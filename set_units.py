@@ -18,6 +18,7 @@ def set_units(dunit=None,lunit=None,vunit=None,cgs=False,muH=1.4):
     units['magnetic_field'] = (np.sqrt(4*np.pi*dunit*vunit**2).cgs.value*u.Gauss).to('microGauss')
     units['temperature']=1.0*u.K
     units['mass'] = (dunit*lunit**3).to('Msun')
+    units['Gcode'] = (c.G/dunit*(vunit/lunit)**2).cgs
 
     if cgs:
         for k in units:

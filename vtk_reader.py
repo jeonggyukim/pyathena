@@ -289,7 +289,6 @@ class AthenaDataSet(AthenaDomain):
 #				self._set_field_map(g)
 #			else: 
 			g['data']={}
-		self.units=set_units()
 		if self.domain['field_map']==None:
 			self.domain['field_map'] = self._set_field_map(self.grids[0])
 		fm = self.domain['field_map']
@@ -362,8 +361,6 @@ class AthenaDataSet(AthenaDomain):
 		self.derived_field_list=derived_field_list_hd+derived_field_list_mhd
 		self.derived_field_list_hd=derived_field_list_hd
 		self.derived_field_list_mhd=derived_field_list_mhd
-		for f in self.derived_field_list+self.field_list:
-			if f not in self.units: self.units[f]=1.0*u.dimensionless_unscaled
 
 	def _set_field_map(self,grid):
 		return set_field_map(grid)
@@ -395,7 +392,7 @@ class AthenaDataSet(AthenaDomain):
 			var.shape = (nx3, nx2, nx1, nvar)
 		file.close()
 		grid['data'][field]=var
-		if nvar == 3: self._set_vector_field(grid,self.units[field],field)
+		if nvar == 3: self._set_vector_field(grid,field)
 
 
 	def _get_grid_data(self,grid,field):
@@ -411,18 +408,15 @@ class AthenaDataSet(AthenaDomain):
 		else:
 			print((field,' is not supported'))
 
-	def _set_vector_field(self,grid,unit,vfield):
+	def _set_vector_field(self,grid,vfield):
 		gd=grid['data']
 		gd[vfield+'1'] = gd[vfield][:,:,:,0]
 		gd[vfield+'2'] = gd[vfield][:,:,:,1]
 		gd[vfield+'3'] = gd[vfield][:,:,:,2]
-		self.units[vfield+'1'] = unit
-		self.units[vfield+'2'] = unit
-		self.units[vfield+'3'] = unit
 
 	def _get_derived_field(self,grid,field):
 		import astropy.constants as c
-		u=self.units
+                u=set_units(muH=1.4271)
 		gd=grid['data']
 		if field in gd:
 			return gd[field]
@@ -448,9 +442,6 @@ class AthenaDataSet(AthenaDomain):
 			v1=gd['velocity1']
 			v2=gd['velocity2']
 			v3=gd['velocity3']
-			u['kinetic_energy1']=u['density']*u['velocity']**2
-			u['kinetic_energy2']=u['density']*u['velocity']**2
-			u['kinetic_energy3']=u['density']*u['velocity']**2
 			if field is 'kinetic_energy1': return 0.5*den*v1**2
 			if field is 'kinetic_energy2': return 0.5*den*v2**2
 			if field is 'kinetic_energy3': return 0.5*den*v3**2
@@ -461,9 +452,6 @@ class AthenaDataSet(AthenaDomain):
 			v1=gd['velocity1']
 			v2=gd['velocity2']
 			v3=gd['velocity3']
-			u['momentum1']=u['density']*u['velocity']
-			u['momentum2']=u['density']*u['velocity']
-			u['momentum3']=u['density']*u['velocity']
 			if field is 'momentum1': return den*v1
 			if field is 'momentum2': return den*v2
 			if field is 'momentum3': return den*v3
@@ -472,51 +460,40 @@ class AthenaDataSet(AthenaDomain):
 			B1=gd['magnetic_field1']
 			B2=gd['magnetic_field2']
 			B3=gd['magnetic_field3']
-			u['magnetic_energy1']=u['magnetic_field']**2
-			u['magnetic_energy2']=u['magnetic_field']**2
-			u['magnetic_energy3']=u['magnetic_field']**2
-			if field is 'magnetic_energy1': return B1**2/(8*np.pi)
-			if field is 'magnetic_energy2': return B2**2/(8*np.pi)
-			if field is 'magnetic_energy3': return B3**2/(8*np.pi)
+			if field is 'magnetic_energy1': return 0.5*B1**2
+			if field is 'magnetic_energy2': return 0.5*B2**2
+			if field is 'magnetic_energy3': return 0.5*B3**2
 		elif field.startswith('magnetic_pressure'):
 			self._read_grid_data(grid,'magnetic_field')
 			B1=gd['magnetic_field1']
 			B2=gd['magnetic_field2']
 			B3=gd['magnetic_field3']
-			u['magnetic_pressure']=u['magnetic_field']**2
-			if field is 'magnetic_pressure': return (B1**2+B2**2+B3**2)/(8*np.pi)
+			if field is 'magnetic_pressure': return (B1**2+B2**2+B3**2)*0.5
 		elif field.startswith('plasma_beta'):
 			vfield='magnetic_field'
-			unit=u[vfield]
 			self._read_grid_data(grid,'pressure')
 			self._read_grid_data(grid,vfield)
 			B1=gd[vfield+'1']
 			B2=gd[vfield+'2']
 			B3=gd[vfield+'3']
 			press=gd['pressure']
-			u['plasma_beta']=u['pressure']/unit**2
-			if field is 'plasma_beta': return press*(8.0*np.pi)/(B1**2+B2**2+B3**2)
+			if field is 'plasma_beta': return press*2.0/(B1**2+B2**2+B3**2)
 		elif field.startswith('alfven_velocity'):
 			vfield='magnetic_field'
-			unit=u[vfield]
 			self._read_grid_data(grid,'density')
 			self._read_grid_data(grid,vfield)
 			den=gd['density']
 			B1=gd[vfield+'1']
 			B2=gd[vfield+'2']
 			B3=gd[vfield+'3']
-			u['alfven_velocity1']=np.sqrt(unit**2/u['density'])
-			u['alfven_velocity2']=np.sqrt(unit**2/u['density'])
-			u['alfven_velocity3']=np.sqrt(unit**2/u['density'])
-			if field is 'alfven_velocity1': return B1/np.sqrt(4*np.pi*den)
-			if field is 'alfven_velocity2': return B2/np.sqrt(4*np.pi*den)
-			if field is 'alfven_velocity3': return B3/np.sqrt(4*np.pi*den)
+			if field is 'alfven_velocity1': return B1/np.sqrt(den)
+			if field is 'alfven_velocity2': return B2/np.sqrt(den)
+			if field is 'alfven_velocity3': return B3/np.sqrt(den)
 		elif field.startswith('sound_speed'):
 			self._read_grid_data(grid,'density')
 			self._read_grid_data(grid,'pressure')
 			den=gd['density']
 			press=gd['pressure']
-			u['sound_speed']=np.sqrt(u['pressure']/u['density'])
 			return np.sqrt(press/den)
 		elif field.startswith('temperature'):
 			self._read_grid_data(grid,'density')
@@ -532,29 +509,23 @@ class AthenaDataSet(AthenaDomain):
 			press=gd['pressure']*u['pressure']
 			u['T1']=u['temperature']
 			return (press/den*c.m_p/c.k_B).cgs
-		elif field.startswith('potential'):
+		elif field.startswith('potential_energy'):
 			self._read_grid_data(grid,'density')
 			self._read_grid_data(grid,'gravitational_potential')
 			den=gd['density']
 			pot=gd['gravitational_potential']
-			u['potential_energy']=u['density']*u['gravitational_potential']
 			return -den*pot
 		elif field.startswith('magnetic_stress'):
 			vfield='magnetic_field'
-			unit=u[vfield]
 			self._read_grid_data(grid,'density')
 			self._read_grid_data(grid,vfield)
 			B1=gd[vfield+'1']
 			B2=gd[vfield+'2']
 			B3=gd[vfield+'3']
-			u['magnetic_stress']=unit**2
-			u['magnetic_stress1']=unit**2
-			u['magnetic_stress2']=unit**2
-			u['magnetic_stress3']=unit**2
-			if field is 'magnetic_stress1': return B2*B3/(4*np.pi) 
-			if field is 'magnetic_stress2': return B1*B3/(4*np.pi) 
-			if field is 'magnetic_stress3': return B1*B2/(4*np.pi) 
-			return B1*B2/(4*np.pi)
+			if field is 'magnetic_stress1': return B2*B3
+			if field is 'magnetic_stress2': return B1*B3
+			if field is 'magnetic_stress3': return B1*B2
+			return B1*B2
 		elif field.startswith('reynold_stress'):
 			self._read_grid_data(grid,'density')
 			self._read_grid_data(grid,'velocity')
@@ -562,10 +533,6 @@ class AthenaDataSet(AthenaDomain):
 			v1=gd['velocity1']
 			v2=gd['velocity2']
 			v3=gd['velocity3']
-			u['reynold_stress']=u['density']*u['velocity']**2
-			u['reynold_stress1']=u['density']*u['velocity']**2
-			u['reynold_stress2']=u['density']*u['velocity']**2
-			u['reynold_stress3']=u['density']*u['velocity']**2
 			if field is 'reynold_stress1': return den*v2*v3
 			if field is 'reynold_stress2': return den*v1*v3
 			if field is 'reynold_stress3': return den*v1*v2
@@ -574,15 +541,12 @@ class AthenaDataSet(AthenaDomain):
 			self._read_grid_data(grid,'gravitational_potential')
 			phi=gd['gravitational_potential']
 			dx=grid['dx']
-			u['gravity_stress']=u['gravitational_potential']**2/u['length']**2/c.G.cgs
-			u['gravity_stress1']=u['gravitational_potential']**2/u['length']**2/c.G.cgs
-			u['gravity_stress2']=u['gravitational_potential']**2/u['length']**2/c.G.cgs
-			u['gravity_stress3']=u['gravitational_potential']**2/u['length']**2/c.G.cgs
 			g1,g2,g3=gradient(phi,dx)
-			if field is 'gravity_stress1': return g2*g3/4/np.pi
-			if field is 'gravity_stress2': return g1*g3/4/np.pi
-			if field is 'gravity_stress3': return g1*g2/4/np.pi
-			return  g1*g2/4/np.pi
+                        Gcode=u['Gcode']
+			if field is 'gravity_stress1': return g2*g3/4/np.pi/Gcode
+			if field is 'gravity_stress2': return g1*g3/4/np.pi/Gcode
+			if field is 'gravity_stress3': return g1*g2/4/np.pi/Gcode
+			return  g1*g2/4/np.pi/Gcode
 		elif field.startswith('scalar'):
 			scal = field[6:]
 			self._read_grid_data(grid,'density')
@@ -765,8 +729,6 @@ class AthenaSlice(AthenaRegion):
 				data=gdata[cidx[2],:,:]
 			self.data[gis[1]:gie[1],gis[0]:gie[0]]=data
 
-		self.units=ds.units[field]
-
 class AthenaSurf(object):
 	def __init__(self,ds,*args,**kwargs):
 		if 'axis' in kwargs: axis=kwargs['axis']
@@ -783,7 +745,6 @@ class AthenaSurf(object):
 
 		self.data = self._get_mean(ds,axis,field,wfield)
 		self._setup(ds)
-		self.units=ds.units[field]
 
 	def _setup(self,ds):
 		aidx=[0,1,2]
