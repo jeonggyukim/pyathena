@@ -12,6 +12,8 @@ import astropy.constants as c
 import astropy.units as u
 import numpy as np
 
+
+
 def cleanup_directory(base,problem_id,problem_dir=None):
     """
        move files into separate directories
@@ -124,7 +126,7 @@ def panel_to_xarray(base,problem_dir,problem_id):
         convert exsiting merged pickles for pandas Panel to netCDF for xarray DataArray
     """
     zpfile='{}{}/zprof_merged/{}.whole.zprof.p'.format(base,problem_dir,problem_id)
-    if os.path.isfile(zpfile):
+    if not os.path.isfile(zpfile):
         print('no merged pickle files')
         return
 
@@ -152,7 +154,7 @@ def recal_rates(h,sn,base,problem_dir,problem_id):
     import pandas as pd
     
     par,blocks,fields,=parse_par('{}{}/{}.par'.format(base,problem_dir,problem_id))
-    dt=float(par['output1']['dt'][0])
+    dt=float(par['output1']['dt'][0])*units['Myr']
     Lx=float(par['domain1']['x1max'][0])-float(par['domain1']['x1min'][0])
     Ly=float(par['domain1']['x2max'][0])-float(par['domain1']['x2min'][0])
     area=Lx*Ly
@@ -374,6 +376,16 @@ def processing_zprof_dump(h,rates,params,zprof_ds,hstfile):
             field_name='massflux_{}_{}{}'.format('bd',var,ph)
             h_zp[field_name]=h_zp[field_name_u]+h_zp[field_name_l]
 
+        for var in ['M1','M2','M3','E1','E2','E3','P']:
+            field_name_u='flux_{}_{}{}'.format('ubd',var,ph)
+            flx=zp_upper.loc['pFz{}'.format(var)]/area
+            h_zp[field_name_u]=flx
+            field_name_l='flux_{}_{}{}'.format('lbd',var,ph)
+            flx=-zp_lower.loc['mFz{}'.format(var)]/area
+            h_zp[field_name_l]=flx
+            field_name='flux_{}_{}{}'.format('bd',var,ph)
+            h_zp[field_name]=h_zp[field_name_u]+h_zp[field_name_l]
+
         zp_upper=zp.sel(zaxis=500,method='nearest')
         zp_lower=zp.sel(zaxis=-500,method='nearest')
         h_zp['massflux_out_u5{}'.format(ph)]=(zp_upper.sel(fields='pFzd')/area)*toflux
@@ -508,11 +520,11 @@ def draw_history(h_zp,metadata,figfname=''):
         if f in h_zp:
             l,=plt.plot(h_zp['tMyr'],h_zp[f])
             if len(subfields)>0:
-                if labels.has_key(f): l.set_label(labels[f])
+                if f in labels: l.set_label(labels[f])
                 for sf in subfields:
                     if sf in h_zp:
                         l,=plt.plot(h_zp['tMyr'],h_zp[sf])
-                        if labels.has_key(sf): l.set_label(labels[sf])
+                        if f in labels: l.set_label(labels[sf])
                 plt.legend(bbox_to_anchor=(1.02, 1),loc=2,fontsize='small')
         plt.ylabel(ylabel)
         plt.yscale(yscale)
@@ -524,7 +536,7 @@ def draw_history(h_zp,metadata,figfname=''):
     if len(figfname) > 0:
         fig.savefig(figfname,bbox_inches='tight',dpi=150)
 
-def doall(base,problem_id,problem_dir=None,do_pickling=True):
+def doall(base,problem_id,problem_dir=None,do_pickling=True,use_yt=True):
     """
        do all preprocessing for a model
     """
@@ -557,5 +569,12 @@ def doall(base,problem_id,problem_dir=None,do_pickling=True):
             'rotation':params['Omega']*1.e3,
             'range':''
         }
-        print('slicing and projecting ...')
-        pa.create_all_pickles(force_recal=False,force_redraw=False,verbose=True,**kwargs)
+
+        if use_yt:
+            print('slicing and projecting with yt ...')
+            from pyathena.yt_analysis import yt_analysis
+            yt_analysis.main(force_recal=False,force_redraw=False,verbose=50,**kwargs)
+        else:
+            print('slicing and projecting with pyathena ...')
+            from pyathena.create_pickle import create_all_pickles
+            create_all_pickles(force_recal=False,force_redraw=False,verbose=True,**kwargs)
