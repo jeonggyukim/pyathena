@@ -21,6 +21,9 @@ def write_par_from_rst(rstfile,parfile):
 def parse_par(rstfile):
 
     fp=open(rstfile,'r')
+    fp.seek(0,2)
+    eof=fp.tell()
+    fp.seek(0)
     par={}
     fields={}
     blocks=[]
@@ -35,6 +38,7 @@ def parse_par(rstfile):
             fields[block]=[]
             blocks.append(block)
         line=fp.readline()
+        if fp.tell() == eof: break
         sp=line.split('=')
         if len(sp) >= 2:
             
@@ -49,7 +53,7 @@ def parse_par(rstfile):
             fields[block].append(field)
 
 
-    par[block]=fp.tell()
+    par['par_end']=fp.tell()
 
     fp.close()
 
