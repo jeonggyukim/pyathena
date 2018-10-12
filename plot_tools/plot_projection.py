@@ -12,7 +12,8 @@ import string
 from .scatter_sp import scatter_sp
 import cPickle as pickle
 
-def plot_projection(surfname,starfname,stars=True,writefile=True,runaway=True,aux={},norm_factor=2.):
+def plot_projection(surfname,starfname,field='rho',
+                    stars=True,writefile=True,runaway=True,aux={},norm_factor=2.):
 
     plt.rc('font',size=11)
     plt.rc('xtick',labelsize=11)
@@ -30,15 +31,19 @@ def plot_projection(surfname,starfname,stars=True,writefile=True,runaway=True,au
         time,sp=read_starvtk(starfname,time_out=True)
         tMyr=time*Myr
 
-    if 'z' in frb: frb=frb['z']
-    extent=np.array(frb['bounds'])/1.e3
+    if 'z' in frb:
+        extent=np.array(frb['zextent'])/1.e3
+        print(extent)
+        frb=frb['z']
+
+    #extent=np.array(frb['bounds'])/1.e3
     x0=extent[0]
     y0=extent[2]
     Lx=extent[1]-extent[0]
     Lz=extent[3]-extent[2]
  
     ax=plt.subplot(gs[:,0])
-    im=ax.imshow(frb['data'],origin='lower')
+    im=ax.imshow(frb[field],origin='lower')
     im.set_extent(extent)
     if aux.has_key('norm'): im.set_norm(aux['norm'])
     if aux.has_key('cmap'): im.set_cmap(aux['cmap'])
@@ -46,7 +51,9 @@ def plot_projection(surfname,starfname,stars=True,writefile=True,runaway=True,au
     ax.text(extent[0]*0.9,extent[3]*0.9,
             't=%3d Myr' % tMyr,ha='left',va='top',**(texteffect()))
 
-    if stars: scatter_sp(sp,ax,axis='z',runaway=runaway,type='surf',norm_factor=norm_factor)
+    if stars:
+        scatter_sp(sp,ax,axis='z',runaway=runaway,
+                   type='surf',norm_factor=norm_factor)
 
     cax=plt.subplot(gs[0,1])
     cbar = fig.colorbar(im,cax=cax,orientation='vertical')
@@ -55,7 +62,7 @@ def plot_projection(surfname,starfname,stars=True,writefile=True,runaway=True,au
     if stars:
       cax=plt.subplot(gs[1,1])
       cbar = colorbar.ColorbarBase(cax, ticks=[0,20,40],
-             cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40), 
+             cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40),
              orientation='vertical')
       cbar.set_label(r'${\rm age [Myr]}$')
  
@@ -104,13 +111,13 @@ def plot_projection_Z(surfname,starfname,stars=True,writefile=True,runaway=True,
     y0=extent[2]
     Lx=extent[1]-extent[0]
     Lz=extent[3]-extent[2]
- 
-    ix=2
+
+    ix=4
     iz=ix*Lz/Lx
     fig=plt.figure(0,figsize=(ix*2+0.5,iz))
     gs = gridspec.GridSpec(2,3,width_ratios=[1,1,0.1],wspace=0.0)
     ax1=plt.subplot(gs[:,0])
-    im1=ax1.imshow(frb['y']['data'],norm=LogNorm(),origin='lower')
+    im1=ax1.imshow(frb['y'][f],norm=LogNorm(),origin='lower')
     im1.set_extent(extent)
     if aux.has_key('cmap'): im1.set_cmap(aux['cmap'])
     if aux.has_key('clim'): im1.set_clim(aux['clim'])
@@ -120,7 +127,7 @@ def plot_projection_Z(surfname,starfname,stars=True,writefile=True,runaway=True,
 
     extent=np.array(frb['x']['bounds'])/1.e3
     ax2=plt.subplot(gs[:,1])
-    im2=ax2.imshow(frb['x']['data'],norm=LogNorm(),origin='lower')
+    im2=ax2.imshow(frb['x'][f],norm=LogNorm(),origin='lower')
     im2.set_extent(extent)
     if aux.has_key('cmap'): im2.set_cmap(aux['cmap'])
     if aux.has_key('clim'): im2.set_clim(aux['clim'])
