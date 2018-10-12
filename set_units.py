@@ -19,6 +19,7 @@ def set_units(dunit=None,lunit=None,vunit=None,cgs=False,muH=1.4):
     units['temperature']=1.0*u.K
     units['mass'] = (dunit*lunit**3).to('Msun')
     units['Gcode'] = (c.G/dunit*(vunit/lunit)**2).cgs
+    units['energy_flux'] = (units['mass']/units['time']**3).cgs
 
     if cgs:
         for k in units:
