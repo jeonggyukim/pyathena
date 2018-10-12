@@ -13,6 +13,7 @@ import pickle as p
 from ath_hst import test_pickle
 from utils import *
 from set_units import set_units
+from cooling import coolftn
 
 def parse_filename(filename):
 	"""
@@ -312,6 +313,8 @@ class AthenaDataSet(AthenaDomain):
 		derived_field_list=[]
 		derived_field_list_hd=[]
 		derived_field_list_mhd=[]
+		derived_field_list_rad=[]
+		derived_field_list_hd=['rho']                
 		if 'magnetic_field' in self.field_list:
 			derived_field_list_mhd.append('magnetic_field1')
 			derived_field_list_mhd.append('magnetic_field2')
@@ -353,14 +356,46 @@ class AthenaDataSet(AthenaDomain):
 			derived_field_list_hd.append('gravity_stress1')
 			derived_field_list_hd.append('gravity_stress2')
 			derived_field_list_hd.append('gravity_stress3')
+                if 'rad_energy_density0' in self.field_list:
+			derived_field_list_rad.append('Erad0')
+                        # I would prefer using Frad0_x, ...
+                        # But I will just follow the convention
+			derived_field_list_rad.append('Frad0x')
+			derived_field_list_rad.append('Frad0y')
+			derived_field_list_rad.append('Frad0z')
+                if 'rad_energy_density1' in self.field_list:
+			derived_field_list_rad.append('Erad1')
+			derived_field_list_rad.append('Frad1x')
+			derived_field_list_rad.append('Frad1y')
+			derived_field_list_rad.append('Frad1z')
+                        
 		derived_field_list_hd.append('number_density')
 		if nscal > 0:
 			for n in range(nscal):
 				derived_field_list_hd.append('scalar%d' % n)
+
+                ## Would be good to check if "ionizing" radiation is turned on, but
+                ## there is no proper way to do this without
+                ## knowing athena configuration or input parameters
+                ## In the future, it might better to change field names
+                ## from specific_scalarX to specific_scalar_IXX
+                ## where XX is HI, HII, HEII, H2 etc.
+                if len(derived_field_list_rad):
+			derived_field_list_rad.append('nHI')
+			derived_field_list_rad.append('nHII')
+			derived_field_list_rad.append('ne')
+			derived_field_list_rad.append('nesq')
+			derived_field_list_rad.append('xn')
+
 		self.domain['nscal']=nscal
-		self.derived_field_list=derived_field_list_hd+derived_field_list_mhd
+                if 'xn' in derived_field_list_rad:
+		        self.domain['IHI']=nscal-1
+
+	        self.derived_field_list=derived_field_list_hd+derived_field_list_mhd+\
+                                         derived_field_list_rad
 		self.derived_field_list_hd=derived_field_list_hd
 		self.derived_field_list_mhd=derived_field_list_mhd
+		self.derived_field_list_rad=derived_field_list_rad
 
 	def _set_field_map(self,grid):
 		return set_field_map(grid)
@@ -410,9 +445,14 @@ class AthenaDataSet(AthenaDomain):
 
 	def _set_vector_field(self,grid,vfield):
 		gd=grid['data']
-		gd[vfield+'1'] = gd[vfield][:,:,:,0]
-		gd[vfield+'2'] = gd[vfield][:,:,:,1]
-		gd[vfield+'3'] = gd[vfield][:,:,:,2]
+                if vfield.startswith('rad'):
+		        gd[vfield+'x'] = gd[vfield][:,:,:,0]
+		        gd[vfield+'y'] = gd[vfield][:,:,:,1]
+		        gd[vfield+'z'] = gd[vfield][:,:,:,2]
+                else:
+		        gd[vfield+'1'] = gd[vfield][:,:,:,0]
+		        gd[vfield+'2'] = gd[vfield][:,:,:,1]
+		        gd[vfield+'3'] = gd[vfield][:,:,:,2]
 
 	def _get_derived_field(self,grid,field):
 		import astropy.constants as c
@@ -420,6 +460,9 @@ class AthenaDataSet(AthenaDomain):
 		gd=grid['data']
 		if field in gd:
 			return gd[field]
+		elif field == 'rho':
+			self._read_grid_data(grid,'density')
+                        return gd['density']*u['muH']
 		elif field.startswith('velocity'):
 			self._read_grid_data(grid,'velocity')
 			if field is 'velocity_magnitude': 
@@ -496,12 +539,27 @@ class AthenaDataSet(AthenaDomain):
 			press=gd['pressure']
 			return np.sqrt(press/den)
 		elif field.startswith('temperature'):
-			self._read_grid_data(grid,'density')
-			self._read_grid_data(grid,'pressure')
-			den=gd['density']*u['density']
-			press=gd['pressure']*u['pressure']
-			T1=(press/den*c.m_p/c.k_B).cgs
-			return T1*1.4/1.1
+                        # Conversion from pressure to temperature should be consistent with C code
+                        if not 'xn' in self.derived_field_list: # With Chang-Goo's cooling fn.
+			        self._read_grid_data(grid,'density')
+			        self._read_grid_data(grid,'pressure')
+			        den=gd['density']*u['density']
+			        press=gd['pressure']*u['pressure']
+                                T1=(press/den*c.m_p/c.k_B).cgs
+			        temp=coolftn().get_temp(T1.value)
+                                return temp
+                        else:
+                                # with xn, assume press = (1.1*nH + (1.0 - xn)*nH)*kB*T
+			        self._read_grid_data(grid,'density')
+			        self._read_grid_data(grid,'pressure')
+                                IHI = str(self.domain['IHI'])
+			        self._read_grid_data(grid,'specific_scalar'+IHI)
+			        den=gd['density']*u['density']
+			        ne = (1.0 - gd['specific_scalar'+IHI])*den
+			        press=gd['pressure']*u['pressure']
+                                T = (press/(1.1*den + ne)*u['muH']/c.k_B).cgs
+                                return T
+                                
 		elif field.startswith('T1'):
 			self._read_grid_data(grid,'density')
 			self._read_grid_data(grid,'pressure')
@@ -554,10 +612,42 @@ class AthenaDataSet(AthenaDomain):
 			den=gd['density']
 			sscal=gd['specific_scalar'+scal]
 			return sscal*den
+		elif field == 'xn': # H neutral fraction
+			IHI = str(self.domain['IHI'])
+			self._read_grid_data(grid,'specific_scalar'+IHI)
+			return gd['specific_scalar'+IHI]
+		elif field == 'ne': # n_elec (free electron results only from H)
+			IHI = str(self.domain['IHI'])
+			self._read_grid_data(grid,'specific_scalar'+IHI)
+			self._read_grid_data(grid,'density')
+			return (1.0 - gd['specific_scalar'+IHI])*gd['density']
+		elif field == 'nHII': # nHII = n_elec (free electron results only from H)
+			IHI = str(self.domain['IHI'])
+			self._read_grid_data(grid,'specific_scalar'+IHI)
+			self._read_grid_data(grid,'density')
+			return (1.0 - gd['specific_scalar'+IHI])*gd['density']
+		elif field == 'nHI': # number density of neutral hydrogen 
+			IHI = str(self.domain['IHI'])
+			self._read_grid_data(grid,'specific_scalar'+IHI)
+			self._read_grid_data(grid,'density')
+			return gd['specific_scalar'+IHI]*gd['density']
+		elif field == 'nesq': # n_elec^2 (free electron results only from H)
+			IHI = str(self.domain['IHI'])
+			self._read_grid_data(grid,'specific_scalar'+IHI)
+			self._read_grid_data(grid,'density')
+			return ((1.0 - gd['specific_scalar'+IHI])*gd['density'])**2
+		elif field.startswith('Erad'): # radiation energy density in cgs
+			ifreq = field[-1]
+			self._read_grid_data(grid,'rad_energy_density'+ifreq)
+			return gd['rad_energy_density'+ifreq]*u['pressure']
+		elif field.startswith('Frad'): # radiation energy density in cgs
+                        ifreq = field[-2]
+			self._read_grid_data(grid,'rad_flux'+ifreq)
+			return gd['rad_flux'+ifreq+field[-1]]*u['energy_flux']
 		
 	def _set_data_array(self,field,dnx):
 		fm=self.domain['field_map']
-		
+
 		if field in self.field_list:
 			if fm[field]['nvar']==3:
 				data=np.empty((dnx[2],dnx[1],dnx[0],3),dtype=fm[field]['dtype'])
@@ -571,11 +661,14 @@ class AthenaDataSet(AthenaDomain):
 				data=np.empty((dnx[2]+1,dnx[1],dnx[0]),dtype=fm[field]['dtype'])
 		elif field in self.derived_field_list:
 			data=np.empty((dnx[2],dnx[1],dnx[0]),dtype=fm['density']['dtype'])
+                else:
+                        print('Field name "{}" is not in field list.'.format(field))
+                        raise
 		return data
 
 	def _get_slab_grid(self,slab=1,verbose=False):
 		if slab > self.NGrids[2]: 
-			print(("%d is lareger than %d" % (slab,self,NGrids[2])))
+			print(("%d is larger than %d" % (slab,self,NGrids[2])))
 		NxNy=self.NGrids[0]*self.NGrids[1]
 		gidx, = np.where(slab == self.gid/NxNy+1)
 		grids = []
@@ -588,7 +681,7 @@ class AthenaDataSet(AthenaDomain):
 		#fm=self.grids[0]['field_map']
 		fm=self.domain['field_map']
 		dnx=np.copy(self.domain['Nx'])
-		if slab: 
+		if slab:
 			dnx[2]=self.grids[0]['Nx'][2]
 			grids = self._get_slab_grid(slab=slab,verbose=verbose)
 		else:
