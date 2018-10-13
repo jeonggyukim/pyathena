@@ -89,14 +89,14 @@ def set_aux(model='solar',verbose=False):
     ## Assuming Erad0 is ionizing radiation
     aux['Erad0']=dict(label=r'$\mathcal{E}_{\rm i}$', \
         unit='erg*cm**(-3)*s**(-1)', limits=(1e-8,1e-18), \
-        cmap=plt.cm.viridis,clim=(1e-12,1e-18), \
-        cticks=(1.e-18,1e-16,1e-14,1e-12), \
+        cmap=plt.cm.viridis,clim=(1e-10,1e-16), \
+        cticks=(1e-16,1e-14,1e-12,1e-10), \
         n_bins=128, norm=LogNorm())
     ## Assuming Erad1 is non-ionizing radiation
     aux['Erad1']=dict(label=r'$\mathcal{E}_{\rm n}$', \
         unit='erg*cm**(-3)*s**(-1)', limits=(1e-8,1e-18), \
-        cmap=plt.cm.viridis,clim=(1e-12,1e-18), \
-        cticks=(1.e-18,1e-16,1e-14,1e-12), \
+        cmap=plt.cm.viridis,clim=(1e-11,1e-16), \
+        cticks=(1e-16,1e-14,1e-12), \
         n_bins=128, norm=LogNorm())
     aux['star_particles']=dict(label=r'${\rm age [Myr]}$', \
         unit='Myr', limits=(0,40), \

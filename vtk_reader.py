@@ -681,11 +681,13 @@ class AthenaDataSet(AthenaDomain):
 		#fm=self.grids[0]['field_map']
 		fm=self.domain['field_map']
 		dnx=np.copy(self.domain['Nx'])
+
 		if slab:
 			dnx[2]=self.grids[0]['Nx'][2]
 			grids = self._get_slab_grid(slab=slab,verbose=verbose)
 		else:
 			grids = self.grids
+
 		data = self._set_data_array(field,dnx)
 		for g in grids:
 			gis=np.copy(g['is'])

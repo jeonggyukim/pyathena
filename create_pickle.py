@@ -129,25 +129,6 @@ def create_projection(ds, proj_fname, proj_fields, weight_fields=None, aux=None,
                 #print('proj field {}: multiplication factor not available in aux.'.format(f))
                 
             proj_data[axis][f] = proj
-            
-
-    # if weight_field != None:
-    #     pdata *= wdata
-    #     proj = pdata.mean(axis=data_axis[axis])
-    #     if weight_field != None:
-    #         wproj = wdata.mean(axis=data_axis[axis])
-    #         proj /= wproj
-    #     if conversion is not None and type(conversion) == dict:
-    #         if axis in conversion:
-    #             proj *= conversion[axis]
-    #     else:
-    #         proj *= conversion
-
-        # bounds = np.array([le[domain_axis[proj_axis[axis][0]]],
-        #                    re[domain_axis[proj_axis[axis][0]]],
-        #                    le[domain_axis[proj_axis[axis][1]]],
-        #                    re[domain_axis[proj_axis[axis][1]]]])
-
         
     print('')
     
@@ -213,7 +194,7 @@ def create_slices(ds,slcfname,slc_fields,force_recal=False,factors={}):
             pdata=ds.read_all_data(f)
 
         for i,axis in enumerate(['x','y','z']):
-            if f is 'temperature' and not 'xn' in ds.derived_field_list:
+            if f == 'temperature' and not 'xn' in ds.derived_field_list:
                 slc=coolftn.get_temp(pdata.take(cidx[i],axis=2-i))
             elif f is 'magnetic_field_strength':
                 slc=np.sqrt((pdata.take(cidx[i],axis=2-i)**2).sum(axis=-1))
@@ -228,6 +209,7 @@ def create_slices(ds,slcfname,slc_fields,force_recal=False,factors={}):
     print('')
         
     pickle.dump(slc_data,open(slcfname,'wb'),pickle.HIGHEST_PROTOCOL)
+    return slc_data
 
 def create_all_pickles_mhd(force_recal=False, force_redraw=False, verbose=True, **kwargs):
     dir = kwargs['base_directory']+kwargs['directory']
@@ -245,7 +227,7 @@ def create_all_pickles_mhd(force_recal=False, force_redraw=False, verbose=True, 
         fskip = 1
     fname=fname[start:end:fskip]
 
-    ngrids=len(glob.glob(dir+'id*/'+kwargs['id']+'*'+fname[0][-8:]))
+    #ngrids=len(glob.glob(dir+'id*/'+kwargs['id']+'*'+fname[0][-8:]))
 
     ds=pa.AthenaDataSet(fname[0])
     mhd='magnetic_field' in ds.field_list
@@ -344,9 +326,17 @@ def create_all_pickles_rad(
     id = problem_id
     aux = set_aux(id)
 
-    fname = glob.glob(os.path.join(dir, 'id0', id + '.????.vtk'))
+    
+    fglob = os.path.join(dir, id + '.????.vtk')
+    fname = glob.glob(fglob)
+    if fname is None:
+        fglob = os.path.join(dir, 'id0', id + '.????.vtk')
+        fname = glob.glob(fglob)
+    
     fname.sort()
-
+    if fname is None:
+        print('No vtk files are found in {}'.format(dir))
+    
     if nums is not None:
         sp = nums.split(':')
         start = eval(sp[0])
@@ -356,8 +346,9 @@ def create_all_pickles_rad(
         start = 1
         end = len(fname)
         fskip = 1
+
     fname = fname[start:end:fskip]
-    ngrids = len(glob.glob(dir+'id*/' + id + '*' + fname[0][-8:]))
+    #ngrids = len(glob.glob(dir+'id*/' + id + '*' + fname[0][-8:]))
 
     ds = pa.AthenaDataSet(fname[0])
     mhd = 'magnetic_field' in ds.field_list
@@ -398,8 +389,8 @@ def create_all_pickles_rad(
         print('*** Extract slices and projections ***')
         
     for i, f in enumerate(fname):
-        slcfname = dir + 'slice/' + id + f[-9:-4] + '.slice.p'
-        projfname = dir + 'proj/' + id + f[-9:-4] + '.proj.p'
+        slcfname = os.path.join(dir,'slice',id + f[-9:-4] + '.slice.p')
+        projfname = os.path.join(dir,'proj',id + f[-9:-4] + '.proj.p')
 
         tasks=dict(slc=(not compare_files(f,slcfname)) or force_recal,
                    proj=(not compare_files(f,projfname)) or force_recal)
@@ -407,7 +398,7 @@ def create_all_pickles_rad(
         do_task = (tasks['slc'] or tasks['proj'])
         
         if verbose:
-            print('num: {} -- Tasks ['.format(i),end='')
+            print('num: {} -- Tasks ['.format(i), end='')
             for k in tasks: print('{}:{} '.format(k,tasks[k]),end='')
             print(']')
         if do_task:
@@ -423,13 +414,13 @@ def create_all_pickles_rad(
         print('*** Draw snapshots ***')
     
     for i,f in enumerate(fname):
-        slcfname=dir+'slice/'+id+f[-9:-4]+'.slice.p'
-        projfname=dir+'proj/'+id+f[-9:-4]+'.proj.p'
+        slcfname=os.path.join(dir,'slice',id+f[-9:-4]+'.slice.p')
+        projfname=os.path.join(dir,'proj',id+f[-9:-4]+'.proj.p')
 
-        starpardir='id0/'
-        if os.path.isdir(dir+'starpar/'):
+        starpardir='id0'
+        if os.path.isdir(os.path.join(dir,'starpar')):
             starpardir='starpar/'
-        starfname=dir+starpardir+id+f[-9:-4]+'.starpar.vtk'
+        starfname=os.path.join(dir,starpardir,id+f[-9:-4]+'.starpar.vtk')
 
         tasks=dict(slc=(not compare_files(f,slcfname+'ng')) or force_redraw,
                    proj=(not compare_files(f,projfname+'ng')) or force_redraw)

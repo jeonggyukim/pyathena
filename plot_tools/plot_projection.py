@@ -33,7 +33,7 @@ def plot_projection(surfname,starfname,field='rho',
 
     if 'z' in frb:
         extent=np.array(frb['zextent'])/1.e3
-        print(extent)
+        #print(extent)
         frb=frb['z']
 
     #extent=np.array(frb['bounds'])/1.e3
