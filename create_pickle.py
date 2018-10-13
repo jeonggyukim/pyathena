@@ -15,13 +15,13 @@ from pyathena.plot_tools.plot_slice_proj import plot_slice_proj as plot_slice_pr
 from pyathena.plot_tools.set_aux import set_aux
 from pyathena.cooling import coolftn
 
-coolftn=coolftn()
-unit=set_units(muH=1.4271)
+coolftn = coolftn()
+unit = set_units(muH=1.4271)
 
-to_Myr=unit['time'].to('Myr').value
-to_Pok=(unit['pressure']/ac.k_B).cgs.value
-to_microG=unit['magnetic_field'].value
-to_surf=(unit['density']*unit['length']).to('Msun/pc^2').value
+to_Myr = unit['time'].to('Myr').value
+to_Pok = (unit['pressure']/ac.k_B).cgs.value
+to_microG = unit['magnetic_field'].value
+to_surf = (unit['density']*unit['length']).to('Msun/pc^2').value
 
 data_axis={'x':2,'y':1,'z':0}
 domain_axis={'x':0,'y':1,'z':2}
@@ -54,17 +54,17 @@ def create_surface_density(ds,surf_fname):
     surf_data={'time':time,'data':proj,'bounds':bounds}
     pickle.dump(surf_data,open(surf_fname,'wb'),pickle.HIGHEST_PROTOCOL)
     
-def create_projection(ds, proj_fname, proj_fields, weight_fields=None, aux=None,
-                      force_recal=False):
+def create_projections(ds, fname, fields, weight_fields=None, aux=None,
+                       force_recal=False, verbose=False):
     """
     Generic function to create pickle file containing projections of field along all axes
     
     Parameters
     ----------
        ds: AthenaDataset
-       proj_fname: string
+       fname: string
           Name of pickle file to save data
-       proj_fields: list of strings
+       fields: list of strings
           List of field names to be projected
        weight_fields: dictionary
           Dictionary for weight fields to be multiplied to the projected field
@@ -72,6 +72,8 @@ def create_projection(ds, proj_fname, proj_fields, weight_fields=None, aux=None,
           aux dictionary
        force_recal: bool
           If True, override existing pickles
+       verbose: bool
+          If True, print verbose messages
     """
     
     time = ds.domain['time']*to_Myr
@@ -84,13 +86,14 @@ def create_projection(ds, proj_fname, proj_fields, weight_fields=None, aux=None,
         aux = set_aux()
     
     import copy
-    field_to_proj = copy.copy(proj_fields)
-    if os.path.isfile(proj_fname) and not force_recal:
-        proj_data = pickle.load(open(proj_fname, 'rb'))
+    field_to_proj = copy.copy(fields)
+    # Check if pickle exists and remove existing fields from field_to_proj
+    if os.path.isfile(fname) and not force_recal:
+        proj_data = pickle.load(open(fname, 'rb'))
         existing_fields = proj_data['z'].keys()
         for f in existing_fields:
             if f in field_to_proj:
-                print('{} has already been pickled.'.format(f))
+                #print('Pickle for {} exists.'.format(f))
                 field_to_proj.remove(f)
     else:
         proj_data = {}
@@ -101,11 +104,13 @@ def create_projection(ds, proj_fname, proj_fields, weight_fields=None, aux=None,
                                le[domain_axis[proj_axis[axis][1]]],
                                re[domain_axis[proj_axis[axis][1]]]])
             proj_data[axis] = {}
-            proj_data[axis + 'extent'] = bounds/1.e3 # to kpc?
+            proj_data[axis + 'extent'] = bounds/1.e3 # pc to kpc
 
-    print('making projections...', end='')
+    if verbose:
+        print('making projections...', end='')
     for f in field_to_proj:
-        print('{}...'.format(f),end='')
+        if verbose:
+            print('{}...'.format(f),end='')
         pdata = ds.read_all_data(f)
         if isinstance(weight_fields,dict) and weight_fields.has_key('f'):
             wdata = ds.read_all_data(weight_field[f])
@@ -123,23 +128,23 @@ def create_projection(ds, proj_fname, proj_fields, weight_fields=None, aux=None,
                                re[domain_axis[proj_axis[axis][1]]]])
 
             try:
-                proj *=  aux[f]['proj_mul']
+                proj *= aux[f]['proj_mul']
             except KeyError:
-                pass
                 #print('proj field {}: multiplication factor not available in aux.'.format(f))
+                pass
                 
             proj_data[axis][f] = proj
-        
-    print('')
+    if verbose:
+        print('')
     
-    pickle.dump(proj_data, open(proj_fname, 'wb'), pickle.HIGHEST_PROTOCOL)
+    pickle.dump(proj_data, open(fname, 'wb'), pickle.HIGHEST_PROTOCOL)
     return proj_data
 
-def create_slices(ds,slcfname,slc_fields,force_recal=False,factors={}):
+def create_slices(ds,fname,fields,force_recal=False,factors={},verbose=False):
     '''
         generic function to create pickle file containing slices of fields
     
-        slc_field: list of field names to be sliced
+        fields: list of field names to be sliced
         
         factors: multiplication factors for unit conversion
     '''
@@ -152,66 +157,73 @@ def create_slices(ds,slcfname,slc_fields,force_recal=False,factors={}):
     cidx=pa.cc_idx(ds.domain,ds.domain['center']).astype('int') 
 
     import copy
-    field_to_slice = copy.copy(slc_fields)
-    if os.path.isfile(slcfname) and not force_recal:
-        slc_data = pickle.load(open(slcfname,'rb'))
+    field_to_slice = copy.copy(fields)
+    if os.path.isfile(fname) and not force_recal:
+        slc_data = pickle.load(open(fname,'rb'))
         existing_fields = slc_data['z'].keys()
         for f in existing_fields:
             if f in field_to_slice: 
-                print('{} is already there'.format(f))
+                #print('Pickle for {} exists'.format(f))
                 field_to_slice.remove(f)
     else:
         slc_data={}
         slc_data['time']=time
        
         for i,axis in enumerate(['x','y','z']):
-            bounds = np.array([le[domain_axis[proj_axis[axis][0]]],re[domain_axis[proj_axis[axis][0]]],
-                               le[domain_axis[proj_axis[axis][1]]],re[domain_axis[proj_axis[axis][1]]]])
-            slc_data[axis]={}
-            slc_data[axis+'extent']=bounds/1.e3
+            bounds = np.array([le[domain_axis[proj_axis[axis][0]]],
+                               re[domain_axis[proj_axis[axis][0]]],
+                               le[domain_axis[proj_axis[axis][1]]],
+                               re[domain_axis[proj_axis[axis][1]]]])
+            slc_data[axis] = {}
+            slc_data[axis+'extent'] = bounds/1.e3
 
-    print('making slices...',end='')
+    if verbose:
+        print('making slices...', end='')
     for f in field_to_slice:
-        print('{}...'.format(f),end='')
+        if verbose:
+            print('{}...'.format(f), end='')
         if f is 'temperature':
             if 'xn' in ds.derived_field_list:
-                pdata=ds.read_all_data('temperature')
+                pdata = ds.read_all_data('temperature')
             else:
-                pdata=ds.read_all_data('T1')
+                pdata = ds.read_all_data('T1')
         elif f is 'magnetic_field_strength':
-            pdata=ds.read_all_data('magnetic_field')
+            pdata = ds.read_all_data('magnetic_field')
         elif f is 'ram_pok_z':
-            pdata=ds.read_all_data('kinetic_energy3')*2.0
+            pdata = ds.read_all_data('kinetic_energy3')*2.0
         elif f is 'pok':
-            pdata=ds.read_all_data('pressure')
+            pdata = ds.read_all_data('pressure')
         elif f is 'velocity_z':
-            pdata=ds.read_all_data('velocity3')
+            pdata = ds.read_all_data('velocity3')
         elif f is 'mag_pok':
-            pdata=ds.read_all_data('magnetic_pressure')
+            pdata = ds.read_all_data('magnetic_pressure')
         elif f is 'nH':
-            pdata=ds.read_all_data('density')
+            pdata = ds.read_all_data('density')
         else:
-            pdata=ds.read_all_data(f)
+            pdata = ds.read_all_data(f)
 
-        for i,axis in enumerate(['x','y','z']):
+        for i, axis in enumerate(['x','y','z']):
             if f == 'temperature' and not 'xn' in ds.derived_field_list:
-                slc=coolftn.get_temp(pdata.take(cidx[i],axis=2-i))
+                slc = coolftn.get_temp(pdata.take(cidx[i],axis=2-i))
             elif f is 'magnetic_field_strength':
-                slc=np.sqrt((pdata.take(cidx[i],axis=2-i)**2).sum(axis=-1))
+                slc = np.sqrt((pdata.take(cidx[i],axis=2-i)**2).sum(axis=-1))
             else:
-                slc=pdata.take(cidx[i],axis=2-i)
+                slc = pdata.take(cidx[i],axis=2-i)
 
             if f in factors:
-                slc_data[axis][f] = slc * factors[f]
+                slc_data[axis][f] = slc*factors[f]
             else:
                 slc_data[axis][f] = slc
-
-    print('')
+    if verbose:
+        print('')
         
-    pickle.dump(slc_data,open(slcfname,'wb'),pickle.HIGHEST_PROTOCOL)
+    pickle.dump(slc_data, open(fname, 'wb'), pickle.HIGHEST_PROTOCOL)
     return slc_data
 
 def create_all_pickles_mhd(force_recal=False, force_redraw=False, verbose=True, **kwargs):
+    """
+    Original create_all_pickles used to extract and draw gas surface density and slices
+    """
     dir = kwargs['base_directory']+kwargs['directory']
     fname=glob.glob(dir+'id0/'+kwargs['id']+'.????.vtk')
     fname.sort()
@@ -296,147 +308,165 @@ def create_all_pickles_mhd(force_recal=False, force_redraw=False, verbose=True, 
         if tasks['slice']:
             plot_slice(slcfname,starfname,fields_to_draw,aux=aux)
 
-def create_all_pickles_rad(
+def create_all_pickles(
         datadir, problem_id,
         nums=None,
-        slc_fields=['nH','nHI','temperature','xn','nesq','Erad0','Erad1'],
-        proj_fields=['density','nesq'],
-        draw_fields=['star_particles','nH','temperature','xn','nesq','Erad0'],
-        force_recal=False, force_redraw=False, verbose=True, **kwargs):
+        fields_slc=['nH', 'nHI', 'temperature', 'xn', 'ne', 'nesq', 'Erad0', 'Erad1'],
+        fields_proj=['rho', 'xn', 'nesq'],
+        fields_draw=['star_particles', 'rho_proj', 'xn_proj', 'nesq_proj',
+                     'nH', 'temperature', 'xn', 'Erad0', 'Erad1'],
+        force_recal=False, force_redraw=False, no_save=False,
+        verbose=True, **plt_args):
     """
-    Pickle slices and projections from dataset and draw snapshots
+
+    Function to pickle slices and projections from AthenaDataset and draw snapshots. 
+
+    Set force_recal if additional fields need to be extracted.
 
     Parameters
     ----------
        datadir: string
-          Base data directory. ex) /tigress/changgoo/R8_8pc_newacc
+          Base data directory
        problem_id: string
-          Prefix used for vtk files
-       slc_fields: list of strings
+          Prefix for vtk files
+       num: array of integers
+          List of vtk output numbers. Search all vtk files if None.
+       fields_slc: list of strings
           List of field names to be sliced
-       draw_fields: list of strings
+       fields_proj: list of strings
+          List of field names to be projected
+       fields_draw: list of strings
           List of field names to be drawn
        force_recal: bool
-          If True, override existing pickles
+          If True, override existing pickles.
+       force_redraw: bool
+          If True, override existing figures.
+       no_save: bool
+          If True, returns slice_proj figure instead of saving it
        verbose: bool
           Print verbose message
+    
+    Returns
+    -------
+       fig: figures
+          Returns tuples of If no_save is set.
     """
     
-    dir = datadir
-    id = problem_id
-    aux = set_aux(id)
-
+    aux = set_aux(problem_id)
+    if not plt_args.has_key('zoom'): # zoom in the z direction
+        plt_args['zoom'] = 1.0
     
-    fglob = os.path.join(dir, id + '.????.vtk')
+    fglob = os.path.join(datadir, problem_id + '.????.vtk')
     fname = glob.glob(fglob)
     if fname is None:
-        fglob = os.path.join(dir, 'id0', id + '.????.vtk')
+        fglob = os.path.join(datadir, 'id0', problem_id + '.????.vtk')
         fname = glob.glob(fglob)
     
     fname.sort()
     if fname is None:
-        print('No vtk files are found in {}'.format(dir))
+        print('No vtk files are found in {}'.format(datadir))
     
-    if nums is not None:
-        sp = nums.split(':')
-        start = eval(sp[0])
-        end = eval(sp[1])
-        fskip = eval(sp[2])
-    else:
+    if nums is None:
         start = 1
         end = len(fname)
         fskip = 1
-
-    fname = fname[start:end:fskip]
-    #ngrids = len(glob.glob(dir+'id*/' + id + '*' + fname[0][-8:]))
+        fname = fname[start:end:fskip]
+    else:
+        nums = np.atleast_1d(nums)
+        fname = [fname[i] for i in nums]
+        
+    #ngrids = len(glob.glob(datadir+'id*/' + id + '*' + fname[0][-8:]))
 
     ds = pa.AthenaDataSet(fname[0])
     mhd = 'magnetic_field' in ds.field_list
     cooling = 'pressure' in ds.field_list
 
-    if verbose:
-        print('[Create_pickle_all_rad]')
-        print('basedir:',dir)
-        print('problem id:',id)
-        print('vtk file numbers:',end=' ')
-        for i in range(start,end,fskip):
-            print(i,end=' ')
-        print('')
-        print("Magnetic fields:", mhd)
-        print("cooling:", cooling)
+    print('[Create_pickle_all_rad]')
+    print('- basedir:', datadir)
+    print('- problem id:', problem_id)
+    print('- vtk file numbers:', end=' ')
+    for i in nums:
+        print(i,end=' ')
+    print('')
 
     if mhd:
         slc_fields.append('magnetic_field_strength')
         slc_fields.append('mag_pok')
         draw_fields.append('magnetic_field_strength')
-
     mul_factors = {'pok':to_Pok,
                    'magnetic_field_strength':to_microG,
                    'mag_pok':to_Pok,
                    'ram_pok_z':to_Pok}
 
-    ## Do not add specific_scalars
-    #scal_fields=get_scalars(ds)
-    #slc_fields+=scal_fields
+    if not os.path.isdir(os.path.join(datadir, 'slice')):
+        os.mkdir(os.path.join(datadir, 'slice'))
+    if not os.path.isdir(os.path.join(datadir, 'proj')):
+        os.mkdir(os.path.join(datadir, 'proj'))
 
-    if not os.path.isdir(os.path.join(dir, 'slice')):
-        os.mkdir(os.path.join(dir, 'slice'))
-    if not os.path.isdir(os.path.join(dir, 'proj')):
-        os.mkdir(os.path.join(dir, 'proj'))
-
-    if verbose:
-        print('')
-        print('*** Extract slices and projections ***')
-        
+    print('')
+    print('*** Extract slices and projections ***')    
+    print('- num: ',end='')
     for i, f in enumerate(fname):
-        slcfname = os.path.join(dir,'slice',id + f[-9:-4] + '.slice.p')
-        projfname = os.path.join(dir,'proj',id + f[-9:-4] + '.proj.p')
+        print('{}'.format(int(f.split('.')[-2])), end=' ')
+        fname_slc = os.path.join(datadir, 'slice', problem_id + f[-9:-4] + '.slice.p')
+        fname_proj = os.path.join(datadir, 'proj', problem_id + f[-9:-4] + '.proj.p')
 
-        tasks=dict(slc=(not compare_files(f,slcfname)) or force_recal,
-                   proj=(not compare_files(f,projfname)) or force_recal)
+        tasks=dict(slc=(not compare_files(f,fname_slc)) or force_recal,
+                   proj=(not compare_files(f,fname_proj)) or force_recal)
 
         do_task = (tasks['slc'] or tasks['proj'])
-        
-        if verbose:
-            print('num: {} -- Tasks ['.format(i), end='')
-            for k in tasks: print('{}:{} '.format(k,tasks[k]),end='')
-            print(']')
         if do_task:
             ds = pa.AthenaDataSet(f)
-            if tasks['proj']:
-                create_projection(ds, projfname, proj_fields, aux=aux)
             if tasks['slc']:
-                create_slices(ds, slcfname, slc_fields, factors=mul_factors,
-                              force_recal=force_recal)
+                create_slices(ds, fname_slc, fields_slc, factors=mul_factors,
+                              force_recal=force_recal, verbose=verbose)
+            if tasks['proj']:
+                create_projections(ds, fname_proj, fields_proj, aux=aux,
+                                   force_recal=force_recal, verbose=verbose)
 
-    if verbose:
-        print('')
-        print('*** Draw snapshots ***')
-    
+    print('')
+    print('*** Draw snapshots ***')
+    print('num: ',end='')
+    savdir = os.path.join(datadir, 'slice_proj')
+    if not os.path.isdir(savdir):
+        os.mkdir(savdir)
     for i,f in enumerate(fname):
-        slcfname=os.path.join(dir,'slice',id+f[-9:-4]+'.slice.p')
-        projfname=os.path.join(dir,'proj',id+f[-9:-4]+'.proj.p')
+        num = f.split('.')[-2]
+        print('{}'.format(int(num)), end=' ')
+        fname_slc = os.path.join(datadir, 'slice',
+                                 problem_id + f[-9:-4] + '.slice.p')
+        fname_proj = os.path.join(datadir, 'proj',
+                                  problem_id + f[-9:-4] + '.proj.p')
 
-        starpardir='id0'
-        if os.path.isdir(os.path.join(dir,'starpar')):
-            starpardir='starpar/'
-        starfname=os.path.join(dir,starpardir,id+f[-9:-4]+'.starpar.vtk')
+        starpardir = 'id0'
+        if os.path.isdir(os.path.join(datadir, 'starpar')):
+            starpardir='starpar'
+        fname_sp = os.path.join(datadir, starpardir,
+                                problem_id + f[-9:-4] + '.starpar.vtk')
 
-        tasks=dict(slc=(not compare_files(f,slcfname+'ng')) or force_redraw,
-                   proj=(not compare_files(f,projfname+'ng')) or force_redraw)
+        if no_save:
+            force_redraw = True
+            figs = []
+
+        savname = os.path.join(savdir, problem_id + '.' + num + '.slc_proj.png')
+        tasks = dict(slc_proj=(not compare_files(f, savname)) or force_redraw,
+                     proj=(not compare_files(f, fname_proj+'ng')) or force_redraw)
         
-        do_task=(tasks['slc'] and tasks['proj'])
-        if verbose:
-            print('file num: {} -- Tasks ['.format(i),end='')
-            for k in tasks: print('{}:{} '.format(k,tasks[k]),end='')
-            print(']')
+        do_task = (tasks['slc_proj'] and tasks['proj'])
         if tasks['proj']:
-            plot_projection(projfname,starfname,'rho',runaway=True,
-                            aux=aux['surface_density'])
-        if tasks['slc']:
-            #plot_slice(slcfname,starfname,draw_fields,aux=aux)
-            plot_slice_proj(slcfname,projfname,starfname,draw_fields,aux=aux)
-
-    if verbose:
-        print('')
-        print('*** Done! ***')
+            plot_projection(fname_proj, fname_sp, 'rho', runaway=True,
+                            aux=aux['rho_proj'])
+        if tasks['slc_proj']:
+            if no_save:
+                savname = None
+                fig = plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_draw,
+                                      savname, aux=aux, **plt_args)
+                figs.append(fig)
+            else:
+                plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_draw,
+                                savname, aux=aux, **plt_args)
+            
+    print('')
+    print('*** Done! ***')
+        
+    return tuple(figs)

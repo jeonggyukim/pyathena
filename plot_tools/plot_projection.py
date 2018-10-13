@@ -13,7 +13,7 @@ from .scatter_sp import scatter_sp
 import cPickle as pickle
 
 def plot_projection(surfname,starfname,field='rho',
-                    stars=True,writefile=True,runaway=True,aux={},norm_factor=2.):
+                    stars=True,writefile=True,runaway=True,aux={},norm_factor=1.):
 
     plt.rc('font',size=11)
     plt.rc('xtick',labelsize=11)
@@ -32,7 +32,7 @@ def plot_projection(surfname,starfname,field='rho',
         tMyr=time*Myr
 
     if 'z' in frb:
-        extent=np.array(frb['zextent'])/1.e3
+        extent=np.array(frb['zextent'])
         #print(extent)
         frb=frb['z']
 

@@ -15,45 +15,53 @@ import cPickle as pickle
 unit=set_units(muH=1.4271)
 to_Myr=unit['time'].to('Myr').value
 
-def plot_slice_proj(slcfname,projfname,starfname,fields_to_draw,zoom=1.,aux={},\
-                    writefile=True,tstamp=True,stars=True,field_label=True,norm_factor=2):
+def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
+                    savname=None, zoom=1., aux={}, tstamp=True,
+                    stars=True, field_label=True, norm_factor=2):
 
-    plt.rc('font',size=14)
-    plt.rc('xtick',labelsize=14)
-    plt.rc('ytick',labelsize=14)
-
-    slc_data=pickle.load(open(slcfname,'rb'))
-    proj_data=pickle.load(open(projfname,'rb'))
+    """
+    Draw slices and projections
+    """
     
-    x0=slc_data['yextent'][0]
-    y0=slc_data['yextent'][3]
-    Lx=slc_data['yextent'][1]-slc_data['yextent'][0]
-    Lz=slc_data['yextent'][3]-slc_data['yextent'][2]
-    Lz=Lz/zoom
-    ix=2
-    iz=ix*Lz/Lx
-    nf=len(fields_to_draw)
-    fig=plt.figure(1,figsize=(ix*nf,iz+ix*1.2))
-    gs = gridspec.GridSpec(2,nf,height_ratios=[iz,ix])
-    gs.update(top=0.95,left=0.10,right=0.95,wspace=0.05,hspace=0)
+    plt.rc('font', size=13)
+    plt.rc('xtick', labelsize=14)
+    plt.rc('ytick', labelsize=14)
+
+    slc_data = pickle.load(open(fname_slc, 'rb'))
+    proj_data = pickle.load(open(fname_proj, 'rb'))
+    
+    x0 = slc_data['yextent'][0]
+    y0 = slc_data['yextent'][3]
+    Lx = slc_data['yextent'][1]-slc_data['yextent'][0]
+    Lz = slc_data['yextent'][3]-slc_data['yextent'][2]
+
+    Lz = Lz/zoom
+    ix = 2
+    iz = ix*Lz/Lx
+    nf = len(fields_to_draw)
+    fig = plt.figure(1,figsize=(ix*nf, iz + ix*1.2))
+    gs = gridspec.GridSpec(2, nf, height_ratios=[iz, ix])
+    gs.update(top=0.95, left=0.10, right=0.95, wspace=0.05, hspace=0)
 
     if stars:
-        sp=read_starvtk(starfname)
+        sp = read_starvtk(fname_sp)
 
     if 'time' in slc_data:
-        tMyr=slc_data['time']
+        tMyr = slc_data['time']
     else:
-        time,sp=read_starvtk(starfname,time_out=True)
-        tMyr=time*Myr
-    images=[]
-    for i,axis in enumerate(['y','z']):
-        for j,f in enumerate(fields_to_draw):
-            ax=plt.subplot(gs[i,j])
+        time, sp = read_starvtk(fname_sp, time_out=True)
+        tMyr = time*Myr
+        
+    images = []
+    for i, axis in enumerate(['y', 'z']):
+        for j, f in enumerate(fields_to_draw):
+            ax = plt.subplot(gs[i, j])
             if f is 'star_particles': 
-                scatter_sp(sp,ax,axis=axis,norm_factor=norm_factor,type='surf')
+                scatter_sp(sp, ax, axis=axis, norm_factor=norm_factor,
+                           type='surf')
                 if axis is 'y':
-                    ax.set_xlim(x0,x0+Lx)
-                    ax.set_ylim(y0,y0+Lz);
+                    ax.set_xlim(x0, x0 + Lx)
+                    ax.set_ylim(y0, y0 + Lz)
                 if axis is 'z': 
                     ax.set_xlim(x0,x0+Lx)
                     ax.set_ylim(x0,x0+Lx)
@@ -65,24 +73,29 @@ def plot_slice_proj(slcfname,projfname,starfname,fields_to_draw,zoom=1.,aux={},\
                     data=slc_data[axis][f]
                 im=ax.imshow(data,origin='lower',interpolation='bilinear')
                 if aux.has_key(f):
-                    if aux[f].has_key('norm'): im.set_norm(aux[f]['norm']) 
-                    if aux[f].has_key('cmap'): im.set_cmap(aux[f]['cmap']) 
-                    if aux[f].has_key('clim'): im.set_clim(aux[f]['clim']) 
+                    if aux[f].has_key('norm'):
+                        im.set_norm(aux[f]['norm']) 
+                    if aux[f].has_key('cmap'):
+                        im.set_cmap(aux[f]['cmap']) 
+                    if aux[f].has_key('clim'):
+                        im.set_clim(aux[f]['clim']) 
 
-                extent=slc_data[axis+'extent']
+                extent = slc_data[axis+'extent']
                 im.set_extent(extent)
                 images.append(im)
-                ax.set_xlim(extent[0],extent[1])
-                ax.set_ylim(extent[2],extent[3])
+                ax.set_xlim(extent[0], extent[1])
+                ax.set_ylim(extent[2], extent[3])
 
-    for j,(im,f) in enumerate(zip(images,fields_to_draw[1:])):
-        ax=plt.subplot(gs[0,j+1])
+    for j, (im, f) in enumerate(zip(images, fields_to_draw[1:])):
+        ax = plt.subplot(gs[0,j+1])
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("top", "3%", pad="1%") 
         cbar = fig.colorbar(im,cax=cax,orientation='horizontal')
         if aux.has_key(f):
-            if 'label' in aux[f]: cbar.set_label(aux[f]['label'])
-            if 'cticks' in aux[f]: cbar.set_ticks(aux[f]['cticks'])
+            if 'label' in aux[f]:
+                cbar.set_label(aux[f]['label'])
+            if 'cticks' in aux[f]:
+                cbar.set_ticks(aux[f]['cticks'])
         cax.xaxis.tick_top()
         cax.xaxis.set_label_position('top')
 
@@ -90,48 +103,52 @@ def plot_slice_proj(slcfname,projfname,starfname,fields_to_draw,zoom=1.,aux={},\
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("top", "3%", pad="1%") 
     cbar = colorbar.ColorbarBase(cax, ticks=[0,20,40],
-           cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40), 
-           orientation='horizontal')
+                                 cmap=plt.cm.cool_r,
+                                 norm=Normalize(vmin=0, vmax=40),
+                                 orientation='horizontal')
     cax.xaxis.tick_top()
     cax.xaxis.set_label_position('top')
     cbar.set_label(r'${\rm age [Myr]}$')
 
-    s1=ax.scatter(Lx*2,Lz*2,
-      s=np.sqrt(1.e3)/norm_factor,color='k',
-      alpha=.8,label=r'$10^3 M_\odot$')
-    s2=ax.scatter(Lx*2,Lz*2,
-      s=np.sqrt(1.e4)/norm_factor,color='k',
-      alpha=.8,label=r'$10^4 M_\odot$')
-    s3=ax.scatter(Lx*2,Lz*2,
-      s=np.sqrt(1.e5)/norm_factor,
-      color='k',alpha=.8,label=r'$10^5 M_\odot$')
+    s1 = ax.scatter(Lx*2, Lz*2,
+                    s=np.sqrt(1.e3)/norm_factor, color='k',
+                    alpha=.8, label=r'$10^3 M_\odot$')
+    s2 = ax.scatter(Lx*2, Lz*2,
+                  s=np.sqrt(1.e4)/norm_factor,color='k',
+                  alpha=.8, label=r'$10^4 M_\odot$')
+    s3 = ax.scatter(Lx*2, Lz*2,
+                    s=np.sqrt(1.e5)/norm_factor,
+                    color='k', alpha=.8, label=r'$10^5 M_\odot$')
 
-    ax.set_xlim(x0,x0+Lx)
-    ax.set_ylim(y0,y0+Lz);
-    legend=ax.legend((s1,s2,s3),(r'$10^3 M_\odot$',r'$10^4 M_\odot$',r'$10^5 M_\odot$'), 
-                     scatterpoints = 1, loc='lower left',fontsize='medium',frameon=True)
+    ax.set_xlim(x0, x0 + Lx)
+    ax.set_ylim(y0, y0 + Lz)
+    legend = ax.legend((s1, s2, s3),
+                       (r'$10^3 M_\odot$', r'$10^4 M_\odot$', r'$10^5 M_\odot$'),
+                       scatterpoints = 1, loc='lower left',
+                       fontsize='medium', frameon=True)
 
-    axes=fig.axes
-    plt.setp([ax.get_xticklabels() for ax in axes[:2*nf]],visible=False)
-    plt.setp([ax.get_yticklabels() for ax in axes[:2*nf]],visible=False)
+    axes = fig.axes
+    plt.setp([ax.get_xticklabels() for ax in axes[:2*nf]], visible=False)
+    plt.setp([ax.get_yticklabels() for ax in axes[:2*nf]], visible=False)
     plt.setp(axes[:nf],'ylim',(slc_data['yextent'][2]/zoom,slc_data['yextent'][3]/zoom))
 
-    plt.setp(axes[nf:2*nf],'xlabel','x [kpc]')
-    plt.setp(axes[0],'ylabel','z [kpc]')
+    plt.setp(axes[nf:2*nf],'xlabel', 'x [kpc]')
+    plt.setp(axes[0],'ylabel', 'z [kpc]')
     if tstamp: 
         ax=axes[0]
-        ax.text(0.5,0.95,'t=%3d Myr' % tMyr,size=16,horizontalalignment='center',
-                transform = ax.transAxes,**(texteffect()))
-    plt.setp(axes[nf],'ylabel','y [kpc]')
+        ax.text(0.5,0.95,'t={0:3d} Myr'.format(int(tMyr)), size=16,
+                horizontalalignment='center',
+                transform=ax.transAxes, **(texteffect()))
+    plt.setp(axes[nf], 'ylabel', 'y [kpc]')
     plt.setp([ax.get_xticklabels() for ax in axes[nf:]], visible=True)
     plt.setp([ax.get_yticklabels() for ax in axes[:2*nf:nf]], visible=True)
-    plt.setp([ax.xaxis.get_majorticklabels() for ax in axes[nf:2*nf]], rotation=45 )
+    plt.setp([ax.xaxis.get_majorticklabels() for ax in axes[nf:2*nf]], rotation=45)
 
-    pngfname=slcfname+'ng'
+    #pngfname=fname_slc+'ng'
     #canvas = mpl.backends.backend_agg.FigureCanvasAgg(fig)
     #canvas.print_figure(pngfname,num=1,dpi=150,bbox_inches='tight')
-    if writefile:
-        plt.savefig(pngfname,bbox_inches='tight',num=0,dpi=150)
-        plt.close()
-    else:
+    if savname is None:
         return fig
+    else:
+        plt.savefig(savname, bbox_inches='tight', num=0, dpi=150)
+        plt.close()
