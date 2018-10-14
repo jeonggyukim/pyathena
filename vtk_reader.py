@@ -314,7 +314,8 @@ class AthenaDataSet(AthenaDomain):
 		derived_field_list_hd=[]
 		derived_field_list_mhd=[]
 		derived_field_list_rad=[]
-		derived_field_list_hd=['rho']                
+		derived_field_list_hd=['rho']
+                
 		if 'magnetic_field' in self.field_list:
 			derived_field_list_mhd.append('magnetic_field1')
 			derived_field_list_mhd.append('magnetic_field2')
@@ -408,25 +409,28 @@ class AthenaDataSet(AthenaDomain):
 		if field in gd:
 			return
 
-		file=open(grid['filename'],'rb')
+		file = open(grid['filename'],'rb')
 		#fm=grid['field_map']
-		fm=self.domain['field_map']
-		nx1=grid['Nx'][0]
-		nx2=grid['Nx'][1]
-		nx3=grid['Nx'][2]
+		fm = self.domain['field_map']
+		nx1 = grid['Nx'][0]
+		nx2 = grid['Nx'][1]
+		nx3 = grid['Nx'][2]
 
-		if field == 'face_centered_B1': nx1=nx1+1
-		if field == 'face_centered_B2': nx2=nx2+1
-		if field == 'face_centered_B3': nx3=nx3+1
+		if field == 'face_centered_B1':
+                        nx1 = nx1+1
+		if field == 'face_centered_B2':
+                        nx2 = nx2+1
+		if field == 'face_centered_B3':
+                        nx3 = nx3+1
 
-		nvar=fm[field]['nvar']
+		nvar = fm[field]['nvar']
 		var = self._read_field(file,fm[field])
 		if nvar == 1: 
 			var.shape = (nx3, nx2, nx1)
 		else: 
 			var.shape = (nx3, nx2, nx1, nvar)
 		file.close()
-		grid['data'][field]=var
+		grid['data'][field] = var
 		if nvar == 3: self._set_vector_field(grid,field)
 
 
