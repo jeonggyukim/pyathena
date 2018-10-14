@@ -1,23 +1,23 @@
-import glob
-import os
+import glob, os
+import numpy as np
 
 import matplotlib.colorbar as colorbar
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from matplotlib.colors import LogNorm,SymLogNorm,NoNorm,Normalize
-from pyathena import read_starvtk,texteffect,set_units
-import numpy as np
-import string
-from .scatter_sp import scatter_sp
+from matplotlib.colors import LogNorm, SymLogNorm, NoNorm, Normalize
 import cPickle as pickle
+
+from pyathena import read_starvtk,texteffect,set_units
+from .scatter_sp import scatter_sp
 
 unit=set_units(muH=1.4271)
 to_Myr=unit['time'].to('Myr').value
 
 def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
-                    savname=None, zoom=1., aux={}, tstamp=True,
-                    stars=True, field_label=True, norm_factor=2):
+                    savname=None, zoom=1., aux={}, time_stamp=True,
+                    fig_zmargin=0.5,
+                    sp_norm_factor=2):
 
     """
     Draw slices and projections
@@ -29,56 +29,68 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
 
     slc_data = pickle.load(open(fname_slc, 'rb'))
     proj_data = pickle.load(open(fname_proj, 'rb'))
+
+    for x in ('x','y','z'):
+        slc_data[x+'extent'] = np.array(slc_data[x+'extent'])/1e3
+        slc_data[x+'yextent'] = np.array(slc_data[x+'extent'])/1e3
+        slc_data[x+'xextent'] = np.array(slc_data[x+'extent'])/1e3
     
     x0 = slc_data['yextent'][0]
-    y0 = slc_data['yextent'][3]
-    Lx = slc_data['yextent'][1]-slc_data['yextent'][0]
-    Lz = slc_data['yextent'][3]-slc_data['yextent'][2]
-
+    y0 = slc_data['yextent'][1]
+    Lx = slc_data['yextent'][1] - slc_data['yextent'][0]
+    Lz = slc_data['yextent'][3] - slc_data['yextent'][2]
+    
+    # Set figure size in inches and margins
     Lz = Lz/zoom
-    ix = 2
-    iz = ix*Lz/Lx
+    xsize = 2.0
+    zsize = xsize*Lz/Lx
     nf = len(fields_to_draw)
-    fig = plt.figure(1,figsize=(ix*nf, iz + ix*1.2))
-    gs = gridspec.GridSpec(2, nf, height_ratios=[iz, ix])
+    
+    # Need to adjust zmargin depending on number of fields and aspect_ratio
+    zfactor = 1.0 + fig_zmargin
+    fig = plt.figure(1, figsize=(xsize*nf, zsize + xsize*zfactor))
+    gs = gridspec.GridSpec(2, nf, height_ratios=[zsize, xsize])
     gs.update(top=0.95, left=0.10, right=0.95, wspace=0.05, hspace=0)
 
-    if stars:
-        sp = read_starvtk(fname_sp)
-
+    # Read starpar and time
+    time_sp, sp = read_starvtk(fname_sp, time_out=True)
     if 'time' in slc_data:
         tMyr = slc_data['time']
     else:
-        time, sp = read_starvtk(fname_sp, time_out=True)
-        tMyr = time*Myr
-        
+        tMyr = time_sp*to_Myr
+
+    # Sanity check
+    if np.abs(slc_data['time']/(time_sp*to_Myr) - 1.0) > 1e-7:
+        print('[plot_slice_proj]: Check time time_slc, time_sp', tMyr, time_sp*to_Myr)
+        #raise
+    
     images = []
     for i, axis in enumerate(['y', 'z']):
         for j, f in enumerate(fields_to_draw):
             ax = plt.subplot(gs[i, j])
             if f is 'star_particles': 
-                scatter_sp(sp, ax, axis=axis, norm_factor=norm_factor,
+                scatter_sp(sp, ax, axis=axis, norm_factor=sp_norm_factor,
                            type='surf')
                 if axis is 'y':
                     ax.set_xlim(x0, x0 + Lx)
                     ax.set_ylim(y0, y0 + Lz)
                 if axis is 'z': 
-                    ax.set_xlim(x0,x0+Lx)
-                    ax.set_ylim(x0,x0+Lx)
+                    ax.set_xlim(x0, x0 + Lx)
+                    ax.set_ylim(x0, x0 + Lx)
                 ax.set_aspect(1.0)
             else:
                 if f[-4:] == 'proj':
-                    data=proj_data[axis][f[:-5]]
+                    data = proj_data[axis][f[:-5]]
                 else:
-                    data=slc_data[axis][f]
-                im=ax.imshow(data,origin='lower',interpolation='bilinear')
+                    data = slc_data[axis][f]
+                im=ax.imshow(data,origin='lower', interpolation='bilinear')
                 if aux.has_key(f):
                     if aux[f].has_key('norm'):
                         im.set_norm(aux[f]['norm']) 
                     if aux[f].has_key('cmap'):
-                        im.set_cmap(aux[f]['cmap']) 
+                        im.set_cmap(aux[f]['cmap'])
                     if aux[f].has_key('clim'):
-                        im.set_clim(aux[f]['clim']) 
+                        im.set_clim(aux[f]['clim'])
 
                 extent = slc_data[axis+'extent']
                 im.set_extent(extent)
@@ -111,13 +123,13 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
     cbar.set_label(r'${\rm age [Myr]}$')
 
     s1 = ax.scatter(Lx*2, Lz*2,
-                    s=np.sqrt(1.e3)/norm_factor, color='k',
+                    s=np.sqrt(1.e3)/sp_norm_factor, color='k',
                     alpha=.8, label=r'$10^3 M_\odot$')
     s2 = ax.scatter(Lx*2, Lz*2,
-                  s=np.sqrt(1.e4)/norm_factor,color='k',
-                  alpha=.8, label=r'$10^4 M_\odot$')
+                    s=np.sqrt(1.e4)/sp_norm_factor,color='k',
+                    alpha=.8, label=r'$10^4 M_\odot$')
     s3 = ax.scatter(Lx*2, Lz*2,
-                    s=np.sqrt(1.e5)/norm_factor,
+                    s=np.sqrt(1.e5)/sp_norm_factor,
                     color='k', alpha=.8, label=r'$10^5 M_\odot$')
 
     ax.set_xlim(x0, x0 + Lx)
@@ -134,9 +146,9 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
 
     plt.setp(axes[nf:2*nf],'xlabel', 'x [kpc]')
     plt.setp(axes[0],'ylabel', 'z [kpc]')
-    if tstamp: 
+    if time_stamp: 
         ax=axes[0]
-        ax.text(0.5,0.95,'t={0:3d} Myr'.format(int(tMyr)), size=16,
+        ax.text(0.5, 0.95, 't={0:3d} Myr'.format(int(tMyr)), size=16,
                 horizontalalignment='center',
                 transform=ax.transAxes, **(texteffect()))
     plt.setp(axes[nf], 'ylabel', 'y [kpc]')
@@ -144,6 +156,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
     plt.setp([ax.get_yticklabels() for ax in axes[:2*nf:nf]], visible=True)
     plt.setp([ax.xaxis.get_majorticklabels() for ax in axes[nf:2*nf]], rotation=45)
 
+    
     #pngfname=fname_slc+'ng'
     #canvas = mpl.backends.backend_agg.FigureCanvasAgg(fig)
     #canvas.print_figure(pngfname,num=1,dpi=150,bbox_inches='tight')
