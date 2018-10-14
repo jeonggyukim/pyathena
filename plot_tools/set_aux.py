@@ -98,7 +98,8 @@ def set_aux(model='solar',verbose=False):
         n_bins=128, norm=Normalize())
 
     # Volume averaged xn
-    aux['xn_proj']=dict(label=r'$x_{\rm n}$', \
+    aux['xn_proj']=dict(
+        label=r'$\langle x_{\rm n}\rangle$', \
         unit='dimensionless', limits=(0,1), \
         cmap=plt.cm.YlGn,clim=(0,1), \
         weight_field='cell_volume', \

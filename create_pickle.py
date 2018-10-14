@@ -361,9 +361,8 @@ def create_all_pickles(
     """
     
     aux = set_aux(problem_id)
-    if not plt_args.has_key('zoom'): # zoom in the z direction
-        plt_args['zoom'] = 1.0
-        print('zoom',plt_args['zoom'])
+    _plt_args = dict(zoom=1.0)
+    _plt_args.update(**plt_args)
     
     fglob = os.path.join(datadir, problem_id + '.????.vtk')
     fname = glob.glob(fglob)
@@ -393,9 +392,12 @@ def create_all_pickles(
     print('[Create_pickle_all_rad]')
     print('- basedir:', datadir)
     print('- problem id:', problem_id)
-    print('- vtk file numbers:', end=' ')
+    print('- vtk file num:', end=' ')
     for i in nums:
         print(i,end=' ')
+    print('slc: {0:s}'.format(' '.join(fields_slc)))
+    print('proj: {0:s}'.format(' '.join(fields_proj)))
+    print('draw: {0:s}'.format(' '.join(fields_draw)))
     print('')
     
     if mhd:
@@ -434,15 +436,16 @@ def create_all_pickles(
                                    force_recal=force_recal, verbose=verbose)
 
     print('')
-    print('*** Draw snapshots ***')
+    print('*** Draw snapshots (zoom {0:.1f}) ***'.format(_plt_args['zoom']))
     print('num: ',end='')
     if no_save:
         force_redraw = True
         figs = []
 
-    savdir = os.path.join(datadir, 'slice_proj')
+    savdir = os.path.join(datadir, 'snapshots')
     if not os.path.isdir(savdir):
         os.mkdir(savdir)
+    print('savdir:', savdir)
     for i,f in enumerate(fname):
         num = f.split('.')[-2]
         print('{}'.format(int(num)), end=' ')
@@ -458,12 +461,12 @@ def create_all_pickles(
                                 problem_id + f[-9:-4] + '.starpar.vtk')
 
         savname = os.path.join(savdir, problem_id + '.' + num + '.slc_proj.png')
-        if plt_args['zoom'] == 1.0:
+        if _plt_args['zoom'] == 1.0:
             savname = os.path.join(savdir, problem_id + '.' + num + '.slc_proj.png')
         else:
             # append zoom factor
             savname = os.path.join(savdir, problem_id + '.' + num + '.slc_proj-' + \
-                                   'zoom{0:02d}'.format(int(10.0*plt_args['zoom'])) + '.png')
+                                   'zoom{0:02d}'.format(int(10.0*_plt_args['zoom'])) + '.png')
 
         tasks = dict(slc_proj=(not compare_files(f, savname)) or force_redraw,
                      proj=(not compare_files(f, fname_proj+'ng')) or force_redraw)
@@ -476,11 +479,11 @@ def create_all_pickles(
             if no_save:
                 savname = None
                 fig = plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_draw,
-                                      savname, aux=aux, **plt_args)
+                                      savname, aux=aux, **_plt_args)
                 figs.append(fig)
             else:
                 plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_draw,
-                                savname, aux=aux, **plt_args)
+                                savname, aux=aux, **_plt_args)
             
     print('')
     print('*** Done! ***')

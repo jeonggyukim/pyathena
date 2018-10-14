@@ -5,4 +5,4 @@ from pyathena.cooling import coolftn
 from pyathena.utils import *
 from pyathena.vtk_reader import *
 from pyathena.create_pickle import *
-from pyathena.plot_tools.movie import display_mp4, make_mp4
+from pyathena.plot_tools.movie import display_movie, make_movie
