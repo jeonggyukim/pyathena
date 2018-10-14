@@ -104,7 +104,7 @@ def create_projections(ds, fname, fields, weight_fields=None, aux=None,
                                le[domain_axis[proj_axis[axis][1]]],
                                re[domain_axis[proj_axis[axis][1]]]])
             proj_data[axis] = {}
-            proj_data[axis + 'extent'] = bounds/1.e3 # pc to kpc
+            proj_data[axis + 'extent'] = bounds
 
     if verbose:
         print('making projections...', end='')
@@ -175,7 +175,7 @@ def create_slices(ds,fname,fields,force_recal=False,factors={},verbose=False):
                                le[domain_axis[proj_axis[axis][1]]],
                                re[domain_axis[proj_axis[axis][1]]]])
             slc_data[axis] = {}
-            slc_data[axis+'extent'] = bounds/1.e3
+            slc_data[axis+'extent'] = bounds
 
     if verbose:
         print('making slices...', end='')
