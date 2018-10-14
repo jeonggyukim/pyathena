@@ -54,7 +54,7 @@ def create_surface_density(ds,surf_fname):
     surf_data={'time':time,'data':proj,'bounds':bounds}
     pickle.dump(surf_data,open(surf_fname,'wb'),pickle.HIGHEST_PROTOCOL)
     
-def create_projections(ds, fname, fields, weight_fields=None, aux=None,
+def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
                        force_recal=False, verbose=False):
     """
     Generic function to create pickle file containing projections of field along all axes
@@ -84,7 +84,12 @@ def create_projections(ds, fname, fields, weight_fields=None, aux=None,
 
     if aux is None:
         aux = set_aux()
-    
+        
+    for f in fields:
+        fp = f + '_proj'
+        if aux.has_key(fp) and aux[fp].has_key('weight_field'):
+            weight_fields[f] = aux[fp]['weight_field']
+        
     import copy
     field_to_proj = copy.copy(fields)
     # Check if pickle exists and remove existing fields from field_to_proj
@@ -112,8 +117,11 @@ def create_projections(ds, fname, fields, weight_fields=None, aux=None,
         if verbose:
             print('{}...'.format(f),end='')
         pdata = ds.read_all_data(f)
-        if isinstance(weight_fields,dict) and weight_fields.has_key('f'):
-            wdata = ds.read_all_data(weight_field[f])
+        if isinstance(weight_fields,dict) and weight_fields.has_key(f):
+            if weight_fields[f] == 'cell_volume':
+                wdata = ds.domain['dx'].prod()*np.ones(pdata.shape)
+            else:
+                wdata = ds.read_all_data(weight_field[f])
             pdata *= wdata
         for i, axis in enumerate(['x', 'y', 'z']):
             dl_cgs = (ds.domain['dx'][domain_axis[axis]]*unit['length'].cgs).value
@@ -318,8 +326,8 @@ def create_all_pickles(
         force_recal=False, force_redraw=False, no_save=False,
         verbose=True, **plt_args):
     """
-
-    Function to pickle slices and projections from AthenaDataset and draw snapshots. 
+    --------------------------------------------------------------------------------
+    Function to pickle slices and projections from AthenaDataset and draw snapshots.
 
     Set force_recal if additional fields need to be extracted.
 
@@ -349,12 +357,13 @@ def create_all_pickles(
     Returns
     -------
        fig: figures
-          Returns tuples of If no_save is set.
+          Returns lists of figure if no_save is True.
     """
     
     aux = set_aux(problem_id)
     if not plt_args.has_key('zoom'): # zoom in the z direction
         plt_args['zoom'] = 1.0
+        print('zoom',plt_args['zoom'])
     
     fglob = os.path.join(datadir, problem_id + '.????.vtk')
     fname = glob.glob(fglob)
@@ -388,7 +397,7 @@ def create_all_pickles(
     for i in nums:
         print(i,end=' ')
     print('')
-
+    
     if mhd:
         slc_fields.append('magnetic_field_strength')
         slc_fields.append('mag_pok')
@@ -427,6 +436,10 @@ def create_all_pickles(
     print('')
     print('*** Draw snapshots ***')
     print('num: ',end='')
+    if no_save:
+        force_redraw = True
+        figs = []
+
     savdir = os.path.join(datadir, 'slice_proj')
     if not os.path.isdir(savdir):
         os.mkdir(savdir)
@@ -444,11 +457,14 @@ def create_all_pickles(
         fname_sp = os.path.join(datadir, starpardir,
                                 problem_id + f[-9:-4] + '.starpar.vtk')
 
-        if no_save:
-            force_redraw = True
-            figs = []
-
         savname = os.path.join(savdir, problem_id + '.' + num + '.slc_proj.png')
+        if plt_args['zoom'] == 1.0:
+            savname = os.path.join(savdir, problem_id + '.' + num + '.slc_proj.png')
+        else:
+            # append zoom factor
+            savname = os.path.join(savdir, problem_id + '.' + num + '.slc_proj-' + \
+                                   'zoom{0:02d}'.format(int(10.0*plt_args['zoom'])) + '.png')
+
         tasks = dict(slc_proj=(not compare_files(f, savname)) or force_redraw,
                      proj=(not compare_files(f, fname_proj+'ng')) or force_redraw)
         
@@ -468,5 +484,6 @@ def create_all_pickles(
             
     print('')
     print('*** Done! ***')
-        
-    return tuple(figs)
+
+    if no_save:
+        return tuple(figs)
