@@ -329,7 +329,8 @@ def create_all_pickles(
     --------------------------------------------------------------------------------
     Function to pickle slices and projections from AthenaDataset and draw snapshots.
 
-    Set force_recal if additional fields need to be extracted.
+    Set force_recal to True if additional fields need to be extracted.
+
 
     Parameters
     ----------
@@ -338,7 +339,7 @@ def create_all_pickles(
        problem_id: string
           Prefix for vtk files
        num: array of integers
-          List of vtk output numbers. Search all vtk files if None.
+          List of vtk output numbers. Search all vtk files in the directory if None.
        fields_slc: list of strings
           List of field names to be sliced
        fields_proj: list of strings
@@ -350,7 +351,8 @@ def create_all_pickles(
        force_redraw: bool
           If True, override existing figures.
        no_save: bool
-          If True, returns slice_proj figure instead of saving it
+          If True, returns a list of matplotlib figure objects instead of 
+          saving them.
        verbose: bool
           Print verbose message
     
