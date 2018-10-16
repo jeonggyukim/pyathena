@@ -82,4 +82,4 @@ def scatter_sp(sp, ax, axis=0, thickness=10.0, norm_factor=4.,
 
         ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung], marker='o',
                    s=spm.iloc[iyoung], c=spa.iloc[iyoung],
-                   vmin=0, vmax=agemax vmin=0, cmap=plt.cm.cool_r, alpha=0.7)
+                   vmin=0, vmax=agemax, cmap=plt.cm.cool_r, alpha=0.7)
