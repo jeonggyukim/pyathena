@@ -52,7 +52,7 @@ class mass_to_lum(object):
                 if idx == 0:
                     raise ValueError('Too small main sequence age')
                 if idx == 1:
-                    res.append(((age_ - 2.3)/7.6e2)**(-1.0/1.57))
+                    res.append(((age_ - 2.3 - 0.5)/7.6e2)**(-1.0/1.57))
                 elif idx == 2:
                     res.append((age_/1.59e3)**(-1.0/1.81))
                 elif idx == 3:
@@ -93,7 +93,7 @@ class mass_to_lum(object):
             def wrapper(x):
                 x = np.atleast_1d(x)
                 y = fn(x)
-                y[x >= 12.0] += 2.3
+                y[x >= 12.0] += 2.3 + 0.5
                 return y
             return wrapper
         tMS = decorator(pp)
