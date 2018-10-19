@@ -29,7 +29,7 @@ class units(object):
         self.lunit = (1.0*au.pc).to('pc')
         if kind == 'LV':
             self.vunit = (1.0*au.km/au.s).to('km/s')
-            self.tunit = (self.lunit/self.vunit).cgs     
+            self.tunit = (self.lunit/self.vunit).cgs
         elif kind == 'LT':
             self.tunit = (1.0*au.Myr).to('Myr')
             self.vunit = (self.lunit/self.tunit).to('km/s')
@@ -38,12 +38,18 @@ class units(object):
         self.dunit = (self.munit/self.lunit**3).cgs    
         self.eunit = (self.munit*self.vunit**2).cgs
         self.punit = (self.dunit*self.vunit**2).cgs
-        
+
+        # Define (physical constants in code units)^-1
+        # Opposite to the convention chosen by set_units function in src/units.c
+        # because in postprocessing we want to convert from code units to
+        # more convenient ones by multiplying these constants
         self.pc = self.lunit.to('pc').value
         self.Myr = self.tunit.to('Myr').value
         self.kms = self.vunit.to('km/s').value
         self.Msun = self.munit.to('Msun').value
         self.Lsun = (self.eunit/self.tunit).to('Lsun').value
+        self.eV = self.eunit.to('eV')
+        self.s = self.tunit.to('s').value
 
         # For yt
         self.units_override = dict(length_unit=(self.lunit.to('pc').value, 'pc'),
