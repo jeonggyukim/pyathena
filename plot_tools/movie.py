@@ -26,7 +26,7 @@ def make_movie(fname_glob, fname_out, fps_in=10, fps_out=20):
         print('[make_movie]: Successful execution. Output:')
         print('{0:s}'.format(fname_out))
     else:
-        print('[make_movie]: subprocess.call returned {0:s}. Something went wrong.'.format(ret))
+        print('[make_movie]: subprocess.call returned {0:d}. Something went wrong.'.format(ret))
         
     return subprocess.call(cmd)
 

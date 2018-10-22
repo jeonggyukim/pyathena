@@ -371,13 +371,19 @@ def create_all_pickles(
     if fname is None:
         fglob = os.path.join(datadir, 'id0', problem_id + '.????.vtk')
         fname = glob.glob(fglob)
-    
+
     fname.sort()
     if fname is None:
         print('No vtk files are found in {}'.format(datadir))
-    
+
     if nums is None:
-        start = 1
+        nums = [int(f[-8:-4]) for f in fname]
+        if nums[0] == 0: # remove the zeroth snapshot
+            start = 1
+            del nums[0]
+        else:
+            start = 0
+            
         end = len(fname)
         fskip = 1
         fname = fname[start:end:fskip]
