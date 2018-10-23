@@ -374,7 +374,7 @@ def create_all_pickles(
 
     fname.sort()
     if fname is None:
-        print('No vtk files are found in {}'.format(datadir))
+        print('No vtk files are found in {0:s}'.format(datadir))
 
     if nums is None:
         nums = [int(f[-8:-4]) for f in fname]
