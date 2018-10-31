@@ -13,7 +13,7 @@ def set_aux(model='solar',verbose=False):
 
     # Somewhat confusing, but let's take following convention
     # Density = nH [cm^-3]
-    aux['density']=dict(label=r'$n_H\;[{\rm cm}^{-3}]$', \
+    aux['density']=dict(label=r'$n_{\rm H}\;[{\rm cm}^{-3}]$', \
         unit='cm**(-3)', limits=(1.e-6,1.e6), \
         cmap=plt.cm.Spectral_r,clim=(2.e-5,2.e2), \
         cticks=(1.e-4,1.e-2,1,1.e2), \
@@ -102,6 +102,7 @@ def set_aux(model='solar',verbose=False):
         label=r'$\langle x_{\rm n}\rangle$', \
         unit='dimensionless', limits=(0,1), \
         cmap=plt.cm.YlGn,clim=(0,1), \
+        cticks=(0, 0.5, 1), \
         weight_field='cell_volume', \
         n_bins=128, norm=Normalize())
 
@@ -124,24 +125,24 @@ def set_aux(model='solar',verbose=False):
     aux['nesq_proj']=dict(label=r'${\rm EM} \;[{\rm cm}^{-6}\,{\rm pc}]$', \
         unit='pc*cm**(-6)', limits=(1e-4,1e6), \
         cmap=plt.cm.plasma,clim=(1e-2,1e5), \
-        cticks=(1e-2,1.e0,1e2,1.e4), \
+        cticks=(1e-1,1.e1,1e3,1e5), \
         n_bins=128, norm=LogNorm())
 
     # Radiation energy density0
-    aux['Erad0']=dict(label=r'$\mathcal{E}_{\rm i}$', \
+    aux['Erad0']=dict(label=r'$\mathcal{E}_{\rm i}\,[{\rm erg\,cm}^{-3}]$', \
         unit='erg*cm**(-3)*s**(-1)', limits=(1e-8,1e-18), \
-        cmap=plt.cm.viridis,clim=(1e-10,1e-16), \
+        cmap=plt.cm.viridis,clim=(1e-11,1e-16), \
         cticks=(1e-15,1e-13,1e-11), \
         n_bins=128, norm=LogNorm())
     
     # Radiation energy density1
-    aux['Erad1']=dict(label=r'$\mathcal{E}_{\rm n}$', \
+    aux['Erad1']=dict(label=r'$\mathcal{E}_{\rm n}\,[{\rm erg\,cm}^{-3}]$', \
         unit='erg*cm**(-3)*s**(-1)', limits=(1e-8,1e-18), \
-        cmap=plt.cm.viridis,clim=(1e-10,1e-16), \
-        cticks=(1e-15,1e-13,1e-11), \
+        cmap=plt.cm.viridis,clim=(1e-10,1e-14), \
+        cticks=(1e-13,1e-11), \
         n_bins=128, norm=LogNorm())
 
-    aux['star_particles']=dict(label=r'${\rm age [Myr]}$', \
+    aux['star_particles']=dict(label=r'${\rm age}\,[{\rm Myr}]}$', \
         unit='Myr', limits=(0,40), \
         cmap=plt.cm.cool_r,clim=(0,40), \
         cticks=(0,20,40), \
