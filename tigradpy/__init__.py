@@ -3,6 +3,7 @@ __all__ = ["add_fields",
            "mass_to_lum",
            "read_athinput",
            "read_hst",
+           "read_hst_postproc",
            "read_starpar_vtk",
            "read_zprof",
            "read_zprof_all",
@@ -11,6 +12,9 @@ __all__ = ["add_fields",
 
 from .add_fields import add_fields
 from .mass_to_lum import mass_to_lum
+
+from analysis_tools.hst_postproc import read_hst_postproc
+
 from io.read_athinput import read_athinput
 from io.read_hst import read_hst
 from io.read_starpar_vtk import read_starpar_vtk

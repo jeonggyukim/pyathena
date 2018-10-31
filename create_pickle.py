@@ -367,12 +367,13 @@ def create_all_pickles(
     _plt_args.update(**plt_args)
     
     fglob = os.path.join(datadir, problem_id + '.????.vtk')
-    fname = glob.glob(fglob)
+    fname = sorted(glob.glob(fglob))
     if fname is None:
         fglob = os.path.join(datadir, 'id0', problem_id + '.????.vtk')
         fname = glob.glob(fglob)
 
     fname.sort()
+    #print(fname)
     if fname is None:
         print('No vtk files are found in {0:s}'.format(datadir))
 
@@ -406,7 +407,6 @@ def create_all_pickles(
     print('slc: {0:s}'.format(' '.join(fields_slc)))
     print('proj: {0:s}'.format(' '.join(fields_proj)))
     print('draw: {0:s}'.format(' '.join(fields_draw)))
-    print('')
     
     if mhd:
         slc_fields.append('magnetic_field_strength')
@@ -423,7 +423,7 @@ def create_all_pickles(
         os.mkdir(os.path.join(datadir, 'proj'))
 
     print('')
-    print('*** Extract slices and projections ***')    
+    print('*** Extract slices and projections ***')
     print('- num: ',end='')
     for i, f in enumerate(fname):
         print('{}'.format(int(f.split('.')[-2])), end=' ')
