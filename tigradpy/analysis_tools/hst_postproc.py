@@ -6,11 +6,11 @@ from ..util.units import units
 
 u = units()
 
-def read_hst_postproc(fname, ds=None, nfreq=2):
+def read_hst_postproc(fname, ds=None, nfreq=2, force_override=False):
     """
     Read hst and convert quantities to convenient units
     """
-    hst = read_hst(fname)
+    hst = read_hst(fname, force_override=force_override)
     if ds is None:
         try:
             #print('[read_hst_postproc]: Cannot find vtk file '.foramt(fvtk))
