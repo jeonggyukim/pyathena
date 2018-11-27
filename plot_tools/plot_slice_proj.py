@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import LogNorm, SymLogNorm, NoNorm, Normalize
-import cPickle as pickle
+import pickle
 
 from pyathena import read_starvtk,texteffect,set_units
 from .scatter_sp import scatter_sp
