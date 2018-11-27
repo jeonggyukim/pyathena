@@ -11,7 +11,7 @@ from pyathena import read_starvtk,texteffect,set_units
 import numpy as np
 import string
 from .scatter_sp import scatter_sp
-import cPickle as pickle
+import pickle
 
 unit=set_units(muH=1.4271)
 to_Myr=unit['time'].to('Myr').value

@@ -10,7 +10,7 @@ from pyathena import read_starvtk,texteffect,set_units
 import numpy as np
 import string
 from .scatter_sp import scatter_sp
-import cPickle as pickle
+import pickle
 
 def plot_projection(surfname,starfname,field='rho',
                     stars=True,writefile=True,runaway=True,aux={},norm_factor=1.):
