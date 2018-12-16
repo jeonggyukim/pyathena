@@ -45,9 +45,9 @@ def plot_projection(surfname,starfname,field='rho',
     ax=plt.subplot(gs[:,0])
     im=ax.imshow(frb[field],origin='lower')
     im.set_extent(extent)
-    if aux.has_key('norm'): im.set_norm(aux['norm'])
-    if aux.has_key('cmap'): im.set_cmap(aux['cmap'])
-    if aux.has_key('clim'): im.set_clim(aux['clim'])
+    if 'norm' in aux: im.set_norm(aux['norm'])
+    if 'cmap' in aux: im.set_cmap(aux['cmap'])
+    if 'clim' in aux: im.set_clim(aux['clim'])
     ax.text(extent[0]*0.9,extent[3]*0.9,
             't=%3d Myr' % tMyr,ha='left',va='top',**(texteffect()))
 
@@ -57,7 +57,7 @@ def plot_projection(surfname,starfname,field='rho',
 
     cax=plt.subplot(gs[0,1])
     cbar = fig.colorbar(im,cax=cax,orientation='vertical')
-    if aux.has_key('label'): cbar.set_label(aux['label'])
+    if 'label' in aux: cbar.set_label(aux['label'])
 
     if stars:
       cax=plt.subplot(gs[1,1])
@@ -119,8 +119,8 @@ def plot_projection_Z(surfname,starfname,stars=True,writefile=True,runaway=True,
     ax1=plt.subplot(gs[:,0])
     im1=ax1.imshow(frb['y'][f],norm=LogNorm(),origin='lower')
     im1.set_extent(extent)
-    if aux.has_key('cmap'): im1.set_cmap(aux['cmap'])
-    if aux.has_key('clim'): im1.set_clim(aux['clim'])
+    if 'cmap' in aux: im1.set_cmap(aux['cmap'])
+    if 'clim' in aux: im1.set_clim(aux['clim'])
     ax1.text(extent[0]*0.9,extent[3]*0.9,
             't=%3d Myr' % tMyr,ha='left',va='top',**(texteffect()))
     if stars: scatter_sp(sp,ax1,axis='y',runaway=runaway,type='surf',norm_factor=norm_factor)
@@ -129,13 +129,13 @@ def plot_projection_Z(surfname,starfname,stars=True,writefile=True,runaway=True,
     ax2=plt.subplot(gs[:,1])
     im2=ax2.imshow(frb['x'][f],norm=LogNorm(),origin='lower')
     im2.set_extent(extent)
-    if aux.has_key('cmap'): im2.set_cmap(aux['cmap'])
-    if aux.has_key('clim'): im2.set_clim(aux['clim'])
+    if 'cmap' in aux: im2.set_cmap(aux['cmap'])
+    if 'clim' in aux: im2.set_clim(aux['clim'])
     if stars: scatter_sp(sp,ax2,axis='x',runaway=runaway,type='surf')
 
     cax=plt.subplot(gs[0,2])
     cbar = fig.colorbar(im1,cax=cax,orientation='vertical')
-    if aux.has_key('label'): cbar.set_label(aux['label'])
+    if 'label' in aux: cbar.set_label(aux['label'])
 
     if stars:
       cax=plt.subplot(gs[1,2])

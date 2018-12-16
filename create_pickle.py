@@ -87,7 +87,7 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
         
     for f in fields:
         fp = f + '_proj'
-        if aux.has_key(fp) and aux[fp].has_key('weight_field'):
+        if fp in aux and 'weight_field' in aux[fp]:
             weight_fields[f] = aux[fp]['weight_field']
         
     import copy
@@ -117,7 +117,7 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
         if verbose:
             print('{}...'.format(f),end='')
         pdata = ds.read_all_data(f)
-        if isinstance(weight_fields,dict) and weight_fields.has_key(f):
+        if isinstance(weight_fields,dict) and f in weight_fields:
             if weight_fields[f] == 'cell_volume':
                 wdata = ds.domain['dx'].prod()*np.ones(pdata.shape)
             else:
@@ -126,7 +126,7 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
         for i, axis in enumerate(['x', 'y', 'z']):
             dl_cgs = (ds.domain['dx'][domain_axis[axis]]*unit['length'].cgs).value
             proj = pdata.sum(axis=data_axis[axis])*dl_cgs
-            if isinstance(weight_fields, dict) and weight_fields.has_key(f):
+            if isinstance(weight_fields, dict) and f in weight_fields:
                 wproj = wdata.sum(axis=data_axis[axis])*dl_cgs
                 proj /= wproj
 
@@ -328,9 +328,7 @@ def create_all_pickles(
     """
     --------------------------------------------------------------------------------
     Function to pickle slices and projections from AthenaDataset and draw snapshots.
-
     Set force_recal to True if additional fields need to be extracted.
-
 
     Parameters
     ----------
@@ -368,15 +366,18 @@ def create_all_pickles(
     
     fglob = os.path.join(datadir, problem_id + '.????.vtk')
     fname = sorted(glob.glob(fglob))
-    if fname is None:
+    if not fname:
+        fglob = os.path.join(datadir, 'vtk', problem_id + '.????.vtk')
+        fname = glob.glob(fglob)
+    if not fname:
         fglob = os.path.join(datadir, 'id0', problem_id + '.????.vtk')
         fname = glob.glob(fglob)
 
     fname.sort()
-    #print(fname)
-    if fname is None:
+    if not fname:
         print('No vtk files are found in {0:s}'.format(datadir))
-
+        raise
+    
     if nums is None:
         nums = [int(f[-8:-4]) for f in fname]
         if nums[0] == 0: # remove the zeroth snapshot

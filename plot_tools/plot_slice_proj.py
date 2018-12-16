@@ -84,12 +84,12 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
                 else:
                     data = slc_data[axis][f]
                 im=ax.imshow(data,origin='lower', interpolation='bilinear')
-                if aux.has_key(f):
-                    if aux[f].has_key('norm'):
+                if f in aux:
+                    if 'norm' in aux[f]:
                         im.set_norm(aux[f]['norm']) 
-                    if aux[f].has_key('cmap'):
+                    if 'cmap' in aux[f]:
                         im.set_cmap(aux[f]['cmap'])
-                    if aux[f].has_key('clim'):
+                    if 'clim' in aux[f]:
                         im.set_clim(aux[f]['clim'])
 
                 extent = slc_data[axis+'extent']
@@ -103,7 +103,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("top", "3%", pad="1%") 
         cbar = fig.colorbar(im,cax=cax,orientation='horizontal')
-        if aux.has_key(f):
+        if f in aux:
             if 'label' in aux[f]:
                 cbar.set_label(aux[f]['label'])
             if 'cticks' in aux[f]:

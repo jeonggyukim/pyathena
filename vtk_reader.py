@@ -86,7 +86,7 @@ def parse_line(line, grid):
 class AthenaDomain(object):
     def __init__(self,filename,ds=None,setgrid=True,serial=False):
         self.flist = glob.glob(filename)
-        if len(self.flist) == 0: 
+        if len(self.flist) == 0:
             print(('no such file: %s' % filename))
         dir, id, step, ext, mpi = parse_filename(filename)
         self.dir = dir
