@@ -12,13 +12,21 @@ class LoadSimRPS(LoadSim, ReadHst, PltHst):
 
     """
     
-    def __init__(self, basedir, load_method='pyathena', verbose=True):
+    def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=True):
         """The constructor for LoadSimRPS class
 
         Parameters
         ----------
         basedir: str
             Name of the directory in which all data is stored
+        savdir: str
+            Name of the directory where pickled data and figures will be saved.
+            Default value is basedir.
+        load_method: str
+            Load vtk using 'pyathena' or 'yt'. Default value is 'pyathena'.
+            If None, savdir=basedir. Default value is None.
+        verbose: bool
+            Print verbose messages using logger.
         """
         
         super().__init__(basedir, load_method='pyathena',
@@ -30,7 +38,7 @@ class LoadSimRPS(LoadSim, ReadHst, PltHst):
         if not self.files['vtk']:
             self.ds = self.load_vtk(num=0, id0=True, load_method='pyathena')
         else:
-            self.ds = self.load_vtk(ivtk=0, load_method='pyathena')    
+            self.ds = self.load_vtk(ivtk=0, load_method='pyathena')
 
 class LoadSimRPSAll(object):
     def __init__(self, basedirs=None):

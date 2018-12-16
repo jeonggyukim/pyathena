@@ -13,7 +13,7 @@ class LoadSim(object):
 
     """
 
-    def __init__(self, basedir, load_method='pyathena', savdir=None, verbose=True):
+    def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=True):
         """
         The constructor for load_sim class.
 
@@ -21,10 +21,11 @@ class LoadSim(object):
         ----------
         basedir : str
             Name of the directory where all data is stored
+        savdir: str
+            Name of the directory where pickled data and figures will be saved.
+            Default value is basedir.
         load_method: str
             Load vtk using 'pyathena' or 'yt'. Default value is 'pyathena'.
-        savdir: str
-            Name of the directory where data and figures are saved.
             If None, savdir=basedir. Default value is None.
         verbose: bool
             Print verbose messages using logger.
