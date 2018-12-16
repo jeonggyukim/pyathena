@@ -1,7 +1,7 @@
 
 import numpy as np
 from scipy.interpolate import interp1d
-from util.piecewisepowerlaw import PiecewisePowerlaw
+from .util.piecewisepowerlaw import PiecewisePowerlaw
 
 class mass_to_lum(object):
     """

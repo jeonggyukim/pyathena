@@ -14,12 +14,13 @@ def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
 
     Parameters
     ----------
-       dirname : string
-           Name of the directory where zprof files are located
-       problem_id: string
-           Prefix of zprof files
-       phase: string
-           whole, phase1, ..., phase5 (cold, intermediate, warm, hot1, hot2)
+    dirname : string
+        Name of the directory where zprof files are located
+    problem_id: string
+        Prefix of zprof files
+    phase: string
+        Name of thermal phase
+        ex) whole, phase1, ..., phase5 (cold, intermediate, warm, hot1, hot2)
   
     Returns
     -------
@@ -80,14 +81,14 @@ def read_zprof(filename, force_override=False, verbose=False):
     
     Parameters
     ----------
-       filename : string
-           Name of the file to open, including extension
-       force_override: bool
-           Flag to force read of zprof file even when pickle exists
+    filename : string
+        Name of the file to open, including extension
+    force_override: bool
+        Flag to force read of zprof file even when pickle exists
 
     Returns
     -------
-       zp : pandas dataframe
+    zp : pandas dataframe
     """
 
     skiprows = 2

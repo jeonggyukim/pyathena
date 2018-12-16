@@ -12,17 +12,17 @@ def read_hst(filename, force_override=False, verbose=False):
     
     Parameters
     ----------
-       filename : string
-           Name of the file to open, including extension
-       force_override : bool
-           Flag to force read of hst file even when pickle exists
-       verbose : bool
-           Print verbose messages
+    filename : string
+        Name of the file to open, including extension
+    force_override : bool
+        Flag to force read of hst file even when pickle exists
+    verbose : bool
+        Print verbose messages
 
     Returns
     -------
-       hst : pandas dataframe
-           Each column contains time series data
+    hst : pandas dataframe
+        Each column contains time series data
     """
 
     skiprows = 3
@@ -41,7 +41,7 @@ def read_hst(filename, force_override=False, verbose=False):
 
         # c engine does not support regex separators
         hst = pd.read_table(filename, names=vlist, skiprows=skiprows,
-                            comment='#', sep='\s*', engine='python')
+                            comment='#', delim_whitespace=True, engine='python')
         try:
             hst.to_pickle(fpkl)
         except IOError:
@@ -51,17 +51,17 @@ def read_hst(filename, force_override=False, verbose=False):
 
       
 def _get_hst_var(filename):
-    """ Read variable names from history file
+    """Read variable names from history file
 
     Parameters
     ----------
-       filename : string
-           Name of the file to open, including extension
+    filename : string
+        Name of the file to open, including extension
 
     Returns
     -------
-       vlist : list
-           List of variables
+    vlist : list
+        List of variables
     """
 
     with open(filename, 'r') as f:
@@ -72,7 +72,7 @@ def _get_hst_var(filename):
         h = f.readline()
         h = f.readline()
 
-    vlist=re.split("\[\d+]\=|\n", h)
+    vlist = re.split("\[\d+]\=|\n", h)
     for i in range(len(vlist)):
         vlist[i] = re.sub("\s|\W", "", vlist[i])
 

@@ -14,16 +14,17 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
 
     Parameters
     ----------
-       filename : string
-           Name of the file to open, including extension
-       force_override : bool
-           Flag to force read of hst file even when pickle exists
+    filename : string
+        Name of the file to open, including extension
+    force_override : bool
+        Flag to force read of hst file even when pickle exists
     
     Returns
     -------
-       star: dict
-           Dictionary containining star particle information
+    star : dict
+        Dictionary containining star particle information
     """
+    
     fpkl = filename + '.p'
     if not force_override and os.path.exists(fpkl) and \
        os.path.getmtime(fpkl) > os.path.getmtime(filename):

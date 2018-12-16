@@ -20,14 +20,16 @@ def split_N(COMM,N):
 
     Parameters
     ----------
-    COMM: MPI COMMunicator
-    N:  int
+    COMM : MPI COMMunicator
+    N :  int
         Total number of things to be distributed.
+
     Returns
-    ----------
-    rstart: index of first local row
-    rend: 1 + index of last row
+    -------
+    rstart : index of first local row
+    rend : 1 + index of last row
     """
+
     P      = COMM.size
     rank   = COMM.rank
     rstart = 0
@@ -53,19 +55,19 @@ def split_N(COMM,N):
 if __name__ == '__main__':
 
     # Simple tests
-    COMM=MPI.COMM_WORLD
-    size=COMM.Get_size()
-    rank=COMM.Get_rank()
+    COMM = MPI.COMM_WORLD
+    size = COMM.Get_size()
+    rank = COMM.Get_rank()
 
-    print('size, rank',size,rank)
-    print(split_N(COMM,100))
+    print('size, rank', size, rank)
+    print(split_N(COMM, 100))
 
     # Collect whatever has to be done in a list. Here we'll just collect a list of
     # numbers. Only the first rank has to do this.
     if COMM.rank == 0:
         jobs = list(range(100))
         # Split into however many cores are available.
-        jobs = split_container(jobs,COMM.size)
+        jobs = split_container(jobs, COMM.size)
     else:
         jobs = None
         
