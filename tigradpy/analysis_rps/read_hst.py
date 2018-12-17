@@ -15,9 +15,10 @@ class ReadHst:
         # Create savdir if it doesn't exist
         if savdir_hst is None:
             savdir_hst = os.path.join(self.savdir, 'hst')
+            
         if not os.path.exists(savdir_hst):
             os.makedirs(savdir_hst)
-            force_override = False
+            force_override = True
 
         fpkl = os.path.join(savdir_hst,
                             os.path.basename(self.files['hst']) + '.mod.p')
@@ -27,32 +28,50 @@ class ReadHst:
            os.path.getmtime(fpkl) > os.path.getmtime(self.files['hst']):
             self.logger.info('[read_hst]: Reading from existing pickle.')
             hst = pd.read_pickle(fpkl)
+            return hst
+        else:
+            self.logger.info('[read_hst]: Reading from original hst dump.')
 
         # If we are here, force_override is True or history file is updated.
         # Need to convert units and define new columns.
         u = self.u
         ds = self.ds
+
         # volume of resolution element
         dvol = ds.domain['dx'].prod()
+
         # total volume of domain
         vol = ds.domain['Lx'].prod()
+
         # Area of domain
         LxLy = ds.domain['Lx'][0]*ds.domain['Lx'][1]
-        
+
+        # Read original history dump file
         hst = read_hst(self.files['hst'], force_override=force_override)
+
         # delete the first row
         hst.drop(hst.index[:1], inplace=True)
-        
+
+        # Time in code units
         hst['time_code'] = hst['time']
-        hst['time'] *= u.Myr # time in Myr
-        hst['mass'] *= vol*u.Msun # total gas mass in Msun
-        hst['Sigma_gas'] = hst['mass']/LxLy # Gas surface density in Msun/pc^2
-        hst['scalar3'] *= vol*u.Msun # neutral gas mass in Msun 
-        hst['Mion'] *= vol*u.Msun # (coll + ionrad) ionized gas mass in Msu
-        hst['Mion_coll'] *= vol*u.Msun # (coll only before ray tracing) ionized gas mass in Msun
-        hst['Qiphot'] *= vol*(u.length**3).cgs # photoionization rate in cgs units
-        hst['Qicoll'] *= vol*(u.length**3).cgs # collisional ionization rate in cgs units
-        hst['Qidust'] *= vol*(u.length**3).cgs # collisional ionization rate in cgs units
+        # Time in Myr
+        hst['time'] *= u.Myr
+        # Total gas mass in Msun
+        hst['mass'] *= vol*u.Msun
+        # Gas surface density in Msun/pc^2
+        hst['Sigma_gas'] = hst['mass']/LxLy
+        # Neutral gas mass in Msun 
+        hst['Mneu'] = hst['scalar{:d}'.format(self.ds.domain['IHI'])]*vol*u.Msun
+        # Ionized gas mass in Msun
+        hst['Mion'] *= vol*u.Msun
+        # Collisionally ionized gas (before ray tracing) in Msun
+        hst['Mion_coll'] *= vol*u.Msun
+        # Total photoionization rate [#/sec]
+        hst['Qiphot'] *= vol*(u.length**3).cgs
+        # Total collisional ionization rate [#/sec]
+        hst['Qicoll'] *= vol*(u.length**3).cgs
+        # Total dust absorption rate [#/sec]
+        hst['Qidust'] *= vol*(u.length**3).cgs
 
         # Mass fraction ionized gas
         hst['mf_ion'] = hst['Mion']/hst['mass']
@@ -105,7 +124,7 @@ class ReadHst:
             hst['Qiesc_est'] = hst['Qilost'] + hst['Qiesc']
 
         else:
-            self.logger.error('Unrecognized nfreq={0:d}, nfreq_ion={1:d}'.\
+            self.logger.error('Unrecognized option nfreq={0:d}, nfreq_ion={1:d}'.\
                               format(self.par['radps']['nfreq'],
                                      self.par['radps']['nfreq_ion']))
 
@@ -114,6 +133,8 @@ class ReadHst:
         hst['Erad1_mid'] *= u.energy_density
 
         hst.index = hst['time_code']
+
+        # Merge with mhd history dump
         if merge_mhd:
             hst_mhd = self.read_hst_mhd()
             hst = hst_mhd.reindex(hst.index, method='nearest',
@@ -122,12 +143,13 @@ class ReadHst:
         try:
             hst.to_pickle(fpkl)
         except IOError:
-            self.logger.warinig('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
+            self.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
 
         return hst
 
     def read_hst_mhd(self):
 
+        # Read original mhd history dump from /tigress/changgoo
         hst = read_hst('/tigress/changgoo/{0:s}/hst/{0:s}.hst'.\
                        format(self.problem_id))
 
@@ -162,17 +184,18 @@ class ReadHst:
         h['Sigma_sp'] = h['mass_sp']/LxLy
 
         # Mass, volume fraction, scale height
+        h['H'] = np.sqrt(hst['H2'] / hst['mass'])
         for ph in ['c','u','w','h1','h2']:
             h['mf_{}'.format(ph)] = hst['M{}'.format(ph)]/hst['mass']
             h['vf_{}'.format(ph)] = hst['V{}'.format(ph)]
             h['H_{}'.format(ph)] = \
                 np.sqrt(hst['H2{}'.format(ph)] / hst['M{}'.format(ph)])
 
+        # mf, vf, H of thermally bistable (cold + unstable + warm) medium
         h['mf_2p'] = h['mf_c'] + h['mf_u'] + h['mf_w']
         h['vf_2p'] = h['vf_c'] + h['vf_u'] + h['vf_w']
         h['H_2p'] = np.sqrt((hst['H2c'] + hst['H2u'] + hst['H2w']) / \
                             (hst['Mc'] + hst['Mu'] + hst['Mw']))
-        h['H'] = np.sqrt(hst['H2'] / hst['mass'])
 
         # Kinetic and magnetic energy
         h['KE'] = hst['x1KE'] + hst['x2KE'] + hst['x3KE']
@@ -198,9 +221,11 @@ class ReadHst:
         h['Pturb_mid'] = hst['Pturb']*u.pok
         h['Pturb_mid_2p'] = hst['Pturb_2p']*u.pok/hst['Vmid_2p']
 
+        # Midplane number density
         h['nmid'] = hst['nmid']
         h['nmid_2p'] = hst['nmid_2p']/hst['Vmid_2p']
 
+        # Star formation rate per unit area [Msun/kpc^2/yr]
         h['sfr10']=hst['sfr10']
         h['sfr40']=hst['sfr40']
         h['sfr100']=hst['sfr100']

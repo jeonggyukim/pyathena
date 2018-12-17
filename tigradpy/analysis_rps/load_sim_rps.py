@@ -30,10 +30,11 @@ class LoadSimRPS(LoadSim, ReadHst, PltHst):
         """
         
         super().__init__(basedir, savdir=savdir,
-                         load_method='pyathena', verbose=verbose)
+                         load_method=load_method, verbose=verbose)
 
         # Set unit
         self.u = Units(muH=1.4271)
+        
         # Get domain info
         if not self.files['vtk']:
             self.ds = self.load_vtk(num=0, id0=True, load_method='pyathena')

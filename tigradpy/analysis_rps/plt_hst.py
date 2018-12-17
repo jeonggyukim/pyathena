@@ -9,9 +9,9 @@ import matplotlib.pyplot as plt
 
 class PltHst:
     
-    def plt_hst(self, savname=None):
+    def plt_hst(self, savname=None, force_override=False):
         
-        hst = self.read_hst(force_override=True)        
+        hst = self.read_hst(force_override=force_override)
         fig, axes = plt.subplots(4, 1, figsize=(15, 12), sharex=True,
                                  gridspec_kw=dict(hspace=0.1))
 
@@ -94,7 +94,6 @@ class PltHst:
         plt.legend([p1, p2, p3],
                    ['Escape','H absorption','Dust absorption'],
                    loc=1)
-
 
         for ax in axes:
             ax.set_xlim(hst.time.iloc[0], hst.time.iloc[-1])

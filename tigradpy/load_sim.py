@@ -33,7 +33,7 @@ class LoadSim(object):
         
         self.basedir = basedir
         self.load_method = load_method
-        self.logger = self._set_logger(verbose=verbose)        
+        self.logger = self._set_logger(verbose=verbose)
         self._find_files()
 
         if savdir is None:
@@ -41,17 +41,17 @@ class LoadSim(object):
         else:
             self.savdir = savdir
             self.logger.info('savdir : {:s}'.format(savdir))
+            
 
-        
     def load_vtk(self, num=None, ivtk= None, id0=False, load_method=None):
         """Function to read Athena vtk file using pythena or yt and return DataSet object.
         
         Parameters
         ----------
         num : int
-           Snapshot number. Read problem_id.num.vtk 
+           Snapshot number. For example, basedir/vtk/problem_id.{num}.vtk
         ivtk: int
-           Read i-th vtk file.
+           Read i-th file in the vtk file list. Overrides num.
         load_method: str
            'pyathena' or 'yt'
         
@@ -66,21 +66,31 @@ class LoadSim(object):
 
         if num is not None:
             if id0:
-                self.fvtk = os.path.join(self.basedir, 'id0', '{0:s}.{1:04d}.vtk'.\
-                                         format(self.problem_id, num))
+                dirname = os.path.dirname(self.files['vtk_id0'][0])
             else:
-                self.fvtk = os.path.join(self.basedir, '{0:s}.{1:04d}.vtk'.\
-                                         format(self.problem_id, num))
+                dirname = os.path.dirname(self.files['vtk'][0])
+               
+            self.fvtk = os.path.join(dirname, '{0:s}.{1:04d}.vtk'.\
+                                     format(self.problem_id, num))
+
         if ivtk is not None:
             if id0:
                 self.fvtk = self.files['vtk_id0'][ivtk]
             else:
                 self.fvtk = self.files['vtk'][ivtk]
 
+        if not os.path.exists(self.fvtk):
+            self.logger.error('[load_vtk]: Vtk file does not exist {:s}'.format(self.fvtk))
+            raise
+                
         if self.load_method == 'pyathena':
             self.ds = AthenaDataSet(self.fvtk)
         elif self.load_method == 'yt':
-            self.ds = yt.load(self.fvtk)
+            if hasattr(self, 'u'):
+                units_override = self.u.units_override
+            else:
+                units_override = None
+            self.ds = yt.load(self.fvtk, units_override=units_override)
         else:
             self.logger.error('load_method "{0:s}" not recognized.'.format(\
                 self.load_method) + ' Use either "yt" or "pyathena".')
@@ -163,7 +173,7 @@ class LoadSim(object):
         if fstar:
             self.files['star'] = fstar
             self.nums_star = [int(f[-16:-12]) for f in self.files['star']]
-            self.logger.info('starpar : {0:d}-{1:d}'.format(\
+            self.logger.info('starpar: {0:d}-{1:d}'.format(\
                         self.nums_star[0], self.nums_star[-1]))
         else:
             self.logger.warning(
