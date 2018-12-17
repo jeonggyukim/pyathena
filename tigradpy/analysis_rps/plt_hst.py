@@ -103,8 +103,8 @@ class PltHst:
         plt.xlabel('time [Myr]')
 
         if savname is None:
-            savname =os.path.join(self.basedir, 'hst',
-                                  self.problem_id + '_hst.png')
-
+            savname = os.path.join(self.savdir, 'hst',
+                                   self.problem_id + '_hst.png')
+            
         plt.savefig(savname, dpi=200)
         self.logger.info('History plot saved to {:s}'.format(savname))

@@ -33,11 +33,15 @@ class LoadSim(object):
         
         self.basedir = basedir
         self.load_method = load_method
+        self.logger = self._set_logger(verbose=verbose)        
+        self._find_files()
+
         if savdir is None:
             self.savdir = self.basedir
-        
-        self.logger = self._set_logger(verbose=verbose)
-        self._find_files()
+        else:
+            self.savdir = savdir
+            self.logger.info('savdir : {:s}'.format(savdir))
+
         
     def load_vtk(self, num=None, ivtk= None, id0=False, load_method=None):
         """Function to read Athena vtk file using pythena or yt and return DataSet object.

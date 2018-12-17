@@ -29,8 +29,8 @@ class LoadSimRPS(LoadSim, ReadHst, PltHst):
             Print verbose messages using logger.
         """
         
-        super().__init__(basedir, load_method='pyathena',
-                         verbose=verbose)
+        super().__init__(basedir, savdir=savdir,
+                         load_method='pyathena', verbose=verbose)
 
         # Set unit
         self.u = Units(muH=1.4271)
