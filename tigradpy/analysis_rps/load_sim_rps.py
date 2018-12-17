@@ -41,6 +41,15 @@ class LoadSimRPS(LoadSim, ReadHst, PltHst):
         else:
             self.ds = self.load_vtk(ivtk=0, load_method='pyathena')
 
+    # def get_method_list(self):
+    #     for func in dir(self):
+    #         if not func.startswith("__"):
+    #             if callable(getattr(self, func)):
+    #                 print(func)
+                
+        #return [func for func in dir(self) if \
+        #        callable(getattr(self.__weakref__, func)) and not func.startswith("__")]
+            
 class LoadSimRPSAll(object):
     def __init__(self, basedirs=None):
 

@@ -10,7 +10,8 @@ import matplotlib.pyplot as plt
 class PltHst:
     
     def plt_hst(self, savname=None, force_override=False):
-        
+        """Function to draw time evolution of Sigma_SFR, escape fraction, etc.
+        """
         hst = self.read_hst(force_override=force_override)
         fig, axes = plt.subplots(4, 1, figsize=(15, 12), sharex=True,
                                  gridspec_kw=dict(hspace=0.1))

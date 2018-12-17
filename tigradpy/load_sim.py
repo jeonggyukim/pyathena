@@ -52,6 +52,8 @@ class LoadSim(object):
            Snapshot number. For example, basedir/vtk/problem_id.{num}.vtk
         ivtk: int
            Read i-th file in the vtk file list. Overrides num.
+        id0: bool
+           Read vtk file in basedir/id0. Default value is False.
         load_method: str
            'pyathena' or 'yt'
         
@@ -97,14 +99,30 @@ class LoadSim(object):
             raise
         
         return self.ds
-        
-    def _find_files(self):
-        """Function to find output files under basedir and create "files" dictionary.
 
+    def print_all_properties(self):
+        """Print all attributes and callable methods
+        """
+        
+        attr_list = list(self.__dict__.keys())
+        print('Attributes:', attr_list)
+        print('\nMethods:')
+        method_list = []
+        for func in sorted(dir(self)):
+            if not func.startswith("_"):
+                if callable(getattr(self, func)):
+                    method_list.append(func)
+                    print(func, end=': ')
+                    print(getattr(self, func).__doc__)
+                    print('-------------------------')
+
+    def _find_files(self):
+        """Function to find all output files under basedir and create "files" dictionary.
+a
         vtk: problem_id.num.vtk
         hst: problem_id.hst
-        starpar: problem_id.num.starpar.vtk
-        """
+        zprof: problem_id.zprof
+        starpar: problem_id.num.starpar.vtk"""
         
         self.files = dict()
         def find_match(patterns):
@@ -189,11 +207,17 @@ class LoadSim(object):
                 self.logger.warning('vtk num:', f[0], 'size:', f[1])
         
     def _set_logger(self, verbose=False):
-        
+        """Function to set logger
+
+        Parameters
+        ----------
+        verbose: bool
+            Set logging level to DEBUG/WARNING if True/False.
+        """
         if verbose:
             loglevel = logging.DEBUG
         else:
-            loglevel = logging.ERROR
+            loglevel = logging.WARNING
         
         l = logging.getLogger(__class__.__name__.split('.')[-1])
         if not l.hasHandlers():

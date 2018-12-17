@@ -9,7 +9,6 @@ class ReadHst:
 
     def read_hst(self, savdir_hst=None, merge_mhd=True, force_override=False):
         """Function to read hst and convert quantities to convenient units
-
         """
 
         # Create savdir if it doesn't exist
@@ -28,6 +27,7 @@ class ReadHst:
            os.path.getmtime(fpkl) > os.path.getmtime(self.files['hst']):
             self.logger.info('[read_hst]: Reading from existing pickle.')
             hst = pd.read_pickle(fpkl)
+            self.hst = hst
             return hst
         else:
             self.logger.info('[read_hst]: Reading from original hst dump.')
@@ -145,7 +145,8 @@ class ReadHst:
         except IOError:
             self.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
 
-        return hst
+        self.hst = hst
+        return self.hst
 
     def read_hst_mhd(self):
 
@@ -231,8 +232,10 @@ class ReadHst:
         h['sfr100']=hst['sfr100']
 
         h.index = h['time_code']
-        
-        return h
+
+        self.hst_mhd = h
+
+        return self.hst_mhd
     
         # return pd.read_pickle(
         #     '/tigress/changgoo/{0:s}/hst/{0:s}.hst_cal.p'.format(self.problem_id))
