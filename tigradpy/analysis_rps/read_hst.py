@@ -103,7 +103,35 @@ class ReadHst:
             hst['fesc{:d}_cum_est'.format(f)] = \
                 (hst['Lesc{:d}'.format(f)] + hst['Llost{:d}'.format(f)]).cumsum() / \
                  hst['L{:d}'.format(f)].cumsum()
-                                                
+
+        # Scale heights of [warm] ionized gas, nesq
+        # Check if columns exist
+        
+        # nesq
+        if 'H2nesq' in hst.columns and 'nesq' in hst.columns:
+            hst['H_nesq'] = np.sqrt(hst['H2nesq'] / hst['nesq'])
+            hst.drop(columns=['H2nesq', 'nesq'], inplace=True)
+
+        # Warm nesq
+        if 'H2wnesq' in hst.columns and 'wnesq' in hst.columns:
+            hst['H_wnesq'] = np.sqrt(hst['H2wnesq'] / hst['wnesq'])
+            hst.drop(columns=['H2wnesq', 'wnesq'], inplace=True)
+
+        # For warm medium, 
+        # append _ to distinguish from mhd history variable
+        if 'H2w' in hst.columns and 'massw' in hst.columns:
+            hst['H_w_'] = np.sqrt(hst['H2w'] / hst['massw'])
+            hst['Mw_'] = hst['massw']*vol*u.Msun
+            hst['mf_w_'] = hst['Mw_']/hst['mass']
+            hst.drop(columns=['H2w', 'massw'], inplace=True)
+
+        # Warm ionized
+        if 'H2wi' in hst.columns and 'masswi' in hst.columns:
+            hst['H_wi'] = np.sqrt(hst['H2wi'] / hst['masswi'])
+            hst['Mwion'] = hst['masswi']*vol*u.Msun
+            hst['mf_wion'] = hst['Mwion']/hst['mass']
+            hst.drop(columns=['H2wi', 'masswi'], inplace=True)
+            
         ##########################
         # With ionizing radiation
         ##########################
@@ -133,7 +161,8 @@ class ReadHst:
         hst['Erad1_mid'] *= u.energy_density
 
         hst.index = hst['time_code']
-
+        #hst.index.name = 'index'
+        
         # Merge with mhd history dump
         if merge_mhd:
             hst_mhd = self.read_hst_mhd()
@@ -232,7 +261,8 @@ class ReadHst:
         h['sfr100']=hst['sfr100']
 
         h.index = h['time_code']
-
+        #h.index.name = 'index'
+        
         self.hst_mhd = h
 
         return self.hst_mhd
