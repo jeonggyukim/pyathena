@@ -34,17 +34,21 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
         slc_data[x+'extent'] = np.array(slc_data[x+'extent'])/1e3
         slc_data[x+'yextent'] = np.array(slc_data[x+'extent'])/1e3
         slc_data[x+'xextent'] = np.array(slc_data[x+'extent'])/1e3
-    
-    x0 = slc_data['yextent'][0]
-    y0 = slc_data['yextent'][1]
+
+    # starting position
+    x0 = slc_data['xextent'][0]
+    y0 = slc_data['xextent'][1]
     Lx = slc_data['yextent'][1] - slc_data['yextent'][0]
+    Ly = slc_data['zextent'][1] - slc_data['zextent'][0]
     Lz = slc_data['yextent'][3] - slc_data['yextent'][2]
+    #print(x0,y0,Lx,Ly,Lz)
     
     # Set figure size in inches and margins
     Lz = Lz/zoom
-    xsize = 2.0
+    xsize = 3.0
     zsize = xsize*Lz/Lx
     nf = len(fields_to_draw)
+    #print(xsize,zsize)
     
     # Need to adjust zmargin depending on number of fields and aspect_ratio
     zfactor = 1.0 + fig_zmargin
@@ -71,19 +75,23 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
             if f is 'star_particles': 
                 scatter_sp(sp, ax, axis=axis, norm_factor=sp_norm_factor,
                            type='surf')
-                if axis is 'y':
-                    ax.set_xlim(x0, x0 + Lx)
-                    ax.set_ylim(y0, y0 + Lz)
-                if axis is 'z': 
-                    ax.set_xlim(x0, x0 + Lx)
-                    ax.set_ylim(x0, x0 + Lx)
+                # if axis is 'y':
+                #     ax.set_xlim(x0, x0 + Lx)
+                #     ax.set_ylim(y0, y0 + Lz)
+                # if axis is 'z':
+                #     ax.set_xlim(x0, x0 + Lx)
+                #     ax.set_ylim(x0, x0 + Lx)
+                extent = slc_data[axis+'extent']
+                print(axis,extent)
+                ax.set_xlim(extent[0], extent[1])
+                ax.set_ylim(extent[2], extent[3])
                 ax.set_aspect(1.0)
             else:
                 if f[-4:] == 'proj':
                     data = proj_data[axis][f[:-5]]
                 else:
                     data = slc_data[axis][f]
-                im=ax.imshow(data,origin='lower', interpolation='bilinear')
+                im=ax.imshow(data, origin='lower', interpolation='bilinear')
                 if f in aux:
                     if 'norm' in aux[f]:
                         im.set_norm(aux[f]['norm']) 
@@ -101,7 +109,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
     for j, (im, f) in enumerate(zip(images, fields_to_draw[1:])):
         ax = plt.subplot(gs[0,j+1])
         divider = make_axes_locatable(ax)
-        cax = divider.append_axes("top", "3%", pad="1%") 
+        cax = divider.append_axes("top", "3%", pad="1%")
         cbar = fig.colorbar(im,cax=cax,orientation='horizontal')
         if f in aux:
             if 'label' in aux[f]:
@@ -132,8 +140,8 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
                     s=np.sqrt(1.e5)/sp_norm_factor,
                     color='k', alpha=.8, label=r'$10^5 M_\odot$')
 
-    ax.set_xlim(x0, x0 + Lx)
-    ax.set_ylim(y0, y0 + Lz)
+    #ax.set_xlim(x0, x0 + Lx)
+    #ax.set_ylim(y0, y0 + Lz)
     legend = ax.legend((s1, s2, s3),
                        (r'$10^3 M_\odot$', r'$10^4 M_\odot$', r'$10^5 M_\odot$'),
                        scatterpoints = 1, loc='lower left',
