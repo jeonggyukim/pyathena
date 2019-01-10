@@ -1,4 +1,4 @@
-import io
+import io, sys
 import subprocess
 import base64
 from IPython.display import HTML
@@ -18,17 +18,26 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
            '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
            '-f', 'mp4', fname_out]
 
-    print('[make_mp4]: ffmpeg command:')
+    print('[make_movie]: ffmpeg command:')
     print('{0:s}'.format(' '.join(cmd)))
 
-    ret = subprocess.call(cmd)
-    if ret == 0:
-        print('[make_movie]: Successful execution. Output:')
+    try:
+        output = subprocess.check_output(cmd, stderr=subprocess.STDOUT)
+
+        # ret = subprocess.check_call(cmd)
+        # df = subprocess.Popen(cmd, stdout=subprocess.PIPE)
+        # output, err = df.communicate()
+        print('[make_movie]: Successful execution.')
+        print('[make_movie]: Movie:')
         print('{0:s}'.format(fname_out))
-    else:
-        print('[make_movie]: subprocess.call returned {0:d}. Something went wrong.'.format(ret))
+    except subprocess.CalledProcessError as e:
+        print('[make_movie]: subprocess.check_output returned:')
+        print(str(e.output, "utf-8"))
+
+    # if ret == 0:
+    # else:
         
-    return subprocess.call(cmd)
+    #return subprocess.call(cmd)
 
 def display_movie(filename):
 
