@@ -30,7 +30,7 @@ class LoadSim(object):
         verbose: bool
             Print verbose messages using logger.
         """
-        
+
         self.basedir = basedir
         self.load_method = load_method
         self.logger = self._set_logger(verbose=verbose)
@@ -118,11 +118,12 @@ class LoadSim(object):
 
     def _find_files(self):
         """Function to find all output files under basedir and create "files" dictionary.
-a
+
         vtk: problem_id.num.vtk
         hst: problem_id.hst
         zprof: problem_id.zprof
-        starpar: problem_id.num.starpar.vtk"""
+        starpar: problem_id.num.starpar.vtk
+        """
         
         self.files = dict()
         def find_match(patterns):
@@ -133,7 +134,7 @@ a
                 f = glob_match(p)
                 if f:
                     break
-                
+
             return f
         
         hst_patterns = [('id0', '*.hst'), ('hst', '*.hst'), ('*.hst',)]
@@ -141,8 +142,10 @@ a
                              ('slurm-*',), # Erin
                              ('athinput.*',), # Chang-Goo's restart
                              ('*.par',)]
-        vtk_patterns = [('*.????.vtk',), ('vtk', '*.????.vtk',)]
-        vtk_id0_patterns = [('id0', '*.????.vtk',)]
+        vtk_patterns = [('*.????.vtk',),
+                        ('vtk', '*.????.vtk',)]
+        vtk_id0_patterns = [('id0', '*.????.vtk',),
+                            ('vtk', 'id0', '*.????.vtk',)]
         star_patterns = [('id0', '*.????.starpar.vtk'),
                          ('starpar', '*.????.starpar.vtk'),
                          ('*.????.starpar.vtk',)]
@@ -172,7 +175,7 @@ a
         # vtk files in basedir (joined) and in basedir/id0
         self.files['vtk'] = find_match(vtk_patterns)
         self.files['vtk_id0'] = find_match(vtk_id0_patterns)
-        
+
         if not self.files['vtk'] and not self.files['vtk_id0']:
             self.logger.error(
                 'No vtk files are found in {0:s}.'.format(self.basedir))
@@ -180,19 +183,22 @@ a
             self.nums = [int(f[-7:-4]) for f in self.files['vtk']]
             self.nums_id0 = [int(f[-7:-4]) for f in self.files['vtk_id0']]
             if self.nums:
-                self.logger.info('vtk (joined) : {0:d}-{1:d}'.format(\
-                            self.nums[0], self.nums[-1]))
+                self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
+                    os.path.dirname(self.files['vtk'][0]),
+                    self.nums[0], self.nums[-1]))
             if self.nums_id0:
-                self.logger.info('vtk in id0 : {0:d}-{1:d}'.format(\
-                            self.nums_id0[0], self.nums_id0[-1]))
+                self.logger.info('vtk in id0:  {0:s} nums: {1:d}-{2:d}'.format(
+                    os.path.dirname(self.files['vtk_id0'][0]),
+                    self.nums_id0[0], self.nums_id0[-1]))
 
         # Find starpar files
         fstar = find_match(star_patterns)
         if fstar:
             self.files['star'] = fstar
             self.nums_star = [int(f[-16:-12]) for f in self.files['star']]
-            self.logger.info('starpar: {0:d}-{1:d}'.format(\
-                        self.nums_star[0], self.nums_star[-1]))
+            self.logger.info('starpar: {0:s} nums: {1:d}-{2:d}'.format(
+                os.path.dirname(self.files['star'][0]),
+                self.nums_star[0], self.nums_star[-1]))
         else:
             self.logger.warning(
                 'No starpar files are found in {0:s}.'.format(self.basedir))
