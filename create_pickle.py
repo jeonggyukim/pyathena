@@ -3,6 +3,7 @@ from __future__ import print_function
 import numpy as np
 import pickle
 import glob,os
+import gc
 
 import astropy.constants as ac
 import astropy.units as au
@@ -142,10 +143,17 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
                 pass
                 
             proj_data[axis][f] = proj
+        try:
+            del pdata
+            del wdata
+        except UnboundLocalError:
+            pass
+
     if verbose:
         print('')
     
     pickle.dump(proj_data, open(fname, 'wb'), pickle.HIGHEST_PROTOCOL)
+    
     return proj_data
 
 def create_slices(ds,fname,fields,force_recal=False,factors={},verbose=False):
@@ -222,10 +230,17 @@ def create_slices(ds,fname,fields,force_recal=False,factors={},verbose=False):
                 slc_data[axis][f] = slc*factors[f]
             else:
                 slc_data[axis][f] = slc
+
+        try:
+            del pdata
+        except UnboundLocalError:
+            pass
+
     if verbose:
         print('')
-        
+
     pickle.dump(slc_data, open(fname, 'wb'), pickle.HIGHEST_PROTOCOL)
+    
     return slc_data
 
 def create_all_pickles_mhd(force_recal=False, force_redraw=False, verbose=True, **kwargs):
@@ -405,6 +420,8 @@ def create_all_pickles(
     print('- vtk file num:', end=' ')
     for i in nums:
         print(i,end=' ')
+
+    print('')
     print('slc: {0:s}'.format(' '.join(fields_slc)))
     print('proj: {0:s}'.format(' '.join(fields_proj)))
     print('draw: {0:s}'.format(' '.join(fields_draw)))
@@ -413,6 +430,7 @@ def create_all_pickles(
         slc_fields.append('magnetic_field_strength')
         slc_fields.append('mag_pok')
         draw_fields.append('magnetic_field_strength')
+
     mul_factors = {'pok':to_Pok,
                    'magnetic_field_strength':to_microG,
                    'mag_pok':to_Pok,
@@ -423,26 +441,28 @@ def create_all_pickles(
     if not os.path.isdir(os.path.join(datadir, 'proj')):
         os.mkdir(os.path.join(datadir, 'proj'))
 
-    print('')
-    print('*** Extract slices and projections ***')
+    print('\n*** Extract slices and projections ***')
     print('- num: ',end='')
+    
     for i, f in enumerate(fname):
         print('{}'.format(int(f.split('.')[-2])), end=' ')
         fname_slc = os.path.join(datadir, 'slice', problem_id + f[-9:-4] + '.slice.p')
         fname_proj = os.path.join(datadir, 'proj', problem_id + f[-9:-4] + '.proj.p')
 
-        tasks=dict(slc=(not compare_files(f,fname_slc)) or force_recal,
-                   proj=(not compare_files(f,fname_proj)) or force_recal)
+        tasks = dict(slc=(not compare_files(f,fname_slc)) or force_recal,
+                     proj=(not compare_files(f,fname_proj)) or force_recal)
 
         do_task = (tasks['slc'] or tasks['proj'])
         if do_task:
             ds = pa.AthenaDataSet(f)
             if tasks['slc']:
-                create_slices(ds, fname_slc, fields_slc, factors=mul_factors,
-                              force_recal=force_recal, verbose=verbose)
+                _ = create_slices(ds, fname_slc, fields_slc, factors=mul_factors,
+                                  force_recal=force_recal, verbose=verbose)
             if tasks['proj']:
-                create_projections(ds, fname_proj, fields_proj, aux=aux,
-                                   force_recal=force_recal, verbose=verbose)
+                _ = create_projections(ds, fname_proj, fields_proj, aux=aux,
+                                       force_recal=force_recal, verbose=verbose)
+            del ds
+            gc.collect()
 
     print('')
     print('*** Draw snapshots (zoom {0:.1f}) ***'.format(_plt_args['zoom']))
@@ -454,6 +474,7 @@ def create_all_pickles(
     savdir = os.path.join(datadir, 'snapshots')
     if not os.path.isdir(savdir):
         os.mkdir(savdir)
+        
     print('savdir:', savdir)
     for i,f in enumerate(fname):
         num = f.split('.')[-2]
@@ -465,7 +486,7 @@ def create_all_pickles(
 
         starpardir = 'id0'
         if os.path.isdir(os.path.join(datadir, 'starpar')):
-            starpardir='starpar'
+            starpardir = 'starpar'
         fname_sp = os.path.join(datadir, starpardir,
                                 problem_id + f[-9:-4] + '.starpar.vtk')
 
