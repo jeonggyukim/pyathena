@@ -13,7 +13,7 @@ class PltHst:
         """Function to draw time evolution of Sigma_SFR, escape fraction, etc.
         """
         hst = self.read_hst(force_override=force_override)
-        fig, axes = plt.subplots(4, 1, figsize=(15, 12), sharex=True,
+        fig, axes = plt.subplots(5, 1, figsize=(18, 12), sharex=True,
                                  gridspec_kw=dict(hspace=0.1))
 
         # SFR10, Qi/Area
@@ -96,15 +96,36 @@ class PltHst:
                    ['Escape','H absorption','Dust absorption'],
                    loc=1)
 
+        # Scale heights
+        plt.sca(axes[4])
+        plt.plot(hst.time, hst.H_wnesq, label=r'$H_{n_e^2}$')
+        plt.plot(hst.time, hst.H_wi, label=r'$H_{\rm w,i}$')
+        plt.plot(hst.time, hst.H_w, label=r'$H_{\rm w}$')
+        plt.plot(hst.time, hst.H_c, label=r'$H_{\rm c}$')
+        plt.yscale('log')
+        plt.legend(loc=1, fontsize='x-large')
+        
+        # alpha=0.5
+        # plt.ylabel('fraction')
+        # plt.ylim(0, 1)
+        # plt.legend([p1, p2, p3],
+        #            ['Escape','H absorption','Dust absorption'],
+        #            loc=1)
+
+        
         for ax in axes:
             ax.set_xlim(hst.time.iloc[0], hst.time.iloc[-1])
 
         plt.sca(axes[-1])
         plt.xlabel('time [Myr]')
 
+        plt.suptitle(os.path.basename(self.basedir), fontsize='x-large')
+        plt.subplots_adjust(top=0.95)
+        
         if savname is None:
             savname = os.path.join(self.savdir, 'hst',
                                    self.problem_id + '_hst.png')
             
         plt.savefig(savname, dpi=200)
+        
         self.logger.info('History plot saved to {:s}'.format(savname))
