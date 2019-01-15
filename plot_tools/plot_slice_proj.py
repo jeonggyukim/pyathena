@@ -7,6 +7,8 @@ import matplotlib.gridspec as gridspec
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import LogNorm, SymLogNorm, NoNorm, Normalize
 import pickle
+import astropy.units as au
+import astropy.constants as ac
 
 from pyathena import read_starvtk,texteffect,set_units
 from .scatter_sp import scatter_sp
@@ -41,14 +43,14 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
     Lx = slc_data['yextent'][1] - slc_data['yextent'][0]
     Ly = slc_data['zextent'][1] - slc_data['zextent'][0]
     Lz = slc_data['yextent'][3] - slc_data['yextent'][2]
-    #print(x0,y0,Lx,Ly,Lz)
+    # print('x0,y0,Lx,Ly,Lz:', x0, y0, Lx, Ly, Lz)
     
     # Set figure size in inches and margins
     Lz = Lz/zoom
     xsize = 3.0
     zsize = xsize*Lz/Lx
     nf = len(fields_to_draw)
-    #print(xsize,zsize)
+    # print('xsize,zsize', xsize,zsize)
     
     # Need to adjust zmargin depending on number of fields and aspect_ratio
     zfactor = 1.0 + fig_zmargin
@@ -82,19 +84,29 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
                 #     ax.set_xlim(x0, x0 + Lx)
                 #     ax.set_ylim(x0, x0 + Lx)
                 extent = slc_data[axis+'extent']
-                print(axis,extent)
+                # print(axis,extent)
                 ax.set_xlim(extent[0], extent[1])
                 ax.set_ylim(extent[2], extent[3])
                 ax.set_aspect(1.0)
             else:
                 if f[-4:] == 'proj':
                     data = proj_data[axis][f[:-5]]
+                    # if f == 'rho_proj': # Plot mean nH rather than Sigma_gas
+                    #     if axis == 'y':
+                    #         Sunit_conv = ((1.0*au.Msun/au.pc**2/(unit['muH'])).to('cm**-2')).cgs.value
+                    #         data *= Sunit_conv
+                    #         data /= (1.0*au.pc).cgs.value*(Ly*1e3)
+                    #     if axis == 'z':
+                    #         Sunit_conv = ((1.0*au.Msun/au.pc**2/(unit['muH'])).to('cm**-2')).cgs.value
+                    #         data *= Sunit_conv
+                    #         data /= (1.0*au.pc).cgs.value*(Lz*1e3)
                 else:
                     data = slc_data[axis][f]
-                im=ax.imshow(data, origin='lower', interpolation='bilinear')
+                    
+                im = ax.imshow(data, origin='lower', interpolation='bilinear')
                 if f in aux:
                     if 'norm' in aux[f]:
-                        im.set_norm(aux[f]['norm']) 
+                        im.set_norm(aux[f]['norm'])
                     if 'cmap' in aux[f]:
                         im.set_cmap(aux[f]['cmap'])
                     if 'clim' in aux[f]:
@@ -107,7 +119,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
                 ax.set_ylim(extent[2], extent[3])
 
     for j, (im, f) in enumerate(zip(images, fields_to_draw[1:])):
-        ax = plt.subplot(gs[0,j+1])
+        ax = plt.subplot(gs[0, j+1])
         divider = make_axes_locatable(ax)
         cax = divider.append_axes("top", "3%", pad="1%")
         cbar = fig.colorbar(im,cax=cax,orientation='horizontal')
@@ -119,7 +131,21 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
         cax.xaxis.tick_top()
         cax.xaxis.set_label_position('top')
 
-    ax=plt.subplot(gs[0,0])
+        # https://pythonmatplotlibtips.blogspot.com/2018/10/draw-second-colorbar-axis-outside-first-axis.html
+        # if f == 'rho_proj':
+        #     pos = cbar.ax.get_position()
+        #     print(pos)
+        #     ax1 = cbar.ax
+        #     # create a second axis and specify ticks based on the relation between the first axis and second aces
+        #     ax2 = ax1.twinx()
+        #     print(ax2.get_position())
+        #     #ax2.set_ylim([1.0, 100.0])
+        #     #pos.y1 -= 0.08
+        #     #ax1.set_position(pos)
+        #     #ax2.set_position(pos)
+
+
+    ax = plt.subplot(gs[0,0])
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("top", "3%", pad="1%") 
     cbar = colorbar.ColorbarBase(cax, ticks=[0,20,40],

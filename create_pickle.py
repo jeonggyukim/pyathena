@@ -385,6 +385,9 @@ def create_all_pickles(
         fglob = os.path.join(datadir, 'vtk', problem_id + '.????.vtk')
         fname = glob.glob(fglob)
     if not fname:
+        fglob = os.path.join(datadir, 'vtk', 'id0', problem_id + '.????.vtk')
+        fname = glob.glob(fglob)
+    if not fname:
         fglob = os.path.join(datadir, 'id0', problem_id + '.????.vtk')
         fname = glob.glob(fglob)
 
@@ -463,7 +466,8 @@ def create_all_pickles(
                                        force_recal=force_recal, verbose=verbose)
             del ds
             gc.collect()
-
+        print(fname)
+        
     print('')
     print('*** Draw snapshots (zoom {0:.1f}) ***'.format(_plt_args['zoom']))
     print('num: ',end='')

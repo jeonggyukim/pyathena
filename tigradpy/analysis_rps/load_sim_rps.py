@@ -37,6 +37,7 @@ class LoadSimRPS(LoadSim, ReadHst, PltHst):
         
         # Get domain info
         if not self.files['vtk']:
+            self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
             self.ds = self.load_vtk(num=0, id0=True, load_method='pyathena')
         else:
             self.ds = self.load_vtk(ivtk=0, load_method='pyathena')

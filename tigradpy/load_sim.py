@@ -207,10 +207,10 @@ class LoadSim(object):
         sizes = [os.stat(f).st_size for f in self.files['vtk']]
         if len(set(sizes)) > 1:
             size = max(set(sizes), key=sizes.count)
-            flist = [(i, s) for i, s in enumerate(sizes) if s != size]
-            self.logger.warning('Check vtk file size. Should be {0:d} bytes.'.format(size))
-            for f in flist:
-                self.logger.warning('vtk num:', f[0], 'size:', f[1])
+            flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
+            self.logger.warning('vtk file sizes are not unique.')
+            #for f in flist:
+            #    self.logger.warning('vtk num:', f[0], 'size:', f[1])
         
     def _set_logger(self, verbose=False):
         """Function to set logger
