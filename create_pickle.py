@@ -338,7 +338,7 @@ def create_all_pickles(
         fields_proj=['rho', 'xn', 'nesq'],
         fields_draw=['star_particles', 'rho_proj', 'xn_proj', 'nesq_proj',
                      'nH', 'temperature', 'xn', 'Erad0', 'Erad1'],
-        force_recal=False, force_redraw=False, no_save=False,
+        force_recal=False, force_redraw=False, no_save=False, savdir=None,
         verbose=True, **plt_args):
     """
     --------------------------------------------------------------------------------
@@ -366,6 +366,9 @@ def create_all_pickles(
        no_save: bool
           If True, returns a list of matplotlib figure objects instead of 
           saving them.
+       savdir: str
+          Directory to save snapshot. If None, saves in snapshot subdirectory under datadir.
+          Default value is None.
        verbose: bool
           Print verbose message
     
@@ -475,7 +478,9 @@ def create_all_pickles(
         force_redraw = True
         figs = []
 
-    savdir = os.path.join(datadir, 'snapshots')
+    if savdir is None:
+        savdir = os.path.join(datadir, 'snapshots')
+
     if not os.path.isdir(savdir):
         os.mkdir(savdir)
         
