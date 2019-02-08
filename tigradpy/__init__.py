@@ -21,3 +21,4 @@ from .io.read_hst import read_hst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof,read_zprof_all
 from .util.units import Units
+from .util.rebin_xy import rebin_xy
