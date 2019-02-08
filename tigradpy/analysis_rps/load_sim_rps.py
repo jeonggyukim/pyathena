@@ -18,14 +18,20 @@ class LoadSimRPS(LoadSim, ReadHst, ReadZprof, PltHstZprof):
         Parameters
         ----------
         basedir : str
-            Name of the directory in which all data is stored.
-        savdir : str, optional
+            Name of the directory where all data is stored
+        savdir : str
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
-        load_method : str, optional
+        load_method : str
             Load vtk using 'pyathena' or 'yt'. Default value is 'pyathena'.
-        verbose : bool, optional
-            If True, print verbose messages using logger.
+            If None, savdir=basedir. Default value is None.
+        verbose : bool or str or int
+            Print verbose messages using logger. If True/False, set logger
+            level to 'DEBUG'/'WARNING'. If string, it should be one of the string
+            representation of python logging package:
+            ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+            Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
+            accepted.
         """
         
         super().__init__(basedir, savdir=savdir,

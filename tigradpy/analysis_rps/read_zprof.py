@@ -141,8 +141,13 @@ class ReadZprof:
         # Electron number density averaged over Atot
         ds['ne'] = ds.d - ds.s1
         # Electron number density averaged over Atot
-        ds['nebar'] = ds.ne/ds['xi']
-
+        ds['nebar'] = ds.ne/ds.xi
+        
+        # Rename time to time_code and use physical time in Myr as dimension
+        ds = ds.rename(dict(time='time_code'))
+        ds = ds.assign_coords(time=ds.time_code*self.u.Myr)
+        ds = ds.swap_dims(dict(time_code='time'))
+        
         # self._set_attrs(ds)
         
         # Somehow overwriting using mode='w' doesn't work..

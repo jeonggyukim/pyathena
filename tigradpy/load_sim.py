@@ -25,13 +25,13 @@ class LoadSim(object):
         ----------
         basedir : str
             Name of the directory where all data is stored
-        savdir: str
+        savdir : str
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
-        load_method: str
+        load_method : str
             Load vtk using 'pyathena' or 'yt'. Default value is 'pyathena'.
             If None, savdir=basedir. Default value is None.
-        verbose: bool or str or int
+        verbose : bool or str or int
             Print verbose messages using logger. If True/False, set logger
             level to 'DEBUG'/'WARNING'. If string, it should be one of the string
             representation of python logging package:
@@ -63,11 +63,11 @@ class LoadSim(object):
         ----------
         num : int
            Snapshot number. For example, basedir/vtk/problem_id.{num}.vtk
-        ivtk: int
+        ivtk : int
            Read i-th file in the vtk file list. Overrides num.
-        id0: bool
+        id0 : bool
            Read vtk file in basedir/id0. Default value is False.
-        load_method: str
+        load_method : str
            'pyathena' or 'yt'
         
         Returns
@@ -289,7 +289,7 @@ class LoadSim(object):
 
         Parameters
         ----------
-        verbose: bool or str
+        verbose: bool or str or int
             Set logging level to "INFO"/"WARNING" if True/False.
         """
 
