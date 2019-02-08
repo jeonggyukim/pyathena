@@ -7,19 +7,19 @@ from ..io.read_hst import read_hst
 
 class ReadHst:
 
-    def read_hst(self, savdir_hst=None, merge_mhd=True, force_override=False):
+    def read_hst(self, savdir=None, merge_mhd=True, force_override=False):
         """Function to read hst and convert quantities to convenient units
         """
 
         # Create savdir if it doesn't exist
-        if savdir_hst is None:
-            savdir_hst = os.path.join(self.savdir, 'hst')
+        if savdir is None:
+            savdir = os.path.join(self.savdir, 'hst')
             
-        if not os.path.exists(savdir_hst):
-            os.makedirs(savdir_hst)
+        if not os.path.exists(savdir):
+            os.makedirs(savdir)
             force_override = True
 
-        fpkl = os.path.join(savdir_hst,
+        fpkl = os.path.join(savdir,
                             os.path.basename(self.files['hst']) + '.mod.p')
 
         # Check if the original history file is updated
@@ -35,16 +35,16 @@ class ReadHst:
         # If we are here, force_override is True or history file is updated.
         # Need to convert units and define new columns.
         u = self.u
-        ds = self.ds
+        domain = self.domain
 
         # volume of resolution element
-        dvol = ds.domain['dx'].prod()
+        dvol = domain['dx'].prod()
 
         # total volume of domain
-        vol = ds.domain['Lx'].prod()
+        vol = domain['Lx'].prod()
 
         # Area of domain
-        LxLy = ds.domain['Lx'][0]*ds.domain['Lx'][1]
+        LxLy = domain['Lx'][0]*domain['Lx'][1]
 
         # Read original history dump file
         hst = read_hst(self.files['hst'], force_override=force_override)
@@ -61,7 +61,7 @@ class ReadHst:
         # Gas surface density in Msun/pc^2
         hst['Sigma_gas'] = hst['mass']/LxLy
         # Neutral gas mass in Msun 
-        hst['Mneu'] = hst['scalar{:d}'.format(self.ds.domain['IHI'])]*vol*u.Msun
+        hst['Mneu'] = hst['scalar{:d}'.format(domain['IHI'])]*vol*u.Msun
         # Ionized gas mass in Msun
         hst['Mion'] *= vol*u.Msun
         # Collisionally ionized gas (before ray tracing) in Msun

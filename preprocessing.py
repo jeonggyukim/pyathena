@@ -1,9 +1,8 @@
 
 import xarray as xr
 import pandas as pd
-import os,glob
+import os, glob
 import shutil
-
 
 from pyathena.parse_par import write_par_from_rst
 import pyathena as pa

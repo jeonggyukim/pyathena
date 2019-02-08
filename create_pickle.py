@@ -156,7 +156,7 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
     
     return proj_data
 
-def create_slices(ds,fname,fields,force_recal=False,factors={},verbose=False):
+def create_slices(ds, fname, fields, force_recal=False, factors={}, verbose=False):
     '''
         generic function to create pickle file containing slices of fields
     
@@ -166,11 +166,11 @@ def create_slices(ds,fname,fields,force_recal=False,factors={},verbose=False):
     '''
  
     time = ds.domain['time']*to_Myr
-    dx=ds.domain['dx']
-    c=ds.domain['center']
-    le=ds.domain['left_edge']
-    re=ds.domain['right_edge']
-    cidx=pa.cc_idx(ds.domain,ds.domain['center']).astype('int') 
+    dx = ds.domain['dx']
+    c = ds.domain['center']
+    le = ds.domain['left_edge']
+    re = ds.domain['right_edge']
+    cidx = pa.cc_idx(ds.domain,ds.domain['center']).astype('int') 
 
     import copy
     field_to_slice = copy.copy(fields)
@@ -195,6 +195,7 @@ def create_slices(ds,fname,fields,force_recal=False,factors={},verbose=False):
 
     if verbose:
         print('making slices...', end='')
+        
     for f in field_to_slice:
         if verbose:
             print('{}...'.format(f), end='')
@@ -341,7 +342,6 @@ def create_all_pickles(
         force_recal=False, force_redraw=False, no_save=False, savdir=None,
         verbose=True, **plt_args):
     """
-    --------------------------------------------------------------------------------
     Function to pickle slices and projections from AthenaDataset and draw snapshots.
     Set force_recal to True if additional fields need to be extracted.
 

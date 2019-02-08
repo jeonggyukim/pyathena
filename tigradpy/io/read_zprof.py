@@ -3,25 +3,32 @@ Read athena zprof file using pandas and xarray
 """
 
 import os
+import os.path as osp
 import glob
 import numpy as np
 import pandas as pd
 import xarray as xr
 
 def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
-    """Read all zprof files and make a DataArray object and write to a NetCDF
-    file
+    """Read all zprof files in directory and make a Dataset object and
+    write to a NetCDF file.
+
+    Note that DataArray holds a single multi-dimensional variable and
+    its coordinates, while a Dataset holds multiple variables that 
+    potentially share the same coordinates.
 
     Parameters
     ----------
-    dirname : string
+    dirname : str
         Name of the directory where zprof files are located
-    problem_id: string
+    problem_id : str
         Prefix of zprof files
-    phase: string
+    phase : str
         Name of thermal phase
         ex) whole, phase1, ..., phase5 (cold, intermediate, warm, hot1, hot2)
-  
+    force_override : bool
+        Flag to force read of hst file even when pickle exists
+
     Returns
     -------
        da: xarray dataarray
@@ -29,22 +36,22 @@ def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
 
     # Find all files with "/dirname/problem_id.xxxx.phase.zprof"    
     fname_base = '{0:s}.????.{1:s}.zprof'.format(problem_id, phase)
-    fnames = sorted(glob.glob(os.path.join(dirname, fname_base)))
+    fnames = sorted(glob.glob(osp.join(dirname, fname_base)))
     
     fnetcdf = '{0:s}.{1:s}.zprof.nc'.format(problem_id, phase)
-    fnetcdf = os.path.join(dirname, fnetcdf)
+    fnetcdf = osp.join(dirname, fnetcdf)
 
-    # check if netcdf file exists and compare last modified times
-    mtime_max = np.array([os.path.getmtime(fname) for fname in fnames]).max()
-    if not force_override and os.path.exists(fnetcdf) and \
-        os.path.getmtime(fnetcdf) > mtime_max:
-        da = xr.open_dataarray(fnetcdf)
+    # Check if netcdf file exists and compare last modified times
+    mtime_max = np.array([osp.getmtime(fname) for fname in fnames]).max()
+    if not force_override and osp.exists(fnetcdf) and \
+        osp.getmtime(fnetcdf) > mtime_max:
+        da = xr.open_dataset(fnetcdf)
         return da
     
-    # if here, need to create a new dataarray
+    # If here, need to create a new dataarray
     time = []
     df_all = []
-    for fname in fnames:
+    for i, fname in enumerate(fnames):
         # Read time
         with open(fname, 'r') as f:
             h = f.readline()
@@ -52,28 +59,38 @@ def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
 
         # read pickle if exists
         df = read_zprof(fname, force_override=False)
+        if i == 0: # save z coordinates
+            z = (np.array(df['z'])).astype(float)
+        df.drop(columns='z', inplace=True)
         df_all.append(df)
 
-    z = (np.array(df['z'])).astype(float)
+        # For test
+        # if i > 10:
+        #     break
+        
     fields = np.array(df.columns)
 
     # Combine all data
+    # Coordinates: time and z
+    time = (np.array(time)).astype(float)
+    fields = np.array(df.columns)
     df_all = np.stack(df_all, axis=0)
-    # print df_all.shape
-    da = xr.DataArray(df_all.T,
-                      coords=dict(fields=fields, z=z, time=time),
-                      dims=('fields', 'z', 'time'))
+    data_vars = dict()
+    for i, f in enumerate(fields):
+        data_vars[f] = (('z', 'time'), df_all[...,i].T)
 
+    ds = xr.Dataset(data_vars, coords=dict(z=z, time=time))
+    
     # Somehow overwriting using mode='w' doesn't work..
-    if os.path.exists(fnetcdf):
+    if osp.exists(fnetcdf):
         os.remove(fnetcdf)
 
     try:
-        da.to_netcdf(fnetcdf, mode='w')
+        ds.to_netcdf(fnetcdf, mode='w')
     except IOError:
         pass
     
-    return da
+    return ds
 
 def read_zprof(filename, force_override=False, verbose=False):
     """
@@ -88,15 +105,15 @@ def read_zprof(filename, force_override=False, verbose=False):
 
     Returns
     -------
-    zp : pandas dataframe
+    df : pandas dataframe
     """
 
     skiprows = 2
 
     fpkl = filename + '.p'
-    if not force_override and os.path.exists(fpkl) and \
-       os.path.getmtime(fpkl) > os.path.getmtime(filename):
-        zp = pd.read_pickle(fpkl)
+    if not force_override and osp.exists(fpkl) and \
+       osp.getmtime(fpkl) > osp.getmtime(filename):
+        df = pd.read_pickle(fpkl)
         if verbose:
             print('[read_zprof]: reading from existing pickle.')
     else:
@@ -116,11 +133,11 @@ def read_zprof(filename, force_override=False, verbose=False):
                 vlist[-1] = vlist[-1][:-1]    # strip \n
 
         # c engine does not support regex separators
-        zp = pd.read_table(filename, names=vlist, skiprows=skiprows,
+        df = pd.read_table(filename, names=vlist, skiprows=skiprows,
                            comment='#', sep=',', engine='python')
         try:
-            zp.to_pickle(fpkl)
+            df.to_pickle(fpkl)
         except IOError:
             pass
         
-    return zp
+    return df

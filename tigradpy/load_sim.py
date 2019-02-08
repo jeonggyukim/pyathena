@@ -1,21 +1,25 @@
-import os, sys
-import glob
+
+import os
+import sys
+import glob, re
 import warnings
 import logging
+import os.path as osp
 
 import yt
 from ..vtk_reader import AthenaDataSet
 from .io.read_athinput import read_athinput
 
 class LoadSim(object):
-    """Class to prepare Athena simulation data analysis. Read input parameters, find
-    vtk and history files.
+    """Class to prepare Athena simulation data analysis. Read input parameters, 
+    find vtk, starpar_vtk, zprof, and history files.
 
     """
 
-    def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=True):
+    def __init__(self, basedir, savdir=None, load_method='pyathena',
+                 verbose=True):
         """
-        The constructor for load_sim class.
+        The constructor for LoadSim class.
 
         Parameters
         ----------
@@ -27,13 +31,18 @@ class LoadSim(object):
         load_method: str
             Load vtk using 'pyathena' or 'yt'. Default value is 'pyathena'.
             If None, savdir=basedir. Default value is None.
-        verbose: bool
-            Print verbose messages using logger.
+        verbose: bool or str or int
+            Print verbose messages using logger. If True/False, set logger
+            level to 'DEBUG'/'WARNING'. If string, it should be one of the string
+            representation of python logging package:
+            ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+            Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
+            accepted.
         """
 
         self.basedir = basedir
         self.load_method = load_method
-        self.logger = self._set_logger(verbose=verbose)
+        self.logger = self._get_logger(verbose=verbose)
         self._find_files()
 
         if savdir is None:
@@ -43,8 +52,10 @@ class LoadSim(object):
             self.logger.info('savdir : {:s}'.format(savdir))
             
 
-    def load_vtk(self, num=None, ivtk= None, id0=False, load_method=None):
-        """Function to read Athena vtk file using pythena or yt and return DataSet object.
+    def load_vtk(self, num=None, ivtk= None, id0=False, load_method=None,
+                 verbose=True):
+        """Function to read Athena vtk file using pythena or yt and 
+        return DataSet object.
         
         Parameters
         ----------
@@ -68,11 +79,11 @@ class LoadSim(object):
 
         if num is not None:
             if id0:
-                dirname = os.path.dirname(self.files['vtk_id0'][0])
+                dirname = osp.dirname(self.files['vtk_id0'][0])
             else:
-                dirname = os.path.dirname(self.files['vtk'][0])
+                dirname = osp.dirname(self.files['vtk'][0])
                
-            self.fvtk = os.path.join(dirname, '{0:s}.{1:04d}.vtk'.\
+            self.fvtk = osp.join(dirname, '{0:s}.{1:04d}.vtk'.\
                                      format(self.problem_id, num))
 
         if ivtk is not None:
@@ -81,12 +92,17 @@ class LoadSim(object):
             else:
                 self.fvtk = self.files['vtk'][ivtk]
 
-        if not os.path.exists(self.fvtk):
-            self.logger.error('[load_vtk]: Vtk file does not exist {:s}'.format(self.fvtk))
+        if not osp.exists(self.fvtk):
+            self.logger.error('[load_vtk]: Vtk file does not exist {:s}'.\
+                              format(self.fvtk))
             raise
                 
         if self.load_method == 'pyathena':
             self.ds = AthenaDataSet(self.fvtk)
+            self.domain = self.ds.domain
+            if verbose:
+                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
+                        osp.basename(self.fvtk), self.ds.domain['time']))
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
                 units_override = self.u.units_override
@@ -100,12 +116,13 @@ class LoadSim(object):
         
         return self.ds
 
+    
     def print_all_properties(self):
         """Print all attributes and callable methods
         """
         
         attr_list = list(self.__dict__.keys())
-        print('Attributes:', attr_list)
+        print('Attributes:\n', attr_list)
         print('\nMethods:')
         method_list = []
         for func in sorted(dir(self)):
@@ -116,52 +133,53 @@ class LoadSim(object):
                     print(getattr(self, func).__doc__)
                     print('-------------------------')
 
+
     def _find_files(self):
         """Function to find all output files under basedir and create "files" dictionary.
 
-        vtk: problem_id.num.vtk
         hst: problem_id.hst
-        zprof: problem_id.zprof
-        starpar: problem_id.num.starpar.vtk
+        vtk: problem_id.num.vtk
+        starpar_vtk: problem_id.num.starpar.vtk
+        zprof: problem_id.num.phase.zprof
         """
         
         self.files = dict()
         def find_match(patterns):
             glob_match = lambda p: \
-                     sorted(glob.glob(os.path.join(self.basedir, *p)))
-    
+                         sorted(glob.glob(osp.join(self.basedir, *p)))
+               
             for p in patterns:
                 f = glob_match(p)
                 if f:
                     break
-
+                
             return f
-        
-        hst_patterns = [('id0', '*.hst'), ('hst', '*.hst'), ('*.hst',)]
+
         athinput_patterns = [('out.txt',), # Jeong-Gyu
                              ('slurm-*',), # Erin
                              ('athinput.*',), # Chang-Goo's restart
                              ('*.par',)]
-        vtk_patterns = [('*.????.vtk',),
-                        ('vtk', '*.????.vtk',)]
-        vtk_id0_patterns = [('id0', '*.????.vtk',),
-                            ('vtk', 'id0', '*.????.vtk',)]
-        star_patterns = [('id0', '*.????.starpar.vtk'),
-                         ('starpar', '*.????.starpar.vtk'),
-                         ('*.????.starpar.vtk',)]
         
-        # find history dump and
-        # extract problem_id (prefix for vtk and hitsory file names)
-        fhst = find_match(hst_patterns)
-        if fhst:
-            self.files['hst'] = fhst[0]
-            self.problem_id = os.path.basename(self.files['hst']).split('.')[0]
-            self.logger.info('basedir: {0:s}'.format(self.basedir))
-            self.logger.info('problem_id: {0:s}'.format(self.problem_id))
-            self.logger.info('hst: {0:s}'.format(self.files['hst']))
-        else:
-            raise IOError('Could not find history file in {0:s}'.format(self.basedir))
+        hst_patterns = [('id0', '*.hst'),
+                        ('hst', '*.hst'),
+                        ('*.hst',)]
+        
+        vtk_patterns = [('vtk', '*.????.vtk'),
+                        ('*.????.vtk',)]
 
+        vtk_id0_patterns = [('vtk', 'id0', '*.????.vtk'),
+                            ('id0', '*.????.vtk')]
+        
+        starpar_patterns = [('starpar', '*.????.starpar.vtk'),
+                            ('id0', '*.????.starpar.vtk'),
+                            ('*.????.starpar.vtk',)]
+        
+        zprof_patterns = [('zprof', '*.zprof'),
+                          ('id0', '*.????.zprof')]
+
+        self.logger.info('basedir: {0:s}'.format(self.basedir))
+
+        # Read athinput files
         fathinput = find_match(athinput_patterns)
         if fathinput:
             self.files['athinput'] = fathinput[0]
@@ -171,70 +189,132 @@ class LoadSim(object):
             self.logger.warning('Could not find athinput file in {0:s}'.\
                                 format(self.basedir))
 
+        self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
+                        if 'output' in k]
+        self.problem_id = self.par['job']['problem_id']
+        self.logger.info('problem_id: {0:s}'.format(self.problem_id))
+
+        # find history dump and
+        # extract problem_id (prefix for vtk and hitsory file names)
+        if 'hst' in self.out_fmt:
+            fhst = find_match(hst_patterns)
+            if fhst:
+                self.files['hst'] = fhst[0]
+                self.problem_id = osp.basename(self.files['hst']).split('.')[0]
+                self.logger.info('hst: {0:s}'.format(self.files['hst']))
+            else:
+                raise IOError('Could not find history file in {0:s}'.\
+                              format(self.basedir))
+
         # Find vtk files
         # vtk files in basedir (joined) and in basedir/id0
-        self.files['vtk'] = find_match(vtk_patterns)
-        self.files['vtk_id0'] = find_match(vtk_id0_patterns)
+        if 'vtk' in self.out_fmt:
+            self.files['vtk'] = find_match(vtk_patterns)
+            self.files['vtk_id0'] = find_match(vtk_id0_patterns)
+            if not self.files['vtk'] and not self.files['vtk_id0']:
+                self.logger.error(
+                    'No vtk files are found in {0:s}.'.format(self.basedir))
+            else:
+                self.nums = [int(f[-7:-4]) for f in self.files['vtk']]
+                self.nums_id0 = [int(f[-7:-4]) for f in self.files['vtk_id0']]
+                if self.nums:
+                    self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
+                        osp.dirname(self.files['vtk'][0]),
+                        self.nums[0], self.nums[-1]))
+                if self.nums_id0:
+                    self.logger.info('vtk in id0:  {0:s} nums: {1:d}-{2:d}'.format(
+                        osp.dirname(self.files['vtk_id0'][0]),
+                        self.nums_id0[0], self.nums_id0[-1]))
 
-        if not self.files['vtk'] and not self.files['vtk_id0']:
-            self.logger.error(
-                'No vtk files are found in {0:s}.'.format(self.basedir))
-        else:
-            self.nums = [int(f[-7:-4]) for f in self.files['vtk']]
-            self.nums_id0 = [int(f[-7:-4]) for f in self.files['vtk_id0']]
-            if self.nums:
-                self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
-                    os.path.dirname(self.files['vtk'][0]),
-                    self.nums[0], self.nums[-1]))
-            if self.nums_id0:
-                self.logger.info('vtk in id0:  {0:s} nums: {1:d}-{2:d}'.format(
-                    os.path.dirname(self.files['vtk_id0'][0]),
-                    self.nums_id0[0], self.nums_id0[-1]))
+            # Check (joined) vtk file size
+            sizes = [os.stat(f).st_size for f in self.files['vtk']]
+            if len(set(sizes)) > 1:
+                size = max(set(sizes), key=sizes.count)
+                flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
+                self.logger.warning('Vtk file size is not unique.')
+                #for f in flist:
+                #    self.logger.warning('vtk num:', f[0], 'size:', f[1])
 
         # Find starpar files
-        fstar = find_match(star_patterns)
-        if fstar:
-            self.files['star'] = fstar
-            self.nums_star = [int(f[-16:-12]) for f in self.files['star']]
-            self.logger.info('starpar: {0:s} nums: {1:d}-{2:d}'.format(
-                os.path.dirname(self.files['star'][0]),
-                self.nums_star[0], self.nums_star[-1]))
-        else:
-            self.logger.warning(
-                'No starpar files are found in {0:s}.'.format(self.basedir))
+        if 'starpar_vtk' in self.out_fmt:
+            fstarpar = find_match(starpar_patterns)
+            if fstarpar:
+                self.files['starpar'] = fstarpar
+                self.nums_starpar = [int(f[-16:-12]) for f in self.files['starpar']]
+                self.logger.info('starpar: {0:s} nums: {1:d}-{2:d}'.format(
+                    osp.dirname(self.files['starpar'][0]),
+                    self.nums_starpar[0], self.nums_starpar[-1]))
+            else:
+                self.logger.warning(
+                    'No starpar files are found in {0:s}.'.format(self.basedir))
 
-        # Check (joined) vtk file size
-        sizes = [os.stat(f).st_size for f in self.files['vtk']]
-        if len(set(sizes)) > 1:
-            size = max(set(sizes), key=sizes.count)
-            flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
-            self.logger.warning('vtk file sizes are not unique.')
-            #for f in flist:
-            #    self.logger.warning('vtk num:', f[0], 'size:', f[1])
-        
-    def _set_logger(self, verbose=False):
-        """Function to set logger
+        # Find zprof files
+        # Multiple zprof files for each snapshot.
+        if 'zprof' in self.out_fmt:
+            fzprof = find_match(zprof_patterns)
+            if fzprof:
+                self.files['zprof'] = fzprof
+                self.nums_zprof = dict()
+                self.phase = []
+                for f in self.files['zprof']:
+                    _, num, ph, _ = osp.basename(f).split('.')
+                    try:
+                        self.nums_zprof[ph].append(int(num))
+                    except KeyError:
+                        self.phase.append(ph)
+                        self.nums_zprof[ph] = []
+                        self.nums_zprof[ph].append(int(num))
+
+                # Check if number of files for each phase matches
+                num = [len(self.nums_zprof[ph]) for ph in self.nums_zprof.keys()]
+                if not all(num):
+                    self.logger.warning('Number of zprof files doesn\'t match.')
+                    self.logger.warning(', '.join(['{0:s}: {1:d}'.format(ph, \
+                        len(self.nums_zprof[ph])) for ph in self.phase][:-1]))
+                else:
+                    self.logger.info('zprof: {0:s} nums: {1:d}-{2:d}'.format(
+                    osp.dirname(self.files['zprof'][0]),
+                    self.nums_zprof[self.phase[0]][0],
+                    self.nums_zprof[self.phase[0]][-1]))
+                    
+            else:
+                self.logger.warning(
+                    'No zprof files are found in {0:s}.'.format(self.basedir))
+
+                
+    def _get_logger(self, verbose=False):
+        """Function to set logger and default verbosity.
 
         Parameters
         ----------
-        verbose: bool
-            Set logging level to DEBUG/WARNING if True/False.
+        verbose: bool or str
+            Set logging level to "INFO"/"WARNING" if True/False.
         """
-        if verbose:
-            loglevel = logging.DEBUG
+
+        levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+        
+        if verbose is True:
+            self.loglevel_def = 'INFO'
+        elif verbose is False:
+            self.loglevel_def = 'WARNING'
+        elif verbose in levels + [l.lower() for l in levels]:
+            self.loglevel_def = verbose.upper()
+        elif isinstance(verbose, int):
+            self.loglevel_def = verbose
         else:
-            loglevel = logging.WARNING
+            raise ValueError('Cannot recognize verbose option {0:s}.'.format(verbose))
         
         l = logging.getLogger(__class__.__name__.split('.')[-1])
+        
         if not l.hasHandlers():
             h = logging.StreamHandler()
             f = logging.Formatter('%(name)s-%(levelname)s: %(message)s')
             # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
             h.setFormatter(f)
             l.addHandler(h)
-            l.setLevel(loglevel)
+            l.setLevel(self.loglevel_def)
         else:
-            l.setLevel(loglevel)
+            l.setLevel(self.loglevel_def)
 
         return l
     
