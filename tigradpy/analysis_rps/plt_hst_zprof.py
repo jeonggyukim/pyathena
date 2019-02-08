@@ -182,7 +182,12 @@ class PltHstZprof:
         plt.sca(axes[3])
         plt.plot(zp[ph].z/1e3, zp[ph]['nebar'].quantile(0.5, dim='time'),
                  alpha=alpha, c='tab:red', lw=lw)
-
+        # Plot warm neutral
+        ph = 'w'
+        plt.sca(axes[2])
+        plt.plot(zp[ph].z/1e3, zp[ph]['A'].quantile(0.5, dim='time'),
+                 alpha=alpha, c='tab:blue', lw=lw, ls='--')
+        
         plt.sca(axes[0])
         plt.legend([axes[0].get_lines()[-2], l], ['warm','hot'], loc=2)
 
