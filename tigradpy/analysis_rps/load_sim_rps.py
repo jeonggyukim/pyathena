@@ -6,9 +6,9 @@ from ..util.units import Units
 
 from .read_hst import ReadHst
 from .read_zprof import ReadZprof
-from .plt_hst import PltHst
+from .plt_hst_zprof import PltHstZprof
 
-class LoadSimRPS(LoadSim, ReadHst, ReadZprof, PltHst):
+class LoadSimRPS(LoadSim, ReadHst, ReadZprof, PltHstZprof):
     """LoadSim class for analyzing radps_postproc simulations.
     """
     

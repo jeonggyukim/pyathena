@@ -1,17 +1,19 @@
 #!/usr/bin/env python
 
-import sys, os
-sys.path.insert(0, '/home/jk11/athena-tigress/python')
-import pyathena as pa
-import pyathena.tigradpy as tp
+import os
+import os.path as osp
 
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 
-class PltHst:
+class PltHstZprof:
+
+    mpl.rcParams['font.size'] = 14
     
     def plt_hst(self, savname=None, force_override=False):
         """Function to draw time evolution of Sigma_SFR, escape fraction, etc.
         """
+        
         hst = self.read_hst(force_override=force_override)
         fig, axes = plt.subplots(5, 1, figsize=(18, 12), sharex=True,
                                  gridspec_kw=dict(hspace=0.1))
@@ -60,12 +62,14 @@ class PltHst:
         # Non-ionizing escape fraction
         l2, = plt.plot(hst.time, hst.fesc1_est, 'k-')
         plt.plot(hst.time, hst.fesc1_cum_est, 'k--')
+
         # # H absorption
         # plt.plot(hst.time, hst.Qiphot/hst.Qi, 'b-')
         # plt.plot(hst.time, hst.Qiphot.cumsum()/hst.Qi.cumsum(), 'b--')
         # dust absorption
         #plt.plot(hst.time, hst.Qidust/hst.Qi, 'g-')
         #plt.plot(hst.time, hst.Qidust.cumsum()/hst.Qi.cumsum(), 'g--')
+        
         plt.ylabel('radiation\n' + 'escape fraction')
         plt.legend([l1, l2],
                    [r'$f_{\rm esc,i}$', r'$f_{\rm esc,n}$'], loc=1,
@@ -103,7 +107,7 @@ class PltHst:
         plt.plot(hst.time, hst.H_w, label=r'$H_{\rm w}$')
         plt.plot(hst.time, hst.H_c, label=r'$H_{\rm c}$')
         plt.yscale('log')
-        plt.legend(loc=1, fontsize='x-large')
+        plt.legend(loc=1, fontsize='large')
         
         # alpha=0.5
         # plt.ylabel('fraction')
@@ -119,13 +123,106 @@ class PltHst:
         plt.sca(axes[-1])
         plt.xlabel('time [Myr]')
 
-        plt.suptitle(os.path.basename(self.basedir), fontsize='x-large')
+        plt.suptitle(self.name)
         plt.subplots_adjust(top=0.95)
         
         if savname is None:
-            savname = os.path.join(self.savdir, 'hst',
-                                   self.problem_id + '_hst.png')
+            savname = osp.join(self.savdir, 'hst',
+                               self.problem_id + '_hst.png')
             
         plt.savefig(savname, dpi=200)
         
         self.logger.info('History plot saved to {:s}'.format(savname))
+
+        return plt.gcf()
+
+    def plt_zprof(self, savname=None, force_override=False):
+        """Function to draw time-averaged z-profiles of nH, ne, xi, etc.
+        """
+        
+        zp = self.read_zprof(['w', 'h'], force_override=force_override)
+        fig, axes = plt.subplots(2, 2, figsize=(12, 10))
+    
+        ylog = dict(d=True, ne=True, nebar=True, nesq=True, xi=False, A=False)
+        ylim = dict(d=(1e-4, 2e1),
+                    ne=(1e-4, 2e1),
+                    nesq=(1e-5, 1e3),
+                    xi=(0.0, 1.0),
+                    nebar=(1e-4, 2e1),
+                    A=(0.0, 1.0)
+                    )
+        
+        ylabel = dict(d=r'$\langle n_{\rm H}\rangle\;[{\rm cm^{-3}}]$',
+                      ne=r'$\langle n_{\rm e}\rangle\;[{\rm cm^{-3}}]$',
+                      xi=r'$\langle x_{\rm i}\rangle$',
+                      nebar=r'$\langle n_{\rm e}\rangle/\langle x_{\rm i}\rangle\;[{\rm cm^{-3}}]$'
+                     )
+
+        phase = ['w', 'w', 'w', 'w']
+        var = ['d', 'ne', 'xi', 'nebar']
+        xlim = (-3, 3)
+        axes = axes.flatten()
+        for ax, ph, v in zip(axes, phase, var):
+            plt_zprof_var(ax, zp[ph], v,
+                          xlim, ylim[v], ylog[v], ylabel[v], alpha=0.02)
+
+        # Plot hot phase median
+        alpha = 0.5
+        lw= 2.0
+        ph = 'h'
+        plt.sca(axes[0])
+        l, = plt.plot(zp[ph].z/1e3, zp[ph]['d'].quantile(0.5, dim='time'),
+                 alpha=alpha, c='tab:red', lw=lw)
+        plt.sca(axes[1])
+        l, = plt.plot(zp[ph].z/1e3, zp[ph]['ne'].quantile(0.5, dim='time'),
+                 alpha=alpha, c='tab:red', lw=lw)
+        plt.sca(axes[2])
+        plt.plot(zp[ph].z/1e3, zp[ph]['xi'].quantile(0.5, dim='time'),
+                 alpha=alpha, c='tab:red', lw=lw)
+        plt.sca(axes[3])
+        plt.plot(zp[ph].z/1e3, zp[ph]['nebar'].quantile(0.5, dim='time'),
+                 alpha=alpha, c='tab:red', lw=lw)
+
+        plt.sca(axes[0])
+        plt.legend([axes[0].get_lines()[-2], l], ['warm','hot'], loc=2)
+
+        plt.suptitle(self.name, fontsize='large')
+        plt.subplots_adjust(top=0.9, wspace=0.3)
+        #plt.tight_layout()
+        
+        if savname is None:
+            savname = osp.join(self.savdir, 'zprof',
+                               self.problem_id + '_zprof.png')
+
+        plt.savefig(savname, dpi=200)
+        
+        self.logger.info('Zprof plot saved to {:s}'.format(savname))
+
+        return plt.gcf()
+
+
+def plt_zprof_var(ax, zp, v, xlim, ylim, ylog, ylabel, alpha=0.02):
+
+    plt.sca(ax)
+    plt.plot(zp.z/1e3, zp[v], alpha=alpha, c='grey')
+    plt.plot(zp.z/1e3, zp[v].quantile(0.5, dim='time'), c='tab:blue')
+    plt.fill_between(zp.z/1e3,
+                     zp[v].quantile(0.25, dim='time'),
+                     zp[v].quantile(0.75, dim='time'),
+                     alpha=0.5, color='tab:blue')
+    plt.fill_between(zp.z/1e3,
+                     zp[v].quantile(0.10, dim='time'),
+                     zp[v].quantile(0.90, dim='time'),
+                     alpha=0.20, color='tab:orange')
+    
+    if ylog:
+        plt.yscale('log')
+    else:
+        plt.yscale('linear')
+        
+    plt.xlabel('z [kpc]')
+    plt.ylabel(ylabel)
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+    #plt.suptitle(v)
+
