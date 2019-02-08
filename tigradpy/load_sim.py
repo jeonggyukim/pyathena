@@ -40,7 +40,9 @@ class LoadSim(object):
             accepted.
         """
 
-        self.basedir = basedir
+        self.basedir = basedir.rstrip('/')
+        self.name = osp.basename(self.basedir)
+        
         self.load_method = load_method
         self.logger = self._get_logger(verbose=verbose)
         self._find_files()
