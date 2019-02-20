@@ -145,6 +145,9 @@ class LoadSim(object):
         starpar_vtk: problem_id.num.starpar.vtk
         zprof: problem_id.num.phase.zprof
         """
+
+        if not osp.isdir(self.basedir):
+            raise IOError('basedir {0:s} does not exist.'.format(self.basedir))
         
         self.files = dict()
         def find_match(patterns):

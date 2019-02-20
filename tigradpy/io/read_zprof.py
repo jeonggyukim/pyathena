@@ -33,7 +33,7 @@ def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
 
     Returns
     -------
-       da: xarray dataarray
+       ds: xarray dataset
     """
 
     # Find all files with "/dirname/problem_id.xxxx.phase.zprof"    
