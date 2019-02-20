@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 import yt.units as yu
 from yt import physical_constants as phyc

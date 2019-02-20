@@ -34,8 +34,8 @@ class LoadSimRPS(LoadSim, ReadHst, ReadZprof, PltHstZprof):
             accepted.
         """
         
-        super().__init__(basedir, savdir=savdir,
-                         load_method=load_method, verbose=verbose)
+        super(LoadSimRPS,self).__init__(basedir, savdir=savdir,
+                                        load_method=load_method, verbose=verbose)
 
         # Set unit
         self.u = Units(muH=1.4271)
@@ -48,6 +48,7 @@ class LoadSimRPS(LoadSim, ReadHst, ReadZprof, PltHstZprof):
             self.ds = self.load_vtk(ivtk=0, load_method='pyathena', verbose=False)
             
 class LoadSimRPSAll(object):
+    ## Under development..
     def __init__(self, basedirs=None):
 
         models = [

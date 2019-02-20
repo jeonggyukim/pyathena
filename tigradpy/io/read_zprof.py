@@ -2,6 +2,8 @@
 Read athena zprof file using pandas and xarray
 """
 
+from __future__ import print_function
+
 import os
 import os.path as osp
 import glob

@@ -2,6 +2,8 @@
 Read athena history file using pandas
 """
 
+from __future__ import print_function
+
 import os
 import re
 import numpy as np
@@ -40,8 +42,10 @@ def read_hst(filename, force_override=False, verbose=False):
         vlist = _get_hst_var(filename)
 
         # c engine does not support regex separators
-        hst = pd.read_table(filename, names=vlist, skiprows=skiprows,
-                            comment='#', delim_whitespace=True, engine='python')
+        hst = pd.read_csv(filename, names=vlist, skiprows=skiprows,
+                          comment='#', delim_whitespace=True, engine='python')
+        #hst = pd.read_table(filename, names=vlist, skiprows=skiprows,
+        #                    comment='#', delim_whitespace=True, engine='python')
         try:
             hst.to_pickle(fpkl)
         except IOError:

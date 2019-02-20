@@ -1,3 +1,4 @@
+from __future__ import print_function
 
 import os
 import sys
@@ -304,19 +305,31 @@ class LoadSim(object):
         elif isinstance(verbose, int):
             self.loglevel_def = verbose
         else:
-            raise ValueError('Cannot recognize verbose option {0:s}.'.format(verbose))
+            raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
         
-        l = logging.getLogger(__class__.__name__.split('.')[-1])
-        
-        if not l.hasHandlers():
-            h = logging.StreamHandler()
-            f = logging.Formatter('%(name)s-%(levelname)s: %(message)s')
-            # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-            h.setFormatter(f)
-            l.addHandler(h)
-            l.setLevel(self.loglevel_def)
-        else:
-            l.setLevel(self.loglevel_def)
+        l = logging.getLogger(self.__class__.__name__.split('.')[-1])
+
+        try:
+            if not l.hasHandlers():
+                h = logging.StreamHandler()
+                f = logging.Formatter('%(name)s-%(levelname)s: %(message)s')
+                # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+                h.setFormatter(f)
+                l.addHandler(h)
+                l.setLevel(self.loglevel_def)
+            else:
+                l.setLevel(self.loglevel_def)
+        except AttributeError: # for python 2 compatibility
+            if not len(l.handlers):
+                h = logging.StreamHandler()
+                f = logging.Formatter('%(name)s-%(levelname)s: %(message)s')
+                # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+                h.setFormatter(f)
+                l.addHandler(h)
+                l.setLevel(self.loglevel_def)
+            else:
+                l.setLevel(self.loglevel_def)
+                
 
         return l
     

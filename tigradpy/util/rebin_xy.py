@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 import numpy as np
 
 def rebin_xy(arr, bin_factor, fill_value=None):
