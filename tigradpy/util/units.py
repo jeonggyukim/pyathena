@@ -41,6 +41,7 @@ class Units(object):
         # because in post-processing we want to convert from code units to
         # more convenient ones by multiplying these constants
         self.pc = self.length.to('pc').value
+        self.kpc = self.length.to('kpc').value
         self.Myr = self.time.to('Myr').value
         self.kms = self.velocity.to('km/s').value
         self.Msun = self.mass.to('Msun').value

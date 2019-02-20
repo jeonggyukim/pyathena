@@ -171,21 +171,21 @@ class PltHstZprof:
         lw= 2.0
         ph = 'h'
         plt.sca(axes[0])
-        l, = plt.plot(zp[ph].z/1e3, zp[ph]['d'].quantile(0.5, dim='time'),
+        l, = plt.plot(zp[ph].z_kpc, zp[ph]['d'].quantile(0.5, dim='time'),
                  alpha=alpha, c='tab:red', lw=lw)
         plt.sca(axes[1])
-        l, = plt.plot(zp[ph].z/1e3, zp[ph]['ne'].quantile(0.5, dim='time'),
+        l, = plt.plot(zp[ph].z_kpc, zp[ph]['ne'].quantile(0.5, dim='time'),
                  alpha=alpha, c='tab:red', lw=lw)
         plt.sca(axes[2])
-        plt.plot(zp[ph].z/1e3, zp[ph]['xi'].quantile(0.5, dim='time'),
+        plt.plot(zp[ph].z_kpc, zp[ph]['xi'].quantile(0.5, dim='time'),
                  alpha=alpha, c='tab:red', lw=lw)
         plt.sca(axes[3])
-        plt.plot(zp[ph].z/1e3, zp[ph]['nebar'].quantile(0.5, dim='time'),
+        plt.plot(zp[ph].z_kpc, zp[ph]['nebar'].quantile(0.5, dim='time'),
                  alpha=alpha, c='tab:red', lw=lw)
         # Plot warm neutral
         ph = 'w'
         plt.sca(axes[2])
-        plt.plot(zp[ph].z/1e3, zp[ph]['A'].quantile(0.5, dim='time'),
+        plt.plot(zp[ph].z_kpc, zp[ph]['A'].quantile(0.5, dim='time'),
                  alpha=alpha, c='tab:blue', lw=lw, ls='--')
         
         plt.sca(axes[0])
@@ -209,13 +209,13 @@ class PltHstZprof:
 def plt_zprof_var(ax, zp, v, xlim, ylim, ylog, ylabel, alpha=0.02):
 
     plt.sca(ax)
-    plt.plot(zp.z/1e3, zp[v], alpha=alpha, c='grey')
-    plt.plot(zp.z/1e3, zp[v].quantile(0.5, dim='time'), c='tab:blue')
-    plt.fill_between(zp.z/1e3,
+    plt.plot(zp.z_kpc, zp[v], alpha=alpha, c='grey')
+    plt.plot(zp.z_kpc, zp[v].quantile(0.5, dim='time'), c='tab:blue')
+    plt.fill_between(zp.z_kpc,
                      zp[v].quantile(0.25, dim='time'),
                      zp[v].quantile(0.75, dim='time'),
                      alpha=0.5, color='tab:blue')
-    plt.fill_between(zp.z/1e3,
+    plt.fill_between(zp.z_kpc,
                      zp[v].quantile(0.10, dim='time'),
                      zp[v].quantile(0.90, dim='time'),
                      alpha=0.20, color='tab:orange')

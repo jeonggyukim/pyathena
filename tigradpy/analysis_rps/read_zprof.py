@@ -146,6 +146,7 @@ class ReadZprof:
         # Rename time to time_code and use physical time in Myr as dimension
         ds = ds.rename(dict(time='time_code'))
         ds = ds.assign_coords(time=ds.time_code*self.u.Myr)
+        ds = ds.assign_coords(z_kpc=ds.z*self.u.kpc)
         ds = ds.swap_dims(dict(time_code='time'))
         
         # self._set_attrs(ds)
