@@ -181,7 +181,7 @@ class LoadSim(object):
                             ('*.????.starpar.vtk',)]
         
         zprof_patterns = [('zprof', '*.zprof'),
-                          ('id0', '*.????.zprof')]
+                          ('id0', '*.zprof')]
 
         self.logger.info('basedir: {0:s}'.format(self.basedir))
 
