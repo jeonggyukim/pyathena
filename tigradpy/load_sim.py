@@ -238,8 +238,8 @@ class LoadSim(object):
                 size = max(set(sizes), key=sizes.count)
                 flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
                 self.logger.warning('Vtk file size is not unique.')
-                #for f in flist:
-                #    self.logger.warning('vtk num:', f[0], 'size:', f[1])
+                # for f in flist:
+                #    self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
 
         # Find starpar files
         if 'starpar_vtk' in self.out_fmt:
