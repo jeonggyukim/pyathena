@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 
 class PltHstZprof:
 
-    mpl.rcParams['font.size'] = 14
+    mpl.rcParams['font.size'] = 15
     
     def plt_hst(self, savname=None, force_override=False):
         """Function to draw time evolution of Sigma_SFR, escape fraction, etc.
@@ -63,9 +63,9 @@ class PltHstZprof:
         l2, = plt.plot(hst.time, hst.fesc1_est, 'k-')
         plt.plot(hst.time, hst.fesc1_cum_est, 'k--')
 
-        # # H absorption
-        # plt.plot(hst.time, hst.Qiphot/hst.Qi, 'b-')
-        # plt.plot(hst.time, hst.Qiphot.cumsum()/hst.Qi.cumsum(), 'b--')
+        # H absorption
+        #plt.plot(hst.time, hst.Qiphot/hst.Qi, 'b-')
+        #plt.plot(hst.time, hst.Qiphot.cumsum()/hst.Qi.cumsum(), 'b--')
         # dust absorption
         #plt.plot(hst.time, hst.Qidust/hst.Qi, 'g-')
         #plt.plot(hst.time, hst.Qidust.cumsum()/hst.Qi.cumsum(), 'g--')
@@ -136,8 +136,8 @@ class PltHstZprof:
 
         return plt.gcf()
 
-    def plt_zprof(self, savname=None, force_override=False):
-        """Function to draw time-averaged z-profiles of nH, ne, xi, etc.
+    def plt_zprof_median(self, savname=None, force_override=False):
+        """Function to draw median z-profiles of nH, ne, xi, etc.
         """
         
         zp = self.read_zprof(['w', 'h'], force_override=force_override)
@@ -192,7 +192,7 @@ class PltHstZprof:
         plt.legend([axes[0].get_lines()[-2], l], ['warm','hot'], loc=2)
 
         plt.suptitle(self.name, fontsize='large')
-        plt.subplots_adjust(top=0.9, wspace=0.3)
+        plt.subplots_adjust(wspace=0.5)
         #plt.tight_layout()
         
         if savname is None:
@@ -201,13 +201,85 @@ class PltHstZprof:
 
         plt.savefig(savname, dpi=200)
         
-        self.logger.info('Zprof plot saved to {:s}'.format(savname))
+        self.logger.info('zprof plot saved to {:s}'.format(savname))
 
         return plt.gcf()
 
+    def plt_zprof_frac(self, savname=None, force_override=False):
+        """Function to draw time-averaged z-profiles of volume and mass fractions
+        """
+        
+        zpw = self.read_zprof('w')
+        zpa = self.read_zprof('whole') # all
+        zp2p = self.read_zprof('2p') # 2-phase (c + u + w)
+        zph = self.read_zprof('h') # 2-phase (c + u + w)
+        zpc = self.read_zprof('c') # cold
+        zpu = self.read_zprof('u') # unstable
+        hst = self.read_hst()
 
+        # Volume fractions of hot, warm, and warm ionized
+        vfh = (zph['A']).mean(dim='time')
+        vfw = (zpw['A']).mean(dim='time')
+        vfwi = (zpw['xi']).mean(dim='time')
+        # Volume fraction of WIM relative to the volume fraction of warm
+        vfwi_vfw = (zpw['xi']/zpw['A']).mean(dim='time')
+        
+        # Mass fractions of hot, warm, warm ionized, and cold
+        mfh = (zph['d']/zpa['d']).mean(dim='time')
+        mfw = (zpw['d']/zpa['d']).mean(dim='time')
+        mfwi = (zpw['ne']/zpa['d']).mean(dim='time')
+        mfwi_mfw = (zpw['ne']/zpw['d']).mean(dim='time')
+        mfc = (zpc['d']/zpa['d']).mean(dim='time')
+        mfu = (zpu['d']/zpa['d']).mean(dim='time')
+
+        # x axis
+        x = zpw.z_kpc
+        
+        mpl.rcParams['font.size'] = 16
+        fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+        # Volume fractions
+        plt.sca(axes[0])
+        plt.plot(x, vfh, label=r'$f_{\rm V,h}$', c='orchid')
+        plt.plot(x, vfw, label=r'$f_{\rm V,w}$', c='tab:orange')
+        plt.plot(x, vfwi, label=r'$f_{\rm V,wi}$', c='tab:green')
+        plt.plot(x, vfwi_vfw, label=r'$f_{\rm V,wi}/f_{\rm V,w}$', c='tab:red')
+        plt.xlabel(r'$z\;[{\rm kpc}]$')
+        plt.legend(loc=2)
+        plt.ylabel('volume fraction')
+        plt.locator_params(nbins=10)
+        plt.grid()
+
+        # Mass fractions
+        plt.sca(axes[1])
+        plt.plot(x, mfh, label=r'$f_{\rm M,h}$', c='orchid')
+        plt.plot(x, mfw, label=r'$f_{\rm M,w}$', c='tab:orange')
+        plt.plot(x, mfwi, label=r'$f_{\rm M,wi}$', c='tab:green')
+        plt.plot(x, mfwi_mfw, label=r'$f_{\rm M,wi}/f_{\rm M,w}$', c='tab:red')
+        plt.plot(x, mfc, label=r'$f_{\rm M,c}$', c='tab:blue')
+        plt.plot(x, mfu, label=r'$f_{\rm M,u}$', c='salmon')
+        plt.legend(loc=2)
+        plt.xlabel(r'$z\;[{\rm kpc}]$')
+        plt.ylabel('mass fraction')
+        plt.locator_params(nbins=10)
+        plt.grid()
+        
+        plt.suptitle(self.name, fontsize='large')
+        plt.subplots_adjust(wspace=0.4)
+        # #plt.tight_layout()
+        
+        if savname is None:
+            savname = osp.join(self.savdir, 'zprof',
+                               self.problem_id + '_zprof_frac.png')
+
+        plt.savefig(savname, dpi=200)
+        
+        self.logger.info('zprof frac plot saved to {:s}'.format(savname))
+
+        return plt.gcf()
+    
 def plt_zprof_var(ax, zp, v, xlim, ylim, ylog, ylabel, alpha=0.02):
-
+    """Function to draw median, 10/25/75/90 percentile ranges."""
+    
     plt.sca(ax)
     plt.plot(zp.z_kpc, zp[v], alpha=alpha, c='grey')
     plt.plot(zp.z_kpc, zp[v].quantile(0.5, dim='time'), c='tab:blue')
