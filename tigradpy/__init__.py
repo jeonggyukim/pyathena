@@ -11,11 +11,13 @@ __all__ = ["add_fields",
            "LoadSim",
            "LoadSimRPS"]
 
+
 from .add_fields import add_fields
 from .load_sim import LoadSim
 from .analysis_rps.load_sim_rps import LoadSimRPS
 from .mass_to_lum import mass_to_lum
 
+from .io.read_vtk import AthenaDataSet
 from .io.read_athinput import read_athinput
 from .io.read_hst import read_hst
 from .io.read_starpar_vtk import read_starpar_vtk
