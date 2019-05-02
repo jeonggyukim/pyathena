@@ -160,11 +160,12 @@ class PltHstZprof:
 
         phase = ['w', 'w', 'w', 'w']
         var = ['d', 'ne', 'xi', 'nebar']
-        xlim = (-3, 3)
+        xlim = (zp['w'].z_kpc.min(),zp['w'].z_kpc.max())
+        
         axes = axes.flatten()
         for ax, ph, v in zip(axes, phase, var):
             plt_zprof_var(ax, zp[ph], v,
-                          xlim, ylim[v], ylog[v], ylabel[v], alpha=0.02)
+                          xlim, ylim[v], ylog[v], ylabel[v], alpha=None)
 
         # Plot hot phase median
         alpha = 0.5
@@ -223,6 +224,8 @@ class PltHstZprof:
         vfwi = (zpw['xi']).mean(dim='time')
         # Volume fraction of WIM relative to the volume fraction of warm
         vfwi_vfw = (zpw['xi']/zpw['A']).mean(dim='time')
+        vfu = (zpu['A']).mean(dim='time')
+        vfc = (zpc['A']).mean(dim='time')
         
         # Mass fractions of hot, warm, warm ionized, and cold
         mfh = (zph['d']/zpa['d']).mean(dim='time')
@@ -242,9 +245,11 @@ class PltHstZprof:
         plt.plot(x, vfh, label=r'$f_{\rm V,h}$', c='orchid')
         plt.plot(x, vfw, label=r'$f_{\rm V,w}$', c='tab:orange')
         plt.plot(x, vfwi, label=r'$f_{\rm V,wi}$', c='tab:green')
-        plt.plot(x, vfwi_vfw, label=r'$f_{\rm V,wi}/f_{\rm V,w}$', c='tab:red')
-        plt.xlabel(r'$z\;[{\rm kpc}]$')
+        #plt.plot(x, vfwi_vfw, label=r'$f_{\rm V,wi}/f_{\rm V,w}$', c='tab:red')
+        plt.plot(x, vfc, label=r'$f_{\rm V,c}$', c='tab:blue')
+        plt.plot(x, vfu, label=r'$f_{\rm V,u}$', c='salmon')
         plt.legend(loc=2)
+        plt.xlabel(r'$z\;[{\rm kpc}]$')
         plt.ylabel('volume fraction')
         plt.locator_params(nbins=10)
         plt.grid()
@@ -254,7 +259,7 @@ class PltHstZprof:
         plt.plot(x, mfh, label=r'$f_{\rm M,h}$', c='orchid')
         plt.plot(x, mfw, label=r'$f_{\rm M,w}$', c='tab:orange')
         plt.plot(x, mfwi, label=r'$f_{\rm M,wi}$', c='tab:green')
-        plt.plot(x, mfwi_mfw, label=r'$f_{\rm M,wi}/f_{\rm M,w}$', c='tab:red')
+        #plt.plot(x, mfwi_mfw, label=r'$f_{\rm M,wi}/f_{\rm M,w}$', c='tab:red')
         plt.plot(x, mfc, label=r'$f_{\rm M,c}$', c='tab:blue')
         plt.plot(x, mfu, label=r'$f_{\rm M,u}$', c='salmon')
         plt.legend(loc=2)
@@ -279,7 +284,10 @@ class PltHstZprof:
     
 def plt_zprof_var(ax, zp, v, xlim, ylim, ylog, ylabel, alpha=0.02):
     """Function to draw median, 10/25/75/90 percentile ranges."""
-    
+
+    if alpha is None:
+        alpha = 0.02*(500.0/zp[v].shape[1])**0.5
+        
     plt.sca(ax)
     plt.plot(zp.z_kpc, zp[v], alpha=alpha, c='grey')
     plt.plot(zp.z_kpc, zp[v].quantile(0.5, dim='time'), c='tab:blue')
