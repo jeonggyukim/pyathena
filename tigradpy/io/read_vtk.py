@@ -6,9 +6,9 @@ from __future__ import print_function
 
 import os
 import os.path as osp
-import glob, re, struct
+import glob, struct
 import numpy as np
-
+import xarray as xr
 
 class AthenaDataSet(object):
     
@@ -47,6 +47,7 @@ class AthenaDataSet(object):
         
         self.grid = self._set_grid()
         self.domain = self._set_domain()
+        self.set_region()
         
         # Need separte field_map for different grids
         if self.domain['all_grid_equal']:
@@ -58,11 +59,22 @@ class AthenaDataSet(object):
                 g['field_map'] = _set_field_map(g)
             self._field_map = self.grid[0]['field_map']
 
-        self.field_list = self._field_map.keys()
+        self.field_list = list(self._field_map.keys())
 
+
+    def get_cc_pos(self):
+        """Compute cell center positions
+        """
+        
+        xc = dict()
+        for axis, le, re, dx in zip(('x', 'y', 'z'), \
+            self.region['gle'], self.region['gre'], self.domain['dx']):
+                xc[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
+        
+        return xc
+        
     def set_region(self, le=None, re=None):
-        """Set region.
-        Find overlapping grids.
+        """Set region and find overlapping grids.
         """
 
         if le is None:
@@ -75,10 +87,10 @@ class AthenaDataSet(object):
         if (re < le).any():
             raise ValueError('Check left/right edge.')
 
-        # Find all overlapping grids and their edges 
-        gle_all = []
-        gre_all = []
-        gidx = []
+        # Find all overlapping grids and their edges
+        gle_all = []  # grid left edge
+        gre_all = []  # grid right edge
+        gidx = []     # grid indices that belongs to this region
         for i, g in enumerate(self.grid):
             if (g['re'] > le).all() and (g['le'] < re).all():
                 gidx.append(i)
@@ -93,7 +105,7 @@ class AthenaDataSet(object):
         gle_all = np.array(gle_all)
         gre_all = np.array(gre_all)
 
-        # Unique edges
+        # Find unique edges
         gleu = np.array([np.unique(gle_all[:, i]) for i in range(3)])
         greu = np.array([np.unique(gre_all[:, i]) for i in range(3)])
         gle = np.array([gle.min() for gle in gleu])
@@ -102,7 +114,7 @@ class AthenaDataSet(object):
         # Number of grids in each direction
         NGrid = np.array([len(gleu_) for gleu_ in gleu])
         
-        # Number of cells
+        # Number of cells per grid
         Nxg = (np.ravel((greu - gleu))/self.domain['dx'])
         Nxr = np.empty(Nxg.shape[0], dtype=int)
         for i, Nxg_ in enumerate(Nxg):
@@ -111,15 +123,54 @@ class AthenaDataSet(object):
         assert len(gidx) == NGrid.prod(),\
             print('Unexpected error: Number of grids {0:d} != '.format(len(gidx)) +
                   'number of unique edges {0:d}.'.format(NGrid.prod()))
-        
+
         self.region = dict(le=le, re=re, gidx=gidx,
                            gleu=gleu, greu=greu,\
                            gle=gle, gre=gre,
                            NGrid=NGrid, Nxg=Nxg, Nxr=Nxr)
         
-    def get_field(self, field='density', le=None, re=None):
+    def get_slice(self, axis, field='density', pos=None, method='nearest'):
 
-        # Check field name
+        axis_idx = dict(x=0, y=1, z=2)
+
+        if pos is None:
+            pos = 'c'
+
+        field = np.atleast_1d(field)
+        axis = np.atleast_1d(axis)
+
+        for ax in axis:
+            le = np.copy(self.domain['le'])
+            re = np.copy(self.domain['re'])
+            if pos in ['c', 'center']:
+                pos = self.domain['center'][axis_idx[ax]]
+
+            le[axis_idx[ax]] = pos
+            re[axis_idx[ax]] = pos
+            dat = self.get_field(field, le, re, as_xarray=True)
+
+            slc = dat.sel(method='nearest', **{ax:pos})
+
+        return slc
+
+    def get_field(self, field='density', le=None, re=None,
+                  as_xarray=False):
+        """Read fields data.
+
+        Parameters
+        ----------
+        field : string
+            The name of the field(s) to be read.
+        le : sequence of floats
+           Left edge. Default value is the domain left edge.
+        re : sequence of floats
+           Right edge. Default value is the domain right edge.
+        as_xarray : bool
+           Return array as an xarray Dataset.
+        """
+        
+        field = np.atleast_1d(field)
+        # TODO: Check field name
         
         # Check and create region
         if not hasattr(self, 'region'):
@@ -131,8 +182,37 @@ class AthenaDataSet(object):
             else:
                 self.set_region(le=le, re=re)
 
-        data = self._set_data_array(field)
+        arr = self._get_field(field)
+        # Works only for 3d data
+        if as_xarray:
+            # Cell center positions
+            x = dict()
+            for axis, le, re, dx in zip(('x', 'y', 'z'), \
+                    self.region['gle'], self.region['gre'], self.domain['dx']):
+                x[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
 
+            dat = dict()
+            for k, v in arr.items():
+                if len(v.shape) > self.domain['ndim']:
+                    for i in range(v.shape[-1]):
+                        dat[k + str(i+1)] = (('z','y','x'), v[..., i])
+                else:
+                    dat[k] = (('z','y','x'), v)
+                
+            return xr.Dataset(dat, coords=x)
+        
+        else: # return numpy array
+            if len(field) == 1:
+                return arr[field[0]]
+            else:
+                return arr
+    
+    def _get_field(self, field):
+
+        arr = dict()
+        for f in field:
+            arr[f] = self._set_array(f)
+            
         # Read from individual grids and copy to data
         le = self.region['gle']
         dx = self.domain['dx']
@@ -141,11 +221,13 @@ class AthenaDataSet(object):
             il = ((g['le'] - le)/dx).astype(int)
             iu = il + g['Nx']
             slc = tuple([slice(l, u) for l, u in zip(il[::-1], iu[::-1])])
-            data[slc] = self._get_field_grid(g, field)
-            
-        return data
+            for f in field:
+                arr[f][slc] = self._read_array(g, f)
+
+        return arr
+
     
-    def _get_field_grid(self, grid, field):
+    def _read_array(self, grid, field):
 
         if field in grid['data']:
             return grid['data'][field]
@@ -170,20 +252,8 @@ class AthenaDataSet(object):
             
             return grid['data'][field]
 
-    def _read_field_grid(self, grid, field):
-
-        fm = self.domain['field_map']
-        nvar = fm[field]['nvar']
-        var = self._read_field(file,fm[field])
-        if nvar == 1: 
-            var.shape = (nx3, nx2, nx1)
-        else: 
-            var.shape = (nx3, nx2, nx1, nvar)
-        file.close()
-        grid['data'][field] = var
-        if nvar == 3: self._set_vector_field(grid,field)
         
-    def _set_data_array(self, field):
+    def _set_array(self, field):
         
         dtype = self._field_map[field]['dtype']
         nvar = self._field_map[field]['nvar']
@@ -197,6 +267,7 @@ class AthenaDataSet(object):
 
         return np.empty(shape, dtype=dtype)
 
+    
     def _set_domain(self):
         
         domain = dict()
