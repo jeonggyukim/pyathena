@@ -3,7 +3,7 @@ from __future__ import print_function
 import re
 import collections
 
-def read_athinput(filename, verbose=False):
+def read_athinput(filename, as_namedtuple=False, verbose=False):
     """
     Function to read athinput and configure block from simulation log
     
@@ -12,11 +12,13 @@ def read_athinput(filename, verbose=False):
     filename : string
         Name of the file to open, including extension
     verbose : bool
+        Print verbose message
     
     Returns
     -------
-    par : namedtuple
-        Each item is a dictionary for input block
+    par : dict or namedtuple
+        Each item is a dictionary or namedtuple containing individual input 
+        block.
     """
 
     if verbose:
@@ -103,8 +105,10 @@ def read_athinput(filename, verbose=False):
             else:
                 o[bname][pname] = value
 
-    return o
+    if as_namedtuple:
+        # Convert to namedtuple
+        par = collections.namedtuple('par', o.keys())(**o)
+        return par
+    else:
+        return o
 
-    ## Convert to namedtuple
-    # par = collections.namedtuple('par', o.keys())(**o)
-    # return par
