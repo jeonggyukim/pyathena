@@ -6,10 +6,13 @@ import glob, re
 import warnings
 import logging
 import os.path as osp
+import functools
+import pandas as pd
 
 import yt
-from ..vtk_reader import AthenaDataSet
+from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_athinput import read_athinput
+from .io.read_vtk import AthenaDataSet
 
 class LoadSim(object):
     """Class to prepare Athena simulation data analysis. Read input parameters, 
@@ -30,7 +33,8 @@ class LoadSim(object):
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
         load_method : str
-            Load vtk using 'pyathena' or 'yt'. Default value is 'pyathena'.
+            Load vtk using 'pyathena', 'pythena_classic', or 'yt'. 
+            Default value is 'pyathena'.
             If None, savdir=basedir. Default value is None.
         verbose : bool or str or int
             Print verbose messages using logger. If True/False, set logger
@@ -39,11 +43,20 @@ class LoadSim(object):
             ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
             Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
             accepted.
+
+        Examples
+        --------
+        >>> s = LoadSim('/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA')
+        LoadSim-INFO: basedir: /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA
+        LoadSim-WARNING: Could not find athinput file in /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA
+        LoadSim-INFO: hst: /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA/id0/R2_2pc_L256_B2.hst
+        LoadSim-INFO: vtk in id0:  /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA/id0 nums: 0-1
+
         """
 
         self.basedir = basedir.rstrip('/')
         self.name = osp.basename(self.basedir)
-        
+
         self.load_method = load_method
         self.logger = self._get_logger(verbose=verbose)
         self._find_files()
@@ -53,7 +66,6 @@ class LoadSim(object):
         else:
             self.savdir = savdir
             self.logger.info('savdir : {:s}'.format(savdir))
-            
 
     def load_vtk(self, num=None, ivtk= None, id0=False, load_method=None,
                  verbose=True):
@@ -69,7 +81,7 @@ class LoadSim(object):
         id0 : bool
            Read vtk file in basedir/id0. Default value is False.
         load_method : str
-           'pyathena' or 'yt'
+           'pyathena', 'pyathena_classic' or 'yt'
         
         Returns
         -------
@@ -106,12 +118,21 @@ class LoadSim(object):
             if verbose:
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                         osp.basename(self.fvtk), self.ds.domain['time']))
+
+        elif self.load_method == 'pyathena_classic':
+            self.ds = AthenaDataSetClassic(self.fvtk)
+            self.domain = self.ds.domain
+            if verbose:
+                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
+                        osp.basename(self.fvtk), self.ds.domain['time']))
+
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
                 units_override = self.u.units_override
             else:
                 units_override = None
             self.ds = yt.load(self.fvtk, units_override=units_override)
+
         else:
             self.logger.error('load_method "{0:s}" not recognized.'.format(\
                 self.load_method) + ' Use either "yt" or "pyathena".')
@@ -146,6 +167,8 @@ class LoadSim(object):
         zprof: problem_id.num.phase.zprof
         """
 
+        self._out_fmt_def = ['hst', 'vtk']
+
         if not osp.isdir(self.basedir):
             raise IOError('basedir {0:s} does not exist.'.format(self.basedir))
         
@@ -162,6 +185,7 @@ class LoadSim(object):
             return f
 
         athinput_patterns = [('out.txt',), # Jeong-Gyu
+                             ('*.out',), # Chang-Goo's stdout
                              ('slurm-*',), # Erin
                              ('athinput.*',), # Chang-Goo's restart
                              ('*.par',)]
@@ -186,19 +210,20 @@ class LoadSim(object):
         self.logger.info('basedir: {0:s}'.format(self.basedir))
 
         # Read athinput files
+        # Throws warning if not found
         fathinput = find_match(athinput_patterns)
         if fathinput:
             self.files['athinput'] = fathinput[0]
             self.par = read_athinput(self.files['athinput'])
             self.logger.info('athinput: {0:s}'.format(self.files['athinput']))
+            self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
+                            if 'output' in k]
+            self.problem_id = self.par['job']['problem_id']
+            self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
             self.logger.warning('Could not find athinput file in {0:s}'.\
                                 format(self.basedir))
-
-        self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
-                        if 'output' in k]
-        self.problem_id = self.par['job']['problem_id']
-        self.logger.info('problem_id: {0:s}'.format(self.problem_id))
+            self.out_fmt = self._out_fmt_def
 
         # find history dump and
         # extract problem_id (prefix for vtk and hitsory file names)
@@ -228,7 +253,7 @@ class LoadSim(object):
                         osp.dirname(self.files['vtk'][0]),
                         self.nums[0], self.nums[-1]))
                 if self.nums_id0:
-                    self.logger.info('vtk in id0:  {0:s} nums: {1:d}-{2:d}'.format(
+                    self.logger.info('vtk in id0: {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk_id0'][0]),
                         self.nums_id0[0], self.nums_id0[-1]))
 
@@ -311,7 +336,7 @@ class LoadSim(object):
             raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
         
         l = logging.getLogger(self.__class__.__name__.split('.')[-1])
-
+ 
         try:
             if not l.hasHandlers():
                 h = logging.StreamHandler()
@@ -332,7 +357,67 @@ class LoadSim(object):
                 l.setLevel(self.loglevel_def)
             else:
                 l.setLevel(self.loglevel_def)
-                
 
         return l
     
+    class Decorators(object):
+        
+        # JKIM: I am sure there is a better way to do this..but this works anyway..
+        def check_pickle_hst(read_hst):
+            
+            @functools.wraps(read_hst)
+            def wrapper(cls, *args, **kwargs):
+                if 'savdir' in kwargs:
+                    savdir = kwargs['savdir']
+                else:
+                    savdir = os.path.join(cls.savdir, 'hst')
+
+                if 'force_override' in kwargs:
+                    force_override = kwargs['force_override']
+                else:
+                    force_override = False
+
+                # Create savdir if it doesn't exist
+                if not os.path.exists(savdir):
+                    os.makedirs(savdir)
+                    force_override = True
+
+                fpkl = os.path.join(savdir,
+                                    os.path.basename(cls.files['hst']) + '.mod.p')
+
+                # Check if the original history file is updated
+                if not force_override and os.path.exists(fpkl) and \
+                   os.path.getmtime(fpkl) > os.path.getmtime(cls.files['hst']):
+                    cls.logger.info('[read_hst]: Reading from existing pickle.')
+                    hst = pd.read_pickle(fpkl)
+                    cls.hst = hst
+                    return hst
+                else:
+                    cls.logger.info('[read_hst]: Reading from original hst dump.')
+                    # If we are here, force_override is True or history file is updated.
+                    # Call read_hst function
+                    hst = read_hst(cls, *args, **kwargs)
+                    try:
+                        hst.to_pickle(fpkl)
+                    except IOError:
+                        self.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
+                    return hst
+
+            return wrapper
+
+    
+class LoadSimAll(object):
+    """Class to load multiple simulations
+    """
+    def __init__(self, models):
+
+        self.models = list(models.keys())
+        self.basedirs = dict()
+        
+        for mdl, basedir in models.items():
+            self.basedirs[mdl] = basedir
+
+    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+        self.model = model
+        self.sim = LoadSim(self.basedir[model], savdir=savdir,
+                           load_method=load_method, verbose=verbose)

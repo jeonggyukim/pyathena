@@ -10,6 +10,25 @@ import glob, struct
 import numpy as np
 import xarray as xr
 
+def read_vtk(filename, id0_only=False):
+    """Convenience wrapper function to read Athena vtk output file 
+    using AthenaDataSet class.
+
+    Parameters
+    ----------
+    filename : string
+        Name of the file to open, including extension
+    id0_only : bool
+        Flag to enforce to read vtk file in id0 directory only.
+        Default value is False.
+
+    Returns
+    -------
+    ds : AthenaDataSet
+    """
+    
+    return AthenaDataSet(filename, id0_only=id0_only)
+
 class AthenaDataSet(object):
     
     def __init__(self, filename, id0_only=False):
@@ -20,7 +39,8 @@ class AthenaDataSet(object):
         filename : string
             Name of the file to open, including extension
         id0_only : bool
-            Flag to enforce to read only id0 vtk file. Default value is False.
+            Flag to enforce to read vtk file in id0 directory only.
+            Default value is False.
         """
         
         if not osp.exists(filename):
