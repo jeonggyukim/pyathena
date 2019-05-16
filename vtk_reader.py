@@ -369,6 +369,13 @@ class AthenaDataSet(AthenaDomain):
             derived_field_list_rad.append('Frad1x')
             derived_field_list_rad.append('Frad1y')
             derived_field_list_rad.append('Frad1z')
+        if 'rad_energy_density2' in self.field_list:
+            derived_field_list_rad.append('Erad2')
+            derived_field_list_rad.append('Frad2x')
+            derived_field_list_rad.append('Frad2y')
+            derived_field_list_rad.append('Frad2z')
+        if 'rad_energy_density_LW' in self.field_list:
+            derived_field_list_rad.append('Erad_LW')
                         
         derived_field_list_hd.append('number_density')
         if nscal > 0:
@@ -381,18 +388,36 @@ class AthenaDataSet(AthenaDomain):
                 ## In the future, it might better to change field names
                 ## from specific_scalarX to specific_scalar_IXX
                 ## where XX is HI, HII, HEII, H2 etc.
-        if len(derived_field_list_rad):
+                
+        # With ionizing radiation..Again, this is not the best way
+        if ('rad_energy_density0' in self.field_list and \
+           'rad_energy_density1' in self.field_list and \
+           'rad_energy_density2' in self.field_list) or \
+           ('rad_energy_density0' in self.field_list and \
+            'rad_energy_density1' in self.field_list and \
+            not 'rad_energy_density_LW' in self.field_list):
             derived_field_list_rad.append('nHI')
             derived_field_list_rad.append('nHII')
             derived_field_list_rad.append('ne')
             derived_field_list_rad.append('nesq')
             derived_field_list_rad.append('xn')
+        if 'rad_energy_density_LW' in self.field_list:
+            derived_field_list_rad.append('nHI')
+            derived_field_list_rad.append('xH2')
+            derived_field_list_rad.append('nH2')
 
         self.domain['nscal']=nscal
-            
-        if 'xn' in derived_field_list_rad:
+        if 'xn' in derived_field_list_rad and \
+           'rad_energy_density_LW' in self.field_list:
+            self.domain['IHI']=nscal-2
+            self.domain['IH2']=nscal-1
+        elif 'xn' in derived_field_list_rad and \
+             not 'rad_energy_density_LW' in derived_field_list_rad:
             self.domain['IHI']=nscal-1
-
+        elif not 'xn' in derived_field_list_rad and \
+             'rad_energy_density_LW' in self.field_list:
+            self.domain['IH2']=nscal-1
+            
         self.derived_field_list=derived_field_list_hd + derived_field_list_mhd + \
           derived_field_list_rad
         self.derived_field_list_hd=derived_field_list_hd
@@ -555,8 +580,9 @@ class AthenaDataSet(AthenaDomain):
                 T1=(press/den*c.m_p/c.k_B).cgs
                 temp=coolftn().get_temp(T1.value)
                 return temp
-            else:
-            # with xn, assume press = (1.1*nH + (1.0 - xn)*nH)*kB*T
+            elif 'xn' in self.derived_field_list and \
+                 not 'rad_energy_density_LW' in self.derived_field_list:
+                # with xn, assume press = (1.1*nH + (1.0 - xn)*nH)*kB*T
                 self._read_grid_data(grid,'density')
                 self._read_grid_data(grid,'pressure')
                 IHI = str(self.domain['IHI'])
@@ -565,6 +591,19 @@ class AthenaDataSet(AthenaDomain):
                 ne = (1.0 - gd['specific_scalar'+IHI])*den
                 press=gd['pressure']*u['pressure']
                 T = (press/(1.1*den + ne)*u['muH']/c.k_B).cgs
+                return T
+            elif 'xn' in derived_field_list_rad and \
+                 not 'rad_energy_density_LW' in derived_field_list_rad:
+                self._read_grid_data(grid,'density')
+                self._read_grid_data(grid,'pressure')
+                IHI = str(self.domain['IHI'])
+                IH2 = str(self.domain['IH2'])
+                self._read_grid_data(grid,'specific_scalar'+IHI)
+                self._read_grid_data(grid,'specific_scalar'+IH2)
+                den=gd['density']*u['density']
+                press=gd['pressure']*u['pressure']
+                T = (press/((2.1 - gd['specific_scalar'+IHI] \
+                            - 3.0*gd['specific_scalar'+IH2])*den)*u['muH']/c.k_B).cgs
                 return T
                                 
         elif field.startswith('T1'):
@@ -623,26 +662,70 @@ class AthenaDataSet(AthenaDomain):
             IHI = str(self.domain['IHI'])
             self._read_grid_data(grid,'specific_scalar'+IHI)
             return gd['specific_scalar'+IHI]
-        elif field == 'ne': # n_elec (free electron results only from H)
-            IHI = str(self.domain['IHI'])
-            self._read_grid_data(grid,'specific_scalar'+IHI)
-            self._read_grid_data(grid,'density')
-            return (1.0 - gd['specific_scalar'+IHI])*gd['density']
+        elif field == 'xH2': # H neutral fraction
+            IH2 = str(self.domain['IH2'])
+            self._read_grid_data(grid,'specific_scalar'+IH2)
+            return gd['specific_scalar'+IH2]
         elif field == 'nHII': # nHII = n_elec (free electron results only from H)
-            IHI = str(self.domain['IHI'])
-            self._read_grid_data(grid,'specific_scalar'+IHI)
+            if 'xn' in self.derived_field_list and 'IH2' in self.domain.keys(): # with ionizing radiation and LW
+                IHI = str(self.domain['IHI'])
+                IH2 = str(self.domain['IH2'])
+                self._read_grid_data(grid,'specific_scalar'+IHI)
+                self._read_grid_data(grid,'specific_scalar'+IH2)
+                self._read_grid_data(grid,'density')
+                return (1.0 - gd['specific_scalar'+IHI]
+                        - 2.0*gd['specific_scalar'+IH2])*gd['density']
+            elif 'xn' in self.derived_field_list and not 'rad_energy_density_LW' in self.field_list:
+                IHI = str(self.domain['IHI'])
+                self._read_grid_data(grid,'specific_scalar'+IHI)
+                self._read_grid_data(grid,'density')
+                return (1.0 - gd['specific_scalar'+IHI])*gd['density']
+            else: # no ionizing radiation
+                return 0.0
+        elif field == 'ne': # n_elec (free electron results only from H)
+            if 'IH2' in self.domain.keys():
+                IHI = str(self.domain['IHI'])
+                IH2 = str(self.domain['IH2'])
+                self._read_grid_data(grid,'specific_scalar'+IHI)
+                self._read_grid_data(grid,'specific_scalar'+IH2)
+                self._read_grid_data(grid,'density')
+                return (1.0 - gd['specific_scalar'+IHI]
+                        - 2.0*gd['specific_scalar'+IH2])*gd['density']
+            else:
+                IHI = str(self.domain['IHI'])
+                self._read_grid_data(grid,'specific_scalar'+IHI)
+                self._read_grid_data(grid,'density')
+                return (1.0 - gd['specific_scalar'+IHI])*gd['density']
+        elif field == 'nHI': # number density of neutral hydrogen
+            if 'xn' in self.derived_field_list:
+                IHI = str(self.domain['IHI'])
+                self._read_grid_data(grid,'specific_scalar'+IHI)
+                self._read_grid_data(grid,'density')
+                return gd['density']*gd['specific_scalar'+IHI]
+            else:
+                IH2 = str(self.domain['IH2'])
+                self._read_grid_data(grid,'density')
+                self._read_grid_data(grid,'specific_scalar'+IH2)
+                return gd['density']*(1.0 - 2.0*gd['specific_scalar'+IH2])
+        elif field == 'nH2': # number density of neutral hydrogen
+            IH2 = str(self.domain['IH2'])
             self._read_grid_data(grid,'density')
-            return (1.0 - gd['specific_scalar'+IHI])*gd['density']
-        elif field == 'nHI': # number density of neutral hydrogen 
-            IHI = str(self.domain['IHI'])
-            self._read_grid_data(grid,'specific_scalar'+IHI)
-            self._read_grid_data(grid,'density')
-            return gd['specific_scalar'+IHI]*gd['density']
+            self._read_grid_data(grid,'specific_scalar'+IH2)
+            return gd['specific_scalar'+IH2]*gd['density']
         elif field == 'nesq': # n_elec^2 (free electron results only from H)
-            IHI = str(self.domain['IHI'])
-            self._read_grid_data(grid,'specific_scalar'+IHI)
-            self._read_grid_data(grid,'density')
-            return ((1.0 - gd['specific_scalar'+IHI])*gd['density'])**2
+            if 'IH2' in self.domain.keys():
+                IHI = str(self.domain['IHI'])
+                IH2 = str(self.domain['IH2'])
+                self._read_grid_data(grid,'specific_scalar'+IHI)
+                self._read_grid_data(grid,'specific_scalar'+IH2)
+                self._read_grid_data(grid,'density')
+                return (1.0 - gd['specific_scalar'+IHI]
+                        - 2.0*gd['specific_scalar'+IH2])*gd['density']
+            else:
+                IHI = str(self.domain['IHI'])
+                self._read_grid_data(grid,'specific_scalar'+IHI)
+                self._read_grid_data(grid,'density')
+                return ((1.0 - gd['specific_scalar'+IHI])*gd['density'])**2
         elif field.startswith('Erad'): # radiation energy density in cgs
             ifreq = field[-1]
             self._read_grid_data(grid,'rad_energy_density'+ifreq)

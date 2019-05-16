@@ -469,7 +469,7 @@ def create_all_pickles(
                                        force_recal=force_recal, verbose=verbose)
             del ds
             gc.collect()
-        print(fname)
+        #print(fname)
         
     print('')
     print('*** Draw snapshots (zoom {0:.1f}) ***'.format(_plt_args['zoom']))

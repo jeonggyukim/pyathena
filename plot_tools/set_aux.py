@@ -25,6 +25,12 @@ def set_aux(model='solar',verbose=False):
         cticks=(1.e-4,1.e-2,1,1.e2), \
         n_bins=128, norm=LogNorm())
 
+    aux['nH2']=dict(label=r'$n_{\rm H_2}\;[{\rm cm}^{-3}]$', \
+        unit='cm**(-3)', limits=(1.e-3,1.e6), \
+        cmap=plt.cm.Spectral_r,clim=(1e0,2.e3), \
+        cticks=(1.e0,1e1,1.e2,1e3), \
+        n_bins=128, norm=LogNorm())
+    
     # Legacy from the previous pyathena convention
     aux['surface_density']=dict( \
         label=r'$\Sigma\;[{\rm M}_{\odot} {\rm pc}^{-2}]$', \
@@ -104,6 +110,12 @@ def set_aux(model='solar',verbose=False):
         cmap=plt.cm.YlGn,clim=(0,1), \
         cticks=(0, 0.5, 1), \
         weight_field='cell_volume', \
+        n_bins=128, norm=Normalize())
+
+    # H2 fraction
+    aux['xH2']=dict(label=r'$x_{\rm H_2}$', \
+        unit='dimensionless', limits=(0,0.5), \
+        cmap=plt.cm.YlGn,clim=(0,0.5), \
         n_bins=128, norm=Normalize())
 
     # ne = Electron number density [cm^-3]
