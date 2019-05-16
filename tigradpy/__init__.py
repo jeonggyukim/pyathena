@@ -9,6 +9,7 @@ __all__ = ["add_fields",
            "read_zprof_all",
            "rebin_xy",
            "rebin_xyz",
+           "plt_joint_pdf",
            "units",
            "LoadSim",
            "LoadSimRPS"]
@@ -26,3 +27,4 @@ from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof,read_zprof_all
 from .util.units import Units
 from .util.rebin import rebin_xyz, rebin_xy
+from .util.plt_joint_pdf import plt_joint_pdf
