@@ -1,5 +1,5 @@
 """
-Read athena hst, zprof, starpar vtk files using pandas, dictionary, xarray
+Read athena starpar vtk file using pandas, dictionary
 """
 
 from __future__ import print_function
@@ -23,8 +23,8 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
     
     Returns
     -------
-    star : dict
-        Dictionary containining star particle information
+    df : dict
+        Pandas DataFrame object
     """
     
     fpkl = filename + '.p'
@@ -157,7 +157,7 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
         for k, v in star.iteritems():
             star[k] = v[idsrt]
 
-    # # Add time, nstars keys at the end
+    # Add time, nstars keys at the end
     df = pd.DataFrame(star)
     df.time = time
     df.nstars = nstars
