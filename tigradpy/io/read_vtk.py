@@ -84,6 +84,11 @@ class AthenaDataSet(object):
 
     def get_cc_pos(self):
         """Compute cell center positions
+
+        Returns
+        -------
+        xc : numpy array
+            Unique cell-centered cooridnates
         """
         
         xc = dict()
@@ -125,17 +130,21 @@ class AthenaDataSet(object):
         gle_all = np.array(gle_all)
         gre_all = np.array(gre_all)
 
-        # Find unique edges
+        # Find unique grid left/right edge coordinates 
         gleu = np.array([np.unique(gle_all[:, i]) for i in range(3)])
         greu = np.array([np.unique(gre_all[:, i]) for i in range(3)])
+        # Min/Max of gleu/greu
         gle = np.array([gle.min() for gle in gleu])
         gre = np.array([gre.max() for gre in greu])
-        
+
         # Number of grids in each direction
         NGrid = np.array([len(gleu_) for gleu_ in gleu])
-        
+
         # Number of cells per grid
-        Nxg = (np.ravel((greu - gleu))/self.domain['dx'])
+        Nxg = np.concatenate([Lx_grid/dx for Lx_grid, dx in \
+                              zip(greu-gleu, self.domain['dx'])])
+        Nxg = np.array(np.array_split(Nxg, NGrid.cumsum()[:-1]))
+
         Nxr = np.empty(Nxg.shape[0], dtype=int)
         for i, Nxg_ in enumerate(Nxg):
             Nxr[i] = np.sum(Nxg_.astype(int))

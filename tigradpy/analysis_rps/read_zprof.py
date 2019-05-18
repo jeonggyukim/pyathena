@@ -37,7 +37,6 @@ class ReadZprof:
             dictionary containing xarray datasets for each thermal phase.
         """
         
-        # Not sure if phases should also be taken as "coordinates". JGKIM
         dct = dict(c='phase1',
                    u='phase2',
                    w='phase3',
