@@ -9,6 +9,47 @@ import struct
 import pandas as pd
 import numpy as np
 
+def _parse_starpar_vtk_line(spl, grid):
+    if b"vtk" in spl:
+        grid['vtk_version'] = spl[-1]
+    elif b"time=" in spl:
+        time_index = spl.index(b"time=")
+        grid['time'] = float(spl[time_index+1])
+    elif b"POINTS" in spl:
+        grid['nstars'] = int(spl[1])
+    elif b"SCALARS" in spl:
+        field = spl[1]
+        grid['read_field'] = field
+        grid['read_type'] = 'scalar'
+        grid['data_type'] = spl[-1]
+    elif b"VECTORS" in spl:
+        field = spl[1]
+        grid['read_field'] = field
+        grid['read_type'] = 'vector'
+        grid['data_type'] = spl[-1]
+
+def _convert_field_name(name):
+    if name == b'star_particle_id':
+        return 'id'
+    elif name == b'star_particle_mass':
+        return 'mass'
+    elif name == b'star_particle_age':
+        return 'age'
+    elif name == b'star_particle_mage':
+        return 'mage'
+    elif name == b'star_particle_position':
+        return 'x'
+    elif name == b'star_particle_velocity':
+        return 'v'
+    elif name == b'star_particle_flag':
+        return 'flag'
+    elif name == b'star_particle_metal_mass[0]':
+        return 'metal_mass[0]'
+    elif name == b'star_particle_metal_mass[1]':
+        return 'metal_mass[1]'
+    elif name == b'star_particle_metal_mass[2]':
+        return 'metal_mass[2]'
+
 def read_starpar_vtk(filename, force_override=False, verbose=False):
     """
     Read athena starpar vtk output.
@@ -36,48 +77,7 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
     else:
         if verbose:
             print('[read_starpar_vtk]: pickle does not exist or starpar file updated.' + \
-                      ' Reading {0:s}'.format(filename))
-    
-    def _parse_starpar_vtk_line(spl, grid):
-        if "vtk" in spl:
-            grid['vtk_version'] = spl[-1]
-        elif "time=" in spl:
-            time_index = spl.index("time=")
-            grid['time'] = float(spl[time_index+1].rstrip(','))
-        elif "POINTS" in spl:
-            grid['nstars'] = int(spl[1])
-        elif "SCALARS" in spl:
-            field = spl[1]
-            grid['read_field'] = field
-            grid['read_type'] = 'scalar'
-            grid['data_type'] = spl[-1]
-        elif "VECTORS" in spl:
-            field = spl[1]
-            grid['read_field'] = field
-            grid['read_type'] = 'vector'
-            grid['data_type'] = spl[-1]
-
-    def _convert_field_name(name):
-        if name == 'star_particle_id':
-            return 'id'
-        elif name == 'star_particle_mass':
-            return 'mass'
-        elif name == 'star_particle_age':
-            return 'age'
-        elif name == 'star_particle_mage':
-            return 'mage'
-        elif name == 'star_particle_position':
-            return 'x'
-        elif name == 'star_particle_velocity':
-            return 'v'
-        elif name == 'star_particle_flag':
-            return 'flag'
-        elif name == 'star_particle_metal_mass[0]':
-            return 'metal_mass[0]'
-        elif name == 'star_particle_metal_mass[1]':
-            return 'metal_mass[1]'
-        elif name == 'star_particle_metal_mass[2]':
-            return 'metal_mass[2]'
+                      ' Reading {0:s}'.format(filename))    
 
     # Check for existance of file
     if not os.path.isfile(filename):
@@ -87,13 +87,12 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
     with open(filename, 'rb') as f:
         grid = {}
         line = f.readline()
-
         # Read time, nstars
-        while line != '':
+        while line:
             spl = line.strip().split()
             _parse_starpar_vtk_line(spl, grid)
             line = f.readline()
-            if "POINT_DATA" in spl:
+            if b"POINT_DATA" in spl:
                 break
 
         time = grid['time']
@@ -101,22 +100,22 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
 
         # Read field info
         _field_map = {}
-        while line != '':
+        while line != b'':
             spl = line.strip().split()
             _parse_starpar_vtk_line(spl, grid)
-            if "SCALARS" in spl:
+            if b"SCALARS" in spl:
                 field = grid['read_field']
                 datatype = grid['data_type']
                 line = f.readline()  # Read the lookup table line
                 _field_map[field] = ('scalar', f.tell(), datatype)
-            elif "VECTORS" in spl:
+            elif b"VECTORS" in spl:
                 field = grid['read_field']
                 datatype = grid['data_type']
                 _field_map[field] = ('vector', f.tell(), datatype)
             line = f.readline()
 
         # Read all fields
-        for k, v in _field_map.iteritems():
+        for k, v in _field_map.items():
             if v[0] == 'scalar':
                 nvar = 1
                 shape = [nstars, 1]
@@ -126,9 +125,9 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
             else:
                 raise ValueError('Unknown variable type')
 
-            if v[2] == 'float':
+            if v[2] == b'float':
                 fmt = '>{}f'.format(nvar*nstars)
-            elif v[2] == 'int':
+            elif v[2] == b'int':
                 fmt = '>{}i'.format(nvar*nstars)
 
             f.seek(v[1])
@@ -154,7 +153,7 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
     # Sort id in an ascending order (or age in an descending order)
     if nstars > 1:
         idsrt = star['id'].argsort()
-        for k, v in star.iteritems():
+        for k, v in star.items():
             star[k] = v[idsrt]
 
     # Add time, nstars keys at the end
