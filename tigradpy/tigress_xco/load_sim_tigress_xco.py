@@ -44,9 +44,9 @@ class LoadSimTIGRESSXCO(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
         # Get domain info
         if not self.files['vtk']:
             self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
-            self.ds = self.load_vtk(num=0, id0=True, load_method=load_method, verbose=False)
+            self.ds = self.load_vtk(num=0, id0=True, load_method=load_method)
         else:
-            self.ds = self.load_vtk(ivtk=0, load_method=load_method, verbose=False)
+            self.ds = self.load_vtk(ivtk=0, load_method=load_method)
 
 
 class LoadSimTIGRESSXCOAll(object):
@@ -65,7 +65,7 @@ class LoadSimTIGRESSXCOAll(object):
         
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
-
+            
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         
         self.model = model

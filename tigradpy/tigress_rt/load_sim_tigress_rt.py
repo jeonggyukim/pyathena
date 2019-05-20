@@ -13,7 +13,7 @@ class LoadSimTIGRESSRT(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 muH=1.4271, verbose=True):
+                 verbose=True):
         """The constructor for LoadSimRPS class
 
         Parameters
@@ -39,14 +39,14 @@ class LoadSimTIGRESSRT(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
                                               load_method=load_method, verbose=verbose)
         
         # Set unit
-        self.u = Units(muH=muH)
+        self.u = Units(muH=1.4271)
         
         # Get domain info
         if not self.files['vtk']:
             self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
-            self.ds = self.load_vtk(num=0, id0=True, load_method=load_method, verbose=False)
+            self.ds = self.load_vtk(num=0, id0=True, load_method=load_method)
         else:
-            self.ds = self.load_vtk(ivtk=0, load_method=load_method, verbose=False)
+            self.ds = self.load_vtk(ivtk=0, load_method=load_method)
 
 
 class LoadSimTIGRESSRTAll(object):

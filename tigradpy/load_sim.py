@@ -67,72 +67,81 @@ class LoadSim(object):
             self.savdir = savdir
             self.logger.info('savdir : {:s}'.format(savdir))
 
-    def load_vtk(self, num=None, ivtk= None, id0=False, load_method=None,
-                 verbose=True):
+    def load_vtk(self, num=None, ivtk=None, id0=False, load_method=None):
         """Function to read Athena vtk file using pythena or yt and 
         return DataSet object.
         
         Parameters
         ----------
         num : int
-           Snapshot number. For example, basedir/vtk/problem_id.{num}.vtk
+           Snapshot number, e.g., /basedir/vtk/problem_id.xxxx.vtk
         ivtk : int
-           Read i-th file in the vtk file list. Overrides num.
+           Read i-th file in the vtk file list. Overrides num if both are given.
         id0 : bool
-           Read vtk file in basedir/id0. Default value is False.
+           Read vtk file in /basedir/id0. Default value is False.
         load_method : str
            'pyathena', 'pyathena_classic' or 'yt'
         
         Returns
         -------
-        ds : AthenaDataSet
+        ds : AthenaDataSet or yt datasets
         """
+
+        if num is None and ivtk is None:
+            raise ValueError('Specify either num or ivtk')
         
         # Override load_method
         if load_method is not None:
             self.load_method = load_method
+        
+        if id0:
+            kind = ['vtk_id0', 'vtk']
+        else:
+            kind = ['vtk', 'vtk_id0']
 
-        if num is not None:
-            if id0:
-                dirname = osp.dirname(self.files['vtk_id0'][0])
+        def get_fvtk(kind, num=None, ivtk=None):
+            try:
+                dirname = osp.dirname(self.files[kind][0])
+            except IndexError:
+                return None
+            if ivtk is not None:
+                fvtk = self.files[kind][ivtk]
             else:
-                dirname = osp.dirname(self.files['vtk'][0])
-               
-            self.fvtk = osp.join(dirname, '{0:s}.{1:04d}.vtk'.\
-                                     format(self.problem_id, num))
+                fvtk = osp.join(dirname, '{0:s}.{1:04d}.vtk'.\
+                                format(self.problem_id, num))
 
-        if ivtk is not None:
+            return fvtk
+
+        self.fvtk = get_fvtk(kind[0], num, ivtk)
+        if self.fvtk is None or not osp.exists(self.fvtk):
             if id0:
-                self.fvtk = self.files['vtk_id0'][ivtk]
+                self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
+                                 'Try joined vtk')
             else:
-                self.fvtk = self.files['vtk'][ivtk]
-
-        if not osp.exists(self.fvtk):
-            self.logger.error('[load_vtk]: Vtk file does not exist {:s}'.\
-                              format(self.fvtk))
-            raise
-                
+                self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
+                                 'Try vtk in id0')
+            # Check if joined vtk (or vtk in id0) exists
+            self.fvtk = get_fvtk(kind[1], num, ivtk)
+            if not osp.exists(self.fvtk):
+                self.logger.error('[load_vtk]: Vtk file does not exist {:s}'.\
+                                  format(self.fvtk))
+                                
         if self.load_method == 'pyathena':
             self.ds = AthenaDataSet(self.fvtk)
             self.domain = self.ds.domain
-            if verbose:
-                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
-                        osp.basename(self.fvtk), self.ds.domain['time']))
-
+            self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
+                 osp.basename(self.fvtk), self.ds.domain['time']))
         elif self.load_method == 'pyathena_classic':
             self.ds = AthenaDataSetClassic(self.fvtk)
             self.domain = self.ds.domain
-            if verbose:
-                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
-                        osp.basename(self.fvtk), self.ds.domain['time']))
-
+            self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
+                            osp.basename(self.fvtk), self.ds.domain['time']))
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
                 units_override = self.u.units_override
             else:
                 units_override = None
             self.ds = yt.load(self.fvtk, units_override=units_override)
-
         else:
             self.logger.error('load_method "{0:s}" not recognized.'.format(\
                 self.load_method) + ' Use either "yt" or "pyathena".')
