@@ -117,14 +117,15 @@ class AthenaDataSet(object):
         gre_all = []  # grid right edge
         gidx = []     # grid indices that belongs to this region
         for i, g in enumerate(self.grid):
-            if (g['re'] > le).all() and (g['le'] < re).all():
+            if (g['re'] >= le).all() and (g['le'] <= re).all():
                 gidx.append(i)
                 gle_all.append(g['le'])
                 gre_all.append(g['re'])
                 
         gidx = np.array(gidx)
         if len(gidx) == 0:
-            raise ValueError('Check left/right edge. Domain left/right edges are ', \
+            raise ValueError('Check left/right edges:', le, re, \
+                             ' Domain left/right edges are ', \
                              self.domain['le'], self.domain['re'])
 
         gle_all = np.array(gle_all)
@@ -197,7 +198,7 @@ class AthenaDataSet(object):
         as_xarray : bool
            Return array as an xarray Dataset.
         """
-        
+
         field = np.atleast_1d(field)
         # TODO: Check field name
         
