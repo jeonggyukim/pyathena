@@ -1,16 +1,20 @@
 import matplotlib.pyplot as plt
-from matplotlib.gridspec import GridSpec
+from matplotlib import gridspec
 import numpy as np
 
-def plt_joint_pdf(x, y, hexbin_args, weights=None):
-    fig = plt.figure(figsize=(6, 6))
-    gs = GridSpec(4, 4)
+def plt_joint_pdf(x, y, hexbin_args, weights=None, gs=None):
+
+    if gs is None:
+        fig = plt.figure(figsize=(6, 6))
+        gs = gridspec.GridSpec(4, 4)
+
+    else:
+        fig = plt.gcf()
+        
     ax = fig.add_subplot(gs[1:4,0:3])
-    
-    # Axes for marginalized quantities
     axx = fig.add_subplot(gs[0,0:3])
     axy = fig.add_subplot(gs[1:4,3])
-
+     
     _hexbin_args = dict()
     _hexbin_args['xscale'] = 'linear'
     _hexbin_args['yscale'] = 'linear'
