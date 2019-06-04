@@ -190,7 +190,7 @@ class ReadHst:
 
         # Read original mhd history dump from /tigress/changgoo
         hst = read_hst('/tigress/changgoo/{0:s}/hst/{0:s}.hst'.\
-                       format(self.problem_id))
+                       format(self.problem_id), force_override=True)
 
         u = self.u
         domain = self.par['domain1']

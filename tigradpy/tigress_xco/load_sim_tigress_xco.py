@@ -48,7 +48,7 @@ class LoadSimTIGRESSXCO(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
         else:
             self.ds = self.load_vtk(ivtk=0, load_method=load_method)
 
-
+            
 class LoadSimTIGRESSXCOAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
@@ -56,9 +56,27 @@ class LoadSimTIGRESSXCOAll(object):
         # Default models
         if models is None:
             models = dict()
-            models['Z1.CR001.L001'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.CR001.L001'
-            models['Z1.CR010.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.CR010.L010'
-            models['Z1.CR001.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.CR001.L010'
+            # R2_2pc_L256 Z1
+            models['R2_2pc_L256.Z1.CR001.L001'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.CR001.L001'
+            models['R2_2pc_L256.Z1.CR010.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.CR010.L010'
+            models['R2_2pc_L256.Z1.CR001.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.CR001.L010'
+
+            # R2_2pc_L256 Z2
+            models['R2_2pc_L256.Z2.CR001.L001'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z2.CR001.L001'
+            models['R2_2pc_L256.Z2.CR001.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z2.CR001.L010'
+            models['R2_2pc_L256.Z2.CR010.L001'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z2.CR010.L001'
+            models['R2_2pc_L256.Z2.CR010.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z2.CR010.L010'
+
+            # R4_2pc_L512
+            models['R4_2pc_L512.Z1.CR001.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R4_2pc_L512_B10.noHII.Z1.CR001.L010'
+            models['R4_2pc_L512.Z1.CR010.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R4_2pc_L512_B10.noHII.Z1.CR010.L010'
+            
+            models['R4_2pc_L512.Z2.CR010.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R4_2pc_L512_B10.noHII.Z2.CR010.L010'
+
+            # R8_2pc_rst
+            models['R8_2pc_rst.Z1.CR100.L100'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R8_2pc_rst.noHII.Z1.CR100.L100'
+
+            
 
         self.models = list(models.keys())
         self.basedirs = dict()
@@ -72,3 +90,4 @@ class LoadSimTIGRESSXCOAll(object):
         self.sim = LoadSimTIGRESSXCO(self.basedirs[model], savdir=savdir,
                                      load_method=load_method, verbose=verbose)
         return self.sim
+
