@@ -216,10 +216,13 @@ class LoadSim(object):
         zprof_patterns = [('zprof', '*.zprof'),
                           ('id0', '*.zprof')]
 
+        timeit_patterns = [('timeit.txt',),
+                           ('timeit', 'timeit.txt')]
+        
         self.logger.info('basedir: {0:s}'.format(self.basedir))
 
         # Read athinput files
-        # Throws warning if not found
+        # Throw warning if not found
         fathinput = find_match(athinput_patterns)
         if fathinput:
             self.files['athinput'] = fathinput[0]
@@ -234,8 +237,8 @@ class LoadSim(object):
                                 format(self.basedir))
             self.out_fmt = self._out_fmt_def
 
-        # find history dump and
-        # extract problem_id (prefix for vtk and hitsory file names)
+        # Find history dump and
+        # Extract problem_id (prefix for vtk and hitsory file names)
         if 'hst' in self.out_fmt:
             fhst = find_match(hst_patterns)
             if fhst:
@@ -247,7 +250,7 @@ class LoadSim(object):
                               format(self.basedir))
 
         # Find vtk files
-        # vtk files in basedir (joined) and in basedir/id0
+        # vtk files in both basedir (joined) and in basedir/id0
         if 'vtk' in self.out_fmt:
             self.files['vtk'] = find_match(vtk_patterns)
             self.files['vtk_id0'] = find_match(vtk_id0_patterns)
@@ -321,6 +324,14 @@ class LoadSim(object):
                 self.logger.warning(
                     'No zprof files are found in {0:s}.'.format(self.basedir))
 
+        # Find timeit.txt
+        ftimeit = find_match(timeit_patterns)
+        if ftimeit:
+            self.files['timeit'] = ftimeit[0]
+            self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
+        else:
+            self.logger.info('No timeit.txt found.')
+                
                 
     def _get_logger(self, verbose=False):
         """Function to set logger and default verbosity.

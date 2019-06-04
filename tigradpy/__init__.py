@@ -5,6 +5,7 @@ __all__ = ["add_fields",
            "read_athinput",
            "read_hst",
            "read_starpar_vtk",
+           "read_timeit",
            "read_vtk",
            "read_zprof",
            "read_zprof_all",
@@ -23,6 +24,7 @@ __all__ = ["add_fields",
 from .io.read_vtk import read_vtk, AthenaDataSet
 from .io.read_athinput import read_athinput
 from .io.read_hst import read_hst
+from .io.read_timeit import read_timeit
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof, read_zprof_all
 
