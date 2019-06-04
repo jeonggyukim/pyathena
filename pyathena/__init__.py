@@ -1,7 +1,6 @@
 __version__ = '0.1'
 
-__all__ = ["add_fields",
-           "mass_to_lum",
+__all__ = ["mass_to_lum",
            "read_athinput",
            "read_hst",
            "read_starpar_vtk",
@@ -46,4 +45,3 @@ from .util.rebin import rebin_xyz, rebin_xy
 from .plt_tools.plt_joint_pdf import plt_joint_pdf
 
 from .mass_to_lum import mass_to_lum
-from .add_fields import add_fields

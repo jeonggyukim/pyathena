@@ -10,7 +10,9 @@ import pickle
 import astropy.units as au
 import astropy.constants as ac
 
-from pyathena import read_starvtk,texteffect,set_units
+from ..vtk_reader import read_starvtk
+from ..utils import texteffect
+from ..set_units import set_units
 from .scatter_sp import scatter_sp
 
 unit=set_units(muH=1.4271)

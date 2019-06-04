@@ -1,14 +1,18 @@
 import glob
 import os
+import string
+import numpy as np
 
 import matplotlib.colorbar as colorbar
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
+
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 from matplotlib.colors import LogNorm,SymLogNorm,NoNorm,Normalize
-from pyathena import read_starvtk,texteffect,set_units
-import numpy as np
-import string
+
+from ..vtk_reader import read_starvtk
+from ..utils import texteffect
+from ..set_units import set_units
 from .scatter_sp import scatter_sp
 import pickle
 

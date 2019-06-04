@@ -1,6 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from pyathena import read_starvtk, texteffect, set_units
+from ..vtk_reader import read_starvtk
+from ..utils import texteffect
+from ..set_units import set_units
 
 def projection(sp, axis):
     if axis == 0 or axis == 'z':

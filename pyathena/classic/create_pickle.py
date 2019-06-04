@@ -8,13 +8,13 @@ import gc
 import astropy.constants as ac
 import astropy.units as au
 import pyathena as pa
-from pyathena.utils import compare_files
-from pyathena.set_units import *
-from pyathena.plot_tools.plot_projection import plot_projection
-from pyathena.plot_tools.plot_slices import slice2 as plot_slice
-from pyathena.plot_tools.plot_slice_proj import plot_slice_proj as plot_slice_proj
-from pyathena.plot_tools.set_aux import set_aux
-from pyathena.cooling import coolftn
+from .utils import compare_files
+from .set_units import *
+from .plot_tools.plot_projection import plot_projection
+from .plot_tools.plot_slices import slice2 as plot_slice
+from .plot_tools.plot_slice_proj import plot_slice_proj as plot_slice_proj
+from .plot_tools.set_aux import set_aux
+from .cooling import coolftn
 
 coolftn = coolftn()
 unit = set_units(muH=1.4271)
