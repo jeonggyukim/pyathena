@@ -40,13 +40,6 @@ class LoadSimTIGRESSGC(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
 
         # Set unit
         self.u = Units(muH=muH)
-        
-        # Get domain info
-        if not self.files['vtk']:
-            self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
-            self.ds = self.load_vtk(num=0, id0=True, load_method=load_method)
-        else:
-            self.ds = self.load_vtk(ivtk=0, load_method=load_method)
 
 
 class LoadSimTIGRESSGCAll(object):
@@ -58,8 +51,8 @@ class LoadSimTIGRESSGCAll(object):
             models = dict()
             # M1_4pc
             models['M1_4pc_pathfinder'] = '/home/smoon/data/gc/M1_4pc_pathfinder'
-            models['TM1_4pc_fast_inflow'] = '/home/smoon/data/gc/TM1_4pc_fast_inflow'
-            models['TM1_4pc_slow_inflow'] = '/home/smoon/data/gc/TM1_4pc_slow_inflow'
+            models['TM2_4pc_fast_inflow'] = '/home/smoon/data/gc/TM2_4pc_fast_inflow'
+            models['TM2_4pc_slow_inflow'] = '/home/smoon/data/gc/TM2_4pc_slow_inflow'
 
         self.models = list(models.keys())
         self.basedirs = dict()
