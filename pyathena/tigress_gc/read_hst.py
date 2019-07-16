@@ -24,16 +24,33 @@ class ReadHst:
         # total volume of domain (code unit)
         vol = domain['Lx'].prod()        
         # Area of domain (code unit)
-        LxLy = domain['Lx'][0]*domain['Lx'][1]
+        Lx = domain['Lx'][0]
+        Ly = domain['Lx'][1]
+        Lz = domain['Lx'][2]
 
-        # Time in code unit
         hst['time_code'] = hst['time']
-        # Time in Myr
         hst['time'] *= u.Myr
-        # Total gas mass in Msun
+        hst['dt'] *= u.Myr
         hst['mass'] *= vol*u.Msun
+        hst['Mh2'] *= vol*u.Msun
+        hst['Mh1'] *= vol*u.Msun
+        hst['Mw'] *= vol*u.Msun
+        hst['Mu'] *= vol*u.Msun
+        hst['Mc'] *= vol*u.Msun
+        hst['msp'] *= vol*u.Msun
+        hst['msp_left'] *= vol*u.Msun
+        hst['F1_lower'] *= (-1.*Ly*Lz*u.mass_flux*u.length**2).to('Msun/yr').value
+        hst['F2_lower'] *= (-1.*Lx*Lz*u.mass_flux*u.length**2).to('Msun/yr').value
+        hst['F3_lower'] *= (-1.*Lx*Ly*u.mass_flux*u.length**2).to('Msun/yr').value
+        hst['F1_upper'] *= (Ly*Lz*u.mass_flux*u.length**2).to('Msun/yr').value
+        hst['F2_upper'] *= (Lx*Lz*u.mass_flux*u.length**2).to('Msun/yr').value
+        hst['F3_upper'] *= (Lx*Ly*u.mass_flux*u.length**2).to('Msun/yr').value
+        # star formation rate in Msun/yr
+        hst['sfr10'] *= (Lx*Ly/1e6)
+        hst['sfr40'] *= (Lx*Ly/1e6)
+        hst['sfr100'] *= (Lx*Ly/1e6)
         # Gas surface density in Msun/pc^2
-        hst['Sigma_gas'] = hst['mass']/(LxLy*u.pc**2)
+        hst['Sigma_gas'] = hst['mass']/(Lx*Ly*u.pc**2)
 
         if 'x1Me' in hst:
             mhd = True

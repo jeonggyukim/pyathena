@@ -41,6 +41,12 @@ class LoadSimTIGRESSGC(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
         # Set unit
         self.u = Units(muH=muH)
 
+        # Get domain info
+        if not self.files['vtk']:
+            self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
+            self.ds = self.load_vtk(num=0, id0=True, load_method=load_method)
+        else:
+            self.ds = self.load_vtk(ivtk=0, load_method=load_method)
 
 class LoadSimTIGRESSGCAll(object):
     """Class to load multiple simulations"""
@@ -49,10 +55,17 @@ class LoadSimTIGRESSGCAll(object):
         # Default models
         if models is None:
             models = dict()
+            # M1_2pc
+            models['M1_2pc'] = '/home/smoon/data/gc/M1_2pc'
+            # M0.1_4pc
+            models['M0.1_4pc_Tth50'] = '/home/smoon/data/gc/M0.1_4pc_Tth50'
             # M1_4pc
-            models['M1_4pc_pathfinder'] = '/home/smoon/data/gc/M1_4pc_pathfinder'
+            models['M1_4pc'] = '/home/smoon/data/gc/M1_4pc'
+            models['M1_4pc_Tth50'] = '/home/smoon/data/gc/M1_4pc_Tth50'
             models['TM2_4pc_fast_inflow'] = '/home/smoon/data/gc/TM2_4pc_fast_inflow'
             models['TM2_4pc_slow_inflow'] = '/home/smoon/data/gc/TM2_4pc_slow_inflow'
+            # M10_4pc
+            models['M10_4pc_Tth50'] = '/home/smoon/data/gc/M10_4pc_Tth50'
 
         self.models = list(models.keys())
         self.basedirs = dict()
