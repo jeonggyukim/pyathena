@@ -69,10 +69,13 @@ class ReadHst:
         
         # Merge with mhd history dump
         if merge_mhd:
-            hst_mhd = self.read_hst_mhd()
-            hst = hst_mhd.reindex(hst.index, method='nearest',
-                                  tolerance=0.1).combine_first(hst)
-        
+            try:
+                hst_mhd = self.read_hst_mhd()
+                hst = hst_mhd.reindex(hst.index, method='nearest',
+                                      tolerance=0.1).combine_first(hst)
+            except FileNotFoundError:
+                pass
+                
         self.hst = hst
         
         return hst
