@@ -16,6 +16,7 @@ def plt_joint_pdf(x, y, hexbin_args, weights=None, gs=None):
     axy = fig.add_subplot(gs[1:4,3])
      
     _hexbin_args = dict()
+    _hexbin_args['mincnt'] = 1
     _hexbin_args['xscale'] = 'linear'
     _hexbin_args['yscale'] = 'linear'
     _hexbin_args.update(**hexbin_args)
