@@ -8,12 +8,12 @@ from .read_hst import ReadHst
 from .read_zprof import ReadZprof
 from .plt_hst_zprof import PltHstZprof
 
-class LoadSimRPS(LoadSim, ReadHst, ReadZprof, PltHstZprof):
-    """LoadSim class for analyzing radps_postproc simulations.
+class LoadSimTIGRESSDIG(LoadSim, ReadHst, ReadZprof, PltHstZprof):
+    """LoadSim class for analyzing TIGRESS DIG simulations.
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=True):
-        """The constructor for LoadSimRPS class
+        """The constructor for LoadSimTIGRESSDIG class
 
         Parameters
         ----------
@@ -34,7 +34,7 @@ class LoadSimRPS(LoadSim, ReadHst, ReadZprof, PltHstZprof):
             accepted.
         """
         
-        super(LoadSimRPS,self).__init__(basedir, savdir=savdir,
+        super(LoadSimTIGRESSDIG,self).__init__(basedir, savdir=savdir,
                                         load_method=load_method, verbose=verbose)
 
         # Set unit
@@ -47,7 +47,7 @@ class LoadSimRPS(LoadSim, ReadHst, ReadZprof, PltHstZprof):
         else:
             self.ds = self.load_vtk(ivtk=0, load_method=load_method)
             
-class LoadSimRPSAll(object):
+class LoadSimTIGRESSDIGAll(object):
     ## Under development..
     def __init__(self, basedirs=None):
 
