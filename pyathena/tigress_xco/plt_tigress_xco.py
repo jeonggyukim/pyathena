@@ -16,12 +16,12 @@ from .load_sim_tigress_xco import LoadSimTIGRESSXCOAll
 from ..util.split_container import split_container
 from ..plt_tools.plt_joint_pdf import plt_joint_pdf
 
-field_def = ['density', 'xH2', 'CR_ionization_rate']
+#field_def = ['density', 'xH2', 'CR_ionization_rate']
 
-# field_def = ['density', 'xH2', 'CR_ionization_rate']
-             # 'rad_energy_density0', 'rad_energy_density_PE',
-             # 'rad_energy_density2', 'rad_energy_density3', 'rad_energy_density4',
-             # 'rad_energy_density_LW', 'rad_energy_density_PE_unatt'
+field_def = ['density', 'xH2', 'CR_ionization_rate',
+             'rad_energy_density0', 'rad_energy_density_PE',
+             'rad_energy_density2', 'rad_energy_density3', 'rad_energy_density4',
+             'rad_energy_density_LW', 'rad_energy_density_PE_unatt']
 
 def read_data(sa, model, num,
               field=field_def, zmin=-256.0, zmax=256.0):
@@ -66,7 +66,7 @@ def plt_pdf_density_CRIR(sa, model, num, dat=None, gs=None, savfig=True):
     ax3.set_ylim(*ylim)
     #ax1.set_ylim(3e-17, 1e-15)
     #ax3.set_ylim(3e-17, 1e-15)
-    plt.suptitle('{0:s}, time: {1:.1f}'.format(s.name, ds.domain['time']))
+    plt.suptitle('{0:s}, time: {1:.1f}'.format(s.basename, ds.domain['time']))
     
     if savfig:
         savdir = osp.join('./figures-pdf')
@@ -108,7 +108,7 @@ def plt_pdf_density_xH2(sa, model, num, dat=None, gs=None, savfig=True):
                            R_gr=3.0e-17*s.par['problem']['R_gr_amp'], zeta=0.0)
     
     ax1.semilogx(n, xH2eq, 'r--')
-    plt.suptitle('{0:s}, time: {1:.1f}'.format(s.name,ds.domain['time']))
+    plt.suptitle('{0:s}, time: {1:.1f}'.format(s.basename,ds.domain['time']))
     
     if savfig:
         savdir = osp.join('./figures-pdf')
@@ -219,7 +219,7 @@ if __name__ == '__main__':
             nums = None
         
         mynums = COMM.scatter(nums, root=0)
-        print('[rank, mysteps]:', COMM.rank, mynums)
+        print('[rank, mynums]:', COMM.rank, mynums)
 
         for num in mynums:
             print(num, end=' ')

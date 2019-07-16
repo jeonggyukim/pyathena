@@ -123,7 +123,7 @@ class PltHstZprof:
         plt.sca(axes[-1])
         plt.xlabel('time [Myr]')
 
-        plt.suptitle(self.name)
+        plt.suptitle(self.basename)
         plt.subplots_adjust(top=0.95)
         
         if savname is None:
@@ -192,7 +192,7 @@ class PltHstZprof:
         plt.sca(axes[0])
         plt.legend([axes[0].get_lines()[-2], l], ['warm','hot'], loc=2)
 
-        plt.suptitle(self.name, fontsize='large')
+        plt.suptitle(self.basename, fontsize='large')
         plt.subplots_adjust(wspace=0.5)
         #plt.tight_layout()
         
@@ -246,8 +246,8 @@ class PltHstZprof:
         plt.plot(x, vfw, label=r'$f_{\rm V,w}$', c='tab:orange')
         plt.plot(x, vfwi, label=r'$f_{\rm V,wi}$', c='tab:green')
         #plt.plot(x, vfwi_vfw, label=r'$f_{\rm V,wi}/f_{\rm V,w}$', c='tab:red')
-        plt.plot(x, vfc, label=r'$f_{\rm V,c}$', c='tab:blue')
-        plt.plot(x, vfu, label=r'$f_{\rm V,u}$', c='salmon')
+        #plt.plot(x, vfc, label=r'$f_{\rm V,c}$', c='tab:blue')
+        #plt.plot(x, vfu, label=r'$f_{\rm V,u}$', c='salmon')
         plt.legend(loc=2)
         plt.xlabel(r'$z\;[{\rm kpc}]$')
         plt.ylabel('volume fraction')
@@ -260,15 +260,15 @@ class PltHstZprof:
         plt.plot(x, mfw, label=r'$f_{\rm M,w}$', c='tab:orange')
         plt.plot(x, mfwi, label=r'$f_{\rm M,wi}$', c='tab:green')
         #plt.plot(x, mfwi_mfw, label=r'$f_{\rm M,wi}/f_{\rm M,w}$', c='tab:red')
-        plt.plot(x, mfc, label=r'$f_{\rm M,c}$', c='tab:blue')
-        plt.plot(x, mfu, label=r'$f_{\rm M,u}$', c='salmon')
+        #plt.plot(x, mfc, label=r'$f_{\rm M,c}$', c='tab:blue')
+        #plt.plot(x, mfu, label=r'$f_{\rm M,u}$', c='salmon')
         plt.legend(loc=2)
         plt.xlabel(r'$z\;[{\rm kpc}]$')
         plt.ylabel('mass fraction')
         plt.locator_params(nbins=10)
         plt.grid()
         
-        plt.suptitle(self.name, fontsize='large')
+        plt.suptitle(self.basename, fontsize='large')
         plt.subplots_adjust(wspace=0.4)
         # #plt.tight_layout()
         
