@@ -20,7 +20,9 @@ __all__ = ["mass_to_lum",
            "LoadSimTIGRESSSingleSN"
            "LoadSimTIGRESSSingleSNAll"
            "LoadSimTIGRESSXCO",
-           "LoadSimTIGRESSXCOAll"]
+           "LoadSimTIGRESSXCOAll"
+           "LoadSimTIGRESSGC",
+           "LoadSimTIGRESSGCAll"]
 
 from .io.read_vtk import read_vtk, AthenaDataSet
 from .io.read_athinput import read_athinput
@@ -37,6 +39,7 @@ from .analysis_rps.load_sim_rps import LoadSimRPS
 from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSXCOAll
 from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll
 from .tigress_rt.load_sim_tigress_rt import LoadSimTIGRESSRT, LoadSimTIGRESSRTAll
+from .tigress_gc.load_sim_tigress_gc import LoadSimTIGRESSGC, LoadSimTIGRESSGCAll
 
 # Utils
 from .util.units import Units

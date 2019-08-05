@@ -258,8 +258,8 @@ class LoadSim(object):
                 self.logger.error(
                     'No vtk files are found in {0:s}.'.format(self.basedir))
             else:
-                self.nums = [int(f[-7:-4]) for f in self.files['vtk']]
-                self.nums_id0 = [int(f[-7:-4]) for f in self.files['vtk_id0']]
+                self.nums = [int(f[-8:-4]) for f in self.files['vtk']]
+                self.nums_id0 = [int(f[-8:-4]) for f in self.files['vtk_id0']]
                 if self.nums:
                     self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk'][0]),
