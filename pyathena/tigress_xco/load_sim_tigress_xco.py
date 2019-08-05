@@ -76,6 +76,14 @@ class LoadSimTIGRESSXCOAll(object):
             # R8_2pc_rst
             models['R8_2pc_rst.Z1.CR100.L100'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R8_2pc_rst.noHII.Z1.CR100.L100'
 
+            # M1_4pc - with starpar mask
+            models['M1_4pc.Z2.CR010.L100'] = '/perseus/scratch/gpfs/jk11/TIGRESS-XCO/M1_4pc.noHII.Z2.CR010.L100'
+            # M1_4pc - without starpar mask
+            models['M1_4pc.Z2.CR010.L100.nomask'] = '/perseus/scratch/gpfs/jk11/TIGRESS-XCO/M1_4pc.noHII.Z2.CR010.L100.nomask'
+            models['M1_4pc.Z2.CR010.L100.nomask.taumax20'] = '/perseus/scratch/gpfs/jk11/TIGRESS-XCO/M1_4pc.noHII.Z2.CR010.L100.nomask.taumax20'
+
+            # M1_2pc_Tth50
+            models['M1_2pc_Tth50.Z2.CR010.L100'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/M1_2pc_Tth50.noHII.Z2.CR010.L100'
             
 
         self.models = list(models.keys())

@@ -14,11 +14,16 @@ __all__ = ["mass_to_lum",
            "units",
            "LoadSim",
            "LoadSimAll",
-           "LoadSimRPS",
+           # DIG
+           "LoadSimTIGRESSDIG",
+           "LoadSimTIGRESSDIGAll",
+           # RT
            "LoadSimTIGRESSRT",
            "LoadSimTIGRESSRTAll"
+           # Single SN
            "LoadSimTIGRESSSingleSN"
            "LoadSimTIGRESSSingleSNAll"
+           # XCO
            "LoadSimTIGRESSXCO",
            "LoadSimTIGRESSXCOAll"
            "LoadSimTIGRESSGC",
@@ -35,7 +40,7 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 
 # LoadSim classes
 from .load_sim import LoadSim, LoadSimAll
-from .analysis_rps.load_sim_rps import LoadSimRPS
+from .tigress_dig.load_sim_tigress_dig import LoadSimTIGRESSDIG, LoadSimTIGRESSDIGAll
 from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSXCOAll
 from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll
 from .tigress_rt.load_sim_tigress_rt import LoadSimTIGRESSRT, LoadSimTIGRESSRTAll

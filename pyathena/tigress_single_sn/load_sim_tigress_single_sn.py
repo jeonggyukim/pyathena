@@ -55,8 +55,15 @@ class LoadSimTIGRESSSingleSNAll(object):
         # Default models
         if models is None:
             models = dict()
-            models['N256.newcool.fcool05'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.newcool.fcool05.cooldump/'
-            models['N256.oldcool'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.oldcool.cooldump/'
+            # models['oldcool.implicit'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.oldcool.cooldump.fcool05/'
+            models['oldcool.fcool05.cool_before_io'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.oldcool.cooldump.fcool05.cooling_called_before_output/'
+            models['newcool.fcool05'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.newcool.fcool05/'
+            models['newcool.fcool10'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.newcool.fcool10/'
+            models['newcool.fcool20'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.newcool.fcool20/'
+            models['newcool.fcool10.fastexp'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.newcool.fcool10-fastexp/'
+            models['newcool.fcool10.fastexplog'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.newcool.fcool10-fastexplog/'
+            models['newcool.fcool10.fastexplogpow'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.newcool.fcool10-fastexplogpow/'
+            models['newcool.fcool10.fastexplogpow-further'] = '/perseus/scratch/gpfs/jk11/TIGRESS-SINGLE-SN/SNR_r1_N256.newcool.fcool10-fastexplogpow-further-optimization/'
 
         self.models = list(models.keys())
         self.basedirs = dict()
