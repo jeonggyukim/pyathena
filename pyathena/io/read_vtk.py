@@ -159,7 +159,25 @@ class AthenaDataSet(object):
                            gle=gle, gre=gre,
                            NGrid=NGrid, Nxg=Nxg, Nxr=Nxr)
         
-    def get_slice(self, axis, field='density', pos=None, method='nearest'):
+    def get_slice(self, axis, field='density', pos='c', method='nearest'):
+        """Read fields data.
+
+        Parameters
+        ----------
+        axis : str
+            Axis to slice along. 'x' or 'y' or 'z'
+        field : (list of) str
+            The name of the field(s) to be read.
+        pos : float or str
+            Slice through If 'c' or 'center', get a slice through the domain
+            center. Default value is 'c'.
+        method : str
+        
+        Returns
+        -------
+        slc : xarray dataset
+            An xarray dataset containing slices.
+        """
 
         axis_idx = dict(x=0, y=1, z=2)
 
@@ -189,14 +207,14 @@ class AthenaDataSet(object):
 
         Parameters
         ----------
-        field : string
+        field : (list of) string
             The name of the field(s) to be read.
         le : sequence of floats
            Left edge. Default value is the domain left edge.
         re : sequence of floats
            Right edge. Default value is the domain right edge.
         as_xarray : bool
-           Return array as an xarray Dataset.
+           Return array as an xarray Dataset. Default value is False.
         """
 
         field = np.atleast_1d(field)
@@ -255,7 +273,6 @@ class AthenaDataSet(object):
                 arr[f][slc] = self._read_array(g, f)
 
         return arr
-
     
     def _read_array(self, grid, field):
 
