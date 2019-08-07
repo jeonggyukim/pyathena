@@ -4,7 +4,26 @@ import base64
 from IPython.display import HTML
 
 def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
-    # To force the frame rate of the input file (valid for raw formats only) to 1 fps and the frame rate of the output file to 24 fps:
+    """Create a mp4 movie from files matching a glob pattern 
+    
+    Parameters
+    ----------
+    fname_glob : string (glob)
+        Glob pattern including wildcard
+    fname_out : string
+        Name of mp4 output file
+    fps_in : int
+        Frames per second for input 
+    fps_output : int
+        Frames per second for output
+
+    Example
+    -------
+    To force the frame rate of the input file (valid for raw formats only) to 1
+    fps and the frame rate of the output file to 24 fps
+
+    >>> make_movie('a.????.png', 'a.mp4', fps_in=1, fps_out=24)
+    """
 
     cmd = ['ffmpeg',
            '-y', # override existing file
