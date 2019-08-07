@@ -109,7 +109,6 @@ class LoadSim(object):
             else:
                 fvtk = osp.join(dirname, '{0:s}.{1:04d}.vtk'.\
                                 format(self.problem_id, num))
-
             return fvtk
 
         self.fvtk = get_fvtk(kind[0], num, ivtk)
@@ -193,9 +192,10 @@ class LoadSim(object):
                 
             return f
 
-        athinput_patterns = [('out.txt',), # Jeong-Gyu
-                             ('*.out',), # Chang-Goo's stdout
-                             ('slurm-*',), # Erin
+        athinput_patterns = [('out.txt',),    # Jeong-Gyu
+                             ('log.txt',),     # Jeong-Gyu
+                             ('*.out',),      # Chang-Goo's stdout
+                             ('slurm-*',),    # Erin
                              ('athinput.*',), # Chang-Goo's restart
                              ('*.par',)]
         
@@ -246,8 +246,8 @@ class LoadSim(object):
                 self.problem_id = osp.basename(self.files['hst']).split('.')[0]
                 self.logger.info('hst: {0:s}'.format(self.files['hst']))
             else:
-                raise IOError('Could not find history file in {0:s}'.\
-                              format(self.basedir))
+                self.logger.warning('Could not find hst file in {0:s}'.\
+                                    format(self.basedir))
 
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
@@ -260,14 +260,16 @@ class LoadSim(object):
             else:
                 self.nums = [int(f[-7:-4]) for f in self.files['vtk']]
                 self.nums_id0 = [int(f[-7:-4]) for f in self.files['vtk_id0']]
-                if self.nums:
-                    self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
-                        osp.dirname(self.files['vtk'][0]),
-                        self.nums[0], self.nums[-1]))
                 if self.nums_id0:
                     self.logger.info('vtk in id0: {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk_id0'][0]),
                         self.nums_id0[0], self.nums_id0[-1]))
+                if self.nums:
+                    self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
+                        osp.dirname(self.files['vtk'][0]),
+                        self.nums[0], self.nums[-1]))
+                else:
+                    self.nums = self.nums_id0
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
@@ -419,8 +421,8 @@ class LoadSim(object):
                     hst = read_hst(cls, *args, **kwargs)
                     try:
                         hst.to_pickle(fpkl)
-                    except IOError:
-                        self.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
                     return hst
 
             return wrapper

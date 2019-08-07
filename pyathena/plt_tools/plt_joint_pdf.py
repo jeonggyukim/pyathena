@@ -2,8 +2,20 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 
-def plt_joint_pdf(x, y, hexbin_args, weights=None, gs=None):
+def plt_joint_pdf(x, y, hexbin_args=dict(),
+                  weights=None, gs=None):
+    """
+    Function to plot 2d + 1d joint pdf using hexbin
 
+    Parameters
+    ----------
+
+    Returns
+    -------
+    (ax, axx, axy) : tuple of matplotlib axes
+        Contains plot axes
+    """
+    
     if gs is None:
         fig = plt.figure(figsize=(6, 6))
         gs = gridspec.GridSpec(4, 4)
@@ -17,8 +29,8 @@ def plt_joint_pdf(x, y, hexbin_args, weights=None, gs=None):
      
     _hexbin_args = dict()
     _hexbin_args['mincnt'] = 1
-    _hexbin_args['xscale'] = 'linear'
-    _hexbin_args['yscale'] = 'linear'
+    _hexbin_args['xscale'] = 'log'
+    _hexbin_args['yscale'] = 'log'
     _hexbin_args.update(**hexbin_args)
     
     if weights is not None:
