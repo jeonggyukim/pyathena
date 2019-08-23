@@ -8,11 +8,13 @@ import logging
 import os.path as osp
 import functools
 import pandas as pd
+import xarray as xr
 
 import yt
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_athinput import read_athinput
 from .io.read_vtk import AthenaDataSet
+from .io.read_zprof import read_zprof_all
 
 class LoadSim(object):
     """Class to prepare Athena simulation data analysis. Read input parameters, 
@@ -170,6 +172,7 @@ class LoadSim(object):
         """Function to find all output files under basedir and create "files" dictionary.
 
         hst: problem_id.hst
+        sn: problem_id.sn (file format identical to hst)
         vtk: problem_id.num.vtk
         starpar_vtk: problem_id.num.starpar.vtk
         zprof: problem_id.num.phase.zprof
@@ -202,6 +205,10 @@ class LoadSim(object):
         hst_patterns = [('id0', '*.hst'),
                         ('hst', '*.hst'),
                         ('*.hst',)]
+        
+        sn_patterns = [('id0', '*.sn'),
+                       ('hst', '*.sn'),
+                       ('*.sn',)]
         
         vtk_patterns = [('vtk', '*.????.vtk'),
                         ('*.????.vtk',)]
@@ -248,6 +255,15 @@ class LoadSim(object):
             else:
                 self.logger.warning('Could not find hst file in {0:s}'.\
                                     format(self.basedir))
+
+        # Find sn dump
+        fsn = find_match(sn_patterns)
+        if fsn:
+            self.files['sn'] = fsn[0]
+            self.logger.info('sn: {0:s}'.format(self.files['sn']))
+        else:
+            self.logger.warning('Could not find sn file in {0:s}'.\
+                                format(self.basedir))
 
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
@@ -424,6 +440,67 @@ class LoadSim(object):
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
                     return hst
+
+            return wrapper
+
+        def check_pickle_zprof(read_zprof):
+            
+            @functools.wraps(read_zprof)
+            def wrapper(cls, *args, **kwargs):
+                if 'savdir' in kwargs:
+                    savdir = kwargs['savdir']
+                else:
+                    savdir = os.path.join(cls.savdir, 'zprof')
+
+                if 'force_override' in kwargs:
+                    force_override = kwargs['force_override']
+                else:
+                    force_override = False
+
+                if 'phase' in kwargs:
+                    phase = kwargs['phase']
+                else:
+                    phase = 'whole'
+                    
+                # Create savdir if it doesn't exist
+                if not os.path.exists(savdir):
+                    os.makedirs(savdir)
+                    force_override = True
+
+                fpkl = os.path.join(savdir,
+                                    os.path.basename(cls.files['hst']) + '.mod.p')
+                fnetcdf = '{0:s}.{1:s}.zprof.mod.nc'.format(cls.problem_id, phase)
+                fnetcdf = osp.join(savdir, fnetcdf)
+
+                # Check if the original history file is updated
+                mtime = max([osp.getmtime(f) for f in cls.files['zprof']])
+
+                if not force_override and os.path.exists(fnetcdf) and \
+                   os.path.getmtime(fnetcdf) > mtime:
+                    cls.logger.info('[read_zprof]: Read {0:s}'.format(phase) + \
+                                    ' zprof from existing NetCDF dump.')
+                    ds = xr.open_dataset(fnetcdf)
+                    return ds
+                else:
+                    cls.logger.info('[read_zprof]: Read from original {0:s}'.\
+                        format(phase) + ' zprof dump and renormalize.'.format(phase))
+                    # If we are here, force_override is True or zprof files are updated.
+                    # Read original zprof dumps.
+                    ds = read_zprof_all(osp.dirname(cls.files['zprof'][0]),
+                                        cls.problem_id, phase=phase,
+                                        force_override=False)
+
+                    # Somehow overwriting with mode='w' in to_netcdf doesn't work..
+                    # Delete file first
+                    if osp.exists(fnetcdf):
+                        os.remove(fnetcdf)
+
+                    try:
+                        ds.to_netcdf(fnetcdf, mode='w')
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('[read_zprof]: Could not netcdf to {0:s}.'\
+                                           .format(fnetcdf))
+                    return ds
 
             return wrapper
 
