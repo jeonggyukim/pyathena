@@ -41,11 +41,11 @@ class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof):
         self.u = Units(muH=1.4271)
         
         # Get domain info
-        if not self.files['vtk']:
+        if self.files['vtk']:
             self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
             self.ds = self.load_vtk(ivtk=0, id0=True, load_method=load_method)
         else:
-            self.ds = self.load_vtk(num=0, id0=True, load_method=load_method)
+            self.domain = self.get_domain_from_par(self.par)
 
 
 class LoadSimTIGRESSRTAll(object):

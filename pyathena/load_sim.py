@@ -49,12 +49,16 @@ class LoadSim(object):
 
         Examples
         --------
-        >>> s = LoadSim('/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA')
-        LoadSim-INFO: basedir: /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA
-        LoadSim-WARNING: Could not find athinput file in /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA
-        LoadSim-INFO: hst: /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA/id0/R2_2pc_L256_B2.hst
-        LoadSim-INFO: vtk in id0:  /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA/id0 nums: 0-1
-
+        >>> s = LoadSim('/Users/jgkim/Documents/R4_8pc.RT.nowind', verbose=True)
+        LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind
+        LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt
+        LoadSim-INFO: problem_id: R4
+        LoadSim-INFO: hst: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.hst
+        LoadSim-INFO: sn: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.sn
+        LoadSim-WARNING: No vtk files are found in /Users/jgkim/Documents/R4_8pc.RT.nowind.
+        LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600
+        LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600
+        LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt
         """
 
         self.basedir = basedir.rstrip('/')
@@ -62,13 +66,15 @@ class LoadSim(object):
 
         self.load_method = load_method
         self.logger = self._get_logger(verbose=verbose)
-        self._find_files()
 
         if savdir is None:
             self.savdir = self.basedir
         else:
             self.savdir = savdir
-            self.logger.info('savdir : {:s}'.format(savdir))
+            
+        self.logger.info('savdir : {:s}'.format(self.savdir))
+
+        self._find_files()
 
     def load_vtk(self, num=None, ivtk=None, id0=False, load_method=None):
         """Function to read Athena vtk file using pythena or yt and 
@@ -151,6 +157,21 @@ class LoadSim(object):
         
         return self.ds
 
+    def get_domain_from_par(self, par):
+
+        d = par['domain1']
+        domain = dict()
+        domain['ndim'] = 3 # should be revised
+        domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
+        domain['le'] = np.array([d['x1min'], d['x2min'], d['x3min']])
+        domain['re'] = np.array([d['x1max'], d['x2max'], d['x3max']])
+        domain['Lx'] = domain['re'] - domain['le']
+        domain['dx'] = domain['Lx']/domain['Nx']
+        domain['center'] = 0.5*(domain['le'] + domain['re'])
+        domain['time'] = None
+        self.domain = domain
+        
+        return domain
     
     def print_all_properties(self):
         """Print all attributes and callable methods
@@ -272,8 +293,10 @@ class LoadSim(object):
             self.files['vtk'] = find_match(vtk_patterns)
             self.files['vtk_id0'] = find_match(vtk_id0_patterns)
             if not self.files['vtk'] and not self.files['vtk_id0']:
-                self.logger.error(
-                    'No vtk files are found in {0:s}.'.format(self.basedir))
+                self.logger.warning(
+                    'No vtk files are found in {0:s}'.format(self.basedir))
+                self.nums = None
+                self.nums_id0 = None
             else:
                 self.nums = [int(f[-7:-4]) for f in self.files['vtk']]
                 self.nums_id0 = [int(f[-7:-4]) for f in self.files['vtk_id0']]
@@ -470,8 +493,6 @@ class LoadSim(object):
                     os.makedirs(savdir)
                     force_override = True
 
-                fpkl = os.path.join(savdir,
-                                    os.path.basename(cls.files['hst']) + '.mod.p')
                 fnetcdf = '{0:s}.{1:s}.zprof.mod.nc'.format(cls.problem_id, phase)
                 fnetcdf = osp.join(savdir, fnetcdf)
 
@@ -490,9 +511,6 @@ class LoadSim(object):
                     # If we are here, force_override is True or zprof files are updated.
                     # Read original zprof dumps.
                     ds = _read_zprof(cls, phase, savdir, force_override)
-                    # ds = read_zprof_all(osp.dirname(cls.files['zprof'][0]),
-                    #                     cls.problem_id, phase=phase,
-                    #                     force_override=False)
 
                     # Somehow overwriting with mode='w' in to_netcdf doesn't work..
                     # Delete file first
