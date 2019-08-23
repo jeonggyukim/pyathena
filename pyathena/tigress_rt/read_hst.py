@@ -3,6 +3,7 @@
 import os
 import numpy as np
 import pandas as pd
+from scipy import integrate
 
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
@@ -14,47 +15,69 @@ class ReadHst:
         """Function to read hst and convert quantities to convenient units
         """
 
-        hst = read_hst(self.files['hst'], force_override=force_override)
-    
         u = self.u
         domain = self.domain
-
+        
         # volume of resolution element (code unit)
         dvol = domain['dx'].prod()
         # total volume of domain (code unit)
-        vol = domain['Lx'].prod()        
+        vol = domain['Lx'].prod()
         # Area of domain (code unit)
         LxLy = domain['Lx'][0]*domain['Lx'][1]
 
-        # Time in code unit
-        hst['time_code'] = hst['time']
-        # Time in Myr
-        hst['time'] *= u.Myr
-        # Total gas mass in Msun
-        hst['mass'] *= vol*u.Msun
-        # Gas surface density in Msun/pc^2
-        hst['Sigma_gas'] = hst['mass']/(LxLy*u.pc**2)
-        # H mass/surface density in Msun
-        hst['MH'] = hst['mass']/u.muH
-        hst['Sigma_H'] = hst['MH']/(LxLy*u.pc**2)
-
         Omega = self.par['problem']['Omega']
         time_orb = 2*np.pi/Omega*u.Myr # Orbital time in Myr
+        try:
+            if self.par['configure']['new_cooling'] == 'ON':
+                newcool = True
+            else:
+                newcool = False
+        except KeyError:
+            newcool = False
+
+        hst = read_hst(self.files['hst'], force_override=force_override)
+
+        
+        h = pd.DataFrame()
 
         if 'x1Me' in hst:
             mhd = True
         else:
             mhd = False
 
-        h = pd.DataFrame()
+        # Time in code unit
         h['time_code'] = hst['time']
-        h['time'] = h['time_code']*u.Myr # time in Myr
+        # Time in Myr
+        h['time'] = h['time_code']*u.Myr
         h['time_orb'] = h['time']/time_orb
+        
+        # Total gas mass in Msun
+        h['mass'] = hst['mass']*vol*u.Msun
+        h['mass_sp'] = hst['msp']*vol*u.Msun
 
-        h['mass'] = hst['mass']*u.Msun*vol
-        h['Sigma'] = h['mass']/LxLy
-        h['mass_sp'] = hst['msp']*u.Msun*vol
-        h['Sigma_sp'] = h['mass_sp']/LxLy
+        # Total outflow mass
+        h['mass_out'] = integrate.cumtrapz(hst['F3_upper'] - hst['F3_lower'], hst['time'], initial=0.0)
+        h['mass_out'] = h['mass_out']/(domain['Nx'][2]*domain['dx'][2])*vol*u.Msun
+                
+        # Mass surface density in Msun/pc^2
+        h['Sigma_gas'] = h['mass']/(LxLy*u.pc**2)
+        h['Sigma_sp'] = h['mass_sp']/(LxLy*u.pc**2)
+        h['Sigma_out'] = h['mass_out']/(LxLy*u.pc**2)
+
+        # Calculate (cumulative) SN ejecta mass
+        # JKIM: only from clustered type II(?)
+        try:
+            sn = read_hst(self.files['sn'], force_override=force_override)
+            t_ = np.array(hst['time'])
+            Nsn, snbin = np.histogram(sn.time, bins=np.concatenate(([t_[0]], t_)))
+            h['mass_snej'] = Nsn.cumsum()*self.par['feedback']['MejII'] # Mass of SN ejecta [Msun]
+            h['Sigma_snej'] = h['mass_snej']/(LxLy*u.pc**2)
+        except:
+            pass
+        
+        # H mass/surface density in Msun
+        h['MH'] = h['mass']/u.muH
+        h['Sigma_H'] = h['MH']/(LxLy*u.pc**2)
 
         # Mass, volume fraction, scale height
         h['H'] = np.sqrt(hst['H2'] / hst['mass'])
@@ -63,6 +86,7 @@ class ReadHst:
             h['vf_{}'.format(ph)] = hst['V{}'.format(ph)]
             h['H_{}'.format(ph)] = \
                 np.sqrt(hst['H2{}'.format(ph)] / hst['M{}'.format(ph)])
+        #print(h['mf_c'])
 
         # mf, vf, H of thermally bistable (cold + unstable + warm) medium
         h['mf_2p'] = h['mf_c'] + h['mf_u'] + h['mf_w']
@@ -99,15 +123,28 @@ class ReadHst:
         h['nmid_2p'] = hst['nmid_2p']/hst['Vmid_2p']
 
         # Star formation rate per area [Msun/kpc^2/yr]
-        hst['sfr10'] = hst['sfr10']
-        hst['sfr40'] = hst['sfr40']
-        hst['sfr100'] = hst['sfr100']
+        h['sfr10'] = hst['sfr10']
+        h['sfr40'] = hst['sfr40']
+        h['sfr100'] = hst['sfr100']
+
+        # Cosmic ray ionization rate
+        if newcool:
+            tdecay = self.par['problem']['CR_tdecay']
+            xi_CR_amp = self.par['problem']['xi_CR_amp']
+            Sigma_gas0 = self.par['problem']['Sigma_gas0']
+            Sigma_SFR0 = self.par['problem']['Sigma_SFR0']
+            Sigma_SFR = self.par['problem']['Sigma_SFR']
+            h['tfact'] = np.exp(-8.0*((hst['time'] - 0.5*tdecay)/hst['time'])**2)
+            idx = hst['time'] < 0.5*tdecay
+            h.loc[idx, 'tfact'] = 1.0
+            h['xi_CR0_init'] = xi_CR_amp*2e-16*(Sigma_SFR/Sigma_SFR0)*(Sigma_gas0/h['Sigma_gas'])*h['tfact']
+            h['xi_CR0'] = h['xi_CR0_init'] + xi_CR_amp*2e-16*(h['sfr40']/Sigma_SFR0)*(Sigma_gas0/h['Sigma_gas'])
+
+        h.index = h['time_code']
         
-        hst.index = hst['time_code']
+        self.hst = h
         
-        self.hst = hst
-        
-        return hst
+        return h
         
         # # Ionized gas mass in Msun
         # hst['Mion'] *= vol*u.Msun
