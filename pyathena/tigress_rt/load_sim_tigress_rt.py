@@ -5,10 +5,9 @@ from ..load_sim import LoadSim
 from ..util.units import Units
 
 from .read_hst import ReadHst
-# from .read_zprof import ReadZprof
-# from .plt_hst_zprof import PltHstZprof
+from .read_zprof import ReadZprof
 
-class LoadSimTIGRESSRT(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
+class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
     

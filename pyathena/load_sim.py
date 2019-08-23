@@ -7,6 +7,7 @@ import warnings
 import logging
 import os.path as osp
 import functools
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -443,12 +444,14 @@ class LoadSim(object):
 
             return wrapper
 
-        def check_pickle_zprof(read_zprof):
+        def check_netcdf_zprof(_read_zprof):
             
-            @functools.wraps(read_zprof)
+            @functools.wraps(_read_zprof)
             def wrapper(cls, *args, **kwargs):
                 if 'savdir' in kwargs:
                     savdir = kwargs['savdir']
+                    if savdir is None:
+                        savdir = os.path.join(cls.savdir, 'zprof')
                 else:
                     savdir = os.path.join(cls.savdir, 'zprof')
 
@@ -486,9 +489,10 @@ class LoadSim(object):
                         format(phase) + ' zprof dump and renormalize.'.format(phase))
                     # If we are here, force_override is True or zprof files are updated.
                     # Read original zprof dumps.
-                    ds = read_zprof_all(osp.dirname(cls.files['zprof'][0]),
-                                        cls.problem_id, phase=phase,
-                                        force_override=False)
+                    ds = _read_zprof(cls, phase, savdir, force_override)
+                    # ds = read_zprof_all(osp.dirname(cls.files['zprof'][0]),
+                    #                     cls.problem_id, phase=phase,
+                    #                     force_override=False)
 
                     # Somehow overwriting with mode='w' in to_netcdf doesn't work..
                     # Delete file first
