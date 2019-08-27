@@ -7,12 +7,15 @@ import warnings
 import logging
 import os.path as osp
 import functools
+import numpy as np
 import pandas as pd
+import xarray as xr
 
 import yt
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_athinput import read_athinput
 from .io.read_vtk import AthenaDataSet
+from .io.read_zprof import read_zprof_all
 
 class LoadSim(object):
     """Class to prepare Athena simulation data analysis. Read input parameters, 
@@ -46,12 +49,16 @@ class LoadSim(object):
 
         Examples
         --------
-        >>> s = LoadSim('/projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA')
-        LoadSim-INFO: basedir: /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA
-        LoadSim-WARNING: Could not find athinput file in /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA
-        LoadSim-INFO: hst: /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA/id0/R2_2pc_L256_B2.hst
-        LoadSim-INFO: vtk in id0:  /projects/EOSTRIKE/TIGRESS_XCO_ART/R2_2pc_L256_B2.noHII.Z1.shldA/id0 nums: 0-1
-
+        >>> s = LoadSim('/Users/jgkim/Documents/R4_8pc.RT.nowind', verbose=True)
+        LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind
+        LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt
+        LoadSim-INFO: problem_id: R4
+        LoadSim-INFO: hst: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.hst
+        LoadSim-INFO: sn: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.sn
+        LoadSim-WARNING: No vtk files are found in /Users/jgkim/Documents/R4_8pc.RT.nowind.
+        LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600
+        LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600
+        LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt
         """
 
         self.basedir = basedir.rstrip('/')
@@ -59,13 +66,15 @@ class LoadSim(object):
 
         self.load_method = load_method
         self.logger = self._get_logger(verbose=verbose)
-        self._find_files()
 
         if savdir is None:
             self.savdir = self.basedir
         else:
             self.savdir = savdir
-            self.logger.info('savdir : {:s}'.format(savdir))
+            
+        self.logger.info('savdir : {:s}'.format(self.savdir))
+
+        self._find_files()
 
     def load_vtk(self, num=None, ivtk=None, id0=False, load_method=None):
         """Function to read Athena vtk file using pythena or yt and 
@@ -109,7 +118,6 @@ class LoadSim(object):
             else:
                 fvtk = osp.join(dirname, '{0:s}.{1:04d}.vtk'.\
                                 format(self.problem_id, num))
-
             return fvtk
 
         self.fvtk = get_fvtk(kind[0], num, ivtk)
@@ -149,6 +157,21 @@ class LoadSim(object):
         
         return self.ds
 
+    def get_domain_from_par(self, par):
+
+        d = par['domain1']
+        domain = dict()
+        domain['ndim'] = 3 # should be revised
+        domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
+        domain['le'] = np.array([d['x1min'], d['x2min'], d['x3min']])
+        domain['re'] = np.array([d['x1max'], d['x2max'], d['x3max']])
+        domain['Lx'] = domain['re'] - domain['le']
+        domain['dx'] = domain['Lx']/domain['Nx']
+        domain['center'] = 0.5*(domain['le'] + domain['re'])
+        domain['time'] = None
+        self.domain = domain
+        
+        return domain
     
     def print_all_properties(self):
         """Print all attributes and callable methods
@@ -171,6 +194,7 @@ class LoadSim(object):
         """Function to find all output files under basedir and create "files" dictionary.
 
         hst: problem_id.hst
+        sn: problem_id.sn (file format identical to hst)
         vtk: problem_id.num.vtk
         starpar_vtk: problem_id.num.starpar.vtk
         zprof: problem_id.num.phase.zprof
@@ -193,15 +217,20 @@ class LoadSim(object):
                 
             return f
 
-        athinput_patterns = [('out.txt',), # Jeong-Gyu
-                             ('*.out',), # Chang-Goo's stdout
-                             ('slurm-*',), # Erin
+        athinput_patterns = [('out.txt',),    # Jeong-Gyu
+                             ('log.txt',),     # Jeong-Gyu
+                             ('*.out',),      # Chang-Goo's stdout
+                             ('slurm-*',),    # Erin
                              ('athinput.*',), # Chang-Goo's restart
                              ('*.par',)]
         
         hst_patterns = [('id0', '*.hst'),
                         ('hst', '*.hst'),
                         ('*.hst',)]
+        
+        sn_patterns = [('id0', '*.sn'),
+                       ('hst', '*.sn'),
+                       ('*.sn',)]
         
         vtk_patterns = [('vtk', '*.????.vtk'),
                         ('*.????.vtk',)]
@@ -246,8 +275,17 @@ class LoadSim(object):
                 self.problem_id = osp.basename(self.files['hst']).split('.')[0]
                 self.logger.info('hst: {0:s}'.format(self.files['hst']))
             else:
-                raise IOError('Could not find history file in {0:s}'.\
-                              format(self.basedir))
+                self.logger.warning('Could not find hst file in {0:s}'.\
+                                    format(self.basedir))
+
+        # Find sn dump
+        fsn = find_match(sn_patterns)
+        if fsn:
+            self.files['sn'] = fsn[0]
+            self.logger.info('sn: {0:s}'.format(self.files['sn']))
+        else:
+            self.logger.warning('Could not find sn file in {0:s}'.\
+                                format(self.basedir))
 
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
@@ -255,19 +293,23 @@ class LoadSim(object):
             self.files['vtk'] = find_match(vtk_patterns)
             self.files['vtk_id0'] = find_match(vtk_id0_patterns)
             if not self.files['vtk'] and not self.files['vtk_id0']:
-                self.logger.error(
-                    'No vtk files are found in {0:s}.'.format(self.basedir))
+                self.logger.warning(
+                    'No vtk files are found in {0:s}'.format(self.basedir))
+                self.nums = None
+                self.nums_id0 = None
             else:
-                self.nums = [int(f[-8:-4]) for f in self.files['vtk']]
-                self.nums_id0 = [int(f[-8:-4]) for f in self.files['vtk_id0']]
-                if self.nums:
-                    self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
-                        osp.dirname(self.files['vtk'][0]),
-                        self.nums[0], self.nums[-1]))
+                self.nums = [int(f[-7:-4]) for f in self.files['vtk']]
+                self.nums_id0 = [int(f[-7:-4]) for f in self.files['vtk_id0']]
                 if self.nums_id0:
                     self.logger.info('vtk in id0: {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk_id0'][0]),
                         self.nums_id0[0], self.nums_id0[-1]))
+                if self.nums:
+                    self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
+                        osp.dirname(self.files['vtk'][0]),
+                        self.nums[0], self.nums[-1]))
+                else:
+                    self.nums = self.nums_id0
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
@@ -419,9 +461,68 @@ class LoadSim(object):
                     hst = read_hst(cls, *args, **kwargs)
                     try:
                         hst.to_pickle(fpkl)
-                    except IOError:
-                        self.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
                     return hst
+
+            return wrapper
+
+        def check_netcdf_zprof(_read_zprof):
+            
+            @functools.wraps(_read_zprof)
+            def wrapper(cls, *args, **kwargs):
+                if 'savdir' in kwargs:
+                    savdir = kwargs['savdir']
+                    if savdir is None:
+                        savdir = os.path.join(cls.savdir, 'zprof')
+                else:
+                    savdir = os.path.join(cls.savdir, 'zprof')
+
+                if 'force_override' in kwargs:
+                    force_override = kwargs['force_override']
+                else:
+                    force_override = False
+
+                if 'phase' in kwargs:
+                    phase = kwargs['phase']
+                else:
+                    phase = 'whole'
+                    
+                # Create savdir if it doesn't exist
+                if not os.path.exists(savdir):
+                    os.makedirs(savdir)
+                    force_override = True
+
+                fnetcdf = '{0:s}.{1:s}.zprof.mod.nc'.format(cls.problem_id, phase)
+                fnetcdf = osp.join(savdir, fnetcdf)
+
+                # Check if the original history file is updated
+                mtime = max([osp.getmtime(f) for f in cls.files['zprof']])
+
+                if not force_override and os.path.exists(fnetcdf) and \
+                   os.path.getmtime(fnetcdf) > mtime:
+                    cls.logger.info('[read_zprof]: Read {0:s}'.format(phase) + \
+                                    ' zprof from existing NetCDF dump.')
+                    ds = xr.open_dataset(fnetcdf)
+                    return ds
+                else:
+                    cls.logger.info('[read_zprof]: Read from original {0:s}'.\
+                        format(phase) + ' zprof dump and renormalize.'.format(phase))
+                    # If we are here, force_override is True or zprof files are updated.
+                    # Read original zprof dumps.
+                    ds = _read_zprof(cls, phase, savdir, force_override)
+
+                    # Somehow overwriting with mode='w' in to_netcdf doesn't work..
+                    # Delete file first
+                    if osp.exists(fnetcdf):
+                        os.remove(fnetcdf)
+
+                    try:
+                        ds.to_netcdf(fnetcdf, mode='w')
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('[read_zprof]: Could not netcdf to {0:s}.'\
+                                           .format(fnetcdf))
+                    return ds
 
             return wrapper
 

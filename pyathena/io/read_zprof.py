@@ -143,3 +143,72 @@ def read_zprof(filename, force_override=False, verbose=False):
             pass
         
     return df
+
+class ReadZprofBase:
+
+    def read_zprof(self, phase='all', savdir=None, force_override=False):
+        """Wrapper function to read all zprof output
+
+        Parameters
+        ----------
+        phase : str or list of str
+            List of thermal phases to read. Possible phases are
+            'c': (phase1, cold, T < 180),
+            'u': (phase2, unstable, 180 <= T < 5050),
+            'w': (phase3, warm, 5050 <= T < 2e4),
+            'h1' (phase4, warm-hot, 2e4 < T < 5e5),
+            'h2' (phase5, hot-hot, T >= 5e5)
+            'whole' (entire temperature range)
+            'h' = h1 + h2
+            '2p' = c + u + w
+            If 'all', read all phases.
+        savdir: str
+            Name of the directory where pickled data will be saved.
+        force_override: bool
+            If True, read all (pickled) zprof profiles and dump in netCDF format.
+
+        Returns
+        -------
+        zp : dict or xarray DataSet
+            Dictionary containing xarray DataSet objects for each phase.
+        """
+
+        # Mapping from thermal phase name to file suffix 
+        dct = dict(c='phase1',
+                   u='phase2',
+                   w='phase3',
+                   h1='phase4',
+                   h2='phase5',
+                   whole='whole')
+        
+        if phase == 'all':
+            phase = list(dct.keys()) + ['h', '2p']
+        else:
+            phase = np.atleast_1d(phase)
+
+        zp = dict()
+        for ph in phase:
+            if ph == 'h':
+                zp[ph] = \
+                self._read_zprof(phase=dct['h1'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['h2'], savdir=savdir,
+                                 force_override=force_override)
+            elif ph == '2p':
+                zp[ph] = \
+                self._read_zprof(phase=dct['c'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['u'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['w'], savdir=savdir,
+                                 force_override=force_override)
+            else:
+                zp[ph] = self._read_zprof(phase=dct[ph], savdir=savdir,
+                                          force_override=force_override)
+
+        if len(phase) == 1:
+            self.zp = zp[ph]
+        else:
+            self.zp = zp
+
+        return self.zp

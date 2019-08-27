@@ -5,10 +5,9 @@ from ..load_sim import LoadSim
 from ..util.units import Units
 
 from .read_hst import ReadHst
-# from .read_zprof import ReadZprof
-# from .plt_hst_zprof import PltHstZprof
+from .read_zprof import ReadZprof
 
-class LoadSimTIGRESSRT(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
+class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
     
@@ -42,11 +41,11 @@ class LoadSimTIGRESSRT(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
         self.u = Units(muH=1.4271)
         
         # Get domain info
-        if not self.files['vtk']:
+        if self.files['vtk']:
             self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
-            self.ds = self.load_vtk(num=0, id0=True, load_method=load_method)
+            self.ds = self.load_vtk(ivtk=0, id0=True, load_method=load_method)
         else:
-            self.ds = self.load_vtk(ivtk=0, load_method=load_method)
+            self.domain = self.get_domain_from_par(self.par)
 
 
 class LoadSimTIGRESSRTAll(object):
