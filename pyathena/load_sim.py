@@ -15,6 +15,7 @@ import yt
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_athinput import read_athinput
 from .io.read_vtk import AthenaDataSet
+from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
 
 class LoadSim(object):
@@ -108,19 +109,7 @@ class LoadSim(object):
         else:
             kind = ['vtk', 'vtk_id0']
 
-        def get_fvtk(kind, num=None, ivtk=None):
-            try:
-                dirname = osp.dirname(self.files[kind][0])
-            except IndexError:
-                return None
-            if ivtk is not None:
-                fvtk = self.files[kind][ivtk]
-            else:
-                fvtk = osp.join(dirname, '{0:s}.{1:04d}.vtk'.\
-                                format(self.problem_id, num))
-            return fvtk
-
-        self.fvtk = get_fvtk(kind[0], num, ivtk)
+        self.fvtk = self._get_fvtk(kind[0], num, ivtk)
         if self.fvtk is None or not osp.exists(self.fvtk):
             if id0:
                 self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
@@ -129,10 +118,9 @@ class LoadSim(object):
                 self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
                                  'Try vtk in id0')
             # Check if joined vtk (or vtk in id0) exists
-            self.fvtk = get_fvtk(kind[1], num, ivtk)
-            if not osp.exists(self.fvtk):
-                self.logger.error('[load_vtk]: Vtk file does not exist {:s}'.\
-                                  format(self.fvtk))
+            self.fvtk = self._get_fvtk(kind[1], num, ivtk)
+            if self.fvtk is None or not osp.exists(self.fvtk):
+                self.logger.error('[load_vtk]: Vtk file does not exist.')
                                 
         if self.load_method == 'pyathena':
             self.ds = AthenaDataSet(self.fvtk)
@@ -156,6 +144,40 @@ class LoadSim(object):
             raise
         
         return self.ds
+
+    def load_starpar_vtk(self, num=None, ivtk=None, force_override=False,
+            verbose=False):
+        """Function to read Athena starpar_vtk file using pythena and
+        return DataFrame object.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number, e.g., /basedir/starpar/problem_id.xxxx.starpar.vtk
+        ivtk : int
+           Read i-th file in the vtk file list. Overrides num if both are given.
+        force_override : bool
+           Flag to force read of starpar_vtk file even when pickle exists
+
+        Returns
+        -------
+        sp : Pandas DataFrame object
+        """
+
+        if num is None and ivtk is None:
+            raise ValueError('Specify either num or ivtk')
+
+        # get starpar_vtk file name and check if it exist
+        self.fstarvtk = self._get_fvtk('starpar', num, ivtk)
+        if self.fstarvtk is None or not osp.exists(self.fstarvtk):
+            self.logger.error('[load_starpar_vtk]: Starpar vtk file does not exist.')
+
+        self.sp = read_starpar_vtk(self.fstarvtk,
+                force_override=force_override, verbose=verbose)
+        self.logger.info('[load_starpar_vtk]: {0:s}. Time: {1:f}'.format(\
+                 osp.basename(self.fstarvtk), self.sp.time))
+
+        return self.sp
 
     def get_domain_from_par(self, par):
 
@@ -373,7 +395,21 @@ class LoadSim(object):
             self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
         else:
             self.logger.info('No timeit.txt found.')
-                
+
+    def _get_fvtk(self, kind, num=None, ivtk=None):
+        try:
+            dirname = osp.dirname(self.files[kind][0])
+        except IndexError:
+            return None
+        if ivtk is not None:
+            fvtk = self.files[kind][ivtk]
+        else:
+            if kind == 'starpar':
+                fpattern = '{0:s}.{1:04d}.starpar.vtk'
+            else:
+                fpattern = '{0:s}.{1:04d}.vtk'
+            fvtk = osp.join(dirname, fpattern.format(self.problem_id, num))
+        return fvtk
                 
     def _get_logger(self, verbose=False):
         """Function to set logger and default verbosity.
