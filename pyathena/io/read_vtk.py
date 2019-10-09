@@ -247,7 +247,7 @@ class AthenaDataSet(object):
                 else:
                     dat[k] = (('z','y','x'), v)
                 
-            return xr.Dataset(dat, coords=x)
+            return xr.Dataset(dat, coords=x, attrs={'domain':self.domain})
         
         else: # return numpy array
             if len(field) == 1:
