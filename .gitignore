@@ -1,2 +1,4 @@
 */.ipynb_checkpoints/*
+*.err
+*.out
 __pycache__
