@@ -2,3 +2,5 @@
 *.err
 *.out
 __pycache__
+*.pyc
+*.swp
