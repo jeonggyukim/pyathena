@@ -6,9 +6,6 @@ import yt
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import AxesGrid
 
-sys.path.insert(0, '../../')
-import tigradpy as tp
-
 def yt_multipanel(ds, kind='slice', axis='z',
                   fields=['nH', 'xn', 'G0prime0', 'G0prime1']):
     """
