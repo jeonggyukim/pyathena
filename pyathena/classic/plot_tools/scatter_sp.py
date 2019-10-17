@@ -88,7 +88,7 @@ def scatter_sp(sp, ax, axis=0, thickness=10.0, norm_factor=4.,
 
             spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
             spa = sp_cl['age']*Myr
-            iyoung = np.where(spa < 40.)
+            iyoung = np.where(spa < agemax)
 
             if type == 'slice':
                 islab = np.where(xbool*(spa < agemax))
