@@ -40,6 +40,8 @@ class LoadSim(object):
             info about dimension, cell size, time, etc.
         load_method : str
             'pyathena' or 'yt' or 'pyathenaclassic'
+        num : list of int
+            vtk output numbers
 
     Methods
         load_vtk() :

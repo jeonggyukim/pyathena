@@ -2,7 +2,8 @@ from __future__ import print_function
 
 import numpy as np
 from scipy.interpolate import interp1d
-from .util.piecewisepowerlaw import PiecewisePowerlaw
+
+from .piecewisepowerlaw import PiecewisePowerlaw
 
 class mass_to_lum(object):
     """
