@@ -10,6 +10,7 @@ import functools
 import numpy as np
 import pandas as pd
 import xarray as xr
+import pickle
 
 import yt
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
@@ -19,9 +20,34 @@ from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
 
 class LoadSim(object):
-    """Class to prepare Athena simulation data analysis. Read input parameters, 
-    find vtk, starpar_vtk, zprof, and history files.
+    """Class to prepare Athena simulation data analysis. Read input parameters,
+    find simulation output (vtk, starpar_vtk, hst, sn, zprof) files.
 
+    Properties
+        basedir : str
+            base directory of simulation output
+        basename : str
+            basename (tail) of basedir
+        files : dict
+            output file paths for vtk, starpar, hst, sn, zprof
+        problem_id : str
+            prefix for (vtk, starpar, hst, zprof) output
+        par : dict
+            input parameters and configure options read from log file
+        ds : AthenaDataSet or yt DataSet
+            class for reading vtk file
+        domain : dict
+            info about dimension, cell size, time, etc.
+        load_method : str
+            'pyathena' or 'yt' or 'pyathenaclassic'
+
+    Methods
+        load_vtk() :
+            reads vtk file using pythena or yt and returns DataSet object
+        load_starpar_vtk() :
+            reads starpar vtk file and returns pandas DataFrame object
+        print_all_properties() :
+            prints all attributes and callable methods
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
@@ -76,6 +102,17 @@ class LoadSim(object):
         self.logger.info('savdir : {:s}'.format(self.savdir))
 
         self._find_files()
+
+        # Get domain info
+        try:
+            self.domain = self._get_domain_from_par(self.par)
+        except:
+            pass
+        
+        # if self.files['vtk']:
+        #     self.logger.info('Loading {0:s}'.format(self.files['vtk'][0]))
+        #     self.ds = self.load_vtk(ivtk=0, id0=True, load_method=load_method)
+        # else:
 
     def load_vtk(self, num=None, ivtk=None, id0=False, load_method=None):
         """Function to read Athena vtk file using pythena or yt and 
@@ -139,9 +176,8 @@ class LoadSim(object):
                 units_override = None
             self.ds = yt.load(self.fvtk, units_override=units_override)
         else:
-            self.logger.error('load_method "{0:s}" not recognized.'.format(\
-                self.load_method) + ' Use either "yt" or "pyathena".')
-            raise
+            self.logger.error('load_method "{0:s}" not recognized.'.format(
+                self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
         
         return self.ds
 
@@ -178,22 +214,6 @@ class LoadSim(object):
                  osp.basename(self.fstarvtk), self.sp.time))
 
         return self.sp
-
-    def get_domain_from_par(self, par):
-
-        d = par['domain1']
-        domain = dict()
-        domain['ndim'] = 3 # should be revised
-        domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
-        domain['le'] = np.array([d['x1min'], d['x2min'], d['x3min']])
-        domain['re'] = np.array([d['x1max'], d['x2max'], d['x3max']])
-        domain['Lx'] = domain['re'] - domain['le']
-        domain['dx'] = domain['Lx']/domain['Nx']
-        domain['center'] = 0.5*(domain['le'] + domain['re'])
-        domain['time'] = None
-        self.domain = domain
-        
-        return domain
     
     def print_all_properties(self):
         """Print all attributes and callable methods
@@ -204,13 +224,31 @@ class LoadSim(object):
         print('\nMethods:')
         method_list = []
         for func in sorted(dir(self)):
-            if not func.startswith("_"):
+            if not func.startswith("__"):
                 if callable(getattr(self, func)):
                     method_list.append(func)
                     print(func, end=': ')
                     print(getattr(self, func).__doc__)
                     print('-------------------------')
 
+                
+    def _get_domain_from_par(self, par):
+        """Get domain info from par['domain1']. Time is set to None.
+        """
+        d = par['domain1']
+        domain = dict()
+        domain['ndim'] = 3 # should be revised
+        domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
+        domain['le'] = np.array([d['x1min'], d['x2min'], d['x3min']])
+        domain['re'] = np.array([d['x1max'], d['x2max'], d['x3max']])
+        domain['Lx'] = domain['re'] - domain['le']
+        domain['dx'] = domain['Lx']/domain['Nx']
+        domain['center'] = 0.5*(domain['le'] + domain['re'])
+        domain['time'] = None
+        
+        self.domain = domain
+        
+        return domain
 
     def _find_files(self):
         """Function to find all output files under basedir and create "files" dictionary.
@@ -220,6 +258,7 @@ class LoadSim(object):
         vtk: problem_id.num.vtk
         starpar_vtk: problem_id.num.starpar.vtk
         zprof: problem_id.num.phase.zprof
+        timeit: timtit.txt
         """
 
         self._out_fmt_def = ['hst', 'vtk']
@@ -326,12 +365,17 @@ class LoadSim(object):
                     self.logger.info('vtk in id0: {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk_id0'][0]),
                         self.nums_id0[0], self.nums_id0[-1]))
+                    if not hasattr(self, 'problem_id'):
+                        self.problem_id = osp.basename(self.files['vtk_id0'][0]).split('.')[0]
                 if self.nums:
                     self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk'][0]),
                         self.nums[0], self.nums[-1]))
+                    if not hasattr(self, 'problem_id'):
+                        self.problem_id = osp.basename(self.files['vtk'][0]).split('.')[0]
                 else:
                     self.nums = self.nums_id0
+                
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
@@ -397,6 +441,9 @@ class LoadSim(object):
             self.logger.info('No timeit.txt found.')
 
     def _get_fvtk(self, kind, num=None, ivtk=None):
+        """Get vtk file path
+        """
+        
         try:
             dirname = osp.dirname(self.files[kind][0])
         except IndexError:
@@ -409,6 +456,7 @@ class LoadSim(object):
             else:
                 fpattern = '{0:s}.{1:04d}.vtk'
             fvtk = osp.join(dirname, fpattern.format(self.problem_id, num))
+
         return fvtk
                 
     def _get_logger(self, verbose=False):
@@ -459,8 +507,57 @@ class LoadSim(object):
         return l
     
     class Decorators(object):
+        """Class containing a collection of decorators for fast reading of 
+        analysis output, (reprocessed) hst, and zprof. Used in child class.
+        """
         
         # JKIM: I am sure there is a better way to do this..but this works anyway..
+        def check_pickle(read_func):
+            @functools.wraps(read_func)
+            def wrapper(cls, *args, **kwargs):
+
+                # Convert positional args to keyword args
+                from inspect import getcallargs
+                call_args = getcallargs(read_func, cls, *args, **kwargs)
+                call_args.pop('self')
+                kwargs = call_args
+
+                try:
+                    dirname = kwargs['dirname']
+                except KeyError:
+                    dirname = '_'.join(read_func.__name__.split('_')[1:])
+
+                if kwargs['savdir'] is not None:
+                    savdir = kwargs['savdir']
+                else:
+                    savdir = os.path.join(cls.savdir, dirname)
+
+                force_override = kwargs['force_override']
+
+                # Create savdir if it doesn't exist
+                if not os.path.exists(savdir):
+                    os.makedirs(savdir)
+                    force_override = True
+
+                fpkl = os.path.join(savdir, cls.problem_id +
+                                    '_{0:s}_{1:04d}.p'.format(dirname, kwargs['num']))
+                
+                if not force_override and os.path.exists(fpkl):
+                    cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
+                    res = pickle.load(open(fpkl, 'rb'))
+                    return res
+                else:
+                    cls.logger.info('Read original dump.')
+                    # If we are here, force_override is True or history file is updated.
+                    res = read_func(cls, **kwargs)
+                    try:
+                        pickle.dump(res, open(fpkl, 'wb'))
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('Could not pickle to {0:s}.'.format(fpkl))
+                    return res
+                
+            return wrapper
+                   
         def check_pickle_hst(read_hst):
             
             @functools.wraps(read_hst)

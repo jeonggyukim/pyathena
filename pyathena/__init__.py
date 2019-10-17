@@ -19,10 +19,10 @@ __all__ = ["mass_to_lum",
            "LoadSimTIGRESSDIGAll",
            # RT
            "LoadSimTIGRESSRT",
-           "LoadSimTIGRESSRTAll"
+           "LoadSimTIGRESSRTAll",
            # Single SN
-           "LoadSimTIGRESSSingleSN"
-           "LoadSimTIGRESSSingleSNAll"
+           "LoadSimTIGRESSSingleSN",
+           "LoadSimTIGRESSSingleSNAll",
            # XCO
            "LoadSimTIGRESSXCO",
            "LoadSimTIGRESSXCOAll"]
@@ -48,5 +48,6 @@ from .util.units import Units
 from .util.rebin import rebin_xyz, rebin_xy
 
 from .plt_tools.plt_joint_pdf import plt_joint_pdf
+from .plt_tools.cmap_shift import cmap_shift
 
 from .mass_to_lum import mass_to_lum
