@@ -32,6 +32,7 @@ class Units(object):
             self.time = 1.0*au.s
             self.velocity = (self.length/self.time).to('km/s')
 
+        self.mH = (1.008*au.u).to('g')
         self.mass = (self.muH*mH*(self.length.to('cm').value)**3).to('Msun')
         self.density = (self.mass/self.length**3).cgs
         self.energy = (self.mass*self.velocity**2).cgs

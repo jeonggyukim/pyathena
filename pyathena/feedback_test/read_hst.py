@@ -3,6 +3,8 @@
 import os
 import numpy as np
 import pandas as pd
+import astropy.constants as ac
+import astropy.units as au
 
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
@@ -47,10 +49,28 @@ class ReadHst:
         hst['Minter'] *= u.Msun*vol
         # cold gas mass in Msun
         hst['Mcold'] *= u.Msun*vol
-        
-        hst['pr_bub'] *= vol*(u.mass*u.velocity).value
+
+        # Total/hot gas/shell momentum in Msun*km/s
+        hst['pr'] *= vol*(u.mass*u.velocity).value
         hst['pr_hot'] *= vol*(u.mass*u.velocity).value
         hst['pr_sh'] *= vol*(u.mass*u.velocity).value
+
+        # Predicted momentum
+        from scipy.integrate import cumtrapz
+
+        hst['pr_pred'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
+                                  hst['time_code'], initial=0.0)
+        
+        hst['pr_pred'] *= vol*(u.mass*u.velocity).value
+        
+        # Total/escaping luminosity in Lsun
+        nfreq = self.par['radps']['nfreq']
+        try:
+            for i in range(nfreq):
+                hst['Ltot{0:d}'] *= vol*u.Lsun
+                hst['Lesc{0:d}'] *= vol*u.Lsun
+        except KeyError:
+            pass
         
         hst.index = hst['time_code']
         

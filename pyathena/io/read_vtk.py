@@ -176,7 +176,7 @@ class AthenaDataSet(object):
                            NGrid=NGrid, Nxg=Nxg, Nxr=Nxr)
         
     def get_slice(self, axis, field='density', pos='c', method='nearest'):
-        """Read fields data.
+        """Read slice of fields.
 
         Parameters
         ----------
@@ -188,7 +188,8 @@ class AthenaDataSet(object):
             Slice through If 'c' or 'center', get a slice through the domain
             center. Default value is 'c'.
         method : str
-        
+            
+
         Returns
         -------
         slc : xarray dataset
@@ -218,10 +219,10 @@ class AthenaDataSet(object):
             slc = dat.sel(method='nearest', **{ax:pos})
 
         return slc
-
+    
     def get_field(self, field='density', le=None, re=None,
                   as_xarray=True):
-        """Read fields data.
+        """Read 3d fields data.
 
         Parameters
         ----------
@@ -232,7 +233,8 @@ class AthenaDataSet(object):
         re : sequence of floats
            Right edge. Default value is the domain right edge.
         as_xarray : bool
-           Return array as an xarray Dataset. Default value is True.
+           If True, returns results as an xarray Dataset. If False, returns a
+           dictionary containing numpy arrays. Default value is True.
         """
 
         field = np.atleast_1d(field)
@@ -253,7 +255,7 @@ class AthenaDataSet(object):
         if not dflist.issubset(set(self.dfi.keys())):
             raise KeyError("Check derived field name", self.dfi.keys())
         
-        # Genuine field list
+        # Field names that are in the vtk file
         flist = set(field) - dflist
 
         # Fields that need to be read to calculate derived field
@@ -261,7 +263,7 @@ class AthenaDataSet(object):
         for f in dflist:
             flist_dep = flist_dep | set(self.dfi[f]['field_dep'])
 
-        # Genuine fields to be dropped later
+        # Fields names to be dropped later
         fdrop_list = flist_dep - flist
 
         field = list(flist_dep | flist)

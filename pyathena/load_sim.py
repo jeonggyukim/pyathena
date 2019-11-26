@@ -688,8 +688,11 @@ class LoadSimAll(object):
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+    def set_model(self, model, savdir=None, load_method='pyathena',
+                  units=Units(kind='LV', muH=1.4271),
+                  verbose=False):
         self.model = model
         self.sim = LoadSim(self.basedir[model], savdir=savdir,
-                           load_method=load_method, verbose=verbose)
+                           load_method=load_method,
+                           units=units, verbose=verbose)
 

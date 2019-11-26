@@ -39,3 +39,25 @@ class LoadSimFeedbackTest(LoadSim, ReadHst):
                                                  units=units,
                                                  verbose=verbose)
 
+
+class LoadSimFeedbackTestAll(object):
+    """Class to load multiple simulations"""
+    def __init__(self, models=None):
+
+        # Default models
+        if models is None:
+            models = dict()
+            models['newcool.n200.M1E3.N128'] = '/perseus/scratch/gpfs/jk11/FEEDBACK-TEST/roe.newcool.n200.M1E3.N128'
+
+        self.models = list(models.keys())
+        self.basedirs = dict()
+        
+        for mdl, basedir in models.items():
+            self.basedirs[mdl] = basedir
+
+    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+        
+        self.model = model
+        self.sim = LoadSimFeedbackTest(self.basedirs[model], savdir=savdir,
+                                       load_method=load_method, verbose=verbose)
+        return self.sim
