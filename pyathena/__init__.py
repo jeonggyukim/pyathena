@@ -44,5 +44,6 @@ from .util.units import Units, ac, au
 from .util.rebin import rebin_xyz, rebin_xy
 
 from .plt_tools.cmap_shift import cmap_shift
+from .plt_tools.make_movie import make_movie, display_movie
 
 from .mass_to_lum import mass_to_lum
