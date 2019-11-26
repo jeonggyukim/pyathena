@@ -13,7 +13,7 @@ class LoadSimTIGRESSXCO(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 muH=1.4271, verbose=True):
+                 muH=1.4271, verbose=False):
         """The constructor for LoadSimRPS class
 
         Parameters

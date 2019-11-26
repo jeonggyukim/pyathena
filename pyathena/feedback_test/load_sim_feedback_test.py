@@ -1,21 +1,19 @@
 import os
 import pandas as pd
-import os.path as osp
 
 from ..load_sim import LoadSim
 from ..util.units import Units
 
 from .read_hst import ReadHst
-from .read_zprof import ReadZprof
-from .slc_prj import SliceProj
 
-class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof, SliceProj):
-    """LoadSim class for analyzing TIGRESS-RT simulations.
+class LoadSimFeedbackTest(LoadSim, ReadHst):
+    """LoadSim class for analyzing LoadSimFeedbackTest simulations.
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena',
+                 units=Units(kind='LV', muH=1.4271),
                  verbose=False):
-        """The constructor for LoadSimTIGRESSRT class
+        """The constructor for LoadSimFeedbackTest class
 
         Parameters
         ----------
@@ -36,28 +34,20 @@ class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof, SliceProj):
             accepted.
         """
 
-        super(LoadSimTIGRESSRT,self).__init__(basedir, savdir=savdir,
-                                              load_method=load_method, verbose=verbose)
-        
-        # Set unit and domain
-        self.u = Units(muH=1.4271)
-        self.domain = self._get_domain_from_par(self.par)
+        super(LoadSimFeedbackTest,self).__init__(basedir, savdir=savdir,
+                                                 load_method=load_method,
+                                                 units=units,
+                                                 verbose=verbose)
 
-    # def load_vtk(self, num=None, ivtk=None, id0=False, load_method=None,
-    #              AthenaDataSet=AthenaDataSet):
 
-    #     self.ds = super(LoadSimTIGRESSRT,self).load_vtk(num, ivtk, id0, load_method,
-    #                                                     AthenaDataSet)
-    #     return self.ds
-
-class LoadSimTIGRESSRTAll(object):
+class LoadSimFeedbackTestAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
 
         # Default models
         if models is None:
             models = dict()
-            models['R8_8pc_rad'] = '/perseus/scratch/gpfs/jk11/TIGRESS-RT/R8_8pc_rad.implicit.test'
+            models['newcool.n200.M1E3.N128'] = '/perseus/scratch/gpfs/jk11/FEEDBACK-TEST/roe.newcool.n200.M1E3.N128'
 
         self.models = list(models.keys())
         self.basedirs = dict()
@@ -68,6 +58,6 @@ class LoadSimTIGRESSRTAll(object):
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         
         self.model = model
-        self.sim = LoadSimTIGRESSRT(self.basedirs[model], savdir=savdir,
-                                    load_method=load_method, verbose=verbose)
+        self.sim = LoadSimFeedbackTest(self.basedirs[model], savdir=savdir,
+                                       load_method=load_method, verbose=verbose)
         return self.sim

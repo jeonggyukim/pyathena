@@ -20,4 +20,15 @@ class ReadZprof(ReadZprofBase):
                             self.problem_id, phase=phase,
                             force_override=False)
 
+        # Divide all variables by total area Lx*Ly
+        domain = self.domain
+        dxdy = domain['dx'][0]*domain['dx'][1]
+        Atot = domain['Lx'][0]*domain['Lx'][1]
+
+        ds = ds/Atot
+
+
+        # For the moment s3 is assumed to be nH2
+        ds['nH2'] = ds.s3
+
         return ds

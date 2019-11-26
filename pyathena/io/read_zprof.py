@@ -12,11 +12,11 @@ import pandas as pd
 import xarray as xr
 
 def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
-    """Read all zprof files in directory and make a Dataset object and
-    write to a NetCDF file.
+    """Function to read all zprof files in directory and make a Dataset object 
+    and write to a NetCDF file.
 
-    Note that DataArray holds a single multi-dimensional variable and
-    its coordinates, while a Dataset holds multiple variables that 
+    Note: An xarray DataArray holds a single multi-dimensional variable and its
+    coordinates, while a xarray Dataset holds multiple variables that
     potentially share the same coordinates.
 
     Parameters
@@ -34,6 +34,7 @@ def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
     Returns
     -------
        ds: xarray dataset
+
     """
 
     # Find all files with "/dirname/problem_id.xxxx.phase.zprof"    
@@ -135,8 +136,8 @@ def read_zprof(filename, force_override=False, verbose=False):
                 vlist[-1] = vlist[-1][:-1]    # strip \n
 
         # c engine does not support regex separators
-        df = pd.read_table(filename, names=vlist, skiprows=skiprows,
-                           comment='#', sep=',', engine='python')
+        df = pd.read_csv(filename, names=vlist, skiprows=skiprows,
+                         comment='#', sep=',', engine='python')
         try:
             df.to_pickle(fpkl)
         except IOError:

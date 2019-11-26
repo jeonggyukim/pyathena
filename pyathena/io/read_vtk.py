@@ -9,6 +9,10 @@ import os.path as osp
 import glob, struct
 import numpy as np
 import xarray as xr
+import astropy.constants as ac
+import astropy.units as au
+
+from ..util.units import Units
 
 def read_vtk(filename, id0_only=False):
     """Convenience wrapper function to read Athena vtk output file 
@@ -31,7 +35,7 @@ def read_vtk(filename, id0_only=False):
 
 class AthenaDataSet(object):
     
-    def __init__(self, filename, id0_only=False):
+    def __init__(self, filename, id0_only=False, units=Units(), dfi=None):
         """Class to read athena vtk file.
         
         Parameters
@@ -41,6 +45,10 @@ class AthenaDataSet(object):
         id0_only : bool
             Flag to enforce to read vtk file in id0 directory only.
             Default value is False.
+        units : Units
+            pyathena Units object (used for reading derived fields)
+        dfi : dict
+            Dictionary containing derived fields info
         """
         
         if not osp.exists(filename):
@@ -57,7 +65,13 @@ class AthenaDataSet(object):
         self.ext = ext
         self.mpi_mode = mpi_mode
         self.fnames = [filename]
-
+        self.u = units
+        self.dfi = dfi
+        if dfi is not None:
+            self.derived_field_list = list(dfi.keys())
+        else:
+            self.derived_field_list = None
+        
         # Find all vtk file names and add to flist
         if mpi_mode:
             fname_pattern = osp.join(dirname, 'id*/{0:s}-id*.{1:s}.{2:s}'.\
@@ -109,6 +123,7 @@ class AthenaDataSet(object):
 
         le = np.array(le)
         re = np.array(re)
+
         if (re < le).any():
             raise ValueError('Check left/right edge.')
 
@@ -116,6 +131,7 @@ class AthenaDataSet(object):
         gle_all = []  # grid left edge
         gre_all = []  # grid right edge
         gidx = []     # grid indices that belongs to this region
+        
         for i, g in enumerate(self.grid):
             if (g['re'] >= le).all() and (g['le'] <= re).all():
                 gidx.append(i)
@@ -160,7 +176,7 @@ class AthenaDataSet(object):
                            NGrid=NGrid, Nxg=Nxg, Nxr=Nxr)
         
     def get_slice(self, axis, field='density', pos='c', method='nearest'):
-        """Read fields data.
+        """Read slice of fields.
 
         Parameters
         ----------
@@ -172,7 +188,8 @@ class AthenaDataSet(object):
             Slice through If 'c' or 'center', get a slice through the domain
             center. Default value is 'c'.
         method : str
-        
+            
+
         Returns
         -------
         slc : xarray dataset
@@ -193,17 +210,19 @@ class AthenaDataSet(object):
             if pos in ['c', 'center']:
                 pos = self.domain['center'][axis_idx[ax]]
 
-            le[axis_idx[ax]] = pos
-            re[axis_idx[ax]] = pos
+            # Let's make sure le < re always and truncation error does not cause
+            # problem, although performance can be slowed down a bit.
+            le[axis_idx[ax]] = pos - 0.5*self.domain['dx'][axis_idx[ax]]
+            re[axis_idx[ax]] = pos + 0.5*self.domain['dx'][axis_idx[ax]]
             dat = self.get_field(field, le, re, as_xarray=True)
 
             slc = dat.sel(method='nearest', **{ax:pos})
 
         return slc
-
+    
     def get_field(self, field='density', le=None, re=None,
-                  as_xarray=False):
-        """Read fields data.
+                  as_xarray=True):
+        """Read 3d fields data.
 
         Parameters
         ----------
@@ -214,30 +233,74 @@ class AthenaDataSet(object):
         re : sequence of floats
            Right edge. Default value is the domain right edge.
         as_xarray : bool
-           Return array as an xarray Dataset. Default value is False.
+           If True, returns results as an xarray Dataset. If False, returns a
+           dictionary containing numpy arrays. Default value is True.
         """
 
         field = np.atleast_1d(field)
-        # TODO: Check field name
-        
-        # Check and create region
-        if not hasattr(self, 'region'):
-            self.set_region(le=le, re=re)
-        elif le is not None or re is not None:
-            if (le == self.region['le']).all() and \
-               (re == self.region['re']).all():
-                pass
-            else:
-                self.set_region(le=le, re=re)
 
-        arr = self._get_field(field)
+        # Derived field list
+        dflist = set(field) - set(self.field_list)
+        # print(field,dflist)
+        
+        if not bool(dflist):
+            # dflist is an empty set, we can read all fields directly from vtk
+            # file
+            return self._get_field(field, le, re, as_xarray)
+        
+        # If we are here, need to read all union of all input fields and those
+        # required to calculate derived fields
+
+        # Let's first make sure that we have all info about dflist
+        if not dflist.issubset(set(self.dfi.keys())):
+            raise KeyError("Check derived field name", self.dfi.keys())
+        
+        # Field names that are in the vtk file
+        flist = set(field) - dflist
+
+        # Fields that need to be read to calculate derived field
+        flist_dep = set()
+        for f in dflist:
+            flist_dep = flist_dep | set(self.dfi[f]['field_dep'])
+
+        # Fields names to be dropped later
+        fdrop_list = flist_dep - flist
+
+        field = list(flist_dep | flist)
+        dat = self._get_field(field, le, re, as_xarray)
+        
+        # Calculate derived fields
+        for f in dflist:
+            dat[f] = self.dfi[f]['func'](dat, self.u)
+
+        # Drop fields that are not requested
+        if as_xarray:
+            dat = dat.drop(list(fdrop_list))
+            dat.attrs['dfi'] = self.dfi
+        else:
+            for f in fdrop_list:
+                del dat[f]
+        
+        return dat
+    
+    def _get_field(self, field='density', le=None, re=None,
+                   as_xarray=True):
+
+        field = np.atleast_1d(field)
+        
+        # Create region
+        self.set_region(le=le, re=re)
+        arr = self._get_array(field)
+    
         # Works only for 3d data
         if as_xarray:
             # Cell center positions
             x = dict()
             for axis, le, re, dx in zip(('x', 'y', 'z'), \
                     self.region['gle'], self.region['gre'], self.domain['dx']):
-                x[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
+                # May not result in correct number of elements due to truncation error
+                # x[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
+                x[axis] = np.arange(le + 0.5*dx, re + 0.25*dx, dx)
 
             dat = dict()
             for k, v in arr.items():
@@ -247,15 +310,15 @@ class AthenaDataSet(object):
                 else:
                     dat[k] = (('z','y','x'), v)
                 
-            return xr.Dataset(dat, coords=x, attrs={'domain':self.domain})
-        
-        else: # return numpy array
+            return xr.Dataset(dat, coords=x, attrs={'domain':self.domain})        
+        else:
             if len(field) == 1:
                 return arr[field[0]]
             else:
+                # Return a dictionary of numpy arrays
                 return arr
     
-    def _get_field(self, field):
+    def _get_array(self, field):
 
         arr = dict()
         for f in field:

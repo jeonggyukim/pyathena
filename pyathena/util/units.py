@@ -17,17 +17,22 @@ class Units(object):
               Default value is 1.4271 (assuming solar metallicity).
         """
         
-        mH = 1.00794*au.u
-        
-        self.muH = muH
-        self.length = (1.0*au.pc).to('pc')
+        mH = 1.00794*au.u        
         if kind == 'LV':
+            self.muH = muH
+            self.length = (1.0*au.pc).to('pc')
             self.velocity = (1.0*au.km/au.s).to('km/s')
             self.time = (self.length/self.velocity).cgs
         elif kind == 'LT':
+            self.muH = muH
+            self.length = (1.0*au.pc).to('pc')
             self.time = (1.0*au.Myr).to('Myr')
             self.velocity = (self.length/self.time).to('km/s')
+        elif kind == 'cgs':
+            self.time = 1.0*au.s
+            self.velocity = (self.length/self.time).to('km/s')
 
+        self.mH = (1.008*au.u).to('g')
         self.mass = (self.muH*mH*(self.length.to('cm').value)**3).to('Msun')
         self.density = (self.mass/self.length**3).cgs
         self.energy = (self.mass*self.velocity**2).cgs
@@ -37,9 +42,11 @@ class Units(object):
         self.mass_flux = (self.density*self.velocity).to('Msun/(pc**2*Myr)')
         
         # Define (physical constants in code units)^-1
-        # Opposite to the convention chosen by set_units function in athena/src/units.c
-        # because in post-processing we want to convert from code units to
-        # more convenient ones by multiplying these constants
+        #
+        # Opposite to the convention chosen by set_units function in
+        # athena/src/units.c This is because in post-processing we want to
+        # convert from code units to more convenient ones by "multiplying" these
+        # constants
         self.pc = self.length.to('pc').value
         self.kpc = self.length.to('kpc').value
         self.Myr = self.time.to('Myr').value

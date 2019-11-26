@@ -11,13 +11,15 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import pickle
-
 import yt
+
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
-from .io.read_athinput import read_athinput
 from .io.read_vtk import AthenaDataSet
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
+from .io.read_athinput import read_athinput
+from .util.units import Units
+from .fields.fields import DerivedFieldsDefault
 
 class LoadSim(object):
     """Class to prepare Athena simulation data analysis. Read input parameters,
@@ -53,7 +55,8 @@ class LoadSim(object):
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 verbose=True):
+                 units=Units(kind='LV', muH=1.4271),
+                 verbose=False):
         """
         The constructor for LoadSim class.
 
@@ -111,12 +114,10 @@ class LoadSim(object):
         except:
             pass
         
-        # if self.files['vtk']:
-        #     self.logger.info('Loading {0:s}'.format(self.files['vtk'][0]))
-        #     self.ds = self.load_vtk(ivtk=0, id0=True, load_method=load_method)
-        # else:
-
-    def load_vtk(self, num=None, ivtk=None, id0=False, load_method=None):
+        self.u = units
+        self.dfi = DerivedFieldsDefault().dfi
+        
+    def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
         """Function to read Athena vtk file using pythena or yt and 
         return DataSet object.
         
@@ -156,21 +157,24 @@ class LoadSim(object):
             else:
                 self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
                                  'Try vtk in id0')
+                
             # Check if joined vtk (or vtk in id0) exists
             self.fvtk = self._get_fvtk(kind[1], num, ivtk)
             if self.fvtk is None or not osp.exists(self.fvtk):
                 self.logger.error('[load_vtk]: Vtk file does not exist.')
-                                
+                
         if self.load_method == 'pyathena':
-            self.ds = AthenaDataSet(self.fvtk)
+            self.ds = AthenaDataSet(self.fvtk, units=self.u, dfi=self.dfi)
             self.domain = self.ds.domain
             self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
-                 osp.basename(self.fvtk), self.ds.domain['time']))
+                osp.basename(self.fvtk), self.ds.domain['time']))
+            
         elif self.load_method == 'pyathena_classic':
             self.ds = AthenaDataSetClassic(self.fvtk)
             self.domain = self.ds.domain
             self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
-                            osp.basename(self.fvtk), self.ds.domain['time']))
+                osp.basename(self.fvtk), self.ds.domain['time']))
+            
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
                 units_override = self.u.units_override
@@ -239,8 +243,9 @@ class LoadSim(object):
         """
         d = par['domain1']
         domain = dict()
-        domain['ndim'] = 3 # should be revised
+        
         domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
+        domain['ndim'] = np.sum(domain['Nx'] > 1)
         domain['le'] = np.array([d['x1min'], d['x2min'], d['x3min']])
         domain['re'] = np.array([d['x1max'], d['x2max'], d['x3max']])
         domain['Lx'] = domain['re'] - domain['le']
@@ -280,7 +285,8 @@ class LoadSim(object):
                 
             return f
 
-        athinput_patterns = [('out.txt',),    # Jeong-Gyu
+        athinput_patterns = [('stdout.txt',),    # Jeong-Gyu
+                             ('out.txt',),    # Jeong-Gyu
                              ('log.txt',),     # Jeong-Gyu
                              ('*.out',),      # Chang-Goo's stdout
                              ('slurm-*',),    # Erin
@@ -325,6 +331,7 @@ class LoadSim(object):
             self.problem_id = self.par['job']['problem_id']
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
+            self.par = None
             self.logger.warning('Could not find athinput file in {0:s}'.\
                                 format(self.basedir))
             self.out_fmt = self._out_fmt_def
@@ -347,9 +354,15 @@ class LoadSim(object):
             self.files['sn'] = fsn[0]
             self.logger.info('sn: {0:s}'.format(self.files['sn']))
         else:
-            self.logger.warning('Could not find sn file in {0:s}'.\
-                                format(self.basedir))
-
+            if self.par is not None:
+                # Issue warning only if iSN is nonzero
+                try:
+                    if self.par['feedback']['iSN'] != 0:
+                        self.logger.warning('Could not find sn file in {0:s}'.\
+                                            format(self.basedir))
+                except KeyError:
+                    pass
+                
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
         if 'vtk' in self.out_fmt:
@@ -385,8 +398,8 @@ class LoadSim(object):
                 size = max(set(sizes), key=sizes.count)
                 flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
                 self.logger.warning('Vtk file size is not unique.')
-                # for f in flist:
-                #    self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
+                for f in flist:
+                   self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
 
         # Find starpar files
         if 'starpar_vtk' in self.out_fmt:
@@ -509,11 +522,13 @@ class LoadSim(object):
         return l
     
     class Decorators(object):
-        """Class containing a collection of decorators for fast reading of 
-        analysis output, (reprocessed) hst, and zprof. Used in child class.
+        """Class containing a collection of decorators for fast reading of analysis
+        output, (reprocessed) hst, and zprof. Used in child class.
+
         """
         
-        # JKIM: I am sure there is a better way to do this..but this works anyway..
+        # JKIM: I'm sure there is a better way to achieve this, but this works
+        # anyway..
         def check_pickle(read_func):
             @functools.wraps(read_func)
             def wrapper(cls, *args, **kwargs):
@@ -661,9 +676,11 @@ class LoadSim(object):
 
             return wrapper
 
-    
+
+# Would be useful to have something like this for each problem
 class LoadSimAll(object):
     """Class to load multiple simulations
+
     """
     def __init__(self, models):
 
@@ -673,7 +690,11 @@ class LoadSimAll(object):
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+    def set_model(self, model, savdir=None, load_method='pyathena',
+                  units=Units(kind='LV', muH=1.4271),
+                  verbose=False):
         self.model = model
         self.sim = LoadSim(self.basedir[model], savdir=savdir,
-                           load_method=load_method, verbose=verbose)
+                           load_method=load_method,
+                           units=units, verbose=verbose)
+
