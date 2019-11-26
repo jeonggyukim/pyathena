@@ -3,6 +3,8 @@
 import os
 import os.path as osp
 import time
+import gc
+import pprint
 from mpi4py import MPI
 import matplotlib.pyplot as plt
 
@@ -16,8 +18,30 @@ if __name__ == '__main__':
 
     basedir = '/tigress/jk11/radps_postproc/R8_4pc_newacc.xymax1024/'
     s = pa.LoadSimTIGRESSDIG(basedir, verbose=False)
-    nums = s.nums[0:100]
+
+    # nums = s.nums[0:5]
+    # nums = s.nums[5:10]
+    # nums = s.nums[10:15]
+    # nums = s.nums[15:20]
+    # nums = s.nums[20:25]
+    # nums = s.nums[25:30]
+    # nums = s.nums[30:35]
+    # nums = s.nums[35:40]
+
+    #nums = s.nums[0:150]
+    # nums = s.nums[150:300]
+    nums = s.nums[394:395]
+    # nums = s.nums[450:571]
     
+    # nums = s.nums[208:209]
+    # nums = s.nums[300:350]
+    # nums = s.nums[350:400]
+    # nums = s.nums[400:450]
+    # nums = s.nums[450:500]
+    # nums = s.nums[500:550]
+    # nums = s.nums[550:571]
+
+    time0 = time.time()
     if COMM.rank == 0:
         print('basedir, nums', s.basedir, nums)
         nums = split_container(nums, COMM.size)
@@ -29,8 +53,13 @@ if __name__ == '__main__':
 
     for num in mynums:
         print(num, end=' ')
-        res = s.read_EM_pdf(num, force_override=True)
-
+        # res = s.read_EM_pdf(num, force_override=True)
+        res = s.read_phot_dust_U_pdf(num, force_override=True)
+        n = gc.collect()
+        print('Unreachable objects:', n)
+        print('Remaining Garbage:', end=' ')
+        pprint.pprint(gc.garbage)
+        
     # if COMM.rank == 0:
     #     fin = osp.join(s.basedir, 'snapshots2/*.png')
     #     fout = osp.join(s.basedir, 'movies/{0:s}_snapshots2.mp4'.format(s.basename))

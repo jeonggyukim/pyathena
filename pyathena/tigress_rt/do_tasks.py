@@ -36,6 +36,7 @@ if __name__ == '__main__':
     #         fig = s.plt_snapshot2(num, force_override=True)
     #     plt.close(fig)
 
+    # Make movies
     if COMM.rank == 0:
         fin = osp.join(s.basedir, 'snapshots2/*.png')
         fout = osp.join(s.basedir, 'movies/{0:s}_snapshots2.mp4'.format(s.basename))

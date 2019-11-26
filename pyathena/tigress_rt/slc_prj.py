@@ -36,8 +36,6 @@ class SliceProj:
     @LoadSim.Decorators.check_pickle
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, dirname='slc',
                  savdir=None, force_override=False):
-        """Function to read hst and convert quantities to convenient units
-        """
         
         fields_def = ['density', 'xH2', 'velocity', 'temperature',
                       'CR_ionization_rate', 'heat_ratio']
@@ -63,8 +61,6 @@ class SliceProj:
     @LoadSim.Decorators.check_pickle
     def read_prj(self, num, axes=['x', 'y', 'z'], dirname='prj',
                  savdir=None, force_override=False):
-        """Function to read hst and convert quantities to convenient units
-        """
 
         axtoi = dict(x=0, y=1, z=2)
         fields = ['density', 'xH2', 'temperature', 'heat_ratio']
@@ -143,7 +139,7 @@ class SliceProj:
                       cmap=cmap['heat_ratio'], vmin=0.1, vmax=1e3)
 
         for ax in (axes[0], axes[1]):
-            scatter_sp(sp, ax, type='proj', kpc=False, norm_factor=5.0, agemax=20.0)
+            scatter_sp(sp, ax, type='proj', kpc=False, norm_factor=5.0, agemax=40.0)
             extent = prj['extent']['z']
             ax.set_xlim(extent[0], extent[1])
             ax.set_ylim(extent[2], extent[3])

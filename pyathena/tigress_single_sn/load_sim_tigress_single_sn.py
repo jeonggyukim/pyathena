@@ -11,7 +11,7 @@ class LoadSimTIGRESSSingleSN(LoadSim, ReadHst):
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 verbose=True):
+                 verbose=False):
         """The constructor for LoadSimTIGRESSSingleSN class
 
         Parameters

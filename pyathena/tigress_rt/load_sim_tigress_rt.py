@@ -1,19 +1,21 @@
 import os
 import pandas as pd
+import os.path as osp
 
 from ..load_sim import LoadSim
 from ..util.units import Units
 
 from .read_hst import ReadHst
 from .read_zprof import ReadZprof
+from .slc_prj import SliceProj
 
-class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof):
+class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof, SliceProj):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 verbose=True):
-        """The constructor for LoadSimRPS class
+                 verbose=False):
+        """The constructor for LoadSimTIGRESSRT class
 
         Parameters
         ----------
@@ -37,16 +39,16 @@ class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof):
         super(LoadSimTIGRESSRT,self).__init__(basedir, savdir=savdir,
                                               load_method=load_method, verbose=verbose)
         
-        # Set unit
+        # Set unit and domain
         self.u = Units(muH=1.4271)
-        
-        # Get domain info
-        if self.files['vtk']:
-            self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
-            self.ds = self.load_vtk(ivtk=0, id0=True, load_method=load_method)
-        else:
-            self.domain = self.get_domain_from_par(self.par)
+        self.domain = self._get_domain_from_par(self.par)
 
+    # def load_vtk(self, num=None, ivtk=None, id0=False, load_method=None,
+    #              AthenaDataSet=AthenaDataSet):
+
+    #     self.ds = super(LoadSimTIGRESSRT,self).load_vtk(num, ivtk, id0, load_method,
+    #                                                     AthenaDataSet)
+    #     return self.ds
 
 class LoadSimTIGRESSRTAll(object):
     """Class to load multiple simulations"""

@@ -7,12 +7,13 @@ from ..util.units import Units
 from .read_hst import ReadHst
 from .read_zprof import ReadZprof
 from .plt_hst_zprof import PltHstZprof
+from .extract_data import ExtractData
 
-class LoadSimTIGRESSDIG(LoadSim, ReadHst, ReadZprof, PltHstZprof):
+class LoadSimTIGRESSDIG(LoadSim, ReadHst, ReadZprof, PltHstZprof, ExtractData):
     """LoadSim class for analyzing TIGRESS DIG simulations.
     """
     
-    def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=True):
+    def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=False):
         """The constructor for LoadSimTIGRESSDIG class
 
         Parameters
