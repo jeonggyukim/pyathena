@@ -241,7 +241,6 @@ class AthenaDataSet(object):
 
         # Derived field list
         dflist = set(field) - set(self.field_list)
-        # print(field,dflist)
         
         if not bool(dflist):
             # dflist is an empty set, we can read all fields directly from vtk
@@ -265,6 +264,13 @@ class AthenaDataSet(object):
 
         # Fields names to be dropped later
         fdrop_list = flist_dep - flist
+
+        # Need to adjust names for vector fields
+        for f in list(fdrop_list):
+            if self._field_map[f]['nvar'] > 1:
+                for i in range(self._field_map[f]['nvar']):
+                    fdrop_list.add(f+str(i+1))
+                fdrop_list.remove(f)
 
         field = list(flist_dep | flist)
         dat = self._get_field(field, le, re, as_xarray)
