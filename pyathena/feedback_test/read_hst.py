@@ -29,13 +29,21 @@ class ReadHst:
         hst['time_code'] = hst['time']
         # Time in Myr
         hst['time'] *= u.Myr
-        # Total gas mass in Msun
-        hst['mass'] *= vol*u.Msun
-
-        # Shell formation time in Myr (Eq.7 in Kim & Ostriker 2015)
+        # Time step
+        hst['dt_code'] = hst['dt']
+        hst['dt'] *= u.Myr
+        
+        # Shell formation time for a single SN in Myr
+        # (Eq.7 in Kim & Ostriker 2015)
         tsf = 4.4e-2*self.par['problem']['n0']**-0.55
         hst['time_tsf'] = hst['time']/tsf
         hst['tsf'] = tsf
+
+        # Shell formation time for wind goes here..
+
+        
+        # Total gas mass in Msun
+        hst['mass'] *= vol*u.Msun
 
         # Mass weighted SNR position in pc
         hst['Rsh'] = hst['Rsh_den']/hst['Msh']*u.pc
@@ -55,23 +63,23 @@ class ReadHst:
         hst['pr_hot'] *= vol*(u.mass*u.velocity).value
         hst['pr_sh'] *= vol*(u.mass*u.velocity).value
 
-        # Predicted momentum
-        from scipy.integrate import cumtrapz
+        # For radiation feedback
+        if self.par['configure']['radps'] == 'ON':
+            from scipy.integrate import cumtrapz
 
-        hst['pr_pred'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
-                                  hst['time_code'], initial=0.0)
-        
-        hst['pr_pred'] *= vol*(u.mass*u.velocity).value
-        
-        # Total/escaping luminosity in Lsun
-        nfreq = self.par['radps']['nfreq']
-        try:
-            for i in range(nfreq):
-                hst['Ltot{0:d}'] *= vol*u.Lsun
-                hst['Lesc{0:d}'] *= vol*u.Lsun
-        except KeyError:
-            pass
-        
+            # Expected radial momentum injection in the optically-thick limit
+            hst['pr_inject'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
+                                      hst['time_code'], initial=0.0)
+            hst['pr_inject'] *= vol*(u.mass*u.velocity).value
+
+            # Total/escaping luminosity in Lsun
+            try:
+                for i in range(self.par['radps']['nfreq']):
+                    hst[f'Ltot{i}'] *= vol*u.Lsun
+                    hst[f'Lesc{i}'] *= vol*u.Lsun
+            except KeyError:
+                pass
+
         hst.index = hst['time_code']
         
         self.hst = hst
