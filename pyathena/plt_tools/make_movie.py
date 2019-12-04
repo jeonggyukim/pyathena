@@ -4,7 +4,8 @@ import base64
 from IPython.display import HTML
 
 def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
-    """Create a mp4 movie from files matching a glob pattern 
+    """(wrapper) function to create an mp4 movie from files matching a glob
+    pattern.
     
     Parameters
     ----------
@@ -23,6 +24,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
     fps and the frame rate of the output file to 24 fps
 
     >>> make_movie('a.????.png', 'a.mp4', fps_in=1, fps_out=24)
+
     """
 
     cmd = ['ffmpeg',

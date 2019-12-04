@@ -16,7 +16,22 @@ def static_vars(**kwargs):
     return decorate
 
 def set_derived_fields(par, x0):
+    """
+    Function to define derived fields info, for example,
+    functions to calculate derived fields, dependency, label, colormap, etc.
 
+    Parameters
+    ----------
+    par: dict
+       Dictionary containing simulation parameter information
+    x0: sequence of floats
+       Coordinate of the center with respect to which distance is measured
+
+    Returns
+    -------
+    Tuple of dictionaries containing derived fields info
+    """
+    
     func = dict()
     field_dep = dict()
     label = dict()
@@ -49,7 +64,7 @@ def set_derived_fields(par, x0):
     label[f] = r'$n_{\rm H_2}\;[{\rm cm^{-3}}]$'
     cmap[f] = 'Spectral_r'
 
-    # nH2 [cm^-3] (assume d=nH)
+    # xH2 [cm^-3] (assume d=nH)
     f = 'xH2'
     field_dep[f] = set(['xH2'])
     def _xH2(d, u):

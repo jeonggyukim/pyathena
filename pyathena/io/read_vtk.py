@@ -235,6 +235,11 @@ class AthenaDataSet(object):
         as_xarray : bool
            If True, returns results as an xarray Dataset. If False, returns a
            dictionary containing numpy arrays. Default value is True.
+
+        Returns
+        -------
+        dat : xarray dataset
+            An xarray dataset containing fields.
         """
 
         field = np.atleast_1d(field)
