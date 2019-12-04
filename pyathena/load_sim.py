@@ -19,7 +19,7 @@ from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
 from .io.read_athinput import read_athinput
 from .util.units import Units
-from .fields.fields import DerivedFieldsDefault
+from .fields.fields import DerivedFields
 
 class LoadSim(object):
     """Class to prepare Athena simulation data analysis. Read input parameters,
@@ -115,7 +115,7 @@ class LoadSim(object):
             pass
         
         self.u = units
-        self.dfi = DerivedFieldsDefault().dfi
+        self.dfi = DerivedFields(self.par).dfi
         
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
         """Function to read Athena vtk file using pythena or yt and 
