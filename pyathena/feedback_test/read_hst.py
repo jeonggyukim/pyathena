@@ -15,9 +15,10 @@ class ReadHst:
     def read_hst(self, savdir=None, force_override=False):
         """Function to read hst and convert quantities to convenient units
         """
-
+        
         hst = read_hst(self.files['hst'], force_override=force_override)
 
+        par = self.par
         u = self.u
         domain = self.domain
         # volume of resolution element (code unit)
@@ -32,15 +33,17 @@ class ReadHst:
         # Time step
         hst['dt_code'] = hst['dt']
         hst['dt'] *= u.Myr
+        if par['configure']['new_cooling'] == 'ON' and par['configure']['radps'] == 'ON':
+            for f in ('dt_cool_min','dt_xH2_min','dt_xHII_min'):
+                hst[f] *= u.Myr*vol
         
         # Shell formation time for a single SN in Myr
         # (Eq.7 in Kim & Ostriker 2015)
-        tsf = 4.4e-2*self.par['problem']['n0']**-0.55
+        tsf = 4.4e-2*par['problem']['n0']**-0.55
         hst['time_tsf'] = hst['time']/tsf
         hst['tsf'] = tsf
 
         # Shell formation time for wind goes here..
-
         
         # Total gas mass in Msun
         hst['mass'] *= vol*u.Msun
@@ -63,23 +66,39 @@ class ReadHst:
         hst['pr_hot'] *= vol*(u.mass*u.velocity).value
         hst['pr_sh'] *= vol*(u.mass*u.velocity).value
 
-        # For radiation feedback
-        if self.par['configure']['radps'] == 'ON':
+        hst['vr_sh'] = hst['pr_sh']/hst['Msh']
+        
+        # Radiation feedback turned on
+        if par['configure']['radps'] == 'ON':
             from scipy.integrate import cumtrapz
 
-            # Expected radial momentum injection in the optically-thick limit
-            hst['pr_inject'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
-                                      hst['time_code'], initial=0.0)
-            hst['pr_inject'] *= vol*(u.mass*u.velocity).value
+            # Expected radial momentum injection
+            if par['radps']['apply_force'] == 1 and par['configure']['ionrad']:
+                # Radiation pressure only (in the optically-thick limit)
+                hst['pr_inject'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
+                                            hst['time_code'], initial=0.0)
+                hst['pr_inject'] *= vol*(u.mass*u.velocity).value
 
             # Total/escaping luminosity in Lsun
-            try:
-                for i in range(self.par['radps']['nfreq']):
-                    hst[f'Ltot{i}'] *= vol*u.Lsun
-                    hst[f'Lesc{i}'] *= vol*u.Lsun
-            except KeyError:
-                pass
+            ifreq = dict()
+            for f in ('PH','LW','PE','PE_unatt'):
+                try:
+                    ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
+                except KeyError:
+                    pass
 
+            for i in range(par['radps']['nfreq']):
+                for k, v in ifreq.items():
+                    if i == v:
+                        try:
+                            hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
+                            hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
+                            hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
+                            hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
+                                               (ac.L_sun.cgs.value)/hnu
+                        except KeyError:
+                            pass
+            
         hst.index = hst['time_code']
         
         self.hst = hst
