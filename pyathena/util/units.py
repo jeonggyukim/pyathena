@@ -37,7 +37,7 @@ class Units(object):
         self.density = (self.mass/self.length**3).cgs
         self.energy = (self.mass*self.velocity**2).cgs
         self.pressure = (self.density*self.velocity**2).cgs
-        self.energy_density = self.pressure
+        self.energy_density = self.pressure.to('erg/cm**3')
         
         self.mass_flux = (self.density*self.velocity).to('Msun/(pc**2*Myr)')
         
