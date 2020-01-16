@@ -64,61 +64,6 @@ def set_derived_fields(par, x0):
     vminmax[f] = (1e-3,1e4)
     take_log[f] = True
 
-    # nH2 [cm^-3] (assume d=nH)
-    f = 'nH2'
-    field_dep[f] = set(['density', 'xH2'])
-    def _nH2(d, u):
-        return d['density']*d['xH2']
-    func[f] = _nH2
-    label[f] = r'$n_{\rm H_2}\;[{\rm cm^{-3}}]$'
-    cmap[f] = get_my_cmap('Greens')
-    vminmax[f] = (1e0,1e4)
-    take_log[f] = True
-
-    # xH2 [cm^-3] (assume d=nH)
-    f = 'xH2'
-    field_dep[f] = set(['xH2'])
-    def _xH2(d, u):
-        return d['xH2']
-    func[f] = _xH2
-    label[f] = r'$x_{\rm H_2}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (0,0.5)
-    take_log[f] = False
-
-    # nHI [cm^-3]
-    f = 'nHI'
-    field_dep[f] = set(['density', 'xHI'])
-    def _nHI(d, u):
-        return d['density']*d['xHI']
-    func[f] = _nHI
-    label[f] = r'$n_{\rm H^0}\;[{\rm cm^{-3}}]$'
-    cmap[f] = get_my_cmap('Blues')
-    vminmax[f] = (1e-3,1e4)
-    take_log[f] = True
-
-    # xHI [cm^-3] (assume d=nH)
-    f = 'xHI'
-    field_dep[f] = set(['xHI'])
-    def _xHI(d, u):
-        return d['xHI']
-    func[f] = _xHI
-    label[f] = r'$x_{\rm H^0}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (0.0, 1.0)
-    take_log[f] = False
-    
-    # nHII [cm^-3]
-    f = 'nHII'
-    field_dep[f] = set(['density', 'xHI', 'xH2'])
-    def _nHII(d, u):
-        return d['density']*(1.0 - d['xHI'] - 2.0*d['xH2'])
-    func[f] = _nHII
-    label[f] = r'$n_{\rm H^+}\;[{\rm cm^{-3}}]$'
-    cmap[f] = get_my_cmap('Oranges')
-    vminmax[f] = (1e-3,1e4)
-    take_log[f] = True
-
     # P/kB [K cm^-3]
     f = 'pok'
     field_dep[f] = set(['pressure'])
@@ -143,13 +88,24 @@ def set_derived_fields(par, x0):
     func[f] = _r
     label[f] = r'$r\;[{\rm pc}]$'
     cmap[f] = 'viridis'
-    # vmax = box length
+    # Set vmax to box length
     Lx = par['domain1']['x1max']-par['domain1']['x1min']
     Ly = par['domain1']['x2max']-par['domain1']['x2min']
     Lz = par['domain1']['x3max']-par['domain1']['x3min']
     Lmax = max(max(Lx,Ly),Lz)
     vminmax[f] = (0,Lmax)
     take_log[f] = False
+
+    # Velocity magnitude [km/s]
+    f = 'vmag'
+    field_dep[f] = set(['velocity'])
+    def _vmag(d, u):
+        return (d['velocity1']**2 + d['velocity2']**2 + d['velocity3']**2)**0.5
+    func[f] = _vmag
+    label[f] = r'$|\mathbf{v}|\;[{\rm km\,s^{-1}}]$'
+    vminmax[f] = (0.1, 1000.0)
+    cmap[f] = 'cividis'
+    take_log[f] = True
 
     # Radial velocity w.r.t. x0 [km/s]
     f = 'vr'
@@ -169,7 +125,7 @@ def set_derived_fields(par, x0):
                                   (abs(vminmax[f][0]) + abs(vminmax[f][1])),
                          name='cmap_vr')
     take_log[f] = False
-
+    
     # vx [km/s]
     f = 'vz'
     field_dep[f] = set(['velocity'])
@@ -203,8 +159,9 @@ def set_derived_fields(par, x0):
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
     
-    # T [K]
+    # Cooling
     if par['configure']['cooling'] == 'ON':
+        # T [K]
         f = 'T'
         field_dep[f] = set(['temperature'])
         def _T(d, u):
@@ -215,10 +172,166 @@ def set_derived_fields(par, x0):
         vminmax[f] = (1e1,1e7)
         take_log[f] = True
 
+        f = 'cool_rate'
+        field_dep[f] = set(['cool_rate'])
+        def _cool_rate(d, u):
+            return d['cool_rate']
+        func[f] = _cool_rate
+        label[f] = r'$\mathcal{L}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
+        cmap[f] = 'cubehelix_r'
+        vminmax[f] = (1e-26,1e-18)
+        take_log[f] = True
+
+        f = 'heat_rate'
+        field_dep[f] = set(['heat_rate'])
+        def _heat_rate(d, u):
+            return d['heat_rate']
+        func[f] = _heat_rate
+        label[f] = r'$\mathcal{G}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
+        cmap[f] = 'cubehelix_r'
+        vminmax[f] = (1e-28,1e-20)
+        take_log[f] = True
+
+        f = 'net_cool_rate'
+        field_dep[f] = set(['cool_rate','heat_rate'])
+        def _net_cool_rate(d, u):
+            return d['cool_rate'] - d['heat_rate']
+        func[f] = _net_cool_rate
+        label[f] = r'$\mathcal{L}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
+        cmap[f] = 'bwr_r'
+        vminmax[f] = (-1e-20,1e-20)
+        take_log[f] = False
+
+    # New cooling
+    if par['configure']['new_cooling'] == 'ON':
+
+        # nH2 [cm^-3] (assume d=nH)
+        f = 'nH2'
+        field_dep[f] = set(['density', 'xH2'])
+        def _nH2(d, u):
+            return d['density']*d['xH2']
+        func[f] = _nH2
+        label[f] = r'$n_{\rm H_2}\;[{\rm cm^{-3}}]$'
+        cmap[f] = get_my_cmap('Greens')
+        vminmax[f] = (1e0,1e4)
+        take_log[f] = True
+
+        # 2nH2 [cm^-3] (assume d=nH)
+        f = '2nH2'
+        field_dep[f] = set(['density', 'xH2'])
+        def _2nH2(d, u):
+            return 2.0*d['density']*d['xH2']
+        func[f] = _2nH2
+        label[f] = r'$2n_{\rm H_2}\;[{\rm cm^{-3}}]$'
+        cmap[f] = get_my_cmap('Greens')
+        vminmax[f] = (1e0,1e4)
+        take_log[f] = True
+
+        # xH2 [cm^-3] (assume d=nH)
+        f = 'xH2'
+        field_dep[f] = set(['xH2'])
+        def _xH2(d, u):
+            return d['xH2']
+        func[f] = _xH2
+        label[f] = r'$x_{\rm H_2}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (0,0.5)
+        take_log[f] = False
+
+        # 2xH2 [cm^-3] (assume d=nH)
+        f = '2xH2'
+        field_dep[f] = set(['xH2'])
+        def _2xH2(d, u):
+            return 2*d['xH2']
+        func[f] = _2xH2
+        label[f] = r'$2x_{\rm H_2}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (0,1.0)
+        take_log[f] = False
+
+        # nHI [cm^-3]
+        f = 'nHI'
+        field_dep[f] = set(['density', 'xHI'])
+        def _nHI(d, u):
+            return d['density']*d['xHI']
+        func[f] = _nHI
+        label[f] = r'$n_{\rm H^0}\;[{\rm cm^{-3}}]$'
+        cmap[f] = get_my_cmap('Blues')
+        vminmax[f] = (1e-3,1e4)
+        take_log[f] = True
+
+        # xHI
+        f = 'xHI'
+        field_dep[f] = set(['xHI'])
+        def _xHI(d, u):
+            return d['xHI']
+        func[f] = _xHI
+        label[f] = r'$x_{\rm H^0}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (0.0, 1.0)
+        take_log[f] = False
+
+        # nHII [cm^-3]
+        f = 'nHII'
+        field_dep[f] = set(['density', 'xHI', 'xH2'])
+        def _nHII(d, u):
+            return d['density']*(1.0 - d['xHI'] - 2.0*d['xH2'])
+        func[f] = _nHII
+        label[f] = r'$n_{\rm H^+}\;[{\rm cm^{-3}}]$'
+        cmap[f] = get_my_cmap('Oranges')
+        vminmax[f] = (1e-3,1e4)
+        take_log[f] = True
+
+        # xHII
+        f = 'xHII'
+        field_dep[f] = set(['xH2','xHI'])
+        def _xHII(d, u):
+            return 1.0 - d['xHI'] - 2.0*d['xH2']
+        func[f] = _xHII
+        label[f] = r'$x_{\rm H^+}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (0.0, 1.0)
+        take_log[f] = False
+
+        # ne
+        f = 'ne'
+        field_dep[f] = set(['density','xe'])
+        def _ne(d, u):
+            return d['density']*d['xe']
+        func[f] = _ne
+        label[f] = r'$n_{\rm e}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-6, 1e3)
+        take_log[f] = False
+
+        # xe
+        f = 'xe'
+        field_dep[f] = set(['xe'])
+        def _xe(d, u):
+            return d['xe']
+        func[f] = _xe
+        label[f] = r'$x_{\rm e}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-6, 1.208)
+        take_log[f] = True
+
+
     if par['configure']['radps'] == 'ON':
         # Dust PE opacity for Z'=1
-        kappa_dust_PE_def = 418.7
+        # kappa_dust_PE_def = 418.7
 
+        # Normalized FUV radiation field strength (Draine field unit)
+        f = 'chi_PE'
+        field_dep[f] = set(['rad_energy_density_PE'])
+        def _chi_PE(d, u):
+            Erad_PE_ISRF = 8.9401e-14
+            return d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE_ISRF
+        func[f] = _chi_PE
+        label[f] = r'$\chi_{\rm PE}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-4,1e4)
+        take_log[f] = True
+        
         # heat_ratio (G0) ; temporary output
         f = 'heat_ratio'
         field_dep[f] = set(['heat_ratio'])
@@ -245,13 +358,15 @@ def set_derived_fields(par, x0):
             # Normalized LW intensity (attenuated by dust and H2 self-shielding)
             # From Sternberg+14,
             # For Draine ISRF and 912 < lambda/angstrom < 1108,
-            # The total photon density is 6.9e-4/cm^3, or flux 2.06856796e7/cm^2/s
-            # Assuming hnu_LW=12eV, we have u_LW = 1.3266e-14 erg/cm^3
+            # The total photon density is 6.9e-4/cm^3, or flux 2.07e7/cm^2/s
+            # Energy density is u_LW = 1.33e-14 erg/cm^3 and
+            # the mean energy of photons is ~12eV
             # (cf. Mathis ISRF gives u_LW = 9.56e-15 erg/cm^3; see also Heays+17)
             f = 'chi_LW'
             field_dep[f] = set(['rad_energy_density_LW'])
             def _chi_LW(d, u):
-                Erad_LW_ISRF = ((6.9e-4/au.cm**3)*(par['radps']['hnu_LW']*au.eV)).to('erg/cm**3').value
+                # Erad_LW_ISRF = ((6.9e-4/au.cm**3)*(par['radps']['hnu_LW']*au.eV)).to('erg/cm**3').value
+                Erad_LW_ISRF = 1.33e-14
                 return d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW_ISRF
             func[f] = _chi_LW
             label[f] = r'$\chi_{\rm LW}$'
