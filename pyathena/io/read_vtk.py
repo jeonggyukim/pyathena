@@ -257,7 +257,12 @@ class AthenaDataSet(object):
 
         # Let's first make sure that we have all info about dflist
         if not dflist.issubset(set(self.dfi.keys())):
-            raise KeyError("Check derived field name", self.dfi.keys())
+            tmp = []
+            for f in dflist:
+                if not f in self.dfi.keys():
+                    tmp.append(f)
+
+            raise KeyError("Unrecognized field name(s):", tmp)
         
         # Field names that are in the vtk file
         flist = set(field) - dflist
