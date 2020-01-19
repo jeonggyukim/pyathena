@@ -2,7 +2,7 @@
 #SBATCH --job-name=do_tasks
 #SBATCH -N 1
 #SBATCH -p shared
-#SBATCH -n 7
+#SBATCH -n 28
 #SBATCH -t 00:30:00
 ##SBATCH --mail-type=begin
 ##SBATCH --mail-type=end
@@ -11,10 +11,10 @@
 #SBATCH --output=do_tasks_%j.out
 #
 
-NPROCS=7
+NPROCS=28
 
 #SCRIPT="/tigress/jk11/pyathena/pyathena/tigress_rt/do_tasks.py"
-MODULE="pyathena.tigress_dig.do_tasks"
+MODULE="pyathena.feedback_test.draw_snapshot"
 
 export MATPLOTLIBRC="$HOME/.config/matplotlib"
 export TERM="xterm-256color"
