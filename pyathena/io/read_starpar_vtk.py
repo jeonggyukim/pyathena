@@ -157,7 +157,11 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
             star[k] = v[idsrt]
 
     # Add time, nstars keys at the end
-    df = pd.DataFrame(star)
+    try:
+        df = pd.DataFrame(star)
+    except:
+        df = pd.DataFrame(index=star.keys())
+        
     df.time = time
     df.nstars = nstars
     try:

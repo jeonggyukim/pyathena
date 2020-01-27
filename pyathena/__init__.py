@@ -10,6 +10,12 @@ __all__ = [
            # LoadSim
            "LoadSim",
            "LoadSimAll",
+           # GMC
+           "LoadSimGMC",
+           "LoadSimGMCAll",
+           # FeedbackTest
+           "LoadSimFeedbackTest",
+           "LoadSimFeedbackTestAll",
            # DIG
            "LoadSimTIGRESSDIG",
            "LoadSimTIGRESSDIGAll",
@@ -34,11 +40,13 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 
 # LoadSim classes
 from .load_sim import LoadSim, LoadSimAll
+# Problem specific subclasses
 from .feedback_test.load_sim_feedback_test import LoadSimFeedbackTest, LoadSimFeedbackTestAll
+from .gmc.load_sim_gmc import LoadSimGMC, LoadSimGMCAll
 from .tigress_dig.load_sim_tigress_dig import LoadSimTIGRESSDIG, LoadSimTIGRESSDIGAll
-from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSXCOAll
-from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll
 from .tigress_rt.load_sim_tigress_rt import LoadSimTIGRESSRT, LoadSimTIGRESSRTAll
+from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll
+from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSXCOAll
 
 # Utils
 from .util.units import Units, ac, au

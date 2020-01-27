@@ -34,50 +34,31 @@ class ReadHst:
         hst['dt_code'] = hst['dt']
         hst['dt'] *= u.Myr
         if par['configure']['new_cooling'] == 'ON' and par['configure']['radps'] == 'ON':
-            for f in ('dt_cool_min','dt_xH2_min','dt_xHII_min'):
-                hst[f] *= u.Myr*vol
+            for c in ('dt_cool_min','dt_xH2_min','dt_xHII_min'):
+                hst[c] *= u.Myr*vol
         
-        # Shell formation time for a single SN in Myr
-        # (Eq.7 in Kim & Ostriker 2015)
-        tsf = 4.4e-2*par['problem']['n0']**-0.55
-        hst['time_tsf'] = hst['time']/tsf
-        hst['tsf'] = tsf
+        # Mass of (gas, gas, starpar, cold/intermediate/warm/hot temperature gas,
+        #          molecular,atomic,ionized) in Msun
+        for c in ('mass','mass_gas','mass_sp','Mcold','Minter','Mwarm','Mhot','mass_sp_esc'):
+            try:
+                hst[c] *= vol*u.Msun
+            except KeyError:
+                continue
 
-        # Shell formation time for wind goes here..
-        
-        # Total gas mass in Msun
-        hst['mass'] *= vol*u.Msun
+        # mass_sp_in: mass of sp currently in the domain
+        # mass_sp_esc: mass of sp escaped the domain
+        # mass_sp: total
+        if 'mass_sp_esc' in hst.columns and 'mass_sp' in hst.columns:
+            hst['mass_sp_in'] = hst['mass_sp']
+            hst['mass_sp'] += hst['mass_sp_esc']
+ 
+        if par['configure']['new_cooling'] == 'ON':
+            for c in ('MH2','MHI','MHII'):
+                hst[c] *= vol*u.Msun
 
-        # Mass weighted SNR position in pc
-        hst['Rsh'] = hst['Rsh_den']/hst['Msh']*u.pc
-        # shell mass in Msun
-        hst['Msh'] *= u.Msun*vol
-        # hot gas mass in Msun
-        hst['Mhot'] *= u.Msun*vol
-        # warm gas mass in Msun
-        hst['Mwarm'] *= u.Msun*vol
-        # intermediate temperature gas in Msun
-        hst['Minter'] *= u.Msun*vol
-        # cold gas mass in Msun
-        hst['Mcold'] *= u.Msun*vol
-
-        # Total/hot gas/shell momentum in Msun*km/s
-        hst['pr'] *= vol*(u.mass*u.velocity).value
-        hst['pr_hot'] *= vol*(u.mass*u.velocity).value
-        hst['pr_sh'] *= vol*(u.mass*u.velocity).value
-
-        hst['vr_sh'] = hst['pr_sh']/hst['Msh']
-        
         # Radiation feedback turned on
         if par['configure']['radps'] == 'ON':
             from scipy.integrate import cumtrapz
-
-            # Expected radial momentum injection
-            if par['radps']['apply_force'] == 1 and par['configure']['ionrad']:
-                # Radiation pressure only (in the optically-thick limit)
-                hst['pr_inject'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
-                                            hst['time_code'], initial=0.0)
-                hst['pr_inject'] *= vol*(u.mass*u.velocity).value
 
             # Total/escaping luminosity in Lsun
             ifreq = dict()
