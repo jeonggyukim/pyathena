@@ -162,10 +162,16 @@ class AthenaDataSet(object):
                               zip(greu-gleu, self.domain['dx'])])
         Nxg = np.array(np.array_split(Nxg, NGrid.cumsum()[:-1]))
 
+        # Since floating point arithmetic may result in incorrect results,
+        # we need to round to the nearest integer
+        for i, Nxg_ in enumerate(Nxg):
+            Nxg[i] = (np.rint(Nxg_)).astype(int)
+
+        # Number of cells in region
         Nxr = np.empty(Nxg.shape[0], dtype=int)
         for i, Nxg_ in enumerate(Nxg):
-            Nxr[i] = np.sum(Nxg_.astype(int))
-
+            Nxr[i] = np.sum(Nxg_)
+        
         assert len(gidx) == NGrid.prod(),\
             print('Unexpected error: Number of grids {0:d} != '.format(len(gidx)) +
                   'number of unique edges {0:d}.'.format(NGrid.prod()))
@@ -345,9 +351,10 @@ class AthenaDataSet(object):
         dx = self.domain['dx']
         for i in self.region['gidx']:
             g = self.grid[i]
-            il = ((g['le'] - le)/dx).astype(int)
+            il = (np.rint((g['le'] - le)/dx)).astype(int)
             iu = il + g['Nx']
             slc = tuple([slice(l, u) for l, u in zip(il[::-1], iu[::-1])])
+
             for f in field:
                 arr[f][slc] = self._read_array(g, f)
 
