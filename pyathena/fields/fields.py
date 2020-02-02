@@ -338,8 +338,77 @@ def set_derived_fields_newcool(par, x0):
     vminmax[f] = (1e-6, 1.208)
     take_log[f] = True
 
+    # xCII - single ionized carbon
+    # Use with caution!
+    # (Do not apply to hot gas and depend on cooling implementation)
+    f = 'xCII'
+    try:
+        xCtot = par['cooling']['xCstd']
+    except KeyError:
+        xCtot = 1.6e-4
+    field_dep[f] = set(['xe','xH2','xHI'])
+    def _xCII(d, u):
+        # Apply floor and ceiling
+        return np.maximum(0.0,np.minimum(xCtot,d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2'])))
+    func[f] = _xCII
+    label[f] = r'$x_{\rm CII}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (0,1.6e-4)
+    take_log[f] = False
+    
     return func, field_dep, label, cmap, vminmax, take_log
 
+
+def set_derived_fields_sixray(par, x0):
+
+    func = dict()
+    field_dep = dict()
+    label = dict()
+    cmap = dict()
+    vminmax = dict()
+    take_log = dict()
+
+    try:
+        Erad_PE0 = par['cooling']['Erad_PE0']
+        Erad_LW0 = par['cooling']['Erad_LW0']
+    except KeyError:
+        Erad_PE0 = 8.948e-14
+        Erad_LW0 = 1.335e-14
+    
+    # Normalized FUV radiation field strength (Draine ISRF)
+    f = 'chi_PE_ext'
+    field_dep[f] = set(['rad_energy_density_PE_ext'])
+    def _chi_PE_ext(d, u):
+        return d['rad_energy_density_PE_ext']*(u.energy_density.cgs.value/Erad_PE0)
+    func[f] = _chi_PE_ext
+    label[f] = r'$\chi_{\rm PE,ext}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized LW radiation field
+    f = 'chi_LW_ext'
+    field_dep[f] = set(['rad_energy_density_LW_ext'])
+    def _chi_LW_ext(d, u):
+        return d['rad_energy_density_LW_ext']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_LW_ext
+    label[f] = r'$\chi_{\rm LW,ext}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized LW radiation field strength (Draine ISRF)
+    f = 'chi_LW_diss_ext'
+    field_dep[f] = set(['rad_energy_density_LW_diss_ext'])
+    def _chi_LW_diss_ext(d, u):
+        return d['rad_energy_density_LW_diss_ext']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_LW_diss_ext
+    label[f] = r'$\chi_{\rm LW,diss,ext}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_rad(par, x0):
 
@@ -353,12 +422,18 @@ def set_derived_fields_rad(par, x0):
     # Dust PE opacity for Z'=1
     kappa_dust_PE_def = 418.7
 
+    try:
+        Erad_PE0 = par['cooling']['Erad_PE0']
+        Erad_LW0 = par['cooling']['Erad_LW0']
+    except KeyError:
+        Erad_PE0 = 8.948e-14
+        Erad_LW0 = 1.335e-14
+    
     # Normalized FUV radiation field strength (Draine field unit)
     f = 'chi_PE'
     field_dep[f] = set(['rad_energy_density_PE'])
     def _chi_PE(d, u):
-        Erad_PE_ISRF = 8.9401e-14
-        return d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE_ISRF
+        return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE_ISRF)
     func[f] = _chi_PE
     label[f] = r'$\chi_{\rm PE}$'
     cmap[f] = 'viridis'
@@ -401,30 +476,28 @@ def set_derived_fields_rad(par, x0):
             field_dep[f] = set(['rad_energy_density_LW'])
             def _chi_LW(d, u):
                 # Erad_LW_ISRF = ((6.9e-4/au.cm**3)*(par['radps']['hnu_LW']*au.eV)).to('erg/cm**3').value
-                Erad_LW_ISRF = 1.33e-14
-                return d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW_ISRF
+                return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
             func[f] = _chi_LW
             label[f] = r'$\chi_{\rm LW}$'
             cmap[f] = 'viridis'
             vminmax[f] = (1e-4,1e4)
             take_log[f] = True
 
-            # Normalized LW intensity (attenuated by dust only)
-            f = 'chi_LW_dust'
-            field_dep[f] = set(['rad_energy_density_LW_dust'])
-            def _chi_LW_dust(d, u):
-                return d['rad_energy_density_LW_dust']*u.energy_density.cgs.value/1.3266e-14
-            func[f] = _chi_LW_dust
-            label[f] = r'$\chi_{\rm LW,d}$'
+            f = 'chi_LW_diss'
+            field_dep[f] = set(['rad_energy_density_LW_diss'])
+            def _chi_LW_diss(d, u):
+                return d['rad_energy_density_LW_diss']*(u.energy_density.cgs.value/Erad_LW0)
+            func[f] = _chi_LW_diss
+            label[f] = r'$\chi_{\rm LW,diss}$'
             cmap[f] = 'viridis'
             vminmax[f] = (1e-8,1e4)
             take_log[f] = True
 
             # fshld_H2 (effective)
             f = 'fshld_H2'
-            field_dep[f] = set(['rad_energy_density_LW','rad_energy_density_LW_dust'])
+            field_dep[f] = set(['rad_energy_density_LW','rad_energy_density_LW_diss'])
             def _fshld_H2(d, u):
-                return d['rad_energy_density_LW']/d['rad_energy_density_LW_dust']
+                return d['rad_energy_density_LW_diss']/d['rad_energy_density_LW']
             func[f] = _fshld_H2
             label[f] = r'$f_{\rm shld,H2}$'
             cmap[f] = 'tab20c'
@@ -485,19 +558,21 @@ class DerivedFields(object):
                  self.vminmax, self.take_log)
 
 
-        try:
-            if par['configure']['new_cooling'] == 'ON':
-                dicts_ = set_derived_fields_newcool(par, x0)
-                for d, d_ in zip(dicts, dicts_):
-                    d = d.update(d_)
-        except KeyError:
-            pass
+        if par['configure']['new_cooling'] == 'ON':
+            dicts_ = set_derived_fields_newcool(par, x0)
+            for d, d_ in zip(dicts, dicts_):
+                d = d.update(d_)
                     
         if par['configure']['radps'] == 'ON':
             dicts_ = set_derived_fields_rad(par, x0)
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
+        if par['configure']['sixray'] == 'ON':
+            dicts_ = set_derived_fields_sixray(par, x0)
+            for d, d_ in zip(dicts, dicts_):
+                d = d.update(d_)
+                
         # Add X-ray emissivity if Wind or SN is turned on
         try:
             if par['feedback']['iSN'] > 0 or par['feedback']['iWind'] > 0 or \
