@@ -355,6 +355,17 @@ def set_derived_fields_newcool(par, x0):
     cmap[f] = 'viridis'
     vminmax[f] = (0,1.6e-4)
     take_log[f] = False
+
+    # xi_CR
+    f = 'xi_CR'
+    field_dep[f] = set(['CR_ionization_rate'])
+    def _xi_CR(d, u):
+        return d['CR_ionization_rate']
+    func[f] = _xi_CR
+    label[f] = r'$\xi_{\rm CR}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-14,1e-18)
+    take_log[f] = True
     
     return func, field_dep, label, cmap, vminmax, take_log
 
@@ -568,10 +579,13 @@ class DerivedFields(object):
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
-        if par['configure']['sixray'] == 'ON':
-            dicts_ = set_derived_fields_sixray(par, x0)
-            for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+        try:
+            if par['configure']['sixray'] == 'ON':
+                dicts_ = set_derived_fields_sixray(par, x0)
+                for d, d_ in zip(dicts, dicts_):
+                    d = d.update(d_)
+        except KeyError:
+            pass
                 
         # Add X-ray emissivity if Wind or SN is turned on
         try:
