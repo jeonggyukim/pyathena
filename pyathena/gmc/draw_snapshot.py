@@ -62,7 +62,8 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
     cm3 = get_my_cmap('Oranges')
 
     ds = s.load_vtk(num)
-    dd = ds.get_field(['nH2','nHI','nHII','ne','T','j_X'])
+    dd = ds.get_field(['nH2','nHI','nHII','ne','T'])
+    #dd = ds.get_field(['nH2','nHI','nHII','ne','T','j_X'])
     dfi = dd.dfi
     sp = s.load_starpar_vtk(num)
     
@@ -83,33 +84,44 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
                cbar_kwargs=dict(label=r'${\rm EM}\equiv\int n_e^2 d\ell\;[{\rm cm}^{-6}\,{\rm pc}]$'))
 
     # Density slices
-#     slc = dd.sel(**{axis:0.0},method='nearest')
-#     im = slc['nHI'].plot.imshow(ax=axes[2], cmap=cm2, norm=LogNorm(1e-2,1e4),
-#                                 add_labels=False,add_colorbar=True, extend='neither')
-#     im.colorbar.remove()
-#     im = slc['nH2'].plot.imshow(ax=axes[2], cmap=cm1, norm=LogNorm(1e-2,1e4),
-#                                 add_labels=False,add_colorbar=False, extend='neither')
-#     im = slc['nHII'].plot.imshow(ax=axes[2], cmap=cm3, norm=LogNorm(1e-2,1e4),
-#                                  add_labels=False,add_colorbar=False, extend='neither')
-#     im = slc['T'].plot.imshow(ax=axes[3], cmap=dfi['T']['cmap'], norm=LogNorm(1e1,1e6),
-#                               add_labels=False, add_colorbar=True)
-#     im.colorbar.remove()
-
-    # X-ray intensity
-    dd['I_X'] = 1.0/(4.0*np.pi)*dd['j_X'].sum(dim='z')*dd.domain['dx'][2]*s.u.length.cgs.value
-    dd['I_X'].plot.imshow(ax=axes[2], norm=LogNorm(1e-10,1e-6),
-                          extend='neither',cmap='Blues',
-                          add_labels=False, xticks=[-40,-20,0,20,40],yticks=[-40,-20,0,20,40],
-                          cbar_kwargs=dict(label=r'$I_X\;[{\rm erg\,{\rm cm}^{-2}\,{\rm s}^{-1}}]$'))
-    
-    im = dd['I_X'].plot.imshow(ax=axes[3], norm=LogNorm(1e-10,1e-6),
-                           extend='neither',cmap='Blues',
-                           add_labels=False, xticks=[-40,-20,0,20,40],yticks=[-40,-20,0,20,40],
-                           cbar_kwargs=dict(label=r'$I_X\;[{\rm erg\,{\rm cm}^{-2}\,{\rm s}^{-1}}]$'))
+    slc = dd.sel(**{axis:0.0},method='nearest')
+    im = slc['nHI'].plot.imshow(ax=axes[2], cmap=cm2, norm=LogNorm(1e-2,1e4),
+                                add_labels=False,add_colorbar=True, extend='neither')
     im.colorbar.remove()
-    _, _, _ = draw_snapshot_rgb(s, num, axes[3], minimum=0., stretch=500, Q=20)
+    im = slc['nH2'].plot.imshow(ax=axes[2], cmap=cm1, norm=LogNorm(1e-2,1e4),
+                                add_labels=False,add_colorbar=False, extend='neither')
+    im = slc['nHII'].plot.imshow(ax=axes[2], cmap=cm3, norm=LogNorm(1e-2,1e4),
+                                 add_labels=False,add_colorbar=False, extend='neither')
+    im = slc['T'].plot.imshow(ax=axes[3], cmap=dfi['T']['cmap'], norm=LogNorm(1e1,1e6),
+                              add_labels=False, add_colorbar=True)
+    im.colorbar.remove()
 
-    for ax in axes[0:3]:
+    # # X-ray intensity
+    # dd['I_X'] = 1.0/(4.0*np.pi)*dd['j_X'].sum(dim='z')*dd.domain['dx'][2]*s.u.length.cgs.value
+    # dd['I_X'].plot.imshow(ax=axes[2], norm=LogNorm(1e-10,1e-6),
+    #                       extend='neither',cmap='Blues',
+    #                       add_labels=False, xticks=[-40,-20,0,20,40],yticks=[-40,-20,0,20,40],
+    #                       cbar_kwargs=dict(label=r'$I_X\;[{\rm erg\,{\rm cm}^{-2}\,{\rm s}^{-1}}]$'))
+    
+    # im = dd['I_X'].plot.imshow(ax=axes[3], norm=LogNorm(1e-10,1e-6),
+    #                        extend='neither',cmap='Blues',
+    #                        add_labels=False, xticks=[-40,-20,0,20,40],yticks=[-40,-20,0,20,40],
+    #                        cbar_kwargs=dict(label=r'$I_X\;[{\rm erg\,{\rm cm}^{-2}\,{\rm s}^{-1}}]$'))
+    # im.colorbar.remove()
+    # _, _, _ = draw_snapshot_rgb(s, num, axes[3], minimum=0., stretch=500, Q=20)
+
+    d = ds.get_field(['nH','pok'])
+    axes[3].hist2d(d['nH'].data.flatten(),
+                   d['pok'].data.flatten(),
+                   bins=(np.logspace(np.log10(1e-3),np.log10(5e4),100),
+                         np.logspace(2,7,100)),
+                   norm=LogNorm(), weights=d['nH'].values.flatten())
+    plt.xlabel(dfi['nH']['label']); plt.ylabel(dfi['pok']['label'])
+    plt.xscale('log'); plt.yscale('log')
+    plt.xlim(1e-3,5e4) ; plt.ylim(1e0,1e8)
+
+    
+    for ax in axes[0:2]:
         ax.set_aspect('equal')
     
     if not sp.empty:
@@ -131,7 +143,7 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
         if not osp.exists(savdir):
             os.makedirs(savdir)
 
-        plt.savefig(osp.join(savdir, 'snapshot2_{0:04d}.png'.format(num)), dpi=200)
+        plt.savefig(osp.join(savdir, 'snapshot_{0:04d}.png'.format(num)), dpi=200)
         plt.close(fig)
         
     return ds,axes,im
@@ -267,7 +279,8 @@ if __name__ == '__main__':
 
     # tiger
     #basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.RWS.N128.test.H2shld.caseA'
-    basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.RWS.N256.test'
+    # basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.RWS.N256.test'
+    basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.B0.02.R.N256.test/'
     s = pa.LoadSimGMC(basedir, verbose=False)
     #h = s.read_hst(force_override=True)
     nums = s.nums
