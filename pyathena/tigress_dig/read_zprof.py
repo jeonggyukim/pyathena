@@ -45,15 +45,19 @@ class ReadZprof(ReadZprofBase):
 
         ds = ds/Atot
 
-        # For the moment s1 is assumed to be nH0
-        ds['nH0'] = ds.s1
-        # Volume filling factor of ionized gas
-        ds['xi'] = ds.A - ds.xn
-        # Electron number density averaged over Atot
-        ds['ne'] = ds.d - ds.s1
-        # Electron number density averaged over Atot
-        ds['nebar'] = ds.ne/ds.xi
-        
+        if self.par['configure']['species_HI'] == 'ON':
+            # For the moment s1 is assumed to be nH0
+            ds['nH0'] = ds.s1
+            # Volume filling factor of ionized gas
+            if 'xn' in ds:
+                ds['xi'] = ds.A - ds.xn
+            else:
+                ds['xi'] = ds.A - ds.xHI
+            # Electron number density averaged over Atot
+            ds['ne'] = ds.d - ds.s1
+            # Electron number density averaged over Atot
+            ds['nebar'] = ds.ne/ds.xi
+
         # Rename time to time_code and use physical time in Myr as dimension
         ds = ds.rename(dict(time='time_code'))
         ds = ds.assign_coords(time=ds.time_code*self.u.Myr)

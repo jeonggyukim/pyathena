@@ -60,22 +60,26 @@ class ReadHst:
         hst['mass'] *= vol*u.Msun
         # Gas surface density in Msun/pc^2
         hst['Sigma_gas'] = hst['mass']/LxLy
-        # Neutral gas mass in Msun 
-        hst['Mneu'] = hst['scalar{:d}'.format(domain['IHI'])]*vol*u.Msun
-        # Ionized gas mass in Msun
-        hst['Mion'] *= vol*u.Msun
-        # Collisionally ionized gas (before ray tracing) in Msun
-        hst['Mion_coll'] *= vol*u.Msun
-        # Total photoionization rate [#/sec]
-        hst['Qiphot'] *= vol*(u.length**3).cgs
-        # Total collisional ionization rate [#/sec]
-        hst['Qicoll'] *= vol*(u.length**3).cgs
-        # Total dust absorption rate [#/sec]
-        hst['Qidust'] *= vol*(u.length**3).cgs
 
-        # Mass fraction ionized gas
-        hst['mf_ion'] = hst['Mion']/hst['mass']
-        hst['mf_ion_coll'] = hst['Mion_coll']/hst['mass']
+        if self.par['configure']['ionrad'] == 'ON':
+            # Neutral gas mass in Msun 
+            #hst['Mneu'] = hst['scalar{:d}'.format(domain['IHI'])]*vol*u.Msun
+            hst['Mneu'] = hst['scalar0']*vol*u.Msun
+
+            # Ionized gas mass in Msun
+            hst['Mion'] *= vol*u.Msun
+            # Collisionally ionized gas (before ray tracing) in Msun
+            hst['Mion_coll'] *= vol*u.Msun
+            # Total photoionization rate [#/sec]
+            hst['Qiphot'] *= vol*(u.length**3).cgs
+            # Total collisional ionization rate [#/sec]
+            hst['Qicoll'] *= vol*(u.length**3).cgs
+            # Total dust absorption rate [#/sec]
+            hst['Qidust'] *= vol*(u.length**3).cgs
+
+            # Mass fraction ionized gas
+            hst['mf_ion'] = hst['Mion']/hst['mass']
+            hst['mf_ion_coll'] = hst['Mion_coll']/hst['mass']
 
         for f in range(self.par['radps']['nfreq']):
             # Total luminosity [Lsun]
@@ -104,34 +108,40 @@ class ReadHst:
                 (hst['Lesc{:d}'.format(f)] + hst['Llost{:d}'.format(f)]).cumsum() / \
                  hst['L{:d}'.format(f)].cumsum()
 
-        # Scale heights of [warm] ionized gas, nesq
-        # Check if columns exist
+            # midplane radiation energy density in cgs units
+            hst['Erad{:d}_mid'.format(f)] *= u.energy_density
+
+
+        if self.par['configure']['ionrad'] == 'ON':
         
-        # nesq
-        if 'H2nesq' in hst.columns and 'nesq' in hst.columns:
-            hst['H_nesq'] = np.sqrt(hst['H2nesq'] / hst['nesq'])
-            hst.drop(columns=['H2nesq', 'nesq'], inplace=True)
+            # Scale heights of [warm] ionized gas, nesq
+            # Check if columns exist
 
-        # Warm nesq
-        if 'H2wnesq' in hst.columns and 'wnesq' in hst.columns:
-            hst['H_wnesq'] = np.sqrt(hst['H2wnesq'] / hst['wnesq'])
-            hst.drop(columns=['H2wnesq', 'wnesq'], inplace=True)
+            # nesq
+            if 'H2nesq' in hst.columns and 'nesq' in hst.columns:
+                hst['H_nesq'] = np.sqrt(hst['H2nesq'] / hst['nesq'])
+                hst.drop(columns=['H2nesq', 'nesq'], inplace=True)
 
-        # For warm medium, 
-        # append _ to distinguish from mhd history variable
-        if 'H2w' in hst.columns and 'massw' in hst.columns:
-            hst['H_w_'] = np.sqrt(hst['H2w'] / hst['massw'])
-            hst['Mw_'] = hst['massw']*vol*u.Msun
-            hst['mf_w_'] = hst['Mw_']/hst['mass']
-            hst.drop(columns=['H2w', 'massw'], inplace=True)
+            # Warm nesq
+            if 'H2wnesq' in hst.columns and 'wnesq' in hst.columns:
+                hst['H_wnesq'] = np.sqrt(hst['H2wnesq'] / hst['wnesq'])
+                hst.drop(columns=['H2wnesq', 'wnesq'], inplace=True)
 
-        # Warm ionized
-        if 'H2wi' in hst.columns and 'masswi' in hst.columns:
-            hst['H_wi'] = np.sqrt(hst['H2wi'] / hst['masswi'])
-            hst['Mwion'] = hst['masswi']*vol*u.Msun
-            hst['mf_wion'] = hst['Mwion']/hst['mass']
-            hst.drop(columns=['H2wi', 'masswi'], inplace=True)
-            
+            # For warm medium, 
+            # append _ to distinguish from mhd history variable
+            if 'H2w' in hst.columns and 'massw' in hst.columns:
+                hst['H_w_'] = np.sqrt(hst['H2w'] / hst['massw'])
+                hst['Mw_'] = hst['massw']*vol*u.Msun
+                hst['mf_w_'] = hst['Mw_']/hst['mass']
+                hst.drop(columns=['H2w', 'massw'], inplace=True)
+
+            # Warm ionized
+            if 'H2wi' in hst.columns and 'masswi' in hst.columns:
+                hst['H_wi'] = np.sqrt(hst['H2wi'] / hst['masswi'])
+                hst['Mwion'] = hst['masswi']*vol*u.Msun
+                hst['mf_wion'] = hst['Mwion']/hst['mass']
+                hst.drop(columns=['H2wi', 'masswi'], inplace=True)
+
         ##########################
         # With ionizing radiation
         ##########################
@@ -155,10 +165,6 @@ class ReadHst:
             self.logger.error('Unrecognized option nfreq={0:d}, nfreq_ion={1:d}'.\
                               format(self.par['radps']['nfreq'],
                                      self.par['radps']['nfreq_ion']))
-
-        # midplane radiation energy density in cgs units
-        hst['Erad0_mid'] *= u.energy_density
-        hst['Erad1_mid'] *= u.energy_density
 
         hst.index = hst['time_code']
         #hst.index.name = 'index'

@@ -48,13 +48,24 @@ class LoadSimTIGRESSDIG(LoadSim, ReadHst, ReadZprof, PltHstZprof, ExtractData):
         else:
             self.ds = self.load_vtk(ivtk=0, load_method=load_method)
             
-class LoadSimTIGRESSDIGAll(object):
-    ## Under development..
-    def __init__(self, basedirs=None):
 
-        models = [
-            '/tigress/jk11/radps_postproc/R8_4pc_newacc.xymax1024',
-            '/tigress/jk11/radps_postproc/R8_4pc_newacc.xymax1024.runaway',
-            '/tigress/jk11/radps_postproc/R8_8pc_rst.xymax1024',
-            '/tigress/jk11/radps_postproc/R8_8pc_rst.xymax1024'
-        ]
+class LoadSimTIGRESSDIGAll(object):
+    """Class to load multiple simulations"""
+    def __init__(self, models=None):
+
+        # Default models
+        if models is None:
+            models = dict()
+
+        self.models = list(models.keys())
+        self.basedirs = dict()
+        
+        for mdl, basedir in models.items():
+            self.basedirs[mdl] = basedir
+
+    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+        
+        self.model = model
+        self.sim = LoadSimTIGRESSDIG(self.basedirs[model], savdir=savdir,
+                                     load_method=load_method, verbose=verbose)
+        return self.sim

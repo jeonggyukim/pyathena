@@ -697,4 +697,5 @@ class LoadSimAll(object):
         self.sim = LoadSim(self.basedirs[model], savdir=savdir,
                            load_method=load_method,
                            units=units, verbose=verbose)
+        return self.sim
 

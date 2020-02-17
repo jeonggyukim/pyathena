@@ -661,3 +661,155 @@ def fshld_CO(logNH2,logNCO):
     Theta = interpolate.interp2d(x, y, z, kind='linear')
 
     return Theta(logNCO,logNH2)
+
+
+def get_CI_lev(nH, T, xe, xHI, xH2):
+    
+    kB_cgs = ac.k_B.cgs.value
+    fp_ = 0.25
+    fo_ = 0.75
+    
+    # CI, 3 level system
+    g0CI_ = 1
+    g1CI_ = 3
+    g2CI_ = 5
+    A10CI_ = 7.880e-08
+    A20CI_ = 1.810e-14
+    A21CI_ = 2.650e-07
+    E10CI_ = 3.261e-15
+    E20CI_ = 8.624e-15
+    E21CI_ = 5.363e-15
+    
+    # e-collisional coefficents (Johnson, Burke, & Kingston 1987; JPhysB, 20, 2553)
+    T2 = T*1e-2
+    lnT2 = np.log(T2)
+    lnT = np.log(T)
+    # ke(u,l) = fac*gamma(u,l)/g(u)
+
+    fac = 8.629e-8*np.sqrt(1.0e4/T)
+
+    # Collisional strength (valid for T < 10^4 K)
+    lngamma10e = np.zeros_like(T)
+    lngamma20e = np.zeros_like(T)
+    lngamma21e = np.zeros_like(T)
+    lngamma10e = np.where(T < 1.0e3,
+                          (((-6.56325e-4*lnT -1.50892e-2)*lnT + 3.61184e-1)*\
+                           lnT -7.73782e-1)*lnT - 9.25141,
+                          (((1.0508e-1*lnT - 3.47620)*lnT + 4.2595e1)*\
+                           lnT- 2.27913e2)*lnT + 4.446e2)
+    lngamma20e = np.where(T < 1.0e3,
+                          (((0.705277e-2*lnT - 0.111338)*lnT + 0.697638)*
+                           lnT - 1.30743)*lnT -7.69735,
+                          (((9.38138e-2*lnT - 3.03283)*lnT +3.61803e1)*\
+                           lnT - 1.87474e2)*lnT +3.50609e2)
+    lngamma21e = np.where(T < 1.0e3,
+                          (((2.35272e-3*lnT - 4.18166e-2)*lnT + 0.358264)*\
+                           lnT - 0.57443)*lnT -7.4387,
+                          (((9.78573e-2*lnT - 3.19268)*lnT +3.85049e1)*\
+                           lnT - 2.02193e2)*lnT +3.86186e2)
+    
+    k10e = fac * np.exp(lngamma10e)/g1CI_
+    k20e = fac * np.exp(lngamma20e)/g2CI_
+    k21e = fac * np.exp(lngamma21e)/g2CI_
+    # Draine's HI/H2 collisional rates (Appendix F Table F.6)
+    # NOTE: this is more updated than the LAMBDA database.
+    k10HI = 1.26e-10 * np.power(T2, 0.115+0.057*lnT2)
+    k20HI = 0.89e-10 * np.power(T2, 0.228+0.046*lnT2)
+    k21HI = 2.64e-10 * np.power(T2, 0.231+0.046*lnT2)
+
+    k10H2p = 0.67e-10 * np.power(T2, -0.085+0.102*lnT2)
+    k10H2o = 0.71e-10 * np.power(T2, -0.004+0.049*lnT2)
+    k20H2p = 0.86e-10 * np.power(T2, -0.010+0.048*lnT2)
+    k20H2o = 0.69e-10 * np.power(T2, 0.169+0.038*lnT2)
+    k21H2p = 1.75e-10 * np.power(T2, 0.072+0.064*lnT2)
+    k21H2o = 1.48e-10 * np.power(T2, 0.263+0.031*lnT2)
+    
+    k10H2 = k10H2p*fp_ + k10H2o*fo_
+    k20H2 = k20H2p*fp_ + k20H2o*fo_
+    k21H2 = k21H2p*fp_ + k21H2o*fo_
+    
+    # The totol collisonal rates
+    q10 = nH*(k10HI*xHI + k10H2*xH2 + k10e*xe)
+    q20 = nH*(k20HI*xHI + k20H2*xH2 + k20e*xe)
+    q21 = nH*(k21HI*xHI + k21H2*xH2 + k21e*xe)
+    q01 = (g1CI_/g0CI_) * q10 * np.exp(-E10CI_/(kB_cgs*T))
+    q02 = (g2CI_/g0CI_) * q20 * np.exp(-E20CI_/(kB_cgs*T))
+    q12 = (g2CI_/g1CI_) * q21 * np.exp(-E21CI_/(kB_cgs*T))
+    
+    R10 = q10 + A10CI_
+    R20 = q20 + A20CI_
+    R21 = q21 + A21CI_
+    a0 = R10*R20 + R10*R21 + q12*R20
+    a1 = q01*R20 + q01*R21 + R21*q02
+    a2 = q02*R10 + q02*q12 + q12*q01
+    de = a0 + a1 + a2
+
+    f0 = a0 / de
+    f1 = a1 / de
+    f2 = a2 / de
+    
+    return (f0, f1, f2)
+
+
+def get_OI_lev(nH, T, xe, xHI, xH2):
+
+    kB_cgs = ac.k_B.cgs.value
+    
+    # Ortho-to-para ratio of H2
+    fp_ = 0.25
+    fo_ = 0.75
+
+    # OI, 3 level system
+    g0OI_ = 5
+    g1OI_ = 3
+    g2OI_ = 1
+    A10OI_ = 8.910e-05
+    A20OI_ = 1.340e-10
+    A21OI_ = 1.750e-05
+    E10OI_ = 3.144e-14
+    E20OI_ = 4.509e-14
+    E21OI_ = 1.365e-14
+    
+    T2 = T*1e-2
+    lnT2 = np.log(T2)
+    # Collisional rates from  Draine (2011) (Appendix F Table F.6)
+    # HI
+    k10HI = 3.57e-10*np.power(T2, 0.419-0.003*lnT2)
+    k20HI = 3.19e-10*np.power(T2, 0.369-0.006*lnT2)
+    k21HI = 4.34e-10*np.power(T2, 0.755-0.160*lnT2)
+    # H2
+    k10H2p = 1.49e-10 * np.power(T2, 0.264+0.025*lnT2)
+    k10H2o = 1.37e-10 * np.power(T2, 0.296+0.043*lnT2)
+    k20H2p = 1.90e-10 * np.power(T2, 0.203+0.041*lnT2)
+    k20H2o = 2.23e-10 * np.power(T2, 0.237+0.058*lnT2)
+    k21H2p = 2.10e-12 * np.power(T2, 0.889+0.043*lnT2)
+    k21H2o = 3.00e-12 * np.power(T2, 1.198+0.525*lnT2)
+    k10H2 = k10H2p*fp_ + k10H2o*fo_
+    k20H2 = k20H2p*fp_ + k20H2o*fo_
+    k21H2 = k21H2p*fp_ + k21H2o*fo_
+    
+    # Electrons; fit from Bell+1998
+    k10e = 5.12e-10 * np.power(T, -0.075)
+    k20e = 4.86e-10 * np.power(T, -0.026)
+    k21e = 1.08e-14 * np.power(T, 0.926)
+    # Total collisional rates
+    q10 = nH*(k10HI*xHI + k10H2*xH2 + k10e*xe)
+    q20 = nH*(k20HI*xHI + k20H2*xH2 + k20e*xe)
+    q21 = nH*(k21HI*xHI + k21H2*xH2 + k21e*xe)
+    q01 = (g1OI_/g0OI_) * q10 * np.exp(-E10OI_/(kB_cgs*T))
+    q02 = (g2OI_/g0OI_) * q20 * np.exp(-E20OI_/(kB_cgs*T))
+    q12 = (g2OI_/g1OI_) * q21 * np.exp(-E21OI_/(kB_cgs*T))
+
+    R10 = q10 + A10OI_
+    R20 = q20 + A20OI_
+    R21 = q21 + A21OI_
+    a0 = R10*R20 + R10*R21 + q12*R20
+    a1 = q01*R20 + q01*R21 + R21*q02
+    a2 = q02*R10 + q02*q12 + q12*q01
+    de = a0 + a1 + a2
+
+    f0 = a0 / de
+    f1 = a1 / de
+    f2 = a2 / de
+    
+    return (f0, f1, f2)

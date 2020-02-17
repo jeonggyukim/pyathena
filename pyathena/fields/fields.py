@@ -343,8 +343,9 @@ def set_derived_fields_newcool(par, x0):
     # (Do not apply to hot gas and depend on cooling implementation)
     f = 'xCII'
     try:
-        xCtot = par['cooling']['xCstd']
+        xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
     except KeyError:
+        # print('xCtot not found. Use 1.6e-4.')
         xCtot = 1.6e-4
     field_dep[f] = set(['xe','xH2','xHI'])
     def _xCII(d, u):
@@ -364,7 +365,7 @@ def set_derived_fields_newcool(par, x0):
     func[f] = _xi_CR
     label[f] = r'$\xi_{\rm CR}$'
     cmap[f] = 'viridis'
-    vminmax[f] = (1e-14,1e-18)
+    vminmax[f] = (1e-15,1e-17)
     take_log[f] = True
     
     return func, field_dep, label, cmap, vminmax, take_log
@@ -416,7 +417,7 @@ def set_derived_fields_sixray(par, x0):
     func[f] = _chi_LW_diss_ext
     label[f] = r'$\chi_{\rm LW,diss,ext}$'
     cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
+    vminmax[f] = (1e-8,1e2)
     take_log[f] = True
 
     return func, field_dep, label, cmap, vminmax, take_log
@@ -444,7 +445,7 @@ def set_derived_fields_rad(par, x0):
     f = 'chi_PE'
     field_dep[f] = set(['rad_energy_density_PE'])
     def _chi_PE(d, u):
-        return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE_ISRF)
+        return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE0)
     func[f] = _chi_PE
     label[f] = r'$\chi_{\rm PE}$'
     cmap[f] = 'viridis'
@@ -486,7 +487,6 @@ def set_derived_fields_rad(par, x0):
             f = 'chi_LW'
             field_dep[f] = set(['rad_energy_density_LW'])
             def _chi_LW(d, u):
-                # Erad_LW_ISRF = ((6.9e-4/au.cm**3)*(par['radps']['hnu_LW']*au.eV)).to('erg/cm**3').value
                 return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
             func[f] = _chi_LW
             label[f] = r'$\chi_{\rm LW}$'
@@ -568,12 +568,14 @@ class DerivedFields(object):
         dicts = (self.func, self.field_dep, self.label, self.cmap, \
                  self.vminmax, self.take_log)
 
-
-        if par['configure']['new_cooling'] == 'ON':
-            dicts_ = set_derived_fields_newcool(par, x0)
-            for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
-                    
+        try:
+            if par['configure']['new_cooling'] == 'ON':
+                dicts_ = set_derived_fields_newcool(par, x0)
+                for d, d_ in zip(dicts, dicts_):
+                    d = d.update(d_)
+        except KeyError:
+            pass
+        
         if par['configure']['radps'] == 'ON':
             dicts_ = set_derived_fields_rad(par, x0)
             for d, d_ in zip(dicts, dicts_):
