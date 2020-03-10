@@ -1,0 +1,80 @@
+   Extinction, Scattering, and Absorption Properties Computed for
+   Carbonaceous - Silicate Model for Interstellar Dust with R_V=5.5
+
+Model consists of mixture of carbonaceous grains and amorphous
+silicate grains.  Carbonaceous grains are PAH-like when small, and
+graphite-like when large (see Li & Draine 2001).  Size distributions
+from Weingartner & Draine (2001, hereafter WD01) case "A" model for
+R_V=5.5, renormalized following Draine (2003a) [see below].
+
+PAH optical properties are from Li & Draine (2001).  The PAH/graphitic
+grains in the log-normal size distributions are assumed to be 50%
+neutral and 50% ionized.  The PAH/graphitic grains in the size
+distribution given by eq. (5,6) of Weingartner & Draine (2001) are
+assumed to be 100% ionized.
+
+Graphite and silicate optical properties from Draine (2003b).
+
+For R_V=3.1: grain abundances relative to H have been reduced by a
+             factor 0.93 relative to the R_V=3.1 size distribution with
+	     [C/H]_PAH=60ppm in WD01.
+             Factor 0.93 is due to reduction in adopted value for
+             A_Ic/N_H in local ISM.
+	     PAH C abundance relative to H is assumed to be
+             [C/H]_PAH = 0.93*60ppm = 55.8ppm
+
+For R_V=4.0: grain abundances relative to H have been increased by a
+             factor 0.93*1.27=1.18 relative to the R_V=4.0 size
+             distribution with [C/H]_PAH=40ppm in WD01
+             Factor 0.93 is due to reduction in adopted value for
+             A_Ic/N_H in local ISM.
+             Factor 1.27 is the increase in A_Ic/N_H for R_V=4.0
+             relative to A_Ic/N_H for R_V=3.1, based on eq.(5) of
+             Draine (2003a).
+             PAH C abundance relative to H is assumed to be
+             [C/H]_PAH = 0.93*1.27*40ppm = 47.2ppm
+
+For R_V=5.5: THIS MODEL
+             grain abundances relative to H have been increased by a
+             factor 0.93*1.52=1.42 relative to the R_V=4.0 size
+             distribution with [C/H]_PAH=30ppm in WD01.
+             Factor 0.93 is due to reduction in adopted value for
+             A_Ic/N_H in local ISM.
+             Factor 1.52 is the increase in A_Ic/N_H for R_V=5.5
+             relative to A_Ic/N_H for R_V=3.1, based on eq.(5) of
+             Draine (2003a).
+             PAH C abundance relative to H is assumed to be
+	     [C/H]_PAH = 0.93*1.52*30ppm = 42.4ppm
+
+References:
+
+Draine, B.T. 2003a, "Interstellar Dust Grains", Annu. Rev. Astr. Astrophys.,
+    41, 241-289
+Draine, B.T. 2003b, "Scattering by Interstellar Dust Grains. I. Optical
+    and Ultraviolet", Astrophys. J., 598, 1017-1025
+Draine, B.T. 2003c, "Scattering by Interstellar Dust Grains. II. X-Rays",
+    Astrophys. J., 598, 1026-1037
+Li, A., & Draine, B.T. 2001, "Infrared Emission from Interstellar Dust.
+    II. The Diffuse Interstellar Medium", Astrophys. J., 554, 778-802
+Weingartner, J.C., & Draine, B.T. 2001, Dust Grain Size Distributions and
+    Extinction in the Milky Way, LMC, and SMC", Astrophys. J., 548,
+    296-309 (WD01).
+
+This table was calculated by B.T. Draine, Princeton University,
+Wed Dec 17 13:50:22 EST 2003
+
+
+Tabulated quantities:
+lambda  = wavelength in vacuo (micron)
+albedo  = (scattering cross section)/(extinction cross section)
+<cos>   = <cos(theta)> for scattered light
+C_ext/H = extinction cross section per H nucleon (cm^2/H)
+K_abs   = absorption cross section per mass of dust (cm^2/gram)
+<cos^2> = <cos^(theta)> for scattered light
+
+2.199E-26 = M_dust per H nucleon (gram/H) for this dust model
+1.051E+02 = M_gas/M_dust for this dust model (assuming He/H=0.096)
+
+  lambda    albedo   <cos>  C_ext/H    K_abs   <cos^2>
+ (micron)                   (cm^2/H)  (cm^2/g)          comment
+----------- ------  ------ --------- --------- ------- --------
