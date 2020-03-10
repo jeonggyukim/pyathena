@@ -12,13 +12,18 @@ def get_xCO(nH, xH2, xCII, Z_d, Z_g, xi_CR, chi_CO, xCstd=1.6e-4):
     xCtot = xCstd*Z_g
     kcr16 = xi_CR*1e16
     term1 = np.maximum(4e3*Z_d/kcr16**2,1.0)
-    ncrit2 = 2.0*np.power(term1,chi_CO**(1.0/3.0))*(50*kcr16/np.power(Z_d,1.4))
+    ncrit = np.power(term1, chi_CO**(1.0/3.0))*(50*kcr16/np.power(Z_d,1.4))
+    #xCO = np.where(nH > ncrit2, 1.0, nH/ncrit2)
+    xCO = nH**2/(nH**2 + ncrit**2)
+    xCO = xCO*(2.0*xH2)
+    xCO = xCO*(xCtot - xCII)
+
+    # xCO = np.minimum(xCO, 2.0*xH2*xCtot)
+    # xCO = np.minimum(xCO, xCtot - xCII)
+    # xCO = np.minimum(xCO, 2.0*xH2)
+    #xCO = np.minimum(xCO, xCtot - xCII)
     
-    xCO = np.where(nH > ncrit2, xCtot, nH/ncrit2)
-    xCO = np.minimum(xCO, 2.0*xH2*xCtot)
-    xCO = np.minimum(xCO, xCtot - xCII)
-    
-    return xCO
+    return xCO,ncrit
 
 def heatPE(nH, T, xe, Z_d, chi_PE):
 

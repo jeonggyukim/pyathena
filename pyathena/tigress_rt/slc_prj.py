@@ -34,7 +34,7 @@ class SliceProj:
         return r
     
     @LoadSim.Decorators.check_pickle
-    def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, dirname='slc',
+    def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
         
         fields_def = ['density', 'xH2', 'velocity', 'temperature',
@@ -59,7 +59,7 @@ class SliceProj:
         return res
 
     @LoadSim.Decorators.check_pickle
-    def read_prj(self, num, axes=['x', 'y', 'z'], dirname='prj',
+    def read_prj(self, num, axes=['x', 'y', 'z'], prefix='prj',
                  savdir=None, force_override=False):
 
         axtoi = dict(x=0, y=1, z=2)

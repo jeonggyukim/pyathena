@@ -104,7 +104,7 @@ def set_derived_fields_def(par, x0):
     f = 'vmag'
     field_dep[f] = set(['velocity'])
     def _vmag(d, u):
-        return (d['velocity1']**2 + d['velocity2']**2 + d['velocity3']**2)**0.5
+        return (d['velocity1']**2 + d['velocity2']**2 + d['velocity3']**2)**0.5*u.kms
     func[f] = _vmag
     label[f] = r'$|\mathbf{v}|\;[{\rm km\,s^{-1}}]$'
     vminmax[f] = (0.1, 1000.0)
@@ -119,7 +119,7 @@ def set_derived_fields_def(par, x0):
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
         r = xr.DataArray(np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
                             dims=('z','y','x'), name='r')
-        return (x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r
+        return (x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r*u.kms
     func[f] = _vr
     label[f] = r'$v_r\;[{\rm km\,s^{-1}}]$'
     vminmax[f] = (-20, 100)
@@ -207,6 +207,67 @@ def set_derived_fields_def(par, x0):
         take_log[f] = False
 
     return func, field_dep, label, cmap, vminmax, take_log    
+
+def set_derived_fields_mag(par, x0):
+
+    func = dict()
+    field_dep = dict()
+    label = dict()
+    cmap = dict()
+    vminmax = dict()
+    take_log = dict()
+
+    # Bx [G]
+    f = 'Bx'
+    field_dep[f] = set(['cell_centered_B'])
+    def _Bx(d, u):
+        return d['cell_centered_B1']*np.sqrt(u.energy_density.cgs.value)\
+            *np.sqrt(4.0*np.pi)
+    func[f] = _Bx
+    label[f] = r'$B_{x}\;[{\rm G}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e-4,-1e-4)
+    take_log[f] = False
+
+    # By [G]
+    f = 'By'
+    field_dep[f] = set(['cell_centered_B'])
+    def _By(d, u):
+        return d['cell_centered_B2']*np.sqrt(u.energy_density.cgs.value)\
+            *np.sqrt(4.0*np.pi)
+    func[f] = _By
+    label[f] = r'$B_{y}\;[{\rm G}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e-4,-1e-4)
+    take_log[f] = False
+
+    # Bz [G]
+    f = 'Bz'
+    field_dep[f] = set(['cell_centered_B'])
+    def _Bz(d, u):
+        return d['cell_centered_B3']*np.sqrt(u.energy_density.cgs.value)\
+            *np.sqrt(4.0*np.pi)
+    func[f] = _Bz
+    label[f] = r'$B_{z}\;[{\rm G}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e-4,-1e-4)
+    take_log[f] = False
+
+    # Magnetic fields magnitude [G]
+    f = 'Bmag'
+    field_dep[f] = set(['cell_centered_B'])
+    def _Bmag(d, u):
+        return (d['cell_centered_B1']**2 +
+                d['cell_centered_B2']**2 +
+                d['cell_centered_B3']**2)**0.5*np.sqrt(u.energy_density.cgs.value)\
+            *np.sqrt(4.0*np.pi)
+    func[f] = _Bmag
+    label[f] = r'$|\mathbf{B}|\;[{\rm G}]$'
+    vminmax[f] = (1e-7, 1e-4)
+    cmap[f] = 'cividis'
+    take_log[f] = True
+    
+    return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_newcool(par, x0):
     
@@ -338,6 +399,34 @@ def set_derived_fields_newcool(par, x0):
     vminmax[f] = (1e-6, 1.208)
     take_log[f] = True
 
+    # xCI - atomic neutral carbon
+    f = 'xCI'
+    try:
+        xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
+    except KeyError:
+        # print('xCtot not found. Use 1.6e-4.')
+        xCtot = 1.6e-4
+    field_dep[f] = set(['xCI'])
+    def _xCI(d, u):
+        # Apply floor and ceiling
+        return np.maximum(0.0,np.minimum(xCtot,d['xCI']))
+    func[f] = _xCI
+    label[f] = r'$x_{\rm CI}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (0,xCtot)
+    take_log[f] = False
+
+    # nCI
+    f = 'nCI'
+    field_dep[f] = set(['density','xCI'])
+    def _nCI(d, u):
+        return d['density']*np.maximum(0.0,np.minimum(xCtot,d['xCI']))
+    func[f] = _nCI
+    label[f] = r'$x_{\rm CI}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e2*xCtot,1e4*xCtot)
+    take_log[f] = True
+    
     # xCII - single ionized carbon
     # Use with caution!
     # (Do not apply to hot gas and depend on cooling implementation)
@@ -354,7 +443,7 @@ def set_derived_fields_newcool(par, x0):
     func[f] = _xCII
     label[f] = r'$x_{\rm CII}$'
     cmap[f] = 'viridis'
-    vminmax[f] = (0,1.6e-4)
+    vminmax[f] = (0,xCtot)
     take_log[f] = False
 
     # xi_CR
@@ -409,13 +498,26 @@ def set_derived_fields_sixray(par, x0):
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
 
+
+    # Normalized LW radiation field
+    f = 'chi_CI_ext'
+    field_dep[f] = set(['rad_energy_density_CI_ext'])
+    def _chi_CI_ext(d, u):
+        return d['rad_energy_density_CI_ext']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_CI_ext
+    label[f] = r'$\chi_{\rm CI,ext}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    
     # Normalized LW radiation field strength (Draine ISRF)
-    f = 'chi_LW_diss_ext'
+    f = 'chi_H2_ext'
     field_dep[f] = set(['rad_energy_density_LW_diss_ext'])
-    def _chi_LW_diss_ext(d, u):
+    def _chi_H2_ext(d, u):
         return d['rad_energy_density_LW_diss_ext']*(u.energy_density.cgs.value/Erad_LW0)
-    func[f] = _chi_LW_diss_ext
-    label[f] = r'$\chi_{\rm LW,diss,ext}$'
+    func[f] = _chi_H2_ext
+    label[f] = r'$\chi_{\rm H2,ext}$'
     cmap[f] = 'viridis'
     vminmax[f] = (1e-8,1e2)
     take_log[f] = True
@@ -494,16 +596,26 @@ def set_derived_fields_rad(par, x0):
             vminmax[f] = (1e-4,1e4)
             take_log[f] = True
 
-            f = 'chi_LW_diss'
+            f = 'chi_H2'
             field_dep[f] = set(['rad_energy_density_LW_diss'])
-            def _chi_LW_diss(d, u):
+            def _chi_H2(d, u):
                 return d['rad_energy_density_LW_diss']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_LW_diss
-            label[f] = r'$\chi_{\rm LW,diss}$'
+            func[f] = _chi_H2
+            label[f] = r'$\chi_{\rm H_2}$'
             cmap[f] = 'viridis'
             vminmax[f] = (1e-8,1e4)
             take_log[f] = True
 
+            f = 'chi_CI'
+            field_dep[f] = set(['rad_energy_density_CI'])
+            def _chi_CI(d, u):
+                return d['rad_energy_density_CI']*(u.energy_density.cgs.value/Erad_LW0)
+            func[f] = _chi_CI
+            label[f] = r'$\chi_{\rm C^0}$'
+            cmap[f] = 'viridis'
+            vminmax[f] = (1e-8,1e4)
+            take_log[f] = True
+            
             # fshld_H2 (effective)
             f = 'fshld_H2'
             field_dep[f] = set(['rad_energy_density_LW','rad_energy_density_LW_diss'])
@@ -567,6 +679,11 @@ class DerivedFields(object):
 
         dicts = (self.func, self.field_dep, self.label, self.cmap, \
                  self.vminmax, self.take_log)
+
+        if par['configure']['gas'] == 'mhd':
+            dicts_ = set_derived_fields_mag(par, x0)
+            for d, d_ in zip(dicts, dicts_):
+                d = d.update(d_)
 
         try:
             if par['configure']['new_cooling'] == 'ON':

@@ -5,9 +5,7 @@ def get_data(s, num, sel_kwargs=dict(z=0.0, method='nearest')):
     ds = s.load_vtk(num)
     dd = ds.get_field(['nH','nH2','nHI','xH2','xHII','xe',
                        'xHI','xCII','chi_PE_ext', 'xi_CR',
-                       'chi_LW_ext','chi_LW_diss_ext',
-                       'rad_energy_density_LW_ext',
-                       'rad_energy_density_LW_diss_ext',
+                       'chi_LW_ext','chi_H2_ext','chi_CI_ext',
                        'T','pok','cool_rate','heat_rate'])
     print('name:',s.basename, end='  ')
     print('time:',ds.domain['time'])
@@ -20,34 +18,40 @@ def get_data(s, num, sel_kwargs=dict(z=0.0, method='nearest')):
     xCstd = s.par['cooling']['xCstd']
     xOstd = s.par['cooling']['xOstd']
     
-    dd['xCO'] = get_xCO(dd.nH, dd.xH2, dd.xCII, Z_d, Z_g, dd['xi_CR'], dd.chi_LW_ext, xCstd)
+    xCO, ncrit = get_xCO(dd.nH, dd.xH2, dd.xCII, Z_d, Z_g,
+                         dd['xi_CR'], dd['chi_LW_ext'], xCstd)
+    dd['xCO'] = xCO
+    dd['ncrit'] = ncrit
     dd['xOI'] = np.maximum(0.0, xOstd*Z_g - dd['xCO'])
     dd['xCI'] = np.maximum(0.0, xCstd*Z_g - dd.xCII - dd.xCO)
 
     # Set nH and chi_PE as new dimensions
     log_nH = np.log10(dd.sel(z=0,y=0,method='nearest')['nH'].data)
     log_chi_PE = np.log10(dd.sel(z=0,x=0,method='nearest')['chi_PE_ext'].data)
-
-    #dd = dd.drop(['nH'])
     dd = dd.rename(dict(x='log_nH'))
     dd = dd.assign_coords(dict(log_nH=log_nH))
 
-    #dd = dd.drop(['chi_PE_ext'])
-    dd = dd.rename(dict(y='log_chi_PE', chi_PE_ext='chi_PE'))
+    dd = dd.rename(dict(y='log_chi_PE'))
     dd = dd.assign_coords(dict(log_chi_PE=log_chi_PE))
+
+    #dd = dd.drop(['nH'])
+    #dd = dd.drop(['y'])
+    
+    # dd = dd.rename(dict(y='log_chi_PE', chi_PE_ext='chi_PE'))
+    # dd = dd.assign_coords(dict(log_chi_PE=log_chi_PE))
     
     d = dd.sel(**sel_kwargs)
-    d['heatPE'] = heatPE(d['nH'], d['T'], d['xe'] ,Z_d,d['chi_PE'])
+    d['heatPE'] = heatPE(d['nH'], d['T'], d['xe'], Z_d, d['chi_PE_ext'])
     d['heatCR'] = heatCR(d['nH'], d['xe'], d['xHI'], d['xH2'], d['xi_CR'])
-    #d['heatH2pump'] = heatH2pump(d['nH'], d['T'], d['xHI'], d['xH2'], d['chi_LW_diss_ext']*5.8e-11)
+    d['heatH2pump'] = heatH2pump(d['nH'], d['T'], d['xHI'], d['xH2'], d['chi_H2_ext']*5.8e-11)
     d['coolCII'] = coolCII(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCII'])
     d['coolOI'] = coolOI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xOI'])
-    d['coolRec'] = coolRec(d['nH'],d['T'],d['xe'],Z_d,d['chi_PE'])
+    d['coolRec'] = coolRec(d['nH'],d['T'],d['xe'],Z_d,d['chi_PE_ext'])
     d['coolLya'] = coolLya(d['nH'],d['T'],d['xe'],d['xHI'])
     d['coolCI'] = coolCI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCI'])
     d['coolCO'] = coolCO(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCO'],3e-14)
     d['cool'] = d['coolCI']+d['coolCII']+d['coolOI']+d['coolRec']+d['coolLya']+d['coolCO']
-    d['heat'] = d['heatPE']+d['heatCR'] #+ d['heatH2pump']
+    d['heat'] = d['heatPE']+d['heatCR'] + d['heatH2pump']
 
     return d
 

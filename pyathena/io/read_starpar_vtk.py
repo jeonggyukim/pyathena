@@ -49,6 +49,16 @@ def _convert_field_name(name):
         return 'metal_mass[1]'
     elif name == b'star_particle_metal_mass[2]':
         return 'metal_mass[2]'
+    elif name == b'star_particle_metal_mass[3]':
+        return 'metal_mass[3]'
+    elif name == b'star_particle_metal_mass[4]':
+        return 'metal_mass[4]'
+    elif name == b'star_particle_metal_mass[5]':
+        return 'metal_mass[5]'
+    elif name == b'star_particle_metal_mass[6]':
+        return 'metal_mass[6]'
+    elif name == b'star_particle_metal_mass[7]':
+        return 'metal_mass[7]'
 
 def read_starpar_vtk(filename, force_override=False, verbose=False):
     """

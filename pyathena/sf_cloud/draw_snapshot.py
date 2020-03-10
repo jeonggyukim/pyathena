@@ -23,6 +23,155 @@ from pyathena.util.split_container import split_container
 from pyathena.util.xray_emissivity import XrayEmissivityIntegrator, get_xray_emissivity
 from astropy.visualization import make_lupton_rgb
 
+def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
+              bbox_to_anchor=None):
+    """
+    Add legend for sink particle mass
+    mass: sink particle mass in solar mass
+    location: "top" or "right"
+    """
+    if bbox_to_anchor is None:
+        bbox_to_anchor = dict(top=(0.1, 0.95),
+                              right=(0.88, 0.83))
+    else:
+        if location not in bbox_to_anchor:
+            raise(
+                "bbox_to_anchor[localtion] must be a tuple specifying legend location")
+
+    ext = ax.images[0].get_extent()
+
+    ss = []
+    labels = []
+    for m in mass:
+        label = r"$10^{0:g}\;M_\odot$".format(np.log10(m))
+        s = ax.scatter(ext[1]*2, ext[3]*2,
+                       s=np.sqrt(m)/norm_factor, lw=1.0,
+                       color='k', alpha=1.0, label=label, facecolors='k')
+        ss.append(s)
+        labels.append(label)
+    
+    ax.set_xlim(ext[0], ext[1])
+    ax.set_ylim(ext[3], ext[2])
+    if location == 'top':
+        legend = ax.legend(ss, labels, scatterpoints=1, fontsize=fontsize,
+                           ncol=len(ss), frameon=False, loc=2,
+                           bbox_to_anchor=bbox_to_anchor[location],
+                           bbox_transform=plt.gcf().transFigure,
+                           columnspacing=0.1, labelspacing=0.1, handletextpad=0.05)
+        # for t in legend.get_texts():
+        #         t.set_va('bottom')
+    else:
+        legend = ax.legend(ss, labels, scatterpoints=1, fontsize=fontsize,
+                           frameon=False, loc=2,
+                           columnspacing=0.02, labelspacing=0.02, handletextpad=0.02,
+                           bbox_to_anchor=bbox_to_anchor[location],
+                           bbox_transform=plt.gcf().transFigure)
+
+    return legend
+
+
+def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=False):
+    
+    from pyathena.classic.plot_tools.scatter_sp import scatter_sp
+    from pyathena.plt_tools.cmap_custom import get_my_cmap
+    
+    # Read data
+    ds = s.load_vtk(num)
+    fields = ['nH2','nHI']
+    if s.par['feedback']['iWind'] > 0:
+        fields += ['j_X']
+    if s.par['configure']['ionrad'] == 'ON':
+        fields += ['nesq']
+        
+    dd = ds.get_field(fields) # read 3d fields nH2 = xH2*nH, nHI = xHI*nH
+    dfi = dd.dfi # dictionary containing derived field info
+    sp = s.load_starpar_vtk(num) # read starpar vtk as pandas DataFrame
+    
+    dim_to_idx = dict(z=2,y=1,x=0)
+    idx = dim_to_idx[dim]
+    if dim == 'z':
+        lx = s.domain['Lx'][0]
+        ly = s.domain['Lx'][1]
+    elif dim == 'y':
+        lx = s.domain['Lx'][2]
+        ly = s.domain['Lx'][0]
+    elif dim == 'x':
+        lx = s.domain['Lx'][1]
+        ly = s.domain['Lx'][2]
+        
+    xticks = [-0.5*lx,-0.25*lx,0.0,0.25*lx,0.5*lx]
+    yticks = [-0.5*ly,-0.25*ly,0.0,0.25*ly,0.5*ly]
+    
+    
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6))
+
+    # Get neutral gas surface density in Msun/pc^2
+    to_Sigma = (s.u.density*ds.domain['dx'][idx]*s.u.length).to('Msun/pc2').value
+    dd['Sigma_neu'] = to_Sigma*(2.0*dd.sum(dim=dim)['nH2'] + dd.sum(dim=dim)['nHI'])
+    # Plot using xarray imshow
+    im0 = dd['Sigma_neu'].plot.imshow(ax=axes[0], cmap='pink_r', norm=LogNorm(1e-1,1e3), 
+                                      extend='neither', add_labels=False,
+                                      xticks=xticks, yticks=yticks,
+                                      cbar_kwargs=dict(label=r'$\Sigma_{\rm n}\;[M_{\odot}\,{\rm pc}^{-2}]$'))
+
+    # X-ray intensity
+    # j_X = X-ray volume emissivity in the 0.5-7.0keV band [erg/s/cm^3]
+    # X-ray intensity: I_X = 1/(4*pi) * \int j_X ds
+    if s.par['feedback']['iWind'] > 0:
+        dd['I_X'] = 1.0/(4.0*np.pi)*dd['j_X'].sum(dim=dim)*dd.domain['dx'][2]*s.u.length.cgs.value
+        im1 = dd['I_X'].plot.imshow(ax=axes[1], norm=LogNorm(1e-10,1e-6), extend='neither',cmap='Blues',
+                                    add_labels=False, xticks=xticks, yticks=yticks,
+                 cbar_kwargs=dict(label=r'$I_X\;[{\rm erg\,{\rm cm}^{-2}\,{\rm s}^{-1}\,{\rm sr}^{-1}}]$'))
+    else:
+        dd['EM'] = dd['nesq'].sum(dim=dim)*dd.domain['dx'][2]
+        im1 = dd['EM'].plot.imshow(ax=axes[1], norm=LogNorm(1e1,1e5), extend='neither',cmap='plasma',
+                                   add_labels=False, xticks=xticks, yticks=yticks,
+                 cbar_kwargs=dict(label=r'${\rm EM}\;[{\rm cm^{-6}\,{\rm pc}}]$'))
+        
+    for ax in axes:
+        ax.set_aspect('equal')
+    
+    # Scatter plot star particles (color: age, mass: size)
+    if not sp.empty:
+        for ax in (axes[0],axes[1]):
+            scatter_sp(sp, ax, axis=0, norm_factor=1.0, 
+                       type='proj', kpc=False, runaway=True, agemax=agemax_sp)
+            extent = (ds.domain['le'][0], ds.domain['re'][0])
+            ax.set_xlim(*extent)
+            ax.set_ylim(*extent)
+
+    # Add starpar age colorbar
+    norm = mpl.colors.Normalize(vmin=0., vmax=agemax_sp)
+    cmap = mpl.cm.cool_r
+    cax = fig.add_axes([0.125, 0.9, 0.1, 0.015])
+    cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm,
+                                   orientation='horizontal', ticks=[0, 4, 8])
+    # cbar_sp.ax.tick_params(labelsize=14)
+    cb.set_label(r'${\rm age}\;[{\rm Myr}]$', fontsize=14)
+    cb.ax.xaxis.set_ticks_position('top')
+    cb.ax.xaxis.set_label_position('top')
+    # Add legends for starpar mass
+    legend_sp(axes[0], norm_factor=1.0, mass=[1e2, 1e3], location='top', fontsize='medium',
+              bbox_to_anchor=dict(top=(0.22, 0.97),
+                                  right=(0.48, 0.91)))
+    
+    # Set simulation time [code] as suptitle
+    plt.suptitle(r'time={0:.2f}'.format(ds.domain['time']), x=0.5, y=0.95)
+    plt.tight_layout()
+    plt.subplots_adjust(top=0.94)
+
+    if savfig:
+        if savdir is None:
+            savdir = osp.join('/tigress/jk11/figures/GMC', s.basename)
+        if not osp.exists(savdir):
+            os.makedirs(savdir)
+
+        plt.savefig(osp.join(savdir, 'snapshot_2panel_{0:04d}.png'.format(num)), dpi=200)
+        #plt.close(fig)
+        
+    return ds,dd,sp,axes,(im0,im1)
+
+
 def draw_snapshot_rgb(s, num, ax, minimum=20.0, stretch=15000, Q=15):
     ds = s.load_vtk(num)
     dd = ds.get_field(['nH2','nHI','nH','j_X', 'nesq'])
@@ -273,15 +422,10 @@ def plt_snapshot(s, h, num, axis='y', savdir=None, savfig=True):
 if __name__ == '__main__':
 
     COMM = MPI.COMM_WORLD
-    #basedir = '/scratch/gpfs/jk11/FEEDBACK-TEST/PHLWRPSN.n100.again2/'
-    #basedir = '/scratch/gpfs/jk11/FEEDBACK-TEST/n100.SN.N128'
-    # basedir = '/scratch/gpfs/jk11/FEEDBACK-TEST/n100.M3E3.PHLWRPWNSN.N128/'
 
-    # tiger
-    #basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.RWS.N128.test.H2shld.caseA'
-    # basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.RWS.N256.test'
-    basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.B0.02.R.N256.test/'
-    s = pa.LoadSimGMC(basedir, verbose=False)
+    #basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.N128.again/'
+    basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.WS.Binf.A2.N128/'
+    s = pa.LoadSimSFCloud(basedir, verbose=False)
     #h = s.read_hst(force_override=True)
     nums = s.nums
     
@@ -297,7 +441,8 @@ if __name__ == '__main__':
     time0 = time.time()
     for num in mynums:
         print(COMM.rank, num, end=' ')
-        ds = plt_snapshot2(s, num, savfig=True)
+        #ds = plt_snapshot2(s, num, savfig=True)
+        ds = plt_snapshot_2panel(s, num, savfig=True)
         n = gc.collect()
         print('Unreachable objects:', n)
         print('Remaining Garbage:', end=' ')

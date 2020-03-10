@@ -522,8 +522,8 @@ class LoadSim(object):
         return l
     
     class Decorators(object):
-        """Class containing a collection of decorators for fast reading of analysis
-        output, (reprocessed) hst, and zprof. Used in child class.
+        """Class containing a collection of decorators for prompt reading of analysis
+        output, (reprocessed) hst, and zprof. Used in child classes.
 
         """
         
@@ -540,14 +540,14 @@ class LoadSim(object):
                 kwargs = call_args
 
                 try:
-                    dirname = kwargs['dirname']
+                    prefix = kwargs['prefix']
                 except KeyError:
-                    dirname = '_'.join(read_func.__name__.split('_')[1:])
+                    prefix = '_'.join(read_func.__name__.split('_')[1:])
 
                 if kwargs['savdir'] is not None:
                     savdir = kwargs['savdir']
                 else:
-                    savdir = os.path.join(cls.savdir, dirname)
+                    savdir = os.path.join(cls.savdir, prefix)
 
                 force_override = kwargs['force_override']
 
@@ -556,15 +556,14 @@ class LoadSim(object):
                     os.makedirs(savdir)
                     force_override = True
 
-                fpkl = os.path.join(savdir, cls.problem_id +
-                                    '_{0:s}_{1:04d}.p'.format(dirname, kwargs['num']))
-                
+                fpkl = os.path.join(savdir, 
+                                    '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
                 if not force_override and os.path.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
                     res = pickle.load(open(fpkl, 'rb'))
                     return res
                 else:
-                    cls.logger.info('Read original dump.')
+                    cls.logger.info('[check_pickle]: Read original dump.')
                     # If we are here, force_override is True or history file is updated.
                     res = read_func(cls, **kwargs)
                     try:
@@ -591,8 +590,11 @@ class LoadSim(object):
 
                 # Create savdir if it doesn't exist
                 if not os.path.exists(savdir):
-                    os.makedirs(savdir)
-                    force_override = True
+                    try:
+                        os.makedirs(savdir)
+                        force_override = True
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('Could not make directory')
 
                 fpkl = os.path.join(savdir,
                                     os.path.basename(cls.files['hst']) + '.mod.p')

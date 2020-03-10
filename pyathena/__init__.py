@@ -10,9 +10,9 @@ __all__ = [
            # LoadSim
            "LoadSim",
            "LoadSimAll",
-           # GMC
-           "LoadSimGMC",
-           "LoadSimGMCAll",
+           # SFCloud
+           "LoadSimSFCloud",
+           "LoadSimSFCloudAll",
            # FeedbackTest
            "LoadSimFeedbackTest",
            "LoadSimFeedbackTestAll",
@@ -42,7 +42,7 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .load_sim import LoadSim, LoadSimAll
 # Problem specific subclasses
 from .feedback_test.load_sim_feedback_test import LoadSimFeedbackTest, LoadSimFeedbackTestAll
-from .gmc.load_sim_gmc import LoadSimGMC, LoadSimGMCAll
+from .sf_cloud.load_sim_sf_cloud import LoadSimSFCloud, LoadSimSFCloudAll
 from .tigress_dig.load_sim_tigress_dig import LoadSimTIGRESSDIG, LoadSimTIGRESSDIGAll
 from .tigress_rt.load_sim_tigress_rt import LoadSimTIGRESSRT, LoadSimTIGRESSRTAll
 from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll

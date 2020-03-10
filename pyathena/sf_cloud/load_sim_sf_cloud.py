@@ -5,15 +5,17 @@ from ..load_sim import LoadSim
 from ..util.units import Units
 
 from .read_hst import ReadHst
+from .slc_prj import SliceProj
+from .dust_pol import DustPol
 
-class LoadSimGMC(LoadSim, ReadHst):
-    """LoadSim class for analyzing GMC simulations.
+class LoadSimSFCloud(LoadSim, ReadHst, SliceProj, DustPol):
+    """LoadSim class for analyzing sf_cloud simulations.
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
-        """The constructor for LoadSimGMC class
+        """The constructor for LoadSimSFCloud class
 
         Parameters
         ----------
@@ -34,13 +36,13 @@ class LoadSimGMC(LoadSim, ReadHst):
             accepted.
         """
 
-        super(LoadSimGMC,self).__init__(basedir, savdir=savdir,
+        super(LoadSimSFCloud,self).__init__(basedir, savdir=savdir,
                                         load_method=load_method,
                                         units=units,
                                         verbose=verbose)
 
 
-class LoadSimGMCAll(object):
+class LoadSimSFCloudAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
 
@@ -57,6 +59,6 @@ class LoadSimGMCAll(object):
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         
         self.model = model
-        self.sim = LoadSimGMC(self.basedirs[model], savdir=savdir,
-                              load_method=load_method, verbose=verbose)
+        self.sim = LoadSimSFCloud(self.basedirs[model], savdir=savdir,
+                                  load_method=load_method, verbose=verbose)
         return self.sim
