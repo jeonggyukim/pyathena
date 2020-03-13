@@ -275,8 +275,7 @@ class LoadSim(object):
         
         self.files = dict()
         def find_match(patterns):
-            glob_match = lambda p: \
-                         sorted(glob.glob(osp.join(self.basedir, *p)))
+            glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
                
             for p in patterns:
                 f = glob_match(p)
@@ -326,8 +325,18 @@ class LoadSim(object):
             self.files['athinput'] = fathinput[0]
             self.par = read_athinput(self.files['athinput'])
             self.logger.info('athinput: {0:s}'.format(self.files['athinput']))
-            self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
-                            if 'output' in k]
+            # self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
+            #                 if 'output' in k]
+            self.out_fmt = []
+            for k in self.par.keys():
+                if 'output' in k:
+                    if self.par[k]['out_fmt'] == 'vtk' and \
+                       not (self.par[k]['out'] == 'prim' or self.par[k]['out'] == 'cons'):
+                        self.out_fmt.append(self.par[k]['id'] + '.' + \
+                                            self.par[k]['out_fmt'])
+                    else:
+                        self.out_fmt.append(self.par[k]['out_fmt'])
+
             self.problem_id = self.par['job']['problem_id']
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
@@ -447,6 +456,18 @@ class LoadSim(object):
                 self.logger.warning(
                     'No zprof files are found in {0:s}.'.format(self.basedir))
 
+        # 2d vtk files
+        for fmt in self.out_fmt:
+            if '.vtk' in fmt:
+                fmt = fmt.split('.')[0]
+                patterns = [('id0', '*.????.{0:s}.vtk'.format(fmt)),
+                    ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
+                files = find_match(patterns)
+                self.files[f'{fmt}'] = files
+                setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
+                                              for f in self.files[f'{fmt}']])
+
+
         # Find timeit.txt
         ftimeit = find_match(timeit_patterns)
         if ftimeit:
@@ -547,18 +568,20 @@ class LoadSim(object):
                 if kwargs['savdir'] is not None:
                     savdir = kwargs['savdir']
                 else:
-                    savdir = os.path.join(cls.savdir, prefix)
+                    savdir = osp.join(cls.savdir, prefix)
 
                 force_override = kwargs['force_override']
 
                 # Create savdir if it doesn't exist
-                if not os.path.exists(savdir):
-                    os.makedirs(savdir)
-                    force_override = True
-
-                fpkl = os.path.join(savdir, 
-                                    '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
-                if not force_override and os.path.exists(fpkl):
+                try:
+                    if not osp.exists(savdir):
+                        force_override = True
+                        os.makedirs(savdir)
+                except FileExistsError:
+                    print('Directory exists: {0:s}'.format(savdir))
+                        
+                fpkl = osp.join(savdir, '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
+                if not force_override and osp.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
                     res = pickle.load(open(fpkl, 'rb'))
                     return res
@@ -581,7 +604,7 @@ class LoadSim(object):
                 if 'savdir' in kwargs:
                     savdir = kwargs['savdir']
                 else:
-                    savdir = os.path.join(cls.savdir, 'hst')
+                    savdir = osp.join(cls.savdir, 'hst')
 
                 if 'force_override' in kwargs:
                     force_override = kwargs['force_override']
@@ -589,19 +612,18 @@ class LoadSim(object):
                     force_override = False
 
                 # Create savdir if it doesn't exist
-                if not os.path.exists(savdir):
+                if not osp.exists(savdir):
                     try:
                         os.makedirs(savdir)
                         force_override = True
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not make directory')
 
-                fpkl = os.path.join(savdir,
-                                    os.path.basename(cls.files['hst']) + '.mod.p')
+                fpkl = osp.join(savdir, osp.basename(cls.files['hst']) + '.mod.p')
 
                 # Check if the original history file is updated
-                if not force_override and os.path.exists(fpkl) and \
-                   os.path.getmtime(fpkl) > os.path.getmtime(cls.files['hst']):
+                if not force_override and osp.exists(fpkl) and \
+                   osp.getmtime(fpkl) > osp.getmtime(cls.files['hst']):
                     cls.logger.info('[read_hst]: Reading from existing pickle.')
                     hst = pd.read_pickle(fpkl)
                     cls.hst = hst
@@ -626,9 +648,9 @@ class LoadSim(object):
                 if 'savdir' in kwargs:
                     savdir = kwargs['savdir']
                     if savdir is None:
-                        savdir = os.path.join(cls.savdir, 'zprof')
+                        savdir = osp.join(cls.savdir, 'zprof')
                 else:
-                    savdir = os.path.join(cls.savdir, 'zprof')
+                    savdir = osp.join(cls.savdir, 'zprof')
 
                 if 'force_override' in kwargs:
                     force_override = kwargs['force_override']
@@ -641,7 +663,7 @@ class LoadSim(object):
                     phase = 'whole'
                     
                 # Create savdir if it doesn't exist
-                if not os.path.exists(savdir):
+                if not osp.exists(savdir):
                     os.makedirs(savdir)
                     force_override = True
 
@@ -651,8 +673,8 @@ class LoadSim(object):
                 # Check if the original history file is updated
                 mtime = max([osp.getmtime(f) for f in cls.files['zprof']])
 
-                if not force_override and os.path.exists(fnetcdf) and \
-                   os.path.getmtime(fnetcdf) > mtime:
+                if not force_override and osp.exists(fnetcdf) and \
+                   osp.getmtime(fnetcdf) > mtime:
                     cls.logger.info('[read_zprof]: Read {0:s}'.format(phase) + \
                                     ' zprof from existing NetCDF dump.')
                     ds = xr.open_dataset(fnetcdf)

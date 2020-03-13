@@ -54,7 +54,7 @@ class AthenaDataSet(object):
         if not osp.exists(filename):
             raise IOError(('File does not exist: {0:s}'.format(filename)))
 
-        dirname, problem_id, num, ext, mpi_mode = _parse_filename(filename)
+        dirname, problem_id, num, suffix, ext, mpi_mode = _parse_filename(filename)
         
         if id0_only:
             mpi_mode = False
@@ -62,6 +62,7 @@ class AthenaDataSet(object):
         self.dirname = dirname
         self.problem_id = problem_id
         self.num = int(num)
+        self.suffix = suffix
         self.ext = ext
         self.mpi_mode = mpi_mode
         self.fnames = [filename]
@@ -71,14 +72,18 @@ class AthenaDataSet(object):
             self.derived_field_list = list(dfi.keys())
         else:
             self.derived_field_list = None
-        
+
         # Find all vtk file names and add to flist
         if mpi_mode:
-            fname_pattern = osp.join(dirname, 'id*/{0:s}-id*.{1:s}.{2:s}'.\
-                                     format(problem_id, num, ext))
+            if self.suffix is None:
+                fname_pattern = osp.join(dirname, 'id*/{0:s}-id*.{1:s}.{2:s}'.\
+                                         format(problem_id, num, ext))
+            else:
+                fname_pattern = osp.join(dirname, 'id*/{0:s}-id*.{1:s}.{2:s}.{3:s}'.\
+                                         format(problem_id, num, suffix, ext))
             fnames = glob.glob(fname_pattern)
             self.fnames += fnames
-        
+
         self.grid = self._set_grid()
         self.domain = self._set_domain()
         self.set_region()
@@ -226,8 +231,7 @@ class AthenaDataSet(object):
 
         return slc
     
-    def get_field(self, field='density', le=None, re=None,
-                  as_xarray=True):
+    def get_field(self, field='density', le=None, re=None, as_xarray=True):
         """Read 3d fields data.
 
         Parameters
@@ -303,10 +307,9 @@ class AthenaDataSet(object):
             for f in fdrop_list:
                 del dat[f]
         
-        return dat
+        return dat.squeeze()
     
-    def _get_field(self, field='density', le=None, re=None,
-                   as_xarray=True):
+    def _get_field(self, field='density', le=None, re=None, as_xarray=True):
 
         field = np.atleast_1d(field)
         
@@ -332,7 +335,7 @@ class AthenaDataSet(object):
                 else:
                     dat[k] = (('z','y','x'), v)
                 
-            return xr.Dataset(dat, coords=x, attrs={'domain':self.domain})        
+            return xr.Dataset(dat, coords=x, attrs={'domain':self.domain})
         else:
             if len(field) == 1:
                 return arr[field[0]]
@@ -435,7 +438,7 @@ class AthenaDataSet(object):
         domain['Lx'] = re - le
         domain['center'] = 0.5*(le + re)
         domain['Nx'] = np.round(domain['Lx']/domain['dx']).astype('int')
-        domain['ndim'] = 3 # should be revised
+        domain['ndim'] = 3 # always 3d
 
         file = open(self.fnames[0], 'rb')
         tmpgrid = dict()
@@ -450,7 +453,6 @@ class AthenaDataSet(object):
     
     def _set_grid(self):
         grid = []
-
         # Record filename and data_offset
         for i, fname in enumerate(self.fnames):
             file = open(fname, 'rb')
@@ -464,12 +466,12 @@ class AthenaDataSet(object):
                 g['data_offset'] = file.tell()
                 line = file.readline()
                 _vtk_parse_line(line, g)
-                
+
             file.close()
-            
             g['Nx'] -= 1
             g['Nx'][g['Nx'] == 0] = 1
-            g['dx'][g['Nx'] == 1] = 1.
+            g['dx'][g['Nx'] == 1] = 1.0
+            
             # Right edge
             g['re'] = g['le'] + g['Nx']*g['dx']
             grid.append(g)
@@ -509,14 +511,23 @@ def _parse_filename(filename):
         mpi_mode = True
     else:
         mpi_mode = False
-
+        
     base = os.path.basename(filename)
     base_split = base.split('.')
-    problem_id = '.'.join(base_split[:-2])
-    num = base_split[-2]
-    ext = base_split[-1]
 
-    return dirname, problem_id, num, ext, mpi_mode
+    if len(base_split) == 3:
+        problem_id = '.'.join(base_split[:-2])
+        num = base_split[-2]
+        suffix = None
+        ext = base_split[-1]
+    else:
+        problem_id = '.'.join(base_split[:-3])
+        num = base_split[-3]
+        suffix = base_split[-2]
+        ext = base_split[-1]
+        
+    return dirname, problem_id, num, suffix, ext, mpi_mode
+        
 
     
 def _set_field_map(grid):
