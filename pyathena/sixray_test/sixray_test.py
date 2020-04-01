@@ -1,16 +1,26 @@
 import numpy as np
 
-def get_data(s, num, sel_kwargs=dict(z=0.0, method='nearest')):
+def get_data(s, num, sel_kwargs=dict(), cool=True):
 
+    D0 = 5.8e-11 # Dissociation rate for unshielded ISRF [s^-1]
+    
     ds = s.load_vtk(num)
-    dd = ds.get_field(['nH','nH2','nHI','xH2','xHII','xe',
-                       'xHI','xCII','chi_PE_ext', 'xi_CR',
-                       'chi_LW_ext','chi_H2_ext','chi_CI_ext',
-                       'T','pok','cool_rate','heat_rate'])
-    print('name:',s.basename, end='  ')
+    if not 'CR_ionization_rate' in ds.field_list:
+        dd = ds.get_field(['nH','nH2','nHI','xH2','xHII','xe',
+                           'xHI','xCII','chi_PE_ext',
+                           'chi_LW_ext','chi_H2_ext','chi_CI_ext',
+                           'T','pok','cool_rate','heat_rate'])
+        dd = dd.assign(xi_CR=dd['z']*0.0 + s.par['problem']['xi_CR0'])
+    else:
+        dd = ds.get_field(['nH','nH2','nHI','xH2','xHII','xe',
+                           'xHI','xCII','chi_PE_ext', 'xi_CR',
+                           'chi_LW_ext','chi_H2_ext','chi_CI_ext',
+                           'T','pok','cool_rate','heat_rate'])
+    print('name:',s.basename, end=' ')
     print('time:',ds.domain['time'])
     
-    from pyathena.microphysics.cool import get_xCO, heatPE, heatCR, heatH2pump,\
+    from pyathena.microphysics.cool import \
+        get_xCO, heatPE, heatCR, heatH2pump, heatH2diss,\
         coolCII, coolOI, coolRec, coolLya, coolCI, coolCO
 
     Z_d = s.par['problem']['Z_dust']
@@ -39,20 +49,24 @@ def get_data(s, num, sel_kwargs=dict(z=0.0, method='nearest')):
     
     # dd = dd.rename(dict(y='log_chi_PE', chi_PE_ext='chi_PE'))
     # dd = dd.assign_coords(dict(log_chi_PE=log_chi_PE))
-    
-    d = dd.sel(**sel_kwargs)
-    d['heatPE'] = heatPE(d['nH'], d['T'], d['xe'], Z_d, d['chi_PE_ext'])
-    d['heatCR'] = heatCR(d['nH'], d['xe'], d['xHI'], d['xH2'], d['xi_CR'])
-    d['heatH2pump'] = heatH2pump(d['nH'], d['T'], d['xHI'], d['xH2'], d['chi_H2_ext']*5.8e-11)
-    d['coolCII'] = coolCII(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCII'])
-    d['coolOI'] = coolOI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xOI'])
-    d['coolRec'] = coolRec(d['nH'],d['T'],d['xe'],Z_d,d['chi_PE_ext'])
-    d['coolLya'] = coolLya(d['nH'],d['T'],d['xe'],d['xHI'])
-    d['coolCI'] = coolCI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCI'])
-    d['coolCO'] = coolCO(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCO'],3e-14)
-    d['cool'] = d['coolCI']+d['coolCII']+d['coolOI']+d['coolRec']+d['coolLya']+d['coolCO']
-    d['heat'] = d['heatPE']+d['heatCR'] + d['heatH2pump']
 
+    d = dd.sel(**sel_kwargs)
+
+    # Calculate heat/cool rates
+    if cool:
+        d['heatPE'] = heatPE(d['nH'], d['T'], d['xe'], Z_d, d['chi_PE_ext'])
+        d['heatCR'] = heatCR(d['nH'], d['xe'], d['xHI'], d['xH2'], d['xi_CR'])
+        d['heatH2pump'] = heatH2pump(d['nH'], d['T'], d['xHI'], d['xH2'], d['chi_H2_ext']*D0)
+        d['heatH2diss'] = heatH2diss(d['xH2'], d['chi_H2_ext']*D0)
+        d['coolCII'] = coolCII(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCII'])
+        d['coolOI'] = coolOI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xOI'])
+        d['coolRec'] = coolRec(d['nH'],d['T'],d['xe'],Z_d,d['chi_PE_ext'])
+        d['coolLya'] = coolLya(d['nH'],d['T'],d['xe'],d['xHI'])
+        d['coolCI'] = coolCI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCI'])
+        d['coolCO'] = coolCO(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCO'],3e-14)
+        d['cool'] = d['coolCI']+d['coolCII']+d['coolOI']+d['coolRec']+d['coolLya']+d['coolCO']
+        d['heat'] = d['heatPE']+d['heatCR'] + d['heatH2pump']
+        
     return d
 
 def get_PTn_at_Pminmax(d, j=1):

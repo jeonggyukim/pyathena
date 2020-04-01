@@ -18,7 +18,7 @@ from ..classic.utils import texteffect
 class SliceProj:
 
     @staticmethod
-    def _get_extent(domain):
+    def get_extent(domain):
 
         r = dict()
         r['x'] = (domain['le'][1], domain['re'][1],
@@ -40,7 +40,7 @@ class SliceProj:
 
         ds = self.load_vtk(num=num)
         res = dict()
-        res['extent'] = self._get_extent(ds.domain)
+        res['extent'] = self.get_extent(ds.domain)
         
         for ax in axes:
             dat = ds.get_slice(ax, fields, pos='c', method='nearest')
@@ -67,7 +67,7 @@ class SliceProj:
         dat = ds.get_field(fields, as_xarray=True)
 
         res = dict()
-        res['extent'] = self._get_extent(ds.domain)
+        res['extent'] = self.get_extent(ds.domain)
 
         for ax in axes:
             i = axtoi[ax]

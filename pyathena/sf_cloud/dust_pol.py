@@ -2,10 +2,11 @@
 
 import os
 import numpy as np
-import astropy.units as au
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm, Normalize
 import os.path as osp
+import astropy.units as au
+from astropy.io import fits
 
 from ..load_sim import LoadSim
 
@@ -146,6 +147,45 @@ class DustPol:
 
         return fig
 
-    # def write_IQU_to_fits(self):
+    def write_IQU_to_fits(self, num):
 
-        
+        def _create_fits_header(r, domain):
+            pc = self.u.pc
+            hdr = fits.Header()
+
+            hdr['xmin'] = (domain['le'][0]*pc, 'pc')
+            hdr['xmax'] = (domain['re'][0]*pc, 'pc')
+            hdr['ymin'] = (domain['le'][1]*pc, 'pc')
+            hdr['ymax'] = (domain['re'][1]*pc, 'pc')
+            hdr['zmin'] = (domain['le'][2]*pc, 'pc')
+            hdr['zmax'] = (domain['re'][2]*pc, 'pc')
+            hdr['dx'] = (domain['dx'][0]*pc, 'pc')
+            hdr['dy'] = (domain['dx'][1]*pc, 'pc')
+            hdr['dz'] = (domain['dx'][2]*pc, 'pc')
+            
+            hdr['time'] = (r['time']*self.u.Myr, 'Myr')
+            hdr['nu'] = (r['nu'], 'GHz')
+            hdr['Td'] = (r['Td'], 'K')
+            hdr['sigmad'] = (r['sigmad'], 'cm^2/H')
+            
+            hdu = fits.PrimaryHDU(header=hdr)
+
+            return hdu
+
+        r = self.read_IQU(num)
+
+        fitsname = osp.join(self.savdir, 'dust_pol', 
+                            self.problem_id + '.{0:04}.fits'.format(num))
+        print(fitsname)
+        hdul = fits.HDUList()
+        hdu = _create_fits_header(r, self.domain)
+        hdul.append(hdu)
+
+        for axis in ('x','y','z'):
+            for label in ('I', 'Q', 'U', 'NH', 'B1proj', 'B2proj'):
+                name = label + '_' + axis
+                data = r[label][axis]
+                hdul.append(fits.ImageHDU(name=name, data=data))
+
+        hdul.writeto(fitsname, overwrite=True)
+        self.logger.info('[write_IQU_to_fits]: Wrote to {0:s}'.format(fitsname))

@@ -579,8 +579,12 @@ class LoadSim(object):
                         os.makedirs(savdir)
                 except FileExistsError:
                     print('Directory exists: {0:s}'.format(savdir))
-                        
-                fpkl = osp.join(savdir, '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
+
+                if 'num' in kwargs:
+                    fpkl = osp.join(savdir, '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
+                else:
+                    fpkl = osp.join(savdir, '{0:s}.p'.format(prefix))
+                    
                 if not force_override and osp.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
                     res = pickle.load(open(fpkl, 'rb'))
@@ -624,12 +628,13 @@ class LoadSim(object):
                 # Check if the original history file is updated
                 if not force_override and osp.exists(fpkl) and \
                    osp.getmtime(fpkl) > osp.getmtime(cls.files['hst']):
-                    cls.logger.info('[read_hst]: Reading from existing pickle.')
+                    cls.logger.info('[read_hst]: Reading pickle.')
+                    #print('[read_hst]: Reading pickle.')
                     hst = pd.read_pickle(fpkl)
                     cls.hst = hst
                     return hst
                 else:
-                    cls.logger.info('[read_hst]: Reading from original hst dump.')
+                    cls.logger.info('[read_hst]: Reading original hst file.')
                     # If we are here, force_override is True or history file is updated.
                     # Call read_hst function
                     hst = read_hst(cls, *args, **kwargs)

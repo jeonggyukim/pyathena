@@ -6,6 +6,7 @@ import pandas as pd
 import astropy.constants as ac
 import astropy.units as au
 from scipy import integrate
+from scipy.integrate import cumtrapz
 
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
@@ -56,9 +57,6 @@ class ReadHst:
                 self.logger.warning('Column {0:s} not found'.format(c))
                 continue
 
-        hst = self._calc_SFR(hst)
-        hst = self._calc_outflow(hst)
-            
         # Mstar: total
         # Mstar_in: mass of sp currently in the domain
         # Mstar_esc: mass of sp escaped the domain
@@ -67,36 +65,21 @@ class ReadHst:
             hst['Mstar'] += hst['Mstar_esc']
 
         hst['MHII'] = hst['Mgas'] - hst['MHI'] - hst['MH2']
-        hst['MHII_cl'] = hst['Mgas'] - hst['MHI_cl'] - hst['MH2_cl']
+        hst['MHII_cl'] = hst['M_cl'] - hst['MHI_cl'] - hst['MH2_cl']
 
         # Volume
         hst['VHII'] = 1.0 - hst['VHI'] - hst['VH2']
         hst['VHII_cl'] = hst['V_cl'] - hst['VHI_cl'] - hst['VH2_cl']
-        
-        # Radiation feedback turned on
+
+        hst = self._calc_SFR(hst)
+        hst = self._calc_outflow(hst)
+
+        # Radiation variables
         if par['configure']['radps'] == 'ON':
-            from scipy.integrate import cumtrapz
+            hst = self._calc_radiation(hst)
 
-            # Total/escaping luminosity in Lsun
-            ifreq = dict()
-            for f in ('PH','LW','PE','PE_unatt'):
-                try:
-                    ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
-                except KeyError:
-                    pass
-
-            for i in range(par['radps']['nfreq']):
-                for k, v in ifreq.items():
-                    if i == v:
-                        try:
-                            hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
-                            hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
-                            hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
-                            hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
-                                               (ac.L_sun.cgs.value)/hnu
-                            hst[f'fesc_{k}'] = hst[f'Lesc_{k}']/hst[f'Ltot_{k}']
-                        except KeyError:
-                            pass
+        hst['avir_neu_cl'] = -2.0*(hst['Ekin_HI_cl']+hst['Ekin_H2_cl']) \
+                            /(hst['Egrav_H2_cl']+hst['Egrav_HI_cl'])
             
         #hst.index = hst['time_code']
         
@@ -105,7 +88,6 @@ class ReadHst:
         return hst
 
     def _calc_outflow(self, hst):
-
         
         u = self.u
         domain = self.domain
@@ -115,10 +97,18 @@ class ReadHst:
         if 'rho_out' in hst.columns:
             hst.rho_out *= vol*u.Msun
             hst['Mof_dot'] = hst.rho_out
-            hst['Mof'] = integrate.cumtrapz(
-                hst['rho_out'], hst['time'], initial=0.0)
-            
+            hst['Mof'] = integrate.cumtrapz(hst['rho_out'], hst['time'], initial=0.0)
+
+        for ph in ('H2','HI','HII'):
+            c = f'rho_{ph}_out'
+            if c in hst.columns:
+                hst[c] *= vol*u.Msun
+                hst[f'Mof_{ph}_dot'] = hst.rho_out
+                hst[f'Mof_{ph}'] = integrate.cumtrapz(
+                    hst[c], hst['time'], initial=0.0)
+
         return hst
+    
     def _calc_SFR(self, hst):
         """Compute instantaneous SFR, SFR averaged over the past 1 Myr, 3Myr, etc.
         """        
@@ -140,6 +130,57 @@ class ReadHst:
                 winsize_3Myr, min_periods=1, win_type='boxcar').mean()
         else:
             raise ValueError('Total time interval smaller than 1 Myr')
+            #pass
 
         return hst
 
+    def _calc_radiation(self, hst):
+
+        par = self.par
+        u = self.u
+        domain = self.domain
+        # total volume of domain (code unit)
+        vol = domain['Lx'].prod()        
+
+        # Total/escaping luminosity in Lsun
+        ifreq = dict()
+        for f in ('PH','LW','PE'): #,'PE_unatt'):
+            try:
+                ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
+            except KeyError:
+                pass
+
+        for i in range(par['radps']['nfreq']):
+            for k, v in ifreq.items():
+                if i == v:
+                    try:
+                        hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
+                        hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
+                        hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
+                        hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
+                                           (ac.L_sun.cgs.value)/hnu
+                        hst[f'Qesc_{k}'] = hst[f'Lesc_{k}'].values * \
+                                           (ac.L_sun.cgs.value)/hnu
+                        # Cumulative number of escaped photons
+                        hst[f'Qtot_cum_{k}'] = \
+                        integrate.cumtrapz(hst[f'Qtot_{k}'], hst.time*u.time.cgs.value, initial=0.0)
+                        hst[f'Qesc_cum_{k}'] = \
+                        integrate.cumtrapz(hst[f'Qesc_{k}'], hst.time*u.time.cgs.value, initial=0.0)
+                        # Instantaneous escape fraction
+                        hst[f'fesc_{k}'] = hst[f'Lesc_{k}']/hst[f'Ltot_{k}']
+                        # Cumulative escape fraction
+                        hst[f'fesc_cum_{k}'] = \
+                        integrate.cumtrapz(hst[f'Lesc_{k}'], hst.time, initial=0.0)/\
+                        integrate.cumtrapz(hst[f'Ltot_{k}'], hst.time, initial=0.0)
+                        hst[f'fesc_cum_{k}'].fillna(value=0.0, inplace=True)
+                    except KeyError:
+                        pass
+                    
+        if 'Ltot_LW' in hst.columns and 'Ltot_PE' in hst.columns:
+            hst['fesc_FUV'] = (hst['Lesc_PE'] + hst['Lesc_LW'])/(hst['Ltot_PE'] + hst['Ltot_LW'])
+            hst['fesc_cum_FUV'] = \
+                integrate.cumtrapz(hst['Lesc_PE'] + hst['Lesc_LW'], hst.time, initial=0.0)/\
+                integrate.cumtrapz(hst['Ltot_PE'] + hst['Ltot_LW'], hst.time, initial=0.0)
+            hst[f'fesc_cum_FUV'].fillna(value=0.0, inplace=True)
+            
+        return hst

@@ -473,7 +473,7 @@ def set_derived_fields_sixray(par, x0):
         Erad_PE0 = par['cooling']['Erad_PE0']
         Erad_LW0 = par['cooling']['Erad_LW0']
     except KeyError:
-        Erad_PE0 = 8.948e-14
+        Erad_PE0 = 7.613e-14
         Erad_LW0 = 1.335e-14
     
     # Normalized FUV radiation field strength (Draine ISRF)
@@ -540,7 +540,7 @@ def set_derived_fields_rad(par, x0):
         Erad_PE0 = par['cooling']['Erad_PE0']
         Erad_LW0 = par['cooling']['Erad_LW0']
     except KeyError:
-        Erad_PE0 = 8.948e-14
+        Erad_PE0 = 7.613e-14
         Erad_LW0 = 1.335e-14
     
     # Normalized FUV radiation field strength (Draine field unit)

@@ -1,8 +1,8 @@
 #!/bin/bash
-#SBATCH --job-name=do_tasks
+#SBATCH --job-name=do_tasks2
 #SBATCH -N 1
 #SBATCH -p shared
-#SBATCH -n 7
+#SBATCH -n 8
 #SBATCH -t 00:30:00
 ##SBATCH --mail-type=begin
 ##SBATCH --mail-type=end
@@ -11,9 +11,9 @@
 #SBATCH --output=do_tasks_%j.out
 #
 
-NPROCS=7
+NPROCS=8
 
-MODULE="pyathena.sf_cloud.do_tasks"
+MODULE="pyathena.sf_cloud.do_tasks2"
 
 export MATPLOTLIBRC="$HOME/.config/matplotlib"
 export TERM="xterm-256color"

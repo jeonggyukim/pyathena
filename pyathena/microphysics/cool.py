@@ -74,6 +74,11 @@ def heatH2pump(nH, T, xHI, xH2, xi_diss_H2):
 
     return 18.4*xi_diss_H2*xH2*f*eV_cgs
 
+def heatH2diss(xH2, xi_diss_H2):
+    eV_cgs = (1.0*au.eV).cgs.value
+
+    return 0.4*xi_diss_H2*xH2*eV_cgs
+
 def heatH2pump_Burton90(nH, T, xHI, xH2, xi_diss_H2):
     # Burton, Hollenbach, & Tielens (1990)
     kpump = 6.94*xi_diss_H2
