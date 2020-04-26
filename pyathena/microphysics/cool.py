@@ -65,6 +65,15 @@ def heatCR(nH, xe, xHI, xH2, xi_CR):
 
     return ktot*(xHI*qHI + 2.0*xH2*qH2)
 
+def heatH2form(nH, T, xHI, xH2, Z_d):
+    # Hollenbach & McKee (1978)
+    eV_cgs = (1.0*au.eV).cgs.value
+    de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
+    ncrit = 1e6/np.sqrt(T)/de
+    f = nH/(nH + ncrit)
+
+    return 3.0e-17*Z_d*nH*xHI*(0.2 + 4.2*f)*eV_cgs
+
 def heatH2pump(nH, T, xHI, xH2, xi_diss_H2):
     # Hollenbach & McKee (1978)
     eV_cgs = (1.0*au.eV).cgs.value
@@ -72,7 +81,7 @@ def heatH2pump(nH, T, xHI, xH2, xi_diss_H2):
     ncrit = 1e6/np.sqrt(T)/de
     f = nH/(nH + ncrit)
 
-    return 18.4*xi_diss_H2*xH2*f*eV_cgs
+    return 9.0*2.2*xi_diss_H2*xH2*f*eV_cgs
 
 def heatH2diss(xH2, xi_diss_H2):
     eV_cgs = (1.0*au.eV).cgs.value
