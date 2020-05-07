@@ -131,7 +131,7 @@ def set_derived_fields_def(par, x0):
     take_log[f] = False
     
     # vx [km/s]
-    f = 'vz'
+    f = 'vx'
     field_dep[f] = set(['velocity'])
     def _vx(d, u):
         return d['velocity1']*u.kms
