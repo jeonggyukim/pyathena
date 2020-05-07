@@ -70,37 +70,53 @@ class ReadHst:
         
         # Radiation feedback turned on
         if par['configure']['radps'] == 'ON':
-            from scipy.integrate import cumtrapz
-
-            # Expected radial momentum injection
-            if par['radps']['apply_force'] == 1 and par['configure']['ionrad']:
-                # Radiation pressure only (in the optically-thick limit)
-                hst['pr_inject'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
-                                            hst['time_code'], initial=0.0)
-                hst['pr_inject'] *= vol*(u.mass*u.velocity).value
-
-            # Total/escaping luminosity in Lsun
-            ifreq = dict()
-            for f in ('PH','LW','PE','PE_unatt'):
-                try:
-                    ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
-                except KeyError:
-                    pass
-
-            for i in range(par['radps']['nfreq']):
-                for k, v in ifreq.items():
-                    if i == v:
-                        try:
-                            hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
-                            hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
-                            hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
-                            hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
-                                               (ac.L_sun.cgs.value)/hnu
-                        except KeyError:
-                            pass
-            
+            hst = self._calc_radiation(hst)
         #hst.index = hst['time_code']
         
         self.hst = hst
         
+        return hst
+
+    def _calc_radiation(self, hst):
+        
+        par = self.par
+        u = self.u
+        domain = self.domain
+        # total volume of domain (code unit)
+        vol = domain['Lx'].prod()        
+        from scipy.integrate import cumtrapz
+
+        # Ionization/dissociation fronts
+        hst['RIF'] = hst['RIF']/hst['RIF_vol']*u.pc
+        hst['RDF'] = hst['RDF']/hst['RDF_vol']*u.pc
+        
+        # Expected radial momentum injection
+        if par['radps']['apply_force'] == 1 and par['configure']['ionrad']:
+            # Radiation pressure only (in the optically-thick limit)
+            hst['pr_inject'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
+                                        hst['time_code'], initial=0.0)
+            hst['pr_inject'] *= vol*(u.mass*u.velocity).value
+
+        # Total/escaping luminosity in Lsun
+        ifreq = dict()
+        for f in ('PH','LW','PE','PE_unatt'):
+            try:
+                ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
+            except KeyError:
+                pass
+
+        for i in range(par['radps']['nfreq']):
+            for k, v in ifreq.items():
+                if i == v:
+                    try:
+                        hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
+                        hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
+                        hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
+                        hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
+                                           (ac.L_sun.cgs.value)/hnu
+                    except KeyError:
+                        pass
+
+
+                    
         return hst

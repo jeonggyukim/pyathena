@@ -25,20 +25,31 @@ def get_xCO(nH, xH2, xCII, Z_d, Z_g, xi_CR, chi_CO, xCstd=1.6e-4):
     
     return xCO,ncrit
 
-def heatPE(nH, T, xe, Z_d, chi_PE):
+def get_charge_param(nH, T, xe, chi_PE, phi=1.0):
+    # Charging parameter
+    # (WD01 does not recommend using their eqaution for x < 100)
+    return np.maximum(1.7*chi_PE*np.sqrt(T)/(xe*nH*phi), 100.0) 
 
+def heatPE(nH, T, xe, Z_d, chi_PE):
     # Weingartner & Draine (2001) Table 2
     # Rv = 3.1, bC=4.0, distribution A, ISRF
     CPE_ = np.array([5.22, 2.25, 0.04996, 0.00430, 0.147, 0.431, 0.692])
-    # Charging parameter
-    # JKIM: adding 50 for safety..?
-    # (WD01 does not recommend using their eqaution for x < 100)
-    x = 1.7*chi_PE*np.sqrt(T)/(xe*nH) + 50.0
-    eps = (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]) )/ \
+    x = get_charge_param(nH, T, xe, chi_PE)
+    eps = (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
         (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
     
     return 1.7e-26*chi_PE*Z_d*eps
 
+def heatPE_BT94(nH, T, xe, Z_d, chi_PE):
+    x = get_charge_param(nH, T, xe, chi_PE)
+    eps_BT94 =  4.87e-2/(1.0 + 4e-3*x**0.73) + 3.65e-2*(T*1e-4)**0.7/(1.0 + 2e-4*x)
+    return 1.7e-24*chi_PE*Z_d*eps_BT94
+
+def heatPE_W03(nH, T, xe, Z_d, chi_PE, phi=0.5):
+    x = get_charge_param(nH, T, xe, chi_PE, phi=phi)
+    eps_BT94 =  4.87e-2/(1.0 + 4e-3*x**0.73) + 3.65e-2*(T*1e-4)**0.7/(1.0 + 2e-4*x)
+    # Multiply by 1.3 (due to increased PAH abundance)
+    return 1.3*1.7e-24*chi_PE*Z_d*eps_BT94
 
 def heatCR(nH, xe, xHI, xH2, xi_CR):
 
@@ -290,18 +301,30 @@ def coolLya(nH, T, xe, xHI):
 
     return q01/(q01 + q10 + A10HI_)*A10HI_*E10HI_*xHI
 
-
 def coolRec(nH, T, xe, Z_d, chi_PE):
     # Weingartner & Draine (2001) Table 3
     # Rv = 3.1, bC=4.0, distribution A, ISRF    
     DPE_ = np.array([0.4535, 2.234, -6.266, 1.442, 0.05089])
     ne = nH*xe
-    x = 1.7*chi_PE*np.sqrt(T)/ne + 50.
+    x = get_charge_param(nH, T, xe, chi_PE)
     lnx = np.log(x)
-    
+
     return 1.0e-28*Z_d*ne*np.power(T, DPE_[0] + DPE_[1]/lnx)*\
         np.exp((DPE_[2]+(DPE_[3]-DPE_[4]*lnx)*lnx))
 
+def coolRec_BT94(nH, T, xe, Z_d, chi_PE):
+    # Eq 44 in Bakes & Tielens (1994)
+    ne = nH*xe
+    x = get_charge_param(nH, T, xe, chi_PE)
+    beta = 0.735*np.power(T,-0.068)
+    
+    return 3.49e-30*np.power(T, 0.944)*np.power(x, beta)*ne*Z_d
+
+def coolRec_W03(nH, T, xe, Z_d, chi_PE, phi=0.5):
+    ne = nH*xe
+    x = get_charge_param(nH, T, xe, chi_PE, phi=phi)
+    beta = 0.735*np.power(T,-0.068)
+    return 4.65e-30*np.power(T, 0.944)*np.power(x, beta)*ne*Z_d*phi
 
 def cool3Level_(q01, q10, q02, q20, q12, q21,
                 A10, A20, A21, E10, E20, E21, xs):
@@ -434,7 +457,11 @@ def coolCO(nH, T, xe, xHI, xH2, xCO, dvdr):
     
     return (1./inv_LCO)*neff*xCO*facT    
 
-    
+def fshld_H2(NH2, b5=3.0):
+    x = 2.0e-15*NH2
+    sqrt_onepx = np.sqrt(1.0 + x)
+    return 0.965/(1.0 + x/b5)**2 + 0.034970262640168365/sqrt_onepx*np.exp(-8.5e-4*sqrt_onepx)
+
 def fshld_CO(logNH2,logNCO):
 
     # # CO column density for DB table
