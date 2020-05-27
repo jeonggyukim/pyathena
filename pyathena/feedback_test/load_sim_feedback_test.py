@@ -5,9 +5,9 @@ import pandas as pd
 from ..load_sim import LoadSim
 from ..util.units import Units
 
-from .read_hst import ReadHst
+from .hst import Hst
 
-class LoadSimFeedbackTest(LoadSim, ReadHst):
+class LoadSimFeedbackTest(LoadSim, Hst):
     """LoadSim class for analyzing LoadSimFeedbackTest simulations.
     """
     

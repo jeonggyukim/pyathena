@@ -4,12 +4,12 @@ import pandas as pd
 from ..load_sim import LoadSim
 from ..util.units import Units
 
-from .read_hst import ReadHst
-from .read_zprof import ReadZprof
+from .hst import Hst
+from .zprof import Zprof
 from .plt_hst_zprof import PltHstZprof
 from .extract_data import ExtractData
 
-class LoadSimTIGRESSDIG(LoadSim, ReadHst, ReadZprof, PltHstZprof, ExtractData):
+class LoadSimTIGRESSDIG(LoadSim, Hst, Zprof, PltHstZprof, ExtractData):
     """LoadSim class for analyzing TIGRESS DIG simulations.
     """
     

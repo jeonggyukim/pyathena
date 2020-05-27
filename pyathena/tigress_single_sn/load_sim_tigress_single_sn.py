@@ -4,9 +4,9 @@ import pandas as pd
 from ..load_sim import LoadSim
 from ..util.units import Units
 
-from .read_hst import ReadHst
+from .hst import Hst
 
-class LoadSimTIGRESSSingleSN(LoadSim, ReadHst):
+class LoadSimTIGRESSSingleSN(LoadSim, Hst):
     """LoadSim class for analyzing TIGRESS-SINGLE-SN simulations.
     """
     

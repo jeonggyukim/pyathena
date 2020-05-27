@@ -4,11 +4,9 @@ import pandas as pd
 from ..load_sim import LoadSim
 from ..util.units import Units
 
-from .read_hst import ReadHst
-# from .read_zprof import ReadZprof
-# from .plt_hst_zprof import PltHstZprof
+from .hst import Hst
 
-class LoadSimTIGRESSXCO(LoadSim, ReadHst): #, ReadZprof, PltHstZprof):
+class LoadSimTIGRESSXCO(LoadSim, Hst):
     """LoadSim class for analyzing TIGRESS simulations.
     """
     

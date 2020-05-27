@@ -1,4 +1,4 @@
-# read_hst.py
+# hst.py
 
 import os
 import numpy as np
@@ -9,7 +9,7 @@ import astropy.units as au
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
 
-class ReadHst:
+class Hst:
 
     @LoadSim.Decorators.check_pickle_hst
     def read_hst(self, savdir=None, force_override=False):

@@ -1,11 +1,11 @@
-# read_hst.py
+# hst.py
 
 import os
 import numpy as np
 import pandas as pd
 from ..io.read_hst import read_hst
 
-class ReadHst:
+class Hst:
 
     def read_hst(self, savdir=None, merge_mhd=True, force_override=False):
         """Function to read hst and convert quantities to convenient units
