@@ -1,4 +1,4 @@
-# read_slc_prj.py
+# slc_prj.py
 
 import os
 import os.path as osp

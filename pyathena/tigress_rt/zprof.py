@@ -1,4 +1,4 @@
-# read_zprof.py
+# zprof.py
 
 import os
 import os.path as osp
