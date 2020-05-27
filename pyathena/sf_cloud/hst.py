@@ -1,8 +1,14 @@
-# read_hst.py
+# hst.py
 
 import os
+import os.path as osp
 import numpy as np
 import pandas as pd
+
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from matplotlib.colors import Normalize, LogNorm
+
 import astropy.constants as ac
 import astropy.units as au
 from scipy import integrate
@@ -11,8 +17,9 @@ from scipy.integrate import cumtrapz
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
 from ..util.derivative import deriv_convolve
+from ..util.scp_to_pc import scp_to_pc
 
-class ReadHst:
+class Hst:
 
     @LoadSim.Decorators.check_pickle_hst
     def read_hst(self, savdir=None, force_override=False):
@@ -56,7 +63,17 @@ class ReadHst:
             except KeyError:
                 self.logger.warning('Column {0:s} not found'.format(c))
                 continue
+            
+        # Convert energy unit [Msun*(km/s)**2]
+        for c in hst.columns:
+            if 'Emag' in c or 'Ekin' in c or 'Egrav' in c:                
+                hst[c] *=  vol*u.Msun*(u.kms)**2
 
+        # Velocity dispersion
+        # (mass-weighted rms velocity magnitude)
+        hst['vdisp_cl'] = np.sqrt(2.0*(hst['Ekin_H2_cl'] + hst['Ekin_HI_cl'])
+                                  /(hst['MHI_cl'] + hst['MH2_cl']))
+        
         # Mstar: total
         # Mstar_in: mass of sp currently in the domain
         # Mstar_esc: mass of sp escaped the domain
@@ -184,3 +201,80 @@ class ReadHst:
             hst[f'fesc_cum_FUV'].fillna(value=0.0, inplace=True)
             
         return hst
+
+
+    @staticmethod
+    def plt_hst(sa, models=['B2S4'], ls=['-'], r=None, savefig=True):
+
+        plt.rcParams['ytick.right'] = True
+
+        fig, axes = plt.subplots(3, 1, figsize=(6, 14), sharex=True)
+        axes = axes.flatten()
+        # ax1t = axes[1].twinx()
+        # L0 = 1e6
+        models = np.atleast_1d(models)
+        ls = np.atleast_1d(ls)
+
+        for i, (mdl, ls_) in enumerate(zip(models, ls)):
+            s = sa.set_model(mdl)
+            M0 = s.par['problem']['M_cloud']
+            if r is not None:
+                h = r.loc[mdl]['hst']
+            else:
+                h = s.read_hst()
+                
+            x = h.time
+
+            plt.sca(axes[0])
+            #plt.plot(x, h.M_cl/M0, label=r'$M_{\rm cl}$', c='k', ls=ls_)
+            #plt.plot(x, h.Mgas/M0, label=r'_nolegend_', c='lightgray', ls=ls_)
+            plt.plot(x, h.Mstar/M0, label=r'$M_{*}$', c='g', ls=ls_)
+            plt.plot(x, (h.MHI_cl+h.MH2_cl)/M0, label=r'$M_{\rm HI+H_2}$', c='k', ls=ls_)
+            plt.plot(x, h.MHI_cl/M0, label=r'$M_{\rm HI}$', c='hotpink', ls=ls_)
+            plt.plot(x, h.MH2_cl/M0, label=r'$M_{\rm H_2}$', c='crimson', ls=ls_)
+            plt.plot(x, h.MHII_cl/M0, label=r'$M_{\rm H^+}$', c='y', ls=ls_)
+
+            plt.sca(axes[1])
+            plt.plot(x, h.Ltot_LW + h.Ltot_PE, label=r'$L_{\rm FUV}$', c='C0', ls=ls_)
+            plt.plot(x, h.Ltot_PH, label=r'$L_{\rm LyC}$', c='C1', ls=ls_)
+
+            plt.sca(axes[2])
+            plt.plot(x, h.fesc_PH, label=r'$f_{\rm esc,LyC}$', c='C1', ls=ls_)
+            plt.plot(x, h.fesc_FUV, label=r'$f_{\rm esc,FUV}$', c='C0', ls=ls_)
+            plt.plot(x, h.fesc_cum_PH, label=r'$f_{\rm esc,LyC}^{\rm cum}$', c='C1', lw=3.5, ls=ls_)
+            plt.plot(x, h.fesc_cum_FUV, label=r'$f_{\rm esc,FUV}^{\rm cum}$', c='C0', lw=3.5, ls=ls_)
+
+        plt.sca(axes[0])
+        plt.ylabel(r'mass/$M_0$')
+        plt.legend(fontsize='small', loc=1, facecolor='whitesmoke', edgecolor='grey')
+        plt.yscale('log')
+        plt.ylim(0.01, 2)
+        
+        plt.sca(axes[1])
+        plt.ylabel(r'luminosity [$L_{\odot}$]')
+        plt.yscale('log')
+        plt.ylim(1e4,1e7)
+        plt.legend(fontsize='small', loc=1, facecolor='whitesmoke', edgecolor='grey')
+
+        plt.sca(axes[2])
+        plt.xlabel(r'time [Myr]')
+        plt.ylabel(r'escape fraction')
+        plt.legend(fontsize='small', loc=(0.03,0.5), facecolor='whitesmoke', edgecolor='grey')
+        plt.ylim(0.0, 1.0)
+
+        labels = ('(a)','(b)','(c)')
+        locs = ((0.03, 0.92),(0.03, 0.92),(0.03, 0.92))
+        for ax,label,loc in zip(axes,labels,locs):
+            ax.set_xlim(left=0)
+            ax.grid()
+            ax.annotate(label, loc, xycoords='axes fraction', fontsize='large')
+
+        plt.tight_layout()
+
+        if savefig:
+            savname = '/tigress/jk11/figures/GMC/paper/hst/hst-{0:s}.png'.\
+                      format('-'.join(models))
+            plt.savefig(savname, dpi=200, bbox_inches='tight')
+            scp_to_pc(savname, target='GMC-MHD-Results')
+        
+        return fig

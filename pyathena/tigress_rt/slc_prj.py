@@ -37,8 +37,7 @@ class SliceProj:
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
         
-        fields_def = ['density', 'xH2', 'velocity', 'temperature',
-                      'CR_ionization_rate', 'heat_ratio']
+        fields_def = ['nH', 'nH2', 'vz', 'T', 'chi_FUV']
         fields = fields_def
         axes = np.atleast_1d(axes)
 
@@ -50,11 +49,7 @@ class SliceProj:
             dat = ds.get_slice(ax, fields, pos='c', method='nearest')
             res[ax] = dict()
             for f in fields:
-                if 'velocity' in f:
-                    for k in ('3',):
-                        res[ax][f+k] = dat[f+k].data
-                else:
-                    res[ax][f] = dat[f].data
+                res[ax][f] = dat[f].data
 
         return res
 
@@ -63,7 +58,7 @@ class SliceProj:
                  savdir=None, force_override=False):
 
         axtoi = dict(x=0, y=1, z=2)
-        fields = ['density', 'xH2', 'temperature', 'heat_ratio']
+        fields = ['nH', 'nH2', 'nesq']
         axes = np.atleast_1d(axes)
 
         ds = self.load_vtk(num=num)
@@ -76,12 +71,13 @@ class SliceProj:
             i = axtoi[ax]
             dx = ds.domain['dx'][i]*self.u.length
             conv_Sigma = (dx*self.u.muH*ac.u.cgs/au.cm**3).to('Msun/pc**2')
+            conv_EM = (dx*au.cm**-6).to('pc cm-6')
             
             res[ax] = dict()
-            res[ax]['Sigma_gas'] = (np.sum(dat['density'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_H2'] = (np.sum(dat['density']*dat['xH2'], axis=2-i)*conv_Sigma).data
+            res[ax]['Sigma_gas'] = (np.sum(dat['nH'], axis=2-i)*conv_Sigma).data
+            res[ax]['Sigma_H2'] = (np.sum(dat['nH2'], axis=2-i)*conv_Sigma).data
             res[ax]['Sigma_HI'] = res[ax]['Sigma_gas'] - res[ax]['Sigma_H2']
-            res[ax]['heat_ratio'] = np.sum(dat['heat_ratio'], axis=2-i)
+            res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
 
         return res
 
@@ -114,10 +110,9 @@ class SliceProj:
 
     def plt_snapshot(self, num, axis='z', savefig=True):
 
-
         cmap = dict(Sigma_gas='pink_r', Sigma_HI='pink_r', Sigma_H2='pink_r', \
-                    density='Spectral_r',
-                    heat_ratio='viridis',
+                    nH='Spectral_r',
+                    chi_FUV='viridis',
                     temperature=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.))
         
         fig, axes = plt.subplots(2, 2, figsize=(12, 12),
@@ -191,30 +186,31 @@ class SliceProj:
         sp = read_starpar_vtk(self.files['starpar'][num])
 
         self.plt_slice(g1[0], prj, 'z', 'Sigma_gas', cmap='pink_r', norm=LogNorm(5e-1,1e3))
-        self.plt_slice(g1[1], prj, 'z', 'Sigma_H2', cmap='pink_r', norm=LogNorm(5e-1,1e3))
-        self.plt_slice(g1[2], slc, 'z', 'density', cmap='Spectral_r', norm=LogNorm(1e-3,1e3))
-        self.plt_slice(g1[3], slc, 'z', 'temperature', cmap=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
+        self.plt_slice(g1[2], prj, 'z', 'Sigma_H2', cmap='pink_r', norm=LogNorm(5e-1,1e3))
+        self.plt_slice(g1[4], prj, 'z', 'EM', cmap='plasma', norm=LogNorm(1e0,1e5))
+        self.plt_slice(g1[1], slc, 'z', 'nH', cmap='Spectral_r', norm=LogNorm(1e-3,1e3))
+        self.plt_slice(g1[3], slc, 'z', 'T', cmap=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
                     norm=LogNorm(1e1,1e7))
-        self.plt_slice(g1[4], slc, 'z', 'heat_ratio', cmap='viridis', norm=LogNorm(0.01,1e3))
-        self.plt_slice(g1[5], slc, 'z', 'CR_ionization_rate', cmap='viridis', norm=LogNorm(1e-16,1e-14))
+        self.plt_slice(g1[5], slc, 'z', 'chi_FUV', cmap='viridis', norm=LogNorm(1e-2,1e3))
 
         self.plt_slice(g2[0], prj, 'y', 'Sigma_gas', cmap='pink_r', norm=LogNorm(5e-1,1e3))
         self.plt_slice(g2[1], prj, 'y', 'Sigma_H2', cmap='pink_r', norm=LogNorm(5e-1,1e3))
-        self.plt_slice(g2[2], slc, 'y', 'density', cmap='Spectral_r', norm=LogNorm(1e-3,1e3))
-        self.plt_slice(g2[3], slc, 'y', 'velocity3', cmap='bwr', norm=Normalize(-300,300))
-        self.plt_slice(g2[4], slc, 'y', 'temperature', cmap=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
-                    norm=LogNorm(1e1,1e7))
-        self.plt_slice(g2[5], slc, 'y', 'heat_ratio', cmap='viridis', norm=LogNorm(0.01,1e3))
+        self.plt_slice(g2[2], prj, 'y', 'EM', cmap='plasma', norm=LogNorm(1e0,1e5))
+        self.plt_slice(g2[3], slc, 'y', 'nH', cmap='Spectral_r', norm=LogNorm(1e-3,1e3))
+        self.plt_slice(g2[4], slc, 'y', 'chi_FUV', cmap='viridis', norm=LogNorm(1e-2,1e3))
+        self.plt_slice(g2[5], slc, 'y', 'vz', cmap='bwr', norm=Normalize(-200,200))
 
-        for ax in (g1[0], g1[1]):
+        for ax in g1:
             scatter_sp(sp, ax, type='proj', kpc=False, norm_factor=5.0, agemax=20.0)
             extent = prj['extent']['z']
             ax.set_xlim(extent[0], extent[1])
             ax.set_ylim(extent[2], extent[3])
         
-        titles1 = (r'$N_{\rm H}$', r'$N_{\rm H_2}$', r'$n_{\rm H}$', r'$T$', r'$G_0$', r'CRIR')
+        titles1 = (r'$\Sigma$', r'$n_{\rm H}$', r'$\Sigma_{\rm H_2}$', r'$T$',
+                   r'${\rm EM}$', r'$\chi_{\rm FUV}$')
         for i, (ax, title) in enumerate(zip(g1, titles1)):
-            ax.text(0.5, 0.92, title, **texteffect(fontsize='xx-large'), ha='center', transform=ax.transAxes)
+            ax.text(0.5, 0.92, title, **texteffect(fontsize='xx-large'),
+                    ha='center', transform=ax.transAxes)
             if i != 4:
                 ax.axes.get_xaxis().set_visible(False)
                 ax.axes.get_yaxis().set_visible(False)
@@ -222,7 +218,8 @@ class SliceProj:
                 ax.set_xlabel('x [pc]')
                 ax.set_ylabel('y [pc]')
 
-        titles2 = (r'$N_{\rm H}$', r'$N_{\rm H_2}$', r'$n_{\rm H}$', r'$v_{z}$', r'$T$', r'$G_0$')
+        titles2 = (r'$N_{\rm H}$', r'$N_{\rm H_2}$', r'${\rm EM}$',
+                   r'$n_{\rm H}$', r'$\chi_{\rm FUV}$', r'$v_z$')
         for i, (ax, title) in enumerate(zip(g2, titles2)):
             ax.text(0.5, 0.97, title, **texteffect(fontsize='xx-large'), ha='center', transform=ax.transAxes)
             if i != 0:

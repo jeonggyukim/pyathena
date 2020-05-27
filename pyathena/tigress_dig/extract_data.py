@@ -6,11 +6,42 @@ import astropy.constants as ac
 import astropy.units as au
 
 import pyathena as pa
+from pyathena.classic import cc_arr
 from ..load_sim import LoadSim
 
 
 class ExtractData:
 
+    @LoadSim.Decorators.check_pickle
+    def read_VFF_Peters17(self, num, savdir=None, force_override=False):
+            
+        r = dict()
+        
+        ds = self.load_vtk(num, load_method='pyathena_classic')
+        x1d, y1d, z1d = cc_arr(ds.domain)
+        z, _, _ = np.meshgrid(z1d, y1d, x1d, indexing='ij')
+        idx_z = np.abs(z) < 100.0
+        tot = idx_z.sum()
+        
+        T = ds.read_all_data('temperature')
+        xn = ds.read_all_data('xn')
+        idx_c = (T[idx_z] <= 300.0)
+        idx_wi = ((T[idx_z] > 300.0) & (T[idx_z] <= 8.0e3) & (xn[idx_z] < 0.1))
+        idx_wn = ((T[idx_z] > 300.0) & (T[idx_z] <= 8.0e3) & (xn[idx_z] > 0.1))
+        idx_whn = ((T[idx_z] > 8000.0) & (T[idx_z] < 5.0e5) & (xn[idx_z] > 0.1))
+        idx_whi = ((T[idx_z] > 8000.0) & (T[idx_z] < 5.0e5) & (xn[idx_z] < 0.1))
+        idx_h = (T[idx_z] > 5e5)
+
+        r['time'] = ds.domain['time']
+        r['f_c'] = idx_c.sum()/tot
+        r['f_wi'] = idx_wi.sum()/tot
+        r['f_wn'] = idx_wn.sum()/tot
+        r['f_whi'] = idx_whi.sum()/tot
+        r['f_whn'] = idx_whn.sum()/tot
+        r['f_h'] = idx_h.sum()/tot
+    
+        return r
+    
     @LoadSim.Decorators.check_pickle
     def read_EM_pdf(self, num, savdir=None, force_override=False):
 

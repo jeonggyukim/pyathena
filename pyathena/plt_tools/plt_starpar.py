@@ -4,40 +4,53 @@ import numpy as np
 
 from ..util.units import Units
 
-def projection(sp, axis):
-    if axis == 0 or axis == 'z':
+def projection(sp, dim):
+    if dim == 0 or dim == 'z':
         spx = sp['x1']
         spy = sp['x2']
         spz = sp['x3']
-    elif axis == 1 or axis == 'y':
+    elif dim == 1 or dim == 'y':
         spx = sp['x1']
         spy = sp['x3']
         spz = sp['x2']
-    elif axis == 2 or axis == 'x':
+    elif dim == 2 or dim == 'x':
         spx = sp['x2']
         spy = sp['x3']
         spz = sp['x1']
     return spx,spy,spz
 
-def projection_v(sp, axis):
-    if axis == 0 or axis == 'z':
+def projection_v(sp, dim):
+    if dim == 0 or dim == 'z':
         spx = sp['v1']
         spy = sp['v2']
         spz = sp['v3']
-    elif axis == 1 or axis == 'y':
+    elif dim == 1 or dim == 'y':
         spx = sp['v1']
         spy = sp['v3']
         spz = sp['v2']
-    elif axis == 2 or axis == 'x':
+    elif dim == 2 or dim == 'x':
         spx = sp['v2']
         spy = sp['v3']
         spz = sp['v1']
     return spx, spy, spz
 
-def scatter(sp, ax, u=None, axis=0, thickness=10.0, cmap=plt.cm.winter,
-            norm_factor=4., kind='proj', kpc=True, runaway=True, agemax=40.0, plt_old=True):
+def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
+               norm_factor=4., kind='prj', dist_max=10.0,
+               kpc=False, runaway=True, agemax=40.0,
+               plt_old=True, u=None):
     """Function to scatter plot star particles. (From pyathena classic)
-
+    
+    Parameters
+    ----------
+    sp : DataFrame
+        Star particle data
+    ax : Axes
+        matplotlib axes
+    dim : 'x' or 'y' or 'z' (or 0, 1, 2)
+    norm_factor: float
+        Symbol size normalization (bigger for smaller norm_factor)
+    kind : 'prj' or 'slc'
+        Slice or projection. If slice, 
     """
 
     if u is None:
@@ -58,34 +71,34 @@ def scatter(sp, ax, u=None, axis=0, thickness=10.0, cmap=plt.cm.winter,
         sp_ru_nonsrc = sp_ru[~src_ru]
 
         if len(sp_ru_nonsrc) > 0 and runaway:
-            spx, spy, spz = projection(sp_ru_nonsrc, axis)
-            spvx, spvy, spvz = projection_v(sp_ru_nonsrc, axis)
+            spx, spy, spz = projection(sp_ru_nonsrc, dim)
+            spvx, spvy, spvz = projection_v(sp_ru_nonsrc, dim)
             if kpc:
                 spx = spx/1.e3
                 spy = spy/1.e3
-            if kind == 'slice':
-                islab=np.where(abs(spz) < thickness)
+            if kind == 'slc':
+                islab=np.where(abs(spz) < dmax)
 
             ax.scatter(spx, spy, marker='o', color='k', alpha=1.0, s=10.0/norm_factor)
 
         if len(sp_ru_src) > 0 and runaway:
-            spx, spy, spz = projection(sp_ru_src, axis)
-            spvx, spvy, spvz = projection_v(sp_ru_src, axis)
+            spx, spy, spz = projection(sp_ru_src, dim)
+            spvx, spvy, spvz = projection_v(sp_ru_src, dim)
             if kpc:
                 spx = spx/1.e3
                 spy = spy/1.e3
-            if kind == 'slice':
-                islab=np.where(abs(spz) < thickness)
+            if kind == 'slc':
+                islab=np.where(abs(spz) < dmax)
 
             ax.scatter(spx, spy, marker='*', color='r', alpha=1.0, s=10.0/norm_factor)
         
         if len(sp_cl) > 0:
-            spx, spy, spz = projection(sp_cl, axis)
+            spx, spy, spz = projection(sp_cl, dim)
             if kpc:
                 spx = spx/1.e3
                 spy = spy/1.e3
-            if kind == 'slice':
-                xbool = abs(spz) < thickness
+            if kind == 'slc':
+                xbool = abs(spz) < dmax
 
             spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
             spa = sp_cl['age']*Myr
@@ -94,7 +107,7 @@ def scatter(sp, ax, u=None, axis=0, thickness=10.0, cmap=plt.cm.winter,
             else:
                 iyoung = np.where(spa < agemax)
 
-            if kind == 'slice':
+            if kind == 'slc':
                 if plt_old:
                     islab = np.where(xbool*(spa < 1e10))
                 else:
@@ -105,11 +118,11 @@ def scatter(sp, ax, u=None, axis=0, thickness=10.0, cmap=plt.cm.winter,
 
             ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung], marker='o',
                        s=spm.iloc[iyoung], c=spa.iloc[iyoung],
-                       vmin=0, vmax=agemax, cmap=cmap, alpha=0.7)
+                       vmin=0, vmax=agemax, cmap=cmap, alpha=1.0)
 
 
-def legend(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
-           bbox_to_anchor=None):
+def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
+              bbox_to_anchor=None):
     """Add legend for sink particle mass.
     
     Parameters
@@ -142,9 +155,9 @@ def legend(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
                        color='k', alpha=1.0, label=label, facecolors='k')
         ss.append(s)
         labels.append(label)
-    
+
     ax.set_xlim(ext[0], ext[1])
-    ax.set_ylim(ext[3], ext[2])
+    ax.set_ylim(ext[2], ext[3])
     if location == 'top':
         legend = ax.legend(ss, labels, scatterpoints=1, fontsize=fontsize,
                            ncol=len(ss), frameon=False, loc=2,
@@ -162,11 +175,10 @@ def legend(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
 
     return legend
 
-def colorbar(fig, agemax, cmap=plt.cm.winter, bbox=[0.125, 0.9, 0.1, 0.015]):
+def colorbar_sp(fig, agemax, cmap=plt.cm.winter, bbox=[0.125, 0.9, 0.1, 0.015]):
 
     # Add starpar age colorbar
     norm = mpl.colors.Normalize(vmin=0., vmax=agemax)
-    cmap = mpl.cm.winter
     cax = fig.add_axes(bbox)
     cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal',
                                    ticks=[0, agemax/2.0, agemax], extend='max')

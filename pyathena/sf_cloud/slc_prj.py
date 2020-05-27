@@ -1,4 +1,4 @@
-# read_slc_prj.py
+# slc_prj.py
 
 import os
 import os.path as osp
@@ -31,13 +31,12 @@ class SliceProj:
         return r
     
     @LoadSim.Decorators.check_pickle
-    def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
+    def read_slc(self, num, axes=['x', 'y', 'z'],
+                 fields=['nH', 'nH2', 'nHI', 'nHII', 'T', 'nHn', 'chi_PE',
+                         'Erad_FUV', 'Erad_LyC'], prefix='slc',
                  savdir=None, force_override=False):
-        
-        fields_def = ['density', 'nH2', 'nHI', 'nHII', 'T']
-        fields = fields_def
+            
         axes = np.atleast_1d(axes)
-
         ds = self.load_vtk(num=num)
         res = dict()
         res['extent'] = self.get_extent(ds.domain)
@@ -122,7 +121,7 @@ class SliceProj:
                                  gridspec_kw=dict(hspace=0.0, wspace=0.0))
 
         norm = LogNorm(1e-1,1e3)
-        norm_EM = LogNorm(1e0,1e4)
+        norm_EM = LogNorm(3e1,3e5)
         im1 = []
         im2 = []
         im3 = []

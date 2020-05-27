@@ -8,13 +8,14 @@ from scipy import integrate
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
 
-class ReadHst:
+class Hst:
 
     @LoadSim.Decorators.check_pickle_hst
     def read_hst(self, savdir=None, force_override=False):
         """Function to read hst and convert quantities to convenient units
         """
 
+        par = self.par
         u = self.u
         domain = self.domain
         
@@ -50,6 +51,13 @@ class ReadHst:
         # Time in Myr
         h['time'] = h['time_code']*u.Myr
         h['time_orb'] = h['time']/time_orb
+        # Time step
+        hst['dt_code'] = hst['dt']
+        hst['dt'] *= u.Myr
+        # if par['configure']['new_cooling'] == 'ON' and \
+        #    (par['configure']['radps'] == 'ON' or par['configure']['sixray'] == 'ON'):
+        #     for c in ('dt_cool_min','dt_xH2_min','dt_xHII_min'):
+        #         hst[c] *= u.Myr*vol
         
         # Total gas mass in Msun
         h['mass'] = hst['mass']*vol*u.Msun
@@ -131,7 +139,10 @@ class ReadHst:
         if newcool:
             tdecay = self.par['problem']['CR_tdecay']
             xi_CR_amp = self.par['problem']['xi_CR_amp']
-            Sigma_gas0 = self.par['problem']['Sigma_gas0']
+            try:
+                Sigma_gas0 = self.par['problem']['Sigma_gas0']
+            except KeyError:
+                Sigma_gas0 = 13.0
             Sigma_SFR0 = self.par['problem']['Sigma_SFR0']
             Sigma_SFR = self.par['problem']['Sigma_SFR']
             h['tfact'] = np.exp(-8.0*((hst['time'] - 0.5*tdecay)/hst['time'])**2)

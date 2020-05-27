@@ -5,11 +5,11 @@ import os.path as osp
 from ..load_sim import LoadSim
 from ..util.units import Units
 
-from .read_hst import ReadHst
-from .read_zprof import ReadZprof
+from .hst import Hst
+from .zprof import Zprof
 from .slc_prj import SliceProj
 
-class LoadSimTIGRESSRT(LoadSim, ReadHst, ReadZprof, SliceProj):
+class LoadSimTIGRESSRT(LoadSim, Hst, Zprof, SliceProj):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
     

@@ -214,9 +214,9 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
     dd = ds.get_field(['nH2','nHI','nHII','ne','T'])
     #dd = ds.get_field(['nH2','nHI','nHII','ne','T','j_X'])
     dfi = dd.dfi
-    sp = s.load_starpar_vtk(num)
+    sp = s.load_starpar_vtk(num*10)
     
-    fig,axes = plt.subplots(2,2,figsize=(15, 12))
+    fig, axes = plt.subplots(2,2,figsize=(15, 12))
     axes = axes.flatten()
     
     # Neutral gas surface density
@@ -268,20 +268,19 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
     plt.xlabel(dfi['nH']['label']); plt.ylabel(dfi['pok']['label'])
     plt.xscale('log'); plt.yscale('log')
     plt.xlim(1e-3,5e4) ; plt.ylim(1e0,1e8)
-
     
-    for ax in axes[0:2]:
+    for ax in axes[:-1]:
         ax.set_aspect('equal')
     
     if not sp.empty:
-        for ax in (axes[1],axes[2]):
+        for ax in (axes[0],axes[1]):
             scatter_sp(sp, ax, axis=0, norm_factor=1.0, 
-                       type='proj', kpc=False, runaway=True, agemax=10.0)
+                       type='prj', kpc=False, runaway=True, agemax=10.0)
             extent = (ds.domain['le'][0], ds.domain['re'][0])
             ax.set_xlim(*extent)
             ax.set_ylim(*extent)
 
-    plt.suptitle(r'time={0:.2f}'.format(ds.domain['time']),x=0.5,y=0.95)
+    plt.suptitle(r'time={0:5.1f}'.format(ds.domain['time']),x=0.5,y=0.95)
 
     #plt.tight_layout()
     #plt.subplots_adjust(top=0.94)

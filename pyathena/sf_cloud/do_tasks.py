@@ -3,6 +3,7 @@
 import os
 import os.path as osp
 import time
+import numpy as np
 import gc
 from mpi4py import MPI
 import matplotlib.pyplot as plt
@@ -18,28 +19,42 @@ if __name__ == '__main__':
 
     COMM = MPI.COMM_WORLD
 
-    #basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.R.mu2.A2.S1.N512.test/'
-    #basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256.Lconst.kexpo2/'
-    #basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256.Lconst.kexpo3/'
-    #basedir = '/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256/'
-    # basedir = '/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N256/'
-    # s = pa.LoadSimSFCloud(basedir, verbose=False)
-    # nums = s.nums
-    # nums = range(0,get_num_max_virial(s))
-
     sa, r = load_all_alphabeta()
-    models = ['B1S4']
-    models = ['B2S4']
-    models = ['B4S4']
-    models = ['B8S4']
-    models = ['A1S4']
-    models = ['A3S4']
-    models = ['A4S4']
-    models = ['A5S4']
+
+    # # beta series
+    # seed = 4
+    # models = list(r[(r['seed'] == seed) & (r['alpha_vir'] == 2.0) & (r['mu'] != np.inf)].index)
+    # models.remove('A2S{0:d}'.format(seed))
+    # print(models)
+
+    # # alpha series
+    # seed = 4
+    # models = list(r[(r['seed'] == seed) & (r['mu'] == 2.0) & (r['mu'] != np.inf)].index)
+    # models.remove('B2S{0:d}'.format(seed))
+    # print(models)
+
+    # models = list(r[(r['seed'] == 4) & (r['mu'] == 2.0)].index)
+    
+    seed = 5
+    sstr = r'S{0:d}'.format(seed)
+    # #models = ['B2'+sstr, 'B8'+sstr, 'B1'+sstr, 'B05'+sstr, 'B4'+sstr]
+    models = ['A1'+sstr, 'A5'+sstr, 'A4'+sstr, 'A3'+sstr]
+    
+    # models = ['A1S4', 'A4S4', 'A3S4', 'A5S4']
+    
+    # models = ['B2S1', 'B2S2', 'B2S3', 'B2S5']
+
+    # sa = pa.LoadSimSFCloudAll(dict(B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'))
+    # models = sa.models
+    
+    # models = dict(nofb='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.NOFB.B2.A2.S4.N256/')
+    # sa = pa.LoadSimSFCloudAll(models)
+    # models = sa.models
+    
     for mdl in models:
         print(mdl)
         s = sa.set_model(mdl)
-        nums = range(0,s.get_num_max_virial())
+        nums = range(0, s.get_num_max_virial())
         
         if COMM.rank == 0:
             print('basedir, nums', s.basedir, nums)
@@ -53,9 +68,8 @@ if __name__ == '__main__':
         time0 = time.time()
         for num in mynums:
             print(num, end=' ')
-
-            print('virial', end=' ')
-            r = s.read_virial(num, force_override=True)
+            # print('virial', end=' ')
+            res = s.read_virial(num, force_override=True)
             n = gc.collect()
             print('Unreachable objects:', n, end=' ')
             print('Remaining Garbage:', end=' ')
@@ -99,7 +113,7 @@ if __name__ == '__main__':
         if COMM.rank == 0:
             print('')
             print('################################################')
-            print('# Do tasks')
+            print('# Do tasks model: {0:s}'.format(mdl))
             print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
             print('################################################')
             print('')
