@@ -28,6 +28,7 @@ class LoadSim(object):
     find simulation output (vtk, starpar_vtk, hst, sn, zprof) files.
 
     Properties
+    ----------
         basedir : str
             base directory of simulation output
         basename : str
@@ -46,8 +47,13 @@ class LoadSim(object):
             'pyathena' or 'yt' or 'pyathenaclassic'
         num : list of int
             vtk output numbers
+        u : Units object
+            simulation unit
+        dfi : dict
+            derived field information
 
     Methods
+    -------
         load_vtk() :
             reads vtk file using pythena or yt and returns DataSet object
         load_starpar_vtk() :
@@ -59,8 +65,7 @@ class LoadSim(object):
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
-        """
-        The constructor for LoadSim class.
+        """Constructor for LoadSim class.
 
         Parameters
         ----------
