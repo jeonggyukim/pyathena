@@ -2,6 +2,7 @@
 
 import os
 import os.path as osp
+import gc
 import time
 from mpi4py import MPI
 import matplotlib.pyplot as plt
@@ -13,7 +14,7 @@ from ..plt_tools.make_movie import make_movie
 if __name__ == '__main__':
     COMM = MPI.COMM_WORLD
 
-    basedir = '/scratch/gpfs/jk11/TIGRESS-RT/R4_4pc.RT.nowind/'
+    basedir = '/scratch/gpfs/jk11/TIGRESS-RT/R4_8pc.test2/'
     s = pa.LoadSimTIGRESSRT(basedir, verbose=False)
     nums = s.nums
     
@@ -26,15 +27,20 @@ if __name__ == '__main__':
     mynums = COMM.scatter(nums, root=0)
     print('[rank, mynums]:', COMM.rank, mynums)
 
-    # for num in mynums:
-    #     print(num, end=' ')
-    #     # prj = s.read_prj(num, force_override=False)
-    #     # slc = s.read_slc(num, force_override=False)
-    #     try:
-    #         fig = s.plt_snapshot2(num)
-    #     except KeyError:
-    #         fig = s.plt_snapshot2(num, force_override=True)
-    #     plt.close(fig)
+    for num in mynums:
+        print(num, end=' ')
+        # prj = s.read_prj(num, force_override=False)
+        # slc = s.read_slc(num, force_override=False)
+        try:
+            fig = s.plt_snapshot2(num)
+        except KeyError:
+            fig = s.plt_snapshot2(num, force_override=True)
+        plt.close(fig)
+
+        n = gc.collect()
+        print('Unreachable objects:', n, end=' ')
+        print('Remaining Garbage:', end=' ')
+        pprint.pprint(gc.garbage)
 
     # Make movies
     if COMM.rank == 0:
