@@ -121,16 +121,16 @@ class SliceProj:
         ds = self.load_vtk(num)
         prj = self.read_prj(num, force_override=False)
         slc = self.read_slc(num, force_override=False)
-        sp = read_starpar_vtk(self.files['starpar'][num])
+        sp = self.load_starpar_vtk(num)
 
         axes = axes.flatten()
         self.plt_proj(axes[0], prj, 'z', 'Sigma_gas', norm='log',
                       cmap=cmap['Sigma_gas'], vmin=0.1, vmax=10e2)
         self.plt_proj(axes[1], prj, 'z', 'Sigma_H2', norm='log',
                       cmap=cmap['Sigma_H2'], vmin=0.1, vmax=10e2)
-        self.plt_proj(axes[2], slc, 'z', 'density', norm='log', 
-                      cmap=cmap['density'], vmin=1e-4, vmax=1e3)
-        self.plt_proj(axes[3], slc, 'z', 'heat_ratio', norm='log',
+        self.plt_proj(axes[2], slc, 'z', 'nH', norm='log', 
+                      cmap=cmap['nH'], vmin=1e-4, vmax=1e3)
+        self.plt_proj(axes[3], slc, 'z', 'chi_FUV', norm='log',
                       cmap=cmap['heat_ratio'], vmin=0.1, vmax=1e3)
 
         for ax in (axes[0], axes[1]):
@@ -183,7 +183,7 @@ class SliceProj:
 
         slc = self.read_slc(num, force_override=force_override)
         prj = self.read_prj(num, force_override=force_override)
-        sp = read_starpar_vtk(self.files['starpar'][num])
+        sp = self.load_starpar_vtk(num)
 
         self.plt_slice(g1[0], prj, 'z', 'Sigma_gas', cmap='pink_r', norm=LogNorm(5e-1,1e3))
         self.plt_slice(g1[2], prj, 'z', 'Sigma_H2', cmap='pink_r', norm=LogNorm(5e-1,1e3))

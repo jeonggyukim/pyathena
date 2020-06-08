@@ -112,7 +112,7 @@ class Hst:
 
         # Obtain ejected mass by integrating mass flux
         if 'rho_out' in hst.columns:
-            hst.rho_out *= vol*u.Msun
+            hst.rho_out *= vol*u.Msun/u.Myr # Outflow rate in Msun/Myr
             hst['Mof_dot'] = hst.rho_out
             hst['Mof'] = integrate.cumtrapz(hst['rho_out'], hst['time'], initial=0.0)
 

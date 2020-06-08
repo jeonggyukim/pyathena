@@ -57,13 +57,17 @@ class LoadSimTIGRESSRTAll(object):
         # Default models
         if models is None:
             models = dict()
-            models['R8_8pc_rad'] = '/perseus/scratch/gpfs/jk11/TIGRESS-RT/R8_8pc_rad.implicit.test'
 
         self.models = list(models.keys())
         self.basedirs = dict()
         
         for mdl, basedir in models.items():
-            self.basedirs[mdl] = basedir
+            if not osp.exists(basedir):
+                print('[LoadSimTIGRESSRTAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
+                    mdl,basedir))
+            else:
+                self.models.append(mdl)
+                self.basedirs[mdl] = basedir
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         

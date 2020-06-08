@@ -36,6 +36,7 @@ def projection_v(sp, dim):
 
 def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
                norm_factor=4., kind='prj', dist_max=10.0,
+               marker='o', edgecolors=None, linewidths=None, alpha=1.0,
                kpc=False, runaway=True, agemax=40.0,
                plt_old=True, u=None):
     """Function to scatter plot star particles. (From pyathena classic)
@@ -79,7 +80,9 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
             if kind == 'slc':
                 islab=np.where(abs(spz) < dmax)
 
-            ax.scatter(spx, spy, marker='o', color='k', alpha=1.0, s=10.0/norm_factor)
+            ax.scatter(spx, spy, color='k',
+                       marker=marker, edgecolors=edgecolors, linewidths=linewidths,
+                       alpha=alpha, s=10.0/norm_factor)
 
         if len(sp_ru_src) > 0 and runaway:
             spx, spy, spz = projection(sp_ru_src, dim)
@@ -90,7 +93,9 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
             if kind == 'slc':
                 islab=np.where(abs(spz) < dmax)
 
-            ax.scatter(spx, spy, marker='*', color='r', alpha=1.0, s=10.0/norm_factor)
+            ax.scatter(spx, spy, marker='*', color='r',
+                       edgecolors=edgecolors, linewidths=linewidths,
+                       alpha=alpha, s=10.0/norm_factor)
         
         if len(sp_cl) > 0:
             spx, spy, spz = projection(sp_cl, dim)
@@ -112,13 +117,15 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
                     islab = np.where(xbool*(spa < 1e10))
                 else:
                     islab = np.where(xbool*(spa < agemax))                    
-                ax.scatter(spx.iloc[islab], spy.iloc[islab], marker='o',
+                ax.scatter(spx.iloc[islab], spy.iloc[islab],
                            s=spm.iloc[islab], c=spa.iloc[islab],
-                           vmin=0, vmax=agemax, cmap=cmap, alpha=1.0)
+                           marker=marker, edgecolors=edgecolors, linewidths=linewidths,
+                           vmin=0, vmax=agemax, cmap=cmap, alpha=alpha)
 
-            ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung], marker='o',
+            ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung],
                        s=spm.iloc[iyoung], c=spa.iloc[iyoung],
-                       vmin=0, vmax=agemax, cmap=cmap, alpha=1.0)
+                       marker=marker, edgecolors=edgecolors, linewidths=linewidths,
+                       vmin=0, vmax=agemax, cmap=cmap, alpha=alpha)
 
 
 def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',

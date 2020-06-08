@@ -19,11 +19,11 @@ class DustPol:
     def read_IQU(self, num, los=('x','y','z'),
                  prefix='dust_pol', savdir=None, force_override=False):
 
-        ds, dd = self.get_field(num)
+        ds, dd = self.get_field_dust_pol(num)
 
         return self.calc_IQU(ds, dd, los=los)
     
-    def get_field(self, num):
+    def get_field_dust_pol(self, num):
         self.logger.info('[DustPol.get_field]: reading vtk data..')
         ds = self.load_vtk(num)
         dd = self.ds.get_field(field=['nH', 'Bx', 'By', 'Bz'])

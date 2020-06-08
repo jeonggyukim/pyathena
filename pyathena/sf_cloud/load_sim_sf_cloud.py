@@ -4,7 +4,10 @@ import os.path as osp
 import pandas as pd
 import numpy as np
 from scipy import integrate
+import astropy.units as au
+import astropy.constants as ac
 
+from ..util.cloud import Cloud
 from ..util.split_container import split_container
 from ..load_sim import LoadSim
 from ..util.units import Units
@@ -57,7 +60,9 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         markers = ['o','v','^','s','*']
 
         par = self.par
-        cl = Cloud(par['problem']['M_cloud'], par['problem']['R_cloud'])
+        cl = Cloud(M=par['problem']['M_cloud'],
+                   R=par['problem']['R_cloud'],
+                   alpha_vir=par['problem']['alpha_vir'])
 
         df = dict()
         df['par'] = par
@@ -68,7 +73,7 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         
         if (par['configure']['gas'] == 'mhd') and \
            (int(par['domain1']['Nx1']) == 256):
-            h_vir = self.read_virial_all(force_override=True)
+            h_vir = self.read_virial_all(force_override=False)
             df['hst_vir'] = h_vir
         else:
             df['hst_vir'] = None
@@ -84,18 +89,21 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         df['Sigma'] = df['M']/(np.pi*df['R']**2)
         df['seed'] = int(np.abs(par['problem']['rseed']))
         df['alpha_vir'] = float(par['problem']['alpha_vir'])
+        df['sigma1d'] = cl.sigma1d.to('km/s').value
         df['marker'] = markers[df['seed'] - 1]
         df['vesc'] = cl.vesc.to('km/s').value
         df['sigma1d'] = cl.sigma1d.to('km/s').value
         df['tff'] = cl.tff.to('Myr').value
         if df['mhd']:
             df['muB'] = float(par['problem']['muB'])
+            df['B0'] = 2.0*np.pi*(cl.Sigma*ac.G**0.5/df['muB']).cgs.value*au.microGauss*1e6
             df['label'] = r'B{0:d}.A{1:d}.S{2:d}'.\
                           format(int(df['muB']),int(df['alpha_vir']),int(df['seed']))
         else:
             df['muB'] = np.inf
+            df['B0'] = 0.0
             df['label'] = r'Binf.A{0:d}.S{1:d}'.\
-                          format(int(df['alpha_vir']),int(df['seed']))            
+                          format(int(df['alpha_vir']),int(df['seed']))
         
         # Simulation results
         # Mstar_final = h['Mstar'].iloc[-1]
@@ -261,8 +269,6 @@ class LoadSimSFCloudAll(Compare):
         return self.sim
 
 def load_all_alphabeta(force_override=False):
-
-    
     
     models = dict(
         # A series (B=2)
