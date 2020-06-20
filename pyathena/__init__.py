@@ -40,19 +40,17 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 
 # LoadSim classes
 from .load_sim import LoadSim, LoadSimAll
+
 # Problem specific subclasses
 from .feedback_test.load_sim_feedback_test import LoadSimFeedbackTest, LoadSimFeedbackTestAll
 from .sf_cloud.load_sim_sf_cloud import LoadSimSFCloud, LoadSimSFCloudAll
 from .tigress_dig.load_sim_tigress_dig import LoadSimTIGRESSDIG, LoadSimTIGRESSDIGAll
 from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll
 from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSXCOAll
-
-#from .tigress_rt.load_sim_tigress_rt import LoadSimTIGRESSRT, LoadSimTIGRESSRTAll
-from .tigress_rt import load_sim_tigress_rt
-from importlib import reload
-
-reload(load_sim_tigress_rt)
 from .tigress_rt.load_sim_tigress_rt import LoadSimTIGRESSRT,LoadSimTIGRESSRTAll
+
+# ReadObs class
+from .obs.read_obs import ReadObs
 
 # Utils
 from .util.units import Units, ac, au
