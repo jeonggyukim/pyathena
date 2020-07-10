@@ -154,14 +154,16 @@ class ReadZprofBase:
         ----------
         phase : str or list of str
             List of thermal phases to read. Possible phases are
+            'whole' (entire gas)
             'c': (phase1, cold, T < 180),
             'u': (phase2, unstable, 180 <= T < 5050),
             'w': (phase3, warm, 5050 <= T < 2e4),
             'h1' (phase4, warm-hot, 2e4 < T < 5e5),
             'h2' (phase5, hot-hot, T >= 5e5)
-            'whole' (entire temperature range)
+            'pi' = photoionized
             'h' = h1 + h2
             '2p' = c + u + w
+            'cu' = c + u
             If 'all', read all phases.
         savdir: str
             Name of the directory where pickled data will be saved.
@@ -180,10 +182,14 @@ class ReadZprofBase:
                    w='phase3',
                    h1='phase4',
                    h2='phase5',
+                   H2='phase6',
+                   HIc='phase7',
+                   HIuw='phase8',
+                   pi='phase9',
                    whole='whole')
         
         if phase == 'all':
-            phase = list(dct.keys()) + ['h', '2p']
+            phase = list(dct.keys()) + ['h', '2p', 'cu']
         else:
             phase = np.atleast_1d(phase)
 
@@ -202,6 +208,12 @@ class ReadZprofBase:
                 self._read_zprof(phase=dct['u'], savdir=savdir,
                                  force_override=force_override) + \
                 self._read_zprof(phase=dct['w'], savdir=savdir,
+                                 force_override=force_override)
+            elif ph == 'cu':
+                zp[ph] = \
+                self._read_zprof(phase=dct['c'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['u'], savdir=savdir,
                                  force_override=force_override)
             else:
                 zp[ph] = self._read_zprof(phase=dct[ph], savdir=savdir,

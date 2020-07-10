@@ -37,8 +37,8 @@ def projection_v(sp, dim):
 def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
                norm_factor=4., kind='prj', dist_max=10.0,
                marker='o', edgecolors=None, linewidths=None, alpha=1.0,
-               kpc=False, runaway=True, agemax=40.0,
-               plt_old=True, u=None):
+               kpc=False, runaway=False, agemax=20.0, agemax_sn=40.0,
+               plt_old=False, u=None):
     """Function to scatter plot star particles. (From pyathena classic)
     
     Parameters
@@ -53,7 +53,9 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
     kind : 'prj' or 'slc'
         Slice or projection. If slice, 
     """
-
+    if sp.empty:
+        return None
+    
     if u is None:
         u = Units(kind='LV', muH=1.4271)
 
@@ -111,12 +113,13 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
                 iyoung = np.where(spa < 1e10)
             else:
                 iyoung = np.where(spa < agemax)
+                iyoung2 = np.where(np.logical_and(spa >= agemax, spa < agemax_sn))
 
             if kind == 'slc':
                 if plt_old:
                     islab = np.where(xbool*(spa < 1e10))
                 else:
-                    islab = np.where(xbool*(spa < agemax))                    
+                    islab = np.where(xbool*(spa < agemax))
                 ax.scatter(spx.iloc[islab], spy.iloc[islab],
                            s=spm.iloc[islab], c=spa.iloc[islab],
                            marker=marker, edgecolors=edgecolors, linewidths=linewidths,
@@ -126,6 +129,11 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
                        s=spm.iloc[iyoung], c=spa.iloc[iyoung],
                        marker=marker, edgecolors=edgecolors, linewidths=linewidths,
                        vmin=0, vmax=agemax, cmap=cmap, alpha=alpha)
+            if not plt_old:
+                ax.scatter(spx.iloc[iyoung2], spy.iloc[iyoung2],
+                           s=spm.iloc[iyoung2], c='grey',
+                           marker=marker, edgecolors=edgecolors, linewidths=linewidths,
+                           alpha=alpha)
 
 
 def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',

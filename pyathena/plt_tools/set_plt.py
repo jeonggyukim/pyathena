@@ -87,11 +87,11 @@ def set_plt_fancy():
     plt.rcParams['savefig.edgecolor'] = 'white'
     plt.rcParams['savefig.facecolor'] = 'white'
 
-    plt.rcParams['figure.constrained_layout.use'] = True
+    # plt.rcParams['figure.constrained_layout.use'] = True
     # plt.rcParams['figure.subplot.left'] = 0.08
     # plt.rcParams['figure.subplot.right'] = 0.95
     # plt.rcParams['figure.subplot.bottom'] = 0.07
     # plt.rcParams['figure.subplot.hspace'] = 0.0
     plt.rcParams['figure.facecolor'] = 'white'
     plt.rcParams['figure.figsize'] = (8, 6)
-    plt.rcParams['figure.dpi'] = 200
+    # plt.rcParams['figure.dpi'] = 200

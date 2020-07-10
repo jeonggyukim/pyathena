@@ -34,7 +34,7 @@ def get_SFR_mean(h, t0_SF=0.0, t1_SF=90.0):
     res = dict()
     res['t0'] = t0
     res['t1'] = t1
-    res['SFR_mean'] = SFR_mean
+    res['SFR_mean'] = SFR_mean[0]
     res['h'] = h_
     
     return res

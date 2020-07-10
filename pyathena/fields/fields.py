@@ -10,7 +10,8 @@ from matplotlib.colors import Normalize, LogNorm
 
 from ..plt_tools.cmap_shift import cmap_shift
 from ..plt_tools.cmap_custom import get_my_cmap
-from ..util.xray_emissivity import get_xray_emissivity
+
+from .xray_emissivity import get_xray_emissivity
 
 def static_vars(**kwargs):
     def decorate(func):
@@ -205,9 +206,13 @@ def set_derived_fields_def(par, x0):
     if par['configure']['cooling'] == 'ON':
         # T [K]
         f = 'T'
-        field_dep[f] = set(['temperature'])
+        field_dep[f] = set(['density','pressure','xe','xH2'])
+        # def _T(d, u):
+        #     return d['temperature']
+        # field_dep[f] = set(['temperature'])
         def _T(d, u):
-            return d['temperature']
+            return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                (ac.k_B/u.energy_density).cgs.value
         func[f] = _T
         label[f] = r'$T\;[{\rm K}]$'
         cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
@@ -642,7 +647,7 @@ def set_derived_fields_rad(par, x0):
     def _Erad_LyC(d, u):
         return d['rad_energy_density_PH']*u.energy_density.cgs.value
     func[f] = _Erad_LyC
-    label[f] = r'$\mathcal{E}_{\rm LyC}$'
+    label[f] = r'$\mathcal{E}_{\rm LyC}\;[{\rm erg\,{\rm cm}^{-3}}]$'
     cmap[f] = 'viridis'
     vminmax[f] = (5e-16,5e-11)
     take_log[f] = True
@@ -747,8 +752,7 @@ def set_derived_fields_xray(par, x0):
 
     # TODO-JKIM: Need Z_gas parameter in the problem block
     # Or metallicity field
-    # Z_gas = par['problem']['Z_gas']
-    Z_gas = 1.0
+    Z_gas = par['problem']['Z_gas']
     emin = 0.5 # keV
     emax = 7.0 # keV
     energy = True # If set to False, returns photon emissivity [#/s/cm^3]

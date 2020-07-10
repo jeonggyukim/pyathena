@@ -157,7 +157,7 @@ class PltSnapshot(object):
             for ir in range(nr):
                 g1[ir*nc].annotate(labels[ir], (-0.09,0.5),
                                    ha='center', va='center',
-                                   xycoords='axes fraction', rotation=90, fontsize='large')
+                                   xycoords='axes fraction', rotation=90, fontsize=20)
 
         # Need to save figure before making colorbar axes
         self.savefig(name='snapshot-{0:s}-{1:s}-{2:s}.png'.\
@@ -185,9 +185,14 @@ class PltSnapshot(object):
         # Annotate time
         if dt_Myr is not None:
             for ic, dt_ in zip(range(nc), dt_Myr):
-                g1[ic].annotate(r'$t_{*,0}+$' + r'{0:.1f}'.format(dt_) + r'Myr',
-                                   (0.5, 1.02), ha='center', xycoords='axes fraction',
-                                   **texteffect(fontsize=18))
+                if dt_ < 0.0:
+                    dt_ = -dt_
+                    sign = r'$t_{*,0}-$'
+                else:
+                    sign = r'$t_{*,0}+$'
+                g1[ic].annotate(sign + r'{0:g}'.format(dt_) + r'Myr',
+                                   (0.5, 1.025), ha='center', xycoords='axes fraction',
+                                   **texteffect(fontsize=20))
 
         if title is not None:
             plt.suptitle(title, 0.5, 1.05, ha='center', va='bottom')
