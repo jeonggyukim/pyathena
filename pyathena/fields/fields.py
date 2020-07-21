@@ -249,6 +249,16 @@ def set_derived_fields_def(par, x0):
         vminmax[f] = (-1e-20,1e-20)
         take_log[f] = False
 
+        f = 'Lambda_cool'
+        field_dep[f] = set(['density','cool_rate'])
+        def _Lambda_cool(d, u):
+            return d['cool_rate']/d['density']**2
+        func[f] = _Lambda_cool
+        label[f] = r'$\Lambda\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
+        cmap[f] = 'cubehelix_r'
+        vminmax[f] = (1e-30,1e-20)
+        take_log[f] = True
+
     return func, field_dep, label, cmap, vminmax, take_log    
 
 def set_derived_fields_mag(par, x0):
@@ -517,7 +527,7 @@ def set_derived_fields_newcool(par, x0):
     def _xi_CR(d, u):
         return d['CR_ionization_rate']
     func[f] = _xi_CR
-    label[f] = r'$\xi_{\rm CR}$'
+    label[f] = r'$\xi_{\rm CR}\;[{\rm s}^{-1}]$'
     cmap[f] = 'viridis'
     vminmax[f] = (1e-15,1e-17)
     take_log[f] = True

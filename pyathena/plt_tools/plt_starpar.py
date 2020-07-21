@@ -34,8 +34,8 @@ def projection_v(sp, dim):
         spz = sp['v1']
     return spx, spy, spz
 
-def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
-               norm_factor=4., kind='prj', dist_max=10.0,
+def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
+               norm_factor=4., kind='prj', dist_max=50.0,
                marker='o', edgecolors=None, linewidths=None, alpha=1.0,
                kpc=False, runaway=False, agemax=20.0, agemax_sn=40.0,
                plt_old=False, u=None):
@@ -80,7 +80,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
                 spx = spx/1.e3
                 spy = spy/1.e3
             if kind == 'slc':
-                islab=np.where(abs(spz) < dmax)
+                islab=np.where(abs(spz) < dist_max)
 
             ax.scatter(spx, spy, color='k',
                        marker=marker, edgecolors=edgecolors, linewidths=linewidths,
@@ -93,7 +93,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
                 spx = spx/1.e3
                 spy = spy/1.e3
             if kind == 'slc':
-                islab=np.where(abs(spz) < dmax)
+                islab=np.where(abs(spz) < dist_max)
 
             ax.scatter(spx, spy, marker='*', color='r',
                        edgecolors=edgecolors, linewidths=linewidths,
@@ -105,7 +105,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.winter,
                 spx = spx/1.e3
                 spy = spy/1.e3
             if kind == 'slc':
-                xbool = abs(spz) < dmax
+                xbool = abs(spz) < dist_max
 
             spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
             spa = sp_cl['age']*Myr

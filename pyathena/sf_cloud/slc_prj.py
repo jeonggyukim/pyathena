@@ -40,7 +40,7 @@ class SliceProj:
         ds = self.load_vtk(num=num)
         res = dict()
         res['extent'] = self.get_extent(ds.domain)
-        
+
         for ax in axes:
             dat = ds.get_slice(ax, fields, pos='c', method='nearest')
             res[ax] = dict()
@@ -84,7 +84,7 @@ class SliceProj:
         return res
 
     @staticmethod
-    def plt_slice(ax, slc, axis='z', field='density', cmap=None, norm=None):
+    def plt_slice(ax, slc, axis='z', field='nH', cmap=None, norm=None):
 
         if cmap is None:
                 cmap = 'viridis'
@@ -96,9 +96,9 @@ class SliceProj:
 
         ax.imshow(slc[axis][field], cmap=cmap,
                   extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
-            
-    @staticmethod        
-    def plt_proj(ax, prj, axis='z', field='density', cmap=None, norm=None, vmin=None, vmax=None):
+
+    @staticmethod
+    def plt_proj(ax, prj, axis='z', field='Sigma', cmap=None, norm=None, vmin=None, vmax=None):
         if cmap is None:
             cmap = 'viridis'
 

@@ -99,10 +99,14 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         df['marker'] = markers[df['seed'] - 1]
         df['vesc'] = cl.vesc.to('km/s').value
         df['sigma1d'] = cl.sigma1d.to('km/s').value
+        df['rho'] = cl.rho.cgs.value
+        df['nH'] = cl.nH.cgs.value
         df['tff'] = cl.tff.to('Myr').value
+        
         if df['mhd']:
             df['muB'] = float(par['problem']['muB'])
             df['B0'] = (2.0*np.pi*(cl.Sigma*ac.G**0.5/df['muB']).cgs.value*au.microGauss*1e6).value
+            df['vA'] = (df['B0']*1e-6)/np.sqrt(4.0*np.pi*df['rho'])/1e5
             df['label'] = r'B{0:d}.A{1:d}.S{2:d}'.\
                           format(int(df['muB']),int(df['alpha_vir']),int(df['seed']))
         else:

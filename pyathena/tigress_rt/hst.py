@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 from scipy import integrate
 import matplotlib.pyplot as plt
+import astropy.units as au
+import astropy.constants as ac
 
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
@@ -38,11 +40,10 @@ class Hst:
             newcool = False
 
         hst = read_hst(self.files['hst'], force_override=force_override)
-
         
         h = pd.DataFrame()
 
-        if 'x1Me' in hst:
+        if self.par['configure']['gas'] == 'mhd':
             mhd = True
         else:
             mhd = False
@@ -138,29 +139,54 @@ class Hst:
         h['sfr40'] = hst['sfr40']
         h['sfr100'] = hst['sfr100']
 
-        # # Cosmic ray ionization rate
-        # if newcool:
-        #     try:
-        #         tdecay = self.par['problem']['CR_tdecay']
-        #     except KeyError:
-        #         tdecay = self.par['problem']['CR_init_tmax']
+        if par['configure']['radps'] == 'ON':
+            # Total/escaping luminosity in Lsun
+            ifreq = dict()
+            for f in ('PH','LW','PE'): #,'PE_unatt'):
+                try:
+                    ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
+                except KeyError:
+                    pass
+            
+            for i in range(par['radps']['nfreq']):
+                for k, v in ifreq.items():
+                    if i == v:
+                        try:
+                            h[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
+                            h[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
+                            if par['radps']['eps_extinct'] > 0.0:
+                                h[f'Leps_{k}'] = hst[f'Leps{i}']*vol*u.Lsun
+                            try:
+                                h[f'Ldust_{k}'] = hst[f'Ldust{i}']*vol*u.Lsun
+                            except KeyError:
+                                self.logger.info('Ldust not found in hst')
 
-        #     try:
-        #         xi_CR_amp = self.par['problem']['xi_CR_amp']
-        #     except KeyError:
-        #         xi_CR_amp = 1.0
-                
-        #     try:
-        #         Sigma_gas0 = self.par['problem']['Sigma_gas0']
-        #     except KeyError:
-        #         Sigma_gas0 = 13.0
-        #     Sigma_SFR0 = self.par['problem']['Sigma_SFR0']
-        #     Sigma_SFR = self.par['problem']['Sigma_SFR']
-        #     h['tfact'] = np.exp(-8.0*((hst['time'] - 0.5*tdecay)/hst['time'])**2)
-        #     idx = hst['time'] < 0.5*tdecay
-        #     h.loc[idx, 'tfact'] = 1.0
-        #     h['xi_CR0_init'] = xi_CR_amp*2e-16*(Sigma_SFR/Sigma_SFR0)*(Sigma_gas0/h['Sigma_gas'])*h['tfact']
-        #     h['xi_CR0'] = h['xi_CR0_init'] + xi_CR_amp*2e-16*(h['sfr40']/Sigma_SFR0)*(Sigma_gas0/h['Sigma_gas'])
+                            hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
+                            h[f'Qtot_{k}'] = h[f'Ltot_{k}'].values * \
+                                               (ac.L_sun.cgs.value)/hnu
+                            h[f'Qesc_{k}'] = h[f'Lesc_{k}'].values * \
+                                               (ac.L_sun.cgs.value)/hnu
+                            # Cumulative number of escaped photons
+                            h[f'Qtot_cum_{k}'] = \
+                            integrate.cumtrapz(h[f'Qtot_{k}'], h.time*u.time.cgs.value, initial=0.0)
+                            h[f'Qesc_cum_{k}'] = \
+                            integrate.cumtrapz(h[f'Qesc_{k}'], h.time*u.time.cgs.value, initial=0.0)
+                            # Instantaneous escape fraction
+                            h[f'fesc_{k}'] = h[f'Lesc_{k}']/h[f'Ltot_{k}']
+                            # Cumulative escape fraction
+                            h[f'fesc_cum_{k}'] = \
+                            integrate.cumtrapz(h[f'Lesc_{k}'], h.time, initial=0.0)/\
+                            integrate.cumtrapz(h[f'Ltot_{k}'], h.time, initial=0.0)
+                            h[f'fesc_cum_{k}'].fillna(value=0.0, inplace=True)
+                        except KeyError as e:
+                            raise e
+
+            if 'Ltot_LW' in hst.columns and 'Ltot_PE' in hst.columns:
+                h['fesc_FUV'] = (hst['Lesc_PE'] + hst['Lesc_LW'])/(hst['Ltot_PE'] + hst['Ltot_LW'])
+                h['fesc_cum_FUV'] = \
+                    integrate.cumtrapz(hst['Lesc_PE'] + hst['Lesc_LW'], hst.time, initial=0.0)/\
+                    integrate.cumtrapz(hst['Ltot_PE'] + hst['Ltot_LW'], hst.time, initial=0.0)
+                h[f'fesc_cum_FUV'].fillna(value=0.0, inplace=True)
 
         try:
             h['xi_CR0'] = hst['xi_CR0']

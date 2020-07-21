@@ -38,6 +38,9 @@ class Zprof(ReadZprofBase):
         ds = ds.assign_coords(z_kpc=ds.z*self.u.kpc)
         ds = ds.swap_dims(dict(time_code='time'))
 
+        ds['pok'] = ds['P']*(u.energy_density/ac.k_B).cgs.value
+        ds['Pturbok'] = 2.0*ds['Ek3']*(u.energy_density/ac.k_B).cgs.value
+        
         try:
             ds['Jrad_LW'] = ds['Erad1']*u.energy_density*ac.c.cgs.value/(4.0*np.pi)
             ds['Jrad_PE'] = ds['Erad2']*u.energy_density*ac.c.cgs.value/(4.0*np.pi)
@@ -91,6 +94,8 @@ def plt_zprof_compare(sa, models=None, phase=['c','u','w','h1','h2'], field='d',
             axes[ic,ir].text(0.07, 0.9, ph, **texteffect(fontsize='xx-large'),
                              ha='center', transform=axes[ic,ir].transAxes, color='k')
 
+    plt.suptitle('  '.join(models))
+    
     return fig, zpa
 
 
@@ -154,5 +159,6 @@ def plt_zprof_avg_compare(sa, models=None, phase=['whole','c','u','w','h1','h2']
             axes[j].set_xlim(*xlim[ph])
         
     axes[0].legend(fontsize='small')
-
+    plt.suptitle('  '.join(models))
+    
     return fig, zpa

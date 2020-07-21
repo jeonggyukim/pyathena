@@ -176,7 +176,7 @@ class DustPol:
 
         fitsname = osp.join(self.savdir, 'dust_pol', 
                             self.problem_id + '.{0:04}.fits'.format(num))
-        print(fitsname)
+        self.logger.info('Save fits file to {0:s}'.format(fitsname))
         hdul = fits.HDUList()
         hdu = _create_fits_header(r, self.domain)
         hdul.append(hdu)

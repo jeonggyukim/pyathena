@@ -14,15 +14,17 @@ from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
 
 class PDF:
-
-    bins=dict(nH=np.logspace(-3,3,61),
+    
+    bins=dict(nH=np.logspace(-5,3,81),
               nHI=np.logspace(-2,5,71),
               nH2=np.logspace(-2,5,71),
-              nHII=np.logspace(-2,5,71),
-              T=np.logspace(0,5,51),
-              pok=np.logspace(1,7,61),
-              chi_PE=np.logspace(-4,5,91),
-              chi_FUV=np.logspace(-4,5,91),
+              nHII=np.logspace(-5,3,101),
+              T=np.logspace(1,8,141),
+              pok=np.logspace(0,7,71),
+              chi_PE=np.logspace(-3,4,71),
+              chi_FUV=np.logspace(-3,4,71),
+              Lambda_cool=np.logspace(-30,-20,101),
+              xi_CR=np.logspace(-17,-15,41)
     )
     
     @LoadSim.Decorators.check_pickle
@@ -30,7 +32,8 @@ class PDF:
                    bin_fields=None, bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
         if self.par['configure']['radps'] == 'ON':
-            bin_fields_def = [['nH', 'pok'], ['nH', 'T'], ['nH','chi_FUV'], ['nH','cool_rate']]
+            bin_fields_def = [['nH', 'pok'], ['nH', 'T'], ['nH','chi_FUV'],
+                              ['T','Lambda_cool'], ['nH','xi_CR']]
         else:
             bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
         if bin_fields is None:
@@ -61,6 +64,26 @@ class PDF:
 
         return res
 
+    def plt_pdf2d(self, ax, dat, bf='nH-pok',
+                  cmap='cubehelix_r',
+                  norm=mpl.colors.LogNorm(1e-6,2e-2),
+                  kwargs=dict(alpha=1.0, edgecolor='face', linewidth=0, rasterized=True),
+                  weighted=True,
+                  xscale='log', yscale='log'):
+        
+        if weighted:
+            hist = 'Hw'
+        else:
+            hist = 'H'
+
+        ax.pcolormesh(dat[bf]['xe'], dat[bf]['ye'], dat[bf][hist].T/dat[bf][hist].sum(),
+                      norm=norm, cmap=cmap, **kwargs)
+
+        kx, ky = bf.split('-')
+        ax.set(xscale=xscale, yscale=yscale,
+               xlabel=self.dfi[kx]['label'], ylabel=self.dfi[ky]['label'])
+        
+    
 #     @LoadSim.Decorators.check_pickle
 #     def read_pdf2d_phase(self, num, prefix='pdf2d_phase',
 #                          savdir=None, force_override=False):
