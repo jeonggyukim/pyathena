@@ -24,7 +24,8 @@ cmap_def = dict(
     T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
     vz=plt.cm.bwr,
     chi_FUV=plt.cm.viridis,
-    Erad_LyC=plt.cm.viridis
+    Erad_LyC=plt.cm.viridis,
+    xi_CR=plt.cm.viridis
 )
 
 norm_def = dict(
@@ -35,7 +36,8 @@ norm_def = dict(
     T=LogNorm(1e1,1e7),
     vz=Normalize(-200,200),
     chi_FUV=LogNorm(1e-2,1e2),
-    Erad_LyC=LogNorm(1e-16,5e-13)
+    Erad_LyC=LogNorm(1e-16,5e-13),
+    xi_CR=LogNorm(5e-17,1e-15)
 )
 
 class SliceProj:
@@ -58,7 +60,7 @@ class SliceProj:
                  savdir=None, force_override=False):
 
         if self.par['configure']['radps'] == 'ON':
-            fields_def = ['nH', 'nH2', 'vz', 'T', 'chi_FUV', 'Erad_LyC']
+            fields_def = ['nH', 'nH2', 'vz', 'T', 'chi_FUV', 'Erad_LyC', 'xi_CR']
         else:
             fields_def = ['nH', 'nH2', 'vz', 'T']
         
@@ -144,8 +146,8 @@ class SliceProj:
                   norm=norm, origin='lower', interpolation='none')
             
     def plt_snapshot(self, num,
-                     fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'chi_FUV'),
-                     fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'chi_FUV'),
+                     fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
+                     fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
                      suptitle=None, force_override=False, savefig=True):
         """Plot 12-panel projection, slice plots in the z and y directions
@@ -171,12 +173,17 @@ class SliceProj:
         label = dict(Sigma_gas=r'$\Sigma$',
                      Sigma_H2=r'$\Sigma_{\rm H_2}$',
                      EM=r'${\rm EM}$',
-                     nH=r'$n_{\rm H}$', T=r'$T$', vz=r'$v_z$',
-                     chi_FUV=r'$\chi_{\rm FUV}$', Erad_LyC=r'$\mathcal{E}_{\rm LyC}$'
+                     nH=r'$n_{\rm H}$',
+                     T=r'$T$',
+                     vz=r'$v_z$',
+                     chi_FUV=r'$\chi_{\rm FUV}$',
+                     Erad_LyC=r'$\mathcal{E}_{\rm LyC}$',
+                     xi_CR=r'$\xi_{\rm CR}$'
         )
 
         kind = dict(Sigma_gas='prj', Sigma_H2='prj', EM='prj',
-                    nH='slc', T='slc', vz='slc', chi_FUV='slc', Erad_LyC='slc')
+                    nH='slc', T='slc', vz='slc', chi_FUV='slc',
+                    Erad_LyC='slc', xi_CR='slc')
 
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]

@@ -1,8 +1,9 @@
 #!/bin/bash
 #SBATCH --job-name=do_tasks
-#SBATCH -N 1
+#SBATCH -N 2
 #SBATCH -p shared
-#SBATCH -n 14
+#SBATCH -n 28
+#SBATCH --ntasks-per-node=14
 #SBATCH -t 00:30:00
 ##SBATCH --mail-type=begin
 ##SBATCH --mail-type=end
@@ -11,7 +12,7 @@
 #SBATCH --output=do_tasks_%j.out
 #
 
-NPROCS=14
+NPROCS=28
 
 #MODULE="pyathena.sf_cloud.do_tasks"
 MODULE="pyathena.tigress_rt.do_tasks"

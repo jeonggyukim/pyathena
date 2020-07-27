@@ -28,6 +28,7 @@ if __name__ == '__main__':
 
     s = pa.LoadSimTIGRESSRT(basedir, verbose=False)
     nums = s.nums
+    #nums = s.nums[324:]
     
     if COMM.rank == 0:
         print('basedir, nums', s.basedir, nums)
@@ -43,9 +44,11 @@ if __name__ == '__main__':
         # prj = s.read_prj(num, force_override=False)
         # slc = s.read_slc(num, force_override=False)
         try:
-            fig = s.plt_snapshot(num)
+            # fig = s.plt_snapshot(num)
+            fig = s.plt_pdf2d_all(num)
         except KeyError:
-            fig = s.plt_snapshot(num, force_override=True)
+            # fig = s.plt_snapshot(num, force_override=True)
+            fig = s.plt_pdf2d_all(num, force_override=True)
         plt.close(fig)
 
         n = gc.collect()

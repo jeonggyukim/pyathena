@@ -6,12 +6,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as au
 import astropy.constants as ac
+from matplotlib.colors import Normalize, LogNorm
 
-from mpl_toolkits.axes_grid1 import ImageGrid
-
+from ..classic.utils import texteffect
 from ..plt_tools.cmap_custom import get_my_cmap
 from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
+from ..plt_tools.plt_starpar import scatter_sp
 
 class PDF:
     
@@ -82,156 +83,89 @@ class PDF:
         kx, ky = bf.split('-')
         ax.set(xscale=xscale, yscale=yscale,
                xlabel=self.dfi[kx]['label'], ylabel=self.dfi[ky]['label'])
+            
+    def plt_pdf2d_all(self, num, suptitle=None, force_override=False, savefig=True):
+
+        s = self
+        ds = s.load_vtk(num)
+        pdf = s.read_pdf2d(num, force_override=False)
+        prj = s.read_prj(num)
+        slc = s.read_slc(num)
+        hst = s.read_hst()
+        sp = s.load_starpar_vtk(num)
+        zpa = s.read_zprof(['whole','2p','h'])
+
+        fig, axes = plt.subplots(3,4,figsize=(20,15), constrained_layout=True)
+
+        # gs = axes[0, -1].get_gridspec()
+        # for ax in axes[0:2, -1]:
+        #     ax.remove()
+        # ax = fig.add_subplot(gs[0:2, -1])
+
+        s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=False)
+        s.plt_pdf2d(axes[1,0], pdf, 'nH-pok', weighted=True)
+        s.plt_pdf2d(axes[0,1], pdf, 'nH-chi_FUV', weighted=False)
+        s.plt_pdf2d(axes[1,1], pdf, 'nH-chi_FUV', weighted=True)
+        s.plt_pdf2d(axes[0,2], pdf, 'T-Lambda_cool', weighted=False)
+        s.plt_pdf2d(axes[1,2], pdf, 'T-Lambda_cool', weighted=True)
+        s.plt_pdf2d(axes[0,3], pdf, 'nH-xi_CR', weighted=False)
+        s.plt_pdf2d(axes[1,3], pdf, 'nH-xi_CR', weighted=True)
+
+        ax = axes[2,0]
+        s.plt_proj(ax, prj, 'z', 'Sigma_gas')
+        scatter_sp(sp, ax, 'z', kind='prj', kpc=False, norm_factor=5.0, agemax=20.0)
+        ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
+        ax.set(xlim=(-512,512),ylim=(-512,512))
+
+        ax = axes[2,1]
+        s.plt_slice(ax, slc, 'z', 'chi_FUV', norm=LogNorm(1e-1,1e2))
+        scatter_sp(sp, ax, 'z', kind='slc', dist_max=50.0, kpc=False, norm_factor=5.0, agemax=20.0)
+        ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
+        ax.set(xlim=(-512,512),ylim=(-512,512))
+
+        ax = axes[2,2]
+        for ph,color in zip(('whole','2p','h'),('grey','b','r')):
+            zp = zpa[ph]
+            if ph == '2p':
+                ax.semilogy(zp.z, zp['xe'][:,num]*zp['d'][:,num], ls=':', label=ph+'_e', c=color)
+            ax.semilogy(zp.z, zp['d'][:,num], ls='-', label=ph, c=color)
         
-    
-#     @LoadSim.Decorators.check_pickle
-#     def read_pdf2d_phase(self, num, prefix='pdf2d_phase',
-#                          savdir=None, force_override=False):
-#         """
-#         Read 2d pdf of density, chi_FUV, pok
-#         """
-        
-#         r = dict()
-#         ds = self.load_vtk(num)
-#         fields = ['nH','xH2','xHII','xHI','pok','T']
-        
-#         self.logger.info('Reading fields {0:s}'.format(', '.join(fields)))
-#         dd = self.get_chi(ds, fields=fields,
-#                           freq=['LW','PE'])
+        ax.set(xlabel='z [kpc]', ylabel=r'$\langle n_{\rm H}\rangle\;[{\rm cm}^{-3}]$',
+               ylim=(1e-5,5e0))
+        ax.legend(loc=1)
+        # axes[2,2].remove()
+        # gs = fig.add_gridspec(3, 8)
+        # ax1 = fig.add_subplot(gs[2, 4])
+        # ax2 = fig.add_subplot(gs[2, 5])
 
-#         bins = (np.logspace(-2,5,71), np.logspace(-4,5,91))
-#         # Masked array
-#         idx_HII = dd['xHII'].data.flatten() > 0.5
-#         idx_HI = (dd['xHI'].data.flatten() > 0.5)
-#         idx_H2 = (dd['xH2'].data.flatten() > 0.25)
-#         #idx_HI = ~idx_HII & ~idx_H2
+        # ax = ax1
+        # s.plt_proj(ax, prj, 'y', 'Sigma_gas')
+        # pa.scatter_sp(sp, ax, 'y', kind='prj', kpc=False, norm_factor=20.0, agemax=20.0)
+        # ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
 
-#         dat_all = {
-#             'nH-chi_PE_tot': (dd['nH'].data.flatten(),
-#                               (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten(),
-#                               dd['nH'].data.flatten()),
-#             'nH2-chi_PE_tot': (dd['nH'].data.flatten()[idx_H2],
-#                                (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_H2],
-#                                dd['nH'].data.flatten()[idx_H2]),
-#             'nHI-chi_PE_tot': (dd['nH'].data.flatten()[idx_HI],
-#                                (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_HI],
-#                                dd['nH'].data.flatten()[idx_HI]),
-#             'nHII-chi_PE_tot': (dd['nH'].data.flatten()[idx_HII],
-#                                 (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_HII],
-#                                 dd['nH'].data.flatten()[idx_HII]),
+        # ax = ax2
+        # s.plt_slice(ax, slc, 'y', 'chi_FUV', norm=LogNorm(1e-1,1e2))
+        # pa.scatter_sp(sp, ax, 'y', kind='slc', kpc=False, norm_factor=20.0, agemax=20.0)
+        # ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
 
-#             'nH-chi_FUV_tot': (dd['nH'].data.flatten(),
-#                                (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten(),
-#                                dd['nH'].data.flatten()),
-#             'nH2-chi_FUV_tot': (dd['nH'].data.flatten()[idx_H2],
-#                                 (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_H2],
-#                                 dd['nH'].data.flatten()[idx_H2]),
-#             'nHI-chi_FUV_tot': (dd['nH'].data.flatten()[idx_HI],
-#                                 (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_HI],
-#                                 dd['nH'].data.flatten()[idx_HI]),
-#             'nHII-chi_FUV_tot': (dd['nH'].data.flatten()[idx_HII],
-#                                  (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_HII],
-#                                  dd['nH'].data.flatten()[idx_HII]),
+        ax = axes[2,3]
+        ax.semilogy(hst['time_code'],hst['sfr10'])
+        ax.semilogy(hst['time_code'],hst['sfr40'])
+        ax.axvline(s.domain['time'], color='grey', lw=0.75)
+        ax.set(xlabel='time [code]', ylabel=r'$\Sigma_{\rm SFR}$', ylim=(1e-3,2e-2))
 
-#             'nH-pok': (dd['nH'].data.flatten(),
-#                        dd['pok'].data.flatten(),
-#                        dd['nH'].data.flatten()),
-#             'nH2-pok': (dd['nH'].data.flatten()[idx_H2],
-#                        dd['pok'].data.flatten()[idx_H2],
-#                         dd['nH'].data.flatten()[idx_H2]),
-#             'nHI-pok': (dd['nH'].data.flatten()[idx_HI],
-#                         dd['pok'].data.flatten()[idx_HI],
-#                         dd['nH'].data.flatten()[idx_HI]),
-#             'nHII-pok': (dd['nH'].data.flatten()[idx_HII],
-#                          dd['pok'].data.flatten()[idx_HII],
-#                          dd['nH'].data.flatten()[idx_HII]),                   
-#                   }
+        if suptitle is None:
+            suptitle = self.basename
 
-#         for k, (xdat,ydat,wdat) in dat_all.items():
-#             r[k] = dict()
-#             kx, ky = k.split('-')
-#             bins = (self.bins[kx], self.bins[ky])
-#             H, xe, ye = np.histogram2d(xdat, ydat, bins=bins, weights=None)
-#             Hw, _, _ = np.histogram2d(xdat, ydat, bins=bins, weights=wdat)
-#             r[k]['H'] = H
-#             r[k]['Hw'] = Hw
-#             r[k]['xe'] = xe
-#             r[k]['ye'] = ye
+        fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.5, y=1.02,
+                     va='center', ha='center', **texteffect(fontsize='xx-large'))
 
-#         return r    
+        if savefig:
+            savdir = osp.join(self.savdir, 'pdf2d')
+            if not osp.exists(savdir):
+                os.makedirs(savdir)
 
+            savname = osp.join(savdir, '{0:s}_{1:04d}_pdf2d.png'.format(self.basename, num))
+            plt.savefig(savname, dpi=200, bbox_inches='tight')
 
-# def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0, force_override=False):
-#     """Function to plot 2d histograms at different snapshots
-#     """
-    
-#     minmax = dict(chi_PE_tot=(1e-4,1e4),
-#                   chi_FUV_tot=(1e-4,1e4),
-#                   pok=(1e2,1e7),
-#                   nH=(1e-2,3e4))
-
-#     ylabels = dict(chi_PE_tot=r'$\chi_{\rm PE}$',
-#                    chi_FUV_tot=r'$\chi_{\rm FUV}$',
-#                    pok=r'$P/k_{\rm B}\;[{\rm cm}^{-3}\,{\rm K}]$')
-    
-#     pcargs = dict(edgecolor='face', linewidth=0, rasterized=True)
-#     norm = mpl.colors.LogNorm(1e-6,2e-2)
-    
-#     nums = s.get_nums(dt_Myr=dt_Myr)
-#     cm0 = plt.cm.viridis
-#     cm1 = get_my_cmap('Blues')
-#     cm2 = get_my_cmap('Greens')
-#     cm3 = get_my_cmap('Oranges')
-
-#     fig = plt.figure(figsize=(15, 12))
-#     nr = 4
-#     nc = len(dt_Myr)
-#     imgrid_args = dict(nrows_ncols=(nr,nc), direction='row', aspect=False,
-#                        label_mode='L', axes_pad=0.2, cbar_mode='edge', cbar_location='right')
-#     g1 = ImageGrid(fig, [0.02, 0.05, 0.90, 0.90], **imgrid_args)
-
-#     for ic,num in enumerate(nums):
-#         print(num, end=' ')
-#         rr = s.read_pdf2d_phase(num, force_override=force_override)
-#         k0 = f'nH-{yvar}'
-#         k = f'nH-{yvar}'
-#         im0 = g1[ic].pcolormesh(rr[k]['xe'], rr[k]['ye'],
-#                                 rr[k]['Hw'].T/rr[k0]['Hw'].T.sum(),
-#                                 norm=norm, cmap=cm0, alpha=alpha, **pcargs)
-#         k = f'nH2-{yvar}'
-#         im1 = g1[nc+ic].pcolormesh(rr[k]['xe'], rr[k]['ye'],
-#                                    rr[k]['Hw'].T/rr[k0]['Hw'].T.sum(),
-#                                    norm=norm, cmap=cm1, alpha=alpha, **pcargs)
-#         k = f'nHI-{yvar}'
-#         im2 = g1[2*nc+ic].pcolormesh(rr[k]['xe'], rr[k]['ye'],
-#                                      rr[k]['Hw'].T/rr[k0]['Hw'].T.sum(),
-#                                      norm=norm, cmap=cm2, alpha=alpha, **pcargs)
-#         k = f'nHII-{yvar}'
-#         im3 = g1[3*nc+ic].pcolormesh(rr[k]['xe'], rr[k]['ye'],
-#                                      rr[k]['Hw'].T/rr[k0]['Hw'].T.sum(),
-#                                      norm=norm, cmap=cm3, alpha=alpha, **pcargs)
-
-#     for ax in g1:
-#         ax.set(xscale='log', yscale='log', xlim=minmax['nH'], ylim=minmax[yvar],
-#                xlabel=r'$n_{\rm H}\;[{\rm cm^{-3}}]$', ylabel=ylabels[yvar])
-#         ax.grid()
-        
-#     # Annotate time
-#     for ic, dt_ in zip(range(nc),dt_Myr):
-#         if dt_ < 0.0:
-#             g1[ic].set_title(r'$t_{*,0}-$' + r'{0:.1f}'.format(np.abs(dt_)) + r' Myr')
-#         else:
-#             g1[ic].set_title(r'$t_{*,0}+$' + r'{0:.1f}'.format(dt_) + r' Myr')
-
-#     for i,(im,cm) in enumerate(zip((im0,im1,im2,im3),(cm0,cm1,cm2,cm3))):
-#         plt.colorbar(im, cax=g1[(i+1)*nc-1].cax, label='mass fraction',
-#                      norm=norm, cmap=cm)
-
-#     basedir='/tigress/jk11/figures/GMC/paper/pdf/'
-#     name = 'pdf2d-{0:s}-{1:s}-{2:s}.png'.format(s.basename, 'nH', yvar)
-#     savname = osp.join(basedir, name)
-#     fig.savefig(savname, dpi=200, bbox_inches='tight')
-#     scp_to_pc(savname, target='GMC-MHD-Results')
-#     print('saved to', savname)
-
-#     return fig
+        return fig

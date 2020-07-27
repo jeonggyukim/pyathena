@@ -139,7 +139,15 @@ class Hst:
         h['sfr40'] = hst['sfr40']
         h['sfr100'] = hst['sfr100']
 
-        if par['configure']['radps'] == 'ON':
+        try:
+            if par['configure']['radps'] == 'ON':
+                radps = True
+            else:
+                radps = False
+        except KeyError:
+            radps = False
+        
+        if radps:
             # Total/escaping luminosity in Lsun
             ifreq = dict()
             for f in ('PH','LW','PE'): #,'PE_unatt'):
@@ -179,7 +187,8 @@ class Hst:
                             integrate.cumtrapz(h[f'Ltot_{k}'], h.time, initial=0.0)
                             h[f'fesc_cum_{k}'].fillna(value=0.0, inplace=True)
                         except KeyError as e:
-                            raise e
+                            pass
+                            #raise e
 
             if 'Ltot_LW' in hst.columns and 'Ltot_PE' in hst.columns:
                 h['fesc_FUV'] = (hst['Lesc_PE'] + hst['Lesc_LW'])/(hst['Ltot_PE'] + hst['Ltot_LW'])
