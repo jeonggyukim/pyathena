@@ -10,6 +10,7 @@ import astropy.constants as ac
 
 from ..plt_tools.cmap_custom import get_my_cmap, get_cmap_parula
 from ..io.read_vtk import read_vtk
+from ..plt_tools.set_plt import toggle_xticks,toggle_yticks
 from ..plt_tools.plt_starpar import scatter_sp, colorbar_sp, legend_sp
 from ..plt_tools.utils import texteffect
 from ..util.scp_to_pc import scp_to_pc
@@ -55,15 +56,16 @@ norm = dict(Sigma=LogNorm(1e0,2e3),Sigma_HI=LogNorm(1e0,2e3),
            )
 
 class PltSnapshot(object):
-    def __init__(self, norm_sp=1.0, agemax_sp=10.0, cmap_sp=plt.cm.OrRd_r):
+    def __init__(self, norm_factor=1.0, agemax_sp=10.0, cmap_sp=plt.cm.OrRd_r):
         
         self.sa, self.r = load_all_alphabeta(force_override=False)
-        self.norm_sp = norm_sp
+        self.norm_factor = norm_factor
         self.agemax_sp = agemax_sp
         self.cmap_sp = cmap_sp
     
-    def plt_models(self, models, dt_Myr=[1.0,2.0,4.0,8.0], nums=None, dim='y',
-                   field='Sigma', vtk_type='vtk_2d',
+    def plt_models(self, models, labels=None,
+                   dt_Myr=[1.0,2.0,4.0,8.0], nums=None, dim='y',
+                   field='Sigma', vtk_type='vtk_2d', title=None,
                    force_override=False):
         """Compare snapshots of different models at different times
 
@@ -101,14 +103,19 @@ class PltSnapshot(object):
         # print(nums)
         # print(nums_sp)
         
+        plt.rcParams['xtick.bottom'] = True
+        plt.rcParams['ytick.left'] = True
+        plt.rcParams['xtick.top'] = True
+        plt.rcParams['ytick.right'] = True
+        
         # Create axes
         nr = len(models)
         nc = len(list(nums.values())[0])
         im = np.empty((nr,nc), dtype=mpl.image.AxesImage)
         self.fig = plt.figure(figsize=(nr*4+2, nc*4+2))
         g1 = ImageGrid(self.fig, [0.02, 0.05, 0.92, 0.94], (nr, nc), direction='row',
-                       axes_pad=0.04, aspect=True, share_all=False, label_mode='1',
-                       cbar_mode='single', cbar_size='2%', cbar_pad='1%')
+                       axes_pad=0.04, aspect=True, share_all=False, label_mode='all',
+                       cbar_mode=None, cbar_size='2%', cbar_pad='1%')
 
         s = self.sa.set_model(models[0])
         extent = SliceProj.get_extent(s.domain)
@@ -132,11 +139,63 @@ class PltSnapshot(object):
                 sp = s.load_starpar_vtk(num_sp)
                 if not sp.empty:
                     scatter_sp(sp, ax, dim=dim, kind='prj', cmap=self.cmap_sp,
-                               norm_factor=self.norm_sp, agemax=self.agemax_sp)
+                               norm_factor=self.norm_factor, agemax=self.agemax_sp)
         
-        self.set_ticks_and_labels(g1[nc*(nr-1)], dim, extent[dim])
-        cb = plt.colorbar(im[ir,nc-1], g1[0].cax,
-                          cmap=cmap[f], norm=norm[f], label=label[f])
+        #self.set_ticks_and_labels(g1[nc*(nr-1)], dim, extent[dim])
+        # toggle_xticks(g1[nc*(nr-1)], visible=False)
+        # toggle_yticks(g1[nc*(nr-1)], visible=False)
+        # self.set_ticks_and_labels(g1[-1], dim, extent[dim], right=True)
+        
+        for ax in g1:
+            ax.xaxis.tick_bottom()
+            ax.yaxis.tick_right()
+            toggle_xticks(ax)
+            toggle_yticks(ax)
+        self.set_ticks_and_labels(g1[-1], dim, extent[dim], bottom=True, right=True)
+
+        if labels is not None:
+            for ir in range(nr):
+                g1[ir*nc].annotate(labels[ir], (-0.09,0.5),
+                                   ha='center', va='center',
+                                   xycoords='axes fraction', rotation=90, fontsize=20)
+
+        # Need to save figure before making colorbar axes
+        self.savefig(name='snapshot-{0:s}-{1:s}-{2:s}.png'.\
+                     format('-'.join(models), dim, suffix, dpi=50))
+        bb = g1[nc-1].get_position(original=False)
+        cax = self.fig.add_axes([bb.x0+0.16,bb.y0,0.01,bb.y1-bb.y0])
+        cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap['Sigma'],
+                                       norm=norm['Sigma'], orientation='vertical')
+
+        cb.set_label(r'$\Sigma\;[M_{\odot}\,{\rm pc^{-2}}]$', fontsize=14)
+                
+        # Add starpar colorbar and legend
+        norm_sp = Normalize(vmin=0., vmax=self.agemax_sp)
+        bb = g1[2*nc-1].get_position(original=False)
+        cax_sp = self.fig.add_axes([bb.x0+0.16,bb.y0+0.5*(bb.y1-bb.y0)-0.02,0.01,0.5*(bb.y1-bb.y0)])
+        cb_sp = mpl.colorbar.ColorbarBase(cax_sp, cmap=self.cmap_sp, norm=norm_sp,
+                                          orientation='vertical', extend='neither',
+                                          ticks=[0, self.agemax_sp/2.0, self.agemax_sp])
+        cb_sp.set_label(r'${\rm age}\;[{\rm Myr}]$', fontsize=14)
+        cb_sp.ax.set_yticklabels(['0', '4', '8'])
+        legend_sp(g1[3*nc-1], norm_factor=self.norm_factor, mass=[1e2, 1e3],
+                  location='right', fontsize='medium',
+                  bbox_to_anchor=dict(top=(0.08, 1.02), right=(bb.x0+0.15, bb.y0+0.06)))
+
+        # Annotate time
+        if dt_Myr is not None:
+            for ic, dt_ in zip(range(nc), dt_Myr):
+                if dt_ < 0.0:
+                    dt_ = -dt_
+                    sign = r'$t_{*,0}-$'
+                else:
+                    sign = r'$t_{*,0}+$'
+                g1[ic].annotate(sign + r'{0:g}'.format(dt_) + r'Myr',
+                                   (0.5, 1.025), ha='center', xycoords='axes fraction',
+                                   **texteffect(fontsize=20))
+
+        if title is not None:
+            plt.suptitle(title, 0.5, 1.05, ha='center', va='bottom')
         
         self.savefig(name='snapshot-{0:s}-{1:s}-{2:s}.png'.format('-'.join(models), dim, suffix))
 
@@ -144,7 +203,7 @@ class PltSnapshot(object):
     def plt_model(self, model='B2S4', dt_Myr=[1.0,2.0,4.0,8.0], nums=None, dim='y',
                   fields=['Sigma','Sigma_HI','Sigma_H2','EM'], 
                   prj=[True, True, True, True], 
-                  plt_sp=[True, True, True, True], norm_sp=1.0,
+                  plt_sp=[True, True, True, True], norm_factor=1.0,
                   agemax_sp=10.0, cmap_sp=plt.cm.OrRd_r,
                   force_override=False):
         """Compare snapshots of different models at different times
@@ -201,7 +260,7 @@ class PltSnapshot(object):
                 if plt_sp[ir]:
                     if not sp.empty:
                         scatter_sp(sp, ax, dim=dim, kind=kind, cmap=cmap_sp,
-                                   norm_factor=norm_sp, agemax=agemax_sp)
+                                   norm_factor=norm_factor, agemax=agemax_sp)
                 else:
                     pass
 
@@ -229,7 +288,7 @@ class PltSnapshot(object):
 
         # Add starpar legend
         colorbar_sp(self.fig, agemax_sp, bbox=[0.28, 1.0, 0.1, 0.008], cmap=cmap_sp)
-        legend_sp(g1[0], norm_factor=norm_sp, mass=[1e2, 1e3],
+        legend_sp(g1[0], norm_factor=norm_factor, mass=[1e2, 1e3],
                   location='top', fontsize='medium',
                   bbox_to_anchor=dict(top=(0.08, 1.02), right=(0.48, 0.90)))
 
@@ -238,13 +297,12 @@ class PltSnapshot(object):
             g1[ic].annotate(r'$t=t_{*,0}+$' + r'{0:.1f}'.format(dt_) + r'Myr',
                             (0.05, 0.9), ha='left', xycoords='axes fraction',
                             **texteffect(fontsize=20))
-        
             
         self.set_ticks_and_labels(g1[nc*(nr-1)], dim, dat[kind]['extent'][dim])
         self.savefig(name='snapshot-{0:s}-{1:s}.png'.format(model, dim))
 
     @staticmethod
-    def set_ticks_and_labels(ax, dim, extent):
+    def set_ticks_and_labels(ax, dim, extent, bottom=True, right=False):
         xmin, xmax = extent[0], extent[1]
         ymin, ymax = extent[2], extent[3]
         ax.set_xticks([xmin,xmin/2.0,0,xmax/2.0,xmax])
@@ -255,10 +313,16 @@ class PltSnapshot(object):
         ylabel = dict(x=r'$z\;[{\rm pc}]$',y=r'$z\;[{\rm pc}]$',z=r'$y\;[{\rm pc}]$',)
         ax.set_xlabel(xlabel[dim])
         ax.set_ylabel(ylabel[dim])
-        
-    def savefig(self, name, basedir='/tigress/jk11/figures/GMC/paper/snapshot/'):
+        if bottom:
+            ax.xaxis.tick_bottom()
+            ax.xaxis.set_label_position("bottom")
+        if right:
+            ax.yaxis.tick_right()
+            ax.yaxis.set_label_position("right")
+
+    def savefig(self, name, basedir='/tigress/jk11/figures/GMC/paper/snapshot/', dpi=200):
         # Save figure
         savname = osp.join(basedir, name)
-        self.fig.savefig(savname, dpi=200, bbox_inches='tight')
+        self.fig.savefig(savname, dpi=dpi, bbox_inches='tight')
         scp_to_pc(savname, target='GMC-MHD-Results')
         print('saved to', savname)

@@ -1,5 +1,6 @@
 # virial.py
 
+import matplotlib.pyplot as plt
 import numpy as np
 import yt
 import yt.units as yu
@@ -18,8 +19,46 @@ def static_vars(**kwargs):
     
     return decorate
 
-class Virial:
 
+def plt_avir_compare(models=['B8S4', 'B2S4', 'B1S4', 'B05S4']):
+
+    from .load_sim_sf_cloud import load_all_alphabeta
+    sa, r = load_all_alphabeta(force_override=False)
+
+    #set_plt.set_plt_fancy()
+    labels = dict(avir_cl_alt=r'$[2(E_{\rm thm} + E_{\rm kin}) + E_{\rm mag}]/|E_{\rm grav}|$',
+                  avir_cl_noB_alt=r'$2(E_{\rm thm} + E_{\rm kin})/|E_{\rm grav}|$',
+                  avir_cl_noBthm_alt=r'$2E_{\rm kin}/|E_{\rm grav}|$',
+                  avir_obs_xy=r'$5\sigma_{{\rm 1d},xy}^2 R_{\rm obs}/(G M_{\rm cl})$',
+                  avir_obs_z=r'$5\sigma_{{\rm 1d},z}^2 R_{\rm obs}/(G M_{\rm cl})$')
+
+    fig, axes = plt.subplots(2, 2, figsize=(12,10), gridspec_kw=dict(hspace=0.4))
+    axes = axes.flatten()
+    for i, mdl in enumerate(models):
+        plt.sca(axes[i])
+        rr = r.loc[mdl]
+        hv = rr['hst_vir']
+        plt.plot(hv['time'], hv['avir_cl_alt'], c='k', label=labels['avir_cl_alt'])
+        plt.plot(hv['time'], hv['avir_cl_noB_alt'], label=labels['avir_cl_noB_alt'])
+        plt.plot(hv['time'], hv['avir_cl_noBthm_alt'], label=labels['avir_cl_noBthm_alt'])
+        plt.plot(hv['time'], hv['avir_obs_xy'], ls='--', c='grey', label=labels['avir_obs_xy'])
+        plt.plot(hv['time'], hv['avir_obs_z'], ls=':', c='grey', label=labels['avir_obs_z'])
+        plt.yscale('log')
+        plt.title(mdl, fontsize='medium')
+        plt.axvline(rr['t_*'], lw=1)
+
+    for ax in axes:
+        ax.grid()
+        #ax.set_xlim(0,10)
+        ax.set_ylim(0.1,10)
+        ax.set_xlabel(r'${\rm time}\;[{\rm Myr}]$')
+
+    axes[0].legend(bbox_to_anchor=(3.05,0.65))
+
+    return fig
+
+class Virial:
+        
     def get_num_max_virial(self):
         """Maximum snapshot number for which virial analysis will be performed
         """
@@ -40,10 +79,10 @@ class Virial:
 
         #print(int(self.par['problem']['rseed'],self.par['problem']['muB'] == 2.0))
         
-        if (int(np.abs(self.par['problem']['rseed'])) == 5) and \
-           (self.par['problem']['muB'] == 2.0):
-            return None
-        
+        # if (int(np.abs(self.par['problem']['rseed'])) == 5) and \
+        #    (self.par['problem']['muB'] == 2.0):
+        #     return None
+        print(nummax)
         for i in range(nummax):
             print(i, end=' ')
             r = self.read_virial(num=i, force_override=False)
@@ -56,18 +95,81 @@ class Virial:
                     rr[k].append(r[k].value.item())
                 except:
                     rr[k].append(r[k])
-        print('')
-        
+
+        fac = 1.26    # Rcl = R50*fac, fac = 2^1/3 for a uniform sphere
         rr = pd.DataFrame(rr)
-        rr['avir_sph'] = (2.0*(rr['T_thm_sph'] + rr['T_kin_sph'] 
+
+        # Kinetic energy calculated with velocity relative to the mean velocity
+        rr['T_kin_neu_cl_alt'] = (0.5*rr['Mgas_neu_cl'].values*au.M_sun*(
+            rr['vrms_x_neu_cl'].values**2 + rr['vrms_y_neu_cl'].values**2 + rr['vrms_z_neu_cl'].values**2)*
+                                  (au.km/au.s)**2).to('erg')
+        # Use velocity dispersion within R50
+        rr['T_kin_neu_cl_alt_50'] = (0.5*rr['Mgas_neu_cl'].values*au.M_sun*(
+            rr['vrms_x_neu_cl_50'].values**2 + rr['vrms_y_neu_cl_50'].values**2 + rr['vrms_z_neu_cl_50'].values**2)*
+                                  (au.km/au.s)**2).to('erg')
+
+        rr['avir_sph'] = (2.0*(rr['T_thm_sph'] + rr['T_kin_sph']
                         - rr['T_surf_sph']) + rr['M_sph'])/rr['W_sph']
         rr['avir_cl'] = (2.0*(rr['T_thm_neu_cl'] + rr['T_kin_neu_cl'])
                          + rr['M_neu_cl'])/rr['W_neu_cl']
         rr['avir_cl_noB'] = (2.0*(rr['T_thm_neu_cl'] + rr['T_kin_neu_cl']))/rr['W_neu_cl']
+        rr['avir_cl_noBthm'] = (2.0*rr['T_kin_neu_cl'])/rr['W_neu_cl']
 
-        rr['avir_obs_x'] =  ((5.0*(rr['vrms_x_neu_cl_50'].values*au.km/au.s)**2*\
-                              (1.2*rr['R50'].values*au.pc))/\
+        rr['avir_cl_alt'] = (2.0*(rr['T_thm_neu_cl'] + rr['T_kin_neu_cl_alt'])
+                         + rr['M_neu_cl'])/rr['W_neu_cl']
+        rr['avir_cl_noB_alt'] = (2.0*(rr['T_thm_neu_cl'] + rr['T_kin_neu_cl_alt']))/rr['W_neu_cl']
+        rr['avir_cl_noBthm_alt'] = (2.0*rr['T_kin_neu_cl_alt'])/rr['W_neu_cl']
+
+        # rr['avir_cl_alt_50'] = (2.0*(rr['T_thm_neu_cl'] + rr['T_kin_neu_cl_alt_50'])
+        #                  + rr['M_neu_cl'])/rr['W_neu_cl']
+        # rr['avir_cl_noB_alt_50'] = (2.0*(rr['T_thm_neu_cl'] + rr['T_kin_neu_cl_alt_50']))/rr['W_neu_cl'
+
+
+        rr['avir_obs_x'] = ((5.0*(rr['vrms_x_neu_cl'].values*au.km/au.s)**2*\
+                             (fac*rr['R50'].values*au.pc))/\
+                            (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        rr['avir_obs_y'] = ((5.0*(rr['vrms_y_neu_cl'].values*au.km/au.s)**2*\
+                             (fac*rr['R50'].values*au.pc))/\
+                            (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        rr['avir_obs_z'] = ((5.0*(rr['vrms_z_neu_cl'].values*au.km/au.s)**2*\
+                             (fac*rr['R50'].values*au.pc))/\
+                            (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        rr['avir_obs_xy'] = ((5.0*(0.5*(rr['vrms_x_neu_cl'].values**2 +
+                                        rr['vrms_y_neu_cl'].values**2)*(au.km/au.s)**2)*\
+                              (fac*rr['R50'].values*au.pc))/\
                              (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        rr['avir_obs_xyz'] = ((5.0*(1.0/3.0*(rr['vrms_x_neu_cl'].values**2 +
+                                             rr['vrms_y_neu_cl'].values**2 +
+                                             rr['vrms_z_neu_cl'].values**2)*(au.km/au.s)**2)*\
+                               (fac*rr['R50'].values*au.pc))/\
+                              (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        
+        # alpha_vir using velocity dispersion within half mass radius
+        rr['avir_obs_x_50'] = ((5.0*(rr['vrms_x_neu_cl_50'].values*au.km/au.s)**2*\
+                                (fac*rr['R50'].values*au.pc))/\
+                               (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        rr['avir_obs_y_50'] = ((5.0*(rr['vrms_y_neu_cl_50'].values*au.km/au.s)**2*\
+                                (fac*rr['R50'].values*au.pc))/\
+                               (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        rr['avir_obs_z_50'] = ((5.0*(rr['vrms_z_neu_cl_50'].values*au.km/au.s)**2*\
+                                (fac*rr['R50'].values*au.pc))/\
+                               (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        rr['avir_obs_xy_50'] = ((5.0*(0.5*(rr['vrms_x_neu_cl_50'].values**2 +
+                                           rr['vrms_y_neu_cl_50'].values**2)*(au.km/au.s)**2)*\
+                                 (fac*rr['R50'].values*au.pc))/\
+                                (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+        rr['avir_obs_xyz_50'] = ((5.0*(1.0/3.0*(rr['vrms_x_neu_cl_50'].values**2 +
+                                                rr['vrms_y_neu_cl_50'].values**2 +
+                                                rr['vrms_z_neu_cl_50'].values**2)*(au.km/au.s)**2)*\
+                                  (fac*rr['R50'].values*au.pc))/\
+                                 (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
+
+        rr['W_neu_cl_obs'] = (3.0*ac.G*rr['Mgas_neu_cl'].values**2*au.M_sun**2/
+                              (5.0*fac*rr['R50'].values*au.pc)).to('erg')
+
+        rr['W_neu_cl_obs_alt'] = (3.0*ac.G*rr['Mgas_neu_cl'].values**2*au.M_sun**2/
+                                  (5.0*rr['R_rms_neu_cl'].values*au.pc)).to('erg')
+        
         return rr
 
     @staticmethod
@@ -358,7 +460,7 @@ class Virial:
         r['I_E_neu_cl'] = ((sph['cell_volume'][idx]*sph['rho_rsq'][idx]).sum()).to('g*cm**2')
         r['V_neu_cl_sph'] = ((sph['cell_volume'][idx]).sum()).to('pc**3')
 
-        # Effective radius
+        # Effective radius # Incorrect
         r['R_rms'] = np.sqrt(5.0/3.0*r['I_E']/r['Mgas_sph']).to('pc')
         r['R_rms_neu_cl'] = np.sqrt(5.0/3.0*r['I_E_neu_cl']/r['Mgas_neu_cl_sph']).to('pc')
         
@@ -450,85 +552,3 @@ class Virial:
                          da['cell_volume'][idx_neu_cl]).sum().to('erg')
         
         return r        
-
-            
-    # @LoadSim.Decorators.check_pickle
-    # def read_virial(self, num, R_over_Rcl=1.8,
-    #                 prefix='virial', savdir=None, force_override=False):
-        
-    #     ds = self.load_vtk(num, load_method='yt')
-    #     ds = self.add_fields_virial(ds)
-
-    #     Rcl = self.par['problem']['R_cloud']
-    #     xc = np.array([0.0,0.0,0.0])
-    #     sph = ds.sphere(xc, (1.1*R_over_Rcl*Rcl,"pc"))
-    #     sph2 = ds.sphere(xc, (R_over_Rcl*Rcl,"pc"))
-    #     surf = ds.surface(sph, "dist", (R_over_Rcl*Rcl, "pc"))
-
-    #     # These are the coordinates of all triangle vertices in the surface
-    #     triangles = surf.triangles
-    #     # construct triange normal vectors
-    #     w1 = surf.triangles[:,1] - surf.triangles[:,0]
-    #     w2 = surf.triangles[:,1] - surf.triangles[:,2]
-    #     # calculate triangle areas
-    #     vector_area = np.cross(w1, w2)/2*(yu.pc**2).to('cm**2')
-
-    #     rdotTM = np.column_stack([surf['rdotTM_{0:s}'.format(x)] for x in 'xyz'])*(yu.erg/yu.cm**2)
-    #     rdotPi = np.column_stack([surf['rdotPi_{0:s}'.format(x)] for x in 'xyz'])*(yu.erg/yu.cm**2)
-    #     rhovrsq = np.column_stack([surf['rhovrsq_{0:s}'.format(x)] for x in 'xyz'])*(yu.g/yu.s)
-
-    #     res = dict()
-    #     res['R_over_Rcl'] = R_over_Rcl
-    #     res['time'] = ds.current_time.value.item()
-    #     res['I_E'] = ((sph2['cell_volume']*sph2['rho_rsq']).sum()).to('g*cm**2')
-
-    #     # Flux of momentum of inertial
-    #     res['S_surf'] = 0.5*np.sum(vector_area*rhovrsq)
-
-    #     # Surface integral of Reynolds stress
-    #     res['T_surf'] = 0.5*np.sum(vector_area*rdotPi)
-
-    #     # Surface integral of Maxwell stress
-    #     res['M_surf'] = np.sum(vector_area*rdotTM)/(4.0*np.pi)
-    #     # Alternative way
-    #     # M_surf_ = surf.calculate_flux('rdotTM_x', 'rdotTM_y', 'rdotTM_z', fluxing_field="ones")
-    #     # Magnetic energy (volume)
-    #     res['M_vol'] = (sph2['cell_volume']*sph2['magnetic_energy']).sum().to('erg')
-    #     res['M'] = res['M_vol'] + res['M_surf']
-
-    #     # Thermal + kinetic energy
-    #     res['T_thm'] = 1.5*((sph2['cell_volume']*sph2['pressure']).sum()).to('erg')
-    #     res['T_turb'] = 0.5*((sph2['cell_volume']*sph2['density']*
-    #                           sph2['velocity_magnitude']**2).sum()).to('erg')
-    #     res['T'] = res['T_thm'] + res['T_turb']
-
-    #     # Gravitational term (gravitational energy in the absence of external potential)
-    #     res['W'] = (sph2['density']*
-    #                 (sph2['x']*sph2['gravitational_potential_gradient_x'] +\
-    #                  sph2['y']*sph2['gravitational_potential_gradient_y'] +\
-    #                  sph2['z']*sph2['gravitational_potential_gradient_z'])*
-    #                 sph2['cell_volume']).sum().to('erg')
-
-    #     return res
-        
-    # @staticmethod
-    # def add_fields_virial(ds, x0, xCM_neu_cl):
-
-    #     @static_vars(x0=x0)
-    #     def _dist(field, data):
-    #         return np.sqrt((data["x"] - _dist.x0[0])**2 +
-    #                        (data["y"] - _dist.x0[0])**2 +
-    #                        (data["z"] - _dist.x0[0])**2)
-
-    #     @static_vars(xCM_neu_cl=xCM_neu_cl)
-    #     def _dist_neu_cl(field, data):
-    #         return np.sqrt((data["x"] - _dist_neu_cl.xCM_neu_cl[0])**2 +
-    #                        (data["y"] - _dist_neu_cl.xCM_neu_cl[0])**2 +
-    #                        (data["z"] - _dist_neu_cl.xCM_neu_cl[0])**2)
-
-    #     ds.add_field("dist", function=_dist, units="pc", sampling_type='cell',
-    #                  force_override=True)
-    #     ds.add_field("dist_neu_cl", function=_dist_neu_cl, units="pc",
-    #                  sampling_type='cell', force_override=True)
-
-    #     return ds

@@ -4,7 +4,11 @@ import os.path as osp
 import pandas as pd
 import numpy as np
 from scipy import integrate
+from scipy import interpolate
+import astropy.units as au
+import astropy.constants as ac
 
+from ..util.cloud import Cloud
 from ..util.split_container import split_container
 from ..load_sim import LoadSim
 from ..util.units import Units
@@ -13,6 +17,7 @@ from ..util.cloud import Cloud
 from .hst import Hst
 from .slc_prj import SliceProj
 from .dust_pol import DustPol
+from .fields import Fields
 
 from .compare import Compare
 from .pdf import PDF
@@ -20,7 +25,7 @@ from .virial import Virial
 from .sfr import get_SFR_mean
 
 class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
-                     DustPol, Virial):
+                     DustPol, Virial, Fields):
     """LoadSim class for analyzing sf_cloud simulations.
     """
     
@@ -57,19 +62,25 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         markers = ['o','v','^','s','*']
 
         par = self.par
-        cl = Cloud(par['problem']['M_cloud'], par['problem']['R_cloud'])
+        cl = Cloud(M=par['problem']['M_cloud'],
+                   R=par['problem']['R_cloud'],
+                   alpha_vir=par['problem']['alpha_vir'])
 
         df = dict()
         df['par'] = par
 
         # Read hst, virial analysis
-        h = self.read_hst(force_override=False)
+        h = self.read_hst(force_override=True)
         df['hst'] = h
         
         if (par['configure']['gas'] == 'mhd') and \
            (int(par['domain1']['Nx1']) == 256):
-            h_vir = self.read_virial_all(force_override=True)
-            df['hst_vir'] = h_vir
+            try:
+                hv = self.read_virial_all(force_override=False)
+                df['hst_vir'] = hv
+            except:
+                self.logger.warning('read_virial_all() failed!')
+                df['hst_vir'] = None
         else:
             df['hst_vir'] = None
     
@@ -84,18 +95,25 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         df['Sigma'] = df['M']/(np.pi*df['R']**2)
         df['seed'] = int(np.abs(par['problem']['rseed']))
         df['alpha_vir'] = float(par['problem']['alpha_vir'])
+        df['sigma1d'] = cl.sigma1d.to('km/s').value
         df['marker'] = markers[df['seed'] - 1]
         df['vesc'] = cl.vesc.to('km/s').value
         df['sigma1d'] = cl.sigma1d.to('km/s').value
+        df['rho'] = cl.rho.cgs.value
+        df['nH'] = cl.nH.cgs.value
         df['tff'] = cl.tff.to('Myr').value
+        
         if df['mhd']:
             df['muB'] = float(par['problem']['muB'])
+            df['B0'] = (2.0*np.pi*(cl.Sigma*ac.G**0.5/df['muB']).cgs.value*au.microGauss*1e6).value
+            df['vA'] = (df['B0']*1e-6)/np.sqrt(4.0*np.pi*df['rho'])/1e5
             df['label'] = r'B{0:d}.A{1:d}.S{2:d}'.\
                           format(int(df['muB']),int(df['alpha_vir']),int(df['seed']))
         else:
             df['muB'] = np.inf
+            df['B0'] = 0.0
             df['label'] = r'Binf.A{0:d}.S{1:d}'.\
-                          format(int(df['alpha_vir']),int(df['seed']))            
+                          format(int(df['alpha_vir']),int(df['seed']))
         
         # Simulation results
         # Mstar_final = h['Mstar'].iloc[-1]
@@ -109,7 +127,7 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         if len(idx_SF0):
             df['t_*'] = h['time'][idx_SF0[0]-1]
             df['tau_*'] = df['t_*']/df['tff']
-            df['t_95%'] = h['time'][h.Mstar > 0.95*Mstar_final].values[0]
+            df['t_95%'] = h['time'][h.Mstar > 0.95*Mstar_final].values[0] # Time at which
             df['tau_95%'] = df['t_95%']/df['tff']
             df['t_90%'] = h['time'][h.Mstar > 0.90*Mstar_final].values[0]
             df['tau_90%'] = df['t_90%']/df['tff']
@@ -117,12 +135,26 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
             df['tau_80%'] = df['t_80%']/df['tff']
             df['t_50%'] = h['time'][h.Mstar > 0.50*Mstar_final].values[0]
             df['tau_50%'] = df['t_50%']/df['tff']
-            df['t_SF'] = df['t_90%'] - df['t_*']
+            df['t_SF'] = df['t_90%'] - df['t_*'] # SF duration
             df['tau_SF'] = df['t_SF']/df['tff']
             df['t_SF2'] = Mstar_final**2 / \
                         integrate.trapz(h['SFR']**2, h.time)
             df['tau_SF2'] = df['t_SF2']/df['tff']
             df['SFR_mean'] = get_SFR_mean(h, 0.0, 90.0)['SFR_mean']
+            df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'Mstar'].iloc[0]/df['M']
+            df['t_dep'] = df['M']/df['SFR_mean'] # depletion time t_dep = M0/SFR_mean
+            df['eps_ff'] = df['tff']/df['t_dep'] # SFE per free-fall time eps_ff = tff0/tdep
+            # Time at which neutral gas mass < 5% of the initial cloud mass
+            df['t_mol_5%'] = h.loc[h['MH2_cl'] < 0.05*df['M'], 'time'].iloc[0]
+            df['t_dest_mol'] = df['t_mol_5%'] - df['t_*']
+            try:
+                df['t_neu_5%'] = h.loc[h['MH2_cl'] + h['MHI_cl'] < 0.05*df['M'], 'time'].iloc[0]
+                df['t_dest_neu'] = df['t_neu_5%'] - df['t_*']
+            except IndexError:
+                df['t_neu_5%'] = np.nan
+                df['t_dest_neu'] = np.nan
+            # print('t_dep, eps_ff, t_dest_mol, t_dest_neu',
+            #       df['t_dep'],df['eps_ff'],df['t_dest_mol'],df['t_dest_neu'])
         else:
             df['t_*'] = np.nan
             df['tau_*'] = np.nan
@@ -139,13 +171,29 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
             df['t_SF2'] = np.nan
             df['tau_SF2'] = np.nan
             df['SFR_mean'] = np.nan
-
+            df['SFE_3Myr'] = np.nan
+            df['t_dep'] = np.nan
+            df['eps_ff'] = np.nan
+            df['t_mol_5%'] = np.nan
+            df['t_dest_mol'] = np.nan
+            df['t_neu_5%'] = np.nan
+            df['t_dest_neu'] = np.nan
+            
         try:
             df['fesc_cum_PH'] = h['fesc_cum_PH'].iloc[-1] # Lyman Continuum
             df['fesc_cum_FUV'] = h['fesc_cum_FUV'].iloc[-1]
         except KeyError:
+            print(h['fesc_cum_PH'])
             df['fesc_cum_PH'] = np.nan
             df['fesc_cum_FUV'] = np.nan
+
+        try:
+            hv = df['hst_vir']
+            f = interpolate.interp1d(hv['time'].values, hv['avir_cl_alt'])
+            df['avir_t_*'] = f(df['t_*'])
+        except (KeyError, TypeError):
+            df['avir_t_*'] = np.nan
+            pass
             
         if as_dict:
             return df
@@ -261,8 +309,6 @@ class LoadSimSFCloudAll(Compare):
         return self.sim
 
 def load_all_alphabeta(force_override=False):
-
-    
     
     models = dict(
         # A series (B=2)

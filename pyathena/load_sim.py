@@ -3,6 +3,7 @@ from __future__ import print_function
 import os
 import sys
 import glob, re
+import getpass
 import warnings
 import logging
 import os.path as osp
@@ -20,6 +21,7 @@ from .io.read_zprof import read_zprof_all
 from .io.read_athinput import read_athinput
 from .util.units import Units
 from .fields.fields import DerivedFields
+from .plt_tools.make_movie import make_movie
 
 class LoadSim(object):
     """Class to prepare Athena simulation data analysis. Read input parameters,
@@ -242,7 +244,22 @@ class LoadSim(object):
                     print(getattr(self, func).__doc__)
                     print('-------------------------')
 
-                
+    def make_movie(self, fname_glob=None, fname_out=None, fps_in=10, fps_out=10,
+                   force_override=False, display=False):
+        
+        if fname_glob is None:
+            fname_glob = osp.join(self.basedir, 'snapshots', '*.png')
+        if fname_out is None:
+            fname_out = osp.join('/tigress/{0:s}/movies/{1:s}.mp4'.format(
+                getpass.getuser(), self.basename))
+
+        if force_override or not osp.exists(fname_out):
+            self.logger.info('Make a movie from files: {0:s}'.format(fname_glob))
+            make_movie(fname_glob, fname_out, fps_in, fps_out)
+            self.logger.info('Movie saved to {0:s}'.format(fname_out))
+        else:
+            self.logger.info('File already exists: {0:s}'.format(fname_out))
+
     def _get_domain_from_par(self, par):
         """Get domain info from par['domain1']. Time is set to None.
         """
@@ -352,6 +369,7 @@ class LoadSim(object):
 
         # Find history dump and
         # Extract problem_id (prefix for vtk and hitsory file names)
+        # Assumes that problem_id does not contain '.'
         if 'hst' in self.out_fmt:
             fhst = find_match(hst_patterns)
             if fhst:
@@ -584,6 +602,8 @@ class LoadSim(object):
                         os.makedirs(savdir)
                 except FileExistsError:
                     print('Directory exists: {0:s}'.format(savdir))
+                except PermissionError as e:
+                    print('Permission Error: ', e)
 
                 if 'num' in kwargs:
                     fpkl = osp.join(savdir, '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
@@ -628,7 +648,8 @@ class LoadSim(object):
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not make directory')
 
-                fpkl = osp.join(savdir, osp.basename(cls.files['hst']) + '.mod.p')
+                fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
+                                '.{0:s}.mod.p'.format(cls.basename))
 
                 # Check if the original history file is updated
                 if not force_override and osp.exists(fpkl) and \
@@ -677,7 +698,8 @@ class LoadSim(object):
                     os.makedirs(savdir)
                     force_override = True
 
-                fnetcdf = '{0:s}.{1:s}.zprof.mod.nc'.format(cls.problem_id, phase)
+                fnetcdf = '{0:s}.{1:s}.zprof.{2:s}.mod.nc'.format(
+                    cls.problem_id, phase, cls.basename)
                 fnetcdf = osp.join(savdir, fnetcdf)
 
                 # Check if the original history file is updated

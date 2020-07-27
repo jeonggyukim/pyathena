@@ -133,7 +133,7 @@ def get_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
         
     return d
 
-def get_PTn_at_Pminmax(d, j=1, kernel_width=12):
+def get_PTn_at_Pminmax(d, jump=1, kernel_width=12):
     
     from scipy import interpolate
     from scipy.signal import find_peaks
@@ -147,13 +147,13 @@ def get_PTn_at_Pminmax(d, j=1, kernel_width=12):
     gT = Gaussian1DKernel(kernel_width)
     #gT = Box1DKernel(15)
     
-    Pmin = np.zeros_like(d['log_chi_PE'][::j])
-    Pmax = np.zeros_like(d['log_chi_PE'][::j])
-    Tmin = np.zeros_like(d['log_chi_PE'][::j])
-    Tmax = np.zeros_like(d['log_chi_PE'][::j])
-    nmin = np.zeros_like(d['log_chi_PE'][::j])
-    nmax = np.zeros_like(d['log_chi_PE'][::j])
-    for i, log_chi_PE in enumerate(d['log_chi_PE'].data[::j]):
+    Pmin = np.zeros_like(d['log_chi_PE'][::jump])
+    Pmax = np.zeros_like(d['log_chi_PE'][::jump])
+    Tmin = np.zeros_like(d['log_chi_PE'][::jump])
+    Tmax = np.zeros_like(d['log_chi_PE'][::jump])
+    nmin = np.zeros_like(d['log_chi_PE'][::jump])
+    nmax = np.zeros_like(d['log_chi_PE'][::jump])
+    for i, log_chi_PE in enumerate(d['log_chi_PE'].data[::jump]):
         dd = d.sel(log_chi_PE=float(log_chi_PE), method='nearest')
 
         fP = interpolate.interp1d(np.log10(dd['nH']), np.log10(dd['pok']), kind='cubic')

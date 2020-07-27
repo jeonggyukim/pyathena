@@ -1,15 +1,16 @@
 import os
-import pandas as pd
 import os.path as osp
+import pandas as pd
 
 from ..load_sim import LoadSim
 from ..util.units import Units
-
+from .pdf import PDF
 from .hst import Hst
 from .zprof import Zprof
 from .slc_prj import SliceProj
+from .starpar import StarPar
 
-class LoadSimTIGRESSRT(LoadSim, Hst, Zprof, SliceProj):
+class LoadSimTIGRESSRT(LoadSim, Hst, Zprof, SliceProj, StarPar, PDF):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
     
@@ -42,14 +43,7 @@ class LoadSimTIGRESSRT(LoadSim, Hst, Zprof, SliceProj):
         # Set unit and domain
         self.u = Units(muH=1.4271)
         self.domain = self._get_domain_from_par(self.par)
-
-    # def load_vtk(self, num=None, ivtk=None, id0=False, load_method=None,
-    #              AthenaDataSet=AthenaDataSet):
-
-    #     self.ds = super(LoadSimTIGRESSRT,self).load_vtk(num, ivtk, id0, load_method,
-    #                                                     AthenaDataSet)
-    #     return self.ds
-
+    
 class LoadSimTIGRESSRTAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
@@ -57,13 +51,17 @@ class LoadSimTIGRESSRTAll(object):
         # Default models
         if models is None:
             models = dict()
-            models['R8_8pc_rad'] = '/perseus/scratch/gpfs/jk11/TIGRESS-RT/R8_8pc_rad.implicit.test'
 
-        self.models = list(models.keys())
+        self.models = []
         self.basedirs = dict()
         
         for mdl, basedir in models.items():
-            self.basedirs[mdl] = basedir
+            if not osp.exists(basedir):
+                print('[LoadSimTIGRESSRTAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
+                    mdl,basedir))
+            else:
+                self.models.append(mdl)
+                self.basedirs[mdl] = basedir
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         

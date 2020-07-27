@@ -19,11 +19,11 @@ class DustPol:
     def read_IQU(self, num, los=('x','y','z'),
                  prefix='dust_pol', savdir=None, force_override=False):
 
-        ds, dd = self.get_field(num)
+        ds, dd = self.get_field_dust_pol(num)
 
         return self.calc_IQU(ds, dd, los=los)
     
-    def get_field(self, num):
+    def get_field_dust_pol(self, num):
         self.logger.info('[DustPol.get_field]: reading vtk data..')
         ds = self.load_vtk(num)
         dd = self.ds.get_field(field=['nH', 'Bx', 'By', 'Bz'])
@@ -176,7 +176,7 @@ class DustPol:
 
         fitsname = osp.join(self.savdir, 'dust_pol', 
                             self.problem_id + '.{0:04}.fits'.format(num))
-        print(fitsname)
+        self.logger.info('Save fits file to {0:s}'.format(fitsname))
         hdul = fits.HDUList()
         hdu = _create_fits_header(r, self.domain)
         hdul.append(hdu)

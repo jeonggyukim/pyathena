@@ -5,21 +5,43 @@ import os.path as osp
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize, LogNorm
 import astropy.units as au
 import astropy.constants as ac
+from matplotlib.colors import Normalize, LogNorm
+from mpl_toolkits.axes_grid1 import ImageGrid
 
-from inspect import getcallargs
-
-import pyathena as pa
 from ..load_sim import LoadSim
 from ..io.read_starpar_vtk import read_starpar_vtk
 from ..plt_tools.cmap_shift import cmap_shift
-from ..classic.plot_tools.scatter_sp import scatter_sp
+from ..plt_tools.plt_starpar import scatter_sp
 from ..classic.utils import texteffect
 
-class SliceProj:
+cmap_def = dict(
+    Sigma_gas=plt.cm.Spectral_r,
+    Sigma_H2=plt.cm.Spectral_r,
+    EM=plt.cm.plasma,
+    nH=plt.cm.Spectral_r,
+    T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
+    vz=plt.cm.bwr,
+    chi_FUV=plt.cm.viridis,
+    Erad_LyC=plt.cm.viridis,
+    xi_CR=plt.cm.viridis
+)
 
+norm_def = dict(
+    Sigma_gas=LogNorm(1e-1,1e3),
+    Sigma_H2=LogNorm(1e-1,1e3),
+    EM=LogNorm(1e0,1e5),
+    nH=LogNorm(1e-3,1e3),
+    T=LogNorm(1e1,1e7),
+    vz=Normalize(-200,200),
+    chi_FUV=LogNorm(1e-2,1e2),
+    Erad_LyC=LogNorm(1e-16,5e-13),
+    xi_CR=LogNorm(5e-17,1e-15)
+)
+
+class SliceProj:
+    
     @staticmethod
     def _get_extent(domain):
 
@@ -36,8 +58,12 @@ class SliceProj:
     @LoadSim.Decorators.check_pickle
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
+
+        if self.par['configure']['radps'] == 'ON':
+            fields_def = ['nH', 'nH2', 'vz', 'T', 'chi_FUV', 'Erad_LyC', 'xi_CR']
+        else:
+            fields_def = ['nH', 'nH2', 'vz', 'T']
         
-        fields_def = ['nH', 'nH2', 'vz', 'T', 'chi_FUV']
         fields = fields_def
         axes = np.atleast_1d(axes)
 
@@ -75,7 +101,7 @@ class SliceProj:
             
             res[ax] = dict()
             res[ax]['Sigma_gas'] = (np.sum(dat['nH'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_H2'] = (np.sum(dat['nH2'], axis=2-i)*conv_Sigma).data
+            res[ax]['Sigma_H2'] = (2.0*np.sum(dat['nH2'], axis=2-i)*conv_Sigma).data
             res[ax]['Sigma_HI'] = res[ax]['Sigma_gas'] - res[ax]['Sigma_H2']
             res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
 
@@ -85,7 +111,7 @@ class SliceProj:
     def plt_slice(ax, slc, axis='z', field='density', cmap=None, norm=None):
 
         if cmap is None:
-                cmap = 'viridis'
+            cmap = cmap_def[field]
 
         if norm is None:
             norm = mpl.colors.LogNorm()
@@ -96,10 +122,21 @@ class SliceProj:
                   extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
             
     @staticmethod        
-    def plt_proj(ax, prj, axis='z', field='density', cmap=None, norm=None, vmin=None, vmax=None):
-        if cmap is None:
-            cmap = 'viridis'
+    def plt_proj(ax, prj, axis='z', field='Sigma_gas',
+                 cmap=None, norm=None, vmin=None, vmax=None):
 
+        vminmax = dict(Sigma_gas=(1e-2,1e2))
+        cmap_def = dict(Sigma_gas='pink_r')
+        
+        if cmap is None:
+            try:
+                cmap = cmap_def[field]
+            except KeyError:
+                cmap = plt.cm.viridis
+        if vmin is None or vmax is None:
+            vmin = vminmax[field][0]
+            vmax = vminmax[field][1]
+            
         if norm is None or 'log':
             norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
         elif norm is 'linear':
@@ -107,138 +144,108 @@ class SliceProj:
 
         ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
                   norm=norm, origin='lower', interpolation='none')
+            
+    def plt_snapshot(self, num,
+                     fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
+                     fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
+                     norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
+                     suptitle=None, savdir=None, force_override=False, savefig=True):
+        """Plot 12-panel projection, slice plots in the z and y directions
 
-    def plt_snapshot(self, num, axis='z', savefig=True):
-
-        cmap = dict(Sigma_gas='pink_r', Sigma_HI='pink_r', Sigma_H2='pink_r', \
-                    nH='Spectral_r',
-                    chi_FUV='viridis',
-                    temperature=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.))
+        Parameters
+        ----------
+        num : int
+            vtk snapshot number
+        fields_xy: list of str
+            field names for z projections and slices
+        fields_xz: list of str
+            Field names for y projections and slices
+        norm_factor : float
+            Normalization factor for starpar size. The smaller the value the
+            bigger the size)
+        agemax : float
+            Maximum age of source particles
+        agemax_sn : float
+            Maximum age of sn particles
+        """
         
-        fig, axes = plt.subplots(2, 2, figsize=(12, 12),
-                                 gridspec_kw=dict(wspace=0.0, hspace=0.0))
 
-        ds = self.load_vtk(num)
-        prj = self.read_prj(num, force_override=False)
-        slc = self.read_slc(num, force_override=False)
-        sp = read_starpar_vtk(self.files['starpar'][num])
+        label = dict(Sigma_gas=r'$\Sigma$',
+                     Sigma_H2=r'$\Sigma_{\rm H_2}$',
+                     EM=r'${\rm EM}$',
+                     nH=r'$n_{\rm H}$',
+                     T=r'$T$',
+                     vz=r'$v_z$',
+                     chi_FUV=r'$\chi_{\rm FUV}$',
+                     Erad_LyC=r'$\mathcal{E}_{\rm LyC}$',
+                     xi_CR=r'$\xi_{\rm CR}$'
+        )
 
-        axes = axes.flatten()
-        self.plt_proj(axes[0], prj, 'z', 'Sigma_gas', norm='log',
-                      cmap=cmap['Sigma_gas'], vmin=0.1, vmax=10e2)
-        self.plt_proj(axes[1], prj, 'z', 'Sigma_H2', norm='log',
-                      cmap=cmap['Sigma_H2'], vmin=0.1, vmax=10e2)
-        self.plt_proj(axes[2], slc, 'z', 'density', norm='log', 
-                      cmap=cmap['density'], vmin=1e-4, vmax=1e3)
-        self.plt_proj(axes[3], slc, 'z', 'heat_ratio', norm='log',
-                      cmap=cmap['heat_ratio'], vmin=0.1, vmax=1e3)
+        kind = dict(Sigma_gas='prj', Sigma_H2='prj', EM='prj',
+                    nH='slc', T='slc', vz='slc', chi_FUV='slc',
+                    Erad_LyC='slc', xi_CR='slc')
 
-        for ax in (axes[0], axes[1]):
-            scatter_sp(sp, ax, type='proj', kpc=False, norm_factor=5.0, agemax=40.0)
-            extent = prj['extent']['z']
-            ax.set_xlim(extent[0], extent[1])
-            ax.set_ylim(extent[2], extent[3])
-
-        for i, (ax, title) in enumerate(zip(axes, 
-               (r'$N_{\rm H}$', r'$N_{\rm H_2}$', r'$n_{\rm H}$', r'$G_{\rm 0}$'))):
-            if i != 2:
-                ax.axes.get_xaxis().set_visible(False)
-                ax.axes.get_yaxis().set_visible(False)
-            else:
-                ax.set_xlabel('x [pc]')
-                ax.set_ylabel('y [pc]')
-
-            ax.text(0, 220, title, **texteffect(fontsize='xx-large'), ha='center')
-
-        fig.suptitle('t=' + str(int(ds.domain['time'])),
-                     ha='center', fontsize='xx-large')
-        plt.subplots_adjust(top=0.97)
-
-        if savefig:
-            savdir = osp.join(self.savdir, 'snapshots')
-            if not osp.exists(savdir):
-                os.makedirs(savdir)
-
-            savname = osp.join(savdir, '{0:s}_{1:04d}.png'.format(self.basename, num))
-            plt.savefig(savname, dpi=200)
-            
-        return fig
-            
-    def plt_snapshot2(self, num, force_override=False, savefig=True):
-
-        from mpl_toolkits.axes_grid1 import ImageGrid
-
+        if savdir is None:
+            savdir = self.savdir
+        
         ds = self.load_vtk(num=num)
-        fig = plt.figure(figsize=(22, 12))
+        LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
 
+        fig = plt.figure(figsize=(25, 12), constrained_layout=True)
         g1 = ImageGrid(fig, [0.02, 0.05, 0.4, 0.94], (3, 2), axes_pad=0.1,
+                       aspect=True, share_all=True, direction='column')
+        g2 = ImageGrid(fig, [0.2, 0.05, 0.85, 0.94], (1, 6), axes_pad=0.1,
                        aspect=True, share_all=True)
-        for i in range(6):
-            g1[i].set_aspect(1)
-
-        g2 = ImageGrid(fig, [0.32, 0.05, 0.85, 0.94], (1, 6), axes_pad=0.1,
-                          aspect=True, share_all=True)
-        for i in range(6):
-            g2[i].set_aspect(ds.domain['Lx'][2]/ds.domain['Lx'][0])
-
-        slc = self.read_slc(num, force_override=force_override)
-        prj = self.read_prj(num, force_override=force_override)
-        sp = read_starpar_vtk(self.files['starpar'][num])
-
-        self.plt_slice(g1[0], prj, 'z', 'Sigma_gas', cmap='pink_r', norm=LogNorm(5e-1,1e3))
-        self.plt_slice(g1[2], prj, 'z', 'Sigma_H2', cmap='pink_r', norm=LogNorm(5e-1,1e3))
-        self.plt_slice(g1[4], prj, 'z', 'EM', cmap='plasma', norm=LogNorm(1e0,1e5))
-        self.plt_slice(g1[1], slc, 'z', 'nH', cmap='Spectral_r', norm=LogNorm(1e-3,1e3))
-        self.plt_slice(g1[3], slc, 'z', 'T', cmap=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
-                    norm=LogNorm(1e1,1e7))
-        self.plt_slice(g1[5], slc, 'z', 'chi_FUV', cmap='viridis', norm=LogNorm(1e-2,1e3))
-
-        self.plt_slice(g2[0], prj, 'y', 'Sigma_gas', cmap='pink_r', norm=LogNorm(5e-1,1e3))
-        self.plt_slice(g2[1], prj, 'y', 'Sigma_H2', cmap='pink_r', norm=LogNorm(5e-1,1e3))
-        self.plt_slice(g2[2], prj, 'y', 'EM', cmap='plasma', norm=LogNorm(1e0,1e5))
-        self.plt_slice(g2[3], slc, 'y', 'nH', cmap='Spectral_r', norm=LogNorm(1e-3,1e3))
-        self.plt_slice(g2[4], slc, 'y', 'chi_FUV', cmap='viridis', norm=LogNorm(1e-2,1e3))
-        self.plt_slice(g2[5], slc, 'y', 'vz', cmap='bwr', norm=Normalize(-200,200))
-
-        for ax in g1:
-            scatter_sp(sp, ax, type='proj', kpc=False, norm_factor=5.0, agemax=20.0)
-            extent = prj['extent']['z']
-            ax.set_xlim(extent[0], extent[1])
-            ax.set_ylim(extent[2], extent[3])
         
-        titles1 = (r'$\Sigma$', r'$n_{\rm H}$', r'$\Sigma_{\rm H_2}$', r'$T$',
-                   r'${\rm EM}$', r'$\chi_{\rm FUV}$')
-        for i, (ax, title) in enumerate(zip(g1, titles1)):
-            ax.text(0.5, 0.92, title, **texteffect(fontsize='xx-large'),
+        dat = dict()
+        dat['slc'] = self.read_slc(num, savdir=savdir, force_override=force_override)
+        dat['prj'] = self.read_prj(num, savdir=savdir, force_override=force_override)
+        sp = self.load_starpar_vtk(num)
+
+        extent = dat['prj']['extent']['z']
+        for i, (ax, f) in enumerate(zip(g1, fields_xy)):
+            ax.set_aspect(ds.domain['Lx'][1]/ds.domain['Lx'][0])
+            self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
+            scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
+                       norm_factor=norm_factor, agemax=agemax, agemax_sn=agemax_sn,
+                       runaway=runaway, cmap=plt.cm.cool_r)
+            ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
+            ax.text(0.5, 0.92, label[f], **texteffect(fontsize='x-large'),
                     ha='center', transform=ax.transAxes)
-            if i != 4:
+            if i == 2:
+                ax.set(xlabel='x [pc]', ylabel='y [pc]')
+            else:
                 ax.axes.get_xaxis().set_visible(False)
                 ax.axes.get_yaxis().set_visible(False)
-            else:
-                ax.set_xlabel('x [pc]')
-                ax.set_ylabel('y [pc]')
 
-        titles2 = (r'$N_{\rm H}$', r'$N_{\rm H_2}$', r'${\rm EM}$',
-                   r'$n_{\rm H}$', r'$\chi_{\rm FUV}$', r'$v_z$')
-        for i, (ax, title) in enumerate(zip(g2, titles2)):
-            ax.text(0.5, 0.97, title, **texteffect(fontsize='xx-large'), ha='center', transform=ax.transAxes)
-            if i != 0:
+        extent = dat['prj']['extent']['y']
+        for i, (ax, f) in enumerate(zip(g2, fields_xz)):
+            ax.set_aspect(ds.domain['Lx'][2]/ds.domain['Lx'][0])
+            self.plt_slice(ax, dat[kind[f]], 'y', f, cmap=cmap_def[f], norm=norm_def[f])
+            scatter_sp(sp, ax, 'y', kind='prj', kpc=False,
+                       norm_factor=norm_factor, agemax=agemax,
+                       cmap=plt.cm.cool_r)
+            ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
+            ax.text(0.5, 0.97, label[f], **texteffect(fontsize='x-large'),
+                    ha='center', transform=ax.transAxes)
+            if i == 0:
+                ax.set(xlabel='x [pc]', ylabel='z [pc]')
+            else:
                 ax.axes.get_xaxis().set_visible(False)
                 ax.axes.get_yaxis().set_visible(False)
-            else:
-                ax.set_xlabel('x [pc]')
-                ax.set_ylabel('z [pc]')
 
-        fig.suptitle('t=' + str(int(ds.domain['time'])), x=0.08, y=0.985,
-                     ha='center', **texteffect(fontsize='xx-large'))
-        plt.subplots_adjust(top=0.97)
+        if suptitle is None:
+            suptitle = self.basename            
+        fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
+                     va='center', ha='center', **texteffect(fontsize='xx-large'))
+        # plt.subplots_adjust(top=0.95)
 
         if savefig:
-            savdir = osp.join(self.savdir, 'snapshots2')
+            savdir = osp.join(savdir, 'snapshots')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
             savname = osp.join(savdir, '{0:s}_{1:04d}.png'.format(self.basename, num))
-            plt.savefig(savname, dpi=200)
+            plt.savefig(savname, dpi=200, bbox_inches='tight')
             
         return fig
