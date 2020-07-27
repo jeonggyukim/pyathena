@@ -149,7 +149,7 @@ class SliceProj:
                      fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
                      fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
-                     suptitle=None, force_override=False, savefig=True):
+                     suptitle=None, savdir=None, force_override=False, savefig=True):
         """Plot 12-panel projection, slice plots in the z and y directions
 
         Parameters
@@ -185,6 +185,9 @@ class SliceProj:
                     nH='slc', T='slc', vz='slc', chi_FUV='slc',
                     Erad_LyC='slc', xi_CR='slc')
 
+        if savdir is None:
+            savdir = self.savdir
+        
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
 
@@ -195,8 +198,8 @@ class SliceProj:
                        aspect=True, share_all=True)
         
         dat = dict()
-        dat['slc'] = self.read_slc(num, force_override=force_override)
-        dat['prj'] = self.read_prj(num, force_override=force_override)
+        dat['slc'] = self.read_slc(num, savdir=savdir, force_override=force_override)
+        dat['prj'] = self.read_prj(num, savdir=savdir, force_override=force_override)
         sp = self.load_starpar_vtk(num)
 
         extent = dat['prj']['extent']['z']
@@ -238,7 +241,7 @@ class SliceProj:
         # plt.subplots_adjust(top=0.95)
 
         if savefig:
-            savdir = osp.join(self.savdir, 'snapshots')
+            savdir = osp.join(savdir, 'snapshots')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 

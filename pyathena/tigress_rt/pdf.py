@@ -1,5 +1,6 @@
 # pdf.py
 
+import os
 import os.path as osp
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -84,16 +85,19 @@ class PDF:
         ax.set(xscale=xscale, yscale=yscale,
                xlabel=self.dfi[kx]['label'], ylabel=self.dfi[ky]['label'])
             
-    def plt_pdf2d_all(self, num, suptitle=None, force_override=False, savefig=True):
+    def plt_pdf2d_all(self, num, suptitle=None, savdir=None, force_override=False, savefig=True):
+
+        if savdir is None:
+            savdir = self.savdir
 
         s = self
         ds = s.load_vtk(num)
-        pdf = s.read_pdf2d(num, force_override=False)
-        prj = s.read_prj(num)
-        slc = s.read_slc(num)
-        hst = s.read_hst()
+        pdf = s.read_pdf2d(num, savdir=savdir, force_override=force_override)
+        prj = s.read_prj(num, savdir=savdir, force_override=force_override)
+        slc = s.read_slc(num, savdir=savdir, force_override=force_override)
+        hst = s.read_hst(savdir=savdir, force_override=force_override)
         sp = s.load_starpar_vtk(num)
-        zpa = s.read_zprof(['whole','2p','h'])
+        zpa = s.read_zprof(['whole','2p','h'], savdir=savdir, force_override=force_override)
 
         fig, axes = plt.subplots(3,4,figsize=(20,15), constrained_layout=True)
 
@@ -161,7 +165,7 @@ class PDF:
                      va='center', ha='center', **texteffect(fontsize='xx-large'))
 
         if savefig:
-            savdir = osp.join(self.savdir, 'pdf2d')
+            savdir = osp.join(savdir, 'pdf2d')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 

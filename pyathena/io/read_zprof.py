@@ -11,7 +11,8 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
-def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
+def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
+                   force_override=False):
     """Function to read all zprof files in directory and make a Dataset object 
     and write to a NetCDF file.
 
@@ -28,8 +29,11 @@ def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
     phase : str
         Name of thermal phase
         ex) whole, phase1, ..., phase5 (cold, intermediate, warm, hot1, hot2)
+    savdir : str
+        Name of directory to save pickle data as a netcdf file
+        Default value is dirname.
     force_override : bool
-        Flag to force read of hst file even when pickle exists
+        Flag to force read of hst file even when netcdf exists
 
     Returns
     -------
@@ -42,8 +46,13 @@ def read_zprof_all(dirname, problem_id, phase='whole', force_override=False):
     fnames = sorted(glob.glob(osp.join(dirname, fname_base)))
     
     fnetcdf = '{0:s}.{1:s}.zprof.nc'.format(problem_id, phase)
-    fnetcdf = osp.join(dirname, fnetcdf)
-
+    if savdir is not None:
+        fnetcdf = osp.join(savdir, fnetcdf)
+    else:
+        fnetcdf = osp.join(dirname, fnetcdf)
+        
+    print(fnetcdf)
+    
     # Check if netcdf file exists and compare last modified times
     mtime_max = np.array([osp.getmtime(fname) for fname in fnames]).max()
     if not force_override and osp.exists(fnetcdf) and \

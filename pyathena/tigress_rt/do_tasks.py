@@ -44,10 +44,10 @@ if __name__ == '__main__':
         # prj = s.read_prj(num, force_override=False)
         # slc = s.read_slc(num, force_override=False)
         try:
-            # fig = s.plt_snapshot(num)
+            fig = s.plt_snapshot(num)
             fig = s.plt_pdf2d_all(num)
         except KeyError:
-            # fig = s.plt_snapshot(num, force_override=True)
+            fig = s.plt_snapshot(num, force_override=True)
             fig = s.plt_pdf2d_all(num, force_override=True)
         plt.close(fig)
 

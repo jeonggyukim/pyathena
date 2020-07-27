@@ -20,10 +20,10 @@ class Zprof(ReadZprofBase):
     def _read_zprof(self, phase='whole', savdir=None, force_override=False):
         """Function to read zprof and convert quantities to convenient units.
         """
-
+            
         ds = read_zprof_all(osp.dirname(self.files['zprof'][0]),
-                            self.problem_id, phase=phase,
-                            force_override=False)
+                            self.problem_id, phase=phase, savdir=savdir,
+                            force_override=force_override)
         u = self.u
         # Divide all variables by total area Lx*Ly
         domain = self.domain

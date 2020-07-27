@@ -597,6 +597,8 @@ class LoadSim(object):
                         os.makedirs(savdir)
                 except FileExistsError:
                     print('Directory exists: {0:s}'.format(savdir))
+                except PermissionError as e:
+                    print('Permission Error: ', e)
 
                 if 'num' in kwargs:
                     fpkl = osp.join(savdir, '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
