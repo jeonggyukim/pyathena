@@ -184,9 +184,6 @@ class SliceProj:
         kind = dict(Sigma_gas='prj', Sigma_H2='prj', EM='prj',
                     nH='slc', T='slc', vz='slc', chi_FUV='slc',
                     Erad_LyC='slc', xi_CR='slc')
-
-        if savdir is None:
-            savdir = self.savdir
         
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
@@ -198,8 +195,8 @@ class SliceProj:
                        aspect=True, share_all=True)
         
         dat = dict()
-        dat['slc'] = self.read_slc(num, savdir=savdir, force_override=force_override)
-        dat['prj'] = self.read_prj(num, savdir=savdir, force_override=force_override)
+        dat['slc'] = self.read_slc(num, force_override=force_override)
+        dat['prj'] = self.read_prj(num, force_override=force_override)
         sp = self.load_starpar_vtk(num)
 
         extent = dat['prj']['extent']['z']
@@ -240,8 +237,11 @@ class SliceProj:
                      va='center', ha='center', **texteffect(fontsize='xx-large'))
         # plt.subplots_adjust(top=0.95)
 
+        
+
         if savefig:
-            savdir = osp.join(savdir, 'snapshots')
+            if savdir is None:
+                savdir = osp.join(self.savdir, 'snapshots')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
