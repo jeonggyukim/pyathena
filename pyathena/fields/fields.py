@@ -481,10 +481,10 @@ def set_derived_fields_newcool(par, x0):
     except KeyError:
         # print('xCtot not found. Use 1.6e-4.')
         xCtot = 1.6e-4
-    field_dep[f] = set(['xCI'])
+    field_dep[f] = set(['xCI_over_xCtot'])
     def _xCI(d, u):
         # Apply floor and ceiling
-        return np.maximum(0.0,np.minimum(xCtot,d['xCI']))
+        return np.maximum(0.0,np.minimum(xCtot,d['xCI_over_xCtot']*xCtot))
     func[f] = _xCI
     label[f] = r'$x_{\rm CI}$'
     cmap[f] = 'viridis'
