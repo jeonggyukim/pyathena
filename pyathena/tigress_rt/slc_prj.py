@@ -237,11 +237,9 @@ class SliceProj:
                      va='center', ha='center', **texteffect(fontsize='xx-large'))
         # plt.subplots_adjust(top=0.95)
 
-        
-
         if savefig:
             if savdir is None:
-                savdir = osp.join(self.savdir, 'snapshots')
+                savdir = osp.join(self.savdir, 'snapshot')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 

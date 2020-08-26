@@ -93,8 +93,8 @@ class PDF:
         s = self
         ds = s.load_vtk(num)
         pdf = s.read_pdf2d(num, savdir=savdir, force_override=force_override)
-        prj = s.read_prj(num, savdir=savdir, force_override=force_override)
-        slc = s.read_slc(num, savdir=savdir, force_override=force_override)
+        prj = s.read_prj(num, force_override=force_override)
+        slc = s.read_slc(num, force_override=force_override)
         hst = s.read_hst(savdir=savdir, force_override=force_override)
         sp = s.load_starpar_vtk(num)
         zpa = s.read_zprof(['whole','2p','h'], savdir=savdir, force_override=force_override)
@@ -119,7 +119,8 @@ class PDF:
         s.plt_proj(ax, prj, 'z', 'Sigma_gas')
         scatter_sp(sp, ax, 'z', kind='prj', kpc=False, norm_factor=5.0, agemax=20.0)
         ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
-        ax.set(xlim=(-512,512),ylim=(-512,512))
+        ax.set(xlim=(ds.domain['le'][0], ds.domain['re'][0]),
+               ylim=(ds.domain['le'][1], ds.domain['re'][1]))
 
         ax = axes[2,1]
         s.plt_slice(ax, slc, 'z', 'chi_FUV', norm=LogNorm(1e-1,1e2))
@@ -137,6 +138,7 @@ class PDF:
         ax.set(xlabel='z [kpc]', ylabel=r'$\langle n_{\rm H}\rangle\;[{\rm cm}^{-3}]$',
                ylim=(1e-5,5e0))
         ax.legend(loc=1)
+
         # axes[2,2].remove()
         # gs = fig.add_gridspec(3, 8)
         # ax1 = fig.add_subplot(gs[2, 4])
@@ -156,7 +158,7 @@ class PDF:
         ax.semilogy(hst['time_code'],hst['sfr10'])
         ax.semilogy(hst['time_code'],hst['sfr40'])
         ax.axvline(s.domain['time'], color='grey', lw=0.75)
-        ax.set(xlabel='time [code]', ylabel=r'$\Sigma_{\rm SFR}$', ylim=(1e-3,2e-2))
+        ax.set(xlabel='time [code]', ylabel=r'$\Sigma_{\rm SFR}$', ylim=(1e-3,1e0))
 
         if suptitle is None:
             suptitle = self.basename
