@@ -23,18 +23,34 @@ class ReadObs():
         self.files['Ochsendorf17'] = os.path.join(local,'../../data/Ochsendorf17-Table5.txt')
         self.files['VE16T2'] = os.path.join(local,'../../data/Vutisalchavakul16-Table2.txt')
         self.files['VE16T3'] = os.path.join(local,'../../data/Vutisalchavakul16-Table3.txt')
+        self.files['Evans14'] = os.path.join(local,'../../data/Evans14-Table1.txt')
         self.df['Sun18'] = self._read_Sun18()
         self.df['Sun20'] = self._read_Sun20()
         self.df['Lee16'] = self._read_Lee16()
         self.df['Ochsendorf17'] = self._read_Ochsendorf17()
         self.df['VE16T2'] = self._read_VE16T2()
         self.df['VE16T3'] = self._read_VE16T3()
+        self.df['Evans14'] = self._read_Evans14()
+    
+    def _read_Evans14(self):
+        df = pd.read_csv(self.files['Evans14'], sep='\s+', skiprows=2,
+                         names=['Dist','Rcloud','SFR','Mcloud','M_dense','Sigma_SFR',
+                                'Sigma_gas','t_ff','sigmav','t_cross'])
+        df['SFEff'] = df['SFR']*df['t_ff']/df['Mcloud']
+        
+        return df
+    
+    def get_Evans14(self):
+        return self.df['Evans14']
     
     def _read_Sun18(self):
         df = pd.read_fwf(self.files['Sun18'], skiprows=28,
                          names=['Name','Res','Tpeak','Sigma','sigma',
                                 'avir','Pturb','Mask1','Mask2'])
         return df
+
+    def get_Sun18(self):
+        return self.df['Sun18']
 
     def get_Sun18(self):
         return self.df['Sun18']
