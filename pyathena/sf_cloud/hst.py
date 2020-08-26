@@ -71,8 +71,11 @@ class Hst:
 
         # Velocity dispersion
         # (mass-weighted rms velocity magnitude)
-        hst['vdisp_cl'] = np.sqrt(2.0*(hst['Ekin_H2_cl'] + hst['Ekin_HI_cl'])
-                                  /(hst['MHI_cl'] + hst['MH2_cl']))
+        try:
+            hst['vdisp_cl'] = np.sqrt(2.0*(hst['Ekin_H2_cl'] + hst['Ekin_HI_cl'])
+                                      /(hst['MHI_cl'] + hst['MH2_cl']))
+        except KeyError as e:
+            self.logger.warning('Could not compute vdisp_cl due to KeyError {0:s}'.format(e))
         
         # Mstar: total
         # Mstar_in: mass of sp currently in the domain

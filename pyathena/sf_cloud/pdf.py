@@ -32,6 +32,9 @@ class PDF:
                    bin_fields=None, bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
 
+        if bins is not None:
+            self.bins = bins
+            
         bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
         if bin_fields is None:
             bin_fields = bin_fields_def
@@ -59,6 +62,8 @@ class PDF:
                                         weights=weights)
             res[k]['Hw'] = Hw
 
+        res['domain'] = ds.domain
+        
         return res
 
     @LoadSim.Decorators.check_pickle
