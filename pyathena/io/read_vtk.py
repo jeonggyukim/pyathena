@@ -153,8 +153,8 @@ class AthenaDataSet(object):
         gre_all = np.array(gre_all)
 
         # Find unique grid left/right edge coordinates 
-        gleu = np.array([np.unique(gle_all[:, i]) for i in range(3)])
-        greu = np.array([np.unique(gre_all[:, i]) for i in range(3)])
+        gleu = np.array([np.unique(gle_all[:, i]) for i in range(3)], dtype=object)
+        greu = np.array([np.unique(gre_all[:, i]) for i in range(3)], dtype=object)
         # Min/Max of gleu/greu
         gle = np.array([gle.min() for gle in gleu])
         gre = np.array([gre.max() for gre in greu])
@@ -165,7 +165,7 @@ class AthenaDataSet(object):
         # Number of cells per grid
         Nxg = np.concatenate([Lx_grid/dx for Lx_grid, dx in \
                               zip(greu-gleu, self.domain['dx'])])
-        Nxg = np.array(np.array_split(Nxg, NGrid.cumsum()[:-1]))
+        Nxg = np.array(np.array_split(Nxg, NGrid.cumsum()[:-1]), dtype=object)
 
         # Since floating point arithmetic may result in incorrect results,
         # we need to round to the nearest integer

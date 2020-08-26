@@ -91,7 +91,7 @@ class SliceProj:
 
         if norm is None:
             norm = mpl.colors.LogNorm()
-        elif norm is 'linear':
+        elif norm == 'linear':
             norm = mpl.colors.Normalize()
 
         ax.imshow(slc[axis][field], cmap=cmap,
@@ -104,7 +104,7 @@ class SliceProj:
 
         if norm is None or 'log':
             norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
-        elif norm is 'linear':
+        elif norm == 'linear':
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
 
         ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
@@ -173,8 +173,8 @@ class SliceProj:
         plt.suptitle(self.basename + '  t={0:4.1f}'.format(sp.time))
         
         if savefig:
-            #savdir = osp.join(self.savdir, 'snapshots')
-            savdir = osp.join('/tigress/jk11/figures/GMC', self.basename, 'snapshots')
+            savdir = osp.join(self.savdir, 'snapshots')
+            # savdir = osp.join('/tigress/jk11/figures/GMC', self.basename, 'snapshots')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
