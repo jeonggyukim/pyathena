@@ -182,10 +182,14 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         try:
             df['fesc_cum_PH'] = h['fesc_cum_PH'].iloc[-1] # Lyman Continuum
             df['fesc_cum_FUV'] = h['fesc_cum_FUV'].iloc[-1]
+            df['fesc_cum_3Myr_PH'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_PH'].iloc[-1]
+            df['fesc_cum_3Myr_FUV'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_FUV'].iloc[-1]
         except KeyError:
-            print(h['fesc_cum_PH'])
+            print('Error in calculating fesc_cum')
             df['fesc_cum_PH'] = np.nan
             df['fesc_cum_FUV'] = np.nan
+            df['fesc_cum_3Myr_PH'] = np.nan
+            df['fesc_cum_3Myr_FUV'] = np.nan
 
         try:
             hv = df['hst_vir']
@@ -391,7 +395,7 @@ def load_all_alphabeta(force_override=False):
         BinfS5='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
 
         # Low resolution
-        B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'
+        # B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'
         
         # B16
         # B16S1='/tigress/jk11/GMC/M1E5R20.R.B16.A2.S1.N256.old',
@@ -416,7 +420,7 @@ def load_all_alphabeta(force_override=False):
         df = s.get_summary(as_dict=True)
         df_list.append(pd.DataFrame(pd.Series(df, name=mdl)).T)
 
-    df = pd.concat(df_list).sort_index(ascending=False)
+    df = pd.concat(df_list, sort=True).sort_index(ascending=False)
 
     df.to_pickle(fpkl)
 

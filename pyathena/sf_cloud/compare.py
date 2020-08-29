@@ -30,8 +30,8 @@ class Compare(object):
         for ic, mdl in enumerate(models):
             s = self.set_model(mdl)
             sp = s.load_starpar_vtk(num)
-            for ir, axis in enumerate(('x','y','z')):
-                extent = SliceProj.get_extent(s.domain)[axis]
+            for ir, dim in enumerate(('x','y','z')):
+                extent = SliceProj.get_extent(s.domain)[dim]
                 ii = ir + 1
                 f = f'Sigma{ii}'
                 dd = read_vtk(s.files[f][num])
@@ -42,10 +42,10 @@ class Compare(object):
 
                 # Overplot starpar
                 if not sp.empty:
-                    plt_starpar.scatter(sp, axes[ir,ic], axis=axis, kind='proj', kpc=False,
-                                        norm_factor=norm_factor, agemax=agemax)
-                    plt_starpar.scatter(sp, axes[ir,ic], axis=axis, kind='proj', kpc=False,
-                                        norm_factor=norm_factor, agemax=agemax)
+                    plt_starpar.scatter_sp(sp, axes[ir,ic], dim=dim, kind='proj', kpc=False,
+                                           norm_factor=norm_factor, agemax=agemax)
+                    plt_starpar.scatter_sp(sp, axes[ir,ic], dim=dim, kind='proj', kpc=False,
+                                           norm_factor=norm_factor, agemax=agemax)
                     axes[ir,ic].set_xlim(extent[0],extent[1])
                     axes[ir,ic].set_ylim(extent[2],extent[3])
                     
@@ -68,12 +68,12 @@ class Compare(object):
 
         bbox_sp = [bbox_ax_top.x0+0.2, bbox_ax_top.y1+0.01,
                    0.1, 0.015]
-        plt_starpar.colorbar(plt.gcf(), agemax,
-                             #bbox=[0.35, 0.89, 0.1, 0.015])
-                             bbox=bbox_sp)
-        plt_starpar.legend(axes[0,2], norm_factor=4.0, mass=[1e2, 1e3], location='top',
-                           fontsize='medium',
-                           bbox_to_anchor=dict(top=(0.45, 0.93), right=(0.48, 0.91)))
+        plt_starpar.colorbar_sp(plt.gcf(), agemax,
+                                #bbox=[0.35, 0.89, 0.1, 0.015])
+                                bbox=bbox_sp)
+        plt_starpar.legend_sp(axes[0,2], norm_factor=4.0, mass=[1e2, 1e3], location='top',
+                              fontsize='medium',
+                              bbox_to_anchor=dict(top=(0.45, 0.93), right=(0.48, 0.91)))
         
         plt.subplots_adjust(wspace=None, hspace=None)
         plt.suptitle('{0:s}    time={1:5.2f}'.format(prefix, sp.time), x=0.7, y=0.91)
