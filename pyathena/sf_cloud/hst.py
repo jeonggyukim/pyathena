@@ -34,8 +34,9 @@ class Hst:
         # volume of resolution element (code unit)
         dvol = domain['dx'].prod()
         # total volume of domain (code unit)
-        vol = domain['Lx'].prod()        
-
+        vol = domain['Lx'].prod()
+        nscalars = par['configure']['nscalars']
+        
         # Rename column names
         hst = hst.rename(columns={"mass": "Mgas",     # total gas mass
                                   "mass_sp": "Mstar", # star particle mass in the box
@@ -62,6 +63,14 @@ class Hst:
                 hst[c] *= vol*u.Msun
             except KeyError:
                 self.logger.warning('Column {0:s} not found'.format(c))
+                continue
+
+        for i in range(nscalars):
+            try:
+                hst[f'scalar{i}'] *= vol*u.Msun
+            except KeyError:
+                self.logger.warning('Nscalar {0:i}, but column {0:s} not found'.\
+                                    format(nscalars,c))
                 continue
             
         # Convert energy unit [Msun*(km/s)**2]
