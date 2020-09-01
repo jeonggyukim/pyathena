@@ -100,19 +100,12 @@ class SliceProj:
         return res
 
     @staticmethod
-    def plt_slice(ax, slc, axis='z', field='nH', cmap='viridis',
-                  norm=mpl.colors.LogNorm()):
-
-        ax.imshow(slc[axis][field], cmap=cmap,
-                  extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
-
-    @staticmethod
-    def plt_proj(ax, prj, axis='z', field='Sigma', cmap='viridis',
-                 norm=mpl.colors.LogNorm()):
-        
-        ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
-                  norm=norm, origin='lower', interpolation='none')
-
+    def plt_imshow(ax, dat, dim='z', field='Sigma', cmap='viridis',
+                   norm=mpl.colors.LogNorm()):
+        im = ax.imshow(dat[dim][field], cmap=cmap, extent=dat['extent'][dim],
+                       norm=norm, origin='lower', interpolation='none')
+        return im
+    
     def plt_snapshot(self, num, savefig=True):
         
         d = self.read_prj(num, force_override=False)
