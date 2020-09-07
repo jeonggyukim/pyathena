@@ -17,7 +17,7 @@ if __name__ == '__main__':
     COMM = MPI.COMM_WORLD
 
     #basedir_def = '/tigress/jk11/TIGRESS-RT/R8_8pc_NCR_xymax1024_SSFR0.02_noLyC/'
-    basedir_def = '/scratch/gpfs/jk11/TIGRESS-RT/LGR4_4pc_NCR_test2/'
+    basedir_def = '/perseus/scratch/gpfs/jk11/TIGRESS-RT/LGR4_4pc_NCR_oldvl/'
     
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--basedir', type=str,

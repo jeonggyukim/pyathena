@@ -92,7 +92,7 @@ class PDF:
 
         s = self
         ds = s.load_vtk(num)
-        pdf = s.read_pdf2d(num, savdir=savdir, force_override=force_override)
+        pdf = s.read_pdf2d(num, force_override=force_override)
         prj = s.read_prj(num, force_override=force_override)
         slc = s.read_slc(num, force_override=force_override)
         hst = s.read_hst(savdir=savdir, force_override=force_override)
