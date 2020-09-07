@@ -23,8 +23,9 @@ from .compare import Compare
 from .pdf import PDF
 from .virial import Virial
 from .sfr import get_SFR_mean
+from .starpar import StarPar
 
-class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
+class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
                      DustPol, Virial, Fields):
     """LoadSim class for analyzing sf_cloud simulations.
     """
