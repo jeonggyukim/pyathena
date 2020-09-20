@@ -96,7 +96,6 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         df['Sigma'] = df['M']/(np.pi*df['R']**2)
         df['seed'] = int(np.abs(par['problem']['rseed']))
         df['alpha_vir'] = float(par['problem']['alpha_vir'])
-        df['sigma1d'] = cl.sigma1d.to('km/s').value
         df['marker'] = markers[df['seed'] - 1]
         df['vesc'] = cl.vesc.to('km/s').value
         df['sigma1d'] = cl.sigma1d.to('km/s').value
