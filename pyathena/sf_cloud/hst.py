@@ -41,7 +41,13 @@ class Hst:
         hst = hst.rename(columns={"mass": "Mgas",     # total gas mass
                                   "mass_sp": "Mstar", # star particle mass in the box
                                   "mass_sp_esc": "Mstar_esc"})
-
+        try:
+            hst = hst.rename(columns={"mass_sp_s0": "Mstar_s0"})
+            hst = hst.rename(columns={"mass_sp_s1": "Mstar_s1"})
+            hst = hst.rename(columns={"mass_sp_s2": "Mstar_s2"})
+        except KeyError:
+            pass
+        
         # Time in code unit
         hst['time_code'] = hst['time']
         # Time in Myr
@@ -58,7 +64,7 @@ class Hst:
         #          molecular,atomic,ionized) in Msun
         for c in ('Mgas','Mcold','Minter','Mwarm','Mhot',
                   'MH2','MHI','MH2_cl','MHI_cl','M_cl',
-                  'Mstar','Mstar_esc'):
+                  'Mstar','Mstar_esc','Mstar_s0','Mstar_s1','Mstar_s2'):
             try:
                 hst[c] *= vol*u.Msun
             except KeyError:
@@ -158,7 +164,7 @@ class Hst:
             hst['SFR_3Myr'] = hst.SFR.rolling(
                 winsize_3Myr, min_periods=1, win_type='boxcar').mean()
         else:
-            raise ValueError('Total time interval smaller than 1 Myr')
+            self.logger.warning('Total time interval smaller than 1 Myr')
             #pass
 
         return hst
