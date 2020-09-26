@@ -17,8 +17,8 @@ from ..plt_tools.plt_starpar import scatter_sp
 from ..classic.utils import texteffect
 
 cmap_def = dict(
-    Sigma_gas=plt.cm.Spectral_r,
-    Sigma_H2=plt.cm.Spectral_r,
+    Sigma_gas=plt.cm.pink_r,
+    Sigma_H2=plt.cm.pink_r,
     EM=plt.cm.plasma,
     nH=plt.cm.Spectral_r,
     T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
@@ -29,8 +29,8 @@ cmap_def = dict(
 )
 
 norm_def = dict(
-    Sigma_gas=LogNorm(1e-1,1e3),
-    Sigma_H2=LogNorm(1e-1,1e3),
+    Sigma_gas=LogNorm(1e-2,1e2),
+    Sigma_H2=LogNorm(1e-2,1e2),
     EM=LogNorm(1e0,1e5),
     nH=LogNorm(1e-3,1e3),
     T=LogNorm(1e1,1e7),
@@ -146,8 +146,10 @@ class SliceProj:
                   norm=norm, origin='lower', interpolation='none')
             
     def plt_snapshot(self, num,
-                     fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
-                     fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
+                     fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'chi_FUV', 'Erad_LyC'),
+                     fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz'),
+                     #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
+                     #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
                      suptitle=None, savdir=None, force_override=False, savefig=True):
         """Plot 12-panel projection, slice plots in the z and y directions
@@ -176,7 +178,7 @@ class SliceProj:
                      nH=r'$n_{\rm H}$',
                      T=r'$T$',
                      vz=r'$v_z$',
-                     chi_FUV=r'$\chi_{\rm FUV}$',
+                     chi_FUV=r'$\mathcal{E}_{\rm FUV}$',
                      Erad_LyC=r'$\mathcal{E}_{\rm LyC}$',
                      xi_CR=r'$\xi_{\rm CR}$'
         )
@@ -188,7 +190,7 @@ class SliceProj:
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
 
-        fig = plt.figure(figsize=(25, 12), constrained_layout=True)
+        fig = plt.figure(figsize=(26, 12))#, constrained_layout=True)
         g1 = ImageGrid(fig, [0.02, 0.05, 0.4, 0.94], (3, 2), axes_pad=0.1,
                        aspect=True, share_all=True, direction='column')
         g2 = ImageGrid(fig, [0.2, 0.05, 0.85, 0.94], (1, 6), axes_pad=0.1,
@@ -233,13 +235,16 @@ class SliceProj:
 
         if suptitle is None:
             suptitle = self.basename            
-        fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
+        # fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
+        #              va='center', ha='center', **texteffect(fontsize='xx-large'))
+        fig.suptitle('Model: R8  time=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
                      va='center', ha='center', **texteffect(fontsize='xx-large'))
         # plt.subplots_adjust(top=0.95)
 
         if savefig:
             if savdir is None:
-                savdir = osp.join(self.savdir, 'snapshot')
+                #savdir = osp.join(self.savdir, 'snapshot')
+                savdir = osp.join('/tigress/jk11/figures/TIGRESS-RT', 'snapshot', self.basename)
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 

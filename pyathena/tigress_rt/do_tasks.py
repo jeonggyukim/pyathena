@@ -16,8 +16,8 @@ from ..plt_tools.make_movie import make_movie
 if __name__ == '__main__':
     COMM = MPI.COMM_WORLD
 
-    #basedir_def = '/tigress/jk11/TIGRESS-RT/R8_8pc_NCR_xymax1024_SSFR0.02_noLyC/'
-    basedir_def = '/perseus/scratch/gpfs/jk11/TIGRESS-RT/LGR4_4pc_NCR_oldvl/'
+    basedir_def = '/tigress/jk11/TIGRESS-RT/R8_8pc_NCR_test6/'
+    #basedir_def = '/perseus/scratch/gpfs/jk11/TIGRESS-RT/LGR4_4pc_NCR_oldvl/'
     
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--basedir', type=str,
@@ -45,10 +45,10 @@ if __name__ == '__main__':
         # slc = s.read_slc(num, force_override=False)
         try:
             fig = s.plt_snapshot(num)
-            fig = s.plt_pdf2d_all(num)
+            # fig = s.plt_pdf2d_all(num)
         except KeyError:
             fig = s.plt_snapshot(num, force_override=True)
-            fig = s.plt_pdf2d_all(num, force_override=True)
+            # fig = s.plt_pdf2d_all(num, force_override=True)
         plt.close(fig)
 
         n = gc.collect()
