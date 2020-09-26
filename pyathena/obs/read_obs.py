@@ -20,14 +20,16 @@ class ReadObs():
         self.files['Sun18'] = os.path.join(local,'../../data/Sun18-Table3.txt')
         self.files['Sun20'] = os.path.join(local,'../../data/Sun20-Table3.txt')
         self.files['Lee16'] = os.path.join(local,'../../data/Lee16-Table3.txt')
-        self.files['Ochsendorf17'] = os.path.join(local,'../../data/Ochsendorf17-Table5.txt')
+        self.files['Ochsendorf17T4'] = os.path.join(local,'../../data/Ochsendorf17-Table4.txt')
+        self.files['Ochsendorf17T5'] = os.path.join(local,'../../data/Ochsendorf17-Table5.txt')
         self.files['VE16T2'] = os.path.join(local,'../../data/Vutisalchavakul16-Table2.txt')
         self.files['VE16T3'] = os.path.join(local,'../../data/Vutisalchavakul16-Table3.txt')
         self.files['Evans14'] = os.path.join(local,'../../data/Evans14-Table1.txt')
         self.df['Sun18'] = self._read_Sun18()
         self.df['Sun20'] = self._read_Sun20()
         self.df['Lee16'] = self._read_Lee16()
-        self.df['Ochsendorf17'] = self._read_Ochsendorf17()
+        self.df['Ochsendorf17T4'] = self._read_Ochsendorf17T4()
+        self.df['Ochsendorf17T5'] = self._read_Ochsendorf17T5()
         self.df['VE16T2'] = self._read_VE16T2()
         self.df['VE16T3'] = self._read_VE16T3()
         self.df['Evans14'] = self._read_Evans14()
@@ -89,8 +91,18 @@ class ReadObs():
     def get_Lee16(self):
         return self.df['Lee16']
 
-    def _read_Ochsendorf17(self):
-        df = pd.read_fwf(self.files['Ochsendorf17'], skiprows=25,
+    def _read_Ochsendorf17T4(self):
+        df = pd.read_fwf(self.files['Ochsendorf17T4'], skiprows=25,
+                         names=['Name','RAdeg','DEdeg','Type','Mass',
+                                'Rad','SFR','SFE','SFEff','tff','sigV'])
+        df['tdyn_1d'] = df['Rad']/df['sigV']*to_Myr
+        df['tdyn_3d'] = df['Rad']/(np.sqrt(3.0)*df['sigV'])*to_Myr
+        df['Avir'] = (5.0*df['Rad'].values*df['sigV'].values**2)/\
+                     (df['Mass'].values)*to_Avir
+        return df
+
+    def _read_Ochsendorf17T5(self):
+        df = pd.read_fwf(self.files['Ochsendorf17T5'], skiprows=25,
                          names=['Name','RAdeg','DEdeg','Type','Mass',
                                 'Rad','SFR','SFE','SFEff','tff','sigV'])
         df['tdyn_1d'] = df['Rad']/df['sigV']*to_Myr
@@ -100,7 +112,7 @@ class ReadObs():
         return df
 
     def get_Ochsendorf17(self):
-        return self.df['Ochsendorf17']
+        return self.df['Ochsendorf17T4'], self.df['Ochsendorf17T5']
 
     def _read_VE16T2(self):
         df = pd.read_fwf(self.files['VE16T2'], skiprows=14,
