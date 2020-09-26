@@ -176,7 +176,8 @@ class PDF:
         return r    
 
 
-def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0, force_override=False):
+def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
+                        force_override=False, savefig=True):
     """Function to plot 2d histograms at different snapshots
     """
     
@@ -252,8 +253,8 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0, fo
         if yvar == 'pok':
             # Plot lines of constant temperature 8000/40K for ionized/molecular gas
             nH = np.logspace(np.log10(minmax['nH'][0]), np.log10(minmax['nH'][1]))
-            for T,xe,xH2,c in zip((20.0,8000.0),(0.0,1.0),(0.5,0.0),('blue','orange')):
-                ax.loglog(nH, (1.1 + xe - xH2)*nH*T, c=c, lw=0.75, ls='-')
+            for T,xe,xH2,c,ls in zip((20.0,8000.0),(0.0,1.0),(0.5,0.0),('blue','orange'),('-',':')):
+                ax.loglog(nH, (1.1 + xe - xH2)*nH*T, c=c, lw=0.75, ls=ls)
     
         if yvar == 'chi_FUV_tot' and i >= (nr - 1)*nc:
             # Plot lines of constant ionization parameter
@@ -283,11 +284,12 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0, fo
         plt.colorbar(im, cax=g1[(i+1)*nc-1].cax, label='mass fraction',
                      norm=norm[i], cmap=cm)
 
-    basedir='/tigress/jk11/figures/GMC/paper/pdf/'
-    name = 'pdf2d-{0:s}-{1:s}.png'.format('nH', yvar)
-    savname = osp.join(basedir, name)
-    fig.savefig(savname, dpi=200, bbox_inches='tight')
-    scp_to_pc(savname, target='GMC-AB')
-    print('saved to', savname)
+    if savefig:
+        basedir = '/tigress/jk11/figures/GMC/paper/pdf/'
+        name = 'pdf2d-{0:s}-{1:s}.png'.format('nH', yvar)
+        savname = osp.join(basedir, name)
+        fig.savefig(savname, dpi=200, bbox_inches='tight')
+        scp_to_pc(savname, target='GMC-AB')
+        print('saved to', savname)
 
     return fig
