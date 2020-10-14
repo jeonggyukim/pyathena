@@ -177,7 +177,7 @@ class PDF:
 
 
 def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
-                        force_override=False, savefig=True):
+                        force_override=False):
     """Function to plot 2d histograms at different snapshots
     """
     
@@ -253,9 +253,13 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
         if yvar == 'pok':
             # Plot lines of constant temperature 8000/40K for ionized/molecular gas
             nH = np.logspace(np.log10(minmax['nH'][0]), np.log10(minmax['nH'][1]))
-            for T,xe,xH2,c,ls in zip((20.0,8000.0),(0.0,1.0),(0.5,0.0),('blue','orange'),('-',':')):
-                ax.loglog(nH, (1.1 + xe - xH2)*nH*T, c=c, lw=0.75, ls=ls)
-    
+            for T,xe,xH2,c,label in zip((20.0,8000.0),(0.0,1.0),\
+                                  (0.5,0.0),('blue','orange'),
+                                  (r'$T=20\,{\rm K} (x_{\rm H_2}=0.5)$',
+                                   r'$T=8000\,{\rm K} (x_{\rm H^+}=1)$')):
+                l, = ax.loglog(nH, (1.1 + xe - xH2)*nH*T, c=c,
+                               lw=0.75, ls='-', label=label)
+
         if yvar == 'chi_FUV_tot' and i >= (nr - 1)*nc:
             # Plot lines of constant ionization parameter
             hnui = (s.par['radps']['hnu_PH']*au.eV).cgs.value

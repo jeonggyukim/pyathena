@@ -34,12 +34,15 @@ if __name__ == '__main__':
     # print(models)
 
     # models = list(r[(r['seed'] == 4) & (r['mu'] == 2.0)].index)
-    
-    seed = 5
+
+    seed = 4
     sstr = r'S{0:d}'.format(seed)
     # #models = ['B2'+sstr, 'B8'+sstr, 'B1'+sstr, 'B05'+sstr, 'B4'+sstr]
-    models = ['A1'+sstr, 'A5'+sstr, 'A4'+sstr, 'A3'+sstr]
-    
+    # models = ['A1'+sstr, 'A5'+sstr, 'A4'+sstr, 'A3'+sstr]
+    # models = ['B2'+sstr, 'B8'+sstr, 'B1'+sstr, 'B05'+sstr, 'B4'+sstr,
+    #           'A1'+sstr, 'A5'+sstr, 'A4'+sstr, 'A3'+sstr]
+
+    models = ['B2S4_N512']
     # models = ['A1S4', 'A4S4', 'A3S4', 'A5S4']
     
     # models = ['B2S1', 'B2S2', 'B2S3', 'B2S5']
@@ -54,7 +57,8 @@ if __name__ == '__main__':
     for mdl in models:
         print(mdl)
         s = sa.set_model(mdl)
-        nums = range(0, s.get_num_max_virial())
+        #nums = range(0, s.get_num_max_virial())
+        nums = s.nums[::10]
         
         if COMM.rank == 0:
             print('basedir, nums', s.basedir, nums)
@@ -68,8 +72,16 @@ if __name__ == '__main__':
         time0 = time.time()
         for num in mynums:
             print(num, end=' ')
-            # print('virial', end=' ')
-            res = s.read_virial(num, force_override=True)
+            
+            # print('read_virial', end=' ')
+            # res = s.read_virial(num, force_override=True)
+            # n = gc.collect()
+            # print('Unreachable objects:', n, end=' ')
+            # print('Remaining Garbage:', end=' ')
+            # pprint.pprint(gc.garbage)
+
+            print('read_outflow', end=' ')
+            of = s.read_outflow(num, force_override=True)
             n = gc.collect()
             print('Unreachable objects:', n, end=' ')
             print('Remaining Garbage:', end=' ')

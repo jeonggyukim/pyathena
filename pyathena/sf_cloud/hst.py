@@ -68,7 +68,7 @@ class Hst:
             try:
                 hst[c] *= vol*u.Msun
             except KeyError:
-                self.logger.warning('Column {0:s} not found'.format(c))
+                self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
                 continue
 
         for i in range(nscalars):
@@ -137,8 +137,8 @@ class Hst:
         for ph in ('H2','HI','HII'):
             c = f'rho_{ph}_out'
             if c in hst.columns:
-                hst[c] *= vol*u.Msun
-                hst[f'Mof_{ph}_dot'] = hst.rho_out
+                hst[c] *= vol*u.Msun/u.Myr
+                hst[f'Mof_{ph}_dot'] = hst[c]
                 hst[f'Mof_{ph}'] = integrate.cumtrapz(
                     hst[c], hst['time'], initial=0.0)
 
