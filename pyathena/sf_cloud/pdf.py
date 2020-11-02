@@ -288,6 +288,7 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
         plt.colorbar(im, cax=g1[(i+1)*nc-1].cax, label='mass fraction',
                      norm=norm[i], cmap=cm)
 
+    savefig = True
     if savefig:
         basedir = '/tigress/jk11/figures/GMC/paper/pdf/'
         name = 'pdf2d-{0:s}-{1:s}.png'.format('nH', yvar)

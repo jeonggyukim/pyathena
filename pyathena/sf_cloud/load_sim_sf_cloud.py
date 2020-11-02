@@ -79,8 +79,8 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         h = self.read_hst(force_override=False)
         df['hst'] = h
         
-        if (par['configure']['gas'] == 'mhd') and \
-           (int(par['domain1']['Nx1']) == 256):
+        if (int(par['domain1']['Nx1']) <= 256):
+            # Skip N512 model (takes too long time to post-process)
             try:
                 hv = self.read_virial_all(force_override=False)
                 df['hst_vir'] = hv
@@ -90,15 +90,11 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         else:
             df['hst_vir'] = None
 
-        if (par['configure']['gas'] == 'mhd') and \
-           (int(par['domain1']['Nx1']) == 256):
-            try:
-                ho = self.read_outflow_all(force_override=False)
-                df['hst_of'] = ho
-            except:
-                self.logger.warning('read_outflow_all() failed!')
-                df['hst_of'] = None
-        else:
+        try:
+            ho = self.read_outflow_all(force_override=False)
+            df['hst_of'] = ho
+        except:
+            self.logger.warning('read_outflow_all() failed!')
             df['hst_of'] = None
 
         df['basedir'] = self.basedir
@@ -435,14 +431,24 @@ def load_all_alphabeta(force_override=False):
         B8S5='/tigress/jk11/GMC/M1E5R20.R.B8.A2.S5.N256',
 
         # Binf
-        BinfS1='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256.again',
-        BinfS2='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S2.N256',
-        BinfS3='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S3.N256',
-        BinfS4='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S4.N256',
-        BinfS5='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
+        BinfS1='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256',
+        BinfS2='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S2.N256',
+        BinfS3='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S3.N256',
+        BinfS4='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S4.N256',
+        BinfS5='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
+
+        # BinfS1='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256.again',
+        # BinfS2='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S2.N256',
+        # BinfS3='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S3.N256',
+        # BinfS4='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S4.N256',
+        # BinfS5='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
 
         # Low resolution
-        # B2S4_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'
+        B2S1_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S1.N128/',
+        B2S2_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S2.N128/',
+        B2S3_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S3.N128/',
+        B2S4_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128/',
+        B2S5_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S5.N128/',
 
         # High resolution
         B2S4_N512='/tigress/jk11/GMC/M1E5R20.RS.B2.A2.S4.N512',

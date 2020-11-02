@@ -324,5 +324,5 @@ class PltSnapshot(object):
         # Save figure
         savname = osp.join(basedir, name)
         self.fig.savefig(savname, dpi=dpi, bbox_inches='tight')
-        scp_to_pc(savname, target='GMC-MHD-Results')
+        scp_to_pc(savname, target='GMC-AB')
         print('saved to', savname)

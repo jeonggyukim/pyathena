@@ -35,17 +35,18 @@ if __name__ == '__main__':
 
     # models = list(r[(r['seed'] == 4) & (r['mu'] == 2.0)].index)
 
-    seed = 4
-    sstr = r'S{0:d}'.format(seed)
+    #seed = 4
+    #sstr = r'S{0:d}'.format(seed)
     # #models = ['B2'+sstr, 'B8'+sstr, 'B1'+sstr, 'B05'+sstr, 'B4'+sstr]
     # models = ['A1'+sstr, 'A5'+sstr, 'A4'+sstr, 'A3'+sstr]
     # models = ['B2'+sstr, 'B8'+sstr, 'B1'+sstr, 'B05'+sstr, 'B4'+sstr,
     #           'A1'+sstr, 'A5'+sstr, 'A4'+sstr, 'A3'+sstr]
 
-    models = ['B2S4_N512']
+    # models = ['B2S4_N512']
     # models = ['A1S4', 'A4S4', 'A3S4', 'A5S4']
     
     # models = ['B2S1', 'B2S2', 'B2S3', 'B2S5']
+    models = ['B2S1_N128','B2S2_N128','B2S3_N128','B2S4_N128','B2S5_N128']
 
     # sa = pa.LoadSimSFCloudAll(dict(B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'))
     # models = sa.models
@@ -57,8 +58,8 @@ if __name__ == '__main__':
     for mdl in models:
         print(mdl)
         s = sa.set_model(mdl)
-        #nums = range(0, s.get_num_max_virial())
-        nums = s.nums[::10]
+        nums = range(0, s.get_num_max_virial())
+        #nums = s.nums[::]
         
         if COMM.rank == 0:
             print('basedir, nums', s.basedir, nums)
@@ -73,19 +74,21 @@ if __name__ == '__main__':
         for num in mynums:
             print(num, end=' ')
             
-            # print('read_virial', end=' ')
-            # res = s.read_virial(num, force_override=True)
-            # n = gc.collect()
+            print('read_virial', end=' ')
+            res = s.read_virial(num, force_override=True)
+            n = gc.collect()
+
             # print('Unreachable objects:', n, end=' ')
             # print('Remaining Garbage:', end=' ')
             # pprint.pprint(gc.garbage)
 
-            print('read_outflow', end=' ')
-            of = s.read_outflow(num, force_override=True)
-            n = gc.collect()
-            print('Unreachable objects:', n, end=' ')
-            print('Remaining Garbage:', end=' ')
-            pprint.pprint(gc.garbage)
+            # print('read_outflow', end=' ')
+            # of = s.read_outflow(num, force_override=True)
+            # n = gc.collect()
+
+            #print('Unreachable objects:', n, end=' ')
+            #print('Remaining Garbage:', end=' ')
+            #pprint.pprint(gc.garbage)
 
             # print('read_slc_prj', end=' ')
             # # slc = s.read_slc(num, force_override=False)
