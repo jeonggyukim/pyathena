@@ -173,7 +173,7 @@ class Virial:
         return rr
 
     @staticmethod
-    def add_fields_virial(ds, x0, xCM_neu_cl):
+    def add_fields_virial(ds, mhd, x0, xCM_neu_cl):
 
         four_PI_inv = 1/(4.0*np.pi)
         
@@ -213,29 +213,30 @@ class Virial:
                    data['x']*(data['density']*data['velocity_x']*data['velocity_z']) +\
                    data['y']*(data['density']*data['velocity_y']*data['velocity_z'])
 
-        def _rdotTM_x(field, data):
-            return four_PI_inv*(
-                data['x']*0.5*(data['magnetic_field_x']**2 -
-                               data['magnetic_field_y']**2 -
-                               data['magnetic_field_z']**2) +\
-                data['y']*(data['magnetic_field_x']*data['magnetic_field_y']) +\
-                data['z']*(data['magnetic_field_x']*data['magnetic_field_z']))
+        if mhd:
+            def _rdotTM_x(field, data):
+                return four_PI_inv*(
+                    data['x']*0.5*(data['magnetic_field_x']**2 -
+                                   data['magnetic_field_y']**2 -
+                                   data['magnetic_field_z']**2) +\
+                    data['y']*(data['magnetic_field_x']*data['magnetic_field_y']) +\
+                    data['z']*(data['magnetic_field_x']*data['magnetic_field_z']))
 
-        def _rdotTM_y(field, data):
-            return four_PI_inv*(
-                data['y']*0.5*(data['magnetic_field_y']**2 -
-                               data['magnetic_field_z']**2 -
-                               data['magnetic_field_x']**2) +\
-                data['x']*(data['magnetic_field_x']*data['magnetic_field_y']) +\
-                data['z']*(data['magnetic_field_y']*data['magnetic_field_z']))
+            def _rdotTM_y(field, data):
+                return four_PI_inv*(
+                    data['y']*0.5*(data['magnetic_field_y']**2 -
+                                   data['magnetic_field_z']**2 -
+                                   data['magnetic_field_x']**2) +\
+                    data['x']*(data['magnetic_field_x']*data['magnetic_field_y']) +\
+                    data['z']*(data['magnetic_field_y']*data['magnetic_field_z']))
 
-        def _rdotTM_z(field, data):
-            return four_PI_inv*(
-                data['z']*0.5*(data['magnetic_field_z']**2 -
-                               data['magnetic_field_x']**2 -
-                               data['magnetic_field_y']**2) +\
-                data['x']*(data['magnetic_field_x']*data['magnetic_field_z']) +\
-                data['y']*(data['magnetic_field_y']*data['magnetic_field_z']))
+            def _rdotTM_z(field, data):
+                return four_PI_inv*(
+                    data['z']*0.5*(data['magnetic_field_z']**2 -
+                                   data['magnetic_field_x']**2 -
+                                   data['magnetic_field_y']**2) +\
+                    data['x']*(data['magnetic_field_x']*data['magnetic_field_z']) +\
+                    data['y']*(data['magnetic_field_y']*data['magnetic_field_z']))
 
         def _rhovrsq_x(field, data):
             return data['density']*data['velocity_x']*data['dist']**2
@@ -267,12 +268,15 @@ class Virial:
                      sampling_type='cell', force_override=True)
         ds.add_field("rdotPi_z", function=_rdotPi_z, units="erg/cm**2",
                      sampling_type='cell', force_override=True)
-        ds.add_field("rdotTM_x", function=_rdotTM_x, units="erg/cm**2",
-                     sampling_type='cell', force_override=True)
-        ds.add_field("rdotTM_y", function=_rdotTM_y, units="erg/cm**2",
-                     sampling_type='cell', force_override=True)
-        ds.add_field("rdotTM_z", function=_rdotTM_z, units="erg/cm**2",
-                     sampling_type='cell', force_override=True)
+
+        if mhd:
+            ds.add_field("rdotTM_x", function=_rdotTM_x, units="erg/cm**2",
+                         sampling_type='cell', force_override=True)
+            ds.add_field("rdotTM_y", function=_rdotTM_y, units="erg/cm**2",
+                         sampling_type='cell', force_override=True)
+            ds.add_field("rdotTM_z", function=_rdotTM_z, units="erg/cm**2",
+                         sampling_type='cell', force_override=True)
+
         ds.add_field("rhovrsq_x", function=_rhovrsq_x, units="g/s",
                      sampling_type='cell', force_override=True)
         ds.add_field("rhovrsq_y", function=_rhovrsq_y, units="g/s",
@@ -320,7 +324,15 @@ class Virial:
         idx_H2_cl = (2.0*da['xH2'] > xH2_min) & (da[xCL] > xCL_min)
         
         # Calculate initial magnetic field
-        muB = self.par['problem']['muB']
+        if self.par['configure']['gas'] == 'hydro':
+            mhd = False
+        else:
+            mhd = True
+
+        if mhd:
+            muB = self.par['problem']['muB']
+        else:
+            muB = np.inf
         M0 = self.par['problem']['M_cloud']
         R0 = self.par['problem']['R_cloud']
         B0mag = 1.3488004135072468e-05*(M0*1e-5)*(20.0/R0)**2*(2.0/muB)*yu.gauss
@@ -329,6 +341,7 @@ class Virial:
         B0 = B0mag*yt.YTArray([np.sin(thetaB)*np.cos(phiB),
                                np.sin(thetaB)*np.sin(phiB),
                                np.cos(thetaB)])
+        print('B0',B0)
         
         # Save results to a dictionary
         r = dict()
@@ -371,7 +384,7 @@ class Virial:
                                       for ax in ('x','y','z')]).to('pc')
 
         # Add fields
-        ds = self.add_fields_virial(ds, x0=x0, xCM_neu_cl=r['xCM_neu_cl'])
+        ds = self.add_fields_virial(ds, mhd, x0=x0, xCM_neu_cl=r['xCM_neu_cl'])
 
         # Calculate radius that encloses xx % of neutral cloud mass
         # (distance is measured from xCM_neu_cl)
@@ -445,8 +458,9 @@ class Virial:
         idx = (sph['xHI'] + 2.0*sph['xH2'] > xneu_min) & (sph[xCL] > xCL_min)
         
         # Surface integral
-        rdotTM = np.column_stack([surf['rdotTM_{0:s}'.format(x)] \
-                                  for x in 'xyz'])*(yu.erg/yu.cm**2)
+        if mhd:
+            rdotTM = np.column_stack([surf['rdotTM_{0:s}'.format(x)] \
+                                      for x in 'xyz'])*(yu.erg/yu.cm**2)
         rdotPi = np.column_stack([surf['rdotPi_{0:s}'.format(x)] \
                                   for x in 'xyz'])*(yu.erg/yu.cm**2)
         rdotPi_thm = np.column_stack([surf['rdotPi_thm_{0:s}'.format(x)] \
@@ -488,44 +502,59 @@ class Virial:
                                       da['velocity_magnitude'][idx_neu_cl]**2).sum()).to('erg')
         
         # Surface integral of Maxwell stress
-        r['M_surf_sph'] = np.sum(vector_area*rdotTM)
-        # Alternative way
-        # r['M_surf_'] = surf.calculate_flux('rdotTM_x', 'rdotTM_y', 'rdotTM_z', fluxing_field="ones")
+        if mhd:
+            r['M_surf_sph'] = np.sum(vector_area*rdotTM)
+            # Alternative way
+            # r['M_surf_'] = surf.calculate_flux('rdotTM_x', 'rdotTM_y', 'rdotTM_z', fluxing_field="ones")
+            # Volume integral of magnetic energy density
+            r['M_vol_sph'] = (sph['cell_volume']*sph['magnetic_energy']).sum().to('erg')
+            r['M_sph'] = r['M_vol_sph'] + r['M_surf_sph']
+            # Define average magnetic field on surface
+            r['B_surf_avg_x'] = (surf['magnetic_field_x']*scalar_area).sum()/surf_area
+            r['B_surf_avg_y'] = (surf['magnetic_field_y']*scalar_area).sum()/surf_area
+            r['B_surf_avg_z'] = (surf['magnetic_field_z']*scalar_area).sum()/surf_area
+            r['B_surf_avg_mag'] = np.sqrt(r['B_surf_avg_x']**2 +
+                                           r['B_surf_avg_y']**2 +
+                                           r['B_surf_avg_z']**2)
+            # Alternative method to calculate surface-averaged B-field magnitude
+            # Bmag^2 = -6*M_surf/R_sph^3
+            r['B_surf_avg_mag_alt'] = (np.sqrt(-6.0*r['M_surf_sph']/
+                                               ((r['Rsph_over_Rcl']*Rcl*yu.pc)**3))).to('gauss')
 
-        # Volume integral of magnetic energy density
-        r['M_vol_sph'] = (sph['cell_volume']*sph['magnetic_energy']).sum().to('erg')
-        r['M_sph'] = r['M_vol_sph'] + r['M_surf_sph']
-        
-        # Define average magnetic field on surface
-        r['B_surf_avg_x'] = (surf['magnetic_field_x']*scalar_area).sum()/surf_area
-        r['B_surf_avg_y'] = (surf['magnetic_field_y']*scalar_area).sum()/surf_area
-        r['B_surf_avg_z'] = (surf['magnetic_field_z']*scalar_area).sum()/surf_area
-        r['B_surf_avg_mag'] = np.sqrt(r['B_surf_avg_x']**2 +
-                                       r['B_surf_avg_y']**2 +
-                                       r['B_surf_avg_z']**2)
-        # Alternative method to calculate surface-averaged B-field magnitude
-        # Bmag^2 = -6*M_surf/R_sph^3
-        r['B_surf_avg_mag_alt'] = (np.sqrt(-6.0*r['M_surf_sph']/
-                                           ((r['Rsph_over_Rcl']*Rcl*yu.pc)**3))).to('gauss')
+            # Magnetic energy as obtaind by volume integral of B^2 - B_avg^2
+            # Using B_avg=B0. This is incorrect because B_avg changes with time
+            r['M_neu_cl0_sph'] = (((sph['magnetic_field_magnitude'][idx]**2 - B0mag**2)*
+                                   sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)
+            # This will be our fiducial choice
+            r['M_neu_cl_sph'] = (((sph['magnetic_field_magnitude'][idx]**2 - r['B_surf_avg_mag']**2)*
+                                   sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)        
+            # Alternative
+            r['M_neu_cl_sph_alt'] = (((sph['magnetic_field_magnitude'][idx]**2 - r['B_surf_avg_mag_alt']**2)*
+                                   sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)
 
-        # Magnetic energy as obtaind by volume integral of B^2 - B_avg^2
-        # Using B_avg=B0. This is incorrect because B_avg changes with time
-        r['M_neu_cl0_sph'] = (((sph['magnetic_field_magnitude'][idx]**2 - B0mag**2)*
-                               sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)
-        # This will be our fiducial choice
-        r['M_neu_cl_sph'] = (((sph['magnetic_field_magnitude'][idx]**2 - r['B_surf_avg_mag']**2)*
-                               sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)        
-        # Alternative
-        r['M_neu_cl_sph_alt'] = (((sph['magnetic_field_magnitude'][idx]**2 - r['B_surf_avg_mag_alt']**2)*
-                               sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)
+            r['M_neu_cl0'] = (((da['magnetic_field_magnitude'][idx_neu_cl]**2 - B0mag**2)*
+                                   da['cell_volume'][idx_neu_cl]).sum()).to('erg') / (8.0*np.pi)
+            r['M_neu_cl'] = (((da['magnetic_field_magnitude'][idx_neu_cl]**2 - r['B_surf_avg_mag']**2)*
+                                   da['cell_volume'][idx_neu_cl]).sum()).to('erg') / (8.0*np.pi)
+            r['M_neu_cl_alt'] = (((da['magnetic_field_magnitude'][idx_neu_cl]**2 - r['B_surf_avg_mag_alt']**2)*
+                                  da['cell_volume'][idx_neu_cl]).sum()).to('erg') / (8.0*np.pi)
 
-        r['M_neu_cl0'] = (((da['magnetic_field_magnitude'][idx_neu_cl]**2 - B0mag**2)*
-                               da['cell_volume'][idx_neu_cl]).sum()).to('erg') / (8.0*np.pi)
-        r['M_neu_cl'] = (((da['magnetic_field_magnitude'][idx_neu_cl]**2 - r['B_surf_avg_mag']**2)*
-                               da['cell_volume'][idx_neu_cl]).sum()).to('erg') / (8.0*np.pi)
-        r['M_neu_cl_alt'] = (((da['magnetic_field_magnitude'][idx_neu_cl]**2 - r['B_surf_avg_mag_alt']**2)*
-                              da['cell_volume'][idx_neu_cl]).sum()).to('erg') / (8.0*np.pi)
-                
+        else:
+            r['M_surf_sph'] = 0.0
+            r['M_vol_sph'] = 0.0
+            r['M_sph'] = 0.0
+            r['B_surf_avg_x'] = 0.0
+            r['B_surf_avg_y'] = 0.0
+            r['B_surf_avg_z'] = 0.0
+            r['B_surf_avg_mag'] = 0.0
+            r['B_surf_avg_mag_alt'] = 0.0
+            r['M_neu_cl0_sph'] = 0.0
+            r['M_neu_cl_sph'] = 0.0
+            r['M_neu_cl_sph_alt'] = 0.0
+            r['M_neu_cl0'] = 0.0
+            r['M_neu_cl'] = 0.0
+            r['M_neu_cl_alt'] = 0.0
+
         # Gravitational term (gravitational energy in the absence of external potential)
         r['W_sph'] = (sph['density']*\
                       (sph['x']*sph['gravitational_potential_gradient_x'] +\
