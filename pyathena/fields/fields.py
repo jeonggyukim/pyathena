@@ -206,12 +206,17 @@ def set_derived_fields_def(par, x0):
     if par['configure']['cooling'] == 'ON':
         # T [K]
         f = 'T'
-        if par['configure']['new_cooling'] == 'ON':
-            field_dep[f] = set(['density','pressure','xe','xH2'])
-            def _T(d, u):
-                return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                    (ac.k_B/u.energy_density).cgs.value
-        else:
+        try:
+            if par['configure']['new_cooling'] == 'ON':
+                field_dep[f] = set(['density','pressure','xe','xH2'])
+                def _T(d, u):
+                    return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                        (ac.k_B/u.energy_density).cgs.value
+            else:
+                field_dep[f] = set(['temperature'])
+                def _T(d, u):
+                    return d['temperature']
+        except KeyError:
             field_dep[f] = set(['temperature'])
             def _T(d, u):
                 return d['temperature']
