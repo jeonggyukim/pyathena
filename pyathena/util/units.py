@@ -1,5 +1,6 @@
 import astropy.units as au
 import astropy.constants as ac
+import numpy as np
 
 class Units(object):
     """Simple class for simulation unit.
@@ -56,6 +57,7 @@ class Units(object):
         self.eV = self.energy.to('eV').value
         self.s = self.time.to('s').value
         self.pok = ((self.pressure/ac.k_B).to('cm**-3*K')).value
+        self.muG = np.sqrt(4*np.pi*self.energy_density.cgs.value)/1e-6
 
         # For yt
         self.units_override = dict(length_unit=(self.length.to('pc').value, 'pc'),
