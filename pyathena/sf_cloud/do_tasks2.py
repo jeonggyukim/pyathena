@@ -35,7 +35,7 @@ if __name__ == '__main__':
     import argparse
     parser = argparse.ArgumentParser()
 
-    parser.add_argument('-p', '--prefix', type=str, default='A2S4')
+    parser.add_argument('-p', '--prefix', type=str, default='A5B2')
     args = vars(parser.parse_args())
     locals().update(args)
 
@@ -44,6 +44,8 @@ if __name__ == '__main__':
         'A2S2': ['B05S2','B1S2','B2S2','B4S2','B8S2'],
         'A2S3': ['B05S3','B1S3','B2S3','B4S3','B8S3'],
         'A2S4': ['B05S4','B1S4','B2S4','B4S4','B8S4'],
+        'A2S5': ['B05S5','B1S5','B2S5','B4S5','B8S5'],
+        'B05A2': ['B05S1','B05S2','B05S3','B05S4','B05S5'],
         'B1A2': ['B1S1','B1S2','B1S3','B1S4','B1S5'],
         'B2A2': ['B2S1','B2S2','B2S3','B2S4','B2S5'],
         'B4A2': ['B4S1','B4S2','B4S3','B4S4','B4S5'],
@@ -52,6 +54,7 @@ if __name__ == '__main__':
         'B2S2': ['A1S2','A2S2','A3S2','A4S2','A5S2'],
         'B2S3': ['A1S3','A2S3','A3S3','A4S3','A5S3'],
         'B2S4': ['A1S4','A2S4','A3S4','A4S4','A5S4'],
+        'A5B2': ['A5S1','A5S2','A5S3','A5S4','A5S5'],
     }
     
     models = models_dict[prefix]

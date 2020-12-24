@@ -28,7 +28,8 @@ def get_xCO(nH, xH2, xCII, Z_d, Z_g, xi_CR, chi_CO, xCstd=1.6e-4):
 def get_charge_param(nH, T, xe, chi_PE, phi=1.0):
     # Charging parameter
     # (WD01 does not recommend using their eqaution for x < 100)
-    return np.maximum(1.7*chi_PE*np.sqrt(T)/(xe*nH*phi), 100.0) 
+    # return np.maximum(1.7*chi_PE*np.sqrt(T)/(xe*nH*phi), 100.0) 
+    return 1.7*chi_PE*np.sqrt(T)/(xe*nH*phi) + 50.0
 
 def heatPE(nH, T, xe, Z_d, chi_PE):
     # Weingartner & Draine (2001) Table 2

@@ -22,10 +22,12 @@ from .fields import Fields
 from .compare import Compare
 from .pdf import PDF
 from .virial import Virial
+from .outflow import Outflow
 from .sfr import get_SFR_mean
+from .starpar import StarPar
 
-class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
-                     DustPol, Virial, Fields):
+class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
+                     DustPol, Virial, Outflow, Fields):
     """LoadSim class for analyzing sf_cloud simulations.
     """
     
@@ -59,6 +61,10 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
                                         verbose=verbose)
 
     def get_summary(self, as_dict=False):
+        """
+        Return key simulation results such as SFE, t_SF, t_dest,H2, etc.
+        """
+        
         markers = ['o','v','^','s','*']
 
         par = self.par
@@ -69,8 +75,8 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         df = dict()
         df['par'] = par
 
-        # Read hst, virial analysis
-        h = self.read_hst(force_override=True)
+        # Read hst, virial, outflow analysies
+        h = self.read_hst(force_override=False)
         df['hst'] = h
         
         if (par['configure']['gas'] == 'mhd') and \
@@ -83,7 +89,18 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
                 df['hst_vir'] = None
         else:
             df['hst_vir'] = None
-    
+
+        if (par['configure']['gas'] == 'mhd') and \
+           (int(par['domain1']['Nx1']) == 256):
+            try:
+                ho = self.read_outflow_all(force_override=False)
+                df['hst_of'] = ho
+            except:
+                self.logger.warning('read_outflow_all() failed!')
+                df['hst_of'] = None
+        else:
+            df['hst_of'] = None
+
         df['basedir'] = self.basedir
         df['domain'] = self.domain
         # Input parameters
@@ -95,7 +112,6 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         df['Sigma'] = df['M']/(np.pi*df['R']**2)
         df['seed'] = int(np.abs(par['problem']['rseed']))
         df['alpha_vir'] = float(par['problem']['alpha_vir'])
-        df['sigma1d'] = cl.sigma1d.to('km/s').value
         df['marker'] = markers[df['seed'] - 1]
         df['vesc'] = cl.vesc.to('km/s').value
         df['sigma1d'] = cl.sigma1d.to('km/s').value
@@ -122,6 +138,12 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         df['SFE'] = Mstar_final/df['M']
         df['t_final'] = h['time'].iloc[-1]
         df['tau_final'] = df['t_final']/df['tff']
+
+        # Outflow efficiency
+        df['eps_of'] = max(h['Mof'].values)/df['M']
+        df['eps_of_HI'] = max(h['Mof_HI'].values)/df['M']
+        df['eps_of_H2'] = max(h['Mof_H2'].values)/df['M']
+        df['eps_of_HII'] = max(h['Mof_HII'].values)/df['M']
         
         idx_SF0, = h['Mstar'].to_numpy().nonzero()
         if len(idx_SF0):
@@ -137,6 +159,8 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
             df['tau_50%'] = df['t_50%']/df['tff']
             df['t_SF'] = df['t_90%'] - df['t_*'] # SF duration
             df['tau_SF'] = df['t_SF']/df['tff']
+            df['t_SF95'] = df['t_95%'] - df['t_*'] # SF duration
+            df['tau_SF95'] = df['t_SF']/df['tff']
             df['t_SF2'] = Mstar_final**2 / \
                         integrate.trapz(h['SFR']**2, h.time)
             df['tau_SF2'] = df['t_SF2']/df['tff']
@@ -168,6 +192,8 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
             df['tau_50%'] = np.nan
             df['t_SF'] = np.nan
             df['tau_SF'] = np.nan
+            df['t_SF95'] = np.nan
+            df['tau_SF95'] = np.nan
             df['t_SF2'] = np.nan
             df['tau_SF2'] = np.nan
             df['SFR_mean'] = np.nan
@@ -182,10 +208,14 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
         try:
             df['fesc_cum_PH'] = h['fesc_cum_PH'].iloc[-1] # Lyman Continuum
             df['fesc_cum_FUV'] = h['fesc_cum_FUV'].iloc[-1]
+            df['fesc_cum_3Myr_PH'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_PH'].iloc[-1]
+            df['fesc_cum_3Myr_FUV'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_FUV'].iloc[-1]
         except KeyError:
-            print(h['fesc_cum_PH'])
+            print('Error in calculating fesc_cum')
             df['fesc_cum_PH'] = np.nan
             df['fesc_cum_FUV'] = np.nan
+            df['fesc_cum_3Myr_PH'] = np.nan
+            df['fesc_cum_3Myr_FUV'] = np.nan
 
         try:
             hv = df['hst_vir']
@@ -193,6 +223,27 @@ class LoadSimSFCloud(LoadSim, Hst, SliceProj, PDF,
             df['avir_t_*'] = f(df['t_*'])
         except (KeyError, TypeError):
             df['avir_t_*'] = np.nan
+            pass
+
+        try:
+            ho = df['hst_of']
+            df['eps_ion_cl'] = (ho['totcl_HII_int'].iloc[-1] + h['MHII_cl'].iloc[-1])/df['M']
+            df['eps_of_H2_cl'] = ho['totcl_H2_int'].iloc[-1]/df['M']
+            df['eps_of_HI_cl'] = ho['totcl_HI_int'].iloc[-1]/df['M']
+            df['eps_of_neu_cl'] = df['eps_of_H2_cl'] + df['eps_of_HI_cl']
+            df['eps_of_HII_cl'] = ho['totcl_HII_int'].iloc[-1]/df['M']
+            df['eps_of_H2_cl_z'] = ho['zcl_H2_int'].iloc[-1]/df['M']
+            df['eps_of_HI_cl_z'] = ho['zcl_HI_int'].iloc[-1]/df['M']
+            df['eps_of_HII_cl_z'] = ho['zcl_HII_int'].iloc[-1]/df['M']
+        except (KeyError, TypeError):
+            df['eps_ion_cl'] = np.nan
+            df['eps_of_H2_cl'] = np.nan
+            df['eps_of_HI_cl'] = np.nan
+            df['eps_of_neu_cl'] = np.nan
+            df['eps_of_HII_cl'] = np.nan
+            df['eps_of_H2_cl_z'] = np.nan
+            df['eps_of_HI_cl_z'] = np.nan
+            df['eps_of_HII_cl_z'] = np.nan
             pass
             
         if as_dict:
@@ -391,7 +442,10 @@ def load_all_alphabeta(force_override=False):
         BinfS5='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
 
         # Low resolution
-        B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'
+        # B2S4_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'
+
+        # High resolution
+        B2S4_N512='/tigress/jk11/GMC/M1E5R20.RS.B2.A2.S4.N512',
         
         # B16
         # B16S1='/tigress/jk11/GMC/M1E5R20.R.B16.A2.S1.N256.old',
@@ -416,7 +470,7 @@ def load_all_alphabeta(force_override=False):
         df = s.get_summary(as_dict=True)
         df_list.append(pd.DataFrame(pd.Series(df, name=mdl)).T)
 
-    df = pd.concat(df_list).sort_index(ascending=False)
+    df = pd.concat(df_list, sort=True).sort_index(ascending=False)
 
     df.to_pickle(fpkl)
 

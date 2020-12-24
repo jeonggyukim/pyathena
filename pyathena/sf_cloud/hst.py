@@ -34,13 +34,20 @@ class Hst:
         # volume of resolution element (code unit)
         dvol = domain['dx'].prod()
         # total volume of domain (code unit)
-        vol = domain['Lx'].prod()        
-
+        vol = domain['Lx'].prod()
+        nscalars = par['configure']['nscalars']
+        
         # Rename column names
         hst = hst.rename(columns={"mass": "Mgas",     # total gas mass
                                   "mass_sp": "Mstar", # star particle mass in the box
                                   "mass_sp_esc": "Mstar_esc"})
-
+        try:
+            hst = hst.rename(columns={"mass_sp_s0": "Mstar_s0"})
+            hst = hst.rename(columns={"mass_sp_s1": "Mstar_s1"})
+            hst = hst.rename(columns={"mass_sp_s2": "Mstar_s2"})
+        except KeyError:
+            pass
+        
         # Time in code unit
         hst['time_code'] = hst['time']
         # Time in Myr
@@ -57,11 +64,19 @@ class Hst:
         #          molecular,atomic,ionized) in Msun
         for c in ('Mgas','Mcold','Minter','Mwarm','Mhot',
                   'MH2','MHI','MH2_cl','MHI_cl','M_cl',
-                  'Mstar','Mstar_esc'):
+                  'Mstar','Mstar_esc','Mstar_s0','Mstar_s1','Mstar_s2'):
             try:
                 hst[c] *= vol*u.Msun
             except KeyError:
-                self.logger.warning('Column {0:s} not found'.format(c))
+                self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
+                continue
+
+        for i in range(nscalars):
+            try:
+                hst[f'scalar{i}'] *= vol*u.Msun
+            except KeyError:
+                self.logger.warning('Nscalar {0:i}, but column {0:s} not found'.\
+                                    format(nscalars,c))
                 continue
             
         # Convert energy unit [Msun*(km/s)**2]
@@ -71,8 +86,11 @@ class Hst:
 
         # Velocity dispersion
         # (mass-weighted rms velocity magnitude)
-        hst['vdisp_cl'] = np.sqrt(2.0*(hst['Ekin_H2_cl'] + hst['Ekin_HI_cl'])
-                                  /(hst['MHI_cl'] + hst['MH2_cl']))
+        try:
+            hst['vdisp_cl'] = np.sqrt(2.0*(hst['Ekin_H2_cl'] + hst['Ekin_HI_cl'])
+                                      /(hst['MHI_cl'] + hst['MH2_cl']))
+        except KeyError as e:
+            self.logger.warning('Could not compute vdisp_cl due to KeyError {0:s}'.format(e))
         
         # Mstar: total
         # Mstar_in: mass of sp currently in the domain
@@ -119,8 +137,8 @@ class Hst:
         for ph in ('H2','HI','HII'):
             c = f'rho_{ph}_out'
             if c in hst.columns:
-                hst[c] *= vol*u.Msun
-                hst[f'Mof_{ph}_dot'] = hst.rho_out
+                hst[c] *= vol*u.Msun/u.Myr
+                hst[f'Mof_{ph}_dot'] = hst[c]
                 hst[f'Mof_{ph}'] = integrate.cumtrapz(
                     hst[c], hst['time'], initial=0.0)
 
@@ -146,7 +164,7 @@ class Hst:
             hst['SFR_3Myr'] = hst.SFR.rolling(
                 winsize_3Myr, min_periods=1, win_type='boxcar').mean()
         else:
-            raise ValueError('Total time interval smaller than 1 Myr')
+            self.logger.warning('Total time interval smaller than 1 Myr')
             #pass
 
         return hst

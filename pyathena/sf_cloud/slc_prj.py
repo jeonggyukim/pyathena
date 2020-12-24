@@ -40,6 +40,7 @@ class SliceProj:
         ds = self.load_vtk(num=num)
         res = dict()
         res['extent'] = self.get_extent(ds.domain)
+        res['time'] = ds.domain['time']
 
         for ax in axes:
             dat = ds.get_slice(ax, fields, pos='c', method='nearest')
@@ -64,10 +65,10 @@ class SliceProj:
 
         ds = self.load_vtk(num=num)
         dat = ds.get_field(fields, as_xarray=True)
-
         res = dict()
         res['extent'] = self.get_extent(ds.domain)
-
+        res['time'] = ds.domain['time']
+        
         for ax in axes:
             i = axtoi[ax]
             dx = ds.domain['dx'][i]*self.u.length
@@ -76,41 +77,35 @@ class SliceProj:
             
             res[ax] = dict()
             res[ax]['Sigma'] = (np.sum(dat['density'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_H2'] = (np.sum(dat['density']*dat['xH2'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_HI'] = (np.sum(dat['density']*dat['xHI'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_HII'] = (np.sum(dat['density']*dat['xHII'], axis=2-i)*conv_Sigma).data
-            res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
+            if 'xH2' in fields:
+                res[ax]['Sigma_H2'] = (np.sum(dat['density']*dat['xH2'],
+                                              axis=2-i)*conv_Sigma).data
+            if 'xHI' in fields:
+                res[ax]['Sigma_HI'] = (np.sum(dat['density']*dat['xHI'],
+                                              axis=2-i)*conv_Sigma).data
+            if 'xHII' in fields:
+                res[ax]['Sigma_HII'] = (np.sum(dat['density']*dat['xHII'],
+                                               axis=2-i)*conv_Sigma).data
+            if 'nesq' in fields:
+                res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
+
+            if 'specific_scalar[1]' in fields:
+                res[ax]['Sigma_scalar1'] = (np.sum(dat['density']*dat['specific_scalar[1]'],
+                                                   axis=2-i)*conv_Sigma).data
+            if 'specific_scalar[2]' in fields:
+                res[ax]['Sigma_scalar2'] = (np.sum(dat['density']*dat['specific_scalar[2]'],
+                                                   axis=2-i)*conv_Sigma).data
+                
 
         return res
 
     @staticmethod
-    def plt_slice(ax, slc, axis='z', field='nH', cmap=None, norm=None):
-
-        if cmap is None:
-                cmap = 'viridis'
-
-        if norm is None:
-            norm = mpl.colors.LogNorm()
-        elif norm is 'linear':
-            norm = mpl.colors.Normalize()
-
-        ax.imshow(slc[axis][field], cmap=cmap,
-                  extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
-
-    @staticmethod
-    def plt_proj(ax, prj, axis='z', field='Sigma', cmap=None, norm=None, vmin=None, vmax=None):
-        if cmap is None:
-            cmap = 'viridis'
-
-        if norm is None or 'log':
-            norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
-        elif norm is 'linear':
-            norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-
-        ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
-                  norm=norm, origin='lower', interpolation='none')
-
-
+    def plt_imshow(ax, dat, dim='z', field='Sigma', cmap='viridis',
+                   norm=mpl.colors.LogNorm()):
+        im = ax.imshow(dat[dim][field], cmap=cmap, extent=dat['extent'][dim],
+                       norm=norm, origin='lower', interpolation='none')
+        return im
+    
     def plt_snapshot(self, num, savefig=True):
         
         d = self.read_prj(num, force_override=False)
@@ -173,8 +168,8 @@ class SliceProj:
         plt.suptitle(self.basename + '  t={0:4.1f}'.format(sp.time))
         
         if savefig:
-            #savdir = osp.join(self.savdir, 'snapshots')
-            savdir = osp.join('/tigress/jk11/figures/GMC', self.basename, 'snapshots')
+            savdir = osp.join(self.savdir, 'snapshots')
+            # savdir = osp.join('/tigress/jk11/figures/GMC', self.basename, 'snapshots')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 

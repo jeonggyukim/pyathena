@@ -206,13 +206,20 @@ def set_derived_fields_def(par, x0):
     if par['configure']['cooling'] == 'ON':
         # T [K]
         f = 'T'
-        field_dep[f] = set(['density','pressure','xe','xH2'])
-        # def _T(d, u):
-        #     return d['temperature']
-        # field_dep[f] = set(['temperature'])
-        def _T(d, u):
-            return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                (ac.k_B/u.energy_density).cgs.value
+        try:
+            if par['configure']['new_cooling'] == 'ON':
+                field_dep[f] = set(['density','pressure','xe','xH2'])
+                def _T(d, u):
+                    return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                        (ac.k_B/u.energy_density).cgs.value
+            else:
+                field_dep[f] = set(['temperature'])
+                def _T(d, u):
+                    return d['temperature']
+        except KeyError:
+            field_dep[f] = set(['temperature'])
+            def _T(d, u):
+                return d['temperature']
         func[f] = _T
         label[f] = r'$T\;[{\rm K}]$'
         cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
@@ -481,10 +488,10 @@ def set_derived_fields_newcool(par, x0):
     except KeyError:
         # print('xCtot not found. Use 1.6e-4.')
         xCtot = 1.6e-4
-    field_dep[f] = set(['xCI'])
+    field_dep[f] = set(['xCI_over_xCtot'])
     def _xCI(d, u):
         # Apply floor and ceiling
-        return np.maximum(0.0,np.minimum(xCtot,d['xCI']))
+        return np.maximum(0.0,np.minimum(xCtot,d['xCI_over_xCtot']*xCtot))
     func[f] = _xCI
     label[f] = r'$x_{\rm CI}$'
     cmap[f] = 'viridis'

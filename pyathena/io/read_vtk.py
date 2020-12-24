@@ -120,7 +120,7 @@ class AthenaDataSet(object):
     def set_region(self, le=None, re=None):
         """Set region and find overlapping grids.
         """
-
+        
         if le is None:
             le = self.domain['le']
         if re is None:
@@ -152,9 +152,10 @@ class AthenaDataSet(object):
         gle_all = np.array(gle_all)
         gre_all = np.array(gre_all)
 
-        # Find unique grid left/right edge coordinates 
-        gleu = np.array([np.unique(gle_all[:, i]) for i in range(3)])
-        greu = np.array([np.unique(gre_all[:, i]) for i in range(3)])
+        # Find unique grid left/right edge coordinates
+        gleu = [np.unique(gle_all[:, i]) for i in range(3)]
+        greu = [np.unique(gre_all[:, i]) for i in range(3)]
+
         # Min/Max of gleu/greu
         gle = np.array([gle.min() for gle in gleu])
         gre = np.array([gre.max() for gre in greu])
@@ -163,17 +164,18 @@ class AthenaDataSet(object):
         NGrid = np.array([len(gleu_) for gleu_ in gleu])
 
         # Number of cells per grid
-        Nxg = np.concatenate([Lx_grid/dx for Lx_grid, dx in \
-                              zip(greu-gleu, self.domain['dx'])])
-        Nxg = np.array(np.array_split(Nxg, NGrid.cumsum()[:-1]))
+        Nxg = np.concatenate([(greu_ - gleu_)/dx for greu_, gleu_, dx in \
+                              zip(greu, gleu, self.domain['dx'])])
+        Nxg = np.array(np.array_split(Nxg, NGrid.cumsum()[:-1]),
+                       dtype=object).tolist()
 
-        # Since floating point arithmetic may result in incorrect results,
-        # we need to round to the nearest integer
+        # Since floating point arithmetic may result in incorrect results, need
+        # to round to the nearest integer
         for i, Nxg_ in enumerate(Nxg):
-            Nxg[i] = (np.rint(Nxg_)).astype(int)
+            Nxg[i] = np.rint(Nxg_).astype(int)
 
         # Number of cells in region
-        Nxr = np.empty(Nxg.shape[0], dtype=int)
+        Nxr = np.empty(len(Nxg), dtype=int)
         for i, Nxg_ in enumerate(Nxg):
             Nxr[i] = np.sum(Nxg_)
         
