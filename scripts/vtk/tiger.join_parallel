@@ -1,0 +1,35 @@
+#!/bin/bash
+#SBATCH --job-name=join_vtk
+#SBATCH -N 5
+#SBATCH --ntasks-per-node=16
+#SBATCH -t 0:30:00
+#SBATCH --mail-type=begin
+#SBATCH --mail-type=end
+#SBATCH --mail-user=omyojj@gmail.com
+#SBATCH --error=join_%j.err
+#SBATCH --output=join_%j.out
+#
+# NPROCS="$(($SLURM_NNODES * $SLURM_CPUS_ON_NODE))"
+
+NPROCS=1
+MODEL="MHD_4pc_new"
+RANGE="600:600:1"
+
+BASENAME="$MODEL"
+INDIR="/tigress/changgoo/$MODEL"
+OUTDIR="/tigress/jk11/tig/$MODEL"
+
+ATHENADIR="$HOME/athena-tigress"
+SCRIPT="$ATHENADIR/vtk/join_parallel.py"
+
+module load openmpi/gcc/1.8.8/64
+module load anaconda
+# export PYTHONPATH="$PYTHONPATH:/tigress/jk11/athpy/"
+
+echo "Starting:"
+
+time mpirun -np $NPROCS python $SCRIPT -b $BASENAME -i $INDIR -o $OUTDIR -r $RANGE
+
+date
+
+echo "join vtk finished"
