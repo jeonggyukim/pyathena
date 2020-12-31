@@ -23,6 +23,7 @@ cmap_def = dict(
     nH=plt.cm.Spectral_r,
     T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
     vz=plt.cm.bwr,
+    Bmag=plt.cm.cividis,
     chi_FUV=plt.cm.viridis,
     Erad_LyC=plt.cm.viridis,
     xi_CR=plt.cm.viridis
@@ -31,10 +32,11 @@ cmap_def = dict(
 norm_def = dict(
     Sigma_gas=LogNorm(1e-2,1e2),
     Sigma_H2=LogNorm(1e-2,1e2),
-    EM=LogNorm(1e0,1e5),
-    nH=LogNorm(1e-3,1e3),
+    EM=LogNorm(1e-1,1e5),
+    nH=LogNorm(1e-4,1e3),
     T=LogNorm(1e1,1e7),
     vz=Normalize(-200,200),
+    Bmag=LogNorm(1.e-8,1.e-4),
     chi_FUV=LogNorm(1e-2,1e2),
     Erad_LyC=LogNorm(1e-16,5e-13),
     xi_CR=LogNorm(5e-17,1e-15)
@@ -64,6 +66,9 @@ class SliceProj:
         else:
             fields_def = ['nH', 'nH2', 'vz', 'T']
         
+        if self.par['configure']['gas'] == 'mhd':
+            fields_def += ['Bx','By','Bz','Bmag']
+
         fields = fields_def
         axes = np.atleast_1d(axes)
 
@@ -146,7 +151,7 @@ class SliceProj:
                   norm=norm, origin='lower', interpolation='none')
             
     def plt_snapshot(self, num,
-                     fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'chi_FUV', 'Erad_LyC'),
+                     fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'T', 'Bmag'),
                      fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz'),
                      #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
                      #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
@@ -178,20 +183,21 @@ class SliceProj:
                      nH=r'$n_{\rm H}$',
                      T=r'$T$',
                      vz=r'$v_z$',
+                     Bmag=r'$B$',
                      chi_FUV=r'$\mathcal{E}_{\rm FUV}$',
                      Erad_LyC=r'$\mathcal{E}_{\rm LyC}$',
                      xi_CR=r'$\xi_{\rm CR}$'
         )
 
         kind = dict(Sigma_gas='prj', Sigma_H2='prj', EM='prj',
-                    nH='slc', T='slc', vz='slc', chi_FUV='slc',
+                    nH='slc', T='slc', vz='slc', Bmag='slc', chi_FUV='slc',
                     Erad_LyC='slc', xi_CR='slc')
         
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
 
         fig = plt.figure(figsize=(26, 12))#, constrained_layout=True)
-        g1 = ImageGrid(fig, [0.02, 0.05, 0.4, 0.94], (3, 2), axes_pad=0.1,
+        g1 = ImageGrid(fig, [0.02, 0.05, 0.4, 0.94], (4, 2), axes_pad=0.1,
                        aspect=True, share_all=True, direction='column')
         g2 = ImageGrid(fig, [0.2, 0.05, 0.85, 0.94], (1, 6), axes_pad=0.1,
                        aspect=True, share_all=True)
@@ -211,7 +217,7 @@ class SliceProj:
             ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
             ax.text(0.5, 0.92, label[f], **texteffect(fontsize='x-large'),
                     ha='center', transform=ax.transAxes)
-            if i == 2:
+            if i == 3:
                 ax.set(xlabel='x [pc]', ylabel='y [pc]')
             else:
                 ax.axes.get_xaxis().set_visible(False)
@@ -243,8 +249,8 @@ class SliceProj:
 
         if savefig:
             if savdir is None:
-                #savdir = osp.join(self.savdir, 'snapshot')
-                savdir = osp.join('/tigress/jk11/figures/TIGRESS-RT', 'snapshot', self.basename)
+                savdir = osp.join(self.savdir, 'snapshot')
+                #savdir = osp.join('/tigress/changgoo/figures/TIGRESS-RT', 'snapshot', self.basename)
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 

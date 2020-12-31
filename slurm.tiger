@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH --job-name=do_tasks
 #SBATCH -N 1
-#SBATCH -p shared
 #SBATCH -n 20
 #SBATCH -t 00:30:00
+#SBATCH --exclusive
 ##SBATCH --mail-type=begin
 ##SBATCH --mail-type=end
-##SBATCH --mail-user=kimjg@princeton.edu
+##SBATCH --mail-user=changgoo@princeton.edu
 #SBATCH --error=do_tasks_%j.err
 #SBATCH --output=do_tasks_%j.out
 #
@@ -14,18 +14,17 @@
 NPROCS=20
 
 MODULE="pyathena.tigress_rt.do_tasks"
-
-export MATPLOTLIBRC="$HOME/.config/matplotlib"
-export TERM="xterm-256color"
-export PATH="$HOME/miniconda3/bin:$HOME/local/bin:$PATH"
-export PYTHONSTARTUP="$HOME/.pythonrc.py"
-export PYTHONPATH="$PYTHONPATH:/tigress/jk11/slug2/"
+BASEDIR="/tigress/changgoo/TIGRESS-NCR/R8s_8pc_NCR"
 
 module load intel-mpi
+module load anaconda3
+conda activate /tigress/changgoo/miniconda3
+
+export PYTHONPATH="$HOME/pyathena"
 
 echo "Starting:"
 
-srun -n $NPROCS --mpi=pmi2 python -m $MODULE
+srun -n $NPROCS --mpi=pmi2 python -m $MODULE -r -b $BASEDIR
 
 date
 

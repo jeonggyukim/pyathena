@@ -14,17 +14,13 @@ from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
 
 if __name__ == '__main__':
+    COMM = MPI.COMM_WORLD
 
-    try: 
-        myid = int(os.environ["SLURM_ARRAY_TASK_ID"])
-        narray = 8
-    except KeyError:
-        myid = 0
-        narray = 1
-
+    basedir_def = '/tigress/changgoo/TIGRESS-NCR/R8s_4pc_NCR'
+    
     parser = argparse.ArgumentParser()
     parser.add_argument('-b', '--basedir', type=str,
-                        default='./',
+                        default=basedir_def,
                         help='Name of the basedir.')
     parser.add_argument('-r', '--redraw',
                     action='store_true', default=False,
@@ -35,22 +31,29 @@ if __name__ == '__main__':
     s = pa.LoadSimTIGRESSRT(basedir, verbose=False)
     nums = s.nums
     
-    print('basedir, nums', s.basedir, nums)
-    nums = split_container(nums, narray)
+    if COMM.rank == 0:
+        print('basedir, nums', s.basedir, nums)
+        nums = split_container(nums, COMM.size)
+    else:
+        nums = None
 
-    mynums = nums[myid] 
-    print('[rank, mynums]:', myid, mynums)
+    mynums = COMM.scatter(nums, root=0)
+    print('[rank, mynums]:', COMM.rank, mynums)
 
+    time0 = time.time()
     for num in mynums:
         print(num, end=' ')
-
+        # prj = s.read_prj(num, force_override=False)
+        # slc = s.read_slc(num, force_override=False)
         savdir = osp.join(s.savdir, 'snapshot')
         savname = osp.join(savdir, '{0:s}_{1:04d}.png'.format(s.basename, num))
         if (not osp.isfile(savname)) or redraw:
             try:
                 fig = s.plt_snapshot(num)
+                # fig = s.plt_pdf2d_all(num)
             except KeyError:
                 fig = s.plt_snapshot(num, force_override=True)
+                # fig = s.plt_pdf2d_all(num, force_override=True)
             plt.close(fig)
 
             n = gc.collect()
@@ -58,14 +61,23 @@ if __name__ == '__main__':
             print('Remaining Garbage:', end=' ')
             pprint.pprint(gc.garbage)
 
+    COMM.barrier()
     savdir = osp.join(s.savdir, 'movies')
     if not osp.exists(savdir):
         os.makedirs(savdir)
     # Make movies
-    if myid == -1:
-        fin = osp.join(s.basedir, 'snapshots/*.png')
+    if COMM.rank == 0:
+        fin = osp.join(s.basedir, 'snapshot/*.png')
         fout = osp.join(s.basedir, 'movies/{0:s}_snapshots.mp4'.format(s.basename))
         make_movie(fin, fout, fps_in=15, fps_out=15)
         from shutil import copyfile
         copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
                                 osp.basename(fout)))
+    COMM.barrier()
+    if COMM.rank == 0:
+        print('')
+        print('################################################')
+        print('# Do tasks')
+        print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
+        print('################################################')
+        print('')
