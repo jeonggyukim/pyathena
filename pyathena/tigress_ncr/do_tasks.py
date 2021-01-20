@@ -18,13 +18,13 @@ if __name__ == '__main__':
     movie = False
     COMM = MPI.COMM_WORLD
 
-    #basedir_def = '/tigress/jk11/TIGRESS-RT/R8_8pc_NCR_test6/'
-    #basedir_def = '/perseus/scratch/gpfs/jk11/TIGRESS-RT/LGR4_4pc_NCR_oldvl/'
+    #basedir_def = '/tigress/jk11/TIGRESS-NCR/R8_8pc_NCR_test6/'
+    #basedir_def = '/perseus/scratch/gpfs/jk11/TIGRESS-NCR/LGR4_4pc_NCR_oldvl/'
 
     #basedir_def = '/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR.cori'
-    basedir_def = '/tigress/jk11/TIGRESS-RT/R8_4pc_NCR.cori'
-    #basedir_def = '/tigress/jk11/TIGRESS-RT/LGR4_2pc_NCR.cori'
-    #basedir_def = '/tiger/scratch/gpfs/jk11/TIGRESS-RT/LGR4_4pc_NCR'
+    basedir_def = '/tigress/jk11/TIGRESS-NCR/R8_4pc_NCR.cori'
+    #basedir_def = '/tigress/jk11/TIGRESS-NCR/LGR4_2pc_NCR.cori'
+    #basedir_def = '/tiger/scratch/gpfs/jk11/TIGRESS-NCR/LGR4_4pc_NCR'
 
     # savdir = '/tigress/jk11/tmp4/'
     # savdir_pkl = '/tigress/jk11/tmp3/'
@@ -38,7 +38,7 @@ if __name__ == '__main__':
     args = vars(parser.parse_args())
     locals().update(args)
 
-    s = pa.LoadSimTIGRESSRT(basedir, verbose=False)
+    s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
     nums = s.nums[::5]
     
     if COMM.rank == 0:

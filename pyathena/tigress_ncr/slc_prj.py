@@ -243,7 +243,7 @@ class SliceProj:
         if savefig:
             if savdir is None:
                 #savdir = osp.join(self.savdir, 'snapshot')
-                savdir = osp.join('/tigress/jk11/figures/TIGRESS-RT', 'snapshot', self.basename)
+                savdir = osp.join('/tigress/jk11/figures/TIGRESS-NCR', 'snapshot', self.basename)
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 

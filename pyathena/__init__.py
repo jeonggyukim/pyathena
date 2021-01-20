@@ -19,9 +19,9 @@ __all__ = [
            # DIG
            "LoadSimTIGRESSDIG",
            "LoadSimTIGRESSDIGAll",
-           # RT
-           "LoadSimTIGRESSRT",
-           "LoadSimTIGRESSRTAll",
+           # NCR
+           "LoadSimTIGRESSNCR",
+           "LoadSimTIGRESSNCRAll",
            # Single SN
            "LoadSimTIGRESSSingleSN",
            "LoadSimTIGRESSSingleSNAll",
@@ -47,7 +47,7 @@ from .sf_cloud.load_sim_sf_cloud import LoadSimSFCloud, LoadSimSFCloudAll
 from .tigress_dig.load_sim_tigress_dig import LoadSimTIGRESSDIG, LoadSimTIGRESSDIGAll
 from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll
 from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSXCOAll
-from .tigress_rt.load_sim_tigress_rt import LoadSimTIGRESSRT,LoadSimTIGRESSRTAll
+from .tigress_ncr.load_sim_tigress_ncr import LoadSimTIGRESSNCR,LoadSimTIGRESSNCRAll
 
 # ReadObs class
 from .obs.read_obs import ReadObs

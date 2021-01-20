@@ -15,7 +15,7 @@
 NPROCS=28
 
 MODULE="pyathena.sf_cloud.do_tasks"
-#MODULE="pyathena.tigress_rt.do_tasks"
+#MODULE="pyathena.tigress_ncr.do_tasks"
 
 export MATPLOTLIBRC="$HOME/.config/matplotlib"
 export TERM="xterm-256color"

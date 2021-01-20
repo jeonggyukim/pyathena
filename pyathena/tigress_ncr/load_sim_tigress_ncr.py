@@ -11,14 +11,14 @@ from .zprof import Zprof
 from .slc_prj import SliceProj
 from .starpar import StarPar
 
-class LoadSimTIGRESSRT(LoadSim, Hst, Zprof, SliceProj,
-                       StarPar, PDF, H2):
+class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
+                        StarPar, PDF, H2):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  verbose=False):
-        """The constructor for LoadSimTIGRESSRT class
+        """The constructor for LoadSimTIGRESSNCR class
 
         Parameters
         ----------
@@ -39,14 +39,14 @@ class LoadSimTIGRESSRT(LoadSim, Hst, Zprof, SliceProj,
             accepted.
         """
 
-        super(LoadSimTIGRESSRT,self).__init__(basedir, savdir=savdir,
-                                              load_method=load_method, verbose=verbose)
+        super(LoadSimTIGRESSNCR,self).__init__(basedir, savdir=savdir,
+                                               load_method=load_method, verbose=verbose)
         
         # Set unit and domain
         self.u = Units(muH=1.4271)
         self.domain = self._get_domain_from_par(self.par)
     
-class LoadSimTIGRESSRTAll(object):
+class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
 
@@ -59,7 +59,7 @@ class LoadSimTIGRESSRTAll(object):
         
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
-                print('[LoadSimTIGRESSRTAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
+                print('[LoadSimTIGRESSNCRAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
                     mdl,basedir))
             else:
                 self.models.append(mdl)
@@ -68,6 +68,6 @@ class LoadSimTIGRESSRTAll(object):
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         
         self.model = model
-        self.sim = LoadSimTIGRESSRT(self.basedirs[model], savdir=savdir,
-                                    load_method=load_method, verbose=verbose)
+        self.sim = LoadSimTIGRESSNCR(self.basedirs[model], savdir=savdir,
+                                     load_method=load_method, verbose=verbose)
         return self.sim
