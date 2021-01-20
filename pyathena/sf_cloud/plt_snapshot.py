@@ -326,3 +326,4 @@ class PltSnapshot(object):
         self.fig.savefig(savname, dpi=dpi, bbox_inches='tight')
         scp_to_pc(savname, target='GMC-AB')
         print('saved to', savname)
+        return fig

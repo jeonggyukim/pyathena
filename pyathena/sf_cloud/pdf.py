@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import astropy.units as au
 import astropy.constants as ac
+import pandas as pd
 
 from mpl_toolkits.axes_grid1 import ImageGrid
 
@@ -175,6 +176,65 @@ class PDF:
 
         return r    
 
+    @LoadSim.Decorators.check_pickle
+    def read_density_pdf_all(self, prefix='density_pdf_all',
+                             savdir=None, force_override=False):
+        rr = dict()
+        # nums = self.nums
+        #nums = [0,10,20]
+        nums = range(0, self.get_num_max_virial())
+        
+
+        print('density_pdf_all: {0:s} nums:'.format(self.basename), nums, end=' ')
+
+        for i in nums:
+            print(i, end=' ')
+            r = self.read_density_pdf(num=i, force_override=False)
+            if i == 0:
+                for k in r.keys():
+                    rr[k] = []
+
+            for k in r.keys():
+                try:
+                    rr[k].append(r[k].value.item())
+                except:
+                    rr[k].append(r[k])
+
+        rr = pd.DataFrame(rr)
+        return rr
+
+    @LoadSim.Decorators.check_pickle
+    def read_density_pdf(self, num, prefix='density_pdf',
+                         savdir=None, force_override=False):
+        """
+        Read 1d pdf of density
+        """
+
+        bins = np.logspace(-3, 7, 101)
+        ds = self.load_vtk(num)
+        dd = ds.get_field(['nH','specific_scalar_CL','xn'])
+        # Select neutral cloud gas
+        idx = np.logical_and(dd['xn'].data > 0.5, dd['specific_scalar_CL'].data > 5e-1)
+        nH_cl = (dd['nH']*dd['specific_scalar_CL']).data[idx]
+        x = np.log(nH_cl)
+
+        res = dict()
+        res['time_code'] = ds.domain['time']
+        
+        try:
+            res['nH_cl_meanV'] = np.mean(nH_cl)
+            res['nH_cl_meanM'] = np.average(nH_cl, weights=nH_cl)
+            res['muV'] = np.sum(x)/len(nH_cl)
+            res['muM'] = np.sum(x*nH_cl)/np.sum(nH_cl)
+            res['sigmaV'] = np.std(x)
+            res['sigmaM'] = np.sqrt(np.sum((x - res['muM'])**2*nH_cl)/np.sum(nH_cl))
+            res['histV'], res['bineV'] = np.histogram(nH_cl, bins=bins)
+            res['histM'], res['bineM'] = np.histogram(nH_cl, bins=bins, weights=nH_cl)
+
+        except ZeroDivisionError:
+            pass
+        
+        return res
 
 def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
                         force_override=False):

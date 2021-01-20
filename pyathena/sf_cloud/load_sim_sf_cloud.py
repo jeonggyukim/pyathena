@@ -22,12 +22,16 @@ from .fields import Fields
 from .compare import Compare
 from .pdf import PDF
 from .virial import Virial
+from .virial2 import Virial2 # simpler version
+from .plt_snapshot_2panel import PltSnapshot2Panel
+
 from .outflow import Outflow
 from .sfr import get_SFR_mean
 from .starpar import StarPar
 
 class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
-                     DustPol, Virial, Outflow, Fields):
+                     DustPol, Virial, Virial2, Outflow, Fields,
+                     PltSnapshot2Panel):
     """LoadSim class for analyzing sf_cloud simulations.
     """
     
@@ -79,16 +83,21 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         h = self.read_hst(force_override=False)
         df['hst'] = h
         
-        if (int(par['domain1']['Nx1']) <= 256):
+        if not (int(par['domain1']['Nx1']) == 512): # and (par['configure']['gas'] == 'mhd'):
             # Skip N512 model (takes too long time to post-process)
             try:
                 hv = self.read_virial_all(force_override=False)
                 df['hst_vir'] = hv
+                hv2 = self.read_virial2_all(force_override=False)
+                df['hst_vir2'] = hv2
             except:
                 self.logger.warning('read_virial_all() failed!')
                 df['hst_vir'] = None
+                self.logger.warning('read_virial2_all() failed!')
+                df['hst_vir2'] = None
         else:
             df['hst_vir'] = None
+            df['hst_vir2'] = None
 
         try:
             ho = self.read_outflow_all(force_override=False)
@@ -217,8 +226,13 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             hv = df['hst_vir']
             f = interpolate.interp1d(hv['time'].values, hv['avir_cl_alt'])
             df['avir_t_*'] = f(df['t_*'])
+            f2 = interpolate.interp1d(hv2['time'].values,
+                                      ((2.0*(hv2['T_thm_cl_all']+hv2['T_kin_cl_all']) + hv2['B_cl_all'])/\
+                                                           hv2['W_cl_all']).values)
+            df['avir_t_*2'] = f2(df['t_*'])
         except (KeyError, TypeError):
             df['avir_t_*'] = np.nan
+            df['avir_t_*2'] = np.nan
             pass
 
         try:
@@ -431,11 +445,11 @@ def load_all_alphabeta(force_override=False):
         B8S5='/tigress/jk11/GMC/M1E5R20.R.B8.A2.S5.N256',
 
         # Binf
-        BinfS1='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256',
-        BinfS2='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S2.N256',
-        BinfS3='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S3.N256',
-        BinfS4='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S4.N256',
-        BinfS5='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
+        BinfS1='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256',
+        BinfS2='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S2.N256',
+        BinfS3='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S3.N256',
+        BinfS4='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S4.N256',
+        BinfS5='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
 
         # BinfS1='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256.again',
         # BinfS2='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S2.N256',
@@ -444,11 +458,11 @@ def load_all_alphabeta(force_override=False):
         # BinfS5='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
 
         # Low resolution
-        B2S1_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S1.N128/',
-        B2S2_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S2.N128/',
-        B2S3_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S3.N128/',
-        B2S4_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128/',
-        B2S5_N128='/tiger/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S5.N128/',
+        B2S1_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S1.N128/',
+        B2S2_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S2.N128/',
+        B2S3_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S3.N128/',
+        B2S4_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N128/',
+        B2S5_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S5.N128/',
 
         # High resolution
         B2S4_N512='/tigress/jk11/GMC/M1E5R20.RS.B2.A2.S4.N512',

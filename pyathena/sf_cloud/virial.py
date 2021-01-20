@@ -71,21 +71,24 @@ class Virial:
         return int(t_90/self.par['output1']['dt']) + 1
 
     @LoadSim.Decorators.check_pickle
-    def read_virial_all(self, prefix='virial_all',
+    def read_virial_all(self, nums=None, prefix='virial_all',
                         savdir=None, force_override=False):
+
         rr = dict()
-        nummax = self.get_num_max_virial()
-        print('virial_all: {0:s} Max step:'.format(self.basename), nummax, end=' ')
+        if nums is None:
+            nummax = self.get_num_max_virial()
+            nums = range(0,nummax)
+            print('Max step: ', nummax, end=' ')
 
         #print(int(self.par['problem']['rseed'],self.par['problem']['muB'] == 2.0))
         
         # if (int(np.abs(self.par['problem']['rseed'])) == 5) and \
         #    (self.par['problem']['muB'] == 2.0):
         #     return None
-        print(nummax)
-        for i in range(nummax):
-            print(i, end=' ')
-            r = self.read_virial(num=i, force_override=False)
+
+        for i,num in enumerate(nums):
+            print(num, end=' ')
+            r = self.read_virial(num=num, force_override=False)
             if i == 0:
                 for k in r.keys():
                     rr[k] = []

@@ -13,10 +13,11 @@ from matplotlib.colors import LogNorm
 from ..io.read_vtk import read_vtk
 from .slc_prj import SliceProj
 from ..plt_tools import plt_starpar
+from ..plt_tools.utils import texteffect
 
 class Compare(object):
 
-    def comp_snapshot(self, models, num, norm_factor=3.0, savefig=True, prefix=None):
+    def comp_snapshot(self, models, num, labels, prefix, norm_factor=3.0, savefig=True):
         s = self.set_model(models[0])
         Sigma_conv = ((s.u.muH*1.008*ac.u.cgs/au.cm**3).to('Msun/pc**3')).value
         norm = LogNorm(1e-1,1e3)
@@ -29,31 +30,36 @@ class Compare(object):
         
         for ic, mdl in enumerate(models):
             s = self.set_model(mdl)
-            sp = s.load_starpar_vtk(num)
-            for ir, dim in enumerate(('x','y','z')):
-                extent = SliceProj.get_extent(s.domain)[dim]
-                ii = ir + 1
-                f = f'Sigma{ii}'
-                dd = read_vtk(s.files[f][num])
-                d = dd.get_field(f).squeeze()
-                im1 = []
-                im1.append(axes[ir,ic].imshow(d[f]*Sigma_conv, norm=norm,
-                                              extent=extent, origin='lower', cmap=cmap))
+            try:
+                sp = s.load_starpar_vtk(num)
+                for ir, dim in enumerate(('x','y','z')):
+                    extent = SliceProj.get_extent(s.domain)[dim]
+                    ii = ir + 1
+                    f = f'Sigma{ii}'
+                    dd = read_vtk(s.files[f][num])
+                    d = dd.get_field(f).squeeze()
+                    im1 = []
+                    im1.append(axes[ir,ic].imshow(d[f]*Sigma_conv, norm=norm,
+                                                  extent=extent, origin='lower', cmap=cmap))
 
-                # Overplot starpar
-                if not sp.empty:
-                    plt_starpar.scatter_sp(sp, axes[ir,ic], dim=dim, kind='proj', kpc=False,
-                                           norm_factor=norm_factor, agemax=agemax)
-                    plt_starpar.scatter_sp(sp, axes[ir,ic], dim=dim, kind='proj', kpc=False,
-                                           norm_factor=norm_factor, agemax=agemax)
-                    axes[ir,ic].set_xlim(extent[0],extent[1])
-                    axes[ir,ic].set_ylim(extent[2],extent[3])
-                    
-        bbox_ax_top = axes[0,0].get_position()
-        cax = fig.add_axes([bbox_ax_top.x0+0.00, bbox_ax_top.y1+0.01,
-                            bbox_ax_top.x1-bbox_ax_top.x0-0.0, 0.02])
+                    # Overplot starpar
+                    if not sp.empty:
+                        plt_starpar.scatter_sp(sp, axes[ir,ic], dim=dim, kind='proj', kpc=False,
+                                               norm_factor=norm_factor, agemax=agemax)
+                        plt_starpar.scatter_sp(sp, axes[ir,ic], dim=dim, kind='proj', kpc=False,
+                                               norm_factor=norm_factor, agemax=agemax)
+                        axes[ir,ic].set_xlim(extent[0],extent[1])
+                        axes[ir,ic].set_ylim(extent[2],extent[3])
+            except OSError:
+                print('File not found for model {0:s} and num {1:04d}. Skipping'.\
+                      format(mdl, num))
+                        
+        bbox0 = axes[0,0].get_position()
+        cax = fig.add_axes([bbox0.x0+0.01, bbox0.y1+0.01,
+                            bbox0.x1-bbox0.x0-0.02, 0.02])
         cbar = plt.colorbar(im1[0], cax=cax, orientation='horizontal')
-        cbar.set_label(label=r'$\Sigma_{\rm gas}\;[M_{\odot}\,{\rm pc}^{-2}]$', fontsize='medium')
+        cbar.set_label(label=r'$\Sigma_{\rm gas}\;[M_{\odot}\,{\rm pc}^{-2}]$',
+                       fontsize='medium')
         cbar.ax.xaxis.set_ticks_position('top')
         cbar.ax.xaxis.set_label_position('top')
         cbar_yticks = plt.getp(cbar.ax.axes, 'xticklabels')
@@ -66,17 +72,27 @@ class Compare(object):
             ax.set_yticks([])
             ax.set_aspect('equal')
 
-        bbox_sp = [bbox_ax_top.x0+0.2, bbox_ax_top.y1+0.01,
-                   0.1, 0.015]
-        plt_starpar.colorbar_sp(plt.gcf(), agemax,
-                                #bbox=[0.35, 0.89, 0.1, 0.015])
-                                bbox=bbox_sp)
-        plt_starpar.legend_sp(axes[0,2], norm_factor=4.0, mass=[1e2, 1e3], location='top',
-                              fontsize='medium',
-                              bbox_to_anchor=dict(top=(0.45, 0.93), right=(0.48, 0.91)))
+        # Add labels
+        for ax, label in zip(axes[0,:], labels):
+            ax.text(0.05, 0.9, label, transform=ax.transAxes,
+                    **texteffect(fontsize=20))
+
+        bbox1 = axes[0,1].get_position()
+        bbox2 = axes[0,2].get_position()
+        plt_starpar.colorbar_sp(fig, agemax, bbox=[bbox1.x0+0.02, bbox1.y1+0.01,
+                                                   bbox1.x1-bbox1.x0-0.04, 0.02])
+        try:
+            plt_starpar.legend_sp(axes[0,2], norm_factor=4.0, mass=[1e2, 1e3], location='top',
+                                  fontsize='medium',
+                                  bbox_to_anchor=dict(top=(bbox2.x0+0.02, bbox2.y1+0.05),
+                                                      right=(bbox2.x1-0.04, bbox2.y1+0.06)))
+        except IndexError:
+            pass
         
         plt.subplots_adjust(wspace=None, hspace=None)
-        plt.suptitle('{0:s}    time={1:5.2f}'.format(prefix, sp.time), x=0.7, y=0.91)
+        plt.suptitle('time={0:5.2f} '.format(sp.time) + prefix,
+                     x=0.7, y=bbox1.y1+0.05,
+                     verticalalignment='bottom')
         
         if savefig:
             if prefix is None:

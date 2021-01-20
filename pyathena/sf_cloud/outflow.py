@@ -11,12 +11,15 @@ from ..load_sim import LoadSim
 class Outflow:
 
     @LoadSim.Decorators.check_pickle
-    def read_outflow_all(self, prefix='outflow_all',
+    def read_outflow_all(self, nums=None, prefix='outflow_all',
                          savdir=None, force_override=False):
         rr = dict()
-        for i in self.nums[::]:
+        if nums is None:
+            nums = self.nums
+
+        for i,num in enumerate(nums):
             print(i, end=' ')
-            r = self.read_outflow(num=i, force_override=False)
+            r = self.read_outflow(num=num, force_override=False)
             if i == 0:
                 for k in r.keys():
                     rr[k] = []
