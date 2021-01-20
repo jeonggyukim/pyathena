@@ -3,10 +3,11 @@
 #SBATCH -N 1
 #SBATCH -p shared
 #SBATCH -n 20
+#SBATCH --ntasks-per-node=28
 #SBATCH -t 00:30:00
 ##SBATCH --mail-type=begin
 ##SBATCH --mail-type=end
-##SBATCH --mail-user=kimjg@princeton.edu
+##SBATCH --mail-user=user@email
 #SBATCH --error=do_tasks_%j.err
 #SBATCH --output=do_tasks_%j.out
 #
