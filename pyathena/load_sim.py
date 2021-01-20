@@ -135,7 +135,7 @@ class LoadSim(object):
         ivtk : int
            Read i-th file in the vtk file list. Overrides num if both are given.
         id0 : bool
-           Read vtk file in /basedir/id0. Default value is False.
+           Read vtk file in /basedir/id0. Default value is True.
         load_method : str
            'pyathena', 'pyathena_classic' or 'yt'
         
@@ -631,7 +631,7 @@ class LoadSim(object):
                     fpkl = osp.join(savdir, '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
                 else:
                     fpkl = osp.join(savdir, '{0:s}.p'.format(prefix))
-                    
+
                 if not force_override and osp.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
                     res = pickle.load(open(fpkl, 'rb'))

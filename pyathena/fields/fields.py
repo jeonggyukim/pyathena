@@ -20,12 +20,12 @@ def static_vars(**kwargs):
         return func
     return decorate
 
-def set_derived_fields_def(par, x0):
+def set_derived_fields_def(par, x0, newcool):
     """
     Function to define derived fields info, for example,
     functions to calculate derived fields, dependency, label, colormap, etc.
 
-    May not work perfectly for problems using different unit system.
+    May not work correctly for problems using different unit system.
     Assume that density = nH, length unit = pc, etc.
 
     Parameters
@@ -34,6 +34,8 @@ def set_derived_fields_def(par, x0):
        Dictionary containing simulation parameter information
     x0: sequence of floats
        Coordinate of the center with respect to which distance is measured
+    newcool: bool
+       Is new cooling turned on?
 
     Returns
     -------
@@ -206,7 +208,7 @@ def set_derived_fields_def(par, x0):
     if par['configure']['cooling'] == 'ON':
         # T [K]
         f = 'T'
-        if par['configure']['new_cooling'] == 'ON':
+        if newcool:
             field_dep[f] = set(['density','pressure','xe','xH2'])
             def _T(d, u):
                 return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
@@ -793,9 +795,17 @@ class DerivedFields(object):
         # Create a dictionary containing all information about derived fields
         self.dfi = dict()
 
+        try:
+            if par['configure']['new_cooling'] == 'ON':
+                newcool = True
+            else:
+                newcool = False
+        except KeyError:
+            newcool = False
+
         self.func, self.field_dep, \
             self.label, self.cmap, \
-            self.vminmax, self.take_log = set_derived_fields_def(par, x0)
+            self.vminmax, self.take_log = set_derived_fields_def(par, x0, newcool)
 
         dicts = (self.func, self.field_dep, self.label, self.cmap, \
                  self.vminmax, self.take_log)
@@ -805,13 +815,10 @@ class DerivedFields(object):
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
-        try:
-            if par['configure']['new_cooling'] == 'ON':
-                dicts_ = set_derived_fields_newcool(par, x0)
-                for d, d_ in zip(dicts, dicts_):
-                    d = d.update(d_)
-        except KeyError:
-            pass
+        if newcool:
+            dicts_ = set_derived_fields_newcool(par, x0)
+            for d, d_ in zip(dicts, dicts_):
+                d = d.update(d_)
 
         try:
             if par['configure']['radps'] == 'ON':
