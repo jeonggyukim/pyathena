@@ -38,6 +38,7 @@ class Hst:
                 newcool = False
         except KeyError:
             newcool = False
+        nscalars = self.par['configure']['nscalars']
 
         hst = read_hst(self.files['hst'], force_override=force_override)
         
@@ -65,6 +66,16 @@ class Hst:
         # Total gas mass in Msun
         h['mass'] = hst['mass']*vol*u.Msun
         h['mass_sp'] = hst['msp']*vol*u.Msun
+        for i in range(nscalars):
+            h[f'mass{i}'] = hst[f'scalar{i}']*vol*u.Msun
+
+        if newcool:
+            h['M_HI'] = h['mass{0:d}'.format(nscalars - 3)]
+            h['Sigma_HI'] = h['M_HI']/(LxLy*u.pc**2)
+            h['M_H2'] = 2.0*h['mass{0:d}'.format(nscalars - 2)]
+            h['Sigma_H2'] = h['M_H2']/(LxLy*u.pc**2)
+            h['M_HII'] = h['mass'] - h['M_H2'] - h['M_HI']
+            h['Sigma_HII'] = h['M_HII']/(LxLy*u.pc**2)
 
         # Total outflow mass
         h['mass_out'] = integrate.cumtrapz(hst['F3_upper'] - hst['F3_lower'], hst['time'], initial=0.0)
@@ -87,9 +98,9 @@ class Hst:
             pass
         
         # H mass/surface density in Msun
-        h['MH'] = h['mass']/u.muH
-        h['Sigma_H'] = h['MH']/(LxLy*u.pc**2)
-
+        #h['M_gas'] = h['mass']/u.muH
+        #h['Sigma_gas'] = h['M_gas']/(LxLy*u.pc**2)
+            
         # Mass, volume fraction, scale height
         h['H'] = np.sqrt(hst['H2'] / hst['mass'])
         for ph in ['c','u','w','h1','h2']:
@@ -210,7 +221,7 @@ class Hst:
 
 def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_override=False),
                     c=['k', 'C0', 'C1', 'C2', 'C3', 'C4', 'C5'],
-                    ncol=2,
+                    ncol=3,
                     lw=[2,2,2,2,2,2,2],
                     column=['Sigma_gas', 'Sigma_sp', 'Sigma_out',
                             'sfr10', 'sfr40', 'dt', 'xi_CR0',
@@ -247,21 +258,22 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
                   mf_c=(1e-2,1.0),
                   mf_u=(1e-2,1.0),
                   mf_w=(1e-1,1.0),)
+
     elif ylim == 'LGR4':
-        ylim=dict(Sigma_gas=(0,60),
+        ylim=dict(Sigma_gas=(0,70),
                   Sigma_sp=(0,30),
                   Sigma_out=(0,10),
                   sfr10=(1e-3,5e-1),
                   sfr40=(1e-3,5e-1),
                   dt=(1e-4,1e-2),
                   xi_CR0=(1e-17,1e-14),
-                  Pturb_mid=(1e4,1e6),
-                  Pturb_mid_2p=(1e4,1e6),
+                  Pturb_mid=(1e3,1e6),
+                  Pturb_mid_2p=(1e3,1e6),
                   Pth_mid=(1e4,1e6),
                   Pth_mid_2p=(1e4,1e6),
                   H=(0,1000),
-                  H_c=(0,300),
-                  H_u=(0,300),
+                  H_c=(0,400),
+                  H_u=(0,400),
                   H_w=(0,1000),
                   H_2p=(0,1000),
                   v3_2p=(0,40.0),

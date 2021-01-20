@@ -5,12 +5,14 @@ import pandas as pd
 from ..load_sim import LoadSim
 from ..util.units import Units
 from .pdf import PDF
+from .h2 import H2
 from .hst import Hst
 from .zprof import Zprof
 from .slc_prj import SliceProj
 from .starpar import StarPar
 
-class LoadSimTIGRESSRT(LoadSim, Hst, Zprof, SliceProj, StarPar, PDF):
+class LoadSimTIGRESSRT(LoadSim, Hst, Zprof, SliceProj,
+                       StarPar, PDF, H2):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
     
