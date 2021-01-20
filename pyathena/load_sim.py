@@ -412,7 +412,7 @@ class LoadSim(object):
                 # Issue warning only if iSN is nonzero
                 try:
                     if self.par['feedback']['iSN'] != 0:
-                        self.logger.warning('Could not find sn file in {0:s}'.\
+                        self.logger.warning('Could not find sphst file in {0:s}'.\
                                             format(self.basedir))
                 except KeyError:
                     pass        
