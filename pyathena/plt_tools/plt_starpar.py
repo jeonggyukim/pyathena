@@ -141,7 +141,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
 
 
 def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
-              bbox_to_anchor=None):
+              facecolors='k', linewidths=1.0, bbox_to_anchor=None):
     """Add legend for sink particle mass.
     
     Parameters
@@ -170,8 +170,9 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
     for m in mass:
         label = r"$10^{0:g}\;M_\odot$".format(np.log10(m))
         s = ax.scatter(ext[1]*2, ext[3]*2,
-                       s=np.sqrt(m)/norm_factor, lw=1.0,
-                       color='k', alpha=1.0, label=label, facecolors='k')
+                       s=np.sqrt(m)/norm_factor,
+                       color='k', alpha=1.0, label=label,
+                       linewidths=linewidths, facecolors=facecolors)
         ss.append(s)
         labels.append(label)
 
