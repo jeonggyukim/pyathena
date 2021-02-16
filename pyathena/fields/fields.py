@@ -279,11 +279,11 @@ def set_derived_fields_mag(par, x0):
     field_dep[f] = set(['cell_centered_B'])
     def _Bx(d, u):
         return d['cell_centered_B1']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)
+            *np.sqrt(4.0*np.pi)*1e6
     func[f] = _Bx
-    label[f] = r'$B_{x}\;[{\rm G}]$'
+    label[f] = r'$B_{x}\;[\mu{\rm G}]$'
     cmap[f] = 'RdBu'
-    vminmax[f] = (-1e-4,-1e-4)
+    vminmax[f] = (-1e2,1e2)
     take_log[f] = False
 
     # By [G]
@@ -291,11 +291,11 @@ def set_derived_fields_mag(par, x0):
     field_dep[f] = set(['cell_centered_B'])
     def _By(d, u):
         return d['cell_centered_B2']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)
+            *np.sqrt(4.0*np.pi)*1e6
     func[f] = _By
-    label[f] = r'$B_{y}\;[{\rm G}]$'
+    label[f] = r'$B_{y}\;[\mu{\rm G}]$'
     cmap[f] = 'RdBu'
-    vminmax[f] = (-1e-4,-1e-4)
+    vminmax[f] = (-1e2,1e2)
     take_log[f] = False
 
     # Bz [G]
@@ -303,11 +303,11 @@ def set_derived_fields_mag(par, x0):
     field_dep[f] = set(['cell_centered_B'])
     def _Bz(d, u):
         return d['cell_centered_B3']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)
+            *np.sqrt(4.0*np.pi)*1e6
     func[f] = _Bz
-    label[f] = r'$B_{z}\;[{\rm G}]$'
+    label[f] = r'$B_{z}\;[\mu{\rm G}]$'
     cmap[f] = 'RdBu'
-    vminmax[f] = (-1e-4,-1e-4)
+    vminmax[f] = (-1e2,1e2)
     take_log[f] = False
 
     # Magnetic fields magnitude [G]
@@ -317,10 +317,10 @@ def set_derived_fields_mag(par, x0):
         return (d['cell_centered_B1']**2 +
                 d['cell_centered_B2']**2 +
                 d['cell_centered_B3']**2)**0.5*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)
+            *np.sqrt(4.0*np.pi)*1e6
     func[f] = _Bmag
-    label[f] = r'$|\mathbf{B}|\;[{\rm G}]$'
-    vminmax[f] = (1e-7, 1e-4)
+    label[f] = r'$|\mathbf{B}|\;[\mu{\rm G}]$'
+    vminmax[f] = (1e-1, 1e2)
     cmap[f] = 'cividis'
     take_log[f] = True
     
