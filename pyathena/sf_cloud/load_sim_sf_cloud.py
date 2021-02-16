@@ -28,9 +28,10 @@ from .plt_snapshot_2panel import PltSnapshot2Panel
 from .outflow import Outflow
 from .sfr import get_SFR_mean
 from .starpar import StarPar
+from .xray import Xray
 
 class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
-                     DustPol, Virial, Virial2, Outflow, Fields,
+                     DustPol, Virial, Virial2, Outflow, Fields, Xray,
                      PltSnapshot2Panel):
     """LoadSim class for analyzing sf_cloud simulations.
     """
