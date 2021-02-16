@@ -10,7 +10,7 @@ from matplotlib.colors import Normalize, LogNorm
 
 from ..plt_tools.cmap_shift import cmap_shift
 from ..plt_tools.cmap_custom import get_my_cmap
-
+from ..microphysics.cool import get_xe_mol
 from .xray_emissivity import get_xray_emissivity
 
 def static_vars(**kwargs):
@@ -513,12 +513,16 @@ def set_derived_fields_newcool(par, x0):
     try:
         xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
     except KeyError:
-        # print('xCtot not found. Use 1.6e-4.')
         xCtot = 1.6e-4
-    field_dep[f] = set(['xe','xH2','xHI'])
+    field_dep[f] = set(['xe','xH2','xHI','pressure','density','CR_ionization_rate'])
     def _xCII(d, u):
+        d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+            (ac.k_B/u.energy_density).cgs.value
+        xe_mol = get_xe_mol(d['density'],d['xH2'],d['xe'],d['T'],d['CR_ionization_rate'],
+                            par['problem']['Z_gas'],par['problem']['Z_dust'])
         # Apply floor and ceiling
-        return np.maximum(0.0,np.minimum(xCtot,d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2'])))
+        return np.maximum(0.0,np.minimum(xCtot,
+                    d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2']) - xe_mol))
     func[f] = _xCII
     label[f] = r'$x_{\rm CII}$'
     cmap[f] = 'viridis'

@@ -7,6 +7,17 @@ from ..util.spline import GlobalSpline2D
 # Original C version implemented in Athena-TIGRESS
 # See also Gong, Ostriker, & Wolfire (2017) and https://github.com/munan/tigress_cooling
 
+def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Zg=1.0, Zd=1.0):
+    phi_s = (1.0 - xe/1.2)*0.67/(1.0 + xe/0.05)
+    k1619 = 5.0e-8*(T*1e-2)**(-0.48)
+    k1621 = 1e-9
+    k1620 = 1e-14*Zd
+    k1622 = 1e-14*Zd
+    xS = 5.3e-6*Zg # From Draine's Table 9.5 (Diffuse H2)
+    A = k1619*(1.0 + k1621/k1622*xS)
+    B = k1620 + k1621*xS
+    return 2.0*xH2*((B**2 + 4.0*A*xi_cr*(1.0 + phi_s)/nH)**0.5 - B)/(2.0*k1619)
+
 def get_xCO(nH, xH2, xCII, Z_d, Z_g, xi_CR, chi_CO, xCstd=1.6e-4):
 
     xCtot = xCstd*Z_g
