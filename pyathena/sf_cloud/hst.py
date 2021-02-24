@@ -89,8 +89,8 @@ class Hst:
         try:
             hst['vdisp_cl'] = np.sqrt(2.0*(hst['Ekin_H2_cl'] + hst['Ekin_HI_cl'])
                                       /(hst['MHI_cl'] + hst['MH2_cl']))
-        except KeyError as e:
-            self.logger.warning('Could not compute vdisp_cl due to KeyError {0:s}'.format(e))
+        except KeyError:
+            self.logger.warning('Could not compute vdisp_cl due to KeyError')
         
         # Mstar: total
         # Mstar_in: mass of sp currently in the domain
@@ -99,12 +99,15 @@ class Hst:
             hst['Mstar_in'] = hst['Mstar']
             hst['Mstar'] += hst['Mstar_esc']
 
-        hst['MHII'] = hst['Mgas'] - hst['MHI'] - hst['MH2']
-        hst['MHII_cl'] = hst['M_cl'] - hst['MHI_cl'] - hst['MH2_cl']
+        try:
+            hst['MHII'] = hst['Mgas'] - hst['MHI'] - hst['MH2']
+            hst['MHII_cl'] = hst['M_cl'] - hst['MHI_cl'] - hst['MH2_cl']
 
-        # Volume
-        hst['VHII'] = 1.0 - hst['VHI'] - hst['VH2']
-        hst['VHII_cl'] = hst['V_cl'] - hst['VHI_cl'] - hst['VH2_cl']
+            # Volume
+            hst['VHII'] = 1.0 - hst['VHI'] - hst['VH2']
+            hst['VHII_cl'] = hst['V_cl'] - hst['VHI_cl'] - hst['VH2_cl']
+        except KeyError:
+            pass
 
         hst = self._calc_SFR(hst)
         hst = self._calc_outflow(hst)
@@ -112,10 +115,12 @@ class Hst:
         # Radiation variables
         if par['configure']['radps'] == 'ON':
             hst = self._calc_radiation(hst)
-
-        hst['avir_neu_cl'] = -2.0*(hst['Ekin_HI_cl']+hst['Ekin_H2_cl']) \
-                            /(hst['Egrav_H2_cl']+hst['Egrav_HI_cl'])
-            
+        try:
+            hst['avir_neu_cl'] = -2.0*(hst['Ekin_HI_cl']+hst['Ekin_H2_cl']) \
+                                 /(hst['Egrav_H2_cl']+hst['Egrav_HI_cl'])
+        except KeyError:
+            pass
+        
         #hst.index = hst['time_code']
         
         self.hst = hst
@@ -142,6 +147,17 @@ class Hst:
                 hst[f'Mof_{ph}'] = integrate.cumtrapz(
                     hst[c], hst['time'], initial=0.0)
 
+            c = f'rho_{ph}_out_cl'
+            if c in hst.columns:
+                hst[c] *= vol*u.Msun/u.Myr
+                hst[f'Mof_cl_{ph}_dot'] = hst[c]
+                hst[f'Mof_cl_{ph}'] = integrate.cumtrapz(
+                    hst[c], hst['time'], initial=0.0)
+        try:
+            hst['Mof_cl'] = hst['Mof_cl_H2'] + hst['Mof_cl_HI'] + hst['Mof_cl_HII']
+        except KeyError:
+            pass
+        
         return hst
     
     def _calc_SFR(self, hst):
