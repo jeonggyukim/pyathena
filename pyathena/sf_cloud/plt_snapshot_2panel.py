@@ -22,8 +22,11 @@ class PltSnapshot2Panel:
 
         ds1 = read_vtk(s.files[f'Sigma{idx+1}'][num])
         dd1 = ds1.get_field(f'Sigma{idx+1}')
-        ds2 = read_vtk(s.files[f'EM{idx+1}'][num])
-        dd2 = ds2.get_field(f'EM{idx+1}')
+        try:
+            ds2 = read_vtk(s.files[f'EM{idx+1}'][num])
+            dd2 = ds2.get_field(f'EM{idx+1}')
+        except IndexError:
+            pass
 
         dfi = s.dfi # dictionary containing derived field info
         sp = s.load_starpar_vtk(num) # read starpar vtk as pandas DataFrame
@@ -46,17 +49,19 @@ class PltSnapshot2Panel:
 
         # Get neutral gas surface density in Msun/pc^2
         to_Sigma = (s.u.density*domain['dx'][idx]*s.u.length).to('Msun/pc2').value
-        dd1['Sigma'] = to_Sigma*dd1[f'Sigma{idx+1}'].sel(y=0.0, method='nearest')
+        dd1['Sigma'] = to_Sigma*dd1[f'Sigma{idx+1}'].sel(**{dim:0.0,'method':'nearest'})
         # Plot using xarray imshow
         im1 = dd1['Sigma'].plot.imshow(ax=axes[0], cmap='pink_r', norm=LogNorm(1e-1,1e3), origin='lower',
                                        extend='neither', add_labels=True, xticks=xticks, yticks=yticks,
                                        cbar_kwargs=dict(label=r'$\Sigma\;[M_{\odot}\,{\rm pc}^{-2}]$'))
-
-        dd2['EM'] = dd2[f'EM{idx+1}'].sel(y=0.0, method='nearest')
-        im2 = dd2['EM'].plot.imshow(ax=axes[1], cmap='plasma', norm=LogNorm(3e1,3e5),origin='lower',
-                                    extend='neither', add_labels=False, xticks=xticks, yticks=yticks,
-                                    cbar_kwargs=dict(label=r'${\rm EM}\;[{\rm cm^{-6}\,{\rm pc}}]$'))
-
+        try:
+            dd2['EM'] = dd2[f'EM{idx+1}'].sel(**{dim:0.0,'method':'nearest'})
+            im2 = dd2['EM'].plot.imshow(ax=axes[1], cmap='plasma', norm=LogNorm(3e1,3e5),origin='lower',
+                                        extend='neither', add_labels=False, xticks=xticks, yticks=yticks,
+                                        cbar_kwargs=dict(label=r'${\rm EM}\;[{\rm cm^{-6}\,{\rm pc}}]$'))
+        except UnboundLocalError:
+            pass
+        
         for ax in axes:
             ax.set_aspect('equal')
 
@@ -107,7 +112,7 @@ class PltSnapshot2Panel:
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
-            plt.savefig(osp.join(savdir, '{0:s}_{1:04d}.png'.format(s.basename,num)),
-                        dpi=200, bbox_inches='tight')
+            plt.savefig(osp.join(savdir, '{0:s}_{1:04d}_{2:s}.png'.format(s.basename,num,dim)),
+                        dpi=200)
 
         return fig
