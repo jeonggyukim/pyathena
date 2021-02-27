@@ -393,7 +393,7 @@ class LoadSim(object):
             if self.par is not None:
                 # Issue warning only if iSN is nonzero
                 try:
-                    if self.par['feedbac']['iSN'] != 0:
+                    if self.par['feedback']['iSN'] != 0:
                         self.logger.warning('Could not find sn file in {0:s}'.\
                                             format(self.basedir))
                 except KeyError:
@@ -407,15 +407,6 @@ class LoadSim(object):
             self.logger.info('sphst: {0:s} nums: {1:d}-{2:d}'.format(
                 osp.dirname(self.files['sphst'][0]),
                 self.nums_sphst[0], self.nums_sphst[-1]))
-        else:
-            if self.par is not None:
-                # Issue warning only if iSN is nonzero
-                try:
-                    if self.par['feedback']['iSN'] != 0:
-                        self.logger.warning('Could not find sphst file in {0:s}'.\
-                                            format(self.basedir))
-                except KeyError:
-                    pass        
                 
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
