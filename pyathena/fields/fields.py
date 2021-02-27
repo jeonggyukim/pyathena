@@ -479,12 +479,12 @@ def set_derived_fields_newcool(par, x0):
     take_log[f] = True
 
     # xCI - atomic neutral carbon
-    f = 'xCI'
     try:
         xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
     except KeyError:
-        # print('xCtot not found. Use 1.6e-4.')
         xCtot = 1.6e-4
+        print('xCtot not found. Use {:.1f}.'.format(xCtot))
+    f = 'xCI'
     field_dep[f] = set(['xCI_over_xCtot'])
     def _xCI(d, u):
         # Apply floor and ceiling
@@ -497,9 +497,9 @@ def set_derived_fields_newcool(par, x0):
 
     # nCI
     f = 'nCI'
-    field_dep[f] = set(['density','xCI'])
+    field_dep[f] = set(['density','xCI_over_xCtot'])
     def _nCI(d, u):
-        return d['density']*np.maximum(0.0,np.minimum(xCtot,d['xCI']))
+        return d['density']*xCtot*np.maximum(0.0,np.minimum(1.0,d['xCI_over_xCtot']))
     func[f] = _nCI
     label[f] = r'$x_{\rm CI}$'
     cmap[f] = 'viridis'

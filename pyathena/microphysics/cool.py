@@ -18,6 +18,29 @@ def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Zg=1.0, Zd=1.0):
     B = k1620 + k1621*xS
     return 2.0*xH2*((B**2 + 4.0*A*xi_cr*(1.0 + phi_s)/nH)**0.5 - B)/(2.0*k1619)
 
+def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4):
+
+    xCtot = xCstd*Z_g
+    small_ = 1e-50
+    k_C_cr = 3.85*xi_CR
+    k_C_photo = 3.5e-10*G_CI
+    lnT = np.log(T)
+    k_Cplus_e = np.where(T < 10.0,
+                         9.982641225129824e-11,
+                         np.exp(-0.7529152*lnT - 21.293937))
+    psi_gr = 1.7*G_PE*np.sqrt(T)/(nH*xe + small_) + small_
+    cCp_ = np.array([45.58, 6.089e-3, 1.128, 4.331e2, 4.845e-2,0.8120, 1.333e-4])
+    k_Cplus_gr = 1.0e-14*cCp_[0]/(1.0 + cCp_[1]*np.power(psi_gr, cCp_[2]) * 
+                                  (1.0 + cCp_[3] * np.power(T, cCp_[4])
+                                   * np.power( psi_gr, -cCp_[5]-cCp_[6]*lnT ))) * Z_d
+    k_Cplus_H2 = 3.3e-13 * np.power(T, -1.3) * np.exp(-23./T)
+    c = (k_C_cr + k_C_photo) / nH
+    al = k_Cplus_e*xe + k_Cplus_gr + k_Cplus_H2*xH2 + c
+    ar = xCtot * c
+    
+    return ar / al
+
+
 def get_xCO(nH, xH2, xCII, Z_d, Z_g, xi_CR, chi_CO, xCstd=1.6e-4):
 
     xCtot = xCstd*Z_g
@@ -315,7 +338,7 @@ def coolLya(nH, T, xe, xHI):
 
 def coolRec(nH, T, xe, Z_d, chi_PE):
     # Weingartner & Draine (2001) Table 3
-    # Rv = 3.1, bC=4.0, distribution A, ISRF    
+    # Rv = 3.1, bC=4.0, distribution A, ISRF
     DPE_ = np.array([0.4535, 2.234, -6.266, 1.442, 0.05089])
     ne = nH*xe
     x = get_charge_param(nH, T, xe, chi_PE)
