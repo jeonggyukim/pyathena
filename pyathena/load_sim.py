@@ -195,7 +195,7 @@ class LoadSim(object):
         return self.ds
 
     def load_starpar_vtk(self, num=None, ivtk=None, force_override=False,
-            verbose=False):
+                         verbose=False):
         """Function to read Athena starpar_vtk file using pythena and
         return DataFrame object.
 

@@ -759,7 +759,7 @@ def set_derived_fields_rad(par, x0):
     
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_xray(par, x0):
+def set_derived_fields_xray(par, x0, newcool):
     
     func = dict()
     field_dep = dict()
@@ -777,9 +777,15 @@ def set_derived_fields_xray(par, x0):
 
     # Normalized FUV radiation field strength (Draine field unit)
     f = 'j_X'
-    field_dep[f] = set(['density','temperature'])
+    if newcool:
+        field_dep[f] = set(['density','pressure','xe','xH2'])
+    else:
+        field_dep[f] = set(['density','temperature'])
     # Frequency integrated volume emissivity
     def _j_Xray(d, u):
+        if newcool:
+            d['temperature'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                               (ac.k_B/u.energy_density).cgs.value
         em = get_xray_emissivity(d['temperature'].data, Z_gas,
                                  emin, emax, energy=energy)
         return d['density']**2*em
@@ -844,7 +850,7 @@ class DerivedFields(object):
         try:
             if par['feedback']['iSN'] > 0 or par['feedback']['iWind'] > 0 or \
                par['feedback']['iEarly'] > 0:
-                dicts_ = set_derived_fields_xray(par, x0)
+                dicts_ = set_derived_fields_xray(par, x0, newcool)
                 for d, d_ in zip(dicts, dicts_):
                     d = d.update(d_)
         except KeyError:
