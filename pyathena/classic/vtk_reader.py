@@ -496,7 +496,7 @@ class AthenaDataSet(AthenaDomain):
             return gd['density']*u['muH']
         elif field.startswith('velocity'):
             self._read_grid_data(grid,'velocity')
-            if field is 'velocity_magnitude': 
+            if field == 'velocity_magnitude': 
                 v1=gd['velocity1']
                 v2=gd['velocity2']
                 v3=gd['velocity3']
@@ -516,9 +516,9 @@ class AthenaDataSet(AthenaDomain):
             v1=gd['velocity1']
             v2=gd['velocity2']
             v3=gd['velocity3']
-            if field is 'kinetic_energy1': return 0.5*den*v1**2
-            if field is 'kinetic_energy2': return 0.5*den*v2**2
-            if field is 'kinetic_energy3': return 0.5*den*v3**2
+            if field == 'kinetic_energy1': return 0.5*den*v1**2
+            if field == 'kinetic_energy2': return 0.5*den*v2**2
+            if field == 'kinetic_energy3': return 0.5*den*v3**2
         elif field.startswith('momentum'):
             self._read_grid_data(grid,'density')
             self._read_grid_data(grid,'velocity')
@@ -526,23 +526,23 @@ class AthenaDataSet(AthenaDomain):
             v1=gd['velocity1']
             v2=gd['velocity2']
             v3=gd['velocity3']
-            if field is 'momentum1': return den*v1
-            if field is 'momentum2': return den*v2
-            if field is 'momentum3': return den*v3
+            if field == 'momentum1': return den*v1
+            if field == 'momentum2': return den*v2
+            if field == 'momentum3': return den*v3
         elif field.startswith('magnetic_energy'):
             self._read_grid_data(grid,'magnetic_field')
             B1=gd['magnetic_field1']
             B2=gd['magnetic_field2']
             B3=gd['magnetic_field3']
-            if field is 'magnetic_energy1': return 0.5*B1**2
-            if field is 'magnetic_energy2': return 0.5*B2**2
-            if field is 'magnetic_energy3': return 0.5*B3**2
+            if field == 'magnetic_energy1': return 0.5*B1**2
+            if field == 'magnetic_energy2': return 0.5*B2**2
+            if field == 'magnetic_energy3': return 0.5*B3**2
         elif field.startswith('magnetic_pressure'):
             self._read_grid_data(grid,'magnetic_field')
             B1=gd['magnetic_field1']
             B2=gd['magnetic_field2']
             B3=gd['magnetic_field3']
-            if field is 'magnetic_pressure': return (B1**2+B2**2+B3**2)*0.5
+            if field == 'magnetic_pressure': return (B1**2+B2**2+B3**2)*0.5
         elif field.startswith('plasma_beta'):
             vfield='magnetic_field'
             self._read_grid_data(grid,'pressure')
@@ -551,7 +551,7 @@ class AthenaDataSet(AthenaDomain):
             B2=gd[vfield+'2']
             B3=gd[vfield+'3']
             press=gd['pressure']
-            if field is 'plasma_beta': return press*2.0/(B1**2+B2**2+B3**2)
+            if field == 'plasma_beta': return press*2.0/(B1**2+B2**2+B3**2)
         elif field.startswith('alfven_velocity'):
             vfield='magnetic_field'
             self._read_grid_data(grid,'density')
@@ -560,9 +560,9 @@ class AthenaDataSet(AthenaDomain):
             B1=gd[vfield+'1']
             B2=gd[vfield+'2']
             B3=gd[vfield+'3']
-            if field is 'alfven_velocity1': return B1/np.sqrt(den)
-            if field is 'alfven_velocity2': return B2/np.sqrt(den)
-            if field is 'alfven_velocity3': return B3/np.sqrt(den)
+            if field == 'alfven_velocity1': return B1/np.sqrt(den)
+            if field == 'alfven_velocity2': return B2/np.sqrt(den)
+            if field == 'alfven_velocity3': return B3/np.sqrt(den)
         elif field.startswith('sound_speed'):
             self._read_grid_data(grid,'density')
             self._read_grid_data(grid,'pressure')
@@ -626,9 +626,9 @@ class AthenaDataSet(AthenaDomain):
             B1=gd[vfield+'1']
             B2=gd[vfield+'2']
             B3=gd[vfield+'3']
-            if field is 'magnetic_stress1': return B2*B3
-            if field is 'magnetic_stress2': return B1*B3
-            if field is 'magnetic_stress3': return B1*B2
+            if field == 'magnetic_stress1': return B2*B3
+            if field == 'magnetic_stress2': return B1*B3
+            if field == 'magnetic_stress3': return B1*B2
             return B1*B2
         elif field.startswith('reynold_stress'):
             self._read_grid_data(grid,'density')
@@ -637,9 +637,9 @@ class AthenaDataSet(AthenaDomain):
             v1=gd['velocity1']
             v2=gd['velocity2']
             v3=gd['velocity3']
-            if field is 'reynold_stress1': return den*v2*v3
-            if field is 'reynold_stress2': return den*v1*v3
-            if field is 'reynold_stress3': return den*v1*v2
+            if field == 'reynold_stress1': return den*v2*v3
+            if field == 'reynold_stress2': return den*v1*v3
+            if field == 'reynold_stress3': return den*v1*v2
             return den*v1*v2
         elif field.startswith('gravity_stress'):
             self._read_grid_data(grid,'gravitational_potential')
@@ -647,9 +647,9 @@ class AthenaDataSet(AthenaDomain):
             dx=grid['dx']
             g1,g2,g3=gradient(phi,dx)
             Gcode=u['Gcode']
-            if field is 'gravity_stress1': return g2*g3/4/np.pi/Gcode
-            if field is 'gravity_stress2': return g1*g3/4/np.pi/Gcode
-            if field is 'gravity_stress3': return g1*g2/4/np.pi/Gcode
+            if field == 'gravity_stress1': return g2*g3/4/np.pi/Gcode
+            if field == 'gravity_stress2': return g1*g3/4/np.pi/Gcode
+            if field == 'gravity_stress3': return g1*g2/4/np.pi/Gcode
             return  g1*g2/4/np.pi/Gcode
         elif field.startswith('scalar'):
             scal = field[6:]
@@ -743,11 +743,11 @@ class AthenaDataSet(AthenaDomain):
                 data=np.empty((dnx[2],dnx[1],dnx[0],3),dtype=fm[field]['dtype'])
             else:
                 data=np.empty((dnx[2],dnx[1],dnx[0]),dtype=fm[field]['dtype'])
-            if field is 'face_centered_B1':
+            if field == 'face_centered_B1':
                 data=np.empty((dnx[2],dnx[1],dnx[0]+1),dtype=fm[field]['dtype'])
-            if field is 'face_centered_B2':
+            if field == 'face_centered_B2':
                 data=np.empty((dnx[2],dnx[1]+1,dnx[0]),dtype=fm[field]['dtype'])
-            if field is 'face_centered_B3':
+            if field == 'face_centered_B3':
                 data=np.empty((dnx[2]+1,dnx[1],dnx[0]),dtype=fm[field]['dtype'])
         elif field in self.derived_field_list:
             data=np.empty((dnx[2],dnx[1],dnx[0]),dtype=fm['density']['dtype'])
@@ -788,11 +788,11 @@ class AthenaDataSet(AthenaDomain):
             if field in self.field_list and fm[field]['nvar']==3:
                 data[gis[2]:gie[2],gis[1]:gie[1],gis[0]:gie[0],:]=gd
             else:
-                if gie[0] == dnx[0] and field is 'face_centered_B1':
+                if gie[0] == dnx[0] and field == 'face_centered_B1':
                     data[gis[2]:gie[2],gis[1]:gie[1],gis[0]:gie[0]+1]=gd
-                elif gie[1] == dnx[1] and field is 'face_centered_B2':
+                elif gie[1] == dnx[1] and field == 'face_centered_B2':
                     data[gis[2]:gie[2],gis[1]:gie[1]+1,gis[0]:gie[0]]=gd
-                elif gie[2] == dnx[2] and field is 'face_centered_B3':
+                elif gie[2] == dnx[2] and field == 'face_centered_B3':
                     data[gis[2]:gie[2]+1,gis[1]:gie[1],gis[0]:gie[0]]=gd
                 else:
                     gd=gd[0:gnx[2],0:gnx[1],0:gnx[0]]

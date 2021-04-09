@@ -160,12 +160,12 @@ def slice2(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
     for i,axis in enumerate(['y','z']):
         for j,f in enumerate(fields_to_draw):
             ax=plt.subplot(gs[i,j])
-            if f is 'star_particles': 
+            if f == 'star_particles': 
                 scatter_sp(sp,ax,axis=axis,norm_factor=norm_factor,type='surf')
-                if axis is 'y': 
+                if axis == 'y': 
                     ax.set_xlim(x0,x0+Lx)
                     ax.set_ylim(y0,y0+Lz);
-                if axis is 'z': 
+                if axis == 'z': 
                     ax.set_xlim(x0,x0+Lx)
                     ax.set_ylim(x0,x0+Lx)
                 ax.set_aspect(1.0)
