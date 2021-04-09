@@ -18,7 +18,7 @@ def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Zg=1.0, Zd=1.0):
     B = k1620 + k1621*xS
     return 2.0*xH2*((B**2 + 4.0*A*xi_cr*(1.0 + phi_s)/nH)**0.5 - B)/(2.0*k1619)
 
-def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4):
+def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=True):
 
     xCtot = xCstd*Z_g
     small_ = 1e-50
@@ -28,12 +28,17 @@ def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4):
     k_Cplus_e = np.where(T < 10.0,
                          9.982641225129824e-11,
                          np.exp(-0.7529152*lnT - 21.293937))
-    psi_gr = 1.7*G_PE*np.sqrt(T)/(nH*xe + small_) + small_
-    cCp_ = np.array([45.58, 6.089e-3, 1.128, 4.331e2, 4.845e-2,0.8120, 1.333e-4])
-    k_Cplus_gr = 1.0e-14*cCp_[0]/(1.0 + cCp_[1]*np.power(psi_gr, cCp_[2]) * 
-                                  (1.0 + cCp_[3] * np.power(T, cCp_[4])
-                                   * np.power( psi_gr, -cCp_[5]-cCp_[6]*lnT ))) * Z_d
+    if gr_rec:
+        psi_gr = 1.7*G_PE*np.sqrt(T)/(nH*xe + small_) + small_
+        cCp_ = np.array([45.58, 6.089e-3, 1.128, 4.331e2, 4.845e-2,0.8120, 1.333e-4])
+        k_Cplus_gr = 1.0e-14*cCp_[0]/(1.0 + cCp_[1]*np.power(psi_gr, cCp_[2]) * 
+                                      (1.0 + cCp_[3] * np.power(T, cCp_[4])
+                                       * np.power( psi_gr, -cCp_[5]-cCp_[6]*lnT ))) * Z_d
+    else:
+        k_Cplus_gr = 0.0
+        
     k_Cplus_H2 = 3.3e-13 * np.power(T, -1.3) * np.exp(-23./T)
+        
     c = (k_C_cr + k_C_photo) / nH
     al = k_Cplus_e*xe + k_Cplus_gr + k_Cplus_H2*xH2 + c
     ar = xCtot * c
@@ -894,3 +899,40 @@ def get_OI_lev(nH, T, xe, xHI, xH2):
     f2 = a2 / de
     
     return (f0, f1, f2)
+
+def coeff_kcoll_H(T):
+    """Collisional ionization
+    """
+    lnT = np.log(T)
+    lnTe = np.log(T*8.6173e-5)
+    k_coll = np.where(T > 3.0e3,
+                np.exp((-3.271396786e1+ (1.35365560e1 + (- 5.73932875 + (1.56315498
+                      + (- 2.877056e-1 + (3.48255977e-2 + (-2.63197617e-3
+                      + (1.11954395e-4 + (-2.03914985e-6)
+                         *lnTe)*lnTe)*lnTe)*lnTe)*lnTe)*lnTe)*lnTe)*lnTe)),
+                      0.0)
+    return k_coll
+
+def coeff_alpha_rr_H(T):
+    """Radiative recombination
+    """
+    Tinv = 1/T
+    bb = 315614.0*Tinv
+    cc = 115188.0*Tinv
+    dd = 1.0 + np.power(cc, 0.407)
+    alpha_rr = 2.753e-14*np.power(bb, 1.5)*np.power(dd, -2.242)
+    
+    return alpha_rr
+
+def coeff_alpha_gr_H(T, G_PE, ne,  Z_d):
+    """Grain-assisted recombination
+    """
+    lnT = np.log(T)
+    small_ = 1e-50
+    cHp_ = np.array([12.25, 8.074e-6,1.378,5.087e2,1.586e-2,0.4723,1.102e-5])
+    psi_gr = 1.7*G_PE*np.sqrt(T)/(ne + small_) + small_
+    alpha_gr = 1.0e-14*cHp_[0] / \
+        (1.0 + cHp_[1]*np.power(psi_gr, cHp_[2]) *
+        (1.0 + cHp_[3] * np.power(T, cHp_[4])*np.power(psi_gr, -cHp_[5]-cHp_[6]*lnT)))*Z_d
+
+    return alpha_gr
