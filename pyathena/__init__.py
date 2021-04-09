@@ -13,6 +13,9 @@ __all__ = [
            # SFCloud
            "LoadSimSFCloud",
            "LoadSimSFCloudAll",
+           # SFCloudRad
+           "LoadSimSFCloudRad",
+           "LoadSimSFCloudRadAll",
            # FeedbackTest
            "LoadSimFeedbackTest",
            "LoadSimFeedbackTestAll",
@@ -44,6 +47,7 @@ from .load_sim import LoadSim, LoadSimAll
 # Problem specific subclasses
 from .feedback_test.load_sim_feedback_test import LoadSimFeedbackTest, LoadSimFeedbackTestAll
 from .sf_cloud.load_sim_sf_cloud import LoadSimSFCloud, LoadSimSFCloudAll
+from .sf_cloud_rad.load_sim_sf_cloud_rad import LoadSimSFCloudRad, LoadSimSFCloudRadAll
 from .tigress_dig.load_sim_tigress_dig import LoadSimTIGRESSDIG, LoadSimTIGRESSDIGAll
 from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll
 from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSXCOAll
