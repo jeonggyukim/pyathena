@@ -151,7 +151,9 @@ class SliceProj:
                      #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
                      #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
-                     suptitle=None, savdir_pkl=None, savdir=None, force_override=False, savefig=True):
+                     suptitle=None, savdir_pkl=None, savdir=None, force_override=False,
+                     figsize=(26,12),
+                     savefig=True):
         """Plot 12-panel projection, slice plots in the z and y directions
 
         Parameters
@@ -159,16 +161,23 @@ class SliceProj:
         num : int
             vtk snapshot number
         fields_xy: list of str
-            field names for z projections and slices
+            Field names for z projections and slices
         fields_xz: list of str
             Field names for y projections and slices
         norm_factor : float
-            Normalization factor for starpar size. The smaller the value the
-            bigger the size)
+            Normalization factor for starpar size. Smaller norm_factor for bigger size.
         agemax : float
-            Maximum age of source particles
+            Maximum age of radiation source particles [Myr]
         agemax_sn : float
-            Maximum age of sn particles
+            Maximum age of sn particles [Myr]
+        runaway : bool
+            If True, show runaway star particles
+        suptitle : str
+            Suptitle for snapshot
+        savdir_pkl : str
+            Path to which save (from which load) projections and slices
+        savdir : str
+            Path to which save (from which load) projections and slices
         """
         
         label = dict(Sigma_gas=r'$\Sigma$',
@@ -189,7 +198,7 @@ class SliceProj:
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
 
-        fig = plt.figure(figsize=(26, 12))#, constrained_layout=True)
+        fig = plt.figure(figsize=figsize)#, constrained_layout=True)
         g1 = ImageGrid(fig, [0.02, 0.05, 0.4, 0.94], (3, 2), axes_pad=0.1,
                        aspect=True, share_all=True, direction='column')
         g2 = ImageGrid(fig, [0.2, 0.05, 0.85, 0.94], (1, 6), axes_pad=0.1,
@@ -242,8 +251,7 @@ class SliceProj:
 
         if savefig:
             if savdir is None:
-                #savdir = osp.join(self.savdir, 'snapshot')
-                savdir = osp.join('/tigress/jk11/figures/TIGRESS-NCR', 'snapshot', self.basename)
+                savdir = osp.join(self.savdir, 'snapshot')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
