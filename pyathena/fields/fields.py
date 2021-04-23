@@ -165,6 +165,18 @@ def set_derived_fields_def(par, x0, newcool):
     cmap[f] = 'RdBu'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
+
+    
+    # cs [km/s]
+    f = 'csound'
+    field_dep[f] = set(['pressure','density'])
+    def _csound(d, u):
+        return np.sqrt(par['problem']['gamma']*d['pressure']/d['density'])
+    func[f] = _csound
+    label[f] = r'$c_s\;[{\rm km}\,{\rm s}^{-1}]$'
+    cmap[f] = 'magma'
+    vminmax[f] = (0.1,1e3)
+    take_log[f] = True
     
     # Radial momentum w.r.t. x0 [km/s cm^-3]
     f = 'pr'
