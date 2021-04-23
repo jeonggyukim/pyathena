@@ -30,7 +30,7 @@ from .sfr import get_SFR_mean
 from .starpar import StarPar
 from .xray import Xray
 
-class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
+class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
                      DustPol, Virial, Virial2, Outflow, Fields, Xray,
                      PltSnapshot2Panel):
     """LoadSim class for analyzing sf_cloud simulations.
@@ -39,7 +39,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
-        """The constructor for LoadSimSFCloud class
+        """The constructor for LoadSimSFCloudRad class
 
         Parameters
         ----------
@@ -60,7 +60,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             accepted.
         """
 
-        super(LoadSimSFCloud,self).__init__(basedir, savdir=savdir,
+        super(LoadSimSFCloudRad,self).__init__(basedir, savdir=savdir,
                                         load_method=load_method,
                                         units=units,
                                         verbose=verbose)
@@ -344,7 +344,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
 
         return nums
     
-class LoadSimSFCloudAll(Compare):
+class LoadSimSFCloudRadAll(Compare):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
 
@@ -357,7 +357,7 @@ class LoadSimSFCloudAll(Compare):
         
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
-                print('[LoadSimSFCloudAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
+                print('[LoadSimSFCloudRadAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
                     mdl,basedir))
             else:
                 self.models.append(mdl)
@@ -366,11 +366,11 @@ class LoadSimSFCloudAll(Compare):
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         
         self.model = model
-        self.sim = LoadSimSFCloud(self.basedirs[model], savdir=savdir,
+        self.sim = LoadSimSFCloudRad(self.basedirs[model], savdir=savdir,
                                   load_method=load_method, verbose=verbose)
         return self.sim
 
-def load_all_alphabeta(force_override=False):
+def load_all_sf_cloud_rad(force_override=False):
     
     models = dict(
         # A series (B=2)
@@ -472,7 +472,7 @@ def load_all_alphabeta(force_override=False):
         # B16S1='/tigress/jk11/GMC/M1E5R20.R.B16.A2.S1.N256.old',
         )
     
-    sa = LoadSimSFCloudAll(models)
+    sa = LoadSimSFCloudRadAll(models)
 
     markers = ['o','v','^','s','*']
 

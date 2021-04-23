@@ -17,10 +17,10 @@ import astropy.constants as ac
 
 import pyathena as pa
 
-from pyathena.util.split_container import split_container
+from ..util.split_container import split_container
 # from ..plt_tools.make_movie import make_movie
 
-from pyathena.util.xray_emissivity import XrayEmissivityIntegrator, get_xray_emissivity
+from ..fields.xray_emissivity import XrayEmissivityIntegrator, get_xray_emissivity
 from astropy.visualization import make_lupton_rgb
 
 def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
@@ -72,8 +72,8 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
 
 def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=False):
     
-    from pyathena.classic.plot_tools.scatter_sp import scatter_sp
-    from pyathena.plt_tools.cmap_custom import get_my_cmap
+    from ..classic.plot_tools.scatter_sp import scatter_sp
+    from ..plt_tools.cmap_custom import get_my_cmap
     
     # Read data
     ds = s.load_vtk(num)
@@ -203,8 +203,8 @@ def draw_snapshot_rgb(s, num, ax, minimum=20.0, stretch=15000, Q=15):
 
 def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
     
-    from pyathena.classic.plot_tools.scatter_sp import scatter_sp
-    from pyathena.plt_tools.cmap_custom import get_my_cmap
+    from ..classic.plot_tools.scatter_sp import scatter_sp
+    from ..plt_tools.cmap_custom import get_my_cmap
     
     cm1 = get_my_cmap('Blues')
     cm2 = get_my_cmap('Greens')
