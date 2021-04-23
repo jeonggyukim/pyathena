@@ -179,15 +179,15 @@ def set_derived_fields_def(par, x0, newcool):
     take_log[f] = True
     
     # Radial momentum w.r.t. x0 [km/s cm^-3]
-    f = 'pr'
+    f = 'Mr'
     field_dep[f] = set(['density','velocity'])
     @static_vars(x0=x0)
-    def _pr(d, u):
+    def _Mr(d, u):
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
         r = xr.DataArray(np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
                             dims=('z','y','x'), name='r')
         return d['density']*(x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r*u.kms
-    func[f] = _pr
+    func[f] = _Mr
     label[f] = r'$p_r\;[{\rm cm^{-3}\,km\,s^{-1}}]$'
     vminmax[f] = (-1e5, 1e5)
     # Set cmap midpoint accordingly (midpoint=abs(vmin)/(abs(vmin)+abs(vmax))
@@ -198,15 +198,15 @@ def set_derived_fields_def(par, x0, newcool):
     take_log[f] = False
 
     # Absolute value of radial momentum w.r.t. x0 [km/s cm^-3]
-    f = 'pr_abs'
+    f = 'Mr_abs'
     field_dep[f] = set(['density','velocity'])
     @static_vars(x0=x0)
-    def _pr_abs(d, u):
+    def _Mr_abs(d, u):
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
         r = xr.DataArray(np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
                             dims=('z','y','x'), name='r')
         return np.abs(d['density']*(x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r)*u.kms
-    func[f] = _pr_abs
+    func[f] = _Mr_abs
     label[f] = r'$|p_r|\;[{\rm cm^{-3}\,km\,s^{-1}}]$'
     vminmax[f] = (1e-2, 1e4)
     # Set cmap midpoint accordingly (midpoint=abs(vmin)/(abs(vmin)+abs(vmax))
