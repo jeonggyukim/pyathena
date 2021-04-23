@@ -36,7 +36,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
            '-r', str(fps_out),
            '-pix_fmt', 'yuv420p',
            '-vcodec', 'libx264',
-           '-vf', 'scale=trunc(iw/2)*2:trunc(ih/2)*2',
+           '-vf', 'scale=trunc\(iw/2\)*2:trunc\(ih/2\)*2',
            '-f', 'mp4', fname_out]
 
     print('[make_movie]: ffmpeg command:')
@@ -51,14 +51,12 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
         print('[make_movie]: Successful execution.')
         print('[make_movie]: Movie:')
         print('{0:s}'.format(fname_out))
+        return True
     except subprocess.CalledProcessError as e:
-        print('[make_movie]: subprocess.check_output returned:')
+        print("\x1b[31m[make_movie]: subprocess.check_output returned:\x1b[0m")
         print(str(e.output, "utf-8"))
-
-    # if ret == 0:
-    # else:
-        
-    #return subprocess.call(cmd)
+        return False
+    
 
 def display_movie(filename):
 
