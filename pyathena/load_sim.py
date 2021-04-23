@@ -217,7 +217,7 @@ class LoadSim(object):
             raise ValueError('Specify either num or ivtk')
 
         # get starpar_vtk file name and check if it exist
-        self.fstarvtk = self._get_fvtk('starpar', num, ivtk)
+        self.fstarvtk = self._get_fvtk('starpar_vtk', num, ivtk)
         if self.fstarvtk is None or not osp.exists(self.fstarvtk):
             self.logger.error('[load_starpar_vtk]: Starpar vtk file does not exist.')
 
@@ -277,7 +277,17 @@ class LoadSim(object):
         
         self.domain = domain
         
+
         return domain
+
+    def _find_match(self, patterns):
+            glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
+            for p in patterns:
+                f = glob_match(p)
+                if f:
+                    break
+                
+            return f
 
     def _find_files(self):
         """Function to find all output files under basedir and create "files" dictionary.
@@ -296,19 +306,10 @@ class LoadSim(object):
             raise IOError('basedir {0:s} does not exist.'.format(self.basedir))
         
         self.files = dict()
-        def find_match(patterns):
-            glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
-               
-            for p in patterns:
-                f = glob_match(p)
-                if f:
-                    break
-                
-            return f
 
-        athinput_patterns = [('stdout.txt',),    # Jeong-Gyu
+        athinput_patterns = [('stdout.txt',), # Jeong-Gyu
                              ('out.txt',),    # Jeong-Gyu
-                             ('log.txt',),     # Jeong-Gyu
+                             ('log.txt',),    # Jeong-Gyu
                              ('*.out',),      # Chang-Goo's stdout
                              ('slurm-*',),    # Erin
                              ('athinput.*',), # Chang-Goo's restart
@@ -329,8 +330,8 @@ class LoadSim(object):
         vtk_patterns = [('vtk', '*.????.vtk'),
                         ('*.????.vtk',)]
 
-        vtk_id0_patterns = [('vtk', 'id0', '*.????.vtk'),
-                            ('id0', '*.????.vtk')]
+        vtk_id0_patterns = [('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
+                            ('id0', '*.' + '[0-9]'*4 + '.vtk')]
         
         starpar_patterns = [('starpar', '*.????.starpar.vtk'),
                             ('id0', '*.????.starpar.vtk'),
@@ -346,7 +347,7 @@ class LoadSim(object):
 
         # Read athinput files
         # Throw warning if not found
-        fathinput = find_match(athinput_patterns)
+        fathinput = self._find_match(athinput_patterns)
         if fathinput:
             self.files['athinput'] = fathinput[0]
             self.par = read_athinput(self.files['athinput'])
@@ -356,13 +357,16 @@ class LoadSim(object):
             self.out_fmt = []
             for k in self.par.keys():
                 if 'output' in k:
+                    # Skip if the block number XX (<outputXX>) is greater than maxout
+                    if int(k.replace('output','')) > self.par['job']['maxout']:
+                        continue
                     if self.par[k]['out_fmt'] == 'vtk' and \
                        not (self.par[k]['out'] == 'prim' or self.par[k]['out'] == 'cons'):
                         self.out_fmt.append(self.par[k]['id'] + '.' + \
                                             self.par[k]['out_fmt'])
                     else:
                         self.out_fmt.append(self.par[k]['out_fmt'])
-
+                    
             self.problem_id = self.par['job']['problem_id']
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
@@ -371,11 +375,19 @@ class LoadSim(object):
                                 format(self.basedir))
             self.out_fmt = self._out_fmt_def
 
+        # Find timeit.txt
+        ftimeit = self._find_match(timeit_patterns)
+        if ftimeit:
+            self.files['timeit'] = ftimeit[0]
+            self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
+        else:
+            self.logger.info('timeit.txt not found.')
+
         # Find history dump and
         # Extract problem_id (prefix for vtk and hitsory file names)
         # Assumes that problem_id does not contain '.'
         if 'hst' in self.out_fmt:
-            fhst = find_match(hst_patterns)
+            fhst = self._find_match(hst_patterns)
             if fhst:
                 self.files['hst'] = fhst[0]
                 self.problem_id = osp.basename(self.files['hst']).split('.')[0]
@@ -385,7 +397,7 @@ class LoadSim(object):
                                     format(self.basedir))
 
         # Find sn dump
-        fsn = find_match(sn_patterns)
+        fsn = self._find_match(sn_patterns)
         if fsn:
             self.files['sn'] = fsn[0]
             self.logger.info('sn: {0:s}'.format(self.files['sn']))
@@ -394,13 +406,14 @@ class LoadSim(object):
                 # Issue warning only if iSN is nonzero
                 try:
                     if self.par['feedback']['iSN'] != 0:
-                        self.logger.warning('Could not find sn file in {0:s}'.\
-                                            format(self.basedir))
+                        self.logger.warning('Could not find sn file in {0:s},' + 
+                        ' but <feedback>/iSN={1:d}'.\
+                        format(self.basedir, self.par['feedback']['iSN']))
                 except KeyError:
                     pass
 
         # Find sphst dump
-        fsphst = find_match(sphst_patterns)
+        fsphst = self._find_match(sphst_patterns)
         if fsphst:
             self.files['sphst'] = fsphst
             self.nums_sphst = [int(f[-10:-5]) for f in self.files['sphst']]
@@ -411,11 +424,11 @@ class LoadSim(object):
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
         if 'vtk' in self.out_fmt:
-            self.files['vtk'] = find_match(vtk_patterns)
-            self.files['vtk_id0'] = find_match(vtk_id0_patterns)
+            self.files['vtk'] = self._find_match(vtk_patterns)
+            self.files['vtk_id0'] = self._find_match(vtk_id0_patterns)
             if not self.files['vtk'] and not self.files['vtk_id0']:
                 self.logger.warning(
-                    'No vtk files are found in {0:s}'.format(self.basedir))
+                    'vtk files not found in {0:s}'.format(self.basedir))
                 self.nums = None
                 self.nums_id0 = None
             else:
@@ -448,21 +461,21 @@ class LoadSim(object):
 
         # Find starpar files
         if 'starpar_vtk' in self.out_fmt:
-            fstarpar = find_match(starpar_patterns)
+            fstarpar = self._find_match(starpar_patterns)
             if fstarpar:
-                self.files['starpar'] = fstarpar
-                self.nums_starpar = [int(f[-16:-12]) for f in self.files['starpar']]
-                self.logger.info('starpar: {0:s} nums: {1:d}-{2:d}'.format(
-                    osp.dirname(self.files['starpar'][0]),
+                self.files['starpar_vtk'] = fstarpar
+                self.nums_starpar = [int(f[-16:-12]) for f in self.files['starpar_vtk']]
+                self.logger.info('starpar_vtk: {0:s} nums: {1:d}-{2:d}'.format(
+                    osp.dirname(self.files['starpar_vtk'][0]),
                     self.nums_starpar[0], self.nums_starpar[-1]))
             else:
                 self.logger.warning(
-                    'No starpar files are found in {0:s}.'.format(self.basedir))
+                    'starpar files not found in {0:s}.'.format(self.basedir))
 
         # Find zprof files
         # Multiple zprof files for each snapshot.
         if 'zprof' in self.out_fmt:
-            fzprof = find_match(zprof_patterns)
+            fzprof = self._find_match(zprof_patterns)
             if fzprof:
                 self.files['zprof'] = fzprof
                 self.nums_zprof = dict()
@@ -490,28 +503,45 @@ class LoadSim(object):
                     
             else:
                 self.logger.warning(
-                    'No zprof files are found in {0:s}.'.format(self.basedir))
+                    'zprof files not found in {0:s}.'.format(self.basedir))
 
         # 2d vtk files
+        self._fmt_vtk2d_not_found = []
         for fmt in self.out_fmt:
             if '.vtk' in fmt:
                 fmt = fmt.split('.')[0]
                 patterns = [('id0', '*.????.{0:s}.vtk'.format(fmt)),
                     ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
-                files = find_match(patterns)
+                files = self._find_match(patterns)
+                if files:
+                    self.files[f'{fmt}'] = files
+                    setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
+                                                  for f in self.files[f'{fmt}']])
+                else:
+                    # Some 2d vtk files may not be found in id0 folder (e.g., slices)
+                    self._fmt_vtk2d_not_found.append(fmt)
+
+        if self._fmt_vtk2d_not_found:
+            self.logger.info('These vtk files need to be found ' + \
+                             'using find_files_vtk2d() method: ' + \
+                             ', '.join(self._fmt_vtk2d_not_found))
+
+    def find_files_vtk2d(self):
+        
+        self.logger.info('Find 2d vtk: {0:s}'.format(' '.join(self._fmt_vtk2d_not_found)))
+        for fmt in self._fmt_vtk2d_not_found:
+            fmt = fmt.split('.')[0]
+            patterns = [('id*', '*.????.{0:s}.vtk'.format(fmt)),
+                ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
+            files = self._find_match(patterns)
+            if files:
                 self.files[f'{fmt}'] = files
                 setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
                                               for f in self.files[f'{fmt}']])
+            else:
+                self.logger.info('{0:s} files not found '.format(fmt))
 
-
-        # Find timeit.txt
-        ftimeit = find_match(timeit_patterns)
-        if ftimeit:
-            self.files['timeit'] = ftimeit[0]
-            self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
-        else:
-            self.logger.info('No timeit.txt found.')
-
+            
     def _get_fvtk(self, kind, num=None, ivtk=None):
         """Get vtk file path
         """
@@ -523,7 +553,7 @@ class LoadSim(object):
         if ivtk is not None:
             fvtk = self.files[kind][ivtk]
         else:
-            if kind == 'starpar':
+            if kind == 'starpar_vtk':
                 fpattern = '{0:s}.{1:04d}.starpar.vtk'
             else:
                 fpattern = '{0:s}.{1:04d}.vtk'
