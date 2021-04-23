@@ -36,11 +36,13 @@ class Units(object):
         self.mH = mH.to('g')
         self.mass = (self.muH*mH*(self.length.to('cm').value)**3).to('Msun')
         self.density = (self.mass/self.length**3).cgs
+        self.momentum = (self.mass*self.velocity).to('Msun km s-1')
         self.energy = (self.mass*self.velocity**2).cgs
         self.pressure = (self.density*self.velocity**2).cgs
         self.energy_density = self.pressure.to('erg/cm**3')
         
-        self.mass_flux = (self.density*self.velocity).to('Msun/(pc**2*Myr)')
+        self.mass_flux = (self.density*self.velocity).to('Msun pc-2 Myr-1')
+        self.momentum_flux = (self.density*self.velocity**2).to('Msun km s-1 pc-2 Myr-1')
         
         # Define (physical constants in code units)^-1
         #
@@ -54,6 +56,7 @@ class Units(object):
         self.kms = self.velocity.to('km/s').value
         self.Msun = self.mass.to('Msun').value
         self.Lsun = (self.energy/self.time).to('Lsun').value
+        self.erg = self.energy.to('erg').value
         self.eV = self.energy.to('eV').value
         self.s = self.time.to('s').value
         self.pok = ((self.pressure/ac.k_B).to('cm**-3*K')).value
