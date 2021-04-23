@@ -19,6 +19,8 @@ from ..load_sim import LoadSim
 from ..util.derivative import deriv_convolve
 from ..util.scp_to_pc import scp_to_pc
 
+np.seterr(divide='ignore', invalid='ignore')
+
 class Hst:
 
     @LoadSim.Decorators.check_pickle_hst
@@ -77,6 +79,8 @@ class Hst:
         cols = ['M', 'M_cl', 'Mc', 'Mu', 'Mw', 'Mi', 'Mh', 'M_sp', 'M_sp_esc']
         if newcool:
             cols += ['M_cl_neu', 'M_H2', 'M_HI', 'M_H2_cl', 'M_HI_cl']
+        if iWind:
+            cols += ['M_s1']
             
         for c in cols:
             try:
@@ -96,7 +100,7 @@ class Hst:
         # Number of star particles and number of active star particles (active >= 0)
         hst['N_sp'] *= vol
         hst['N_sp_active'] *= vol
-
+        
         ################
         # Outflow mass #
         ################
@@ -104,7 +108,9 @@ class Hst:
         cols = ['M', 'M_cl']
         if newcool:
             cols += ['M_cl_neu', 'M_H2', 'M_HI', 'M_H2_cl', 'M_HI_cl']
-
+        if iWind:
+            cols += ['M_s1']
+            
         for c in cols:
             try:
                 hst['d'+c] *= vol*u.Msun/u.Myr # Outflow rate in Msun/Myr
@@ -135,6 +141,22 @@ class Hst:
                     self.logger.warning('[read_hst]: Column {0:s} not found'.\
                                         format(c.format(k)))
                     continue
+
+        # Mean velocity and kinetic energy
+        if newcool:
+            for i in range(1,4):
+                hst[f'rhov{i}_cl_neu'] *= vol*u.Msun*u.kms
+                hst[f'rhov{i}sq_cl_neu'] *= vol*u.Msun*u.kms
+                hst[f'vmean{i}_cl_neu'] = hst['rhov1_cl_neu']/hst['M_cl_neu']
+
+            hst['vmean_cl_neu'] = np.sqrt(hst['vmean1_cl_neu']**2 +
+                                          hst['vmean2_cl_neu']**2 +
+                                          hst['vmean3_cl_neu']**2)
+            hst['Ekin_cl_neu0'] = hst['Ekin_cl_neu']
+            hst['Ekin_cl_neu'] = hst['Ekin_cl_neu0'] - \
+                (hst['vmean1_cl_neu']*hst[f'rhov1_cl_neu'] +
+                 hst['vmean2_cl_neu']*hst[f'rhov2_cl_neu'] +
+                 hst['vmean3_cl_neu']*hst[f'rhov3_cl_neu']) + 0.5*hst['M_cl_neu']*hst['vmean_cl_neu']**2
 
         ###################
         # Radial Momentum #
@@ -187,7 +209,6 @@ class Hst:
                 self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
                 continue
 
-
         if rayt:
             hst = self._calc_radiation(hst)
         
@@ -217,7 +238,11 @@ class Hst:
                 
         if iWind:
             hst['wind_Minj'] *= vol*u.Msun
-            hst['wind_Einj'] *= vol*u.Lsun
+            hst['wind_Einj'] *= vol*u.erg
+            hst['wind_pinj'] *= vol*u.Msun*u.kms
+            hst['wind_Mdot'] *= vol*u.Msun/u.Myr
+            hst['wind_Edot'] *= vol*u.erg/u.s
+            hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr
             
         return hst
     
@@ -358,10 +383,7 @@ class Hst:
                     try:
                         hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
                         hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
-                        try:
-                            hst[f'Ldust_{k}'] = hst[f'Ldust{i}']*vol*u.Lsun
-                        except KeyError:
-                            self.logger.info('Ldust not found in hst')
+                        hst[f'Ldust_{k}'] = hst[f'Ldust{i}']*vol*u.Lsun
                             
                         hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
                         hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
@@ -373,13 +395,18 @@ class Hst:
                         integrate.cumtrapz(hst[f'Qtot_{k}'], hst.time*u.time.cgs.value, initial=0.0)
                         hst[f'Qesc_cum_{k}'] = \
                         integrate.cumtrapz(hst[f'Qesc_{k}'], hst.time*u.time.cgs.value, initial=0.0)
-                        # Instantaneous escape fraction
+                        # Instantaneous fraction
                         hst[f'fesc_{k}'] = hst[f'Lesc_{k}']/hst[f'Ltot_{k}']
-                        # Cumulative escape fraction
+                        hst[f'fdust_{k}'] = hst[f'Ldust_{k}']/hst[f'Ltot_{k}']
+                        # Cumulative fraction
                         hst[f'fesc_cum_{k}'] = \
                         integrate.cumtrapz(hst[f'Lesc_{k}'], hst.time, initial=0.0)/\
                         integrate.cumtrapz(hst[f'Ltot_{k}'], hst.time, initial=0.0)
                         hst[f'fesc_cum_{k}'].fillna(value=0.0, inplace=True)
+                        hst[f'fdust_cum_{k}'] = \
+                        integrate.cumtrapz(hst[f'Ldust_{k}'], hst.time, initial=0.0)/\
+                        integrate.cumtrapz(hst[f'Ltot_{k}'], hst.time, initial=0.0)
+                        hst[f'fdust_cum_{k}'].fillna(value=0.0, inplace=True)
                     except KeyError as e:
                         raise e
                     
@@ -390,86 +417,244 @@ class Hst:
                 integrate.cumtrapz(hst['Ltot_PE'] + hst['Ltot_LW'], hst.time, initial=0.0)
             hst[f'fesc_cum_FUV'].fillna(value=0.0, inplace=True)
 
+            hst['fdust_FUV'] = (hst['Ldust_PE'] + hst['Ldust_LW'])/(hst['Ltot_PE'] + hst['Ltot_LW'])
+            hst['fdust_cum_FUV'] = \
+                integrate.cumtrapz(hst['Ldust_PE'] + hst['Ldust_LW'], hst.time, initial=0.0)/\
+                integrate.cumtrapz(hst['Ltot_PE'] + hst['Ltot_LW'], hst.time, initial=0.0)
+            hst[f'fdust_cum_FUV'].fillna(value=0.0, inplace=True)
+
+        hst['Ltot_FUV'] = hst['Ltot_LW'] + hst['Ltot_PE']
         hst['Ltot'] = hst['Ltot_PH'] + hst['Ltot_LW'] + hst['Ltot_PE']
         # Should we multipy Ltot_PE by 1.25?
-        hst['Ltot_over_c'] = ((hst['Ltot_PH'] + hst['Ltot_LW'] + hst['Ltot_PE']).values*\
+        hst['Ltot_over_c'] = ((hst['Ltot_PH'] + hst['Ltot_LW'] + self.par['radps']['frad_PE_boost']*hst['Ltot_PE']).values*\
                               ac.L_sun/ac.c).to('Msun km s-1 Myr-1')
+        hst['Ltot_over_c_int'] = cumtrapz(hst['Ltot_over_c'], hst['time'], initial=0.0)
         
         return hst
 
 
-def plt_hst_compare(sa, models=['B2S4'], ls=['-'], r=None, savefig=True):
+class PlotHst(object):
+    """
+    Plot time evolution of various quantities
+    """
+    
+    def __init__(self, sa, df, models=None, suptitle=None, tlim=None):
+        self.sa = sa
+        self.df = df
+        if models is None:
+            self.models = sa.models
+        self.models = np.atleast_1d(self.models)
+        self.linestyles = ['solid','dashed','dotted','dot-dashed']
+        self.ls = ['-','--',':','-.']
+        self.lw = [1.5, 1.5, 1.5, 1.5]
+        colors = ['k', 'C0', 'C1', 'C2']
+        
+        self.get_fig()
+        if suptitle is None:
+            self.set_suptitle()
+        if tlim is None:
+            self.tlim = (0, 20)
+            
+        
+        
+    def get_fig(self, nrows=3, ncols=2, figsize=(15,15), merge_last_row=False):
+        self.fig, self.axes = plt.subplots(nrows, ncols,
+                                           figsize=figsize, constrained_layout=True)
+        self.axes = self.axes.flatten()
+        if merge_last_row:
+            # Last row is merged
+            gs = self.axes[-2].get_gridspec()
+            # remove the underlying axes
+            for ax in self.axes[-2:]:
+                ax.remove()
+            self.axbig = self.fig.add_subplot(gs[-1,:])
+    
+    def set_suptitle(self):
+        suptitle = ''
+        for i,(ls, mdl) in enumerate(zip(self.linestyles,self.models)):
+            if i > 0:
+                suptitle += '\n '
+            suptitle += '\n {0:s}: {1:s}'.format(ls,mdl)
+        
+        self.fig.suptitle(suptitle)
+        
+    def set_params(self, ax, models, setp_kwargs, kind, **kwargs):
+        if ax is None:
+            ax = plt.gca()
+        if models is None:
+            models = self.models
 
-    plt.rcParams['ytick.right'] = True
+        if kind == 'mass':
+            if kwargs['normed_y']:
+                ylabel = 'mass/$M_0$'
+                ylim = (1e-3,2)
+            else:
+                ylabel = r'mass $[M_{\odot}]$'
+                ylim = (1e2,2e5)
+            setp_kwargs_def  = dict(xlabel=r'time', ylabel=ylabel, yscale='log', ylim=ylim)
+            print(setp_kwargs_def)
+        if kind == 'volume':
+            setp_kwargs_def = dict(xlabel=r'time', ylabel='volume fraction', yscale='linear', ylim=(0,1.2))
+        if kind == 'dt':
+            setp_kwargs_def = dict(xlabel=r'time', ylabel='dt', yscale='log', ylim=(1e-5,1e-1))
+        if kind == 'force':
+            setp_kwargs_def = dict(xlabel=r'time',
+                                   ylabel=r'force $[M_{\odot}{\rm km}\,{\rm s}^{-1}\,{\rm Myr}^{-1}]$',
+                                   yscale='log', ylim=(1e3,5e6))
+        if kind == 'pr':
+            setp_kwargs_def = dict(xlabel=r'time',
+                                   ylabel=r'momentum $[M_{\odot}{\rm km}\,{\rm s}^{-1}]$',
+                                   yscale='log', ylim=(1e3,5e6))
+        if kind == 'luminosity':
+            setp_kwargs_def = dict(xlabel=r'time', ylabel=r'luminosity $[L_{\odot}]$',
+                                   yscale='log', ylim=(1e3,5e6))
+        if kind == 'fesc':
+            setp_kwargs_def = dict(xlabel=r'time', ylabel=r'escape fraction',
+                                   yscale='linear', ylim=(0,1.4))
+        
+        if setp_kwargs is not None:
+            setp_kwargs_def.update(setp_kwargs)
+        
+        return ax, models, setp_kwargs_def
+    
+    def plt_mass(self, ax=None, models=None, setp_kwargs=None, normed_y=False):
+        ax, models, setp_kwargs = self.set_params(ax, models,
+                        setp_kwargs, 'mass', **dict(normed_y=normed_y))
+        plt.sca(ax)
+        for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
+            mhd = self.df.loc[mdl]['mhd']
+            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            if normed_y:
+                M0 = df.loc[mdl]['M']
+            else:
+                M0 = 1.0
 
-    fig, axes = plt.subplots(3, 1, figsize=(6, 14), sharex=True)
-    axes = axes.flatten()
-    # ax1t = axes[1].twinx()
-    # L0 = 1e6
-    models = np.atleast_1d(models)
-    ls = np.atleast_1d(ls)
+            plt.plot(x, h['M_cl']/M0, c='C0', ls=ls, lw=lw)
+            plt.plot(x, h['M_sp']/M0, c='C1', ls=ls, lw=lw)
+            plt.plot(x, (h['Mi']+h['Mh'])/M0, c='C2', ls=ls, lw=lw)
+            plt.plot(x, (h['M_cl']-h['M_H2_cl']-h['M_HI_cl'])/M0, c='C3', ls=ls, lw=lw)
+            plt.plot(x, h['M_H2_cl']/M0, c='C4', ls=ls, lw=lw)
+            plt.plot(x, h['M_cl_of']/M0, c='C5', ls=ls, lw=lw)
+            plt.plot(x, (h['M_cl_of']-h['M_HI_cl_of']-h['M_H2_cl_of'])/M0, c='C7', ls=ls, lw=lw)
+            plt.plot(x, h['wind_Minj']/M0, c='grey', ls=ls, lw=0.5)
+            plt.plot(x, h['M_sp_s1']/M0, c='C2', ls=ls, lw=3)
+            
+        plt.setp(ax, **setp_kwargs)
+        ax.legend([r'$M_{\rm cl}$',r'$M_{\ast}$',r'$M_{\rm hot}$',
+                   r'$M_{\rm HII,cl}$',r'$M_{\rm H_2,cl}$',r'$M_{\rm of,cl}$',r'$M_{\rm of,ion,cl}$',
+                   r'$M_{\rm wind}$',r'$M_{\ast,{\rm wind}}$'])
 
-    for i, (mdl, ls_) in enumerate(zip(models, ls)):
-        s = sa.set_model(mdl)
-        M0 = s.par['problem']['M_cloud']
-        if r is not None:
-            h = r.loc[mdl]['hst']
-        else:
-            h = s.read_hst()
+    def plt_volume(self, ax=None, models=None, setp_kwargs=None):
+        ax, models, setp_kwargs = self.set_params(ax, models,
+                        setp_kwargs, 'volume')
+        plt.sca(ax)
+        for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
+            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            plt.plot(x, 1.0-h['V_HI']-h['V_H2'], c='C0', ls=ls, lw=1.5)
+            plt.plot(x, h['Vi'] + h['Vh'], c='C1', ls=ls, lw=1.5)
+            plt.plot(x, h['Vf'], c='C2', ls=ls, lw=1.5)
 
-        x = h.time
+        plt.setp(ax, **setp_kwargs)
+        ax.legend([r'ionized',r'hot',r'free wind'])
 
-        plt.sca(axes[0])
-        #plt.plot(x, h.M_cl/M0, label=r'$M_{\rm cl}$', c='k', ls=ls_)
-        #plt.plot(x, h.Mgas/M0, label=r'_nolegend_', c='lightgray', ls=ls_)
-        plt.plot(x, h.Mstar/M0, label=r'$M_{*}$', c='g', ls=ls_)
-        plt.plot(x, (h.MHI_cl+h.MH2_cl)/M0, label=r'$M_{\rm HI+H_2}$', c='k', ls=ls_)
-        plt.plot(x, h.MHI_cl/M0, label=r'$M_{\rm HI}$', c='hotpink', ls=ls_)
-        plt.plot(x, h.MH2_cl/M0, label=r'$M_{\rm H_2}$', c='crimson', ls=ls_)
-        plt.plot(x, h.MHII_cl/M0, label=r'$M_{\rm H^+}$', c='y', ls=ls_)
+    def plt_dt(self, ax=None, models=None, setp_kwargs=None, dtHII=False):
+        ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'dt')
+        plt.sca(ax)
+        for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
+            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            plt.plot(x, h['dt'], ls=ls[i], c='k')
+            if dtHII:
+                plt.plot(x, h['dt_xHII_min'], ls=ls[i], c='C0')
 
-        plt.sca(axes[1])
-        plt.plot(x, h.Ltot_LW + h.Ltot_PE, label=r'$L_{\rm FUV}$', c='C0', ls=ls_)
-        plt.plot(x, h.Ltot_PH, label=r'$L_{\rm LyC}$', c='C1', ls=ls_)
+        plt.setp(ax, **setp_kwargs)
+        ax.legend([r'$dt$',r'$dt_{\rm HII}$'])
 
-        plt.sca(axes[2])
-        plt.plot(x, h.fesc_PH, label=r'$f_{\rm esc,LyC}$', c='C1', ls=ls_)
-        plt.plot(x, h.fesc_FUV, label=r'$f_{\rm esc,FUV}$', c='C0', ls=ls_)
-        plt.plot(x, h.fesc_cum_PH, label=r'$f_{\rm esc,LyC}^{\rm cum}$', c='C1', lw=3.5, ls=ls_)
-        plt.plot(x, h.fesc_cum_FUV, label=r'$f_{\rm esc,FUV}^{\rm cum}$', c='C0', lw=3.5, ls=ls_)
+    def plt_force(self, ax=None, models=None, setp_kwargs=None, plt_inj=True):
+        ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'force')
+        plt.sca(ax)
+        for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
+            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            plt.plot(h['time'], h['Fthm'], ls=ls[i], c='C0')
+            plt.plot(h['time'], h['Frad'], ls=ls[i], c='C1')
+            plt.plot(h['time'], -h['Fgrav'], ls=ls[i], c='C2')
+            plt.plot(h['time'], h['Fcent'], ls=ls[i], c='C3')
+            plt.plot(h['time'], h['Fthm'] + h['Frad'] + h['Fgrav']+ h['Fcent'], ls=ls[i], c='k', lw=3)
+            if plt_inj:
+                plt.plot(h['time'], h['Ltot_over_c'], ls=ls[i], c='C1', lw=0.5)
+                plt.plot(h['time'], h['wind_pdot'], ls=ls[i], c='C0', lw=0.5)
+            
+        plt.setp(ax, **setp_kwargs)
+        labels = [r'$F_{\rm thm}$', r'$F_{\rm rad}$',r'$|F_{\rm grav}|$',
+                  r'$F_{\rm cent}$',r'$F_{\rm tot}$',]
+        if plt_inj:
+            labels += [r'$L/c$',r'$\dot{p}_{\rm w}$']
 
-    plt.sca(axes[0])
-    plt.ylabel(r'mass/$M_0$')
-    plt.legend(fontsize='small', loc=1, facecolor='whitesmoke', edgecolor='grey')
-    plt.yscale('log')
-    plt.ylim(0.01, 2)
+        ax.legend(labels, loc=2)
 
-    plt.sca(axes[1])
-    plt.ylabel(r'luminosity [$L_{\odot}$]')
-    plt.yscale('log')
-    plt.ylim(1e4,1e7)
-    plt.legend(fontsize='small', loc=1, facecolor='whitesmoke', edgecolor='grey')
+    def plt_pr(self, ax=None, models=None, setp_kwargs=None, plt_inj=True):
+        ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'pr')
+        plt.sca(ax)
+        for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
+            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            plt.plot(x, h['pr'] + h['pr_of'] - h['pr'].iloc[0], c='k', label='tot')
+            plt.plot(x, h['Fthm_int'], label='thm', ls=ls[i], c='C0')
+            plt.plot(x, h['Frad_int'], label='rad', ls=ls[i], c='C1')
+            plt.plot(x, -h['Fgrav_int'], label='|grav|', ls=ls[i], c='C2')
+            plt.plot(x, h['Fcent_int'], label='cent', ls=ls[i], c='C3')
+            plt.plot(x, h['Fthm_int'] + h['Frad_int'] +
+                        h['Fcent_int'] + h['Fgrav_int'], ls=ls[i], c='grey', lw=3, alpha=0.7)
+            if plt_inj:
+                plt.plot(x, h['wind_pinj'], ls=ls[i], c='C0', lw=0.5)
+                plt.plot(x, h['Ltot_over_c_int'], ls=ls[i], c='C1', lw=0.5)
 
-    plt.sca(axes[2])
-    plt.xlabel(r'time [Myr]')
-    plt.ylabel(r'escape fraction')
-    plt.legend(fontsize='small', loc=(0.03,0.5), facecolor='whitesmoke', edgecolor='grey')
-    plt.ylim(0.0, 1.0)
+            
+        plt.setp(ax, **setp_kwargs)
+        labels = [r'$\Delta p_{\rm r,box} + p_{\rm r,of}$', r'$\int F_{\rm thm}dt$',
+                  r'$\int F_{\rm rad} dt$',r'$\left|\int F_{\rm grav} dt\right|$',r'$\int F_{\rm cent}dt$',
+                  r'$\int F_{\rm tot} dt$']
+        if plt_inj:
+            labels += [r'$\int L/c dt$', r'$\int \dot{p}_w dt$']
+        ax.legend(labels, loc=4, ncol=2)
 
-    labels = ('(a)','(b)','(c)')
-    locs = ((0.03, 0.92),(0.03, 0.92),(0.03, 0.92))
-    for ax,label,loc in zip(axes,labels,locs):
-        ax.set_xlim(left=0)
-        ax.grid()
-        ax.annotate(label, loc, xycoords='axes fraction', fontsize='large')
+        
+    def plt_luminosity(self, ax=None, models=None, setp_kwargs=None, plt_wind=True):
+        ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'luminosity')
+        plt.sca(ax)
+        for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
+            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            plt.plot(x, h['Ltot_PH'], ls=ls[i], c='C0')
+            plt.plot(x, h['Ltot_FUV'], ls=ls[i], c='C1')
+            if plt_wind:
+                plt.plot(x, h['wind_Edot']/ac.L_sun.cgs.value, ls=ls[i], lw=0.5, c='k')
+                
+        plt.setp(ax, **setp_kwargs)
+        labels = [r'$L_{\rm LyC}$', r'$L_{\rm FUV}$']
+        if plt_wind:
+            labels += [r'$L_{\rm wind}$']
+        ax.legend(labels, loc=4, ncol=2)
+        
+    def plt_fesc(self, ax=None, models=None, setp_kwargs=None, plt_dust=True):
+        ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'fesc')
+        plt.sca(ax)
+        for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
+            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            plt.plot(x, h['fesc_PH'], ls=ls, lw=1.0, c='C0')
+            plt.plot(x, h['fesc_FUV'], ls=ls, lw=1.0, c='C1')
+            plt.plot(x, h['fesc_cum_PH'], ls=ls, lw=3, c='C0')
+            plt.plot(x, h['fesc_cum_FUV'], ls=ls, lw=3, c='C1')
 
-    plt.tight_layout()
+            plt.plot(x, h['fdust_PH'], ls=ls, lw=1.0, c='C0', alpha=0.35)
+            plt.plot(x, h['fdust_FUV'], ls=ls, lw=1.0, c='C1', alpha=0.35)
+            plt.plot(x, h['fdust_cum_PH'], ls=ls, lw=3, c='C0', alpha=0.35)
+            plt.plot(x, h['fdust_cum_FUV'], ls=ls, lw=3, c='C1', alpha=0.35)
 
-    if savefig:
-        savname = '/tigress/jk11/figures/GMC/paper/hst/hst-{0:s}.png'.\
-                  format('-'.join(models))
-        plt.savefig(savname, dpi=200, bbox_inches='tight')
-        scp_to_pc(savname, target='GMC-MHD-Results')
-
-    return fig
-
+        plt.setp(ax, **setp_kwargs)
+        ncol = 2
+        labels = [r'$f_{\rm esc,LyC}$', r'$f_{\rm esc,FUV}$',
+                  r'$\langle f_{\rm esc,LyC} \rangle$', r'$\langle f_{\rm esc,FUV} \rangle$']
+        if plt_dust:
+            #ncol = 2
+            labels += [r'$f_{\rm dust,LyC}$', r'$f_{\rm dust,FUV}$',
+                      r'$\langle f_{\rm dust,LyC} \rangle$', r'$\langle f_{\rm dust,FUV} \rangle$']
+            
+        ax.legend(labels, loc=2, ncol=ncol)

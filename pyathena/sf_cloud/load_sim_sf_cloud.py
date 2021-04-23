@@ -24,6 +24,7 @@ from .pdf import PDF
 from .virial import Virial
 from .virial2 import Virial2 # simpler version
 from .plt_snapshot_2panel import PltSnapshot2Panel
+from .plt_snapshot_vtk2d import PltSnapshotVTK2D
 
 from .outflow import Outflow
 from .sfr import get_SFR_mean
@@ -32,7 +33,7 @@ from .xray import Xray
 
 class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
                      DustPol, Virial, Virial2, Outflow, Fields, Xray,
-                     PltSnapshot2Panel):
+                     PltSnapshot2Panel,PltSnapshotVTK2D):
     """LoadSim class for analyzing sf_cloud simulations.
     """
     
@@ -91,23 +92,24 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         #     self.logger.warning('read_outflow_all() failed!')
         #     df['hst_of'] = None
 
-        # df['basedir'] = self.basedir
-        # df['domain'] = self.domain
-        # # Input parameters
-        # df['mhd'] = par['configure']['gas'] == 'mhd'
-        # df['Nx'] = int(par['domain1']['Nx1'])
-        
-        # df['M'] = float(par['problem']['M_cloud'])
-        # df['R'] = float(par['problem']['R_cloud'])
-        # df['Sigma'] = df['M']/(np.pi*df['R']**2)
-        # df['seed'] = int(np.abs(par['problem']['rseed']))
-        # df['alpha_vir'] = float(par['problem']['alpha_vir'])
         # df['marker'] = markers[df['seed'] - 1]
-        # df['vesc'] = cl.vesc.to('km/s').value
-        # df['sigma1d'] = cl.sigma1d.to('km/s').value
-        # df['rho'] = cl.rho.cgs.value
-        # df['nH'] = cl.nH.cgs.value
-        # df['tff'] = cl.tff.to('Myr').value
+        
+        df['basedir'] = self.basedir
+        df['domain'] = self.domain
+        # Input parameters
+        df['mhd'] = par['configure']['gas'] == 'mhd'
+        df['Nx'] = int(par['domain1']['Nx1'])
+        
+        df['M'] = float(par['problem']['M_cloud'])
+        df['R'] = float(par['problem']['R_cloud'])
+        df['Sigma'] = df['M']/(np.pi*df['R']**2)
+        df['seed'] = int(np.abs(par['problem']['rseed']))
+        df['alpha_vir'] = float(par['problem']['alpha_vir'])
+        df['vesc'] = cl.vesc.to('km/s').value
+        df['sigma1d'] = cl.sigma1d.to('km/s').value
+        df['rho'] = cl.rho.cgs.value
+        df['nH'] = cl.nH.cgs.value
+        df['tff'] = cl.tff.to('Myr').value
         
         # if df['mhd']:
         #     df['muB'] = float(par['problem']['muB'])
@@ -122,12 +124,12 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         #                   format(int(df['alpha_vir']),int(df['seed']))
         
         # # Simulation results
-        # # Mstar_final = h['Mstar'].iloc[-1]
-        # Mstar_final = max(h['Mstar'].values)
-        # df['Mstar_final'] = Mstar_final
-        # df['SFE'] = Mstar_final/df['M']
-        # df['t_final'] = h['time'].iloc[-1]
-        # df['tau_final'] = df['t_final']/df['tff']
+        # M_sp_final = h['M_sp'].iloc[-1]
+        M_sp_final = max(h['M_sp'].values)
+        df['M_sp_final'] = M_sp_final
+        df['SFE'] = M_sp_final/df['M']
+        df['t_final'] = h['time'].iloc[-1]
+        df['tau_final'] = df['t_final']/df['tff']
 
         # # Outflow efficiency
         # df['eps_of'] = max(h['Mof'].values)/df['M']
@@ -135,27 +137,28 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         # df['eps_of_H2'] = max(h['Mof_H2'].values)/df['M']
         # df['eps_of_HII'] = max(h['Mof_HII'].values)/df['M']
         
-        # idx_SF0, = h['Mstar'].to_numpy().nonzero()
-        # if len(idx_SF0):
-        #     df['t_*'] = h['time'][idx_SF0[0]-1]
-        #     df['tau_*'] = df['t_*']/df['tff']
-        #     df['t_95%'] = h['time'][h.Mstar > 0.95*Mstar_final].values[0] # Time at which
-        #     df['tau_95%'] = df['t_95%']/df['tff']
-        #     df['t_90%'] = h['time'][h.Mstar > 0.90*Mstar_final].values[0]
-        #     df['tau_90%'] = df['t_90%']/df['tff']
-        #     df['t_80%'] = h['time'][h.Mstar > 0.80*Mstar_final].values[0]
-        #     df['tau_80%'] = df['t_80%']/df['tff']
-        #     df['t_50%'] = h['time'][h.Mstar > 0.50*Mstar_final].values[0]
-        #     df['tau_50%'] = df['t_50%']/df['tff']
-        #     df['t_SF'] = df['t_90%'] - df['t_*'] # SF duration
-        #     df['tau_SF'] = df['t_SF']/df['tff']
-        #     df['t_SF95'] = df['t_95%'] - df['t_*'] # SF duration
-        #     df['tau_SF95'] = df['t_SF']/df['tff']
-        #     df['t_SF2'] = Mstar_final**2 / \
+        idx_SF0, = h['M_sp'].to_numpy().nonzero()
+        if len(idx_SF0):
+            df['t_*'] = h['time'][idx_SF0[0]-1]
+            df['tau_*'] = df['t_*']/df['tff']
+            # Time at which XX% of star formation is complete
+            df['t_95%'] = h['time'][h.M_sp > 0.95*M_sp_final].values[0]
+            df['tau_95%'] = df['t_95%']/df['tff']
+            df['t_90%'] = h['time'][h.M_sp > 0.90*M_sp_final].values[0]
+            df['tau_90%'] = df['t_90%']/df['tff']
+            df['t_80%'] = h['time'][h.M_sp > 0.80*M_sp_final].values[0]
+            df['tau_80%'] = df['t_80%']/df['tff']
+            df['t_50%'] = h['time'][h.M_sp > 0.50*M_sp_final].values[0]
+            df['tau_50%'] = df['t_50%']/df['tff']
+            df['t_SF'] = df['t_90%'] - df['t_*'] # SF duration
+            df['tau_SF'] = df['t_SF']/df['tff']
+            df['t_SF95'] = df['t_95%'] - df['t_*'] # SF duration
+            df['tau_SF95'] = df['t_SF']/df['tff']
+        #     df['t_SF2'] = M_sp_final**2 / \
         #                 integrate.trapz(h['SFR']**2, h.time)
         #     df['tau_SF2'] = df['t_SF2']/df['tff']
         #     df['SFR_mean'] = get_SFR_mean(h, 0.0, 90.0)['SFR_mean']
-        #     df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'Mstar'].iloc[0]/df['M']
+        #     df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'M_sp'].iloc[0]/df['M']
         #     df['t_dep'] = df['M']/df['SFR_mean'] # depletion time t_dep = M0/SFR_mean
         #     df['eps_ff'] = df['tff']/df['t_dep'] # SFE per free-fall time eps_ff = tff0/tdep
         #     # Time at which neutral gas mass < 5% of the initial cloud mass
@@ -169,21 +172,21 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         #         df['t_dest_neu'] = np.nan
         #     # print('t_dep, eps_ff, t_dest_mol, t_dest_neu',
         #     #       df['t_dep'],df['eps_ff'],df['t_dest_mol'],df['t_dest_neu'])
-        # else:
-        #     df['t_*'] = np.nan
-        #     df['tau_*'] = np.nan
-        #     df['t_95%'] = np.nan
-        #     df['tau_95%'] = np.nan
-        #     df['t_90%'] = np.nan
-        #     df['tau_90%'] = np.nan
-        #     df['t_80%'] = np.nan
-        #     df['tau_80%'] = np.nan
-        #     df['t_50%'] = np.nan
-        #     df['tau_50%'] = np.nan
-        #     df['t_SF'] = np.nan
-        #     df['tau_SF'] = np.nan
-        #     df['t_SF95'] = np.nan
-        #     df['tau_SF95'] = np.nan
+        else:
+            df['t_*'] = np.nan
+            df['tau_*'] = np.nan
+            df['t_95%'] = np.nan
+            df['tau_95%'] = np.nan
+            df['t_90%'] = np.nan
+            df['tau_90%'] = np.nan
+            df['t_80%'] = np.nan
+            df['tau_80%'] = np.nan
+            df['t_50%'] = np.nan
+            df['tau_50%'] = np.nan
+            df['t_SF'] = np.nan
+            df['tau_SF'] = np.nan
+            df['t_SF95'] = np.nan
+            df['tau_SF95'] = np.nan
         #     df['t_SF2'] = np.nan
         #     df['tau_SF2'] = np.nan
         #     df['SFR_mean'] = np.nan
@@ -300,7 +303,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         elif dt_Myr is not None:
             dt_Myr = np.atleast_1d(dt_Myr)
             h = self.read_hst()
-            idx_SF0, = h['Mstar'].to_numpy().nonzero()
+            idx_SF0, = h['M_sp'].to_numpy().nonzero()
             t0 = h['time_code'][idx_SF0[0] - 1]
             t_code = [t0 + dt_Myr_/u.Myr for dt_Myr_ in dt_Myr]
             # print('time of first SF [Myr]', t0*self.u.Myr)
@@ -308,8 +311,8 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         elif sp_frac is not None:
             sp_frac = np.atleast_1d(sp_frac)
             h = self.read_hst()
-            Mstar_final = h['Mstar'].iloc[-1]
-            idx = [np.where(h['Mstar'] > sp_frac_*Mstar_final)[0][0] \
+            M_sp_final = h['M_sp'].iloc[-1]
+            idx = [np.where(h['M_sp'] > sp_frac_*M_sp_final)[0][0] \
                    for sp_frac_ in sp_frac]
             t_code = [h['time_code'].iloc[idx_] for idx_ in idx]
 
@@ -357,15 +360,16 @@ class LoadSimSFCloudAll(Compare):
 def load_all_sf_cloud(force_override=False):
     
     models = dict(
-        # Early tests
-        ALL_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N128.test1',
-        ALL_N256='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test1',
-        ALL_N256_redV3='/tigress/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test2',
-
-        # Control model tests
-        PHRP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.A4.B2.N128.test',
-        RP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RP.A4.B2.N128.test',
-        RPWNSN_N128_HLLD='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.WN.SN.A4.B2.N128.test.hlld'
+        ## Early tests
+        # ALL_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N128.test1',
+        # ALL_N256='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test1',
+        # ALL_N256_redV3='/tigress/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test2',
+        
+        ## Control model tests
+        ALL_N128_HYD='/tigress/jk11/SF-CLOUD/M1E5R20.ALL.N128.test.roe.hydro',
+        # PHRP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.A4.B2.N128.test',
+        # RP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RP.A4.B2.N128.test',
+        # RPWNSN_N128_HLLD='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.WN.SN.A4.B2.N128.test.hlld'
     )
     
     sa = LoadSimSFCloudAll(models)
