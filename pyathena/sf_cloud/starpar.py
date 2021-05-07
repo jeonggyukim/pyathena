@@ -12,13 +12,13 @@ class StarPar():
     def read_starpar_all(self, prefix='starpar_all',
                          savdir=None, force_override=False):
         rr = dict()
-        for i in self.nums_starpar:
-            print(i, end=' ')
-            r = self.read_starpar(num=i, force_override=False)
+        for num in self.nums_starpar:
+            print(num, end=' ')
+            r = self.read_starpar(num=num, force_override=force_override)
             if r is None:
-                print('sp is None')
                 continue
-            if i == 0:
+            
+            if not rr: # Create keys
                 for k in r.keys():
                     rr[k] = []
 
@@ -27,8 +27,9 @@ class StarPar():
                     rr[k].append(r[k].value.item())
                 except:
                     rr[k].append(r[k])
-
+                    
         rr = pd.DataFrame(rr)
+        
         return rr
     
     @LoadSim.Decorators.check_pickle
@@ -65,6 +66,14 @@ class StarPar():
         r['sp'] = sp
         r['time'] = sp.time
         r['nstars'] = sp.nstars
+        r['mtot'] = sp['mass'].sum()
+        r['p1tot'] = (sp['mass']*sp['v1']).sum()
+        r['p2tot'] = (sp['mass']*sp['v2']).sum()
+        r['p3tot'] = (sp['mass']*sp['v3']).sum()
+        r['prtot'] = (sp['mass']*(sp['v1']*sp['x1'] +
+                                  sp['v2']*sp['x2'] +
+                                  sp['v1']*sp['x3']) /
+                      np.sqrt(sp['x1']**2 + sp['x2']**2 + sp['x3']**2)).sum()
         r['isrc'] = isrc
         r['nsrc'] = np.sum(isrc)
                 

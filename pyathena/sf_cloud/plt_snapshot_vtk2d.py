@@ -20,8 +20,8 @@ from ..plt_tools.make_movie import make_movie
 
 class PltSnapshotVTK2D:
 
-    def make_moive_snashot_vtk2d(self, fps_in=20, fps_out=20, basedir=None, savdir=None):
-        if pngdir is None:
+    def make_movie_snapshot_vtk2d(self, fps=15, basedir=None, savdir=None):
+        if basedir is None:
             basedir = self.basedir
 
         if savdir is None:
@@ -31,14 +31,13 @@ class PltSnapshotVTK2D:
             
         fin = osp.join(basedir, 'snapshot_vtk2d/*.png')
         fout = osp.join(savdir, '{0:s}_snapshot_vtk2d.mp4'.format(self.basename))
-        if make_movie(fin, fout, fps_in, fps_out):
+        if make_movie(fin, fout, fps, fps):
             savdir2='/tigress/{0:s}/public_html/movies/SF-CLOUD/'.\
                 format(getpass.getuser())
             fout2 = osp.join(savdir2, osp.basename(fout))
             copyfile(fout, fout2)
             print('Copied movie file to {0:s}'.format(fout2))
 
-        
     def plt_snapshot_vtk2d(self, num, dim='y',
                            fields = ['Sigma','Sigma_H2','Sigma_HI',
                                      'EM','d','T',

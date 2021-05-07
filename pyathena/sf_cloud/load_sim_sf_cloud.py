@@ -14,6 +14,7 @@ from ..util.split_container import split_container
 from ..load_sim import LoadSim
 from ..util.units import Units
 from ..util.cloud import Cloud
+from ..io.read_timeit import read_timeit
 
 from .hst import Hst
 from .slc_prj import SliceProj
@@ -101,6 +102,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
 
         df['iWind'] = par['feedback']['iWind']
         df['iSN'] = par['feedback']['iSN']
+        df['irayt'] = par['radps']['irayt']
         df['iPhot'] = par['radps']['iPhot']
         df['iRadp'] = par['radps']['apply_force']
         
@@ -181,6 +183,9 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             df['color'] = 'C3'
             df['edgecolor'] = 'none'
 
+        if df['alpha_vir'] != 4.0:
+            df['edgecolor'] = 'k'
+            
         df['kwargs_scatter'] = dict(m=df['marker'], s=df['markersize'], c=df['color'])
 
         idx_SF0, = h['M_sp'].to_numpy().nonzero()
@@ -289,6 +294,18 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         #     df['eps_of_HI_cl_z'] = np.nan
         #     df['eps_of_HII_cl_z'] = np.nan
         #     pass
+
+        # Simulation time, Nproc, etc.
+        df['Nproc'] = par['domain1']['AutoWithNProc']
+        if osp.exists(self.files['timeit']):
+            ti = read_timeit(self.files['timeit'])
+            cols = ['cycle', 'time']
+            for col in ti.columns:
+                if col[-4:] == '_tot' or col == 'cycle' or col == 'time':
+                    df['timeit_{0:s}'.format(col)] = ti[col].iloc[-1]
+                    
+            # df['timeit'] = read_timeit(self.files['timeit'])[cols].iloc[-1]
+
             
         if as_dict:
             return df
@@ -436,7 +453,7 @@ class LoadSimSFCloudAll(Compare):
             line_args_.update(line_args)
 
         markers = ['o', 's', 'P', 'X']
-        colors = ['C0', 'C1', 'C2', 'C3']
+        colors = ['C1', 'C0', 'C2', 'C3']
         labels = ['PH', 'RP', 'WN', 'SN']
 
         lines = []
@@ -494,13 +511,20 @@ def load_all_sf_cloud(force_override=False):
         # Hydro tests
         M1E6R60_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-PH-Binf-N128',
         M1E6R60_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-RP-Binf-N128',
+        M1E6R60_WN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-WN-Binf-N128',
         M1E6R60_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-SN-Binf-N128',
 
         M1E5R20_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PH-Binf-N128',
         M1E5R20_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-RP-Binf-N128',
+        M1E5R20_WN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-WN-Binf-N128',
         M1E5R20_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-SN-Binf-N128',
 
+        M1E5R05_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128',
+        M1E5R05_PH_A2_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-N128',
+        M1E5R05_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-RP-Binf-N128',
+        M1E5R05_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-SN-Binf-N128',
 
+        M1E6R15_PH_Binf_N192='/scratch/gpfs/jk11/SF-CLOUD/M1E6R15-PH-Binf-N192',
         
         ## Early tests
         # ALL_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N128.test1',

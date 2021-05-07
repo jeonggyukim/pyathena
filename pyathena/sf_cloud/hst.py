@@ -18,6 +18,7 @@ from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
 from ..util.derivative import deriv_convolve
 from ..util.scp_to_pc import scp_to_pc
+from ..util.cloud import Cloud
 
 np.seterr(divide='ignore', invalid='ignore')
 
@@ -44,7 +45,7 @@ class Hst:
         else:
             newcool =False
 
-        if par['configure']['radps'] == 'ON':
+        if par['radps']['irayt'] == 1:
             rayt = True
         else:
             rayt = False
@@ -52,19 +53,27 @@ class Hst:
         if par['configure']['sixray'] == 'ON':
             sixray = True
         else:
-            sixray =False
+            sixray = False
 
         if par['configure']['gas'] == 'mhd':
             mhd = True
         else:
             mhd = False
+
+        cl = Cloud(M=par['problem']['M_cloud'],
+                   R=par['problem']['R_cloud'],
+                   alpha_vir=par['problem']['alpha_vir'])
             
         iWind = par['feedback']['iWind']
+        iPhot = par['radps']['iPhot']
+        iRadp = par['radps']['apply_force']
         
         # Time in code unit
         hst['time_code'] = hst['time']
         # Time in Myr
         hst['time'] *= u.Myr
+        # Time in freefall time
+        hst['tau'] = hst['time']/cl.tff.to('Myr').value
         # Time step
         hst['dt_code'] = hst['dt']
         hst['dt'] *= u.Myr
@@ -442,8 +451,8 @@ class PlotHst(object):
                  ls=['-','--',':','-.'],
                  lw=[1.5, 1.5, 1.5, 1.5],
                  subplots_kwargs=dict(nrows=1, ncols=2,
-                                     figsize=(15,5), merge_last_row=False),
-                 plt_vars=['mass', 'momentum']):
+                                      figsize=(15,5), merge_last_row=False),
+                 plt_vars=['mass', 'momentum'], savfig=True):
         
         self.sa = sa
         self.df = df
@@ -463,11 +472,24 @@ class PlotHst(object):
             self.tlim = (0, 20)
 
         self.normed_x = normed_x
+        if self.normed_x:
+            self.col_time = 'tau'
+        else:
+            self.col_time = 'time_code'
+            
 
         for i, v in enumerate(plt_vars):
             method = getattr(self, 'plt_' + v)
             method(self.axes[i])
-        
+
+        if savfig:
+            savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst')
+            if not osp.exists(savdir):
+                os.makedirs(savdir)
+
+            plt.savefig(osp.join(savdir, 'hst-{0:s}.png'.format('-'.join(self.models))),
+                        dpi=200)
+                        
     def get_subplots(self, nrows=3, ncols=2, figsize=(15,15), merge_last_row=False):
         
         self.fig, self.axes = plt.subplots(nrows, ncols,
@@ -483,12 +505,15 @@ class PlotHst(object):
     
     def set_suptitle(self):
         suptitle = ''
-        for i,(ls, mdl) in enumerate(zip(self.linestyles,self.models)):
-            if i > 0:
-                suptitle += '\n '
+        if len(self.models) == 1:
+            suptitle = 'Model: {0:s}'.format(self.models[0])
+        else:
+            for i,(ls, mdl) in enumerate(zip(self.linestyles, self.models)):
+                if i > 0:
+                    suptitle += '\n '
 
-            suptitle += '\n {0:s}: {1:s}'.format(ls,mdl)
-        
+                suptitle += '\n {0:s}: {1:s}'.format(ls,mdl)
+
         self.fig.suptitle(suptitle, linespacing=0.7)
         
     def set_params(self, ax, models, setp_kwargs, kind, **kwargs):
@@ -497,10 +522,10 @@ class PlotHst(object):
         if models is None:
             models = self.models
 
-        if self.normed_x:
-            xlabel = 'time'
+        if not self.normed_x:
+            xlabel = 'time [code]'
         else:
-            xlabel = r'$time/t_{\rm ff,0}$'
+            xlabel = r'${\rm time}/t_{\rm ff,0}$'
             
         M0 = self.df.loc[models[0]]['M']
         if kind == 'mass':
@@ -523,7 +548,7 @@ class PlotHst(object):
             setp_kwargs_def = dict(xlabel=xlabel,
                                    ylabel=r'force $[M_{\odot}{\rm km}\,{\rm s}^{-1}\,{\rm Myr}^{-1}]$',
                                    yscale='log', ylim=(1e3,5e6))
-        if kind == 'pr':
+        if kind == 'momentum':
             setp_kwargs_def = dict(xlabel=xlabel,
                                    ylabel=r'momentum $[M_{\odot}{\rm km}\,{\rm s}^{-1}]$',
                                    yscale='linear')
@@ -547,9 +572,7 @@ class PlotHst(object):
             iWind = self.df.loc[mdl]['iWind']
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
-            x = h['time']
-            if self.normed_x:
-                x /= tff
+            x = h[self.col_time]
             if normed_y:
                 M0 = self.df.loc[mdl]['M']
             else:
@@ -587,9 +610,7 @@ class PlotHst(object):
             iWind = self.df.loc[mdl]['iWind']
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
-            x = h['time'].copy()
-            if self.normed_x:
-                x /= tff
+            x = h[self.col_time]
                 
             plt.plot(x, 1.0-h['V_HI']-h['V_H2'], c='C0', ls=ls, lw=1.5)
             plt.plot(x, h['Vi'] + h['Vh'], c='C1', ls=ls, lw=1.5)
@@ -605,9 +626,8 @@ class PlotHst(object):
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
-            x = h['time'].copy()
-            if self.normed_x:
-                x /= tff
+            x = h[self.col_time]
+
             plt.plot(x, h['dt'], ls=ls, c='k')
             if dtHII:
                 plt.plot(x, h['dt_xHII_min'], ls=ls, c='C0')
@@ -621,61 +641,89 @@ class PlotHst(object):
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
             mhd = self.df.loc[mdl]['mhd']
             iWind = self.df.loc[mdl]['iWind']
+            iRadp = self.df.loc[mdl]['iRadp']
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
-            x = h['time']
-            if self.normed_x:
-                x /= tff
+            x = h[self.col_time]
 
-            plt.plot(h['time'], h['Fthm'], ls=ls, c='C0')
-            plt.plot(h['time'], h['Frad'], ls=ls, c='C1')
-            plt.plot(h['time'], -h['Fgrav'], ls=ls, c='C2')
-            plt.plot(h['time'], h['Fcent'], ls=ls, c='C3')
-            plt.plot(h['time'], h['Fthm'] + h['Frad'] + h['Fgrav']+ h['Fcent'],
-                     ls=ls, c='k', lw=3)
+            plt.plot(x, h['Fthm'], ls=ls, c='C0')
+            plt.plot(x, -h['Fgrav'], ls=ls, c='C2')
+            plt.plot(x, h['Fcent'], ls=ls, c='C3')
+            if iRadp:
+                plt.plot(x, h['Frad'], ls=ls, c='C1')
+
+            Ftot = h['Fthm'] + h['Fgrav']+ h['Fcent']
+            if iRadp:
+                Ftot += h['Frad']
+
             if plt_inj:
-                plt.plot(h['time'], h['Ltot_over_c'], ls=ls, c='C1', lw=0.5)
+                if iRadp:
+                    plt.plot(x, h['Ltot_over_c'], ls=ls, c='C1', lw=0.5)
                 if iWind:
-                    plt.plot(h['time'], h['wind_pdot'], ls=ls, c='C0', lw=0.5)
+                    plt.plot(x, h['wind_pdot'], ls=ls, c='C0', lw=0.5)
+
+            plt.plot(x, Ftot, ls=ls, c='k', lw=3)
+                
 
         plt.setp(ax, **setp_kwargs)
-        labels = [r'$F_{\rm thm}$', r'$F_{\rm rad}$',r'$-F_{\rm grav}$',
-                  r'$F_{\rm cent}$',r'$F_{\rm tot}$',]
+        labels = [r'$F_{\rm thm}$', r'$-F_{\rm grav}$',
+                  r'$F_{\rm cent}$']
+        if iRadp:
+            labels += [r'$F_{\rm rad}$']
         if plt_inj:
-            labels += [r'$L/c$',r'$\dot{p}_{\rm w}$']
+            if iRadp:
+                labels += [r'$L/c$']
+            if iWind:
+                labels += [r'$\dot{p}_{\rm w}$']
 
+        labels += [r'$F_{\rm tot}$']
+        
         ax.legend(labels, loc=2)
 
     def plt_momentum(self, ax=None, models=None, setp_kwargs=None, plt_inj=True):
-        ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'pr')
+        ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'momentum')
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
             mhd = self.df.loc[mdl]['mhd']
             iWind = self.df.loc[mdl]['iWind']
+            iRadp = self.df.loc[mdl]['iRadp']
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
-            x = h['time']
-            if self.normed_x:
-                x /= tff
+            x = h[self.col_time]
                 
-            plt.plot(x, h['pr'] + h['pr_of'] - h['pr'].iloc[0], c='k', label='tot')
             plt.plot(x, h['Fthm_int'], label='thm', ls=ls, c='C0')
-            plt.plot(x, h['Frad_int'], label='rad', ls=ls, c='C1')
             plt.plot(x, -h['Fgrav_int'], label='|grav|', ls=ls, c='C2')
             plt.plot(x, h['Fcent_int'], label='cent', ls=ls, c='C3')
-            plt.plot(x, h['Fthm_int'] + h['Frad_int'] +
-                        h['Fcent_int'] + h['Fgrav_int'], ls=ls, c='grey', lw=3, alpha=0.7)
+            if iRadp:
+                plt.plot(x, h['Frad_int'], label='rad', ls=ls, c='C1')
+
+            Ftot_int = h['Fthm_int'] + h['Fcent_int'] + h['Fgrav_int']
+            if iRadp:
+                Ftot_int += h['Frad_int']
+                
             if plt_inj:
-                plt.plot(x, h['Ltot_over_c_int'], ls=ls, c='C1', lw=0.5)
+                if iRadp:
+                    plt.plot(x, h['Ltot_over_c_int'], ls=ls, c='C1', lw=0.5)
                 if iWind:
                     plt.plot(x, h['wind_pinj'], ls=ls, c='C0', lw=0.5)
-            
+
+            plt.plot(x, Ftot_int, ls=ls, c='grey', lw=3, alpha=0.7)
+            plt.plot(x, h['pr'] + h['pr_of'] - h['pr'].iloc[0], c='k', label='tot')
+
         plt.setp(ax, **setp_kwargs)
-        labels = [r'$\Delta p_{\rm r,box} + p_{\rm r,of}$', r'$\int F_{\rm thm}dt$',
-                  r'$\int F_{\rm rad} dt$',r'$-\int F_{\rm grav} dt$',r'$\int F_{\rm cent}dt$',
-                  r'$\int F_{\rm tot} dt$']
+        labels = [r'$\int F_{\rm thm}dt$',
+                  r'$-\int F_{\rm grav} dt$',
+                  r'$\int F_{\rm cent}dt$',]
+        if iRadp:
+            labels += [r'$\int F_{\rm rad} dt$',]
         if plt_inj:
-            labels += [r'$\int L/c dt$', r'$\int \dot{p}_w dt$']
+            if iRadp:
+                labels += [r'$\int L/c dt$']
+            if iWind:
+                labels += [r'$\int \dot{p}_w dt$']
+
+        labels += [r'$\int F_{\rm tot} dt$',
+                   r'$\Delta p_{\rm r,box} + p_{\rm r,of}$',]
 
         ax.legend(labels, loc='best')
 
@@ -689,9 +737,7 @@ class PlotHst(object):
             iWind = self.df.loc[mdl]['iWind']
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
-            x = h['time']
-            if self.normed_x:
-                x /= tff
+            x = h[self.col_time]
                 
             plt.plot(x, h['Ltot_PH'], ls=ls, c='C0')
             plt.plot(x, h['Ltot_FUV'], ls=ls, c='C1')
@@ -710,9 +756,7 @@ class PlotHst(object):
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
-            x = h['time']
-            if self.normed_x:
-                x /= tff
+            x = h[self.col_time]
 
             plt.plot(x, h['fesc_PH'], ls=ls, lw=1.0, c='C0')
             plt.plot(x, h['fesc_FUV'], ls=ls, lw=1.0, c='C1')
