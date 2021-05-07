@@ -1,0 +1,250 @@
+The archive contains files that give net cooling rates due to various
+elements as a function of density, temperature, and redshift. Each
+file is encoded using the HDF5 format
+(http://hdf.ncsa.uiuc.edu/HDF5/).
+
+For a description of the methods used, see 
+
+Wiersma, R. P. C., Schaye, J., and Smith, B. D. 2009, MNRAS, 393, 99
+
+The gas was exposed to the (redshift-dependent) Haardt & Madau (2001,
+hereafter HM01) UV/X-ray background from quasars and galaxies and the
+(redshift-dependent) cosmic microwave background (CMB). The gas was
+assumed to be optically thin and in ionization equilibrium.
+
+The redshift range is identical to that of the HM01 model: z = 0
+through z = 8.989. Every file is named for the redshift it represents,
+with the exception of the following files:
+
+-z_8.989nocompton.hdf5: This file contains net cooling rates for the z
+       = 8.989 UV/X-ray background, but without the CMB. Such a table
+       could be used in a pre z=9, but post-reionization universe (one
+       should then add redshift-dependent Compton cooling off the CMB
+       analytically).
+
+-z_photodis.hdf5: This file contains net cooling rates computed using
+       a soft, non-ionizing UV background. It was computed for the z =
+       8.989 HM01 background but with the spectrum cut-off at 1
+       Ryd. The CMB was not included. This background dissociates
+       molecules, but does not contain H-ionizing radiation. It could
+       for example be used in the pre-reionization universe (one
+       should then add redshift-dependent Compton cooling off the CMB
+       analytically).
+
+In addition, we provide the following redshift-independent file:
+
+-z_collis.hdf5: This file contains net cooling rates computed assuming
+       collisional ionization equilbrium and no CMB. Note that 'no induced 
+       processes' was not used in this table (all other tables were made with 
+       this command) since it caused cloudy to crash.
+
+Each file contains groups corresponding to the different elements
+(e.g., "/Carbon"). Hydrogen and helium are considered simultaneously
+in the group "/Metal_free". The different contributions to the cooling
+rates can be combined and scaled to the desired abundances as
+described in WSS08 (eq. 3).
+
+All metals (not just the ones we do separately) are considered
+simultaneously in the group "/Total_Metals". This latter table is useful if
+the metallicity is known, but not the abundances of individual
+elements.  The metal and H&He contributions to the cooling rates can
+be combined and scaled to the desired metallicity as described in
+WSS08 (eq. 4).
+
+The group "/Header" contains some useful meta-data and the group
+"/Solar" considers all elements simultaneously (assuming solar
+abundances).
+
+The tables were prepared using the Haardt and Madau (2001) quasars and
+galaxies spectrum, and CLOUDY (last described in Ferland et al. 1998)
+version 07.02. 
+
+The ranges of the tables are as follows:
+Temperature: 100 K - 9.1612998e8 K
+Hydrogen density: 1 cm^-3 - 1e-8 cm^-3
+Redshift: 0 - 8.989
+Helium mass fraction (Helium number ratio): 0.238 - 0.298 (0.07865282 - 
+0.10689845)
+Energy density: 1e10 erg/g - 1e18 erg/g
+
+Our website (http://www.strw.leidenuniv.nl/WSS08/) contains many sample 
+scripts to give an idea as to how to use the tables
+
+References:
+
+Haardt, F. and Madau, P., 2001, Clusters of galaxies and the high
+redshift universe observed in X-rays, Recent results of XMM-Newton and
+Chandra, XXXVIth Rencontres de Moriond , XXIst Moriond Astrophysics
+Meeting, March 10-17, 2001 Savoie, France.   
+
+Ferland et al., 1998, PASP, 110, 761
+
+______________________________________________________________________________
+
+What follows is a item-by-item description of each entry in the table,
+complete with units.
+
+/Header (Group)                            
+       Contains meta data.
+
+/Header/Abundances (Group)                 
+       Abundances subgroup
+
+/Header/Abundances/Abund_names             
+       Names of all the elements in the list
+       /Header/Abundances/Solar_abundances and
+       /Header/Abundances/Solar_number_abundances
+
+/Header/Abundances/Number_of_abundances
+       Number of entries in /Header/Abundances/Solar_abundances and
+       /Header/Abundances/Solar_number_abundances 
+
+/Header/Abundances/Solar_mass_fractions
+       Solar abundances used (mass fractions)
+
+/Header/Abundances/Solar_number_ratios
+       Solar abundances used (number density relative to hydrogen)
+
+/Header/Metal_names		   
+       Names of the metals for which cooling rates are included
+       (correspond to group names).
+
+/Header/Number_of_density_bins    
+       Number of density bins
+
+/Header/Number_of_helium_fractions
+       Number of helium fraction bins
+
+/Header/Number_of_metals	  
+       Number of metals for which cooling rates are included.
+
+/Header/Number_of_temperature_bins
+       Number of temperature bins 
+
+/Header/Redshift                  
+       The redshift to which the data in this file corresponds.
+
+-----
+
+/Metal_free (Group)
+       Includes only hydrogen and helium
+
+/Metal_free/Electron_density_over_n_h 
+       Ratio of free electron and hydrogen number densities (n_e/n_H)
+       as a function of /Metal_free/Hydrogen_density_bins,
+       /Metal_free/Temperature_bins, and helium abundance
+       (/Metal_free/Helium_mass_fraction_bins or
+       /Metal_free/Helium_number_ratio_bins)
+
+/Metal_free/Helium_mass_fraction_bins       
+       Helium mass fraction bins 
+
+/Metal_free/Helium_number_ratio_bins 
+       Ratio of helium and hydrogen number density bins (n_He/n_H)
+
+/Metal_free/Hydrogen_density_bins
+       Hydrogen number density bins (n_H [cm^-3]) 
+
+/Metal_free/Mean_particle_mass 
+       Mean particle mass as a function of
+       /Metal_free/Hydrogen_density_bins,
+       /Metal_free/Temperature_bins, and helium abundance
+       (/Metal_free/Helium_mass_fraction_bins or
+       /Metal_free/Helium_number_ratio_bins) (mu [m_H])
+
+/Metal_free/Net_cooling 
+       Normalized net cooling rate (pos for cooling, neg for heating)
+       as a function of /Metal_free/Hydrogen_density_bins,
+       /Metal_free/Temperature_bins, and helium abundance
+       (/Metal_free/Helium_mass_fraction_bins or
+       /Metal_free/Helium_number_ratio_bins) (Lambda/n_H^2 [erg s^-1
+       cm^3])
+
+/Metal_free/Temperature_bins
+       Temperature bins (T [K])
+
+-----
+
+/Metal_free/Temperature (Group)
+       Contains data needed to convert energy per unit mass into
+       temperature 
+
+/Metal_free/Temperature/Energy_density_bins
+       Internal energy density per unit mass bins [erg g^-1]
+
+/Metal_free/Temperature/Helium_mass_fraction_bins        
+       Helium mass fraction bins
+
+/Metal_free/Temperature/Helium_number_ratio_bins
+       Ratio of helium and hydrogen number density bins (n_He/n_H)
+
+/Metal_free/Temperature/Hydrogen_density_bins
+       Hydrogen number density bins (n_H [cm^-3]) 
+
+/Metal_free/Temperature/Temperature 
+       Temperature as a function of
+       /Metal_free/Temperature/Hydrogen_density_bins,
+       /Metal_free/Temperature/Energy_density_bins, and helium
+       abundance (/Metal_free/Temperature/Helium_mass_fraction_bins or
+       /Metal_free/Temperature/Helium_number_ratio_bins) (T [K])
+
+-----
+
+/Total_Metals (Group)
+       Contains contribution to the net cooling due to elements from 
+       Li to Zn combined (for solar abundances)
+
+/Total_Metals/Hydrogen_density_bins
+       Hydrogen number density bins (n_H [cm^-3]) 
+
+/Total_Metals/Net_cooling 
+       Normalized net cooling rate (pos for cooling, neg for heating)
+       as a function of /Total_Metals/Hydrogen_density_bins and
+       /Total_Metals/Temperature_bins (Lambda/n_H^2 [erg s^-1 cm^3])
+
+/Total_Metals/Temperature_bins
+       Temperature bins (T [K])
+
+-----
+
+/X (Group)
+       Contains contribution to the net cooling due to element X (for
+       solar abundances)
+
+/X/Hydrogen_density_bins
+       Hydrogen number density bins (n_H [cm^-3])
+
+/X/Net_cooling
+       Normalized, net cooling rate (pos for cooling, neg for heating)
+       due to element X as a function of /X/Hydrogen_density_bins and
+       /X/Temperature_bins (Lambda/n_H^2 [erg s^-1 cm^3])
+
+/X/Temperature_bins
+       Temperature bins (T [K])
+
+-----
+
+/Solar (Group)
+       All elements - H to Zn - are considered simultaneously (assuming 
+       solar abundances) 
+
+/Solar/Electron_density_over_n_h
+       Ratio of free electron and hydrogen number densities (n_e/n_H)
+       as a function of /Solar/Hydrogen_density_bins and
+       /Solar/Temperature_bins for solar abundances
+
+/Solar/Hydrogen_density_bins
+       Hydrogen number density bins (n_H [cm^-3])
+
+/Solar/Mean_particle_mass
+       Mean particle mass as a function of /Solar/Hydrogen_density_bins and
+       /Solar/Temperature_bins for solar abundances (mu [m_H]) 
+
+/Solar/Net_Cooling       
+       Normalized, net cooling rate (pos for cooling, neg for heating)
+       as a function of /Solar/Hydrogen_density_bins and
+       /Solar/Temperature_bins for solar abundances (Lambda/n_H^2 [erg
+       s^-1 cm^3]) 
+
+/Solar/Temperature_bins	 	 
+       Temperature bins (T [K])
