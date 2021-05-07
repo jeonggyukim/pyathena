@@ -438,26 +438,38 @@ class PlotHst(object):
     Plot time evolution of various quantities
     """
     
-    def __init__(self, sa, df, models=None, suptitle=None, tlim=None):
+    def __init__(self, sa, df, models=None, suptitle=None, tlim=None, normed_x=False,
+                 ls=['-','--',':','-.'],
+                 lw=[1.5, 1.5, 1.5, 1.5],
+                 subplots_kwargs=dict(nrows=1, ncols=2,
+                                     figsize=(15,5), merge_last_row=False),
+                 plt_vars=['mass', 'momentum']):
+        
         self.sa = sa
         self.df = df
         if models is None:
             self.models = sa.models
+        else:
+            self.models = models
         self.models = np.atleast_1d(self.models)
         self.linestyles = ['solid','dashed','dotted','dot-dashed']
-        self.ls = ['-','--',':','-.']
-        self.lw = [1.5, 1.5, 1.5, 1.5]
-        colors = ['k', 'C0', 'C1', 'C2']
+        self.ls = ls
+        self.lw = lw
         
-        self.get_fig()
+        self.get_subplots(**subplots_kwargs)
         if suptitle is None:
             self.set_suptitle()
         if tlim is None:
             self.tlim = (0, 20)
-            
+
+        self.normed_x = normed_x
+
+        for i, v in enumerate(plt_vars):
+            method = getattr(self, 'plt_' + v)
+            method(self.axes[i])
         
+    def get_subplots(self, nrows=3, ncols=2, figsize=(15,15), merge_last_row=False):
         
-    def get_fig(self, nrows=3, ncols=2, figsize=(15,15), merge_last_row=False):
         self.fig, self.axes = plt.subplots(nrows, ncols,
                                            figsize=figsize, constrained_layout=True)
         self.axes = self.axes.flatten()
@@ -474,9 +486,10 @@ class PlotHst(object):
         for i,(ls, mdl) in enumerate(zip(self.linestyles,self.models)):
             if i > 0:
                 suptitle += '\n '
+
             suptitle += '\n {0:s}: {1:s}'.format(ls,mdl)
         
-        self.fig.suptitle(suptitle)
+        self.fig.suptitle(suptitle, linespacing=0.7)
         
     def set_params(self, ax, models, setp_kwargs, kind, **kwargs):
         if ax is None:
@@ -484,48 +497,61 @@ class PlotHst(object):
         if models is None:
             models = self.models
 
+        if self.normed_x:
+            xlabel = 'time'
+        else:
+            xlabel = r'$time/t_{\rm ff,0}$'
+            
+        M0 = self.df.loc[models[0]]['M']
         if kind == 'mass':
             if kwargs['normed_y']:
                 ylabel = 'mass/$M_0$'
-                ylim = (1e-3,2)
+                ylim = (0.0, 1.1)
             else:
                 ylabel = r'mass $[M_{\odot}]$'
-                ylim = (1e2,2e5)
-            setp_kwargs_def  = dict(xlabel=r'time', ylabel=ylabel, yscale='log', ylim=ylim)
-            print(setp_kwargs_def)
+                ylim = (0.0, 1.1e5*M0/1e5)
+                
+            setp_kwargs_def  = dict(xlabel=xlabel, ylabel=ylabel,
+                                    yscale='linear', ylim=ylim)
+            
         if kind == 'volume':
-            setp_kwargs_def = dict(xlabel=r'time', ylabel='volume fraction', yscale='linear', ylim=(0,1.2))
+            setp_kwargs_def = dict(xlabel=xlabel, ylabel='volume fraction',
+                                   yscale='linear', ylim=(0,1.2))
         if kind == 'dt':
-            setp_kwargs_def = dict(xlabel=r'time', ylabel='dt', yscale='log', ylim=(1e-5,1e-1))
+            setp_kwargs_def = dict(xlabel=xlabel, ylabel='dt', yscale='log', ylim=(1e-5,1e-1))
         if kind == 'force':
-            setp_kwargs_def = dict(xlabel=r'time',
+            setp_kwargs_def = dict(xlabel=xlabel,
                                    ylabel=r'force $[M_{\odot}{\rm km}\,{\rm s}^{-1}\,{\rm Myr}^{-1}]$',
                                    yscale='log', ylim=(1e3,5e6))
         if kind == 'pr':
-            setp_kwargs_def = dict(xlabel=r'time',
+            setp_kwargs_def = dict(xlabel=xlabel,
                                    ylabel=r'momentum $[M_{\odot}{\rm km}\,{\rm s}^{-1}]$',
-                                   yscale='log', ylim=(1e3,5e6))
+                                   yscale='linear')
         if kind == 'luminosity':
-            setp_kwargs_def = dict(xlabel=r'time', ylabel=r'luminosity $[L_{\odot}]$',
-                                   yscale='log', ylim=(1e3,5e6))
+            setp_kwargs_def = dict(xlabel=xlabel, ylabel=r'luminosity $[L_{\odot}]$',
+                                   yscale='log', ylim=(1e4,5e6))
         if kind == 'fesc':
-            setp_kwargs_def = dict(xlabel=r'time', ylabel=r'escape fraction',
+            setp_kwargs_def = dict(xlabel=xlabel, ylabel=r'escape fraction',
                                    yscale='linear', ylim=(0,1.4))
-        
         if setp_kwargs is not None:
             setp_kwargs_def.update(setp_kwargs)
         
         return ax, models, setp_kwargs_def
-    
-    def plt_mass(self, ax=None, models=None, setp_kwargs=None, normed_y=False):
+
+    def plt_mass(self, ax=None, models=None, setp_kwargs=None, normed_y=True):
         ax, models, setp_kwargs = self.set_params(ax, models,
                         setp_kwargs, 'mass', **dict(normed_y=normed_y))
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
             mhd = self.df.loc[mdl]['mhd']
-            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            iWind = self.df.loc[mdl]['iWind']
+            tff = self.df.loc[mdl]['tff']
+            h = self.df.loc[mdl]['hst']
+            x = h['time']
+            if self.normed_x:
+                x /= tff
             if normed_y:
-                M0 = df.loc[mdl]['M']
+                M0 = self.df.loc[mdl]['M']
             else:
                 M0 = 1.0
 
@@ -536,35 +562,55 @@ class PlotHst(object):
             plt.plot(x, h['M_H2_cl']/M0, c='C4', ls=ls, lw=lw)
             plt.plot(x, h['M_cl_of']/M0, c='C5', ls=ls, lw=lw)
             plt.plot(x, (h['M_cl_of']-h['M_HI_cl_of']-h['M_H2_cl_of'])/M0, c='C7', ls=ls, lw=lw)
-            plt.plot(x, h['wind_Minj']/M0, c='grey', ls=ls, lw=0.5)
-            plt.plot(x, h['M_sp_s1']/M0, c='C2', ls=ls, lw=3)
-            
-        plt.setp(ax, **setp_kwargs)
-        ax.legend([r'$M_{\rm cl}$',r'$M_{\ast}$',r'$M_{\rm hot}$',
-                   r'$M_{\rm HII,cl}$',r'$M_{\rm H_2,cl}$',r'$M_{\rm of,cl}$',r'$M_{\rm of,ion,cl}$',
-                   r'$M_{\rm wind}$',r'$M_{\ast,{\rm wind}}$'])
+            if iWind:
+                plt.plot(x, h['wind_Minj']/M0, c='C8', ls=ls, lw=0.5)
+                plt.plot(x, h['M_sp_s1']/M0, c='C2', ls=ls, lw=3)
 
+            plt.plot(x, (h['M_cl'] + h['M_sp'] + h['M_cl_of'])/M0, c='grey', ls=ls, lw=lw)
+                
+        plt.setp(ax, **setp_kwargs)
+        labels = [r'$M_{\rm cl}$',r'$M_{\ast}$',r'$M_{\rm hot}$',
+                  r'$M_{\rm HII,cl}$',r'$M_{\rm H_2,cl}$',
+                  r'$M_{\rm of,cl}$',r'$M_{\rm of,ion,cl}$',]
+        if iWind:
+            labels.extend([r'$M_{\rm wind}$',r'$M_{\ast,{\rm wind}}$'])
+
+        ax.legend(labels, loc=2)
+
+        
     def plt_volume(self, ax=None, models=None, setp_kwargs=None):
         ax, models, setp_kwargs = self.set_params(ax, models,
                         setp_kwargs, 'volume')
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
-            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            mhd = self.df.loc[mdl]['mhd']
+            iWind = self.df.loc[mdl]['iWind']
+            tff = self.df.loc[mdl]['tff']
+            h = self.df.loc[mdl]['hst']
+            x = h['time'].copy()
+            if self.normed_x:
+                x /= tff
+                
             plt.plot(x, 1.0-h['V_HI']-h['V_H2'], c='C0', ls=ls, lw=1.5)
             plt.plot(x, h['Vi'] + h['Vh'], c='C1', ls=ls, lw=1.5)
-            plt.plot(x, h['Vf'], c='C2', ls=ls, lw=1.5)
+            if iWind:
+                plt.plot(x, h['Vf'], c='C2', ls=ls, lw=1.5)
 
         plt.setp(ax, **setp_kwargs)
         ax.legend([r'ionized',r'hot',r'free wind'])
 
-    def plt_dt(self, ax=None, models=None, setp_kwargs=None, dtHII=False):
+    def plt_dt(self, ax=None, models=None, setp_kwargs=None, dtHII=True):
         ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'dt')
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
-            h = self.df.loc[mdl]['hst'] ; x = h['time']
-            plt.plot(x, h['dt'], ls=ls[i], c='k')
+            tff = self.df.loc[mdl]['tff']
+            h = self.df.loc[mdl]['hst']
+            x = h['time'].copy()
+            if self.normed_x:
+                x /= tff
+            plt.plot(x, h['dt'], ls=ls, c='k')
             if dtHII:
-                plt.plot(x, h['dt_xHII_min'], ls=ls[i], c='C0')
+                plt.plot(x, h['dt_xHII_min'], ls=ls, c='C0')
 
         plt.setp(ax, **setp_kwargs)
         ax.legend([r'$dt$',r'$dt_{\rm HII}$'])
@@ -573,63 +619,88 @@ class PlotHst(object):
         ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'force')
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
-            h = self.df.loc[mdl]['hst'] ; x = h['time']
-            plt.plot(h['time'], h['Fthm'], ls=ls[i], c='C0')
-            plt.plot(h['time'], h['Frad'], ls=ls[i], c='C1')
-            plt.plot(h['time'], -h['Fgrav'], ls=ls[i], c='C2')
-            plt.plot(h['time'], h['Fcent'], ls=ls[i], c='C3')
-            plt.plot(h['time'], h['Fthm'] + h['Frad'] + h['Fgrav']+ h['Fcent'], ls=ls[i], c='k', lw=3)
+            mhd = self.df.loc[mdl]['mhd']
+            iWind = self.df.loc[mdl]['iWind']
+            tff = self.df.loc[mdl]['tff']
+            h = self.df.loc[mdl]['hst']
+            x = h['time']
+            if self.normed_x:
+                x /= tff
+
+            plt.plot(h['time'], h['Fthm'], ls=ls, c='C0')
+            plt.plot(h['time'], h['Frad'], ls=ls, c='C1')
+            plt.plot(h['time'], -h['Fgrav'], ls=ls, c='C2')
+            plt.plot(h['time'], h['Fcent'], ls=ls, c='C3')
+            plt.plot(h['time'], h['Fthm'] + h['Frad'] + h['Fgrav']+ h['Fcent'],
+                     ls=ls, c='k', lw=3)
             if plt_inj:
-                plt.plot(h['time'], h['Ltot_over_c'], ls=ls[i], c='C1', lw=0.5)
-                plt.plot(h['time'], h['wind_pdot'], ls=ls[i], c='C0', lw=0.5)
-            
+                plt.plot(h['time'], h['Ltot_over_c'], ls=ls, c='C1', lw=0.5)
+                if iWind:
+                    plt.plot(h['time'], h['wind_pdot'], ls=ls, c='C0', lw=0.5)
+
         plt.setp(ax, **setp_kwargs)
-        labels = [r'$F_{\rm thm}$', r'$F_{\rm rad}$',r'$|F_{\rm grav}|$',
+        labels = [r'$F_{\rm thm}$', r'$F_{\rm rad}$',r'$-F_{\rm grav}$',
                   r'$F_{\rm cent}$',r'$F_{\rm tot}$',]
         if plt_inj:
             labels += [r'$L/c$',r'$\dot{p}_{\rm w}$']
 
         ax.legend(labels, loc=2)
 
-    def plt_pr(self, ax=None, models=None, setp_kwargs=None, plt_inj=True):
+    def plt_momentum(self, ax=None, models=None, setp_kwargs=None, plt_inj=True):
         ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'pr')
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
-            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            mhd = self.df.loc[mdl]['mhd']
+            iWind = self.df.loc[mdl]['iWind']
+            tff = self.df.loc[mdl]['tff']
+            h = self.df.loc[mdl]['hst']
+            x = h['time']
+            if self.normed_x:
+                x /= tff
+                
             plt.plot(x, h['pr'] + h['pr_of'] - h['pr'].iloc[0], c='k', label='tot')
-            plt.plot(x, h['Fthm_int'], label='thm', ls=ls[i], c='C0')
-            plt.plot(x, h['Frad_int'], label='rad', ls=ls[i], c='C1')
-            plt.plot(x, -h['Fgrav_int'], label='|grav|', ls=ls[i], c='C2')
-            plt.plot(x, h['Fcent_int'], label='cent', ls=ls[i], c='C3')
+            plt.plot(x, h['Fthm_int'], label='thm', ls=ls, c='C0')
+            plt.plot(x, h['Frad_int'], label='rad', ls=ls, c='C1')
+            plt.plot(x, -h['Fgrav_int'], label='|grav|', ls=ls, c='C2')
+            plt.plot(x, h['Fcent_int'], label='cent', ls=ls, c='C3')
             plt.plot(x, h['Fthm_int'] + h['Frad_int'] +
-                        h['Fcent_int'] + h['Fgrav_int'], ls=ls[i], c='grey', lw=3, alpha=0.7)
+                        h['Fcent_int'] + h['Fgrav_int'], ls=ls, c='grey', lw=3, alpha=0.7)
             if plt_inj:
-                plt.plot(x, h['wind_pinj'], ls=ls[i], c='C0', lw=0.5)
-                plt.plot(x, h['Ltot_over_c_int'], ls=ls[i], c='C1', lw=0.5)
-
+                plt.plot(x, h['Ltot_over_c_int'], ls=ls, c='C1', lw=0.5)
+                if iWind:
+                    plt.plot(x, h['wind_pinj'], ls=ls, c='C0', lw=0.5)
             
         plt.setp(ax, **setp_kwargs)
         labels = [r'$\Delta p_{\rm r,box} + p_{\rm r,of}$', r'$\int F_{\rm thm}dt$',
-                  r'$\int F_{\rm rad} dt$',r'$\left|\int F_{\rm grav} dt\right|$',r'$\int F_{\rm cent}dt$',
+                  r'$\int F_{\rm rad} dt$',r'$-\int F_{\rm grav} dt$',r'$\int F_{\rm cent}dt$',
                   r'$\int F_{\rm tot} dt$']
         if plt_inj:
             labels += [r'$\int L/c dt$', r'$\int \dot{p}_w dt$']
-        ax.legend(labels, loc=4, ncol=2)
+
+        ax.legend(labels, loc='best')
 
         
     def plt_luminosity(self, ax=None, models=None, setp_kwargs=None, plt_wind=True):
+
         ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'luminosity')
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
-            h = self.df.loc[mdl]['hst'] ; x = h['time']
-            plt.plot(x, h['Ltot_PH'], ls=ls[i], c='C0')
-            plt.plot(x, h['Ltot_FUV'], ls=ls[i], c='C1')
-            if plt_wind:
-                plt.plot(x, h['wind_Edot']/ac.L_sun.cgs.value, ls=ls[i], lw=0.5, c='k')
+            mhd = self.df.loc[mdl]['mhd']
+            iWind = self.df.loc[mdl]['iWind']
+            tff = self.df.loc[mdl]['tff']
+            h = self.df.loc[mdl]['hst']
+            x = h['time']
+            if self.normed_x:
+                x /= tff
+                
+            plt.plot(x, h['Ltot_PH'], ls=ls, c='C0')
+            plt.plot(x, h['Ltot_FUV'], ls=ls, c='C1')
+            if plt_wind and iWind:
+                plt.plot(x, h['wind_Edot']/ac.L_sun.cgs.value, ls=ls, lw=0.5, c='k')
                 
         plt.setp(ax, **setp_kwargs)
         labels = [r'$L_{\rm LyC}$', r'$L_{\rm FUV}$']
-        if plt_wind:
+        if plt_wind and iWind:
             labels += [r'$L_{\rm wind}$']
         ax.legend(labels, loc=4, ncol=2)
         
@@ -637,7 +708,12 @@ class PlotHst(object):
         ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'fesc')
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
-            h = self.df.loc[mdl]['hst'] ; x = h['time']
+            tff = self.df.loc[mdl]['tff']
+            h = self.df.loc[mdl]['hst']
+            x = h['time']
+            if self.normed_x:
+                x /= tff
+
             plt.plot(x, h['fesc_PH'], ls=ls, lw=1.0, c='C0')
             plt.plot(x, h['fesc_FUV'], ls=ls, lw=1.0, c='C1')
             plt.plot(x, h['fesc_cum_PH'], ls=ls, lw=3, c='C0')
@@ -658,3 +734,13 @@ class PlotHst(object):
                       r'$\langle f_{\rm dust,LyC} \rangle$', r'$\langle f_{\rm dust,FUV} \rangle$']
             
         ax.legend(labels, loc=2, ncol=ncol)
+
+
+# ax = plt.gca()
+
+# t1 = lambda x: x/tff
+# t2 = lambda x: x*tff
+
+# sax = ax.secondary_xaxis('top', functions=(t1,t2))
+# ax.xaxis.set_ticks_position('bottom')
+# sax.set_xlabel(r'$t/t_{\rm ff,0}$', labelpad=12)

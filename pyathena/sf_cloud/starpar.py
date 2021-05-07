@@ -15,6 +15,9 @@ class StarPar():
         for i in self.nums_starpar:
             print(i, end=' ')
             r = self.read_starpar(num=i, force_override=False)
+            if r is None:
+                print('sp is None')
+                continue
             if i == 0:
                 for k in r.keys():
                     rr[k] = []

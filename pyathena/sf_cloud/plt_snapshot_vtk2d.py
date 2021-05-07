@@ -20,14 +20,16 @@ from ..plt_tools.make_movie import make_movie
 
 class PltSnapshotVTK2D:
 
-    def make_moive_snashot_vtk2d(self, fps_in=20, fps_out=20, savdir=None):
+    def make_moive_snashot_vtk2d(self, fps_in=20, fps_out=20, basedir=None, savdir=None):
+        if pngdir is None:
+            basedir = self.basedir
 
         if savdir is None:
-            savdir = osp.join(self.basedir, 'movies')
+            savdir = osp.join(basedir, 'movies')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
             
-        fin = osp.join(self.basedir, 'snapshot_vtk2d/*.png')
+        fin = osp.join(basedir, 'snapshot_vtk2d/*.png')
         fout = osp.join(savdir, '{0:s}_snapshot_vtk2d.mp4'.format(self.basename))
         if make_movie(fin, fout, fps_in, fps_out):
             savdir2='/tigress/{0:s}/public_html/movies/SF-CLOUD/'.\
@@ -42,7 +44,7 @@ class PltSnapshotVTK2D:
                                      'EM','d','T',
                                      'P','vmag','Bmag'],
                            figsize=(20,16), nrows_ncols=(3,3), axes_pad=(0.5,0.8),
-                           suptitle=None, savefig=False, make_movie=False):
+                           suptitle=None, savefig=False, savdir=None, make_movie=False):
 
         if self.par['configure']['gas'] == 'hydro':
             fields = ['Sigma','Sigma_H2','Sigma_HI',
@@ -93,7 +95,8 @@ class PltSnapshotVTK2D:
                      ha='center', va='bottom')
 
         if savefig:
-            savdir = osp.join(self.basedir, 'snapshot_vtk2d')
+            if savdir is None:
+                savdir = osp.join(self.basedir, 'snapshot_vtk2d')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
