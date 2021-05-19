@@ -146,12 +146,12 @@ class SliceProj:
                   norm=norm, origin='lower', interpolation='none')
             
     def plt_snapshot(self, num,
-                     fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'chi_FUV', 'Erad_LyC'),
+                     fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'chi_FUV'),
                      fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz'),
                      #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
                      #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
-                     suptitle=None, savdir=None, force_override=False, savefig=True):
+                     suptitle=None, savdir_pkl=None, savdir=None, force_override=False, savefig=True):
         """Plot 12-panel projection, slice plots in the z and y directions
 
         Parameters
@@ -171,7 +171,6 @@ class SliceProj:
             Maximum age of sn particles
         """
         
-
         label = dict(Sigma_gas=r'$\Sigma$',
                      Sigma_H2=r'$\Sigma_{\rm H_2}$',
                      EM=r'${\rm EM}$',
@@ -197,8 +196,8 @@ class SliceProj:
                        aspect=True, share_all=True)
         
         dat = dict()
-        dat['slc'] = self.read_slc(num, force_override=force_override)
-        dat['prj'] = self.read_prj(num, force_override=force_override)
+        dat['slc'] = self.read_slc(num, savdir=savdir_pkl, force_override=force_override)
+        dat['prj'] = self.read_prj(num, savdir=savdir_pkl, force_override=force_override)
         sp = self.load_starpar_vtk(num)
 
         extent = dat['prj']['extent']['z']
@@ -237,14 +236,14 @@ class SliceProj:
             suptitle = self.basename            
         # fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
         #              va='center', ha='center', **texteffect(fontsize='xx-large'))
-        fig.suptitle('Model: R8  time=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
+        fig.suptitle('Model: {0:s}  time='.format(suptitle) + str(int(ds.domain['time'])), x=0.4, y=1.02,
                      va='center', ha='center', **texteffect(fontsize='xx-large'))
         # plt.subplots_adjust(top=0.95)
 
         if savefig:
             if savdir is None:
                 #savdir = osp.join(self.savdir, 'snapshot')
-                savdir = osp.join('/tigress/jk11/figures/TIGRESS-RT', 'snapshot', self.basename)
+                savdir = osp.join('/tigress/jk11/figures/TIGRESS-NCR', 'snapshot', self.basename)
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 

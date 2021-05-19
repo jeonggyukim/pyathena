@@ -54,8 +54,9 @@ class AthenaDataSet(object):
         if not osp.exists(filename):
             raise IOError(('File does not exist: {0:s}'.format(filename)))
 
-        dirname, problem_id, num, suffix, ext, mpi_mode = _parse_filename(filename)
-        
+        dirname, problem_id, num, suffix, ext, mpi_mode, nonzero_id = \
+            _parse_filename(filename)
+
         if id0_only:
             mpi_mode = False
 
@@ -83,6 +84,10 @@ class AthenaDataSet(object):
                                          format(problem_id, num, suffix, ext))
             fnames = glob.glob(fname_pattern)
             self.fnames += fnames
+            
+        if nonzero_id:
+            from collections import OrderedDict
+            self.fnames = list(OrderedDict.fromkeys(self.fnames))
 
         self.grid = self._set_grid()
         self.domain = self._set_domain()
@@ -136,7 +141,7 @@ class AthenaDataSet(object):
         gle_all = []  # grid left edge
         gre_all = []  # grid right edge
         gidx = []     # grid indices that belongs to this region
-        
+        #print(self.grid,len(self.grid))
         for i, g in enumerate(self.grid):
             if (g['re'] >= le).all() and (g['le'] <= re).all():
                 gidx.append(i)
@@ -178,7 +183,8 @@ class AthenaDataSet(object):
         Nxr = np.empty(len(Nxg), dtype=int)
         for i, Nxg_ in enumerate(Nxg):
             Nxr[i] = np.sum(Nxg_)
-        
+
+        #print(gidx,NGrid)
         assert len(gidx) == NGrid.prod(),\
             print('Unexpected error: Number of grids {0:d} != '.format(len(gidx)) +
                   'number of unique edges {0:d}.'.format(NGrid.prod()))
@@ -493,22 +499,27 @@ def _parse_filename(filename):
 
     Returns
     -------
-    tuple containing dirname, problem_id, output number, extension, and mpi flag
+    tuple containing dirname, problem_id, output number, extension, mpi flag, nonzero_id flag
     
     Examples
     --------
     >>> _parse_filename('/basedir/id0/problem_id.0000.vtk')
-    ('/basedir', 'problem_id', '0000', 'vtk', True)
+    ('/basedir', 'problem_id', '0000', 'vtk', True, False)
     
+    >>> _parse_filename('/basedir/id10/problem_id-id10.0000.d1.vtk')
+    ('/basedir', 'problem_id', '0000', 'vtk', True, True)
+
     >>> _parse_filename('/basedir/problem_id.0000.vtk')
-    ('/basedir', 'problem_id', '0000', 'vtk', False)
+    ('/basedir', 'problem_id', '0000', 'vtk', False, False)
     """
 
-    sep = os.path.sep
-    dirname = os.path.dirname(filename)
-    
+    sep = osp.sep
+    dirname = osp.dirname(filename)
+    nonzero_id = False
     # Check if dirname ends with id0
-    if dirname.split(sep)[-1] == 'id0':
+    dirname_last = dirname.split(sep)[-1]
+    if dirname_last.startswith('id') and \
+       dirname_last[2:].isdigit():
         dirname = sep.join(dirname.split(sep)[:-1])
         mpi_mode = True
     else:
@@ -516,19 +527,25 @@ def _parse_filename(filename):
         
     base = os.path.basename(filename)
     base_split = base.split('.')
-
     if len(base_split) == 3:
         problem_id = '.'.join(base_split[:-2])
         num = base_split[-2]
         suffix = None
         ext = base_split[-1]
     else:
-        problem_id = '.'.join(base_split[:-3])
+        # If dirname is idXX where XX>0, (2d vtk slices)
+        # need to remove idXX string from the problem_id
+        if mpi_mode and int(dirname_last[2:]) != 0:
+            problem_id = '.'.join(base_split[:-3])
+            problem_id = problem_id.replace('-' + dirname_last,'')
+            nonzero_id = True
+        else:
+            problem_id = '.'.join(base_split[:-3])
         num = base_split[-3]
         suffix = base_split[-2]
         ext = base_split[-1]
-        
-    return dirname, problem_id, num, suffix, ext, mpi_mode
+
+    return dirname, problem_id, num, suffix, ext, mpi_mode, nonzero_id
         
 
     

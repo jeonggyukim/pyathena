@@ -6,8 +6,9 @@ from ..load_sim import LoadSim
 from ..util.units import Units
 
 from .hst import Hst
+from .dust_pol import DustPol
 
-class LoadSimFeedbackTest(LoadSim, Hst):
+class LoadSimFeedbackTest(LoadSim, Hst, DustPol):
     """LoadSim class for analyzing LoadSimFeedbackTest simulations.
     """
     

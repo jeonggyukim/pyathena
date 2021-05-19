@@ -2,20 +2,20 @@
 #SBATCH --job-name=do_tasks
 #SBATCH -N 1
 #SBATCH -p shared
-#SBATCH -n 14
-#SBATCH --ntasks-per-node=14
+#SBATCH -n 28
+#SBATCH --ntasks-per-node=28
 #SBATCH -t 00:30:00
 ##SBATCH --mail-type=begin
 ##SBATCH --mail-type=end
-##SBATCH --mail-user=kimjg@princeton.edu
+##SBATCH --mail-user=user@email
 #SBATCH --error=do_tasks_%j.err
 #SBATCH --output=do_tasks_%j.out
 #
 
-NPROCS=14
+NPROCS=28
 
-#MODULE="pyathena.sf_cloud.do_tasks2"
-MODULE="pyathena.tigress_rt.do_tasks"
+MODULE="pyathena.sf_cloud.do_tasks"
+#MODULE="pyathena.tigress_ncr.do_tasks"
 
 export MATPLOTLIBRC="$HOME/.config/matplotlib"
 export TERM="xterm-256color"

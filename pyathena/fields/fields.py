@@ -10,7 +10,7 @@ from matplotlib.colors import Normalize, LogNorm
 
 from ..plt_tools.cmap_shift import cmap_shift
 from ..plt_tools.cmap_custom import get_my_cmap
-
+from ..microphysics.cool import get_xe_mol
 from .xray_emissivity import get_xray_emissivity
 
 def static_vars(**kwargs):
@@ -20,12 +20,12 @@ def static_vars(**kwargs):
         return func
     return decorate
 
-def set_derived_fields_def(par, x0):
+def set_derived_fields_def(par, x0, newcool):
     """
     Function to define derived fields info, for example,
     functions to calculate derived fields, dependency, label, colormap, etc.
 
-    May not work perfectly for problems using different unit system.
+    May not work correctly for problems using different unit system.
     Assume that density = nH, length unit = pc, etc.
 
     Parameters
@@ -34,6 +34,8 @@ def set_derived_fields_def(par, x0):
        Dictionary containing simulation parameter information
     x0: sequence of floats
        Coordinate of the center with respect to which distance is measured
+    newcool: bool
+       Is new cooling turned on?
 
     Returns
     -------
@@ -163,17 +165,29 @@ def set_derived_fields_def(par, x0):
     cmap[f] = 'RdBu'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
+
+    
+    # cs [km/s]
+    f = 'csound'
+    field_dep[f] = set(['pressure','density'])
+    def _csound(d, u):
+        return np.sqrt(par['problem']['gamma']*d['pressure']/d['density'])
+    func[f] = _csound
+    label[f] = r'$c_s\;[{\rm km}\,{\rm s}^{-1}]$'
+    cmap[f] = 'magma'
+    vminmax[f] = (0.1,1e3)
+    take_log[f] = True
     
     # Radial momentum w.r.t. x0 [km/s cm^-3]
-    f = 'pr'
+    f = 'Mr'
     field_dep[f] = set(['density','velocity'])
     @static_vars(x0=x0)
-    def _pr(d, u):
+    def _Mr(d, u):
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
         r = xr.DataArray(np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
                             dims=('z','y','x'), name='r')
         return d['density']*(x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r*u.kms
-    func[f] = _pr
+    func[f] = _Mr
     label[f] = r'$p_r\;[{\rm cm^{-3}\,km\,s^{-1}}]$'
     vminmax[f] = (-1e5, 1e5)
     # Set cmap midpoint accordingly (midpoint=abs(vmin)/(abs(vmin)+abs(vmax))
@@ -184,15 +198,15 @@ def set_derived_fields_def(par, x0):
     take_log[f] = False
 
     # Absolute value of radial momentum w.r.t. x0 [km/s cm^-3]
-    f = 'pr_abs'
+    f = 'Mr_abs'
     field_dep[f] = set(['density','velocity'])
     @static_vars(x0=x0)
-    def _pr_abs(d, u):
+    def _Mr_abs(d, u):
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
         r = xr.DataArray(np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
                             dims=('z','y','x'), name='r')
         return np.abs(d['density']*(x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r)*u.kms
-    func[f] = _pr_abs
+    func[f] = _Mr_abs
     label[f] = r'$|p_r|\;[{\rm cm^{-3}\,km\,s^{-1}}]$'
     vminmax[f] = (1e-2, 1e4)
     # Set cmap midpoint accordingly (midpoint=abs(vmin)/(abs(vmin)+abs(vmax))
@@ -206,17 +220,12 @@ def set_derived_fields_def(par, x0):
     if par['configure']['cooling'] == 'ON':
         # T [K]
         f = 'T'
-        try:
-            if par['configure']['new_cooling'] == 'ON':
-                field_dep[f] = set(['density','pressure','xe','xH2'])
-                def _T(d, u):
-                    return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                        (ac.k_B/u.energy_density).cgs.value
-            else:
-                field_dep[f] = set(['temperature'])
-                def _T(d, u):
-                    return d['temperature']
-        except KeyError:
+        if newcool:
+            field_dep[f] = set(['density','pressure','xe','xH2'])
+            def _T(d, u):
+                return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                    (ac.k_B/u.energy_density).cgs.value
+        else:
             field_dep[f] = set(['temperature'])
             def _T(d, u):
                 return d['temperature']
@@ -282,11 +291,11 @@ def set_derived_fields_mag(par, x0):
     field_dep[f] = set(['cell_centered_B'])
     def _Bx(d, u):
         return d['cell_centered_B1']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)
+            *np.sqrt(4.0*np.pi)*1e6
     func[f] = _Bx
-    label[f] = r'$B_{x}\;[{\rm G}]$'
+    label[f] = r'$B_{x}\;[\mu{\rm G}]$'
     cmap[f] = 'RdBu'
-    vminmax[f] = (-1e-4,-1e-4)
+    vminmax[f] = (-1e2,1e2)
     take_log[f] = False
 
     # By [G]
@@ -294,11 +303,11 @@ def set_derived_fields_mag(par, x0):
     field_dep[f] = set(['cell_centered_B'])
     def _By(d, u):
         return d['cell_centered_B2']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)
+            *np.sqrt(4.0*np.pi)*1e6
     func[f] = _By
-    label[f] = r'$B_{y}\;[{\rm G}]$'
+    label[f] = r'$B_{y}\;[\mu{\rm G}]$'
     cmap[f] = 'RdBu'
-    vminmax[f] = (-1e-4,-1e-4)
+    vminmax[f] = (-1e2,1e2)
     take_log[f] = False
 
     # Bz [G]
@@ -306,11 +315,11 @@ def set_derived_fields_mag(par, x0):
     field_dep[f] = set(['cell_centered_B'])
     def _Bz(d, u):
         return d['cell_centered_B3']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)
+            *np.sqrt(4.0*np.pi)*1e6
     func[f] = _Bz
-    label[f] = r'$B_{z}\;[{\rm G}]$'
+    label[f] = r'$B_{z}\;[\mu{\rm G}]$'
     cmap[f] = 'RdBu'
-    vminmax[f] = (-1e-4,-1e-4)
+    vminmax[f] = (-1e2,1e2)
     take_log[f] = False
 
     # Magnetic fields magnitude [G]
@@ -320,10 +329,10 @@ def set_derived_fields_mag(par, x0):
         return (d['cell_centered_B1']**2 +
                 d['cell_centered_B2']**2 +
                 d['cell_centered_B3']**2)**0.5*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)
+            *np.sqrt(4.0*np.pi)*1e6
     func[f] = _Bmag
-    label[f] = r'$|\mathbf{B}|\;[{\rm G}]$'
-    vminmax[f] = (1e-7, 1e-4)
+    label[f] = r'$|\mathbf{B}|\;[\mu{\rm G}]$'
+    vminmax[f] = (1e-1, 1e2)
     cmap[f] = 'cividis'
     take_log[f] = True
     
@@ -482,12 +491,12 @@ def set_derived_fields_newcool(par, x0):
     take_log[f] = True
 
     # xCI - atomic neutral carbon
-    f = 'xCI'
     try:
         xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
     except KeyError:
-        # print('xCtot not found. Use 1.6e-4.')
         xCtot = 1.6e-4
+        print('xCtot not found. Use {:.1f}.'.format(xCtot))
+    f = 'xCI'
     field_dep[f] = set(['xCI_over_xCtot'])
     def _xCI(d, u):
         # Apply floor and ceiling
@@ -500,9 +509,9 @@ def set_derived_fields_newcool(par, x0):
 
     # nCI
     f = 'nCI'
-    field_dep[f] = set(['density','xCI'])
+    field_dep[f] = set(['density','xCI_over_xCtot'])
     def _nCI(d, u):
-        return d['density']*np.maximum(0.0,np.minimum(xCtot,d['xCI']))
+        return d['density']*xCtot*np.maximum(0.0,np.minimum(1.0,d['xCI_over_xCtot']))
     func[f] = _nCI
     label[f] = r'$x_{\rm CI}$'
     cmap[f] = 'viridis'
@@ -516,12 +525,16 @@ def set_derived_fields_newcool(par, x0):
     try:
         xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
     except KeyError:
-        # print('xCtot not found. Use 1.6e-4.')
         xCtot = 1.6e-4
-    field_dep[f] = set(['xe','xH2','xHI'])
+    field_dep[f] = set(['xe','xH2','xHI','pressure','density','CR_ionization_rate'])
     def _xCII(d, u):
+        d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+            (ac.k_B/u.energy_density).cgs.value
+        xe_mol = get_xe_mol(d['density'],d['xH2'],d['xe'],d['T'],d['CR_ionization_rate'],
+                            par['problem']['Z_gas'],par['problem']['Z_dust'])
         # Apply floor and ceiling
-        return np.maximum(0.0,np.minimum(xCtot,d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2'])))
+        return np.maximum(0.0,np.minimum(xCtot,
+                    d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2']) - xe_mol))
     func[f] = _xCII
     label[f] = r'$x_{\rm CII}$'
     cmap[f] = 'viridis'
@@ -758,7 +771,7 @@ def set_derived_fields_rad(par, x0):
     
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_xray(par, x0):
+def set_derived_fields_xray(par, x0, newcool):
     
     func = dict()
     field_dep = dict()
@@ -776,9 +789,15 @@ def set_derived_fields_xray(par, x0):
 
     # Normalized FUV radiation field strength (Draine field unit)
     f = 'j_X'
-    field_dep[f] = set(['density','temperature'])
+    if newcool:
+        field_dep[f] = set(['density','pressure','xe','xH2'])
+    else:
+        field_dep[f] = set(['density','temperature'])
     # Frequency integrated volume emissivity
     def _j_Xray(d, u):
+        if newcool:
+            d['temperature'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                               (ac.k_B/u.energy_density).cgs.value
         em = get_xray_emissivity(d['temperature'].data, Z_gas,
                                  emin, emax, energy=energy)
         return d['density']**2*em
@@ -798,9 +817,17 @@ class DerivedFields(object):
         # Create a dictionary containing all information about derived fields
         self.dfi = dict()
 
+        try:
+            if par['configure']['new_cooling'] == 'ON':
+                newcool = True
+            else:
+                newcool = False
+        except KeyError:
+            newcool = False
+
         self.func, self.field_dep, \
             self.label, self.cmap, \
-            self.vminmax, self.take_log = set_derived_fields_def(par, x0)
+            self.vminmax, self.take_log = set_derived_fields_def(par, x0, newcool)
 
         dicts = (self.func, self.field_dep, self.label, self.cmap, \
                  self.vminmax, self.take_log)
@@ -810,13 +837,10 @@ class DerivedFields(object):
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
-        try:
-            if par['configure']['new_cooling'] == 'ON':
-                dicts_ = set_derived_fields_newcool(par, x0)
-                for d, d_ in zip(dicts, dicts_):
-                    d = d.update(d_)
-        except KeyError:
-            pass
+        if newcool:
+            dicts_ = set_derived_fields_newcool(par, x0)
+            for d, d_ in zip(dicts, dicts_):
+                d = d.update(d_)
 
         try:
             if par['configure']['radps'] == 'ON':
@@ -838,7 +862,7 @@ class DerivedFields(object):
         try:
             if par['feedback']['iSN'] > 0 or par['feedback']['iWind'] > 0 or \
                par['feedback']['iEarly'] > 0:
-                dicts_ = set_derived_fields_xray(par, x0)
+                dicts_ = set_derived_fields_xray(par, x0, newcool)
                 for d, d_ in zip(dicts, dicts_):
                     d = d.update(d_)
         except KeyError:

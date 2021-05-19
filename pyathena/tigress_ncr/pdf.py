@@ -20,6 +20,7 @@ class PDF:
     bins=dict(nH=np.logspace(-5,3,81),
               nHI=np.logspace(-2,5,71),
               nH2=np.logspace(-2,5,71),
+              xH2=np.linspace(0,0.5,51),
               nHII=np.logspace(-5,3,101),
               T=np.logspace(1,8,141),
               pok=np.logspace(0,7,71),
@@ -35,7 +36,7 @@ class PDF:
                    savdir=None, force_override=False):
         if self.par['configure']['radps'] == 'ON':
             bin_fields_def = [['nH', 'pok'], ['nH', 'T'], ['nH','chi_FUV'],
-                              ['T','Lambda_cool'], ['nH','xi_CR']]
+                              ['T','Lambda_cool'], ['nH','xi_CR'], ['nH', 'xH2']]
         else:
             bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
         if bin_fields is None:
@@ -85,19 +86,22 @@ class PDF:
         ax.set(xscale=xscale, yscale=yscale,
                xlabel=self.dfi[kx]['label'], ylabel=self.dfi[ky]['label'])
             
-    def plt_pdf2d_all(self, num, suptitle=None, savdir=None, force_override=False, savefig=True):
+    def plt_pdf2d_all(self, num, suptitle=None, savdir=None,
+                      plt_zprof=True, savdir_pkl=None,
+                      force_override=False, savefig=True):
 
         if savdir is None:
             savdir = self.savdir
 
         s = self
         ds = s.load_vtk(num)
-        pdf = s.read_pdf2d(num, force_override=force_override)
-        prj = s.read_prj(num, force_override=force_override)
-        slc = s.read_slc(num, force_override=force_override)
+        pdf = s.read_pdf2d(num, savdir=savdir_pkl, force_override=force_override)
+        prj = s.read_prj(num, savdir=savdir_pkl, force_override=force_override)
+        slc = s.read_slc(num, savdir=savdir_pkl, force_override=force_override)
         hst = s.read_hst(savdir=savdir, force_override=force_override)
         sp = s.load_starpar_vtk(num)
-        zpa = s.read_zprof(['whole','2p','h'], savdir=savdir, force_override=force_override)
+        if plt_zprof:
+            zpa = s.read_zprof(['whole','2p','h'], savdir=savdir, force_override=force_override)
 
         fig, axes = plt.subplots(3,4,figsize=(20,15), constrained_layout=True)
 
@@ -128,16 +132,17 @@ class PDF:
         ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
         ax.set(xlim=(-512,512),ylim=(-512,512))
 
-        ax = axes[2,2]
-        for ph,color in zip(('whole','2p','h'),('grey','b','r')):
-            zp = zpa[ph]
-            if ph == '2p':
-                ax.semilogy(zp.z, zp['xe'][:,num]*zp['d'][:,num], ls=':', label=ph+'_e', c=color)
-            ax.semilogy(zp.z, zp['d'][:,num], ls='-', label=ph, c=color)
-        
-        ax.set(xlabel='z [kpc]', ylabel=r'$\langle n_{\rm H}\rangle\;[{\rm cm}^{-3}]$',
-               ylim=(1e-5,5e0))
-        ax.legend(loc=1)
+        if plt_zprof:
+            ax = axes[2,2]
+            for ph,color in zip(('whole','2p','h'),('grey','b','r')):
+                zp = zpa[ph]
+                if ph == '2p':
+                    ax.semilogy(zp.z, zp['xe'][:,num]*zp['d'][:,num],
+                                ls=':', label=ph+'_e', c=color)
+                ax.semilogy(zp.z, zp['d'][:,num], ls='-', label=ph, c=color)
+                ax.set(xlabel='z [kpc]', ylabel=r'$\langle n_{\rm H}\rangle\;[{\rm cm}^{-3}]$',
+                       ylim=(1e-5,5e0))
+                ax.legend(loc=1)
 
         # axes[2,2].remove()
         # gs = fig.add_gridspec(3, 8)
@@ -173,5 +178,6 @@ class PDF:
 
             savname = osp.join(savdir, '{0:s}_{1:04d}_pdf2d.png'.format(self.basename, num))
             plt.savefig(savname, dpi=200, bbox_inches='tight')
-
+            plt.close()
+            
         return fig

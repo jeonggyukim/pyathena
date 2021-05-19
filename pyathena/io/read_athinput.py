@@ -46,10 +46,10 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
     else: # from restart
         for i, line in enumerate(lines):
             if '<comment>' in line:
-                    istart = i
-            if '<par_end>' in line:
-                    iend = i
-                    
+                istart = i
+            if 'SMR enabled?' in line or '<par_end>' in line:
+                iend = i
+
     lines = lines[istart:iend]
     
     # Parse lines

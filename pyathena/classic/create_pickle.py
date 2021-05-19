@@ -199,22 +199,22 @@ def create_slices(ds, fname, fields, force_recal=False, factors={}, verbose=Fals
     for f in field_to_slice:
         if verbose:
             print('{}...'.format(f), end='')
-        if f is 'temperature':
+        if f == 'temperature':
             if 'xn' in ds.derived_field_list:
                 pdata = ds.read_all_data('temperature')
             else:
                 pdata = ds.read_all_data('T1')
-        elif f is 'magnetic_field_strength':
+        elif f == 'magnetic_field_strength':
             pdata = ds.read_all_data('magnetic_field')
-        elif f is 'ram_pok_z':
+        elif f == 'ram_pok_z':
             pdata = ds.read_all_data('kinetic_energy3')*2.0
-        elif f is 'pok':
+        elif f == 'pok':
             pdata = ds.read_all_data('pressure')
-        elif f is 'velocity_z':
+        elif f == 'velocity_z':
             pdata = ds.read_all_data('velocity3')
-        elif f is 'mag_pok':
+        elif f == 'mag_pok':
             pdata = ds.read_all_data('magnetic_pressure')
-        elif f is 'nH':
+        elif f == 'nH':
             pdata = ds.read_all_data('density')
         else:
             pdata = ds.read_all_data(f)
@@ -222,7 +222,7 @@ def create_slices(ds, fname, fields, force_recal=False, factors={}, verbose=Fals
         for i, axis in enumerate(['x','y','z']):
             if f == 'temperature' and not 'xn' in ds.derived_field_list:
                 slc = coolftn.get_temp(pdata.take(cidx[i],axis=2-i))
-            elif f is 'magnetic_field_strength':
+            elif f == 'magnetic_field_strength':
                 slc = np.sqrt((pdata.take(cidx[i],axis=2-i)**2).sum(axis=-1))
             else:
                 slc = pdata.take(cidx[i],axis=2-i)

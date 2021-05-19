@@ -138,7 +138,7 @@ class DustPol:
         plt.suptitle(self.basename + '  t={0:4.1f}'.format(sp.time))
         
         if savefig:
-            savdir = osp.join(self.savdir, 'dust_pol')
+            savdir = osp.join('/tigress/jk11/figures/GMC', self.basename, 'dust_pol')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
