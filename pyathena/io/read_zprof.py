@@ -250,10 +250,15 @@ def recal_zprof(sim,num,write=False):
                       pressure='P',gravitational_potential='Phisg')
     mhd_rename=dict(cell_centered_B1='B1',cell_centered_B2='B2',cell_centered_B3='B3')
     cool_rename=dict(cool_rate='cool',heat_rate='heat')
-
+    rad_rename=dict(rad_energy_density_PE='Erad2',
+                    #rad_energy_density_PE_unatt='Erad3',
+                    rad_energy_density_LW_diss='Erad_LWdiss',
+                    rad_energy_density_PH='Erad0',
+                    rad_energy_density_LW='Erad1')
     if 'density' in zprof_data: zprof_data=zprof_data.rename(hydro_rename)
     if 'cell_centered_B1' in zprof_data: zprof_data=zprof_data.rename(mhd_rename)
     if 'cool_rate' in zprof_data: zprof_data=zprof_data.rename(cool_rename)
+    if 'rad_energy_density_PE' in zprof_data: zprof_data=zprof_data.rename(rad_rename)
     if sim.par['configure']['nscalars'] > 3:
         zprof_data['specific_scalar[3]']=zprof_data['xHI']
     if sim.par['configure']['nscalars'] > 4:
@@ -275,12 +280,19 @@ def recal_zprof(sim,num,write=False):
 
     savdir = sim.savdir+'/zprof'
     if not os.path.isdir(savdir): os.mkdir(savdir)
+
+    if not write: zp_phase=[]
     for phase in plist:
         zp = _get_mean(zprof_data*idx[phase],dA)
-        fname = '{}/{}.{:04d}.{}.zprof.nc'.format(savdir,sim.problem_id,num,phase)
-        print(fname)
-        if write: zp.to_netcdf(fname)
-        zp.close()
+        if write:
+            fname = '{}/{}.{:04d}.{}.zprof.nc'.format(savdir,sim.problem_id,num,phase)
+            print("Writing: {}".format(fname))
+            zp.to_netcdf(fname)
+            zp.close()
+        else:
+            print("Reading: {}".format(phase))
+            zp_phase.append(zp)
+    if not write: return zp_phase
 
 def _set_zprof_classic(sim,zprof):
     """Setting data variables to be integrated horizontally (used in TIGRESS classic)
@@ -395,6 +407,9 @@ def _set_zprof_classic(sim,zprof):
         if k.startswith('m'): zprof[k]=zprof[k].where(nv3).fillna(0.)
 
     zprof['A']=unitary*dA
+    zprof['dsq']=zprof['d']*zprof['d']
+    zprof['nesq']=(zprof['xe']*zprof['d'])**2
+
 
 def _get_phase(data,new_cool=False):
     """Define phases as done in the original code"""
