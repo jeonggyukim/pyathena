@@ -12,4 +12,7 @@ conda activate pyathena
 MODULE="pyathena.tigress_ncr.do_tasks"
 export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
 
-srun python -m $MODULE
+BASEDIR=$1
+cd $HOME/pyathena
+
+srun python pyathena/tigress_ncr/do_tasks -b $BASEDIR
