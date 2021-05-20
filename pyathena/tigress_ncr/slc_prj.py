@@ -41,7 +41,7 @@ norm_def = dict(
 )
 
 class SliceProj:
-    
+
     @staticmethod
     def _get_extent(domain):
 
@@ -52,9 +52,9 @@ class SliceProj:
                   domain['le'][2], domain['re'][2])
         r['z'] = (domain['le'][0], domain['re'][0],
                   domain['le'][1], domain['re'][1])
-        
+
         return r
-    
+
     @LoadSim.Decorators.check_pickle
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
@@ -63,14 +63,14 @@ class SliceProj:
             fields_def = ['nH', 'nH2', 'vz', 'T', 'chi_FUV', 'Erad_LyC', 'xi_CR']
         else:
             fields_def = ['nH', 'nH2', 'vz', 'T']
-        
+
         fields = fields_def
         axes = np.atleast_1d(axes)
 
         ds = self.load_vtk(num=num)
         res = dict()
         res['extent'] = self._get_extent(ds.domain)
-        
+
         for ax in axes:
             dat = ds.get_slice(ax, fields, pos='c', method='nearest')
             res[ax] = dict()
@@ -98,7 +98,7 @@ class SliceProj:
             dx = ds.domain['dx'][i]*self.u.length
             conv_Sigma = (dx*self.u.muH*ac.u.cgs/au.cm**3).to('Msun/pc**2')
             conv_EM = (dx*au.cm**-6).to('pc cm-6')
-            
+
             res[ax] = dict()
             res[ax]['Sigma_gas'] = (np.sum(dat['nH'], axis=2-i)*conv_Sigma).data
             res[ax]['Sigma_H2'] = (2.0*np.sum(dat['nH2'], axis=2-i)*conv_Sigma).data
@@ -120,14 +120,14 @@ class SliceProj:
 
         ax.imshow(slc[axis][field], cmap=cmap,
                   extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
-            
-    @staticmethod        
+
+    @staticmethod
     def plt_proj(ax, prj, axis='z', field='Sigma_gas',
                  cmap=None, norm=None, vmin=None, vmax=None):
 
         vminmax = dict(Sigma_gas=(1e-2,1e2))
         cmap_def = dict(Sigma_gas='pink_r')
-        
+
         if cmap is None:
             try:
                 cmap = cmap_def[field]
@@ -136,7 +136,7 @@ class SliceProj:
         if vmin is None or vmax is None:
             vmin = vminmax[field][0]
             vmax = vminmax[field][1]
-            
+
         if norm is None or 'log':
             norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
         elif norm is 'linear':
@@ -144,7 +144,7 @@ class SliceProj:
 
         ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
                   norm=norm, origin='lower', interpolation='none')
-            
+
     def plt_snapshot(self, num,
                      fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'chi_FUV'),
                      fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz'),
@@ -170,7 +170,7 @@ class SliceProj:
         agemax_sn : float
             Maximum age of sn particles
         """
-        
+
         label = dict(Sigma_gas=r'$\Sigma$',
                      Sigma_H2=r'$\Sigma_{\rm H_2}$',
                      EM=r'${\rm EM}$',
@@ -185,7 +185,7 @@ class SliceProj:
         kind = dict(Sigma_gas='prj', Sigma_H2='prj', EM='prj',
                     nH='slc', T='slc', vz='slc', chi_FUV='slc',
                     Erad_LyC='slc', xi_CR='slc')
-        
+
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
 
@@ -194,7 +194,7 @@ class SliceProj:
                        aspect=True, share_all=True, direction='column')
         g2 = ImageGrid(fig, [0.2, 0.05, 0.85, 0.94], (1, 6), axes_pad=0.1,
                        aspect=True, share_all=True)
-        
+
         dat = dict()
         dat['slc'] = self.read_slc(num, savdir=savdir_pkl, force_override=force_override)
         dat['prj'] = self.read_prj(num, savdir=savdir_pkl, force_override=force_override)
@@ -233,7 +233,7 @@ class SliceProj:
                 ax.axes.get_yaxis().set_visible(False)
 
         if suptitle is None:
-            suptitle = self.basename            
+            suptitle = self.basename
         # fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
         #              va='center', ha='center', **texteffect(fontsize='xx-large'))
         fig.suptitle('Model: {0:s}  time='.format(suptitle) + str(int(ds.domain['time'])), x=0.4, y=1.02,
@@ -242,12 +242,11 @@ class SliceProj:
 
         if savefig:
             if savdir is None:
-                #savdir = osp.join(self.savdir, 'snapshot')
-                savdir = osp.join('/tigress/jk11/figures/TIGRESS-NCR', 'snapshot', self.basename)
+                savdir = osp.join(self.savdir, 'snapshot')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
             savname = osp.join(savdir, '{0:s}_{1:04d}.png'.format(self.basename, num))
             plt.savefig(savname, dpi=200, bbox_inches='tight')
-            
+
         return fig
