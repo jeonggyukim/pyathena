@@ -54,7 +54,9 @@ class CoolGnat12(object):
             for e in self.info.index:
                 self.info['abd'][e] = float(a.df[a.df['X'] == e]['NX_NH'])
 
-            
+        # self.cool_cie_tot = self.get_cool_cie_total()
+        self.get_cool_cie_total()
+        
     def _read_ion_frac_table(self):
         """Read Gnat & Sternberg (2007) CIE ion fractions
         """
@@ -111,17 +113,37 @@ class CoolGnat12(object):
         return pd.DataFrame(r).T.sort_values('number')
 
     def get_cool_cie_total(self,
-            elem=['H','He','C','N','O','Ne','Mg','Si','S','Fe']):
+            elements=['H','He','C','N','O','Ne','Mg','Si','S','Fe']):
 
+        xe = dict()
+        xe_tot = np.zeros_like(self.temp)
+        cool = dict()
         cool_tot = np.zeros_like(self.temp)
-        for ion_name in elem:
-            element = tbl.elem.loc[ion_name]
-            nstate = element['number'] + 1
-            A = element['abd']
-            cool_tot += tbl.get_cool_cie(ion_name)*A
+
+        # Elements for which CIE ion_frac is available
+
+        for e in elements:
+            xe[e] = np.zeros_like(self.temp)
+            cool[e] = np.zeros_like(self.temp)
+
+        for e in elements:
+            nstate = self.info.loc[e]['number'] + 1
+            A = self.info.loc[e]['abd']
             
-        return cool_tot
+            for i in range(nstate):
+                xe[e] += A*i*self.ion_frac[e + str(i)].values
+                cool[e] += A*self.ion_frac[e + str(i)].values*self.cool_cie_per_ion[e][:,i]
+
             
+        for e in elements:
+            xe_tot += xe[e]
+            cool_tot += cool[e]
+
+        self.cool_tot = cool_tot
+        self.xe_tot = xe_tot
+        self.xe = xe
+        self.cool = cool
+
     def get_cool_cie(self, element):
         """
         Parameter

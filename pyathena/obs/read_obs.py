@@ -18,7 +18,9 @@ class ReadObs():
         self.files = dict()
         self.df = dict()
         self.files['Sun18'] = os.path.join(local,'../../data/Sun18-Table3.txt')
-        self.files['Sun20'] = os.path.join(local,'../../data/Sun20-Table3.txt')
+        self.files['Sun20a'] = os.path.join(local,'../../data/Sun20a-Table3.txt')
+        self.files['Sun20bTA'] = os.path.join(local,'../../data/Sun20b-TableA1.txt')
+        self.files['Sun20bTB'] = os.path.join(local,'../../data/Sun20b-TableB1.txt')
         self.files['Lee16'] = os.path.join(local,'../../data/Lee16-Table3.txt')
         self.files['Ochsendorf17T4'] = os.path.join(local,'../../data/Ochsendorf17-Table4.txt')
         self.files['Ochsendorf17T5'] = os.path.join(local,'../../data/Ochsendorf17-Table5.txt')
@@ -26,7 +28,8 @@ class ReadObs():
         self.files['VE16T3'] = os.path.join(local,'../../data/Vutisalchavakul16-Table3.txt')
         self.files['Evans14'] = os.path.join(local,'../../data/Evans14-Table1.txt')
         self.df['Sun18'] = self._read_Sun18()
-        self.df['Sun20'] = self._read_Sun20()
+        self.df['Sun20a'] = self._read_Sun20a()
+        self.df['Sun20bTA'], self.df['Sun20bTB'] = self._read_Sun20b()
         self.df['Lee16'] = self._read_Lee16()
         self.df['Ochsendorf17T4'] = self._read_Ochsendorf17T4()
         self.df['Ochsendorf17T5'] = self._read_Ochsendorf17T5()
@@ -66,15 +69,27 @@ class ReadObs():
     def get_Sun18_main_sample(self):
         return self.df['Sun18'].query('Name != "M31" and Name != "M33" and Name != "Antenna"')
     
-    def _read_Sun20(self):
-        df = pd.read_fwf(self.files['Sun20'], skiprows=27,
+    def _read_Sun20a(self):
+        df = pd.read_fwf(self.files['Sun20a'], skiprows=27,
                          names=['Galaxy','inDisk','fCO120pc','Pturb120pc','PDE120pc',
                                 'fCO60pc','Pturb60pc','PDE60pc','PDEkpc','PDEkpc11',
                                 'SigSFRkpc','Rmolkpc'])
         return df
 
-    def get_Sun20(self):
-        return self.df['Sun20']
+    def _read_Sun20b(self):
+        dfA = pd.read_fwf(self.files['Sun20bTA'], skiprows=46,
+                          names=['Galaxy','f_Galaxy','Bar','Arm','Dist','i',
+                                 'PA','Mstar','SFR','Reff','Tnoise','rch','fCO','f_fCO','Nlos'])
+        dfB = pd.read_fwf(self.files['Sun20bTB'], skiprows=27,
+                          names=['Galaxy','scale','rgal','Center','Arm',
+                                 'Interarm','ICO21','Sigma','Vdisp','Pturb','alphavir'])
+        return dfA,dfB
+
+    def get_Sun20a(self):
+        return self.df['Sun20a']
+    
+    def get_Sun20b(self):
+        return self.df['Sun20bTA'],self.df['Sun20bTB']
 
     def _read_Lee16(self):
         df = pd.read_fwf(self.files['Lee16'], skiprows=30,
