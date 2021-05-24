@@ -2,7 +2,10 @@ import struct
 import numpy as np
 import glob
 import os
+import os.path as osp
 import sys
+import re
+from tqdm import tqdm
 
 def read_rst(filename, verbose=False):
     """Wrapper function to return RestartHandler class to read/handle restart file"""
@@ -14,10 +17,8 @@ class RestartHandler(object):
         self.verbose = verbose
         # read information from id0 file
         par, rst_fm, data = _read_one_grid(filename,verbose=verbose)
-        ns=0
-        for f in rst_fm:
-            if f.startswith('SCALAR'): ns+=1
-        self.nscalars = ns
+        self.nscalars = self._get_nscalars(data)
+
         self.par = par
         self.time = par['time']['time']
 
@@ -28,7 +29,8 @@ class RestartHandler(object):
         dm=par['domain1']
         Nx=np.array([dm['Nx1'],dm['Nx2'],dm['Nx3']])
         Ng=np.array([dm['NGrid_x1'],dm['NGrid_x2'],dm['NGrid_x3']])
-        Nb=Nx/Ng
+        Nb=(Nx/Ng).astype('int64')
+
         self.dm = dm # domain information from the input file
         xfc, xcc = _set_xpos_with_dm(dm)
         self.xfc = xfc
@@ -42,45 +44,222 @@ class RestartHandler(object):
         self.ngrid = Nb # grid size
         self.grids = grids # list of grid dict id, is, Nx
 
-    def read(self):
-        return _read_all_grid(self.fname,self.grids,self.NGrid,verbose=self.verbose)
+        self.ideg = 0 # degraded?
+        self.iref = 0 # refined?
 
-    def degrade(self,data,ns=None,check_divB=True):
-        if ns is None: ns = self.nscalars
+    def read(self,verbose=None):
+        """Read full data"""
+        if verbose is None: verbose = self.verbose
+        self.data = _read_all_grid(self.fname,self.grids,self.NGrid,verbose=verbose)
+        return self.data
+
+    def remove_all_targets(self):
+        """Remove previously manipulated data"""
+        target_attrs = ['data','par','grids','NGrid','ngrid']
+        for attr in target_attrs:
+            if hasattr(self,'{}_target'.format(attr)):
+                delattr(self,'{}_target'.format(attr))
+        self.ideg = 0
+        self.iref = 0
+        if hasattr(self,'new_x3min'): delattr(self,'new_x3min')
+        if hasattr(self,'new_x3min'): delattr(self,'new_x3max')
+
+    def reset_par(self,pid=None):
+        """Reset input parameters. May not be able to handle this fully automatically"""
+        if hasattr(self,'par_target'):
+            par = self.par_target['par'].decode()
+            parnew = self.par_target.copy()
+        else:
+            par = self.par_misc['par'].decode()
+            parnew = self.par_misc.copy()
+
+        if hasattr(self,'data_target'):
+            Nx_new = self.data_target['DENSITY'].shape
+            Nx = dict(Nx1=Nx_new[2],Nx2=Nx_new[1],Nx3=Nx_new[0])
+            is_new_domain = True
+        else:
+            is_new_domain = False
+
+        if hasattr(self,'NGrid_target'):
+            NGrid = dict(NGrid_x1=self.NGrid_target[0],
+                         NGrid_x2=self.NGrid_target[1],
+                         NGrid_x3=self.NGrid_target[2])
+            is_new_grid = True
+        else:
+            is_new_grid = False
+
+        ideg, iref = self.ideg, self.iref
+        plist = par.split('\n')
+        for i, p in enumerate(plist):
+            psp = re.split('\s+',p)
+            pnew = p
+            if(p.startswith('problem_id') & (pid is not None)):
+                pnew = p.replace(psp[2],'{:s}'.format(pid))
+                if self.verbose: print('reset {}:'.format(psp[0]),pnew)
+
+            if(p.startswith('Nx') & is_new_domain):
+                pnew = p.replace(psp[2],'{:d}'.format(Nx[psp[0]]))
+                if self.verbose: print('reset {}:'.format(psp[0]),pnew)
+
+            if(p.startswith('NGrid') & is_new_grid):
+                pnew = p.replace('= '+psp[2],'= {:d}'.format(NGrid[psp[0]]))
+                if self.verbose: print('reset {}:'.format(psp[0]),pnew)
+
+            if(p.startswith('x3min') & hasattr(self,'new_x3min')):
+                pnew = p.replace(psp[2],'{:.1f}'.format(self.new_x3min))
+                if self.verbose: print('reset {}:'.format(psp[0]),pnew)
+
+            if(p.startswith('x3max') & hasattr(self,'new_x3max')):
+                pnew = p.replace(psp[2],'{:.1f}'.format(self.new_x3max))
+                if self.verbose: print('reset {}:'.format(psp[0]),pnew)
+
+            if(p.startswith('eps_extinct') & ((ideg>0) | (iref>0))):
+                if ideg > 0: factor=4**ideg
+                if iref > 0: factor=0.25**iref
+                pnew = p.replace(psp[2],'{:.1e}'.format(eval(psp[2])*factor))
+                if self.verbose: print('reset {}:'.format(psp[0]),pnew)
+
+            plist[i] = pnew
+        par = '\n'.join(plist)
+
+        parnew['par']=par.encode()
+
+        return parnew
+
+
+    def reset_grids(self,ngrid=None):
+        """Reset grid list with new grid size
+
+        Parameter
+        =========
+        ngrid : array like
+           grid dimension [nx, ny, nz]
+        """
+        if hasattr(self,'data_target'):
+            data = self.data_target
+        else:
+            data = self.data
+
+        Nx = np.array(data['DENSITY'].shape)[::-1]
+
+        if ngrid is None:
+            ngrid = self.ngrid
+            # grid size cannot be larger than domain size
+            ngrid = np.gcd(Nx,ngrid)
+
+        grids_target, NG_target=_calculate_grid(Nx,ngrid,verbose=self.verbose)
+
+        self.grids_target = grids_target
+        self.NGrid_target = NG_target
+        self.ngrid_target = ngrid
+
+        self.par_target = self.reset_par()
+
+    def write(self,outdir=None,pid="newrst",itime=0):
+        """Write target data"""
+        if hasattr(self,'data_target'):
+            data = self.data_target
+        else:
+            data = self.data
+
+        if hasattr(self,'par_target'):
+            par = self.par_target
+        else:
+            par = self.par_misc
+        par = self.reset_par(pid=pid)
+
+        if hasattr(self,'grids_target'):
+            grids = self.grids_target
+        else:
+            grids = self.grids
+
+        if outdir is None:
+            outdir = osp.join(osp.dirname(self.fname),'../newrst')
+        # make directory
+        if not osp.isdir(outdir): os.mkdir(outdir)
+
+        ns = self._get_nscalars(data)
+
+        new_fname = write_allfile(par,data,grids,
+                                  dname=outdir,id=pid,itime=itime,scalar=ns)
+
+        if self.verbose: print("new restart dump is written in: {}".format(new_fname))
+        return new_fname
+
+    def degrade(self,check_divB=True):
+        """Degrade data and store it to data_target"""
+        if hasattr(self,'data_target'):
+            data = self.data_target
+        else:
+            data = self.data
+
+        ns = self._get_nscalars(data)
+
         rstdata_target=_degrade(data,scalar=ns)
         if check_divB:
             divB = _divergence_B(rstdata_target)
-            print("divB max:", divB.max())
+            if self.verbose: print("divB max:", divB.max())
+        self.data_target = rstdata_target
+        self.reset_grids() # recacluate grid as this changed domain
+        self.ideg += 1
 
         return rstdata_target
 
-    def refine(self,data,ns=None,check_divB=True):
-        if ns is None: ns = self.nscalars
+    def refine(self,check_divB=True):
+        """Refine data and store it to data_target"""
+        if hasattr(self,'data_target'):
+            data = self.data_target
+        else:
+            data = self.data
+
+        ns = self._get_nscalars(data)
+
         rstdata_target=_refine(data,scalar=ns)
         if check_divB:
             divB = _divergence_B(rstdata_target)
-            print("divB max:", divB.max())
+            if self.verbose: print("divB max:", divB.max())
+        self.data_target = rstdata_target
+        self.reset_grids() # recacluate grid as this changed domain
+        self.iref += 1
 
         return rstdata_target
 
-    def cut_z(self,data,zmin,zmax,inplace=True):
+    def cut_z(self,zmin,zmax):
+        """Cut vertical domain and store it to data_target"""
         k0,k1 = self._find_kmin_kmax(zmin,zmax)
-        if not inplace: newdata = dict()
+
+        if hasattr(self,'data_target'):
+            data = self.data_target
+        else:
+            data = dict()
+            for k in self.data: # deep copy
+                data[k] = self.data[k].copy()
+
         for k in data:
             if k == '3-FIELD':
-                if inplace: data[k] = data[k][k0:k1+1,:,:]
-                else: newdata[k] = data[k][k0:k1+1,:,:]
+                data[k] = data[k][k0:k1+1,:,:]
             else:
-                if inplace: data[k] = data[k][k0:k1,:,:]
-                else: newdata[k] = data[k][k0:k1,:,:]
-        if inplace: return data
-        else: return newdata
+                data[k] = data[k][k0:k1,:,:]
+
+        self.data_target = data
+        self.new_x3min = self.xfc['z'][k0]
+        self.new_x3max = self.xfc['z'][k1]
+        self.reset_grids() # recacluate grid as this changed domain
+
+        return data
 
     def _find_kmin_kmax(self,zmin,zmax):
         zmin = max(zmin,self.dm['x3min'])
         zmax = min(zmax,self.dm['x3max'])
         zidx, = np.where((self.xcc['z'] >= zmin) & (self.xcc['z'] <= zmax))
-        return zidx.min(), zidx.max()
+        return zidx.min(), zidx.max()+1
+
+    def _get_nscalars(self,data):
+        ns=0
+        for f in data:
+            if f.startswith('SCALAR'): ns+=1
+        return ns
+
 #writer
 
 def _parse_misc_info(rstfile):
@@ -140,7 +319,7 @@ def write_onefile(newfile,data_part,data_par):
     return
 
 def write_allfile(pardata,rstdata,grids,grid_disp=np.array([0,0,0]),
-  id='newrst',dname='/tigress/changgoo/rst/',itime=0,verbose=False,scalar=0):
+  id='newrst',dname='/tigress/changgoo/rst/',itime=0,scalar=0):
     """Write all restart file for given grid and domain information"""
     ngrids=len(grids)
 #    if not (ds.domain['Nx'][::-1] == rstdata['DENSITY'].shape).all():
@@ -156,7 +335,7 @@ def write_allfile(pardata,rstdata,grids,grid_disp=np.array([0,0,0]),
                  'ENERGY','POTENTIAL']
     fc_varnames=['1-FIELD','2-FIELD','3-FIELD']
 
-    for g in grids:
+    for g in tqdm(grids, desc='Writing...'):
         i=g['id']
         if i == 0:
           fname=id+'.%4.4d.rst' % itime
@@ -184,10 +363,11 @@ def write_allfile(pardata,rstdata,grids,grid_disp=np.array([0,0,0]),
             f='SCALAR %d' % ns
             if f in fields:
                 data[f]=rstdata[f][gis[2]:gie[2],gis[1]:gie[1],gis[0]:gie[0]]
-        if verbose: dname+fname
-        write_onefile(dname+fname,data,pardata)
+        write_onefile(osp.join(dname,fname),data,pardata)
+        if i == 0:
+            fname0 = osp.join(dname,fname)
 
-    return
+    return fname0
 
 def _to_eint(rstdata,neg_correct=True):
     """Convert total energy to internal energy and correct negative energy"""
@@ -557,53 +737,38 @@ def _read_all_grid(rstfile,grids,NGrids,parfile=None,verbose=False,starghost=Tru
     rstdata={}
     nx=NGrids*grids[0]['Nx']
     nx=nx[::-1]
-    #nx=ds.domain['Nx'][::-1]
-    if verbose: print("domain size: {}, num grids: {}".format(nx,nprocs))
-    dirname=os.path.dirname(rstfile)
-    basename=os.path.basename(rstfile)
-
-    par,fm,data=_read_one_grid(rstfile,verbose=verbose,starghost=starghost)
+    dirname=osp.dirname(rstfile)
+    basename=osp.basename(rstfile)
 
     g=grids[0]
     gis=g['is']
     gnx=g['Nx']
     gie=gis+gnx
 
-    for k in fm:
-        ib,jb,kb=(0,0,0)
-        if fm[k]['vtype'] == 'ccvar':
-            rstdata[k]=np.empty(nx,dtype=fm[k]['dtype'])
-            rstdata[k][gis[2]:gie[2],gis[1]:gie[1],gis[0]:gie[0]]=data[k]
-        elif fm[k]['vtype'] == 'fcvar':
-            if k.startswith('1'): ib=1
-            if k.startswith('2'): jb=1
-            if k.startswith('3'): kb=1
-            rstdata[k]=np.empty((nx[0]+kb,nx[1]+jb,nx[2]+ib),dtype=fm[k]['dtype'])
-            rstdata[k][gis[2]:gie[2]+kb,gis[1]:gie[1]+jb,gis[0]:gie[0]+ib]=data[k]
-#for i in range(nprocs):
-    for i in range(1,nprocs):
+    for i in tqdm(range(nprocs), desc = "Reading ..."):
         g=grids[i]
         gis=g['is']
         gnx=g['Nx']
         gie=gis+gnx
-#        if i % 50 == 0:
-#            print i,gis,gie
-#            print rstfile,g['filename']
-        rstfname = '%s/%s-id%d%s' % (dirname,basename[:-9],i,basename[-9:])
-        if not os.path.isfile(rstfname):
-            rstfname = '%s/../id%d/%s-id%d%s' % (dirname,i,basename[:-9],i,basename[-9:])
-        par,fm,data=_read_one_grid(rstfname,starghost=starghost)
 
-        if verbose > 1: print(i,fm['DENSITY']['nx'],gnx)
+        if i == 0:
+            par,fm,data=_read_one_grid(rstfile,verbose=False,starghost=starghost)
+        else:
+            rstfname = '%s/%s-id%d%s' % (dirname,basename[:-9],i,basename[-9:])
+            if not osp.isfile(rstfname):
+                rstfname = '%s/../id%d/%s-id%d%s' % (dirname,i,basename[:-9],i,basename[-9:])
+            par,fm,data=_read_one_grid(rstfname,starghost=starghost)
 
         for k in fm:
             ib,jb,kb=(0,0,0)
             if fm[k]['vtype'] == 'ccvar':
+                if i == 0: rstdata[k]=np.empty(nx,dtype=fm[k]['dtype'])
                 rstdata[k][gis[2]:gie[2],gis[1]:gie[1],gis[0]:gie[0]]=data[k]
             elif fm[k]['vtype'] == 'fcvar':
                 if k.startswith('1'): ib=1
                 if k.startswith('2'): jb=1
                 if k.startswith('3'): kb=1
+                if i == 0: rstdata[k]=np.empty((nx[0]+kb,nx[1]+jb,nx[2]+ib),dtype=fm[k]['dtype'])
                 rstdata[k][gis[2]:gie[2]+kb,gis[1]:gie[1]+jb,gis[0]:gie[0]+ib]=data[k]
 
     return rstdata
@@ -615,7 +780,7 @@ def _read_part(rstfile,grids,nx,verbose=False):
     rstdata={}
     if verbose: print(nx,nprocs)
 
-    basename=os.path.basename(rstfile)
+    basename=osp.basename(rstfile)
     pid=basename[:-9]
     par,fm,data=_read_one_grid(rstfile,verbose=verbose)
 
@@ -648,7 +813,7 @@ def _read_part(rstfile,grids,nx,verbose=False):
             rstfname = rstfile.replace('{}.'.format(pid),'{}-id{}.'.format(pid,gid))
         else:
             rstfname = rstfile
-        if not os.path.isfile(rstfname):
+        if not osp.isfile(rstfname):
             rstfname = rstfile.replace('id{}/{}.'.format(gid,pid),
                                        'id{}/{}-id{}.'.format(gid,pid,gid))
 

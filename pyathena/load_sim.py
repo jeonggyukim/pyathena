@@ -359,9 +359,6 @@ class LoadSim(object):
         timeit_patterns = [('timeit.txt',),
                            ('timeit', 'timeit.txt')]
 
-        rst_patterns = [('rst', '*.rst'),
-                        ('id0', '*.rst')]
-
         self.logger.info('basedir: {0:s}'.format(self.basedir))
 
         # Read athinput files
