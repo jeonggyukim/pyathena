@@ -343,6 +343,9 @@ class LoadSim(object):
         timeit_patterns = [('timeit.txt',),
                            ('timeit', 'timeit.txt')]
 
+        rst_patterns = [('rst', '*.rst'),
+                        ('id0', '*.rst')]
+
         self.logger.info('basedir: {0:s}'.format(self.basedir))
 
         # Read athinput files
@@ -526,6 +529,21 @@ class LoadSim(object):
             self.logger.info('These vtk files need to be found ' + \
                              'using find_files_vtk2d() method: ' + \
                              ', '.join(self._fmt_vtk2d_not_found))
+        # Find rst files
+        if 'rst' in self.out_fmt:
+            if hasattr(self,'problem_id'):
+                rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
+                                ('id0','{}.*.rst'.format(self.problem_id))]
+                frst = self._find_match(rst_patterns)
+                if frst:
+                    self.files['rst'] = frst
+                    self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
+                    self.logger.info('rst: {0:s} nums: {1:d}-{2:d}'.format(
+                                     osp.dirname(self.files['rst'][0]),
+                                     self.nums_rst[0], self.nums_rst[-1]))
+                else:
+                    self.logger.warning(
+                        'rst files not found in {0:s}.'.format(self.basedir))
 
     def find_files_vtk2d(self):
 
