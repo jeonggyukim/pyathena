@@ -16,6 +16,7 @@ import yt
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet
+from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
 from .io.read_athinput import read_athinput
@@ -227,6 +228,21 @@ class LoadSim(object):
                  osp.basename(self.fstarvtk), self.sp.time))
 
         return self.sp
+
+    def load_rst(self, num=None, irst=None, verbose=False):
+        if num is None and ivtk is None:
+            raise ValueError('Specify either num or irst')
+
+        # get starpar_vtk file name and check if it exist
+        self.frst = self._get_fvtk('rst', num, irst)
+        if self.frst is None or not osp.exists(self.frst):
+            self.logger.error('[load_rst]: rst file does not exist.')
+
+        self.rh = read_rst(self.frst, verbose=verbose)
+        self.logger.info('[load_rst]: {0:s}. Time: {1:f}'.format(\
+                 osp.basename(self.frst), self.rh.time))
+
+        return self.rh
 
     def print_all_properties(self):
         """Print all attributes and callable methods
@@ -574,6 +590,8 @@ class LoadSim(object):
         else:
             if kind == 'starpar_vtk':
                 fpattern = '{0:s}.{1:04d}.starpar.vtk'
+            elif kind == 'rst':
+                fpattern = '{0:s}.{1:04d}.rst'
             else:
                 fpattern = '{0:s}.{1:04d}.vtk'
             fvtk = osp.join(dirname, fpattern.format(self.problem_id, num))
