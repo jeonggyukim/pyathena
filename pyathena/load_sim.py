@@ -75,7 +75,7 @@ class LoadSim(object):
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
         load_method : str
-            Load vtk using 'pyathena', 'pythena_classic', or 'yt'. 
+            Load vtk using 'pyathena', 'pythena_classic', or 'yt'.
             Default value is 'pyathena'.
             If None, savdir=basedir. Default value is None.
         verbose : bool or str or int
@@ -110,7 +110,7 @@ class LoadSim(object):
             self.savdir = self.basedir
         else:
             self.savdir = savdir
-            
+
         self.logger.info('savdir : {:s}'.format(self.savdir))
 
         self._find_files()
@@ -120,14 +120,14 @@ class LoadSim(object):
             self.domain = self._get_domain_from_par(self.par)
         except:
             pass
-        
+
         self.u = units
         self.dfi = DerivedFields(self.par).dfi
-        
+
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
-        """Function to read Athena vtk file using pythena or yt and 
+        """Function to read Athena vtk file using pythena or yt and
         return DataSet object.
-        
+
         Parameters
         ----------
         num : int
@@ -138,7 +138,7 @@ class LoadSim(object):
            Read vtk file in /basedir/id0. Default value is True.
         load_method : str
            'pyathena', 'pyathena_classic' or 'yt'
-        
+
         Returns
         -------
         ds : AthenaDataSet or yt datasets
@@ -146,11 +146,11 @@ class LoadSim(object):
 
         if num is None and ivtk is None:
             raise ValueError('Specify either num or ivtk')
-        
+
         # Override load_method
         if load_method is not None:
             self.load_method = load_method
-        
+
         if id0:
             kind = ['vtk_id0', 'vtk']
         else:
@@ -164,24 +164,24 @@ class LoadSim(object):
             else:
                 self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
                                  'Try vtk in id0')
-                
+
             # Check if joined vtk (or vtk in id0) exists
             self.fvtk = self._get_fvtk(kind[1], num, ivtk)
             if self.fvtk is None or not osp.exists(self.fvtk):
                 self.logger.error('[load_vtk]: Vtk file does not exist.')
-                
+
         if self.load_method == 'pyathena':
             self.ds = AthenaDataSet(self.fvtk, units=self.u, dfi=self.dfi)
             self.domain = self.ds.domain
             self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                 osp.basename(self.fvtk), self.ds.domain['time']))
-            
+
         elif self.load_method == 'pyathena_classic':
             self.ds = AthenaDataSetClassic(self.fvtk)
             self.domain = self.ds.domain
             self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                 osp.basename(self.fvtk), self.ds.domain['time']))
-            
+
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
                 units_override = self.u.units_override
@@ -191,7 +191,7 @@ class LoadSim(object):
         else:
             self.logger.error('load_method "{0:s}" not recognized.'.format(
                 self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
-        
+
         return self.ds
 
     def load_starpar_vtk(self, num=None, ivtk=None, force_override=False,
@@ -227,11 +227,11 @@ class LoadSim(object):
                  osp.basename(self.fstarvtk), self.sp.time))
 
         return self.sp
-    
+
     def print_all_properties(self):
         """Print all attributes and callable methods
         """
-        
+
         attr_list = list(self.__dict__.keys())
         print('Attributes:\n', attr_list)
         print('\nMethods:')
@@ -246,7 +246,7 @@ class LoadSim(object):
 
     def make_movie(self, fname_glob=None, fname_out=None, fps_in=10, fps_out=10,
                    force_override=False, display=False):
-        
+
         if fname_glob is None:
             fname_glob = osp.join(self.basedir, 'snapshots', '*.png')
         if fname_out is None:
@@ -265,7 +265,7 @@ class LoadSim(object):
         """
         d = par['domain1']
         domain = dict()
-        
+
         domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
         domain['ndim'] = np.sum(domain['Nx'] > 1)
         domain['le'] = np.array([d['x1min'], d['x2min'], d['x3min']])
@@ -274,9 +274,9 @@ class LoadSim(object):
         domain['dx'] = domain['Lx']/domain['Nx']
         domain['center'] = 0.5*(domain['le'] + domain['re'])
         domain['time'] = None
-        
+
         self.domain = domain
-        
+
 
         return domain
 
@@ -286,7 +286,7 @@ class LoadSim(object):
                 f = glob_match(p)
                 if f:
                     break
-                
+
             return f
 
     def _find_files(self):
@@ -304,7 +304,7 @@ class LoadSim(object):
 
         if not osp.isdir(self.basedir):
             raise IOError('basedir {0:s} does not exist.'.format(self.basedir))
-        
+
         self.files = dict()
 
         athinput_patterns = [('stdout.txt',), # Jeong-Gyu
@@ -314,7 +314,7 @@ class LoadSim(object):
                              ('slurm-*',),    # Erin
                              ('athinput.*',), # Chang-Goo's restart
                              ('*.par',)]
-        
+
         hst_patterns = [('id0', '*.hst'),
                         ('hst', '*.hst'),
                         ('*.hst',)]
@@ -326,23 +326,23 @@ class LoadSim(object):
         sn_patterns = [('id0', '*.sn'),
                        ('hst', '*.sn'),
                        ('*.sn',)]
-       
+
         vtk_patterns = [('vtk', '*.????.vtk'),
                         ('*.????.vtk',)]
 
         vtk_id0_patterns = [('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
                             ('id0', '*.' + '[0-9]'*4 + '.vtk')]
-        
+
         starpar_patterns = [('starpar', '*.????.starpar.vtk'),
                             ('id0', '*.????.starpar.vtk'),
                             ('*.????.starpar.vtk',)]
-        
+
         zprof_patterns = [('zprof', '*.zprof'),
                           ('id0', '*.zprof')]
 
         timeit_patterns = [('timeit.txt',),
                            ('timeit', 'timeit.txt')]
-        
+
         self.logger.info('basedir: {0:s}'.format(self.basedir))
 
         # Read athinput files
@@ -366,7 +366,7 @@ class LoadSim(object):
                                             self.par[k]['out_fmt'])
                     else:
                         self.out_fmt.append(self.par[k]['out_fmt'])
-                    
+
             self.problem_id = self.par['job']['problem_id']
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
@@ -406,7 +406,7 @@ class LoadSim(object):
                 # Issue warning only if iSN is nonzero
                 try:
                     if self.par['feedback']['iSN'] != 0:
-                        self.logger.warning('Could not find sn file in {0:s},' + 
+                        self.logger.warning('Could not find sn file in {0:s},' +
                         ' but <feedback>/iSN={1:d}'.\
                         format(self.basedir, self.par['feedback']['iSN']))
                 except KeyError:
@@ -420,7 +420,7 @@ class LoadSim(object):
             self.logger.info('sphst: {0:s} nums: {1:d}-{2:d}'.format(
                 osp.dirname(self.files['sphst'][0]),
                 self.nums_sphst[0], self.nums_sphst[-1]))
-                
+
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
         if 'vtk' in self.out_fmt:
@@ -448,7 +448,7 @@ class LoadSim(object):
                         self.problem_id = osp.basename(self.files['vtk'][0]).split('.')[0]
                 else:
                     self.nums = self.nums_id0
-                
+
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
@@ -500,7 +500,7 @@ class LoadSim(object):
                     osp.dirname(self.files['zprof'][0]),
                     self.nums_zprof[self.phase[0]][0],
                     self.nums_zprof[self.phase[0]][-1]))
-                    
+
             else:
                 self.logger.warning(
                     'zprof files not found in {0:s}.'.format(self.basedir))
@@ -525,9 +525,24 @@ class LoadSim(object):
             self.logger.info('These vtk files need to be found ' + \
                              'using find_files_vtk2d() method: ' + \
                              ', '.join(self._fmt_vtk2d_not_found))
+        # Find rst files
+        if 'rst' in self.out_fmt:
+            if hasattr(self,'problem_id'):
+                rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
+                                ('id0','{}.*.rst'.format(self.problem_id))]
+                frst = self._find_match(rst_patterns)
+                if frst:
+                    self.files['rst'] = frst
+                    self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
+                    self.logger.info('rst: {0:s} nums: {1:d}-{2:d}'.format(
+                                     osp.dirname(self.files['rst'][0]),
+                                     self.nums_rst[0], self.nums_rst[-1]))
+                else:
+                    self.logger.warning(
+                        'rst files not found in {0:s}.'.format(self.basedir))
 
     def find_files_vtk2d(self):
-        
+
         self.logger.info('Find 2d vtk: {0:s}'.format(' '.join(self._fmt_vtk2d_not_found)))
         for fmt in self._fmt_vtk2d_not_found:
             fmt = fmt.split('.')[0]
@@ -541,11 +556,11 @@ class LoadSim(object):
             else:
                 self.logger.info('{0:s} files not found '.format(fmt))
 
-            
+
     def _get_fvtk(self, kind, num=None, ivtk=None):
         """Get vtk file path
         """
-        
+
         try:
             dirname = osp.dirname(self.files[kind][0])
         except IndexError:
@@ -560,7 +575,7 @@ class LoadSim(object):
             fvtk = osp.join(dirname, fpattern.format(self.problem_id, num))
 
         return fvtk
-                
+
     def _get_logger(self, verbose=False):
         """Function to set logger and default verbosity.
 
@@ -571,7 +586,7 @@ class LoadSim(object):
         """
 
         levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-        
+
         if verbose is True:
             self.loglevel_def = 'INFO'
         elif verbose is False:
@@ -582,9 +597,9 @@ class LoadSim(object):
             self.loglevel_def = verbose
         else:
             raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
-        
+
         l = logging.getLogger(self.__class__.__name__.split('.')[-1])
- 
+
         try:
             if not l.hasHandlers():
                 h = logging.StreamHandler()
@@ -607,13 +622,13 @@ class LoadSim(object):
                 l.setLevel(self.loglevel_def)
 
         return l
-    
+
     class Decorators(object):
         """Class containing a collection of decorators for prompt reading of analysis
         output, (reprocessed) hst, and zprof. Used in child classes.
 
         """
-        
+
         # JKIM: I'm sure there is a better way to achieve this, but this works
         # anyway..
         def check_pickle(read_func):
@@ -666,11 +681,11 @@ class LoadSim(object):
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not pickle to {0:s}.'.format(fpkl))
                     return res
-                
+
             return wrapper
-                   
+
         def check_pickle_hst(read_hst):
-            
+
             @functools.wraps(read_hst)
             def wrapper(cls, *args, **kwargs):
                 if 'savdir' in kwargs:
@@ -716,7 +731,7 @@ class LoadSim(object):
             return wrapper
 
         def check_netcdf_zprof(_read_zprof):
-            
+
             @functools.wraps(_read_zprof)
             def wrapper(cls, *args, **kwargs):
                 if 'savdir' in kwargs:
@@ -735,7 +750,7 @@ class LoadSim(object):
                     phase = kwargs['phase']
                 else:
                     phase = 'whole'
-                    
+
                 # Create savdir if it doesn't exist
                 if not osp.exists(savdir):
                     os.makedirs(savdir)
@@ -785,7 +800,7 @@ class LoadSimAll(object):
 
         self.models = list(models.keys())
         self.basedirs = dict()
-        
+
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
 
