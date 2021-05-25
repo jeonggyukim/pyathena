@@ -64,14 +64,13 @@ class RestartHandler(object):
         if hasattr(self,'new_x3min'): delattr(self,'new_x3min')
         if hasattr(self,'new_x3max'): delattr(self,'new_x3max')
 
+        par, rst_fm, data = _read_one_grid(self.fname,verbose=False)
+        self.stars = data['STAR PARTICLE LIST']
+
     def reset_par(self,pid=None):
         """Reset input parameters. May not be able to handle this fully automatically"""
-        if hasattr(self,'par_target'):
-            par = self.par_target['par'].decode()
-            parnew = self.par_target.copy()
-        else:
-            par = self.par_misc['par'].decode()
-            parnew = self.par_misc.copy()
+        par = self.par_misc['par'].decode()
+        parnew = self.par_misc.copy()
 
         if hasattr(self,'data_target'):
             Nx_new = self.data_target['DENSITY'].shape
@@ -711,6 +710,8 @@ def _write_star(fp,stars):
         for k in s.keys():
             if k in ivars:
                 idata.append(s[k])
+            elif k == 'n_ostar':
+                pass
             else:
                 rdata.append(s[k])
         fp.write(np.array(idata,dtype='i').tobytes('C'))
