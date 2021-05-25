@@ -18,6 +18,7 @@ class RestartHandler(object):
         # read information from id0 file
         par, rst_fm, data = _read_one_grid(filename,verbose=verbose)
         self.nscalars = self._get_nscalars(data)
+        self.stars = data['STAR PARTICLE LIST']
 
         self.par = par
         self.time = par['time']['time']
@@ -62,7 +63,7 @@ class RestartHandler(object):
         self.ideg = 0
         self.iref = 0
         if hasattr(self,'new_x3min'): delattr(self,'new_x3min')
-        if hasattr(self,'new_x3min'): delattr(self,'new_x3max')
+        if hasattr(self,'new_x3max'): delattr(self,'new_x3max')
 
     def reset_par(self,pid=None):
         """Reset input parameters. May not be able to handle this fully automatically"""
@@ -180,7 +181,7 @@ class RestartHandler(object):
 
         ns = self._get_nscalars(data)
 
-        new_fname = write_allfile(par,data,grids,
+        new_fname = write_allfile(par,data,grids,self.stars,
                                   dname=outdir,id=pid,itime=itime,scalar=ns)
 
         if self.verbose: print("new restart dump is written in: {}".format(new_fname))
@@ -248,6 +249,34 @@ class RestartHandler(object):
 
         return data
 
+    def pop_scalar(self,ipop):
+        """Pop scalar"""
+        if hasattr(self,'data_target'):
+            data = self.data_target
+        else:
+            data = self.data
+
+        ns = self._get_nscalars(data)
+
+        if ipop == (ns-1):
+            tmp = data.pop('SCALAR {}'.format(ipop))
+        else:
+            for i in range(ipop,ns-1):
+                data['SCALAR {}'.format(i)] = data['SCALAR {}'.format(i+1)].copy()
+            tmp = data.pop('SCALAR {}'.format(ns-1))
+
+        if hasattr(self,'stars_target'):
+            stars = self.stars_target
+        else:
+            stars = self.stars
+
+        for s in stars:
+            for i in range(ipop,ns-1):
+                s['metal{}'.format(i)]=s['metal{}'.format(i+1)]
+                s['Sghost{}'.format(i)]=s['Sghost{}'.format(i+1)]
+            tmp = s.pop('metal{}'.format(ns-1))
+            tmp = s.pop('Sghost{}'.format(ns-1))
+
     def _find_kmin_kmax(self,zmin,zmax):
         zmin = max(zmin,self.dm['x3min'])
         zmax = min(zmax,self.dm['x3max'])
@@ -294,7 +323,7 @@ def _parse_misc_info(rstfile):
 
     return data
 
-def write_onefile(newfile,data_part,data_par):
+def _write_onefile(newfile,data_part,data_par,stars):
     """Write one restart file from given data and parameter"""
 
     fp=open(newfile,'wb')
@@ -312,13 +341,15 @@ def write_onefile(newfile,data_part,data_par):
             fp.write('\n{}\n'.format(f).encode())
             fp.write(data_part[f].flatten().tobytes('C'))
     fp.write(b'\n')
-    for block in ['star','user']:
+    _write_star(fp,stars)
+    fp.write(b'\n')
+    for block in ['user']:
       if block in data_par: fp.write(data_par[block])
     fp.close()
 
     return
 
-def write_allfile(pardata,rstdata,grids,grid_disp=np.array([0,0,0]),
+def write_allfile(pardata,rstdata,grids,stars,grid_disp=np.array([0,0,0]),
   id='newrst',dname='/tigress/changgoo/rst/',itime=0,scalar=0):
     """Write all restart file for given grid and domain information"""
     ngrids=len(grids)
@@ -363,7 +394,7 @@ def write_allfile(pardata,rstdata,grids,grid_disp=np.array([0,0,0]),
             f='SCALAR %d' % ns
             if f in fields:
                 data[f]=rstdata[f][gis[2]:gie[2],gis[1]:gie[1],gis[0]:gie[0]]
-        write_onefile(osp.join(dname,fname),data,pardata)
+        _write_onefile(osp.join(dname,fname),data,pardata,stars)
         if i == 0:
             fname0 = osp.join(dname,fname)
 
@@ -578,7 +609,7 @@ def _parse_par(rstfile):
 
     return par
 
-def parse_rst(var,par,fm):
+def _parse_rst(var,par,fm):
     """Get given variable"""
     starpar=False
     if 'star particles' in par['configure']:
@@ -638,19 +669,9 @@ def parse_rst(var,par,fm):
 
     return 1
 
-def read_star(fp,nscal=0,ghost=True):
+def _read_star(fp,nscal=0,ghost=True):
     """Read star particle information from restart dump.
        Number of integer and real fields is different from sims by sims"""
-# This works for MST_4pc
-#    ivars=['id','merge_history','isnew','active']
-#    dvars=['m','x1','x2','x3','v1','v2','v3','age','mage','mdot',\
-#           'x1_old','x2_old','x3_old',\
-#           'm_old','M1_old','M2_old','M3_old',\
-#           'navg','n2avg','v1avg','v2avg','v3avg',\
-#           'eavg','Vol','radius','SFUV','SNRate',\
-#'SNprob',\
-#           'x1sn','x2sn','x3sn',\
-#          ]
 # Latest restart file
     ivars=['id','merge_history','isnew','active']
     dvars=['m','x1','x2','x3','v1','v2','v3','age','mage','mdot',\
@@ -668,18 +689,33 @@ def read_star(fp,nscal=0,ghost=True):
     star_dict={}
     dtype='i'
     for var in ivars:
-       data=fp.read(struct.calcsize(dtype))
-       tmp=struct.unpack('<'+dtype,data)
-       star_dict[var]=tmp
+        data=fp.read(struct.calcsize(dtype))
+        tmp=struct.unpack('<'+dtype,data)
+        star_dict[var]=tmp
 
     dtype='d'
     for var in dvars:
-       data=fp.read(struct.calcsize(dtype))
-       tmp=struct.unpack('<'+dtype,data)
-       #if var is 'm': print(var,tmp)
-       star_dict[var]=tmp
+        data=fp.read(struct.calcsize(dtype))
+        tmp=struct.unpack('<'+dtype,data)
+        star_dict[var]=tmp
 
     return star_dict
+
+def _write_star(fp,stars):
+    ivars=['id','merge_history','isnew','active']
+
+    fp.write(b'STAR PARTICLE LIST\n')
+    fp.write(np.array(len(stars),dtype='int64').tobytes('C'))
+    for s in stars:
+        idata = []
+        rdata = []
+        for k in s.keys():
+            if k in ivars:
+                idata.append(s[k])
+            else:
+                rdata.append(s[k])
+        fp.write(np.array(idata,dtype='i').tobytes('C'))
+        fp.write(np.array(rdata,dtype='d').tobytes('C'))
 
 def _read_one_grid(rstfile,verbose=False,starghost=True):
     """Read restart dump of one grid"""
@@ -694,7 +730,7 @@ def _read_one_grid(rstfile,verbose=False,starghost=True):
         l=fp.readline().decode('utf-8')
         var=l.strip()
 
-        if parse_rst(var,par,rst):
+        if _parse_rst(var,par,rst):
             dtype=rst[var]['dtype']
             ndata=rst[var]['ndata']
             vtype=rst[var]['vtype']
@@ -708,7 +744,7 @@ def _read_one_grid(rstfile,verbose=False,starghost=True):
                 star_list=[]
                 if nstar > 0:
                   for i in range(nstar):
-                      star_list.append(read_star(fp,nscal=nscal,ghost=starghost))
+                      star_list.append(_read_star(fp,nscal=nscal,ghost=starghost))
                   if verbose:
                       print(var, nstar)
                       print(star_list[0])
