@@ -6,7 +6,7 @@ import pandas as pd
 # (based on Asplund+2009)
 
 class AbundanceSolar(object):
-    def __init__(self, nHe_nH=9.55e-2, Zprime=1.0):
+    def __init__(self, xHe=9.55e-2, Zprime=1.0):
 
         self.Zprime = Zprime
         
@@ -28,16 +28,17 @@ class AbundanceSolar(object):
         df = pd.DataFrame.from_dict(data)
 
         # Adjust Helium abundance
-        df.loc[df['X'] == 'He', 'NX_NH'] = nHe_nH
+        df.loc[df['X'] == 'He', 'NX_NH'] = xHe
 
         # Scale metal abundance by Zprime
         df.loc[df['Z'] > 2, 'NX_NH'] *= self.Zprime
-        
-        # Mass fraction
-        df['MX_MH'] = df['mX_amu']*df['NX_NH']
 
+        # Mass [amu] for nH=1 
+        df['MX_per_H'] = df['mX_amu']*df['NX_NH']
+
+        # Mass fraction
         # divide by MH = 1.008 amu so that MX_MH = 1.0 for H
-        df['MX_MH'] /= df.loc[0, 'MX_MH']
+        df['MX_MH'] = df['MX_per_H']/df.loc[0, 'MX_per_H']
 
         self.df = df
 
@@ -50,11 +51,11 @@ class AbundanceSolar(object):
         xHe = df[df['X'] == 'He']['NX_NH'].iloc[0]
         xMetal = df[df['Z'] > 2]['NX_NH'].sum()
 
-        # Total mass (in units of amu)
-        Mtot = df['MX_MH'].sum()
-
+        # Total mass (in units of amu) per H
+        Mtot = df['MX_per_H'].sum()
+        
         # Mean molecular weight per H (in units of mH)
-        muH = Mtot*1.008
+        muH = Mtot/1.008
         
         # Mass fraction of H, He, and Metals
         X = df[df['X'] == 'H']['MX_MH'].iloc[0]/Mtot
@@ -82,7 +83,8 @@ class AbundanceSolar(object):
         res['mu_atom'] = mu_atom
         res['mu_ion'] = mu_ion
         res['xe_ion'] = xe_ion
-
+        res['df'] = df
+        
         return res
 
 
