@@ -115,7 +115,7 @@ class SliceProj:
 
         if norm is None:
             norm = mpl.colors.LogNorm()
-        elif norm is 'linear':
+        elif norm == 'linear':
             norm = mpl.colors.Normalize()
 
         ax.imshow(slc[axis][field], cmap=cmap,
@@ -137,9 +137,9 @@ class SliceProj:
             vmin = vminmax[field][0]
             vmax = vminmax[field][1]
             
-        if norm is None or 'log':
+        if norm is None or norm == 'log':
             norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
-        elif norm is 'linear':
+        elif norm == 'linear':
             norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
 
         ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
