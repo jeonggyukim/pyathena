@@ -19,7 +19,7 @@ def get_cmap_parula():
     Function to get MATLAB Parula colormap
     https://stackoverflow.com/questions/34859628/has-someone-made-the-parula-colormap-in-matplotlib
     """
-    
+
     cm_data = [[0.2422, 0.1504, 0.6603],
                [0.2444, 0.1534, 0.6728],
                [0.2464, 0.1569, 0.6847],
