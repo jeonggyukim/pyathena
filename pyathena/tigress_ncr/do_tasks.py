@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 import pprint
 import argparse
 import sys
+import pickle
 
 import pyathena as pa
 from pyathena.util.split_container import split_container
@@ -57,7 +58,7 @@ if __name__ == '__main__':
             plt.close(fig)
             fig = s.plt_pdf2d_all(num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir)
             plt.close(fig)
-        except KeyError:
+        except (EOFError, KeyError, pickle.UnpicklingError):
             fig = s.plt_snapshot(num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True)
             plt.close(fig)
             fig = s.plt_pdf2d_all(num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True)
@@ -84,7 +85,6 @@ if __name__ == '__main__':
         copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
                                 osp.basename(fout)))
 
-    COMM.barrier()
     if COMM.rank == 0:
         print('')
         print('################################################')
