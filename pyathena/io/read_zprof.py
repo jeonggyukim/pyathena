@@ -13,7 +13,7 @@ import xarray as xr
 
 def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
                    force_override=False):
-    """Function to read all zprof files in directory and make a Dataset object 
+    """Function to read all zprof files in directory and make a Dataset object
     and write to a NetCDF file.
 
     Note: An xarray DataArray holds a single multi-dimensional variable and its
@@ -41,25 +41,25 @@ def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
 
     """
 
-    # Find all files with "/dirname/problem_id.xxxx.phase.zprof"    
+    # Find all files with "/dirname/problem_id.xxxx.phase.zprof"
     fname_base = '{0:s}.????.{1:s}.zprof'.format(problem_id, phase)
     fnames = sorted(glob.glob(osp.join(dirname, fname_base)))
-    
+
     fnetcdf = '{0:s}.{1:s}.zprof.nc'.format(problem_id, phase)
     if savdir is not None:
         fnetcdf = osp.join(savdir, fnetcdf)
     else:
         fnetcdf = osp.join(dirname, fnetcdf)
-        
+
     print(fnetcdf)
-    
+
     # Check if netcdf file exists and compare last modified times
     mtime_max = np.array([osp.getmtime(fname) for fname in fnames]).max()
     if not force_override and osp.exists(fnetcdf) and \
         osp.getmtime(fnetcdf) > mtime_max:
         da = xr.open_dataset(fnetcdf)
         return da
-    
+
     # If here, need to create a new dataarray
     time = []
     df_all = []
@@ -79,7 +79,7 @@ def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
         # For test
         # if i > 10:
         #     break
-        
+
     fields = np.array(df.columns)
 
     # Combine all data
@@ -92,7 +92,7 @@ def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
         data_vars[f] = (('z', 'time'), df_all[...,i].T)
 
     ds = xr.Dataset(data_vars, coords=dict(z=z, time=time))
-    
+
     # Somehow overwriting using mode='w' doesn't work..
     if osp.exists(fnetcdf):
         os.remove(fnetcdf)
@@ -101,13 +101,13 @@ def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
         ds.to_netcdf(fnetcdf, mode='w')
     except IOError:
         pass
-    
+
     return ds
 
 def read_zprof(filename, force_override=False, verbose=False):
     """
     Function to read one zprof file and pickle
-    
+
     Parameters
     ----------
     filename : string
@@ -151,7 +151,7 @@ def read_zprof(filename, force_override=False, verbose=False):
             df.to_pickle(fpkl)
         except IOError:
             pass
-        
+
     return df
 
 class ReadZprofBase:
@@ -173,6 +173,7 @@ class ReadZprofBase:
             'h' = h1 + h2
             '2p' = c + u + w
             'cu' = c + u
+            'HI' = all HI
             If 'all', read all phases.
         savdir: str
             Name of the directory where pickled data will be saved.
@@ -185,20 +186,24 @@ class ReadZprofBase:
             Dictionary containing xarray DataSet objects for each phase.
         """
 
-        # Mapping from thermal phase name to file suffix 
+        # Mapping from thermal phase name to file suffix
         dct = dict(c='phase1',
                    u='phase2',
                    w='phase3',
                    h1='phase4',
                    h2='phase5',
-                   H2='phase6',
-                   HIc='phase7',
-                   HIuw='phase8',
-                   pi='phase9',
+                   mol='phase6',
+                   pi='phase7',
+                   HIcc='phase8',
+                   HIc='phase9',
+                   HIuc='phase10',
+                   HIu='phase11',
+                   HIw='phase12',
+                   HIwh='phase13',
                    whole='whole')
-        
+
         if phase == 'all':
-            phase = list(dct.keys()) + ['h', '2p', 'cu']
+            phase = list(dct.keys()) + ['h', '2p', 'cu','HI']
         else:
             phase = np.atleast_1d(phase)
 
@@ -224,10 +229,41 @@ class ReadZprofBase:
                                  force_override=force_override) + \
                 self._read_zprof(phase=dct['u'], savdir=savdir,
                                  force_override=force_override)
+            elif ph == 'HI':
+                zp[ph] = \
+                self._read_zprof(phase=dct['HIcc'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['HIc'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['HIuc'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['HIu'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['HIw'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['HIwh'], savdir=savdir,
+                                 force_override=force_override)
+            elif ph == 'CNM':
+                zp[ph] = \
+                self._read_zprof(phase=dct['HIcc'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['HIc'], savdir=savdir,
+                                 force_override=force_override)
+            elif ph == 'UNM':
+                zp[ph] = \
+                self._read_zprof(phase=dct['HIuc'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['HIu'], savdir=savdir,
+                                 force_override=force_override)
+            elif ph == 'WNM':
+                zp[ph] = \
+                self._read_zprof(phase=dct['HIw'], savdir=savdir,
+                                 force_override=force_override) + \
+                self._read_zprof(phase=dct['HIwh'], savdir=savdir,
+                                 force_override=force_override)
             else:
                 zp[ph] = self._read_zprof(phase=dct[ph], savdir=savdir,
                                           force_override=force_override)
-
         if len(phase) == 1:
             self.zp = zp[ph]
         else:
