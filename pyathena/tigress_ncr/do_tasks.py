@@ -70,22 +70,24 @@ if __name__ == '__main__':
         pprint.pprint(gc.garbage)
 
     # Make movies
-    if COMM.rank == 0 and movie:
-        if not osp.isdir(osp.join(s.basedir,'movies')): os.mkdir(osp.join(s.basedir,'movies'))
-        fin = osp.join(s.basedir, 'snapshot/*.png')
-        fout = osp.join(s.basedir, 'movies/{0:s}_snapshot.mp4'.format(s.basename))
-        make_movie(fin, fout, fps_in=15, fps_out=15)
-        from shutil import copyfile
-        copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
-                                osp.basename(fout)))
-        fin = osp.join(s.basedir, 'pdf2d/*.png')
-        fout = osp.join(s.basedir, 'movies/{0:s}_pdf2d.mp4'.format(s.basename))
-        make_movie(fin, fout, fps_in=15, fps_out=15)
-        from shutil import copyfile
-        copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
-                                osp.basename(fout)))
+    COMM.barrier()
 
     if COMM.rank == 0:
+        if movie:
+            if not osp.isdir(osp.join(s.basedir,'movies')): os.mkdir(osp.join(s.basedir,'movies'))
+            fin = osp.join(s.basedir, 'snapshot/*.png')
+            fout = osp.join(s.basedir, 'movies/{0:s}_snapshot.mp4'.format(s.basename))
+            make_movie(fin, fout, fps_in=15, fps_out=15)
+            from shutil import copyfile
+            copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
+                                    osp.basename(fout)))
+            fin = osp.join(s.basedir, 'pdf2d/*.png')
+            fout = osp.join(s.basedir, 'movies/{0:s}_pdf2d.mp4'.format(s.basename))
+            make_movie(fin, fout, fps_in=15, fps_out=15)
+            from shutil import copyfile
+            copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
+                                osp.basename(fout)))
+
         print('')
         print('################################################')
         print('# Do tasks')
