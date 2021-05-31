@@ -1,6 +1,7 @@
 # read_hst.py
 
 import os
+import os.path as osp
 import numpy as np
 import pandas as pd
 from scipy import integrate
@@ -30,7 +31,10 @@ class Hst:
         LxLy = domain['Lx'][0]*domain['Lx'][1]
 
         Omega = self.par['problem']['Omega']
-        time_orb = 2*np.pi/Omega*u.Myr # Orbital time in Myr
+        if Omega>0:
+            time_orb = 2*np.pi/Omega*u.Myr # Orbital time in Myr
+        else:
+            time_orb = 1.0
         try:
             if self.par['configure']['new_cooling'] == 'ON':
                 newcool = True
@@ -219,11 +223,12 @@ class Hst:
         self.hst = h
 
         # SN data
-        sn = read_hst(self.files['sn'],force_override=force_override)
-        snr = get_snr(sn['time']*self.u.Myr,hst['time']*self.u.Myr)
+        if osp.exists(self.files['sn']):
+            sn = read_hst(self.files['sn'],force_override=force_override)
+            snr = get_snr(sn['time']*self.u.Myr,hst['time']*self.u.Myr)
 
-        self.sn = sn
-        self.snr = snr/LxLy
+            self.sn = sn
+            self.snr = snr/LxLy
 
         return h
 
