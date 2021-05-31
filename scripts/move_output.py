@@ -87,8 +87,6 @@ if COMM.rank == 0:
             os.makedirs(d)
             print('Create directory for {0:s}: {1:s}'.format(k,d))
 
-COMM.barrier()
-
 rsync_id0 = 'rsync -av {0:s} {1:s}'.format(basedir_orig_id0, basedir_new)
 
 rsync_hst = 'rsync -av --include="*.sn" --include="*.hst" --exclude="*" {0:s} {1:s}'.\
