@@ -44,12 +44,24 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
 
         # Set unit and domain
         try:
-            muH = self.par['problem']
+            muH = self.par['problem']['muH']
         except KeyError:
             pass
         self.muH = muH
         self.u = Units(muH=muH)
         self.domain = self._get_domain_from_par(self.par)
+
+    def test_newcool(self):
+        try:
+            if self.par['configure']['new_cooling'] == 'ON':
+                newcool = True
+            else:
+                newcool = False
+        except KeyError:
+            newcool = False
+        return newcool
+
+
 
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
