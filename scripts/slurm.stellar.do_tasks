@@ -18,4 +18,4 @@ export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
 OUTDIR=$1
 
 cd $HOME/pyathena
-srun python pyathena/tigress_ncr/do_tasks.py -m -b $OUTDIR
+srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR

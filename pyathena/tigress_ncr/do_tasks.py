@@ -19,7 +19,6 @@ if __name__ == '__main__':
 
     COMM = MPI.COMM_WORLD
 
-    movie = False
     basedir_def = '/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR'
 
     # savdir = '/tigress/jk11/tmp4/'
@@ -31,9 +30,6 @@ if __name__ == '__main__':
     parser.add_argument('-b', '--basedir', type=str,
                         default=basedir_def,
                         help='Name of the basedir.')
-    parser.add_argument('-m', '--movie', action='store_true',
-                        default=False,
-                        help='Make movie')
     args = vars(parser.parse_args())
     locals().update(args)
 
@@ -73,19 +69,18 @@ if __name__ == '__main__':
     COMM.barrier()
 
     if COMM.rank == 0:
-        if movie:
-            if not osp.isdir(osp.join(s.basedir,'movies')): os.mkdir(osp.join(s.basedir,'movies'))
-            fin = osp.join(s.basedir, 'snapshot/*.png')
-            fout = osp.join(s.basedir, 'movies/{0:s}_snapshot.mp4'.format(s.basename))
-            make_movie(fin, fout, fps_in=15, fps_out=15)
-            from shutil import copyfile
-            copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
-                                    osp.basename(fout)))
-            fin = osp.join(s.basedir, 'pdf2d/*.png')
-            fout = osp.join(s.basedir, 'movies/{0:s}_pdf2d.mp4'.format(s.basename))
-            make_movie(fin, fout, fps_in=15, fps_out=15)
-            from shutil import copyfile
-            copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
+        if not osp.isdir(osp.join(s.basedir,'movies')): os.mkdir(osp.join(s.basedir,'movies'))
+        fin = osp.join(s.basedir, 'snapshot/*.png')
+        fout = osp.join(s.basedir, 'movies/{0:s}_snapshot.mp4'.format(s.basename))
+        make_movie(fin, fout, fps_in=15, fps_out=15)
+        from shutil import copyfile
+        copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
+                                osp.basename(fout)))
+        fin = osp.join(s.basedir, 'pdf2d/*.png')
+        fout = osp.join(s.basedir, 'movies/{0:s}_pdf2d.mp4'.format(s.basename))
+        make_movie(fin, fout, fps_in=15, fps_out=15)
+        from shutil import copyfile
+        copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
                                 osp.basename(fout)))
 
         print('')
