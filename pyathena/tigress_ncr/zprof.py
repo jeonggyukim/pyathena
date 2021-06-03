@@ -63,6 +63,9 @@ class Zprof(ReadZprofBase):
             zplist.append(zp[ph].expand_dims('phase').assign_coords(phase=[ph]))
 
         zp=xr.concat(zplist,dim='phase')
+        rename_dict = {'h':'hot'}
+        zp = zp.to_array().to_dataset('phase').rename(rename_dict)
+        zp = zp.to_array('phase').to_dataset('variable')
 
         dm=self.domain
         u=self.u
@@ -94,6 +97,7 @@ class Zprof(ReadZprofBase):
         else:
             momzp['Wsg']=xr.zeros_like(zp['P'])
         momzp['W']=momzp['Wext']+momzp['Wsg']
+        momzp['A']=zp['A']
 
         self.zp_pw = momzp
         return momzp
@@ -109,14 +113,27 @@ class Zprof(ReadZprofBase):
         zpth = self.read_zprof(phase=['c','u','w','h1','h2','whole'])
         # chemical/thermal phase
         if not thermal_only:
-            zpch = self.read_zprof(phase=['mol','CNM','UNM','WNM','pi','h1','h2','whole'])
+            zpch = self.read_zprof(phase=['mol','CNM','UNM','WNM',
+                'pi','h1','h2','whole'])
 
         def _to_dset(zp):
             zplist=[]
             for ph in zp:
-                zpdata = zp[ph][['A','d']]
+                if self.test_newcool():
+                    ns = self.par['configure']['nscalars']
+                    sHI = 's{}'.format(ns-2)
+                    sH2 = 's{}'.format(ns-1)
+                    zpdata = zp[ph][['A','d',sHI,sH2]]
+                    zpdata = zpdata.rename({sHI:'dHI',sH2:'dH2'})
+                    zpdata['dHII'] = zpdata['d']-(zpdata['dHI']+2.0*zpdata['dH2'])
+                else:
+                    zpdata = zp[ph][['A','d']]
                 zplist.append(zpdata.expand_dims('phase').assign_coords(phase=[ph]))
             zp=xr.concat(zplist,dim='phase')
+            if 'mol' in zp.phase:
+                rename_dict = {'mol':'MOL','pi':'WIM','h1':'WHIM','h2':'HIM'}
+                zp = zp.to_array().to_dataset('phase').rename(rename_dict)
+                zp = zp.to_array('phase').to_dataset('variable')
             return zp
 
         zpth = _to_dset(zpth)
@@ -261,7 +278,7 @@ def plot_stacked_bar(frac,x='time'):
                    Wext = r'W_{{\rm ext}}',
                   )
     color_idx = dict(Pthm=0, Ptrb=1, dPimag=2, oPimag=3, Wsg=0, Wext=1)
-    colors = {'h':c_hot,'2p':c_2p}
+    colors = {'hot':c_hot,'2p':c_2p}
 
     # plot using fill_between
     f0 = 0
@@ -280,7 +297,7 @@ def plot_stacked_bar(frac,x='time'):
 
         f0 += frac.sel(varph=varph).data.copy()
 
-def plot_pressure_fraction(ptdata,rolling=None):
+def plot_pressure_fraction(ptdata,ph='2p',rolling=None):
     """Plot time evolution of pressure contributions as a stacked bar graph
     """
 
@@ -290,9 +307,9 @@ def plot_pressure_fraction(ptdata,rolling=None):
         pt=ptdata.rolling(time=rolling,center=True).mean()
 
     # cacluate fractions
-    Ptot = pt.sel(variable='Ptot',phase='whole').drop_vars(['variable','phase'])
-    frac = pt.sel(variable=['Pthm','Ptrb','dPimag','oPimag'],phase=['2p','h'])\
-             .stack(varph = ['variable','phase'])/Ptot
+    Ptot = pt.sel(variable='Ptot',phase=ph).drop_vars(['variable','phase'])
+    frac = pt.sel(variable=['Pthm','Ptrb','dPimag','oPimag'],phase=[ph])\
+             .stack(varph = ['phase','variable'])/Ptot
 
     # plot
     plot_stacked_bar(frac)
@@ -313,8 +330,8 @@ def plot_weight_fraction(wtdata,rolling=None):
         wt=wtdata.rolling(time=rolling,center=True).mean()
     # cacluate fractions
     Wtot = wt.sel(variable='W',phase='whole').drop_vars(['variable','phase'])
-    frac = wt.sel(variable=['Wsg','Wext'],phase=['2p','h'])\
-             .stack(varph = ['variable','phase'])/Wtot
+    frac = wt.sel(variable=['Wsg','Wext'],phase=['2p','hot'])\
+             .stack(varph = ['phase','variable'])/Wtot
 
     # plot
     plot_stacked_bar(frac)
@@ -328,19 +345,27 @@ def plot_weight_fraction(wtdata,rolling=None):
 def plt_pressure_weight_tevol(sim,rolling=None):
     pw = sim.load_zprof_for_sfr()
 
+    area = pw['A'].sel(z=slice(-10,10)).mean(dim='z')
+    area_frac = area/area.sel(phase='whole')
+
     wtevol=pw.to_array().sel(variable=['W','Wsg','Wext'],z=slice(-10,10)).mean(dim='z')
+    wtevol = wtevol#/area_frac
 
     da_p = pw.to_array().sel(variable=['Ptot','Ptrb','Pthm','Pimag','dPimag','oPimag'])
     pmid_tevol=da_p.sel(z=slice(-10,10)).mean(dim='z')
-    pzmax_tevol=da_p.sel(z=(-2000,2000),method='nearest').mean(dim='z')
+    pzmax_tevol=da_p.sel(z=(-1000,1000),method='nearest').mean(dim='z')
     ptevol=pmid_tevol-pzmax_tevol
+    ptevol = ptevol/area_frac
 
-    fig,axes = plt.subplots(3,1,figsize=(10,10),gridspec_kw=dict(wspace=1),sharex=True)
+    fig,axes = plt.subplots(4,1,figsize=(10,10),gridspec_kw=dict(wspace=1),sharex=True)
 
     # time evolution of midplane values
     plt.sca(axes[0])
     plt.plot(wtevol.time,wtevol.sel(variable='W',phase='whole'),label=r'$W$')
     plt.plot(ptevol.time,ptevol.sel(variable='Ptot',phase='whole'),label=r'$P_{\rm tot}$')
+    #plt.plot(wtevol.time,wtevol.sel(variable='W',phase='2p'),label=r'$W^{\rm 2p}$')
+    plt.plot(ptevol.time,ptevol.sel(variable='Ptot',phase='2p'),\
+            label=r'$f_V^{\rm 2p}\cdot P_{\rm tot}^{\rm 2p}$')
     plt.legend(loc=2,bbox_to_anchor=(1.01,1))
     plt.ylabel(r'$P, W\,[k_B\, {\rm cm^{-3}\, K}]$')
 
@@ -348,115 +373,180 @@ def plt_pressure_weight_tevol(sim,rolling=None):
     plt.sca(axes[1])
     plot_pressure_fraction(ptevol,rolling=rolling)
     plt.xlabel('')
-    plt.legend(loc=2,ncol=2,bbox_to_anchor=(1.01,1))
+    #plt.legend(loc=2,ncol=2,bbox_to_anchor=(1.01,1))
 
     # weight fraction
     plt.sca(axes[2])
     plot_weight_fraction(wtevol,rolling=rolling)
 
+    # pressure fraction
+    plt.sca(axes[3])
+    plot_pressure_fraction(ptevol,rolling=rolling,ph='hot')
+    plt.xlabel('')
+    #plt.legend(loc=2,ncol=1,bbox_to_anchor=(1.01,1))
+
+
     return fig
 
-def plot_phase_fraction(zpdata,x='time',var='fmass',zcut='H',z0=0,rolling=None):
+def calc_phase_fraction(zpdata,x='time',var='fmass',zcut='H',z0=0,rolling=None):
     """Plot time evolution of filling factors of different phases
     """
     phs = list(zpdata.phase.data)
 
     z = zpdata.z
-    A = zpdata.A
-    d = zpdata.d
+    d = zpdata.sel(variable='d')
 
     if z0 == 0:
         if zcut == 'H':
             zcut = np.sqrt((d*z**2).sel(phase=phs[:-3]).sum(dim=['z','phase']) \
                           /d.sel(phase=phs[:-3]).sum(dim=['z','phase']))
-        if var == 'fmass':
-            phdata = d.where(np.abs(z)<zcut).sum(dim='z')
-        else:
-            phdata = A.where(np.abs(z)<zcut).sum(dim='z')
+        phdata = zpdata.where(np.abs(z)<zcut).sum(dim='z')
     else:
-        if var == 'fmass':
-            phdata = d.sel(z=slice(z0-100,z0+100)).sum(dim='z')
-        else:
-            phdata = A.sel(z=slice(z0-100,z0+100)).sum(dim='z')
-
+        phdata = zpdata.sel(z=slice(z0-100,z0+100)).sum(dim='z')
 
     if x == 'time':
         if rolling is None:
             pht=phdata
         else:
             pht=phdata.rolling(time=rolling,center=True).mean()
-
+    else:
+        pht=phdata
 
     # cacluate fractions
-    tot = pht.sel(phase='whole').drop_vars(['phase'])
-    frac = pht.sel(phase=phs[:-1])/tot
+    if var == 'fmass':
+        tot = pht.sel(phase='whole',variable='d').drop_vars(['phase'])
+        frac = pht.sel(phase=phs[:-1],variable='d')/tot
+    elif var == 'fvol':
+        tot = pht.sel(phase='whole',variable='A').drop_vars(['phase'])
+        frac = pht.sel(phase=phs[:-1],variable='A')/tot
 
+    if (var == 'fmass') & ('MOL' in phs) & ('dH2' in zpdata.coords['variable']):
+        # recalculate mass fraction using xH2 and xHII
+        fH = pht.sel(phase='whole',variable=['dHI','dH2','dHII'])
+        fH = fH/tot
+
+        # get fmol and fpi from scalars
+        fmol = 2.0*fH.sel(variable='dH2').drop_vars(['phase','variable'])
+        fpi = fH.sel(variable='dHII').drop_vars(['phase','variable'])
+
+        # recacluate CNM and WNM
+        fHI = pht.sel(variable='dHI')/tot
+        fcnm = fHI.sel(phase='CNM')
+        funm = fHI.sel(phase='UNM')
+        fwnm = fHI.sel(phase='WNM')
+
+        # other phases
+        fh1 = frac.drop_vars('variable').sel(phase=['WHIM']).sum(dim='phase')
+        fh2 = frac.drop_vars('variable').sel(phase=['HIM']).sum(dim='phase')
+
+        # save back to frac
+        frac_new = xr.Dataset()
+
+        frac_new['MOL']=fmol
+        frac_new['CNM']=fcnm
+        frac_new['UNM']=funm
+        frac_new['WNM']=fwnm
+        frac_new['WIM']=fpi
+        frac_new['WHIM']=fh1
+        frac_new['HIM']=fh2
+
+        frac = frac_new.to_array('phase')
+
+        total = frac.sum(dim='phase')
+        if (1-total).std() > 0.01:
+            print("Warning: phase fraction doesn't sum up to 1 -- sum={}".format(total.mean()))
+
+        frac /= total
+
+    return frac
+
+def plot_phase_fraction(frac,x='time',zcut='H',z0=0,rolling=None):
     # plot
     import seaborn as sns
     import cmasher.cm as cma
     colors=sns.color_palette(cma.pride(np.linspace(0.0,1.0,8)))
-    if len(phs) == 6:
+    if len(frac.phase) == 5:
         colors = colors[1:4]+colors[5:-1]
     else:
         colors = colors[:-1]
+
     # plot using fill_between
     f0 = 0
     for c,ph in zip(colors,frac.phase):
         if x=='time':
             plt.fill_between(frac.time,f0,f0+frac.sel(phase=ph),label=ph.data,color=c)
-            f0 += frac.sel(phase=ph).data.copy()
         elif x=='model':
-            y = frac.mean(dim='time')
-            plt.var(frac.model,y,bottom=f0,label=ph.data,color=c)
-            f0 += y.data.copy()
+            plt.bar(frac.model,frac.sel(phase=ph),bottom=f0,label=ph.data,color=c)
+        f0 += frac.sel(phase=ph).data.copy()
 
     # decorate
-
     if x=='time': plt.xlabel('time [Myr]')
-    plt.ylabel(var)
     plt.ylim(0,1)
 
 def plt_phase_balance(sim,**z_kwargs):
-    zpth,zpch = sim.load_zprof_for_phase()
+    if sim.test_newcool():
+        zpth,zpch = sim.load_zprof_for_phase()
+        fig,axes = plt.subplots(2,2,figsize=(12,8))
+        zplist = [zpth,zpch]
+    else:
+        zpth = sim.load_zprof_for_phase(thermal_only = True)
+        fig,axes = plt.subplots(2,1,figsize=(8,6),squeeze=False)
+        axes = axes.T
+        zplist = [zpth]
 
-    fig,axes = plt.subplots(2,2,figsize=(12,8))
-
-    for zpdata,axes_ in zip([zpth,zpch],axes):
+    for zpdata,axes_ in zip(zplist,axes):
         for var,ax in zip(['fvol','fmass'],axes_):
             plt.sca(ax)
-            plot_phase_fraction(zpdata,var=var,**z_kwargs)
-            plt.xlim(100,600)
+            frac = calc_phase_fraction(zpdata.to_array(),var=var,**z_kwargs)
+            plot_phase_fraction(frac,**z_kwargs)
+            plt.ylabel(var)
+
     for ax in axes[:,-1]:
         plt.sca(ax)
         plt.legend(loc=2,bbox_to_anchor=(1.01,1))
 
     return fig
 
-def plt_upsilon_comparison(sa,trange=slice(300,500)):
+def plt_upsilon_comparison(sa,trange=slice(300,500),torb=None,norm=False):
     Upsilon_unit = (ac.k_B*au.K/au.cm**3/ac.M_sun*ac.kpc**2*au.yr).to('km/s').value
     Pstack = xr.Dataset()
     Upsilon = xr.Dataset()
+
     for m in sa.models:
         s = sa.set_model(m)
+        if torb is not None:
+            to = 2*np.pi/s.par['problem']['Omega']*s.u.Myr
+            t0 = to*torb[0]
+            t1 = to*torb[1]
+            trange = slice(t0,t1)
         h = s.read_hst()
         sfr = h.set_index('time')['sfr10'].to_xarray()
+        sfr = sfr.sel(time=trange).mean().data
+        H2p = h.set_index('time')['H_2p'].to_xarray()
+        H2p = H2p.sel(time=trange).mean().data
         pw = s.load_zprof_for_sfr()
 
-        print(m,sfr.sel(time=trange).mean().data)
+        print(m,sfr,H2p)
         da_p = pw.to_array().sel(variable=['Pthm','Ptrb','dPimag','oPimag'])
         pmid_tevol=da_p.sel(z=slice(-10,10)).mean(dim='z')
-        pzmax_tevol=da_p.sel(z=(-2000,2000),method='nearest').mean(dim='z')
+        pzmax_tevol=da_p.sel(z=(-4*H2p,4*H2p),method='nearest').mean(dim='z')
         ptevol=pmid_tevol-pzmax_tevol
 
-        Pstack[m] = ptevol.sel(time=trange,phase=['2p','h'])\
+        Pstack[m] = ptevol.sel(time=trange,phase=['2p','hot'])\
                           .stack(varph=['phase','variable']).mean(dim='time')
-        Upsilon[m] = Pstack[m]/sfr.sel(time=trange).mean()*Upsilon_unit
+        Upsilon[m] = Pstack[m]/sfr*Upsilon_unit
+        if norm:
+            Ptot = Pstack[m].sum(dim='varph')
+            Pstack[m] = Pstack[m]/Ptot
 
-    fig,axes = plt.subplots(2,1,figsize=(8,10))
+    fig,axes = plt.subplots(2,1,figsize=(8,6))
     plt.sca(axes[0])
     plot_stacked_bar(Pstack.to_array('model'),x='model')
     plt.legend(loc=2,bbox_to_anchor=(1.01,1))
-    plt.ylabel(r'$P/k_B\,[{\rm cm^{-3} K}]$')
+    if norm:
+        plt.ylabel(r'$P_{\rm comp}^{\rm ph}/P_{\rm tot}$')
+    else:
+        plt.ylabel(r'$P/k_B\,[{\rm cm^{-3} K}]$')
 
     plt.sca(axes[1])
     plot_stacked_bar(Upsilon.to_array('model'),x='model')
@@ -464,30 +554,50 @@ def plt_upsilon_comparison(sa,trange=slice(300,500)):
 
     return fig
 
-def plt_phase_comparison(sa,thermal_only=False,trange=slice(300,500)):
-    thstack = xr.Dataset()
-    chstack = xr.Dataset()
+def plt_phase_comparison(sa,thermal_only=False,
+        trange=slice(300,500),torb=None,**zkwargs):
+    thstack_fvol = xr.Dataset()
+    thstack_fmass = xr.Dataset()
+    chstack_fvol = xr.Dataset()
+    chstack_fmass = xr.Dataset()
+
     for m in sa.models:
         s = sa.set_model(m)
+        if torb is not None:
+            to = 2*np.pi/s.par['problem']['Omega']*s.u.Myr
+            t0 = to*torb[0]
+            t1 = to*torb[1]
+            trange = slice(t0,t1)
+
         if thermal_only:
             zpth = s.load_zprof_for_phase(thermal_only=thermal_only)
-            thstack[m] = zpth.to_array().sel(time=trange)
+            fvol = calc_phase_fraction(zpth.to_array(),var='fvol',**zkwargs)
+            fmass = calc_phase_fraction(zpth.to_array(),var='fmass',**zkwargs)
+            thstack_fvol[m] = fvol.sel(time=trange).mean(dim='time')
+            thstack_fmass[m] = fmass.sel(time=trange).mean(dim='time')
         else:
-            zpth, zpch = s.load_zprof_for_phase(thermal_only=thermal_only)
-            thstack[m] = zpth.to_array().sel(time=trange)
-            chstack[m] = zpch.to_array().sel(time=trange)
+            if s.test_newcool():
+                zpth, zpch = s.load_zprof_for_phase(thermal_only=thermal_only)
+                fvol = calc_phase_fraction(zpth.to_array(),var='fvol',**zkwargs)
+                fmass = calc_phase_fraction(zpth.to_array(),var='fmass',**zkwargs)
+                thstack_fvol[m] = fvol.sel(time=trange).mean(dim='time')
+                thstack_fmass[m] = fmass.sel(time=trange).mean(dim='time')
+                fvol = calc_phase_fraction(zpch.to_array(),var='fvol',**zkwargs)
+                fmass = calc_phase_fraction(zpch.to_array(),var='fmass',**zkwargs)
+                chstack_fvol[m] = fvol.sel(time=trange).mean(dim='time')
+                chstack_fmass[m] = fmass.sel(time=trange).mean(dim='time')
 
+    fraclist = [thstack_fvol.to_array('model'),thstack_fmass.to_array('model')]
     if thermal_only:
-        fig,axes = plt.subplots(2,1,figsize=(8,10),squeeze=False)
-        zplist = [thstack]
+        fig,axes = plt.subplots(2,1,figsize=(8,6),squeeze=False)
+        axes = axes.T
     else:
         fig,axes = plt.subplots(2,2,figsize=(12,8))
-        zplist = [thstack,chstack]
+        fraclist += [chstack_fvol.to_array('model'),chstack_fmass.to_array('model')]
 
-    for zpdata,axes_ in zip(zplist,axes):
-        for var,ax in zip(['fvol','fmass'],axes_):
-            plt.sca(ax)
-            plot_phase_fraction(zpdata.to_array('model'),var=var,x='model',**z_kwargs)
+    for frac,ax in zip(fraclist,axes.flat):
+        plt.sca(ax)
+        plot_phase_fraction(frac,x='model')
 
     for ax in axes[:,-1]:
         plt.sca(ax)
