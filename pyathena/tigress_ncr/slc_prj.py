@@ -29,10 +29,10 @@ cmap_def = dict(
 )
 
 norm_def = dict(
-    Sigma_gas=LogNorm(1e-2,1e2),
-    Sigma_H2=LogNorm(1e-2,1e2),
+    Sigma_gas=LogNorm(1e-3,1e3),
+    Sigma_H2=LogNorm(1e-1,1e3),
     EM=LogNorm(1e0,1e5),
-    nH=LogNorm(1e-3,1e3),
+    nH=LogNorm(1e-4,1e3),
     T=LogNorm(1e1,1e7),
     vz=Normalize(-200,200),
     chi_FUV=LogNorm(1e-2,1e2),
@@ -188,11 +188,16 @@ class SliceProj:
 
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
+        xwidth = 3
+        ysize = LzoLx*xwidth
+        xsize = ysize/3*2 + 6*xwidth
+        x1 = 0.90*(ysize*2/3/xsize)
+        x2 = 0.90*(6*xwidth/xsize)
 
-        fig = plt.figure(figsize=(26, 12))#, constrained_layout=True)
-        g1 = ImageGrid(fig, [0.02, 0.05, 0.4, 0.94], (3, 2), axes_pad=0.1,
+        fig = plt.figure(figsize=(xsize, ysize))#, constrained_layout=True)
+        g1 = ImageGrid(fig, [0.02, 0.05, x1, 0.94], (3, 2), axes_pad=0.1,
                        aspect=True, share_all=True, direction='column')
-        g2 = ImageGrid(fig, [0.2, 0.05, 0.85, 0.94], (1, 6), axes_pad=0.1,
+        g2 = ImageGrid(fig, [x1+0.07, 0.05, x2, 0.94], (1, 6), axes_pad=0.1,
                        aspect=True, share_all=True)
 
         dat = dict()
@@ -204,9 +209,10 @@ class SliceProj:
         for i, (ax, f) in enumerate(zip(g1, fields_xy)):
             ax.set_aspect(ds.domain['Lx'][1]/ds.domain['Lx'][0])
             self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
-            scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
-                       norm_factor=norm_factor, agemax=agemax, agemax_sn=agemax_sn,
-                       runaway=runaway, cmap=plt.cm.cool_r)
+            if i == 0:
+                scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
+                           norm_factor=norm_factor, agemax=agemax, agemax_sn=agemax_sn,
+                           runaway=runaway, cmap=plt.cm.cool_r)
             ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
             ax.text(0.5, 0.92, label[f], **texteffect(fontsize='x-large'),
                     ha='center', transform=ax.transAxes)
@@ -220,9 +226,10 @@ class SliceProj:
         for i, (ax, f) in enumerate(zip(g2, fields_xz)):
             ax.set_aspect(ds.domain['Lx'][2]/ds.domain['Lx'][0])
             self.plt_slice(ax, dat[kind[f]], 'y', f, cmap=cmap_def[f], norm=norm_def[f])
-            scatter_sp(sp, ax, 'y', kind='prj', kpc=False,
-                       norm_factor=norm_factor, agemax=agemax,
-                       cmap=plt.cm.cool_r)
+            if i == 0:
+                scatter_sp(sp, ax, 'y', kind='prj', kpc=False,
+                           norm_factor=norm_factor, agemax=agemax,
+                           cmap=plt.cm.cool_r)
             ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
             ax.text(0.5, 0.97, label[f], **texteffect(fontsize='x-large'),
                     ha='center', transform=ax.transAxes)
