@@ -29,8 +29,8 @@ cmap_def = dict(
 )
 
 norm_def = dict(
-    Sigma_gas=LogNorm(1e-3,1e3),
-    Sigma_H2=LogNorm(1e-1,1e3),
+    Sigma_gas=LogNorm(1e-2,1e2),
+    Sigma_H2=LogNorm(1e-2,1e2),
     EM=LogNorm(1e0,1e5),
     nH=LogNorm(1e-4,1e3),
     T=LogNorm(1e1,1e7),
