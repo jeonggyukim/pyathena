@@ -38,13 +38,17 @@ class PDF:
     def read_pdf2d(self, num,
                    bin_fields=None, bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
+        bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
         if self.par['configure']['radps'] == 'ON':
-            bin_fields_def = [['nH', 'pok'], ['nH', 'T'], ['nH','chi_FUV'],
-                              ['nH','chi_H2'], ['nH','Erad_LyC'],
-                              ['T','Lambda_cool'], ['nH','xi_CR'], ['nH', 'xH2'],
+            bin_fields_def+= [['T','Lambda_cool'], ['nH','xi_CR'], ['nH', 'xH2'],
                               ['T', 'xHII'], ['T', 'xHI']]
-        else:
-            bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
+            if (self.par['cooling']['iPEheating'] == 1):
+                bin_fields_def+= [['nH','chi_FUV']]
+            if (self.par['radps']['iPhotDiss'] == 1):
+                bin_fields_def+= [['nH','chi_H2']]
+            if (self.par['radps']['iPhotIon'] == 1):
+                bin_fields_def+= [['nH','Erad_LyC']]
+
         if bin_fields is None:
             bin_fields = bin_fields_def
 
@@ -110,14 +114,17 @@ class PDF:
             hist = wfield
             ax.annotate(wfield,(0.05,0.95),xycoords='axes fraction',ha='left',va='top')
 
-        pdf = dat[bf][hist].T/dat[bf][hist].sum()
+        try:
+            pdf = dat[bf][hist].T/dat[bf][hist].sum()
 
-        ax.pcolormesh(dat[bf]['xe'], dat[bf]['ye'], pdf,
-                      norm=norm, cmap=cmap, **kwargs)
+            ax.pcolormesh(dat[bf]['xe'], dat[bf]['ye'], pdf,
+                          norm=norm, cmap=cmap, **kwargs)
 
-        kx, ky = bf.split('-')
-        ax.set(xscale=xscale, yscale=yscale,
-               xlabel=self.dfi[kx]['label'], ylabel=self.dfi[ky]['label'])
+            kx, ky = bf.split('-')
+            ax.set(xscale=xscale, yscale=yscale,
+                   xlabel=self.dfi[kx]['label'], ylabel=self.dfi[ky]['label'])
+        except KeyError:
+            pass
 
     def plt_pdf2d_all(self, num, suptitle=None, savdir=None,
                       plt_zprof=True, savdir_pkl=None,

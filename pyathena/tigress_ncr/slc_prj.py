@@ -59,10 +59,13 @@ class SliceProj:
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
 
+        fields_def = ['nH', 'nH2', 'vz', 'T']
         if self.par['configure']['radps'] == 'ON':
-            fields_def = ['nH', 'nH2', 'vz', 'T', 'chi_FUV', 'Erad_LyC', 'xi_CR']
-        else:
-            fields_def = ['nH', 'nH2', 'vz', 'T']
+            fields_def += ['xi_CR']
+            if self.par['radps']['iPhotIon'] == 1:
+                fields_def += ['Erad_LyC']
+            if self.par['cooling']['iPEheating'] == 1:
+                fields_def += ['chi_FUV']
 
         fields = fields_def
         axes = np.atleast_1d(axes)
@@ -208,7 +211,10 @@ class SliceProj:
         extent = dat['prj']['extent']['z']
         for i, (ax, f) in enumerate(zip(g1, fields_xy)):
             ax.set_aspect(ds.domain['Lx'][1]/ds.domain['Lx'][0])
-            self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
+            try:
+                self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
+            except KeyError:
+                pass
             if i == 0:
                 scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
                            norm_factor=norm_factor, agemax=agemax, agemax_sn=agemax_sn,

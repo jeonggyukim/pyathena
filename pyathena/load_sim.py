@@ -325,6 +325,7 @@ class LoadSim(object):
 
         athinput_patterns = [('stdout.txt',), # Jeong-Gyu
                              ('out.txt',),    # Jeong-Gyu
+                             ('out.*.txt',),    # Jeong-Gyu
                              ('log.txt',),    # Jeong-Gyu
                              ('*.par',),
                              ('*.out',),      # Chang-Goo's stdout
