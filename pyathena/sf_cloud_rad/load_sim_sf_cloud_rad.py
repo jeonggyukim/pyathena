@@ -267,7 +267,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
         r = dict()
         r['vtk'] = None
         r['hst'] = None
-        r['vtk_sp'] = None
+        r['vtk_starpar'] = None
         r['rst'] = None
         r['vtk_2d'] = None
         
@@ -279,7 +279,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
             elif self.par[b]['out_fmt'] == 'hst':
                 r['hst'] = self.par[b]['dt']
             elif self.par[b]['out_fmt'] == 'starpar_vtk':
-                r['vtk_sp'] = self.par[b]['dt']
+                r['vtk_starpar'] = self.par[b]['dt']
             elif self.par[b]['out_fmt'] == 'rst':
                 r['rst'] = self.par[b]['dt']
             elif self.par[b]['out_fmt'] == 'vtk' and \
@@ -305,7 +305,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
         sp_frac : (sequence of) float
             Fraction of final stellar mass (0 < sp_frac < 1)
         output : str
-            Output type: 'vtk', 'starpar_vtk', 'vtk_2d', 'hst', 'rst'
+            Output type: 'vtk', 'vtk_starpar', 'vtk_2d', 'hst', 'rst'
         """
 
         u = self.u

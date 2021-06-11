@@ -8,8 +8,7 @@ import astropy.units as au
 
 from matplotlib.colors import Normalize, LogNorm
 
-from ..plt_tools.cmap_shift import cmap_shift
-from ..plt_tools.cmap_custom import get_my_cmap
+from ..plt_tools.cmap import cmap_apply_alpha,cmap_shift
 from ..microphysics.cool import get_xe_mol
 from .xray_emissivity import get_xray_emissivity
 
@@ -354,7 +353,7 @@ def set_derived_fields_newcool(par, x0):
         return d['density']*d['xH2']
     func[f] = _nH2
     label[f] = r'$n_{\rm H_2}\;[{\rm cm^{-3}}]$'
-    cmap[f] = get_my_cmap('Greens')
+    cmap[f] = cmap_apply_alpha('Greens')
     vminmax[f] = (1e0,1e4)
     take_log[f] = True
 
@@ -365,7 +364,7 @@ def set_derived_fields_newcool(par, x0):
         return 2.0*d['density']*d['xH2']
     func[f] = _2nH2
     label[f] = r'$2n_{\rm H_2}\;[{\rm cm^{-3}}]$'
-    cmap[f] = get_my_cmap('Greens')
+    cmap[f] = cmap_apply_alpha('Greens')
     vminmax[f] = (1e0,1e4)
     take_log[f] = True
 
@@ -398,7 +397,7 @@ def set_derived_fields_newcool(par, x0):
         return d['density']*d['xHI']
     func[f] = _nHI
     label[f] = r'$n_{\rm H^0}\;[{\rm cm^{-3}}]$'
-    cmap[f] = get_my_cmap('Blues')
+    cmap[f] = cmap_apply_alpha('Blues')
     vminmax[f] = (1e-3,1e4)
     take_log[f] = True
 
@@ -420,7 +419,7 @@ def set_derived_fields_newcool(par, x0):
         return d['density']*(1.0 - d['xHI'] - 2.0*d['xH2'])
     func[f] = _nHII
     label[f] = r'$n_{\rm H^+}\;[{\rm cm^{-3}}]$'
-    cmap[f] = get_my_cmap('Oranges')
+    cmap[f] = cmap_apply_alpha('Oranges')
     vminmax[f] = (1e-3,1e4)
     take_log[f] = True
 
@@ -442,7 +441,7 @@ def set_derived_fields_newcool(par, x0):
         return d['density']*(d['xHI'] + 2.0*d['xH2'])
     func[f] = _nHn
     label[f] = r'$n_{\rm H^0} + 2n_{\rm H_2}\;[{\rm cm^{-3}}]$'
-    cmap[f] = get_my_cmap('Blues')
+    cmap[f] = cmap_apply_alpha('Blues')
     vminmax[f] = (1e-3,1e4)
     take_log[f] = True
 
@@ -453,7 +452,7 @@ def set_derived_fields_newcool(par, x0):
         return d['xHI'] + 2.0*d['xH2']
     func[f] = _xn
     label[f] = r'$x_{\rm n}$'
-    cmap[f] = get_my_cmap('YlGn')
+    cmap[f] = cmap_apply_alpha('YlGn')
     vminmax[f] = (0,1)
     take_log[f] = False
         

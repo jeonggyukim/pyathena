@@ -10,7 +10,7 @@ import astropy.constants as ac
 from matplotlib.colors import Normalize, LogNorm
 
 from ..classic.utils import texteffect
-from ..plt_tools.cmap_custom import get_my_cmap
+from ..plt_tools.cmap import cmap_apply_alpha
 from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp

@@ -64,8 +64,7 @@ from .util.units import Units, ac, au
 from .util.rebin import rebin_xyz, rebin_xy
 from .util.mass_to_lum import mass_to_lum
 
-from .plt_tools.cmap_shift import cmap_shift
-from .plt_tools.cmap_custom import get_cmap_planck,get_cmap_parula
+from .plt_tools.cmap import Colormaps, cmap_shift, get_cmap_planck, get_cmap_parula
 from .plt_tools.plt_starpar import scatter_sp
 from .plt_tools.make_movie import make_movie, display_movie
 from .plt_tools.set_plt import set_plt_default, set_plt_fancy
