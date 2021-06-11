@@ -312,12 +312,12 @@ class LoadSim(object):
         
         self.files = dict()
 
-        athinput_patterns = [('stdout.txt',), # Jeong-Gyu
-                             ('out.txt',),    # Jeong-Gyu
-                             ('log.txt',),    # Jeong-Gyu
-                             ('*.out',),      # Chang-Goo's stdout
-                             ('slurm-*',),    # Erin
-                             ('athinput.*',), # Chang-Goo's restart
+        athinput_patterns = [('stdout.txt',),
+                             ('out.txt',),
+                             ('log.txt',),
+                             ('*.out',),
+                             ('slurm-*',),
+                             ('athinput.*',),
                              ('*.par',)]
         
         hst_patterns = [('id0', '*.hst'),
