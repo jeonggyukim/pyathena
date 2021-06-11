@@ -20,11 +20,11 @@ class PltSnapshot2Panel:
         idx = dim_to_idx[dim]
         domain = s.domain
 
-        ds1 = read_vtk(s.files[f'Sigma{idx+1}'][num])
-        dd1 = ds1.get_field(f'Sigma{idx+1}')
+        ds1 = read_vtk(s.files[f'Sigma_{dim}'][num])
+        dd1 = ds1.get_field(f'Sigma_{dim}')
         try:
-            ds2 = read_vtk(s.files[f'EM{idx+1}'][num])
-            dd2 = ds2.get_field(f'EM{idx+1}')
+            ds2 = read_vtk(s.files[f'EM_{dim}'][num])
+            dd2 = ds2.get_field(f'EM_{dim}')
         except IndexError:
             pass
 
@@ -32,14 +32,14 @@ class PltSnapshot2Panel:
         sp = s.load_starpar_vtk(num) # read starpar vtk as pandas DataFrame
 
         if dim == 'z':
-            lx = s.domain['Lx'][0]
-            ly = s.domain['Lx'][1]
+            lx = s.domain['Lx'][0]; ly = s.domain['Lx'][1]
+            xlabel = 'x [pc]'; ylabel = 'y [pc]'
         elif dim == 'y':
-            lx = s.domain['Lx'][2]
-            ly = s.domain['Lx'][0]
+            lx = s.domain['Lx'][2]; ly = s.domain['Lx'][0]
+            xlabel = 'x [pc]'; ylabel = 'z [pc]'
         elif dim == 'x':
-            lx = s.domain['Lx'][1]
-            ly = s.domain['Lx'][2]
+            lx = s.domain['Lx'][1]; ly = s.domain['Lx'][2]
+            xlabel = 'x [pc]'; ylabel = 'z [pc]'
 
         xticks = [-0.5*lx,-0.25*lx,0.0,0.25*lx,0.5*lx]
         yticks = [-0.5*ly,-0.25*ly,0.0,0.25*ly,0.5*ly]
@@ -49,13 +49,15 @@ class PltSnapshot2Panel:
 
         # Get neutral gas surface density in Msun/pc^2
         to_Sigma = (s.u.density*domain['dx'][idx]*s.u.length).to('Msun/pc2').value
-        dd1['Sigma'] = to_Sigma*dd1[f'Sigma{idx+1}'].sel(**{dim:0.0,'method':'nearest'})
+        dd1['Sigma'] = to_Sigma*dd1[f'Sigma_{dim}'].sel(**{dim:0.0,'method':'nearest'})
         # Plot using xarray imshow
-        im1 = dd1['Sigma'].plot.imshow(ax=axes[0], cmap='pink_r', norm=LogNorm(1e-1,1e3), origin='lower',
-                                       extend='neither', add_labels=True, xticks=xticks, yticks=yticks,
+        im1 = dd1['Sigma'].plot.imshow(ax=axes[0], cmap='pink_r',
+                                       norm=LogNorm(1e-1,1e3), origin='lower',
+                                       extend='neither', add_labels=True, xticks=xticks,
+                                       yticks=yticks,
                                        cbar_kwargs=dict(label=r'$\Sigma\;[M_{\odot}\,{\rm pc}^{-2}]$'))
         try:
-            dd2['EM'] = dd2[f'EM{idx+1}'].sel(**{dim:0.0,'method':'nearest'})
+            dd2['EM'] = dd2[f'EM_{dim}'].sel(**{dim:0.0,'method':'nearest'})
             im2 = dd2['EM'].plot.imshow(ax=axes[1], cmap='plasma', norm=LogNorm(3e1,3e5),origin='lower',
                                         extend='neither', add_labels=False, xticks=xticks, yticks=yticks,
                                         cbar_kwargs=dict(label=r'${\rm EM}\;[{\rm cm^{-6}\,{\rm pc}}]$'))

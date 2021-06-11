@@ -1,0 +1,26 @@
+The archive contains idl procedures with which one may calculate net
+cooling rates due to various elements as a function of density,
+temperature, and redshift from tables given by Wiersma et
+al. (2009). The tables themselves are encoded using the HDF5 format
+(http://hdf.ncsa.uiuc.edu/HDF5/).
+
+For a description of the methods used, see Wiersma, R. P. C., Schaye, J., and Smith, B. D. 2009, MNRAS, 393, 99.
+
+Our website (http://www.strw.leidenuniv.nl/WSS08/) contains many more details.
+
+The routines are documented in their help, i.e., test = compute_temperature(/help)
+Some examples (assuming the tables are contained in a directory listed in the variable 'tablepath'):
+result = compute_temperature(tablepath, 'normal', 0., 0.1, 1.e13, 1., 0.1, 0)
+^ Computes the temperature at z = 0 corresponding to an energy density of 1.e13 erg/g for a hydrogen density of 0.1 cm^-3 and a nH = 1. and a nHe = 0.1
+
+result = compute_temperature(tablepath, 'collis', 0., 0.2, 1.e12, 0.752, 0.248, 1)
+^ Computes the temperature in collisional ionization equilibrium corresponding to an energy density of 1.e12 erg/g for a hydrogen density of 0.2 cm^-3 and a mH = 0.752 and a mHe = 0.248
+
+result = compute_cooling_Z(tablepath, 'normal', 0., 0.1, 1.e5, 1., 0.1, 0.01, 0)
+^ Computes the cooling at z = 0 for T = 1E5 K, a hydrogen density of 0.1 cm^-3, nH = 1., nHe = 0.1, and nZ = 0.01.
+
+result = compute_cooling_Z(tablepath, 'collis', 0., 0.2, 1.e7, 0.750, 0.24, 0.01)
+^ Computes the cooling in collisional ionization equilibrium for T = 10^7 K, a hydrogen density of 0.2 cm^-3, mH = 0.75, mHe = 0.24 and mZ = 0.01
+
+result = compute_cooling(tablepath, 'collis', 0., 0.2, 1.e7, 0.750, 0.24, 0.0002, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 0.0001, 1)
+^ Computes the cooling in collisional ionization equilibrium for T = 10^7 K, a hydrogen density of 0.2 cm^-3, mH = 0.75, mHe = 0.24 and a bunch of abundances (by mass).

@@ -41,6 +41,8 @@ def _convert_field_name(name):
         return 'x'
     elif name == b'star_particle_velocity':
         return 'v'
+    elif name == b'star_particle_n_ostar':
+        return 'n_ostar'
     elif name == b'star_particle_flag':
         return 'flag'
     elif name == b'star_particle_metal_mass[0]':

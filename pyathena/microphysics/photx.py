@@ -1,11 +1,14 @@
 import numpy as np
 import os
+import os.path as osp
+import pathlib
+
 import astropy.units as au
 import astropy.constants as ac
 
-# __all__ = ['PhotCrossSection']
+__all__ = ['PhotX']
 
-class PhotCrossSection(object):
+class PhotX(object):
     """
     Computes photoionization cross-sections as described in Verner 96
     http://adsabs.harvard.edu/abs/1996ApJ...465..487V
@@ -18,12 +21,9 @@ class PhotCrossSection(object):
     def __init__(self, datadir=None):
         # Read Verner et al. 1996 photoionization cross-section table
         if datadir is None:
-            local = os.path.dirname(os.path.realpath('__file__'))
-            fname = os.path.join(local, '../data/verner96_photx.dat')
-            # fname = os.path.join(os.path.expanduser('~'),
-            #                      'Dropbox/code/tigress_cooling/data/verner96_photx.dat')
-        else:
-            fname = os.path.join(datadir, 'verner96_photx.dat')
+            basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
+                               '../../data/microphysics')
+            fname = os.path.join(basedir, 'verner96_photx.dat')
             
         dat = np.loadtxt(fname, unpack=True)
         self._dat = dat

@@ -160,6 +160,9 @@ def q10CII_(nH, T, xe, xHI, xH2):
     # Eqs (17.16) and (17.17) in Draine (2011)
     T2 = T*1e-2;
     k10e = 4.53e-8*np.sqrt(1.0e4/T)
+    # Omega10e = (1.55+1.25*T*1e-4)/(1 + 0.35*(T*1e-4)**1.25)
+    # k10e = 8.629e-8/np.sqrt(T*1e-4)*Omega10e
+
     k10HI = 7.58e-10*np.power(T2, 0.1281+0.0087*np.log(T2))
 
     k10oH2 = np.zeros_like(T)
@@ -270,6 +273,41 @@ def coolCI(nH, T, xe, xHI, xH2, xCI):
     return cool3Level_(q01,q10,q02,q20,q12,q21,A10CI_,A20CI_,
                        A21CI_,E10CI_,E20CI_,E21CI_,xCI)
 
+def coolOII(nH, T, xe, xOII):
+    
+    T4 = T*1e-4
+    kB_cgs = ac.k_B.cgs.value
+    # OII, 3 level system
+    g0OII_ = 4  # 4S_3/2
+    g1OII_ = 6  # 2D_5/2
+    g2OII_ = 4  # 2D_3/2
+    A10OII_ = 3.6e-5
+    A20OII_ = 1.6e-4
+    A21OII_ = 1.3e-7
+    E10OII_ = (ac.h*ac.c/(3728.8*au.angstrom)).to('erg').value
+    E20OII_ = (ac.h*ac.c/(3726.0*au.angstrom)).to('erg').value 
+    E21OII_ = (ac.h*ac.c/(497.1*au.micron)).to('erg').value    
+    
+    # Draine (2011)
+    Omega10e = 0.803*T4**(0.023-0.008*np.log(T4))
+    Omega20e = 0.550*T4**(0.054-0.004*np.log(T4))
+    Omega21e = 1.434*T4**(-0.176+0.004*np.log(T4))
+    
+    prefactor = 8.629e-8/np.sqrt(T4)
+    k10e = prefactor*Omega10e/g1OII_
+    k20e = prefactor*Omega20e/g2OII_
+    k21e = prefactor*Omega21e/g2OII_
+    
+    # Total collisional rates
+    q10 = nH*k10e*xe
+    q20 = nH*k20e*xe
+    q21 = nH*k21e*xe
+    q01 = (g1OII_/g0OII_) * q10 * np.exp(-E10OII_/(kB_cgs*T))
+    q02 = (g2OII_/g0OII_) * q20 * np.exp(-E20OII_/(kB_cgs*T))
+    q12 = (g2OII_/g1OII_) * q21 * np.exp(-E21OII_/(kB_cgs*T))
+
+    return cool3Level_(q01, q10, q02, q20, q12, q21, A10OII_, A20OII_, 
+                       A21OII_, E10OII_, E20OII_, E21OII_, xOII)
 
 def coolOI(nH, T, xe, xHI, xH2, xOI):
 
@@ -340,6 +378,45 @@ def coolLya(nH, T, xe, xHI):
     q10 = (g0HI_/g1HI_)*fac*ne
 
     return q01/(q01 + q10 + A10HI_)*A10HI_*E10HI_*xHI
+
+def coolHI(nH, T, xHI, xe):
+
+    # Neutral Hydrogen cooling (Lya + Lyb + two photon) taken from DESPOTIC
+
+    #TLyA = (3.0/4.0*(ac.h*ac.c*ac.Ryd).to('eV')/ac.k_B).to('K').value
+    #TLyB = (8.0/9.0*(ac.h*ac.c*ac.Ryd).to('eV')/ac.k_B).to('K').value
+    
+    TLyA = 118415.63430152694
+    TLyB = 140344.45546847637
+
+    kB = ac.k_B.cgs.value
+    upsilon2s = 0.35
+    upsilon2p = 0.69
+    upsilon3s = 0.077
+    upsilon3p = 0.14
+    upsilon3d = 0.073
+    fac = 8.629e-6/(2*np.sqrt(T))
+    exfacLyA = np.exp(-TLyA/T)
+    exfacLyB = np.exp(-TLyB/T)
+    Lambda2p = fac * exfacLyA * upsilon2s * xHI * xe * nH * kB * TLyA
+    LambdaLyA = fac * exfacLyA * upsilon2p * xHI * xe * nH * kB * TLyA
+    LambdaLyB = fac * exfacLyB * (upsilon3s + upsilon3p + upsilon3d) * xHI * xe * nH * kB * TLyB
+    
+    return Lambda2p + LambdaLyA + LambdaLyB
+
+def coolffH(nH, T, xe, xHII):
+    """free-free power for hydrogen (Z=1)
+    """
+    # Frequency-averaged Gaunt factor (Eq.10.11 in Draine 2011)
+    gff_T = 1.0 + 0.44/(1.0 + 0.058* np.log(T/10**5.4)**2)
+    return 1.422e-25*gff_T*(T*1e-4)**0.5*nH*xe*xHII
+
+def coolrecH(nH, T, xe, xHII):
+    from .rec_rate import RecRate
+    rec = RecRate()
+    Err_B = (0.684 - 0.0416*np.log(T*1e-4))*ac.k_B.cgs.value*T
+    return Err_B*rec.get_rec_rate_H_caseB(T)*nH*xe*xHII
+
 
 def coolRec(nH, T, xe, Z_d, chi_PE):
     # Weingartner & Draine (2001) Table 3

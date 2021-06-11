@@ -1,0 +1,36 @@
+Table 2
+Cooling Data and Solar Elemental Abundances
+
+Z	Element	Table	Abundance (X/H)_sun	References	
+1	Hydrogen	1A	1		
+2	Helium	1B	8.33 x 10^-2	B	
+3	Lithium	1C	2.04 x 10^-9	C	
+4	Beryllium	1D	2.63 x 10^-11	C	
+5	Boron	1E	6.17 x 10^-10	C	
+6	Carbon	1F	2.45 x 10^-4	A	
+7	Nitrogen	1G	6.03 x 10^-5	A	
+8	Oxygen	1H	4.57 x 10^-4	A	
+9	Fluorine	1I	3.02 x 10^-8	C	
+10	Neon	1J	1.95 x 10^-4	DT	
+11	Sodium	1K	2.14 x 10^-6	C	
+12	Magnesium	1L	3.39 x 10^-5	A	
+13	Aluminum	1M	2.95 x 10^-6	C	
+14	Silicon	1N	3.24 x 10^-5	A	
+15	Phosphorus	1O	3.20 x 10^-7	C	
+16	Sulfur	1P	1.38 x 10^-5	A	
+17	Chlorine	1Q	1.91 x 10^-7	C	
+18	Argon	1R	2.51 x 10^-6	C	
+19	Potassium	1S	1.32 x 10^-7	C	
+20	Calcium	1T	2.29 x 10^-6	C	
+21	Scandium	1U	1.48 x 10^-9	C	
+22	Titanium	1V	1.05 x 10^-7	C	
+23	Vanadium	1W	1.08 x 10^-8	C	
+24	Chromium	1X	4.68 x 10^-7	C	
+25	Manganese	1Y	2.88 x 10^-7	C	
+26	Iron	1Z	2.82 x 10^-5	A	
+27	Cobalt	1AA	8.32 x 10^-8	C	
+28	Nickel	1AB	1.78 x 10^-6	C	
+29	Copper	1AC	1.62 x 10^-8	C	
+30	Zinc	1AD	3.98 x 10^-8	C	
+
+References. (A) Asplund et al. 2005; (B) Ballantyne et al. 2000; (C) adopted from Cloudy, based on Grevesse & Sauval 1998; (DT) Drake & Testa 2005.

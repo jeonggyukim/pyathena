@@ -122,7 +122,13 @@ class LoadSim(object):
         except:
             pass
 
-        self.u = units
+
+        try:
+            muH = self.par['problem']['muH']
+            self.u = Units(kind='LV', muH=muH)
+        except KeyError:
+            self.u = units
+
         self.dfi = DerivedFields(self.par).dfi
 
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
@@ -323,12 +329,12 @@ class LoadSim(object):
 
         self.files = dict()
 
-        athinput_patterns = [('stdout.txt',), # Jeong-Gyu
-                             ('out.txt',),    # Jeong-Gyu
-                             ('log.txt',),    # Jeong-Gyu
-                             ('*.out',),      # Chang-Goo's stdout
-                             ('slurm-*',),    # Erin
-                             ('athinput.*',), # Chang-Goo's restart
+        athinput_patterns = [('stdout.txt',),
+                             ('out.txt',),
+                             ('log.txt',),
+                             ('*.out',),
+                             ('slurm-*',),
+                             ('athinput.*',),
                              ('*.par',)]
 
         hst_patterns = [('id0', '*.hst'),
