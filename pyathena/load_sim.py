@@ -120,8 +120,13 @@ class LoadSim(object):
             self.domain = self._get_domain_from_par(self.par)
         except:
             pass
-        
-        self.u = units
+
+        try:
+            muH = self.par['problem']['muH']
+            self.u = Units(kind='LV', muH=muH)
+        except KeyError:
+            self.u = units
+            
         self.dfi = DerivedFields(self.par).dfi
         
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
