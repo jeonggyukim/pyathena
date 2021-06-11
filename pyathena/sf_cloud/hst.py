@@ -65,7 +65,11 @@ class Hst:
                    alpha_vir=par['problem']['alpha_vir'])
             
         iWind = par['feedback']['iWind']
-        iPhot = par['radps']['iPhot']
+        try:
+            iPhot = par['radps']['iPhot']
+        except:
+            iPhot = par['radps']['iPhotIon']
+            
         iRadp = par['radps']['apply_force']
         
         # Time in code unit
@@ -452,6 +456,7 @@ class PlotHst(object):
                  lw=[1.5, 1.5, 1.5, 1.5],
                  subplots_kwargs=dict(nrows=1, ncols=2,
                                       figsize=(15,5), merge_last_row=False),
+                 plt_vars_kwargs=dict(),
                  plt_vars=['mass', 'momentum'], savfig=True):
         
         self.sa = sa
@@ -477,13 +482,18 @@ class PlotHst(object):
         else:
             self.col_time = 'time_code'
             
-
         for i, v in enumerate(plt_vars):
             method = getattr(self, 'plt_' + v)
-            method(self.axes[i])
+            try:
+                method(self.axes[i], **(plt_vars_kwargs[v]))
+            except KeyError:
+                method(self.axes[i])
 
         if savfig:
-            savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst')
+            if len(self.models) == 1:
+                savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst')
+            else:
+                savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst_compare')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
@@ -543,7 +553,7 @@ class PlotHst(object):
             setp_kwargs_def = dict(xlabel=xlabel, ylabel='volume fraction',
                                    yscale='linear', ylim=(0,1.2))
         if kind == 'dt':
-            setp_kwargs_def = dict(xlabel=xlabel, ylabel='dt', yscale='log', ylim=(1e-5,1e-1))
+            setp_kwargs_def = dict(xlabel=xlabel, ylabel='dt', yscale='log', ylim=(1e-6,1e-2))
         if kind == 'force':
             setp_kwargs_def = dict(xlabel=xlabel,
                                    ylabel=r'force $[M_{\odot}{\rm km}\,{\rm s}^{-1}\,{\rm Myr}^{-1}]$',
@@ -554,7 +564,7 @@ class PlotHst(object):
                                    yscale='linear')
         if kind == 'luminosity':
             setp_kwargs_def = dict(xlabel=xlabel, ylabel=r'luminosity $[L_{\odot}]$',
-                                   yscale='log', ylim=(1e4,5e6))
+                                   yscale='log')
         if kind == 'fesc':
             setp_kwargs_def = dict(xlabel=xlabel, ylabel=r'escape fraction',
                                    yscale='linear', ylim=(0,1.4))
@@ -598,7 +608,7 @@ class PlotHst(object):
         if iWind:
             labels.extend([r'$M_{\rm wind}$',r'$M_{\ast,{\rm wind}}$'])
 
-        ax.legend(labels, loc=2)
+        ax.legend(labels, loc=1)
 
         
     def plt_volume(self, ax=None, models=None, setp_kwargs=None):
@@ -708,7 +718,7 @@ class PlotHst(object):
                     plt.plot(x, h['wind_pinj'], ls=ls, c='C0', lw=0.5)
 
             plt.plot(x, Ftot_int, ls=ls, c='grey', lw=3, alpha=0.7)
-            plt.plot(x, h['pr'] + h['pr_of'] - h['pr'].iloc[0], c='k', label='tot')
+            plt.plot(x, h['pr'] + h['pr_of'] - h['pr'].iloc[0], ls=ls, c='k', label='tot')
 
         plt.setp(ax, **setp_kwargs)
         labels = [r'$\int F_{\rm thm}dt$',
@@ -749,8 +759,10 @@ class PlotHst(object):
         if plt_wind and iWind:
             labels += [r'$L_{\rm wind}$']
         ax.legend(labels, loc=4, ncol=2)
+        ax.set_ylim(ax.get_ylim()[1]*1e-4,ax.get_ylim()[1])
         
-    def plt_fesc(self, ax=None, models=None, setp_kwargs=None, plt_dust=True):
+    def plt_fesc(self, ax=None, models=None, setp_kwargs=None,
+                 plt_avg=True, plt_dust=True):
         ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'fesc')
         plt.sca(ax)
         for i, (mdl,ls,lw) in enumerate(zip(models, self.ls, self.lw)):
@@ -760,24 +772,29 @@ class PlotHst(object):
 
             plt.plot(x, h['fesc_PH'], ls=ls, lw=1.0, c='C0')
             plt.plot(x, h['fesc_FUV'], ls=ls, lw=1.0, c='C1')
-            plt.plot(x, h['fesc_cum_PH'], ls=ls, lw=3, c='C0')
-            plt.plot(x, h['fesc_cum_FUV'], ls=ls, lw=3, c='C1')
+            if plt_avg:
+                plt.plot(x, h['fesc_cum_PH'], ls=ls, lw=3, c='C0')
+                plt.plot(x, h['fesc_cum_FUV'], ls=ls, lw=3, c='C1')
 
-            plt.plot(x, h['fdust_PH'], ls=ls, lw=1.0, c='C0', alpha=0.35)
-            plt.plot(x, h['fdust_FUV'], ls=ls, lw=1.0, c='C1', alpha=0.35)
-            plt.plot(x, h['fdust_cum_PH'], ls=ls, lw=3, c='C0', alpha=0.35)
-            plt.plot(x, h['fdust_cum_FUV'], ls=ls, lw=3, c='C1', alpha=0.35)
+            if plt_dust:
+                plt.plot(x, h['fdust_PH'], ls=ls, lw=1.0, c='C0', alpha=0.35)
+                plt.plot(x, h['fdust_FUV'], ls=ls, lw=1.0, c='C1', alpha=0.35)
+                if plt_avg:
+                    plt.plot(x, h['fdust_cum_PH'], ls=ls, lw=3, c='C0', alpha=0.35)
+                    plt.plot(x, h['fdust_cum_FUV'], ls=ls, lw=3, c='C1', alpha=0.35)
 
         plt.setp(ax, **setp_kwargs)
-        ncol = 2
-        labels = [r'$f_{\rm esc,LyC}$', r'$f_{\rm esc,FUV}$',
-                  r'$\langle f_{\rm esc,LyC} \rangle$', r'$\langle f_{\rm esc,FUV} \rangle$']
+        labels = [r'$f_{\rm esc,LyC}$', r'$f_{\rm esc,FUV}$']
+        if plt_avg:
+            labels += [r'$\langle f_{\rm esc,LyC} \rangle$',
+                       r'$\langle f_{\rm esc,FUV} \rangle$']
         if plt_dust:
-            #ncol = 2
-            labels += [r'$f_{\rm dust,LyC}$', r'$f_{\rm dust,FUV}$',
-                      r'$\langle f_{\rm dust,LyC} \rangle$', r'$\langle f_{\rm dust,FUV} \rangle$']
-            
-        ax.legend(labels, loc=2, ncol=ncol)
+            labels += [r'$f_{\rm dust,LyC}$', r'$f_{\rm dust,FUV}$']
+            if plt_avg:
+                labels += [r'$\langle f_{\rm dust,LyC} \rangle$',
+                           r'$\langle f_{\rm dust,FUV} \rangle$']
+
+        ax.legend(labels, loc=2, ncol=2)
 
 
 # ax = plt.gca()

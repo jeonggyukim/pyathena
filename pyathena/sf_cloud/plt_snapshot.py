@@ -8,7 +8,7 @@ from mpl_toolkits.axes_grid1 import ImageGrid
 import astropy.units as au
 import astropy.constants as ac
 
-from ..plt_tools.cmap_custom import get_my_cmap, get_cmap_parula
+from ..plt_tools.cmap import cmap_apply_alpha, get_cmap_parula
 from ..io.read_vtk import read_vtk
 from ..plt_tools.set_plt import toggle_xticks,toggle_yticks
 from ..plt_tools.plt_starpar import scatter_sp, colorbar_sp, legend_sp
@@ -21,10 +21,10 @@ from .slc_prj import SliceProj
 cm_parula = get_cmap_parula()
 cmap = dict(Sigma=cm_parula, Sigma_HI=cm_parula, Sigma_H2=cm_parula, 
             EM='plasma',
-            nHn=get_my_cmap('Blues'),
-            nH2=get_my_cmap('Blues'),
-            nHI=get_my_cmap('Greens'),
-            nHII=get_my_cmap('Oranges'),
+            nHn=cmap_apply_alpha('Blues'),
+            nH2=cmap_apply_alpha('Blues'),
+            nHI=cmap_apply_alpha('Greens'),
+            nHII=cmap_apply_alpha('Oranges'),
             T=plt.cm.jet,
             chi_PE=plt.cm.viridis,
             Erad_LyC=plt.cm.viridis,
