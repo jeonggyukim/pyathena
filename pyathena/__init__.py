@@ -39,6 +39,7 @@ from .io.read_sphst import read_sphst
 from .io.read_timeit import read_timeit
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof, read_zprof_all
+from .io.read_rst import read_rst, RestartHandler
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 

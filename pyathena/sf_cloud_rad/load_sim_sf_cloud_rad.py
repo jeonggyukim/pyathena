@@ -344,7 +344,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
 
         return nums
 
-    
+
 class LoadSimSFCloudRadAll(Compare):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
@@ -370,6 +370,7 @@ class LoadSimSFCloudRadAll(Compare):
         self.sim = LoadSimSFCloudRad(self.basedirs[model], savdir=savdir,
                                   load_method=load_method, verbose=verbose)
         return self.sim
+
 
 def load_all_sf_cloud_rad(force_override=False):
     
