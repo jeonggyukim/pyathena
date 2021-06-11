@@ -54,11 +54,11 @@ if __name__ == '__main__':
     # models = ['A5S4']
     #models = ['B05S4']
 
-    # sa = pa.LoadSimSFCloudAll(dict(B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'))
+    # sa = pa.LoadSimSFCloudRadAll(dict(B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'))
     # models = sa.models
     
     # models = dict(nofb='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.NOFB.B2.A2.S4.N256/')
-    # sa = pa.LoadSimSFCloudAll(models)
+    # sa = pa.LoadSimSFCloudRadAll(models)
     # models = sa.models
 
     # For snapshot_2panels

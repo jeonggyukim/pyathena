@@ -32,7 +32,7 @@ class SliceProj:
     
     @LoadSim.Decorators.check_pickle
     def read_slc(self, num, axes=['x', 'y', 'z'],
-                 fields=['nH', 'nH2', 'nHI', 'nHII', 'T', 'nHn', 'chi_PE',
+                 fields=['nH', 'nH2', 'nHI', 'nHII', 'T', 'nHn', 'chi_PE', 'pok',
                          'Erad_FUV', 'Erad_LyC'], prefix='slc',
                  savdir=None, force_override=False):
             
@@ -115,8 +115,11 @@ class SliceProj:
         fig, axes = plt.subplots(nr, nc, figsize=(16, 12.5), # constrained_layout=True,
                                  gridspec_kw=dict(hspace=0.0, wspace=0.0))
 
-        norm = LogNorm(1e-1,1e3)
-        norm_EM = LogNorm(3e1,3e5)
+        M0 = self.par['problem']['M_cloud']
+        R0 = self.par['problem']['R_cloud']
+        S0 = M0/(np.pi*R0**2)
+        norm = LogNorm(1e-1,1e3*(S0/1e2))
+        norm_EM = LogNorm(3e1,3e5*(S0/1e2))
         im1 = []
         im2 = []
         im3 = []

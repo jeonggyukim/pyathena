@@ -3,6 +3,8 @@ import time
 import os.path as osp
 import pandas as pd
 import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
 from scipy import integrate
 from scipy import interpolate
 import astropy.units as au
@@ -13,6 +15,7 @@ from ..util.split_container import split_container
 from ..load_sim import LoadSim
 from ..util.units import Units
 from ..util.cloud import Cloud
+from ..io.read_timeit import read_timeit
 
 from .hst import Hst
 from .slc_prj import SliceProj
@@ -24,6 +27,8 @@ from .pdf import PDF
 from .virial import Virial
 from .virial2 import Virial2 # simpler version
 from .plt_snapshot_2panel import PltSnapshot2Panel
+from .plt_snapshot_vtk2d import PltSnapshotVTK2D
+from .plt_snapshot_combined import PltSnapshotCombined
 
 from .outflow import Outflow
 from .sfr import get_SFR_mean
@@ -32,7 +37,7 @@ from .xray import Xray
 
 class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
                      DustPol, Virial, Virial2, Outflow, Fields, Xray,
-                     PltSnapshot2Panel):
+                     PltSnapshot2Panel,PltSnapshotVTK2D,PltSnapshotCombined):
     """LoadSim class for analyzing sf_cloud simulations.
     """
     
@@ -65,17 +70,25 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
                                         units=units,
                                         verbose=verbose)
 
+        # Cloud
+        try:
+            self.cl = Cloud(self.par['problem']['M_cloud'],
+                            self.par['problem']['R_cloud'],
+                            alpha_vir=self.par['problem']['alpha_vir'])
+        except:
+            self.cl = Cloud(self.par['problem']['M_GMC'],
+                            self.par['problem']['rcloud'],
+                            alpha_vir=self.par['problem']['alpha_vir'])
+    
+
     def get_summary(self, as_dict=False):
         """
         Return key simulation results such as SFE, t_SF, t_dest,H2, etc.
         """
         
-        markers = ['o','v','^','s','*']
 
         par = self.par
-        cl = Cloud(M=par['problem']['M_cloud'],
-                   R=par['problem']['R_cloud'],
-                   alpha_vir=par['problem']['alpha_vir'])
+        cl = self.cl
 
         df = dict()
         df['par'] = par
@@ -91,71 +104,131 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         #     self.logger.warning('read_outflow_all() failed!')
         #     df['hst_of'] = None
 
-        # df['basedir'] = self.basedir
-        # df['domain'] = self.domain
-        # # Input parameters
-        # df['mhd'] = par['configure']['gas'] == 'mhd'
-        # df['Nx'] = int(par['domain1']['Nx1'])
-        
-        # df['M'] = float(par['problem']['M_cloud'])
-        # df['R'] = float(par['problem']['R_cloud'])
-        # df['Sigma'] = df['M']/(np.pi*df['R']**2)
-        # df['seed'] = int(np.abs(par['problem']['rseed']))
-        # df['alpha_vir'] = float(par['problem']['alpha_vir'])
         # df['marker'] = markers[df['seed'] - 1]
-        # df['vesc'] = cl.vesc.to('km/s').value
-        # df['sigma1d'] = cl.sigma1d.to('km/s').value
-        # df['rho'] = cl.rho.cgs.value
-        # df['nH'] = cl.nH.cgs.value
-        # df['tff'] = cl.tff.to('Myr').value
         
-        # if df['mhd']:
-        #     df['muB'] = float(par['problem']['muB'])
-        #     df['B0'] = (2.0*np.pi*(cl.Sigma*ac.G**0.5/df['muB']).cgs.value*au.microGauss*1e6).value
-        #     df['vA'] = (df['B0']*1e-6)/np.sqrt(4.0*np.pi*df['rho'])/1e5
-        #     df['label'] = r'B{0:d}.A{1:d}.S{2:d}'.\
-        #                   format(int(df['muB']),int(df['alpha_vir']),int(df['seed']))
-        # else:
-        #     df['muB'] = np.inf
-        #     df['B0'] = 0.0
+        df['basedir'] = self.basedir
+        df['domain'] = self.domain
+        # Input parameters
+        df['mhd'] = par['configure']['gas'] == 'mhd'
+
+        df['iWind'] = par['feedback']['iWind']
+        df['iSN'] = par['feedback']['iSN']
+        df['irayt'] = par['radps']['irayt']
+        try:
+            df['iPhot'] = par['radps']['iPhot']
+        except:
+            df['iPhot'] = par['radps']['iPhotIon']
+
+        df['iRadp'] = par['radps']['apply_force']
+        
+        df['Nx'] = int(par['domain1']['Nx1'])
+        df['tlim'] = par['time']['tlim']
+        
+        df['M'] = float(par['problem']['M_cloud'])
+        df['R'] = float(par['problem']['R_cloud'])
+        df['Sigma'] = df['M']/(np.pi*df['R']**2)
+        df['seed'] = int(np.abs(par['problem']['rseed']))
+        df['alpha_vir'] = float(par['problem']['alpha_vir'])
+        df['vesc'] = cl.vesc.to('km/s').value
+        df['sigma1d'] = cl.sigma1d.to('km/s').value
+        df['rho'] = cl.rho.cgs.value
+        df['nH'] = cl.nH.cgs.value
+        df['tff'] = cl.tff.to('Myr').value
+
+        
+        if df['mhd']:
+            df['muB'] = float(par['problem']['muB'])
+            df['B'] = (2.0*np.pi*(cl.Sigma*ac.G**0.5/df['muB']).cgs.value*au.microGauss*1e6).value
+            df['vA'] = (df['B0']*1e-6)/np.sqrt(4.0*np.pi*df['rho'])/1e5
+            # df['label'] = r'B{0:d}.A{1:d}.S{2:d}'.\
+            #               format(int(df['muB']),int(df['alpha_vir']),int(df['seed']))
+        else:
+            df['muB'] = np.inf
+            df['B'] = 0.0
+            df['vA'] = 0.0
         #     df['label'] = r'Binf.A{0:d}.S{1:d}'.\
         #                   format(int(df['alpha_vir']),int(df['seed']))
         
         # # Simulation results
-        # # Mstar_final = h['Mstar'].iloc[-1]
-        # Mstar_final = max(h['Mstar'].values)
-        # df['Mstar_final'] = Mstar_final
-        # df['SFE'] = Mstar_final/df['M']
-        # df['t_final'] = h['time'].iloc[-1]
-        # df['tau_final'] = df['t_final']/df['tff']
+        # M_sp_final = h['M_sp'].iloc[-1]
+        M_sp_final = max(h['M_sp'].values)
+        df['M_sp_final'] = M_sp_final
+        df['SFE'] = M_sp_final/df['M']
+        df['t_final'] = h['time'].iloc[-1]
+        df['tau_final'] = df['t_final']/df['tff']
 
         # # Outflow efficiency
         # df['eps_of'] = max(h['Mof'].values)/df['M']
         # df['eps_of_HI'] = max(h['Mof_HI'].values)/df['M']
         # df['eps_of_H2'] = max(h['Mof_H2'].values)/df['M']
         # df['eps_of_HII'] = max(h['Mof_HII'].values)/df['M']
-        
-        # idx_SF0, = h['Mstar'].to_numpy().nonzero()
-        # if len(idx_SF0):
-        #     df['t_*'] = h['time'][idx_SF0[0]-1]
-        #     df['tau_*'] = df['t_*']/df['tff']
-        #     df['t_95%'] = h['time'][h.Mstar > 0.95*Mstar_final].values[0] # Time at which
-        #     df['tau_95%'] = df['t_95%']/df['tff']
-        #     df['t_90%'] = h['time'][h.Mstar > 0.90*Mstar_final].values[0]
-        #     df['tau_90%'] = df['t_90%']/df['tff']
-        #     df['t_80%'] = h['time'][h.Mstar > 0.80*Mstar_final].values[0]
-        #     df['tau_80%'] = df['t_80%']/df['tff']
-        #     df['t_50%'] = h['time'][h.Mstar > 0.50*Mstar_final].values[0]
-        #     df['tau_50%'] = df['t_50%']/df['tff']
-        #     df['t_SF'] = df['t_90%'] - df['t_*'] # SF duration
-        #     df['tau_SF'] = df['t_SF']/df['tff']
-        #     df['t_SF95'] = df['t_95%'] - df['t_*'] # SF duration
-        #     df['tau_SF95'] = df['t_SF']/df['tff']
-        #     df['t_SF2'] = Mstar_final**2 / \
+
+        def get_markersize(M):
+            log10M = [4., 5., 6.]
+            ms = [40.0, 120.0, 360.0]
+            return np.interp(np.log10(M), log10M, ms)
+
+        def get_linewidth(M):
+            logM_min = 4.0
+            logM_max = 6.0
+            lw_min = 1.0
+            lw_max = 4.0
+            return lw_min + (lw_max - lw_min)*(np.log10(M)-logM_min)/(logM_max-logM_min)
+
+        df['norm'] = mpl.colors.LogNorm(vmin=1e1, vmax=2e3)
+        df['cmap'] = mpl.cm.viridis
+        df['linecolor'] = df['cmap'](df['norm'](df['Sigma']))
+        df['linewidth'] = get_linewidth(df['M'])
+        df['markersize'] = get_markersize(df['M'])
+
+        if df['iRadp'] and not df['iPhot'] and not df['iWind'] and not df['iSN']:
+            df['marker'] = 's'
+            df['color'] = 'C0'
+            df['edgecolor'] = 'none'
+        elif df['iPhot'] and not df['iRadp'] and not df['iWind'] and not df['iSN']:
+            df['marker'] = 'o'
+            df['color'] = 'C1'
+            df['edgecolor'] = 'none'
+        elif df['iWind'] and not df['iPhot'] and not df['iRadp'] and not df['iSN']:
+            df['marker'] = 'P'
+            df['color'] = 'C2'
+            df['edgecolor'] = 'none'
+        elif df['iSN'] and not df['iPhot'] and not df['iRadp'] and not df['iWind']:
+            df['marker'] = 'X'
+            df['color'] = 'C3'
+            df['edgecolor'] = 'none'
+        else:
+            df['marker'] = '^'
+            df['color'] = 'C4'
+            df['edgecolor'] = 'none'
+
+        if df['alpha_vir'] != 4.0:
+            df['edgecolor'] = 'k'
+            
+        df['kwargs_scatter'] = dict(m=df['marker'], s=df['markersize'], c=df['color'])
+
+        idx_SF0, = h['M_sp'].to_numpy().nonzero()
+        if len(idx_SF0):
+            df['t_*'] = h['time'][idx_SF0[0]-1]
+            df['tau_*'] = df['t_*']/df['tff']
+            # Time at which XX% of star formation is complete
+            df['t_95%'] = h['time'][h.M_sp > 0.95*M_sp_final].values[0]
+            df['tau_95%'] = df['t_95%']/df['tff']
+            df['t_90%'] = h['time'][h.M_sp > 0.90*M_sp_final].values[0]
+            df['tau_90%'] = df['t_90%']/df['tff']
+            df['t_80%'] = h['time'][h.M_sp > 0.80*M_sp_final].values[0]
+            df['tau_80%'] = df['t_80%']/df['tff']
+            df['t_50%'] = h['time'][h.M_sp > 0.50*M_sp_final].values[0]
+            df['tau_50%'] = df['t_50%']/df['tff']
+            df['t_SF'] = df['t_90%'] - df['t_*'] # SF duration
+            df['tau_SF'] = df['t_SF']/df['tff']
+            df['t_SF95'] = df['t_95%'] - df['t_*'] # SF duration
+            df['tau_SF95'] = df['t_SF']/df['tff']
+        #     df['t_SF2'] = M_sp_final**2 / \
         #                 integrate.trapz(h['SFR']**2, h.time)
         #     df['tau_SF2'] = df['t_SF2']/df['tff']
         #     df['SFR_mean'] = get_SFR_mean(h, 0.0, 90.0)['SFR_mean']
-        #     df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'Mstar'].iloc[0]/df['M']
+        #     df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'M_sp'].iloc[0]/df['M']
         #     df['t_dep'] = df['M']/df['SFR_mean'] # depletion time t_dep = M0/SFR_mean
         #     df['eps_ff'] = df['tff']/df['t_dep'] # SFE per free-fall time eps_ff = tff0/tdep
         #     # Time at which neutral gas mass < 5% of the initial cloud mass
@@ -169,21 +242,21 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         #         df['t_dest_neu'] = np.nan
         #     # print('t_dep, eps_ff, t_dest_mol, t_dest_neu',
         #     #       df['t_dep'],df['eps_ff'],df['t_dest_mol'],df['t_dest_neu'])
-        # else:
-        #     df['t_*'] = np.nan
-        #     df['tau_*'] = np.nan
-        #     df['t_95%'] = np.nan
-        #     df['tau_95%'] = np.nan
-        #     df['t_90%'] = np.nan
-        #     df['tau_90%'] = np.nan
-        #     df['t_80%'] = np.nan
-        #     df['tau_80%'] = np.nan
-        #     df['t_50%'] = np.nan
-        #     df['tau_50%'] = np.nan
-        #     df['t_SF'] = np.nan
-        #     df['tau_SF'] = np.nan
-        #     df['t_SF95'] = np.nan
-        #     df['tau_SF95'] = np.nan
+        else:
+            df['t_*'] = np.nan
+            df['tau_*'] = np.nan
+            df['t_95%'] = np.nan
+            df['tau_95%'] = np.nan
+            df['t_90%'] = np.nan
+            df['tau_90%'] = np.nan
+            df['t_80%'] = np.nan
+            df['tau_80%'] = np.nan
+            df['t_50%'] = np.nan
+            df['tau_50%'] = np.nan
+            df['t_SF'] = np.nan
+            df['tau_SF'] = np.nan
+            df['t_SF95'] = np.nan
+            df['tau_SF95'] = np.nan
         #     df['t_SF2'] = np.nan
         #     df['tau_SF2'] = np.nan
         #     df['SFR_mean'] = np.nan
@@ -240,6 +313,18 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         #     df['eps_of_HI_cl_z'] = np.nan
         #     df['eps_of_HII_cl_z'] = np.nan
         #     pass
+
+        # Simulation time, Nproc, etc.
+        df['Nproc'] = par['domain1']['AutoWithNProc']
+        if osp.exists(self.files['timeit']):
+            ti = read_timeit(self.files['timeit'])
+            # cols = ['cycle', 'time']
+            for col in ti.columns:
+                if col[-4:] == '_tot':
+                    df['timeit_{0:s}'.format(col)] = ti[col].iloc[-1]
+                    
+            # df['timeit'] = read_timeit(self.files['timeit'])[cols].iloc[-1]
+
             
         if as_dict:
             return df
@@ -256,20 +341,21 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         r['vtk_2d'] = None
         
         for i in range(self.par['job']['maxout']):
-            b = f'output{i+1}'
-            if self.par[b]['out_fmt'] == 'vtk' and \
-               (self.par[b]['out'] == 'prim' or self.par[b]['out'] == 'cons'):
-                r['vtk'] = self.par[b]['dt']
-            elif self.par[b]['out_fmt'] == 'hst':
-                r['hst'] = self.par[b]['dt']
-            elif self.par[b]['out_fmt'] == 'starpar_vtk':
-                r['vtk_sp'] = self.par[b]['dt']
-            elif self.par[b]['out_fmt'] == 'rst':
-                r['rst'] = self.par[b]['dt']
-            elif self.par[b]['out_fmt'] == 'vtk' and \
-               ('Sigma' in self.par[b]['out']) or ('EM' in self.par[b]['out']):
-                r['vtk_2d'] = self.par[b]['dt']
-
+            b = f'output{i+1}'                
+            try:
+                if self.par[b]['out_fmt'] == 'vtk' and \
+                   (self.par[b]['out'] == 'prim' or self.par[b]['out'] == 'cons'):
+                    r['vtk'] = self.par[b]['dt']
+                elif self.par[b]['out_fmt'] == 'hst':
+                    r['hst'] = self.par[b]['dt']
+                elif self.par[b]['out_fmt'] == 'starpar_vtk':
+                    r['vtk_sp'] = self.par[b]['dt']
+                elif self.par[b]['out_fmt'] == 'rst':
+                    r['rst'] = self.par[b]['dt']
+                elif self.par[b]['out_fmt'] == 'vtk':
+                    r['vtk_2d'] = self.par[b]['dt']
+            except KeyError:
+                continue
         self.dt_output = r
         
         return r 
@@ -300,7 +386,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         elif dt_Myr is not None:
             dt_Myr = np.atleast_1d(dt_Myr)
             h = self.read_hst()
-            idx_SF0, = h['Mstar'].to_numpy().nonzero()
+            idx_SF0, = h['M_sp'].to_numpy().nonzero()
             t0 = h['time_code'][idx_SF0[0] - 1]
             t_code = [t0 + dt_Myr_/u.Myr for dt_Myr_ in dt_Myr]
             # print('time of first SF [Myr]', t0*self.u.Myr)
@@ -308,8 +394,8 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         elif sp_frac is not None:
             sp_frac = np.atleast_1d(sp_frac)
             h = self.read_hst()
-            Mstar_final = h['Mstar'].iloc[-1]
-            idx = [np.where(h['Mstar'] > sp_frac_*Mstar_final)[0][0] \
+            M_sp_final = h['M_sp'].iloc[-1]
+            idx = [np.where(h['M_sp'] > sp_frac_*M_sp_final)[0][0] \
                    for sp_frac_ in sp_frac]
             t_code = [h['time_code'].iloc[idx_] for idx_ in idx]
 
@@ -327,6 +413,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             nums = nums[0]
 
         return nums
+
     
 class LoadSimSFCloudAll(Compare):
     """Class to load multiple simulations"""
@@ -348,29 +435,193 @@ class LoadSimSFCloudAll(Compare):
                 self.basedirs[mdl] = basedir
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
-        
+
         self.model = model
         self.sim = LoadSimSFCloud(self.basedirs[model], savdir=savdir,
                                   load_method=load_method, verbose=verbose)
         return self.sim
 
+    @staticmethod
+    def mscatter(x, y, ax=None, m=None, **kwargs):
+        # https://stackoverflow.com/questions/52303660/iterating-markers-in-plots/52303895#52303895
+        import matplotlib.markers as mmarkers
+        if not ax:
+            ax = plt.gca()
+        sc = ax.scatter(x, y, **kwargs)
+        if (m is not None) and (len(m)==len(x)):
+            paths = []
+            for marker in m:
+                if isinstance(marker, mmarkers.MarkerStyle):
+                    marker_obj = marker
+                else:
+                    marker_obj = mmarkers.MarkerStyle(marker)
+                path = marker_obj.get_path().transformed(
+                            marker_obj.get_transform())
+                paths.append(path)
+            sc.set_paths(paths)
+        return sc
+
+    @staticmethod
+    def legend_feedback(ax, line_args=None, legend_args=None, alpha=1.0):
+
+        line_args_ = dict(marker='o', markerfacecolor='r', linestyle='none',
+                          markersize=np.sqrt(120.0), linewidth=0.5, alpha=alpha)
+        legend_args_ = dict(loc='best', numpoints=1,
+                            frameon=True, fontsize=18)
+
+        if line_args is not None:
+            line_args_.update(line_args)
+
+        markers = ['o', 's', 'P', 'X']
+        colors = ['C1', 'C0', 'C2', 'C3']
+        labels = ['PH', 'RP', 'WN', 'SN']
+
+        lines = []
+        for m, c in zip(markers, colors):
+
+            line_args_['marker'] = m
+            line_args_['markerfacecolor'] = c
+            line_args_['markeredgecolor'] = 'none'
+
+            l = mpl.lines.Line2D([0], [0], **line_args_)
+            lines.append(l)
+
+        if legend_args is not None:
+            legend_args_.update(legend_args)
+            
+        leg = ax.legend(lines, labels, **legend_args_)
+        leg1 = ax.add_artist(leg)
+        return leg1
+
+    @staticmethod
+    def legend_mass(ax, legend_args=None, marker='o', mew=1.0, color='k', alpha=1.0):
+
+        legend_args_ = dict(loc='best', numpoints=1,
+                            frameon=True, fontsize=18)
+        if legend_args is not None:
+            legend_args_.update(legend_args)
+
+        # Create another legend
+        s1 = mpl.lines.Line2D([0], [0], marker=marker, color=color, ls='none',
+                              markersize=np.sqrt(120.0), markeredgecolor='k',
+                              markerfacecolor='none',
+                              markeredgewidth=mew, alpha=alpha)
+        s2 = mpl.lines.Line2D([0], [0], marker=marker, color=color, ls='none',
+                              markersize=np.sqrt(360.0), markeredgecolor='k',
+                              markerfacecolor='none',
+                              markeredgewidth=mew, alpha=alpha)
+        # s3 = mpl.lines.Line2D([0], [0], marker=marker, color=color, ls='none',
+        #                       markersize=np.sqrt(360.0), markeredgecolor='none',
+        #                       markeredgewidth=mew, alpha=alpha)
+
+        sym = [s1, s2] #, s3]
+
+        leg = ax.legend(sym,
+                        [#r'$M_{\rm 0}=10^4\,M_{\odot}$',
+                         r'$M_{\rm 0}=10^5\,M_{\odot}$',
+                         r'$M_{\rm 0}=10^6\,M_{\odot}$'],
+                        **legend_args_)
+
+        return leg
+
+    
 def load_all_sf_cloud(force_override=False):
     
     models = dict(
-        # Early tests
-        ALL_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N128.test1',
-        ALL_N256='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test1',
-        ALL_N256_redV3='/tigress/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test2',
 
-        # Control model tests
-        PHRP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.A4.B2.N128.test',
-        RP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RP.A4.B2.N128.test',
-        RPWNSN_N128_HLLD='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.WN.SN.A4.B2.N128.test.hlld'
+        ### Hydro tests
+        
+        # 5pc cloud
+        # No feedback
+        R05_NOFB_A2S4_Binf_N256='/tigress/jk11/SF-CLOUD/M1E5R05-NOFB-A2-Binf-S4-N256',
+        R05_NOFB_A2S1_Binf_N256_acc0='/tigress/jk11/SF-CLOUD/M1E5R05-NOFB-A2-Binf-S1-N256-acc0',
+
+        # PH+RP
+        R05_PHRP_A2S1_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128',
+        
+        # Effect of timestep
+        R05_PHRP_A2S1_N128_dt10='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-dt10',
+        R05_PHRP_A2S1_N128_dt50='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-dt50',
+        
+        # Resolution
+        R05_PHRP_A2S1_N256_dt50='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N256-dt50',
+
+        # Accretion
+        R05_PHRP_A2S1_N128_acc0='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-acc0',
+        R05_PHRP_A2S1_N128_acc0_dt50='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-acc0-dt50',
+        R05_PHRP_A2S1_N256_acc0_dt50='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N256-acc0-dt50',
+
+        # Wind only
+        R05_WN_A2S4_N256_mc1000='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-WN-A2-Binf-S4-N256-mc1000',
+        
+        # 20pc cloud
+        R20_PHRP_A2S1_N128='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128',
+        R20_PHRP_A2S1_N128_mc1000='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-mc1000',
+
+        R20_PHRP_A2S1_N128_acc0='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-acc0',
+        R20_PHRP_A2S1_N128_acc0_dt10='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-acc0-dt10',
+        R20_PHRP_A2S4_N128_acc0_dt10='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S4-N128-acc0-dt10',
+
+        R20_WN_A2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-WN-A2-Binf-S4-N128',
+        R20_WN_A2S4_N128_mc1000='/tigress/jk11/SF-CLOUD/M1E5R20-WN-A2-Binf-S4-N128-mc1000',
+        
+        # M1E6R60_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-PH-Binf-N128',
+        # M1E6R60_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-RP-Binf-N128',
+        # M1E6R60_WN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-WN-Binf-N128',
+        # M1E6R60_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-SN-Binf-N128',
+        # M1E6R60_SN_Binf_N128_gcorr='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-SN-Binf-N128-gcorr',
+
+        # M1E5R20_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PH-Binf-N128',
+        # M1E5R20_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-RP-Binf-N128',
+        # M1E5R20_WN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-WN-Binf-N128',
+        # M1E5R20_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-SN-Binf-N128',
+
+        # M1E5R05_PH_A2_Binf_N256='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf',
+        # M1E5R05_PH_A2_Binf_N256_fcool50='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-fcool50',
+
+        # PH_A2S1_N128_fcool30_hllc='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-S1-N128-fcool30-hllc/',
+        # PH_A2S1_N128_fcool30='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-S1-N128-fcool30/',
+        # PH_A2S1_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-S1-N128/',
+        # PHRP_A2S1_N128_hllc='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-fcool30-hllc/',
+
+
+        # M1E5R05_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128',
+        # M1E5R05_PH_Binf_N128_noEradcv='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128-noEradcv',
+        # M1E5R05_PH_Binf_N128_noEradcv_selfgno0='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128-noEradcv-selfgno0',
+        # M1E5R05_PH_Binf_N128_gcorr='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128-gcorr',
+        # M1E5R05_PH_A2_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-N128',
+        # M1E5R05_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-RP-Binf-N128',
+        # M1E5R05_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-SN-Binf-N128',
+
+        # M1E6R15_PH_Binf_N192='/scratch/gpfs/jk11/SF-CLOUD/M1E6R15-PH-Binf-N192',
+        
+        ## Early tests
+        # ALL_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N128.test1',
+        # ALL_N256='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test1',
+        # ALL_N256_redV3='/tigress/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test2',
+        
+        ## Control model tests
+        # ALL_N128_HYD='/tigress/jk11/SF-CLOUD/M1E5R20.ALL.N128.test.roe.hydro',
+        # M1E5R05_PHRPSN='/tigress/jk11/SF-CLOUD/M1E5R05-PHRPSN',
+        # M1E5R05_PHRPSN_B64='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRPSN-B64',
+
+        # M1E5R20_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-RP-Binf-N128',
+        # M1E5R20_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PH-Binf-N128',
+        # M1E5R05_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-RP-Binf-N128',
+        # M1E5R05_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128',
+
+        # M1E5R05_PHRPSN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRPSN-Binf-N128',
+
+        # M1E6R60_PHRPSN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-PHRPSN-Binf-N128',
+        # M1E6R15_PHRPSN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R15-PHRPSN-Binf-N128',
+        
+
+        # PHRP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.A4.B2.N128.test',
+        # RP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RP.A4.B2.N128.test',
+        # RPWNSN_N128_HLLD='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.WN.SN.A4.B2.N128.test.hlld'
     )
     
     sa = LoadSimSFCloudAll(models)
-
-    markers = ['o','v','^','s','*']
 
     # Check if pickle exists
     fpkl = osp.join('/tigress/jk11/SF-CLOUD/pickles/sf-cloud-all.p')
@@ -388,7 +639,7 @@ def load_all_sf_cloud(force_override=False):
         df_list.append(pd.DataFrame(pd.Series(df, name=mdl)).T)
 
     df = pd.concat(df_list, sort=True).sort_index(ascending=False)
-
+    df['markersize'] = df['markersize'].astype(float)
     df.to_pickle(fpkl)
 
     return sa, df

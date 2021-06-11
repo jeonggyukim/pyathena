@@ -10,7 +10,7 @@ import pandas as pd
 
 from mpl_toolkits.axes_grid1 import ImageGrid
 
-from ..plt_tools.cmap_custom import get_my_cmap
+from ..plt_tools.cmap import cmap_apply_alpha
 from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
 
@@ -266,9 +266,9 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
     
     nums = s.get_nums(dt_Myr=dt_Myr)
     cm0 = plt.cm.viridis
-    # cm1 = get_my_cmap('Blues')
-    # cm2 = get_my_cmap('Greens')
-    # cm3 = get_my_cmap('Oranges')
+    # cm1 = cmap_apply_alpha('Blues')
+    # cm2 = cmap_apply_alpha('Greens')
+    # cm3 = cmap_apply_alpha('Oranges')
     cm1 = plt.cm.Blues
     cm2 = plt.cm.Greens
     cm3 = plt.cm.Oranges

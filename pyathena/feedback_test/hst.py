@@ -53,20 +53,49 @@ class Hst:
         # shell mass in Msun
         hst['Msh'] *= u.Msun*vol
         # hot gas mass in Msun
-        hst['Mhot'] *= u.Msun*vol
+        hst['Mh'] *= u.Msun*vol
         # warm gas mass in Msun
-        hst['Mwarm'] *= u.Msun*vol
+        hst['Mw'] *= u.Msun*vol
         # intermediate temperature gas in Msun
-        hst['Minter'] *= u.Msun*vol
+        hst['Mi'] *= u.Msun*vol
         # cold gas mass in Msun
-        hst['Mcold'] *= u.Msun*vol
-
+        hst['Mc'] *= u.Msun*vol
+        # Hot and ionized
+        hst['Mhi'] = hst['Mh'] + hst['Mi']
+        
         # Total/hot gas/shell momentum in Msun*km/s
-        hst['pr'] *= vol*(u.mass*u.velocity).value
-        hst['pr_hot'] *= vol*(u.mass*u.velocity).value
-        hst['pr_sh'] *= vol*(u.mass*u.velocity).value
+        pr_conv = vol*(u.mass*u.velocity).to('Msun km s-1').value
+        hst['pr'] *= pr_conv
+        hst['pr_h'] *= pr_conv
+        hst['prsh'] *= pr_conv
 
-        hst['vr_sh'] = hst['pr_sh']/hst['Msh']
+        # energy in ergs
+        E_conv = vol*(u.energy).cgs.value
+        hst['Ethm'] *= E_conv
+        hst['Ekin'] *= E_conv
+        for ph in ('c','u','w','i','h'):
+            hst['Ethm_'+ph] *= E_conv
+            hst['Ekin_'+ph] *= E_conv
+            
+        # SNR velocity in km/s
+        # hst['vsnr'] = hst['pr']/(hst['Msh'] + hst['Mi'] + hst['Mh'])
+        # SNR radius
+        # hst['Rsnr'] = hst['pr']/(hst['Msh'] + hst['Mi'] + hst['Mh'])
+        
+        # Dimensionless deceleration parameter
+        # hst['eta'] = hst['vsnr']*hst['time_code']/hst['Rsnr']
+
+        vol_cgs = vol*u.length.cgs.value**3
+        hst['pok_bub'] = (hst['Ethm_i'] + hst['Ethm_h'])/\
+            ((hst['Vi'] + hst['Vh'])*vol_cgs)/ac.k_B.cgs.value
+
+        hst['Vbub'] *= vol
+        hst['Rbub'] = (3.0*hst['Vbub']/(4.0*np.pi))**(1.0/3.0)
+        hst['vrbub'] = np.gradient(hst['Rbub'], hst['time_code'])
+        hst['etabub'] = hst['vrbub']*hst['time']/hst['Rbub']
+
+        hst['vrsh'] = np.gradient(hst['Rsh'], hst['time_code'])
+        hst['etash'] = hst['vrsh']*hst['time']/hst['Rsh']
         
         # Radiation feedback turned on
         if par['configure']['radps'] == 'ON':
@@ -120,3 +149,5 @@ class Hst:
 
                     
         return hst
+
+

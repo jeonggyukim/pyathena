@@ -2,11 +2,14 @@
 """
 
 import os
+import os.path as osp
 import numpy as np
 import matplotlib.pyplot as plt
+import pathlib
 
 class RecRate(object):
-    """Class to compute Badnell recombination rate
+    """Class to compute Badnell (radiative/dielectronic) recombination rates, 
+    Draine (2011)'s recombination rates
     """
     
     def __init__(self):
@@ -14,11 +17,13 @@ class RecRate(object):
         self._read_data()
 
     def _read_data(self):
-        
-        local = os.path.dirname(os.path.realpath('__file__'))
-        self.fname_dr_C = os.path.join(local, '../../data/badnell_dr_C.dat')
-        self.fname_dr_E = os.path.join(local, '../../data/badnell_dr_E.dat')
-        self.fname_rr = os.path.join(local, '../../data/badnell_rr.dat')
+
+        basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
+                           '../../data/microphysics')
+
+        self.fname_dr_C = os.path.join(basedir, 'badnell_dr_C.dat')
+        self.fname_dr_E = os.path.join(basedir, 'badnell_dr_E.dat')
+        self.fname_rr = os.path.join(basedir, 'badnell_rr.dat')
         
         # Read dielectronic recombination rate data
         with open(self.fname_dr_C, 'r') as fp:
@@ -112,7 +117,7 @@ class RecRate(object):
         Z : int
             Nuclear Charge
         N : int
-            Number of electrons of the initial target ion (before recombination)
+            Number of electrons of the initial target ion
         T : array of floats
             Temperature [K]
         M : int
@@ -128,9 +133,8 @@ class RecRate(object):
         c1 = self.Zr == Z
         c2 = self.Nr == N
         c3 = self.Mr == M
-        
-        indx = np.where(c1 & c2 & c3)
-        i = indx[0][0]
+        idx = np.where(c1 & c2 & c3)
+        i = idx[0][0]
         sqrtTT0 = np.sqrt(T/self.T0r[i])
         sqrtTT1 = np.sqrt(T/self.T1r[i])
         if self.modr[i]:
@@ -169,9 +173,9 @@ class RecRate(object):
         c2 = self.Nd == N
         c3 = self.Md == M
         
-        indx = np.where(c1 & c2 & c3)
+        idx = np.where(c1 & c2 & c3)
 
-        i = indx[0][0]
+        i = idx[0][0]
         dr = 0.0
         for m in range(self.nd[i]):
             dr += self.Cd[i, m]*np.exp(-self.Ed[i, m]/T)
