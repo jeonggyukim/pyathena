@@ -727,7 +727,9 @@ class LoadSim(object):
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not make directory')
 
-                fpkl = osp.join(savdir, osp.basename(cls.files['hst']) + '.mod.p')
+                fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
+                                 '.{0:s}.mod.p'.format(cls.basename))
+                #fpkl = osp.join(savdir, osp.basename(cls.files['hst']) + '.mod.p')
 
                 # Check if the original history file is updated
                 if not force_override and osp.exists(fpkl) and \
