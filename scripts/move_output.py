@@ -176,16 +176,19 @@ if join_vtk or join_vtk_suffix:
         mynums = COMM.scatter(new_nums, root=0)
         print('[rank, mynums]:', COMM.rank, mynums)
 
-        mymin = mynums[0]
-        mymax = mynums[-1]
-        if len(mynums) > 1: mystride = mynums[1]-mynums[0]
-        else: mystride = 1
-        print(COMM.rank, mynums, mymin, mymax, mystride)
-        r = r'{0:d}:{1:d}:{2:d}'.format(mymin,mymax,mystride)
-        join_vtk_command['vtk'] = '{0:s} -r {1:s} -i {2:s} -o {3:s} -C'.format(
-            join_vtk_script,r,basedir_orig,osp.join(basedir_new,'vtk'))
-        print(join_vtk_command['vtk'])
-        os.system(join_vtk_command['vtk'])
+        try:
+            mymin = mynums[0]
+            mymax = mynums[-1]
+            if len(mynums) > 1: mystride = mynums[1]-mynums[0]
+            else: mystride = 1
+            print(COMM.rank, mynums, mymin, mymax, mystride)
+            r = r'{0:d}:{1:d}:{2:d}'.format(mymin,mymax,mystride)
+            join_vtk_command['vtk'] = '{0:s} -r {1:s} -i {2:s} -o {3:s} -C'.format(
+                join_vtk_script,r,basedir_orig,osp.join(basedir_new,'vtk'))
+            print(join_vtk_command['vtk'])
+            os.system(join_vtk_command['vtk'])
+        except IndexError:
+            pass
 
 COMM.barrier()
 

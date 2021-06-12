@@ -40,8 +40,10 @@ class PDF:
                    savdir=None, force_override=False):
         bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
         if self.par['configure']['radps'] == 'ON':
-            bin_fields_def+= [['T','Lambda_cool'], ['nH','xi_CR'], ['nH', 'xH2'],
+            bin_fields_def+= [['T','Lambda_cool'], ['nH', 'xH2'],
                               ['T', 'xHII'], ['T', 'xHI']]
+            if (self.par['cooling']['iCR_attenuation']):
+                bin_fields_def+=[['nH','xi_CR']]
             if (self.par['cooling']['iPEheating'] == 1):
                 bin_fields_def+= [['nH','chi_FUV']]
             if (self.par['radps']['iPhotDiss'] == 1):

@@ -17,8 +17,8 @@ class Units(object):
               mean particle mass per H (for neutral gas).
               Default value is 1.4271 (assuming solar metallicity).
         """
-        
-        mH = 1.008*au.u        
+
+        mH = 1.008*au.u
         if kind == 'LV':
             self.muH = muH
             self.length = (1.0*au.pc).to('pc')
@@ -40,10 +40,11 @@ class Units(object):
         self.energy = (self.mass*self.velocity**2).cgs
         self.pressure = (self.density*self.velocity**2).cgs
         self.energy_density = self.pressure.to('erg/cm**3')
-        
-        self.mass_flux = (self.density*self.velocity).to('Msun pc-2 Myr-1')
-        self.momentum_flux = (self.density*self.velocity**2).to('Msun km s-1 pc-2 Myr-1')
-        
+
+        self.mass_flux = (self.density*self.velocity).to('Msun kpc-2 yr-1')
+        self.momentum_flux = (self.density*self.velocity**2).to('Msun km s-1 kpc-2 yr-1')
+        self.energy_flux = (self.density*self.velocity**3).to('erg kpc-2 yr-1')
+
         # Define (physical constants in code units)^-1
         #
         # Opposite to the convention chosen by set_units function in

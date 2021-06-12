@@ -4,7 +4,7 @@
 #SBATCH --ntasks=24              # total number of tasks
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=06:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=12:00:00          # total run time limit (HH:MM:SS)
 
 module purge
 module load anaconda3/2020.11 openmpi/gcc/4.1.0
@@ -13,8 +13,8 @@ conda activate pyathena
 MODULE="pyathena.tigress_ncr.do_tasks"
 export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
 
-INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$1
 if [[ $# -eq 2 ]]; then
+  INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$1
   OUTDIR=/tigress/changgoo/TIGRESS-NCR/$2
   cd $HOME/pyathena/scripts
   srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1> join-$SLURM_JOB_ID.out 2> join-$SLURM_JOB_ID.err
@@ -23,5 +23,22 @@ if [[ $# -eq 2 ]]; then
   cd $HOME/pyathena
   srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> scripts/join-$SLURM_JOB_ID.out 2>> scripts/join-$SLURM_JOB_ID.err
 else
-  echo "Please specify the output basename"
+  echo "Move everything from scratch"
+  cd $HOME/pyathena/scripts
+  DIRS=`ls /scratch/gpfs/changgoo/TIGRESS-NCR/`
+  for dir in $DIRS
+  do
+    echo $dir
+    echo "join started"
+    INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$dir
+    OUTDIR=/tigress/changgoo/TIGRESS-NCR/$dir
+    srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1>> join-$SLURM_JOB_ID.out 2>> join-$SLURM_JOB_ID.err
+  done
+
+  for dir in $DIRS
+  do
+    echo "do tasks started"
+    OUTDIR=/tigress/changgoo/TIGRESS-NCR/$dir
+    srun python ../pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> join-$SLURM_JOB_ID.out 2>> join-$SLURM_JOB_ID.err
+  done
 fi

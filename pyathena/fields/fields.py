@@ -166,6 +166,16 @@ def set_derived_fields_def(par, x0, newcool):
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
+    # cs [km/s]
+    f = 'cs'
+    field_dep[f] = set(['pressure','density'])
+    def _cs(d, u):
+        return np.sqrt(d['pressure']/d['density'])
+    func[f] = _cs
+    label[f] = r'$c_s\;[{\rm km}\,{\rm s}^{-1}]$'
+    cmap[f] = 'magma'
+    vminmax[f] = (0.1,1e3)
+    take_log[f] = True
 
     # cs [km/s]
     f = 'csound'
@@ -285,6 +295,39 @@ def set_derived_fields_mag(par, x0):
     cmap = dict()
     vminmax = dict()
     take_log = dict()
+
+    # vAx [km/s]
+    f = 'vAx'
+    field_dep[f] = set(['density','cell_centered_B'])
+    def _vAx(d, u):
+        return d['cell_centered_B1']*np.sqrt(d['density'])*u.kms
+    func[f] = _vAx
+    label[f] = r'$v_{A,x}\;[{\rm km/s}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e2,1e2)
+    take_log[f] = False
+
+    # vAy [km/s]
+    f = 'vAy'
+    field_dep[f] = set(['density','cell_centered_B'])
+    def _vAy(d, u):
+        return d['cell_centered_B2']*np.sqrt(d['density'])*u.kms
+    func[f] = _vAy
+    label[f] = r'$v_{A,y}\;[{\rm km/s}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e2,1e2)
+    take_log[f] = False
+
+    # vAz [km/s]
+    f = 'vAz'
+    field_dep[f] = set(['density','cell_centered_B'])
+    def _vAz(d, u):
+        return d['cell_centered_B3']*np.sqrt(d['density'])*u.kms
+    func[f] = _vAz
+    label[f] = r'$v_{A,z}\;[{\rm km/s}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e2,1e2)
+    take_log[f] = False
 
     # Bx [G]
     f = 'Bx'

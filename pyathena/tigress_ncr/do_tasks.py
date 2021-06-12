@@ -50,7 +50,7 @@ if __name__ == '__main__':
         print(num, end=' ')
 
         try:
-            fig = s.plt_snapshot(num, savdir_pkl=savdir_pkl, savdir=savdir)
+            fig = s.plt_snapshot(num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True)
             plt.close(fig)
             fig = s.plt_pdf2d_all(num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir)
             plt.close(fig)

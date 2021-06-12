@@ -25,7 +25,8 @@ cmap_def = dict(
     vz=plt.cm.bwr,
     chi_FUV=plt.cm.viridis,
     Erad_LyC=plt.cm.viridis,
-    xi_CR=plt.cm.viridis
+    xi_CR=plt.cm.viridis,
+    Bmag=plt.cm.cividis,
 )
 
 norm_def = dict(
@@ -37,7 +38,8 @@ norm_def = dict(
     vz=Normalize(-200,200),
     chi_FUV=LogNorm(1e-2,1e2),
     Erad_LyC=LogNorm(1e-16,5e-13),
-    xi_CR=LogNorm(5e-17,1e-15)
+    xi_CR=LogNorm(5e-17,1e-15),
+    Bmag=LogNorm(1.e-2,1.e2)
 )
 
 class SliceProj:
@@ -59,13 +61,16 @@ class SliceProj:
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
 
-        fields_def = ['nH', 'nH2', 'vz', 'T']
+        fields_def = ['nH', 'nH2', 'vz', 'T', 'cs', 'vx', 'vy', 'vz', 'pok']
         if self.par['configure']['radps'] == 'ON':
-            fields_def += ['xi_CR']
+            if (self.par['cooling']['iCR_attenuation']):
+                fields_def += ['xi_CR']
             if self.par['radps']['iPhotIon'] == 1:
                 fields_def += ['Erad_LyC']
             if self.par['cooling']['iPEheating'] == 1:
                 fields_def += ['chi_FUV']
+        if self.par['configure']['gas'] == 'mhd':
+            fields_def += ['Bx','By','Bz','Bmag']
 
         fields = fields_def
         axes = np.atleast_1d(axes)
@@ -77,6 +82,12 @@ class SliceProj:
         for ax in axes:
             dat = ds.get_slice(ax, fields, pos='c', method='nearest')
             res[ax] = dict()
+            for f in fields:
+                res[ax][f] = dat[f].data
+
+        for zpos,zlab in zip([-1000,-500,500,1000],['zn10','zn05','zp05','zp10']):
+            dat = ds.get_slice('z', fields, pos=zpos, method='nearest')
+            res[zlab] = dict()
             for f in fields:
                 res[ax][f] = dat[f].data
 
@@ -112,45 +123,49 @@ class SliceProj:
 
     @staticmethod
     def plt_slice(ax, slc, axis='z', field='density', cmap=None, norm=None):
+        try:
+            if cmap is None:
+                cmap = cmap_def[field]
 
-        if cmap is None:
-            cmap = cmap_def[field]
+            if norm is None:
+                norm = mpl.colors.LogNorm()
+            elif norm is 'linear':
+                norm = mpl.colors.Normalize()
 
-        if norm is None:
-            norm = mpl.colors.LogNorm()
-        elif norm is 'linear':
-            norm = mpl.colors.Normalize()
-
-        ax.imshow(slc[axis][field], cmap=cmap,
-                  extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
+            ax.imshow(slc[axis][field], cmap=cmap,
+                      extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
+        except KeyError:
+            pass
 
     @staticmethod
     def plt_proj(ax, prj, axis='z', field='Sigma_gas',
                  cmap=None, norm=None, vmin=None, vmax=None):
+        try:
+            vminmax = dict(Sigma_gas=(1e-2,1e2))
+            cmap_def = dict(Sigma_gas='pink_r')
 
-        vminmax = dict(Sigma_gas=(1e-2,1e2))
-        cmap_def = dict(Sigma_gas='pink_r')
+            if cmap is None:
+                try:
+                    cmap = cmap_def[field]
+                except KeyError:
+                    cmap = plt.cm.viridis
+            if vmin is None or vmax is None:
+                vmin = vminmax[field][0]
+                vmax = vminmax[field][1]
 
-        if cmap is None:
-            try:
-                cmap = cmap_def[field]
-            except KeyError:
-                cmap = plt.cm.viridis
-        if vmin is None or vmax is None:
-            vmin = vminmax[field][0]
-            vmax = vminmax[field][1]
+            if norm is None or 'log':
+                norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
+            elif norm is 'linear':
+                norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
 
-        if norm is None or 'log':
-            norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
-        elif norm is 'linear':
-            norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-
-        ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
-                  norm=norm, origin='lower', interpolation='none')
+            ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
+                      norm=norm, origin='lower', interpolation='none')
+        except KeyError:
+            pass
 
     def plt_snapshot(self, num,
                      fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'chi_FUV'),
-                     fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz'),
+                     fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz', 'Bmag'),
                      #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
                      #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
@@ -182,25 +197,27 @@ class SliceProj:
                      vz=r'$v_z$',
                      chi_FUV=r'$\mathcal{E}_{\rm FUV}$',
                      Erad_LyC=r'$\mathcal{E}_{\rm LyC}$',
-                     xi_CR=r'$\xi_{\rm CR}$'
+                     xi_CR=r'$\xi_{\rm CR}$',
+                     Bmag=r'$|B|$'
         )
 
         kind = dict(Sigma_gas='prj', Sigma_H2='prj', EM='prj',
                     nH='slc', T='slc', vz='slc', chi_FUV='slc',
-                    Erad_LyC='slc', xi_CR='slc')
-
+                    Erad_LyC='slc', xi_CR='slc', Bmag='slc')
+        nxy = len(fields_xy)
+        nxz = len(fields_xz)
         ds = self.load_vtk(num=num)
         LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
         xwidth = 3
         ysize = LzoLx*xwidth
-        xsize = ysize/3*2 + 6*xwidth
-        x1 = 0.90*(ysize*2/3/xsize)
-        x2 = 0.90*(6*xwidth/xsize)
+        xsize = ysize/nxy*4 + nxz*xwidth
+        x1 = 0.90*(ysize*4/nxy/xsize)
+        x2 = 0.90*(nxz*xwidth/xsize)
 
         fig = plt.figure(figsize=(xsize, ysize))#, constrained_layout=True)
-        g1 = ImageGrid(fig, [0.02, 0.05, x1, 0.94], (3, 2), axes_pad=0.1,
+        g1 = ImageGrid(fig, [0.02, 0.05, x1, 0.94], (nxy//2, 2), axes_pad=0.1,
                        aspect=True, share_all=True, direction='column')
-        g2 = ImageGrid(fig, [x1+0.07, 0.05, x2, 0.94], (1, 6), axes_pad=0.1,
+        g2 = ImageGrid(fig, [x1+0.07, 0.05, x2, 0.94], (1, nxz), axes_pad=0.1,
                        aspect=True, share_all=True)
 
         dat = dict()
@@ -211,10 +228,8 @@ class SliceProj:
         extent = dat['prj']['extent']['z']
         for i, (ax, f) in enumerate(zip(g1, fields_xy)):
             ax.set_aspect(ds.domain['Lx'][1]/ds.domain['Lx'][0])
-            try:
-                self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
-            except KeyError:
-                pass
+            self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
+
             if i == 0:
                 scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
                            norm_factor=norm_factor, agemax=agemax, agemax_sn=agemax_sn,

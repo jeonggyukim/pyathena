@@ -102,6 +102,41 @@ class Zprof(ReadZprofBase):
         self.zp_pw = momzp
         return momzp
 
+    def load_zprof_for_wind(self):
+        """Process zprof data for pressure/weight analysis
+        """
+        if hasattr(self,'zp_flux'):
+            return self.zp_flux
+        zp = self.read_zprof(phase=['2p','h','whole'])
+
+        zplist=[]
+        for ph in zp:
+            zplist.append(zp[ph].expand_dims('phase').assign_coords(phase=[ph]))
+
+        zp=xr.concat(zplist,dim='phase')
+        rename_dict = {'h':'hot'}
+        zp = zp.to_array().to_dataset('phase').rename(rename_dict)
+        zp = zp.to_array('phase').to_dataset('variable')
+
+        dm=self.domain
+        u=self.u
+        flux=xr.Dataset()
+        flux['mass']=(zp['pFzd']*u.mass_flux)
+        flux['mom_kin']=(zp['pFzM3']*u.momentum_flux)
+        try:
+            flux['mom_th']=(zp['pP']*u.momentum_flux)
+        except KeyError:
+            flux['mom_th']=(zp['P']*u.momentum_flux)
+        flux['mom']=flux['mom_kin']+flux['mom_th']
+        flux['energy_kin']=(zp['pFzE1']+zp['pFzE2']+zp['pFzE3'])*u.energy_flux
+        flux['energy_th']=zp['pFzP']*u.energy_flux
+        flux['energy']=flux['energy_kin']+flux['energy_th']
+        flux['A']=zp['pA']
+        flux['d']=zp['pd']
+
+        self.zp_flux = flux
+        return flux
+
     def load_zprof_for_phase(self,thermal_only=False):
         if hasattr(self,'zp_th'):
             if thermal_only:
@@ -258,7 +293,7 @@ def plt_zprof_avg_compare(sa, models=None, phase=['whole','c','u','w','h1','h2']
 
     return fig, zpa
 
-def plot_stacked_bar(frac,x='time'):
+def plot_stacked_bar(frac,x='time',**kwargs):
     """A convenient wrapper for stacked bar graph plot for pressure/weight
     """
     # setup colors and labels using seaborn
@@ -293,11 +328,12 @@ def plot_stacked_bar(frac,x='time'):
         if x == 'time':
             plt.fill_between(frac.time,f0,f0+frac.sel(varph=varph),label=label,color=c)
         elif x == 'model':
-            plt.bar(frac.model,frac.sel(varph=varph),bottom=f0,label=label,color=c)
+            plt.bar(frac.model,frac.sel(varph=varph),bottom=f0,
+                    label=label,color=c,**kwargs)
 
         f0 += frac.sel(varph=varph).data.copy()
 
-def plot_pressure_fraction(ptdata,ph='2p',rolling=None):
+def plot_pressure_fraction(ptdata,ph='2p',rolling=None,normed=True):
     """Plot time evolution of pressure contributions as a stacked bar graph
     """
 
@@ -309,7 +345,8 @@ def plot_pressure_fraction(ptdata,ph='2p',rolling=None):
     # cacluate fractions
     Ptot = pt.sel(variable='Ptot',phase=ph).drop_vars(['variable','phase'])
     frac = pt.sel(variable=['Pthm','Ptrb','dPimag','oPimag'],phase=[ph])\
-             .stack(varph = ['phase','variable'])/Ptot
+             .stack(varph = ['phase','variable'])
+    if normed: frac = frac/Ptot
 
     # plot
     plot_stacked_bar(frac)
@@ -318,9 +355,9 @@ def plot_pressure_fraction(ptdata,ph='2p',rolling=None):
     plt.legend(loc=2,bbox_to_anchor=(1.01,1))
     plt.xlabel('time [Myr]')
     plt.ylabel(r'$P_{\rm comp}^{\rm ph}/P_{\rm tot}$')
-    plt.ylim(0,1)
+    if normed: plt.ylim(0,1)
 
-def plot_weight_fraction(wtdata,rolling=None):
+def plot_weight_fraction(wtdata,rolling=None,normed=True):
     """Plot time evolution of pressure contributions as a stacked bar graph
     """
 
@@ -331,7 +368,8 @@ def plot_weight_fraction(wtdata,rolling=None):
     # cacluate fractions
     Wtot = wt.sel(variable='W',phase='whole').drop_vars(['variable','phase'])
     frac = wt.sel(variable=['Wsg','Wext'],phase=['2p','hot'])\
-             .stack(varph = ['phase','variable'])/Wtot
+             .stack(varph = ['phase','variable'])
+    if normed: frac = frac/Wtot
 
     # plot
     plot_stacked_bar(frac)
@@ -340,9 +378,9 @@ def plot_weight_fraction(wtdata,rolling=None):
     plt.legend(loc=2,bbox_to_anchor=(1.01,1))
     plt.xlabel('time [Myr]')
     plt.ylabel(r'$W_{\rm comp}^{\rm ph}/W$')
-    plt.ylim(0,1)
+    if normed: plt.ylim(0,1)
 
-def plt_pressure_weight_tevol(sim,rolling=None):
+def plt_pressure_weight_tevol(sim,rolling=None,normed=True):
     pw = sim.load_zprof_for_sfr()
 
     area = pw['A'].sel(z=slice(-10,10)).mean(dim='z')
@@ -357,7 +395,7 @@ def plt_pressure_weight_tevol(sim,rolling=None):
     ptevol=pmid_tevol-pzmax_tevol
     ptevol = ptevol/area_frac
 
-    fig,axes = plt.subplots(4,1,figsize=(10,10),gridspec_kw=dict(wspace=1),sharex=True)
+    fig,axes = plt.subplots(3,1,figsize=(10,10),gridspec_kw=dict(wspace=1),sharex=True)
 
     # time evolution of midplane values
     plt.sca(axes[0])
@@ -371,18 +409,18 @@ def plt_pressure_weight_tevol(sim,rolling=None):
 
     # pressure fraction
     plt.sca(axes[1])
-    plot_pressure_fraction(ptevol,rolling=rolling)
+    plot_pressure_fraction(ptevol,rolling=rolling,normed=normed)
     plt.xlabel('')
     #plt.legend(loc=2,ncol=2,bbox_to_anchor=(1.01,1))
 
     # weight fraction
     plt.sca(axes[2])
-    plot_weight_fraction(wtevol,rolling=rolling)
+    plot_weight_fraction(wtevol,rolling=rolling,normed=normed)
 
     # pressure fraction
-    plt.sca(axes[3])
-    plot_pressure_fraction(ptevol,rolling=rolling,ph='hot')
-    plt.xlabel('')
+    #plt.sca(axes[3])
+    #plot_pressure_fraction(ptevol,rolling=rolling,ph='hot')
+    #plt.xlabel('')
     #plt.legend(loc=2,ncol=1,bbox_to_anchor=(1.01,1))
 
 
@@ -510,6 +548,7 @@ def plt_phase_balance(sim,**z_kwargs):
 def plt_upsilon_comparison(sa,trange=slice(300,500),torb=None,norm=False):
     Upsilon_unit = (ac.k_B*au.K/au.cm**3/ac.M_sun*ac.kpc**2*au.yr).to('km/s').value
     Pstack = xr.Dataset()
+    Wstack = xr.Dataset()
     Upsilon = xr.Dataset()
 
     for m in sa.models:
@@ -529,19 +568,28 @@ def plt_upsilon_comparison(sa,trange=slice(300,500),torb=None,norm=False):
         print(m,sfr,H2p)
         da_p = pw.to_array().sel(variable=['Pthm','Ptrb','dPimag','oPimag'])
         pmid_tevol=da_p.sel(z=slice(-10,10)).mean(dim='z')
+        area = pw['A'].sel(z=slice(-10,10)).mean(dim='z')
+        area_frac = area/area.sel(phase='whole')
         pzmax_tevol=da_p.sel(z=(-4*H2p,4*H2p),method='nearest').mean(dim='z')
         ptevol=pmid_tevol-pzmax_tevol
+        ptevol=ptevol/area_frac
 
-        Pstack[m] = ptevol.sel(time=trange,phase=['2p','hot'])\
+        Pstack[m] = ptevol.sel(time=trange,phase=['2p'])\
                           .stack(varph=['phase','variable']).mean(dim='time')
+
         Upsilon[m] = Pstack[m]/sfr*Upsilon_unit
         if norm:
             Ptot = Pstack[m].sum(dim='varph')
             Pstack[m] = Pstack[m]/Ptot
 
+        wtevol=pw.to_array().sel(variable=['Wsg','Wext'],z=slice(-10,10)).mean(dim='z')
+        Wstack[m] = wtevol.sel(time=trange,phase=['2p'])\
+                          .stack(varph=['phase','variable']).mean(dim='time')
+
     fig,axes = plt.subplots(2,1,figsize=(8,6))
     plt.sca(axes[0])
-    plot_stacked_bar(Pstack.to_array('model'),x='model')
+    plot_stacked_bar(Pstack.to_array('model'),x='model',width=-0.4,align='edge')
+    plot_stacked_bar(Wstack.to_array('model'),x='model',width=0.4,align='edge')
     plt.legend(loc=2,bbox_to_anchor=(1.01,1))
     if norm:
         plt.ylabel(r'$P_{\rm comp}^{\rm ph}/P_{\rm tot}$')
