@@ -9,6 +9,7 @@ import astropy.units as au
 import astropy.constants as ac
 from matplotlib.colors import Normalize, LogNorm
 from mpl_toolkits.axes_grid1 import ImageGrid
+import xarray as xr
 
 from ..load_sim import LoadSim
 from ..io.read_starpar_vtk import read_starpar_vtk
@@ -61,7 +62,7 @@ class SliceProj:
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
 
-        fields_def = ['nH', 'nH2', 'vz', 'T', 'cs', 'vx', 'vy', 'vz', 'pok']
+        fields_def = ['nH', 'nH2', 'ne', 'vz', 'T', 'cs', 'vx', 'vy', 'vz', 'pok']
         if self.par['configure']['radps'] == 'ON':
             if (self.par['cooling']['iCR_attenuation']):
                 fields_def += ['xi_CR']
@@ -89,7 +90,7 @@ class SliceProj:
             dat = ds.get_slice('z', fields, pos=zpos, method='nearest')
             res[zlab] = dict()
             for f in fields:
-                res[ax][f] = dat[f].data
+                res[zlab][f] = dat[f].data
 
         return res
 
@@ -120,6 +121,14 @@ class SliceProj:
             res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
 
         return res
+
+    def read_slc_xarray(self, num, axis='zall', force_override=False):
+        slc = self.read_slc(num, force_override=force_override)
+        if axis == 'zall':
+            slc_dset = slc_get_all_z(slc)
+        else:
+            slc_dset = slc_to_xarray(slc, axis)
+        return slc_dset
 
     @staticmethod
     def plt_slice(ax, slc, axis='z', field='density', cmap=None, norm=None):
@@ -278,3 +287,41 @@ class SliceProj:
             plt.savefig(savname, dpi=200, bbox_inches='tight')
 
         return fig
+
+
+def slc_to_xarray(slc,axis='z'):
+    dset = xr.Dataset()
+    for f in slc[axis].keys():
+        x0,x1,y0,y1=slc['extent'][axis[0]]
+
+        Ny,Nx=slc[axis][f].shape
+
+        xfc = np.linspace(x0,x1,Nx+1)
+        yfc = np.linspace(y0,y1,Ny+1)
+        xcc = 0.5*(xfc[1:] + xfc[:-1])
+        ycc = 0.5*(yfc[1:] + yfc[:-1])
+
+        dims = dict(z=['y','x'],x=['z','y'],y=['z','x'])
+
+        dset[f] = xr.DataArray(slc[axis][f],coords=[ycc,xcc],dims=dims[axis[0]])
+    return dset
+
+def slc_get_all_z(slc):
+    dlist = []
+    for k in slc.keys():
+        if k.startswith('z'):
+            slc_dset = slc_to_xarray(slc,k)
+            if len(k) == 1:
+                z0=0.
+            elif k[1] == 'n':
+                z0 = float(k[2:])*(-100)
+            elif k[1] == 'p':
+                z0 = float(k[2:])*(100)
+            else:
+                raise KeyError
+            slc_dset = slc_dset.assign_coords(z=z0)
+            dlist.append(slc_dset)
+        else:
+            pass
+    return xr.concat(dlist,dim='z').sortby('z')
+
