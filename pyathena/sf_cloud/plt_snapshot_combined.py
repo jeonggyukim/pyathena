@@ -32,9 +32,15 @@ class PltSnapshotCombined:
             copyfile(fout, fout2)
             print('Copied movie file to {0:s}'.format(fout2))
     
-    def plt_snapshot_combined(self, num, dim='z', zoom=2.0, savfig=True):
+    def plt_snapshot_combined(self, num, dim='z', zoom=1.0,
+                              slice_domain_center=True, savfig=True):
         """Plot slices, projections, pdf, and mass history
-
+        
+        Parameters
+        ----------
+        slice_domain_center : bool
+            If True, plot slices through the domain center.
+            If False, plot slices through the most massive starpar.
         """
 
         if self.par['radps']['irayt'] == 0:
@@ -42,14 +48,21 @@ class PltSnapshotCombined:
         else:
             noUV = False
 
+        if self.par['radps']['iPhotIon'] == 0:
+            noPhotIon = True
+        else:
+            noPhotIon = False
+
         if noUV:
             fields = ['nH', 'T', 'pok', 'xH2', 'xHII']
+        elif noPhotIon:
+            fields = ['nH', 'T', 'pok', 'Erad_FUV', 'xH2']
         else:
             fields = ['nH', 'T', 'pok', 'Erad_FUV', 'Erad_LyC']
-
+            
         ds = self.load_vtk(num)
         sp = self.load_starpar_vtk(num)
-        if sp.empty:
+        if sp.empty or slice_domain_center:
             pos = 0.0
             x0,y0 = (0.0,0.0)
         else:
@@ -104,6 +117,17 @@ class PltSnapshotCombined:
             (2.0*dd[f]).plot.imshow(ax=axes[4], norm=Normalize(0,1),
                                     cmap='viridis', add_labels=False, extend='neither',
                                     cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
+        elif noPhotIon:
+            f = 'xH2'
+            (2.0*dd[f]).plot.imshow(ax=axes[3], norm=Normalize(0,1),
+                                    cmap='viridis', add_labels=False, extend='neither',
+                                    cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
+            f = 'Erad_FUV'
+            if dd[f].max() != 0.0:
+                dd[f].plot.imshow(ax=axes[4], norm=LogNorm(1e-12,1e-7),
+                                  cmap='viridis', add_labels=False, extend='neither',
+              cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm FUV}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
+
         else:
             f = 'Erad_LyC'
             if dd[f].max() != 0.0:

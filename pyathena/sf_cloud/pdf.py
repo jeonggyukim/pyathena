@@ -1,5 +1,6 @@
 # pdf.py
 
+import os
 import os.path as osp
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -7,7 +8,7 @@ import numpy as np
 import astropy.units as au
 import astropy.constants as ac
 import pandas as pd
-
+from matplotlib.colors import LogNorm, Normalize
 from mpl_toolkits.axes_grid1 import ImageGrid
 
 from ..plt_tools.cmap import cmap_apply_alpha
@@ -16,14 +17,16 @@ from ..load_sim import LoadSim
 
 class PDF:
 
-    bins=dict(nH=np.logspace(-2,5,71),
-              nHI=np.logspace(-2,5,71),
-              nH2=np.logspace(-2,5,71),
-              nHII=np.logspace(-2,5,71),
-              T=np.logspace(0,5,51),
-              pok=np.logspace(0,7,71),
+    bins=dict(nH=np.logspace(-2,8,101),
+              nHI=np.logspace(-2,8,101),
+              nH2=np.logspace(-2,8,101),
+              nHII=np.logspace(-2,8,101),
+              T=np.logspace(0,5,101),
+              pok=np.logspace(0,9,71),
               chi_PE_tot=np.logspace(-4,5,91),
               chi_FUV_tot=np.logspace(-4,5,91),
+              chi_FUV_ext=np.logspace(-6,2,91),
+              xi_CR=np.logspace(-20,-14,81),
               Bmag=np.logspace(-7,-4,91),
               Erad_LyC=np.logspace(-17,-8,91),
     )
@@ -36,7 +39,8 @@ class PDF:
         if bins is not None:
             self.bins = bins
             
-        bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
+        bin_fields_def = [['nH', 'pok'], ['nH', 'T'], ['nH', 'chi_FUV_ext'],
+                          ['nH', 'xi_CR']]
         if bin_fields is None:
             bin_fields = bin_fields_def
 
@@ -44,9 +48,12 @@ class PDF:
         res = dict()
         
         for bf in bin_fields:
+            try:
+                dd = ds.get_field(bf)
+            except KeyError:
+                continue
             k = '-'.join(bf)
             res[k] = dict()
-            dd = ds.get_field(bf) 
             xdat = dd[bf[0]].data.flatten()
             ydat = dd[bf[1]].data.flatten()
             # Volume weighted hist
@@ -236,6 +243,68 @@ class PDF:
         
         return res
 
+    def plt_pdf_slice(self, num, force_override=False):
+        from mpl_toolkits.axes_grid1.axes_divider import make_axes_locatable
+
+        dd = self.get_summary()
+
+        r = self.read_pdf2d(num, force_override=force_override)
+        slc = self.read_slc(num, force_override=force_override)
+        fig,axes = plt.subplots(2,3, figsize=(16,10), constrained_layout=False)
+
+        fields = list(r.keys())
+        for i,f in enumerate(fields):
+            if f == 'domain':
+                continue
+            f1,f2 = f.split('-')
+            plt.sca(axes.flatten()[i])
+            plt.pcolormesh(r[f]['xe'],r[f]['ye'],r[f]['Hw'].T, norm=LogNorm())
+            plt.xscale('log')
+            plt.yscale('log')
+            plt.xlabel(self.dfi[f1]['label'])
+            plt.ylabel(self.dfi[f2]['label'])
+            if self.par['feedback']['iSN'] == 0 and self.par['feedback']['iWind'] == 0:
+                if f1 == 'T':
+                    plt.xlim(1e0,1e5)
+                elif f2 == 'T':
+                    plt.ylim(1e0,1e5)
+
+            if f1 == 'nH':
+                plt.xlim(dd['nH']*1e-4,dd['nH']*1e3)
+            elif f2 == 'nH':
+                plt.ylim(dd['nH']*1e-4,dd['nH']*1e3)
+
+        dim = 'z'
+        im1 = axes[1,1].imshow(slc[dim]['nH'],extent=slc['extent'][dim], origin='lower',
+                                norm=LogNorm(1e0,1e6), cmap=self.dfi['nH']['cmap'])
+        im2 = axes[1,2].imshow(slc[dim]['T'],extent=slc['extent'][dim], origin='lower',
+                                norm=self.dfi['T']['norm'], cmap=self.dfi['T']['cmap'])
+        for ax,im in zip((axes[1,1],axes[1,2]),(im1,im2)):
+            ax_divider = make_axes_locatable(ax)
+            cax = ax_divider.append_axes('top', size='3%', pad='2%')
+            cb = plt.colorbar(im, cax=cax, orientation='horizontal')
+            cb.ax.xaxis.set_ticks_position('top')
+            cb.ax.xaxis.set_label_position('top')
+
+
+
+        plt.suptitle('{0:s}  t={1:.3f}, t/tff={2:.2f}'.format(
+            self.basename, slc['time'], slc['time']/(dd['tff']/self.u.Myr)))
+
+        plt.subplots_adjust(top=0.93)
+        plt.tight_layout()
+
+        savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/', self.basename)
+        if not osp.exists(savdir):
+            os.makedirs(savdir)
+
+        savname = osp.join(savdir, '{0:s}_pdf2d_slice_{1:04d}.png'.format(self.basename, num))
+        plt.savefig(savname, dpi=200, bbox_inches='tight')
+
+        print('saved to ', savname)
+
+        return fig, r, slc
+    
 def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
                         force_override=False):
     """Function to plot 2d histograms at different snapshots
@@ -358,3 +427,4 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
         print('saved to', savname)
 
     return fig
+

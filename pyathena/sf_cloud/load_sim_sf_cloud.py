@@ -80,8 +80,8 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
                             self.par['problem']['rcloud'],
                             alpha_vir=self.par['problem']['alpha_vir'])
     
-
-    def get_summary(self, as_dict=False):
+    @LoadSim.Decorators.check_pickle
+    def get_summary(self, as_dict=False, prefix='summary', savdir=None, force_override=False):
         """
         Return key simulation results such as SFE, t_SF, t_dest,H2, etc.
         """
@@ -139,7 +139,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         if df['mhd']:
             df['muB'] = float(par['problem']['muB'])
             df['B'] = (2.0*np.pi*(cl.Sigma*ac.G**0.5/df['muB']).cgs.value*au.microGauss*1e6).value
-            df['vA'] = (df['B0']*1e-6)/np.sqrt(4.0*np.pi*df['rho'])/1e5
+            df['vA'] = (df['B']*1e-6)/np.sqrt(4.0*np.pi*df['rho'])/1e5
             # df['label'] = r'B{0:d}.A{1:d}.S{2:d}'.\
             #               format(int(df['muB']),int(df['alpha_vir']),int(df['seed']))
         else:
@@ -163,6 +163,14 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         # df['eps_of_H2'] = max(h['Mof_H2'].values)/df['M']
         # df['eps_of_HII'] = max(h['Mof_HII'].values)/df['M']
 
+        # Injected momentum
+        df['pr_cl_final'] = h['pr_cl'].iloc[-1] + h['pr_cl_of'].iloc[-1] - h['pr_cl'].iloc[0]
+        df['pr_final'] = h['pr'].iloc[-1] + h['pr_of'].iloc[-1] - h['pr'].iloc[0]
+
+        # Feedback yield
+        df['pr_cl_over_M_sp'] = df['pr_cl_final']/df['M_sp_final']
+        df['pr_over_M_sp'] = df['pr_final']/df['M_sp_final']
+        
         def get_markersize(M):
             log10M = [4., 5., 6.]
             ms = [40.0, 120.0, 360.0]
@@ -181,27 +189,42 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         df['linewidth'] = get_linewidth(df['M'])
         df['markersize'] = get_markersize(df['M'])
 
-        if df['iRadp'] and not df['iPhot'] and not df['iWind'] and not df['iSN']:
+        if df['iRadp'] and not df['iPhot'] and not df['iWind'] and not df['iSN']: # RP
             df['marker'] = 's'
             df['color'] = 'C0'
             df['edgecolor'] = 'none'
-        elif df['iPhot'] and not df['iRadp'] and not df['iWind'] and not df['iSN']:
+            df['feedback'] = 'RP'
+            df['offset'] = -2
+        elif df['iPhot'] and not df['iRadp'] and not df['iWind'] and not df['iSN']: # PH
             df['marker'] = 'o'
             df['color'] = 'C1'
             df['edgecolor'] = 'none'
-        elif df['iWind'] and not df['iPhot'] and not df['iRadp'] and not df['iSN']:
+            df['feedback'] = 'PH'
+            df['offset'] = -1
+        elif df['iWind'] and not df['iPhot'] and not df['iRadp'] and not df['iSN']: # WN
             df['marker'] = 'P'
             df['color'] = 'C2'
             df['edgecolor'] = 'none'
-        elif df['iSN'] and not df['iPhot'] and not df['iRadp'] and not df['iWind']:
+            df['feedback'] = 'WN'
+            df['offset'] = 0
+        elif df['iSN'] and not df['iPhot'] and not df['iRadp'] and not df['iWind']: # SN
             df['marker'] = 'X'
             df['color'] = 'C3'
             df['edgecolor'] = 'none'
-        else:
-            df['marker'] = '^'
+            df['feedback'] = 'SN'
+            df['offset'] = 1
+        elif df['iPhot'] and df['iRadp'] and not df['iWind'] and not df['iSN']: # PHRP
+            df['marker'] = 'D'
             df['color'] = 'C4'
             df['edgecolor'] = 'none'
-
+            df['feedback'] = 'PHRP'
+            df['offset'] = 2
+        else:
+            df['marker'] = '^'
+            df['color'] = 'C5'
+            df['edgecolor'] = 'none'
+            df['offset'] = 3
+            prnit('offset')
         if df['alpha_vir'] != 4.0:
             df['edgecolor'] = 'k'
             
@@ -224,24 +247,33 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             df['tau_SF'] = df['t_SF']/df['tff']
             df['t_SF95'] = df['t_95%'] - df['t_*'] # SF duration
             df['tau_SF95'] = df['t_SF']/df['tff']
-        #     df['t_SF2'] = M_sp_final**2 / \
-        #                 integrate.trapz(h['SFR']**2, h.time)
-        #     df['tau_SF2'] = df['t_SF2']/df['tff']
-        #     df['SFR_mean'] = get_SFR_mean(h, 0.0, 90.0)['SFR_mean']
-        #     df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'M_sp'].iloc[0]/df['M']
-        #     df['t_dep'] = df['M']/df['SFR_mean'] # depletion time t_dep = M0/SFR_mean
-        #     df['eps_ff'] = df['tff']/df['t_dep'] # SFE per free-fall time eps_ff = tff0/tdep
-        #     # Time at which neutral gas mass < 5% of the initial cloud mass
-        #     df['t_mol_5%'] = h.loc[h['MH2_cl'] < 0.05*df['M'], 'time'].iloc[0]
-        #     df['t_dest_mol'] = df['t_mol_5%'] - df['t_*']
-        #     try:
-        #         df['t_neu_5%'] = h.loc[h['MH2_cl'] + h['MHI_cl'] < 0.05*df['M'], 'time'].iloc[0]
-        #         df['t_dest_neu'] = df['t_neu_5%'] - df['t_*']
-        #     except IndexError:
-        #         df['t_neu_5%'] = np.nan
-        #         df['t_dest_neu'] = np.nan
-        #     # print('t_dep, eps_ff, t_dest_mol, t_dest_neu',
-        #     #       df['t_dep'],df['eps_ff'],df['t_dest_mol'],df['t_dest_neu'])
+            df['t_SF2'] = M_sp_final**2 / \
+                        integrate.trapz(h['SFR']**2, h.time)
+            df['tau_SF2'] = df['t_SF2']/df['tff']
+            df['SFR_mean'] = get_SFR_mean(h, 0.0, 90.0)['SFR_mean']
+            try:
+                df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'M_sp'].iloc[0]/df['M']
+            except IndexError:
+                df['SFE_3Myr'] = np.nan
+            # depletion time t_dep = M0/SFR_mean
+            df['t_dep'] = df['M']/df['SFR_mean']
+            # SFE per free-fall time eps_ff = tff0/tdep
+            df['eps_ff'] = df['tff']/df['t_dep']
+            # Time at which molecular/neutral gas mass < 5% of the initial cloud mass
+            try:
+                df['t_mol_5%'] = h.loc[h['M_H2_cl'] < 0.05*df['M'], 'time'].iloc[0]
+                df['t_dest_mol'] = df['t_mol_5%'] - df['t_*']
+            except IndexError:
+                df['t_mol_5%'] = np.nan
+                df['t_dest_mol'] = np.nan
+            try:
+                df['t_neu_5%'] = h.loc[h['M_H2_cl'] + h['M_HI_cl'] < 0.05*df['M'], 'time'].iloc[0]
+                df['t_dest_neu'] = df['t_neu_5%'] - df['t_*']
+            except IndexError:
+                df['t_neu_5%'] = np.nan
+                df['t_dest_neu'] = np.nan
+            # print('t_dep, eps_ff, t_dest_mol, t_dest_neu',
+            #       df['t_dep'],df['eps_ff'],df['t_dest_mol'],df['t_dest_neu'])
         else:
             df['t_*'] = np.nan
             df['tau_*'] = np.nan
@@ -257,28 +289,27 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             df['tau_SF'] = np.nan
             df['t_SF95'] = np.nan
             df['tau_SF95'] = np.nan
-        #     df['t_SF2'] = np.nan
-        #     df['tau_SF2'] = np.nan
-        #     df['SFR_mean'] = np.nan
-        #     df['SFE_3Myr'] = np.nan
-        #     df['t_dep'] = np.nan
-        #     df['eps_ff'] = np.nan
-        #     df['t_mol_5%'] = np.nan
-        #     df['t_dest_mol'] = np.nan
-        #     df['t_neu_5%'] = np.nan
-        #     df['t_dest_neu'] = np.nan
+            df['t_SF2'] = np.nan
+            df['tau_SF2'] = np.nan
+            df['SFR_mean'] = np.nan
+            df['SFE_3Myr'] = np.nan
+            df['t_dep'] = np.nan
+            df['eps_ff'] = np.nan
+            df['t_mol_5%'] = np.nan
+            df['t_dest_mol'] = np.nan
+            df['t_neu_5%'] = np.nan
+            df['t_dest_neu'] = np.nan
             
-        # try:
-        #     df['fesc_cum_PH'] = h['fesc_cum_PH'].iloc[-1] # Lyman Continuum
-        #     df['fesc_cum_FUV'] = h['fesc_cum_FUV'].iloc[-1]
-        #     df['fesc_cum_3Myr_PH'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_PH'].iloc[-1]
-        #     df['fesc_cum_3Myr_FUV'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_FUV'].iloc[-1]
-        # except KeyError:
-        #     print('Error in calculating fesc_cum')
-        #     df['fesc_cum_PH'] = np.nan
-        #     df['fesc_cum_FUV'] = np.nan
-        #     df['fesc_cum_3Myr_PH'] = np.nan
-        #     df['fesc_cum_3Myr_FUV'] = np.nan
+        try:
+            df['fesc_cum_PH'] = h['fesc_cum_PH'].iloc[-1] # Lyman Continuum
+            df['fesc_cum_FUV'] = h['fesc_cum_FUV'].iloc[-1]
+            df['fesc_cum_3Myr_PH'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_PH'].iloc[-1]
+            df['fesc_cum_3Myr_FUV'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_FUV'].iloc[-1]
+        except KeyError:
+            df['fesc_cum_PH'] = np.nan
+            df['fesc_cum_FUV'] = np.nan
+            df['fesc_cum_3Myr_PH'] = np.nan
+            df['fesc_cum_3Myr_FUV'] = np.nan
 
         # try:
         #     hv = df['hst_vir']
@@ -356,6 +387,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
                     r['vtk_2d'] = self.par[b]['dt']
             except KeyError:
                 continue
+        
         self.dt_output = r
         
         return r 
@@ -472,9 +504,9 @@ class LoadSimSFCloudAll(Compare):
         if line_args is not None:
             line_args_.update(line_args)
 
-        markers = ['o', 's', 'P', 'X']
-        colors = ['C1', 'C0', 'C2', 'C3']
-        labels = ['PH', 'RP', 'WN', 'SN']
+        markers = ['o', 's', 'P', 'X', 'D']
+        colors = ['C1', 'C0', 'C2', 'C3', 'C4']
+        labels = ['PH', 'RP', 'WN', 'SN', 'PHRP']
 
         lines = []
         for m, c in zip(markers, colors):
@@ -526,100 +558,100 @@ class LoadSimSFCloudAll(Compare):
 
     
 def load_all_sf_cloud(force_override=False):
-    
+
     models = dict(
 
-        ### Hydro tests
+        M1E5R20_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R20-PH-A4-B2-S4-N192',
+        M1E5R20_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R20-RP-A4-B2-S4-N192',
+        M1E5R20_SN_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-SN-A4-B2-S4-N128',
+        M1E5R20_PHRP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A4-B2-S4-N128',
+
+        M1E5R10_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-PH-A4-B2-S4-N192',
+        M1E5R10_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-RP-A4-B2-S4-N192',
+        M1E5R10_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-SN-A4-B2-S4-N192',
+        M1E5R10_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-PHRP-A4-B2-S4-N192',
+
+        M1E5R05_PH_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PH-A4-B2-S4-N128',
+        M1E5R05_RP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-RP-A4-B2-S4-N128',
+        M1E5R05_SN_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-SN-A4-B2-S4-N128',
+        M1E5R05_PHRP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A4-B2-S4-N128',
         
-        # 5pc cloud
-        # No feedback
-        R05_NOFB_A2S4_Binf_N256='/tigress/jk11/SF-CLOUD/M1E5R05-NOFB-A2-Binf-S4-N256',
-        R05_NOFB_A2S1_Binf_N256_acc0='/tigress/jk11/SF-CLOUD/M1E5R05-NOFB-A2-Binf-S1-N256-acc0',
+        M1E6R7p5_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-PH-A4-B2-S4-N192',
+        M1E6R7p5_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-RP-A4-B2-S4-N192',
+        M1E6R7p5_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-SN-A4-B2-S4-N192',
+        M1E6R7p5_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-PHRP-A4-B2-S4-N192',
 
-        # PH+RP
-        R05_PHRP_A2S1_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128',
+        M1E6R15_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PH-A4-B2-S4-N192',
+        M1E6R15_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-RP-A4-B2-S4-N192',
+        M1E6R15_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-SN-A4-B2-S4-N192',
+        M1E6R15_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PHRP-A4-B2-S4-N192',
+
+        M1E6R30_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-PH-A4-B2-S4-N192',
+        M1E6R30_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-RP-A4-B2-S4-N192',
+        M1E6R30_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-SN-A4-B2-S4-N192',
+        M1E6R30_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-PHRP-A4-B2-S4-N192',
         
-        # Effect of timestep
-        R05_PHRP_A2S1_N128_dt10='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-dt10',
-        R05_PHRP_A2S1_N128_dt50='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-dt50',
+        M1E6R60_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PH-A4-B2-S4-N192',
+        M1E6R60_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-RP-A4-B2-S4-N192',
+        M1E6R60_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-SN-A4-B2-S4-N192',
+        M1E6R60_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PHRP-A4-B2-S4-N192',
         
-        # Resolution
-        R05_PHRP_A2S1_N256_dt50='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N256-dt50',
-
-        # Accretion
-        R05_PHRP_A2S1_N128_acc0='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-acc0',
-        R05_PHRP_A2S1_N128_acc0_dt50='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-acc0-dt50',
-        R05_PHRP_A2S1_N256_acc0_dt50='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N256-acc0-dt50',
-
-        # Wind only
-        R05_WN_A2S4_N256_mc1000='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-WN-A2-Binf-S4-N256-mc1000',
-        
-        # 20pc cloud
-        R20_PHRP_A2S1_N128='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128',
-        R20_PHRP_A2S1_N128_mc1000='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-mc1000',
-
-        R20_PHRP_A2S1_N128_acc0='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-acc0',
-        R20_PHRP_A2S1_N128_acc0_dt10='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-acc0-dt10',
-        R20_PHRP_A2S4_N128_acc0_dt10='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S4-N128-acc0-dt10',
-
-        R20_WN_A2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-WN-A2-Binf-S4-N128',
-        R20_WN_A2S4_N128_mc1000='/tigress/jk11/SF-CLOUD/M1E5R20-WN-A2-Binf-S4-N128-mc1000',
-        
-        # M1E6R60_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-PH-Binf-N128',
-        # M1E6R60_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-RP-Binf-N128',
-        # M1E6R60_WN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-WN-Binf-N128',
-        # M1E6R60_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-SN-Binf-N128',
-        # M1E6R60_SN_Binf_N128_gcorr='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-SN-Binf-N128-gcorr',
-
-        # M1E5R20_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PH-Binf-N128',
-        # M1E5R20_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-RP-Binf-N128',
-        # M1E5R20_WN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-WN-Binf-N128',
-        # M1E5R20_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-SN-Binf-N128',
-
-        # M1E5R05_PH_A2_Binf_N256='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf',
-        # M1E5R05_PH_A2_Binf_N256_fcool50='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-fcool50',
-
-        # PH_A2S1_N128_fcool30_hllc='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-S1-N128-fcool30-hllc/',
-        # PH_A2S1_N128_fcool30='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-S1-N128-fcool30/',
-        # PH_A2S1_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-S1-N128/',
-        # PHRP_A2S1_N128_hllc='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-fcool30-hllc/',
-
-
-        # M1E5R05_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128',
-        # M1E5R05_PH_Binf_N128_noEradcv='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128-noEradcv',
-        # M1E5R05_PH_Binf_N128_noEradcv_selfgno0='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128-noEradcv-selfgno0',
-        # M1E5R05_PH_Binf_N128_gcorr='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128-gcorr',
-        # M1E5R05_PH_A2_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-A2-Binf-N128',
-        # M1E5R05_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-RP-Binf-N128',
-        # M1E5R05_SN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-SN-Binf-N128',
-
-        # M1E6R15_PH_Binf_N192='/scratch/gpfs/jk11/SF-CLOUD/M1E6R15-PH-Binf-N192',
-        
-        ## Early tests
-        # ALL_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N128.test1',
-        # ALL_N256='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test1',
-        # ALL_N256_redV3='/tigress/jk11/SF-CLOUD/M1E5R20.RWS.A4.B2.N256.test2',
-        
-        ## Control model tests
-        # ALL_N128_HYD='/tigress/jk11/SF-CLOUD/M1E5R20.ALL.N128.test.roe.hydro',
-        # M1E5R05_PHRPSN='/tigress/jk11/SF-CLOUD/M1E5R05-PHRPSN',
-        # M1E5R05_PHRPSN_B64='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRPSN-B64',
-
-        # M1E5R20_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-RP-Binf-N128',
-        # M1E5R20_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R20-PH-Binf-N128',
-        # M1E5R05_RP_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-RP-Binf-N128',
-        # M1E5R05_PH_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PH-Binf-N128',
-
-        # M1E5R05_PHRPSN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRPSN-Binf-N128',
-
-        # M1E6R60_PHRPSN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R60-PHRPSN-Binf-N128',
-        # M1E6R15_PHRPSN_Binf_N128='/scratch/gpfs/jk11/SF-CLOUD/M1E6R15-PHRPSN-Binf-N128',
-        
-
-        # PHRP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.A4.B2.N128.test',
-        # RP_N128='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.RP.A4.B2.N128.test',
-        # RPWNSN_N128_HLLD='/perseus/scratch/gpfs/jk11/SF-CLOUD/M1E5R20.PH.RP.WN.SN.A4.B2.N128.test.hlld'
     )
+    
+    # models = dict(
+
+    #     ### Tests
+        
+    #     # 5pc cloud
+    #     # No feedback
+    #     R05_NOFB_A2S4_Binf_N256='/tigress/jk11/SF-CLOUD/M1E5R05-NOFB-A2-Binf-S4-N256',
+    #     R05_NOFB_A2S1_Binf_N256_acc0='/tigress/jk11/SF-CLOUD/M1E5R05-NOFB-A2-Binf-S1-N256-acc0',
+
+    #     # PH+RP
+    #     R05_PHRP_A2S1_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128',
+        
+    #     # Effect of timestep
+    #     R05_PHRP_A2S1_N128_dt10='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-dt10',
+    #     R05_PHRP_A2S1_N128_dt50='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-dt50',
+        
+    #     # Resolution
+    #     R05_PHRP_A2S1_N256_dt50='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N256-dt50',
+
+    #     # Accretion
+    #     R05_PHRP_A2S1_N128_acc0='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-acc0',
+    #     R05_PHRP_A2S1_N128_acc0_dt50='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-acc0-dt50',
+    #     R05_PHRP_A2S1_N256_acc0_dt50='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N256-acc0-dt50',
+
+    #     # Another accretion condition
+    #     R05_PHRP_A2S1_N256_acc1='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N256-acc1',
+    #     # No stellar FUV heating
+    #     R05_PHRP_A2S1_N128_acc0_noH2PEheat='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-acc0-noH2PEheat',
+    #     # Magnetized
+    #     R05_PHRP_A2B2S1_N256_acc0='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-B2-S1-N256-acc0',
+    #     R05_PHRP_A2B2S1_N128_acc0='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-B2-S1-N128-acc0',
+    #     R05_PHRP_A2B2S1_N256='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-B2-S1-N256/',
+
+    #     # K18
+    #     R05_PHRP_A4S1_N256_fixedT_hllc_kturb3='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A4-Binf-S1-N256-fixedT-hllc-kturb3',
+    #     R05_PHRP_A2S1_N256_fixedT_hllc_kturb3='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N256-hllc-iso-kpow3',
+    #     R05_PHRP_A2S1_N128_K18='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-K18',
+    #     R05_PHRP_A2S1_N128_K18_k2='/scratch/gpfs/jk11/SF-CLOUD/M1E5R05-PHRP-A2-Binf-S1-N128-K18-k2',
+        
+    #     # Wind only
+    #     R05_WN_A2S4_N256_mc1000='/tigress/jk11/SF-CLOUD/M1E5R05-WN-A2-Binf-S4-N256-mc1000',
+        
+    #     # 20pc cloud
+    #     R20_PHRP_A2S1_N128='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128',
+    #     R20_PHRP_A2S1_N128_mc1000='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-mc1000',
+        
+    #     R20_PHRP_A2S1_N128_acc0='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-acc0',
+    #     R20_PHRP_A2S1_N128_acc0_dt10='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S1-N128-acc0-dt10',
+    #     R20_PHRP_A2S4_N128_acc0_dt10='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A2-Binf-S4-N128-acc0-dt10',
+
+    #     R20_WN_A2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-WN-A2-Binf-S4-N128',
+    #     R20_WN_A2S4_N128_mc1000='/tigress/jk11/SF-CLOUD/M1E5R20-WN-A2-Binf-S4-N128-mc1000',
+        
+    # )
     
     sa = LoadSimSFCloudAll(models)
 
@@ -635,11 +667,15 @@ def load_all_sf_cloud(force_override=False):
     for mdl in sa.models:
         print(mdl, end=' ')
         s = sa.set_model(mdl, verbose=False)
-        df = s.get_summary(as_dict=True)
+        df = s.get_summary(as_dict=True, force_override=True)
         df_list.append(pd.DataFrame(pd.Series(df, name=mdl)).T)
 
     df = pd.concat(df_list, sort=True).sort_index(ascending=False)
     df['markersize'] = df['markersize'].astype(float)
+
+    if not osp.exists(osp.dirname(fpkl)):
+        os.makedirs(osp.dirname(fpkl))
+        
     df.to_pickle(fpkl)
 
     return sa, df

@@ -32,10 +32,18 @@ class SliceProj:
     
     @LoadSim.Decorators.check_pickle
     def read_slc(self, num, axes=['x', 'y', 'z'],
-                 fields=['nH', 'nH2', 'nHI', 'nHII', 'T', 'nHn', 'chi_PE', 'pok',
-                         'Erad_FUV', 'Erad_LyC'], prefix='slc',
-                 savdir=None, force_override=False):
-            
+                 fields=['nH', 'nH2', 'nHI', 'nHII', 'T', 'nHn', 'pok',
+                         'chi_FUV', 'Erad_FUV', 'Erad_LyC'],
+                 prefix='slc', savdir=None, force_override=False):
+
+        if self.par['radps']['irayt'] == 0:
+            try:
+                fields.remove('Erad_FUV')
+                fields.remove('Erad_LyC')
+                fields.remove('chi_FUV')
+            except ValueError:
+                pass
+        
         axes = np.atleast_1d(axes)
         ds = self.load_vtk(num=num)
         res = dict()

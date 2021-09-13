@@ -114,6 +114,8 @@ class Hst:
         hst['N_sp'] *= vol
         hst['N_sp_active'] *= vol
         
+        hst = self._calc_SFR(hst)
+
         ################
         # Outflow mass #
         ################
@@ -248,7 +250,7 @@ class Hst:
     #     except KeyError:
     #         pass
                 
-                
+
         if iWind:
             hst['wind_Minj'] *= vol*u.Msun
             hst['wind_Einj'] *= vol*u.erg
@@ -349,30 +351,32 @@ class Hst:
         
     #     return hst
     
-    # def _calc_SFR(self, hst):
-    #     """Compute instantaneous SFR, SFR averaged over the past 1 Myr, 3Myr, etc.
-    #     """        
+    def _calc_SFR(self, hst):
+        """Compute instantaneous SFR, SFR averaged over the past 1 Myr, 3Myr, etc.
+        """        
 
-    #     # Instantaneous SFR
-    #     hst['SFR'] = deriv_convolve(hst['Mstar'].values, hst['time'].values,
-    #                                 gauss=True, fft=False, stddev=3.0)
+        # Instantaneous SFR
+        hst['SFR'] = deriv_convolve(hst['M_sp'].values, hst['time'].values,
+                                    gauss=True, fft=False, stddev=3.0)
         
-    #     # Set any negative values to zero
-    #     hst['SFR'][hst['SFR'] < 0.0] = 0.0
+        # Set any negative values to zero
+        hst['SFR'][hst['SFR'] < 0.0] = 0.0
+        if hst.time.max() > 1.0:
+            hst_ = hst[hst.time < 1.0]
+            winsize_1Myr = hst_.index.size
+            hst['SFR_1Myr'] = hst.SFR.rolling(
+                winsize_1Myr, min_periods=1, win_type='boxcar').mean()
+            
+        if hst.time.max() > 3.0:
+            hst_ = hst[hst.time < 3.0]
+            winsize_3Myr = 3*winsize_1Myr
+            hst['SFR_3Myr'] = hst.SFR.rolling(
+                winsize_3Myr, min_periods=1, win_type='boxcar').mean()
+        
+            # self.logger.warning('Failed to calculate SFR')
+            # pass
 
-    #     if hst.time.max() > 1.0:
-    #         hst_ = hst[hst.time < 1.0]
-    #         winsize_1Myr = hst_.index.size
-    #         winsize_3Myr = 3*winsize_1Myr
-    #         hst['SFR_1Myr'] = hst.SFR.rolling(
-    #             winsize_1Myr, min_periods=1, win_type='boxcar').mean()
-    #         hst['SFR_3Myr'] = hst.SFR.rolling(
-    #             winsize_3Myr, min_periods=1, win_type='boxcar').mean()
-    #     else:
-    #         self.logger.warning('Total time interval smaller than 1 Myr')
-    #         #pass
-
-    #     return hst
+        return hst
 
     def _calc_radiation(self, hst):
 
@@ -573,7 +577,8 @@ class PlotHst(object):
         
         return ax, models, setp_kwargs_def
 
-    def plt_mass(self, ax=None, models=None, setp_kwargs=None, normed_y=True):
+    def plt_mass(self, ax=None, models=None, setp_kwargs=None, normed_y=True,
+                 plt_H2=True,plt_hot=True):
         ax, models, setp_kwargs = self.set_params(ax, models,
                         setp_kwargs, 'mass', **dict(normed_y=normed_y))
         plt.sca(ax)
@@ -590,11 +595,14 @@ class PlotHst(object):
 
             plt.plot(x, h['M_cl']/M0, c='C0', ls=ls, lw=lw)
             plt.plot(x, h['M_sp']/M0, c='C1', ls=ls, lw=lw)
-            plt.plot(x, (h['Mi']+h['Mh'])/M0, c='C2', ls=ls, lw=lw)
             plt.plot(x, (h['M_cl']-h['M_H2_cl']-h['M_HI_cl'])/M0, c='C3', ls=ls, lw=lw)
-            plt.plot(x, h['M_H2_cl']/M0, c='C4', ls=ls, lw=lw)
             plt.plot(x, h['M_cl_of']/M0, c='C5', ls=ls, lw=lw)
             plt.plot(x, (h['M_cl_of']-h['M_HI_cl_of']-h['M_H2_cl_of'])/M0, c='C7', ls=ls, lw=lw)
+            
+            if plt_H2:
+                plt.plot(x, h['M_H2_cl']/M0, c='C4', ls=ls, lw=lw)
+            if plt_hot:
+                plt.plot(x, (h['Mi']+h['Mh'])/M0, c='C2', ls=ls, lw=lw)
             if iWind:
                 plt.plot(x, h['wind_Minj']/M0, c='C8', ls=ls, lw=0.5)
                 plt.plot(x, h['M_sp_s1']/M0, c='C2', ls=ls, lw=3)
@@ -602,9 +610,12 @@ class PlotHst(object):
             plt.plot(x, (h['M_cl'] + h['M_sp'] + h['M_cl_of'])/M0, c='grey', ls=ls, lw=lw)
                 
         plt.setp(ax, **setp_kwargs)
-        labels = [r'$M_{\rm cl}$',r'$M_{\ast}$',r'$M_{\rm hot}$',
-                  r'$M_{\rm HII,cl}$',r'$M_{\rm H_2,cl}$',
-                  r'$M_{\rm of,cl}$',r'$M_{\rm of,ion,cl}$',]
+        labels = [r'$M_{\rm cl}$',r'$M_{\ast}$',r'$M_{\rm of,HII,cl}$']
+        labels += [r'$M_{\rm of,cl}$',r'$M_{\rm of,HII,cl}$']
+        if plt_H2:
+            labels += [r'$M_{\rm H_2,cl}$']
+        if plt_hot:
+            labels += [r'$M_{\rm hot}$']
         if iWind:
             labels.extend([r'$M_{\rm wind}$',r'$M_{\ast,{\rm wind}}$'])
 
