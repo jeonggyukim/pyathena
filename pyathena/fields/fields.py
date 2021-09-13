@@ -592,8 +592,10 @@ def set_derived_fields_newcool(par, x0):
     f = 'xCII'
     try:
         xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
+        xOtot = par['problem']['Z_gas']*par['cooling']['xOstd']
     except KeyError:
-        xCtot = 1.6e-4
+        xCtot = 1.6e-4*par['problem']['Z_gas']
+        xOtot = 3.2e-4*par['problem']['Z_gas']
     field_dep[f] = set(['xe','xH2','xHI','pressure','density','CR_ionization_rate'])
     def _xCII(d, u):
         d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
@@ -602,7 +604,7 @@ def set_derived_fields_newcool(par, x0):
                             par['problem']['Z_gas'],par['problem']['Z_dust'])
         # Apply floor and ceiling
         return np.maximum(0.0,np.minimum(xCtot,
-                    d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2']) - xe_mol))
+                    d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2'])*(1.0 + xOtot) - xe_mol))
     func[f] = _xCII
     label[f] = r'$x_{\rm CII}$'
     cmap[f] = 'viridis'
@@ -649,7 +651,7 @@ def set_derived_fields_sixray(par, x0):
     except KeyError:
         Erad_PE0 = 7.613e-14
         Erad_LW0 = 1.335e-14
-    
+
     # Normalized FUV radiation field strength (Draine ISRF)
     f = 'chi_PE_ext'
     field_dep[f] = set(['rad_energy_density_PE_ext'])
@@ -672,6 +674,17 @@ def set_derived_fields_sixray(par, x0):
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
 
+    # Normalized FUV radiation field strength (Draine field unit)
+    f = 'chi_FUV_ext'
+    field_dep[f] = set(['rad_energy_density_PE_ext','rad_energy_density_LW_ext'])
+    def _chi_FUV_ext(d, u):
+        return (d['rad_energy_density_PE_ext'] + d['rad_energy_density_LW_ext'])*\
+            (u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
+    func[f] = _chi_FUV_ext
+    label[f] = r'$\chi_{\rm FUV,ext}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
 
     # Normalized LW radiation field
     f = 'chi_CI_ext'
@@ -683,7 +696,6 @@ def set_derived_fields_sixray(par, x0):
     cmap[f] = 'viridis'
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
-
     
     # Normalized LW radiation field strength (Draine ISRF)
     f = 'chi_H2_ext'
@@ -724,6 +736,17 @@ def set_derived_fields_rad(par, x0):
         return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE0)
     func[f] = _chi_PE
     label[f] = r'$\chi_{\rm PE}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized FUV radiation field strength (Draine field unit)
+    f = 'chi_LW'
+    field_dep[f] = set(['rad_energy_density_LW'])
+    def _chi_LW(d, u):
+        return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_LW
+    label[f] = r'$\chi_{\rm LW}$'
     cmap[f] = 'viridis'
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
