@@ -408,6 +408,106 @@ def coolHI(nH, T, xHI, xe):
     
     return Lambda2p + LambdaLyA + LambdaLyB
 
+def coolH2G17(nH, T, xHI, xH2, xHII, xe, xHe=0.1):
+    """
+    H2 Cooling from Gong et al. (2017)
+    """
+    
+    Tmax_H2 = 6000.  # maximum temperature above which use Tmax
+    Tmin_H2 = 10.    # minimum temperature below which cut off cooling
+
+    # Note: limit extended to T< 10K and T>6000K
+    T = np.where(T > Tmax_H2, Tmax_H2, T)
+
+    logT3 = np.log10(T*1.0e-3)
+    logT3_2 = logT3 * logT3
+    logT3_3 = logT3_2 * logT3
+    logT3_4 = logT3_3 * logT3
+    logT3_5 = logT3_4 * logT3
+    
+    # HI
+    LHI = np.where(T < 100.0,
+                   np.power(10, -16.818342e0 +3.7383713e1*logT3 \
+                            + 5.8145166e1*logT3_2 + 4.8656103e1*logT3_3 \
+                            + 2.0159831e1*logT3_4 + 3.8479610e0*logT3_5), 0.0)
+    LHI += np.where(np.logical_and(T >= 100.0, T < 1000.0),
+                    np.power(10, -2.4311209e1 +3.5692468e0*logT3 \
+                             - 1.1332860e1*logT3_2 - 2.7850082e1*logT3_3 \
+                             - 2.1328264e1*logT3_4 - 4.2519023e0*logT3_5), 0.0)
+    LHI += np.where(T >= 1000.0,
+                    np.power(10, -2.4311209e1 +4.6450521e0*logT3 + \
+                             - 3.7209846e0*logT3_2 + 5.9369081e0*logT3_3
+                             - 5.5108049e0*logT3_4 + 1.5538288e0*logT3_5), 0.0)
+
+    # H2 
+    LH2 = np.power(10, -2.3962112e1 +2.09433740e0*logT3 \
+                   -0.77151436e0*logT3_2 +0.43693353e0*logT3_3 \
+                   -0.14913216e0*logT3_4 -0.033638326e0*logT3_5)
+    # He 
+    LHe = np.power(10, -2.3689237e1 +2.1892372e0*logT3 \
+                   -0.81520438e0*logT3_2 +0.29036281e0*logT3_3 \
+                   -0.16596184e0*logT3_4 +0.19191375e0*logT3_5)
+    # H+
+    LHplus = np.power(10, -2.1716699e1 +1.3865783e0*logT3 \
+                      -0.37915285e0*logT3_2 +0.11453688e0*logT3_3 \
+                      -0.23214154e0*logT3_4 +0.058538864e0*logT3_5)
+    # e
+    Le = np.where(T < 200.0,
+                  np.power(10, -3.4286155e1 -4.8537163e1*logT3 \
+                           -7.7121176e1*logT3_2 -5.1352459e1*logT3_3 \
+                           -1.5169150e1*logT3_4 -0.98120322e0*logT3_5),
+                  np.power(10, -2.2190316e1 +1.5728955e0*logT3 \
+                           -0.213351e0*logT3_2 +0.96149759e0*logT3_3 \
+                           -0.91023195e0*logT3_4 +0.13749749e0*logT3_5)
+                  )
+
+    # total cooling in low density limit
+    Gamma_n0 = LHI*xHI*nH + LH2*xH2*nH + LHe*xHe*nH + LHplus*xHII*nH + Le*xe*nH
+    # cooling rate at LTE, from Hollenbach + McKee 1979
+    T3 = T*1.0e-3
+    Gamma_LTE_HR = (9.5e-22*np.power(T3, 3.76))/(1.+0.12*np.power(T3, 2.1))* \
+        np.exp(-np.power(0.13/T3, 3))+ 3.e-24*np.exp(-0.51/T3)
+    Gamma_LTE_HV = 6.7e-19*np.exp(-5.86/T3) + 1.6e-18*np.exp(-11.7/T3)
+    Gamma_LTE = Gamma_LTE_HR +  Gamma_LTE_HV
+    # Total cooling rate
+    Gamma_tot = np.where(Gamma_n0 > 1e-100,
+                         Gamma_LTE / (1.0 + Gamma_LTE/Gamma_n0),
+                         0.0)
+    Gamma_tot = np.where(T >= Tmin_H2, Gamma_tot, 0.0)
+
+    return Gamma_tot * xH2;
+
+def coolH2(nH, T, xHI, xH2):
+    """
+    Cooling by rotation-vibration lines of H2
+    from Moseley et al. (2021)
+    """
+    
+    n1 = 50.0
+    n2 = 450.0
+    n3 = 25.0
+    n4 = 900
+    T3 = T*1e-3
+    T3inv = 1.0/T3
+    nH2 = xH2*nH
+    nHI = xHI*nH
+    x1 = nHI + 5.0*nH2
+    x2 = nHI + 4.5*nH2
+    x3 = nHI + 0.75*nH2
+    x4 = nHI + 0.05*nH2
+    sqrtT3 = np.power(T3,0.5)
+    f1 = 1.1e-25*sqrtT3*np.exp(-0.51*T3inv)* \
+        (0.7*x1/(1.0 + x1/n1) + 0.3*x1/(1.0 + x1/(10.0*n1)))
+    f2 = 2.0e-25*T3*np.exp(-T3inv)* \
+        (0.35*x2/(1.0 + x2/n2) + 0.65*x2/(1.0 + x2/(10.0*n2)))
+    f3 = 2.4e-24*sqrtT3*T3*np.exp(-2.0*T3inv)* \
+        (x3/(1.0 + x3/n3))
+    f4 = 1.7e-23*sqrtT3*T3*np.exp(-4.0*T3inv)* \
+        (0.45*x4/(1.0 + x4/n4) + 0.55*x4/(1.0 + x4/(10.0*n4)))
+    
+    return xH2*(f1 + f2 + f3 + f4)
+
+
 def coolffH(nH, T, xe, xHII):
     """free-free power for hydrogen (Z=1)
     """
