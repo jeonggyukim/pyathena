@@ -814,8 +814,15 @@ def set_derived_fields_rad(par, x0):
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
 
-    # Normalized FUV radiation field strength (Draine field unit)
-    if (par['radps']['iPhotIon'] == 1):
+    try:
+        if (par['radps']['iPhotIon'] == 1):
+            iPhot = True
+        else:
+            iPhot = False
+    except KeyError:
+        iPhot = True
+        
+    if iPhot:
         f = 'Erad_LyC'
         field_dep[f] = set(['rad_energy_density_PH'])
         def _Erad_LyC(d, u):
