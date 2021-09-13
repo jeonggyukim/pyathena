@@ -536,16 +536,24 @@ def _parse_filename(filename):
         suffix = None
         ext = base_split[-1]
     else:
-        # If dirname is idXX where XX>0, (2d vtk slices)
-        # need to remove idXX string from the problem_id
+        try:
+            inum = -3
+            test = int(base_split[inum])
+            # If dirname is idXX where XX>0, (2d vtk slices)
+            # need to remove idXX string from the problem_id
+            suffix = base_split[-2]
+        except ValueError:
+            inum = -2
+            suffix = None
+
         if mpi_mode and int(dirname_last[2:]) != 0:
-            problem_id = '.'.join(base_split[:-3])
+            problem_id = '.'.join(base_split[:inum])
             problem_id = problem_id.replace('-' + dirname_last,'')
             nonzero_id = True
         else:
-            problem_id = '.'.join(base_split[:-3])
-        num = base_split[-3]
-        suffix = base_split[-2]
+            problem_id = '.'.join(base_split[:inum])
+
+        num = base_split[inum]
         ext = base_split[-1]
 
     return dirname, problem_id, num, suffix, ext, mpi_mode, nonzero_id

@@ -47,8 +47,8 @@ def set_derived_fields_def(par, x0, newcool):
     cmap = dict()
     vminmax = dict()
     take_log = dict()
-    
-    # rho [g cm^-3]
+
+    # rho [g cm^-3] - gas density
     f = 'rho'
     field_dep[f] = ['density']
     def _rho(d, u):
@@ -58,8 +58,8 @@ def set_derived_fields_def(par, x0, newcool):
     cmap[f] = 'Spectral_r'
     vminmax[f] = (1e-27,1e-20)
     take_log[f] = True
-    
-    # nH [cm^-3] (assume d=nH)
+
+    # nH [cm^-3] (assume that density = nH)
     f = 'nH'
     field_dep[f] = ['density']
     def _nH(d, u):
@@ -70,7 +70,7 @@ def set_derived_fields_def(par, x0, newcool):
     vminmax[f] = (1e-3,1e4)
     take_log[f] = True
 
-    # P/kB [K cm^-3]
+    # P/kB [K cm^-3] - thermal pressure
     f = 'pok'
     field_dep[f] = set(['pressure'])
     def _pok(d, u):
@@ -80,8 +80,8 @@ def set_derived_fields_def(par, x0, newcool):
     cmap[f] = 'inferno'
     vminmax[f] = (1e2,1e7)
     take_log[f] = True
-    
-    # Distance from x0 [pc]    
+
+    # Distance from x0 [pc]
     f = 'r'
     field_dep[f] = set(['density'])
     @static_vars(x0=x0)
@@ -131,7 +131,7 @@ def set_derived_fields_def(par, x0, newcool):
                                   (abs(vminmax[f][0]) + abs(vminmax[f][1])),
                          name='cmap_vr')
     take_log[f] = False
-    
+
     # vx [km/s]
     f = 'vx'
     field_dep[f] = set(['velocity'])
@@ -165,8 +165,18 @@ def set_derived_fields_def(par, x0, newcool):
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
-    
     # cs [km/s]
+    f = 'cs'
+    field_dep[f] = set(['pressure','density'])
+    def _cs(d, u):
+        return np.sqrt(d['pressure']/d['density'])
+    func[f] = _cs
+    label[f] = r'$c_s\;[{\rm km}\,{\rm s}^{-1}]$'
+    cmap[f] = 'magma'
+    vminmax[f] = (0.1,1e3)
+    take_log[f] = True
+
+    # cs [km/s] - sound speed
     f = 'csound'
     field_dep[f] = set(['pressure','density'])
     def _csound(d, u):
@@ -176,7 +186,7 @@ def set_derived_fields_def(par, x0, newcool):
     cmap[f] = 'magma'
     vminmax[f] = (0.1,1e3)
     take_log[f] = True
-    
+
     # Radial momentum w.r.t. x0 [km/s cm^-3]
     f = 'Mr'
     field_dep[f] = set(['density','velocity'])
@@ -215,9 +225,9 @@ def set_derived_fields_def(par, x0, newcool):
                          name='cmap_vr')
     take_log[f] = True
     
-    # Cooling related
+    # Cooling related fields
     if par['configure']['cooling'] == 'ON':
-        # T [K]
+        # T [K] - gas temperature
         f = 'T'
         if newcool:
             field_dep[f] = set(['density','pressure','xe','xH2'])
@@ -235,7 +245,7 @@ def set_derived_fields_def(par, x0, newcool):
         vminmax[f] = (1e1,1e7)
         take_log[f] = True
 
-        # Td [K]
+        # Td [K] - dust temperature
         if newcool:
             f = 'Td'
             field_dep[f] = set(['temperature_dust'])
@@ -247,7 +257,8 @@ def set_derived_fields_def(par, x0, newcool):
             cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
             vminmax[f] = (1e0,1e2)
             take_log[f] = True
-        
+
+        # Cooling rate per volume [erg/s/cm^3] - nH^2*Lambda
         f = 'cool_rate'
         field_dep[f] = set(['cool_rate'])
         def _cool_rate(d, u):
@@ -258,6 +269,7 @@ def set_derived_fields_def(par, x0, newcool):
         vminmax[f] = (1e-26,1e-18)
         take_log[f] = True
 
+        # Heating rate per volume [erg/s/cm^3] - nH*Gamma
         f = 'heat_rate'
         field_dep[f] = set(['heat_rate'])
         def _heat_rate(d, u):
@@ -268,6 +280,8 @@ def set_derived_fields_def(par, x0, newcool):
         vminmax[f] = (1e-28,1e-20)
         take_log[f] = True
 
+        # Net cooling rate per volume [erg/s/cm^3] - nH^2*Lambda - nH*Gamma
+        # (averaged over dt_mhd)
         f = 'net_cool_rate'
         field_dep[f] = set(['cool_rate','heat_rate'])
         def _net_cool_rate(d, u):
@@ -278,6 +292,7 @@ def set_derived_fields_def(par, x0, newcool):
         vminmax[f] = (-1e-20,1e-20)
         take_log[f] = False
 
+        # Cooling efficiency [erg*cm^3/s]
         f = 'Lambda_cool'
         field_dep[f] = set(['density','cool_rate'])
         def _Lambda_cool(d, u):
@@ -288,6 +303,7 @@ def set_derived_fields_def(par, x0, newcool):
         vminmax[f] = (1e-30,1e-20)
         take_log[f] = True
 
+        # Specific cooling rate [erg/s/H]
         f = 'nHLambda_cool'
         field_dep[f] = set(['density','cool_rate'])
         def _nHLambda_cool(d, u):
@@ -298,8 +314,9 @@ def set_derived_fields_def(par, x0, newcool):
         vminmax[f] = (1e-30,1e-20)
         take_log[f] = True
 
+        # Specific net cooling rate [erg/s/H]
         f = 'nHLambda_cool_net'
-        field_dep[f] = set(['density','cool_rate'])
+        field_dep[f] = set(['density','cool_rate','heat_rate'])
         def _nHLambda_cool_net(d, u):
             return (d['cool_rate'] - d['heat_cool'])/d['density']
         func[f] = _nHLambda_cool_net
@@ -307,7 +324,8 @@ def set_derived_fields_def(par, x0, newcool):
         cmap[f] = 'cubehelix_r'
         vminmax[f] = (1e-30,1e-20)
         take_log[f] = True
-        
+
+        # Heating efficiency [erg/s/H]
         f = 'Gamma_heat'
         field_dep[f] = set(['density','heat_rate'])
         def _Gamma_heat(d, u):
@@ -318,6 +336,7 @@ def set_derived_fields_def(par, x0, newcool):
         vminmax[f] = (1e-30,1e-20)
         take_log[f] = True
 
+        # Cooling time [Myr]
         f = 't_cool'
         field_dep[f] = set(['pressure', 'cool_rate'])
         def _t_cool(d, u):
@@ -338,6 +357,54 @@ def set_derived_fields_mag(par, x0):
     cmap = dict()
     vminmax = dict()
     take_log = dict()
+
+    # Magnitude of Alfven velocity [km/s]
+    f = 'vAmag'
+    field_dep[f] = set(['density', 'cell_centered_B'])
+    def _vAmag(d, u):
+        return (d['cell_centered_B1']**2 +
+                d['cell_centered_B2']**2 +
+                d['cell_centered_B3']**2)**0.5*np.sqrt(u.energy_density.cgs.value)\
+            /np.sqrt(d['density']*u.density.cgs.value)/1e5
+    
+    func[f] = _vAmag
+    label[f] = r'$v_A\;[{\rm km}\,{\rm s}^{-1}]$'
+    vminmax[f] = (0.1, 1000.0)
+    cmap[f] = 'cividis'
+    take_log[f] = True
+    
+    # vAx [km/s]
+    f = 'vAx'
+    field_dep[f] = set(['density','cell_centered_B'])
+    def _vAx(d, u):
+        return d['cell_centered_B1']*np.sqrt(d['density'])*u.kms
+    func[f] = _vAx
+    label[f] = r'$v_{A,x}\;[{\rm km/s}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e2,1e2)
+    take_log[f] = False
+
+    # vAy [km/s]
+    f = 'vAy'
+    field_dep[f] = set(['density','cell_centered_B'])
+    def _vAy(d, u):
+        return d['cell_centered_B2']*np.sqrt(d['density'])*u.kms
+    func[f] = _vAy
+    label[f] = r'$v_{A,y}\;[{\rm km/s}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e2,1e2)
+    take_log[f] = False
+
+    # vAz [km/s]
+    f = 'vAz'
+    field_dep[f] = set(['density','cell_centered_B'])
+    def _vAz(d, u):
+        return d['cell_centered_B3']*np.sqrt(d['density'])*u.kms
+    func[f] = _vAz
+    label[f] = r'$v_{A,z}\;[{\rm km/s}]$'
+    cmap[f] = 'RdBu'
+    vminmax[f] = (-1e2,1e2)
+    take_log[f] = False
 
     # Bx [G]
     f = 'Bx'
@@ -388,33 +455,18 @@ def set_derived_fields_mag(par, x0):
     vminmax[f] = (1e-1, 1e2)
     cmap[f] = 'cividis'
     take_log[f] = True
-
-    # Alfven velocity [km/s]
-    f = 'vA'
-    field_dep[f] = set(['density', 'cell_centered_B'])
-    def _vA(d, u):
-        return (d['cell_centered_B1']**2 +
-                d['cell_centered_B2']**2 +
-                d['cell_centered_B3']**2)**0.5*np.sqrt(u.energy_density.cgs.value)\
-            /np.sqrt(d['density']*u.density.cgs.value)/1e5
-    
-    func[f] = _vA
-    label[f] = r'$v_A\;[{\rm km}\,{\rm s}^{-1}]$'
-    vminmax[f] = (0.1, 1000.0)
-    cmap[f] = 'cividis'
-    take_log[f] = True
     
     return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_newcool(par, x0):
-    
+
     func = dict()
     field_dep = dict()
     label = dict()
     cmap = dict()
     vminmax = dict()
     take_log = dict()
-    
+
     # nH2 [cm^-3] (assume d=nH)
     f = 'nH2'
     field_dep[f] = set(['density', 'xH2'])
@@ -524,7 +576,7 @@ def set_derived_fields_newcool(par, x0):
     cmap[f] = cmap_apply_alpha('YlGn')
     vminmax[f] = (0,1)
     take_log[f] = False
-        
+
     # ne
     f = 'ne'
     field_dep[f] = set(['density','xe'])
@@ -546,7 +598,7 @@ def set_derived_fields_newcool(par, x0):
     cmap[f] = 'viridis'
     vminmax[f] = (1e-8, 1e6)
     take_log[f] = True
-    
+
     # xe
     f = 'xe'
     field_dep[f] = set(['xe'])
@@ -585,7 +637,7 @@ def set_derived_fields_newcool(par, x0):
     cmap[f] = 'viridis'
     vminmax[f] = (1e2*xCtot,1e4*xCtot)
     take_log[f] = True
-    
+
     # xCII - single ionized carbon
     # Use with caution!
     # (Do not apply to hot gas and depend on cooling implementation)
@@ -632,7 +684,7 @@ def set_derived_fields_newcool(par, x0):
     cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
     vminmax[f] = (1e1,1e7)
     take_log[f] = True
-    
+
     return func, field_dep, label, cmap, vminmax, take_log
 
 
@@ -696,7 +748,7 @@ def set_derived_fields_sixray(par, x0):
     cmap[f] = 'viridis'
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
-    
+
     # Normalized LW radiation field strength (Draine ISRF)
     f = 'chi_H2_ext'
     field_dep[f] = set(['rad_energy_density_LW_diss_ext'])
@@ -718,7 +770,7 @@ def set_derived_fields_rad(par, x0):
     cmap = dict()
     vminmax = dict()
     take_log = dict()
-    
+
     # Dust PE opacity for Z'=1
     kappa_dust_PE_def = 418.7
 
@@ -728,7 +780,7 @@ def set_derived_fields_rad(par, x0):
     except KeyError:
         Erad_PE0 = 7.613e-14
         Erad_LW0 = 1.335e-14
-    
+
     # Normalized FUV radiation field strength (Draine field unit)
     f = 'chi_PE'
     field_dep[f] = set(['rad_energy_density_PE'])
@@ -761,17 +813,18 @@ def set_derived_fields_rad(par, x0):
     cmap[f] = 'viridis'
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
-    
+
     # Normalized FUV radiation field strength (Draine field unit)
-    f = 'Erad_LyC'
-    field_dep[f] = set(['rad_energy_density_PH'])
-    def _Erad_LyC(d, u):
-        return d['rad_energy_density_PH']*u.energy_density.cgs.value
-    func[f] = _Erad_LyC
-    label[f] = r'$\mathcal{E}_{\rm LyC}\;[{\rm erg\,{\rm cm}^{-3}}]$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (5e-16,5e-11)
-    take_log[f] = True
+    if (par['radps']['iPhotIon'] == 1):
+        f = 'Erad_LyC'
+        field_dep[f] = set(['rad_energy_density_PH'])
+        def _Erad_LyC(d, u):
+            return d['rad_energy_density_PH']*u.energy_density.cgs.value
+        func[f] = _Erad_LyC
+        label[f] = r'$\mathcal{E}_{\rm LyC}\;[{\rm erg\,{\rm cm}^{-3}}]$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (5e-16,5e-11)
+        take_log[f] = True
 
     # Normalized FUV radiation field strength (Draine field unit)
     f = 'Erad_FUV'
@@ -783,7 +836,7 @@ def set_derived_fields_rad(par, x0):
     cmap[f] = 'viridis'
     vminmax[f] = (5e-16,5e-11)
     take_log[f] = True
-    
+
     # heat_ratio (G0) ; temporary output
     f = 'heat_ratio'
     field_dep[f] = set(['heat_ratio'])
@@ -845,7 +898,7 @@ def set_derived_fields_rad(par, x0):
             cmap[f] = 'viridis'
             vminmax[f] = (1e-8,1e4)
             take_log[f] = True
-            
+
             # fshld_H2 (effective)
             f = 'fshld_H2'
             field_dep[f] = set(['rad_energy_density_LW','rad_energy_density_LW_diss'])
@@ -859,11 +912,11 @@ def set_derived_fields_rad(par, x0):
 
     except KeyError:
         pass
-    
+
     return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_xray(par, x0, newcool):
-    
+
     func = dict()
     field_dep = dict()
     label = dict()
@@ -939,7 +992,7 @@ class DerivedFields(object):
                 for d, d_ in zip(dicts, dicts_):
                     d = d.update(d_)
         except KeyError:
-            pass                    
+            pass
 
         try:
             if par['configure']['sixray'] == 'ON':
@@ -948,7 +1001,7 @@ class DerivedFields(object):
                     d = d.update(d_)
         except KeyError:
             pass
-                
+
         # Add X-ray emissivity if Wind or SN is turned on
         try:
             if par['feedback']['iSN'] > 0 or par['feedback']['iWind'] > 0 or \
@@ -958,7 +1011,7 @@ class DerivedFields(object):
                     d = d.update(d_)
         except KeyError:
             pass
-                    
+
         self.derived_field_list = self.func
 
         # Set colormap normalization and scale
@@ -975,7 +1028,7 @@ class DerivedFields(object):
 
             self.imshow_args[f] = dict(norm=self.norm[f], cmap=self.cmap[f],
                                        cbar_kwargs=dict(label=self.label[f]))
-            
+
         for f in self.derived_field_list:
             self.dfi[f] = dict(field_dep=self.field_dep[f],
                                func=self.func[f],
@@ -986,4 +1039,4 @@ class DerivedFields(object):
                                scale=self.scale[f],
                                take_log=self.take_log[f],
                                imshow_args=self.imshow_args[f])
-                               
+

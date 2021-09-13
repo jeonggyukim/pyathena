@@ -31,6 +31,7 @@ class RestartHandler(object):
         Nx=np.array([dm['Nx1'],dm['Nx2'],dm['Nx3']])
         Ng=np.array([dm['NGrid_x1'],dm['NGrid_x2'],dm['NGrid_x3']])
         Nb=(Nx/Ng).astype('int64')
+
         self.dm = dm # domain information from the input file
         xfc, xcc = _set_xpos_with_dm(dm)
         self.xfc = xfc
@@ -786,6 +787,7 @@ def _read_all_grid(rstfile,grids,NGrids,parfile=None,verbose=False,starghost=Tru
         gis=g['is']
         gnx=g['Nx']
         gie=gis+gnx
+
         if i == 0:
             par,fm,data=_read_one_grid(rstfile,verbose=False,starghost=starghost)
         else:

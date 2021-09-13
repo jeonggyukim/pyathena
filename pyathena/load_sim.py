@@ -341,11 +341,13 @@ class LoadSim(object):
 
         athinput_patterns = [('stdout.txt',),
                              ('out.txt',),
+                             ('out.*.txt',),
                              ('log.txt',),
+                             ('*.par',),
                              ('*.out',),
                              ('slurm-*',),
                              ('athinput.*',),
-                             ('*.par',)]
+                             ]
 
         hst_patterns = [('id0', '*.hst'),
                         ('hst', '*.hst'),
@@ -422,7 +424,8 @@ class LoadSim(object):
             fhst = self._find_match(hst_patterns)
             if fhst:
                 self.files['hst'] = fhst[0]
-                self.problem_id = osp.basename(self.files['hst']).split('.')[0]
+                if not hasattr(self, 'problem_id'):
+                    self.problem_id = osp.basename(self.files['hst']).split('.')[:-1]
                 self.logger.info('hst: {0:s}'.format(self.files['hst']))
             else:
                 self.logger.warning('Could not find hst file in {0:s}'.\
@@ -471,13 +474,13 @@ class LoadSim(object):
                         osp.dirname(self.files['vtk_id0'][0]),
                         self.nums_id0[0], self.nums_id0[-1]))
                     if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(self.files['vtk_id0'][0]).split('.')[0]
+                        self.problem_id = osp.basename(self.files['vtk_id0'][0]).split('.')[-2:]
                 if self.nums:
                     self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk'][0]),
                         self.nums[0], self.nums[-1]))
                     if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(self.files['vtk'][0]).split('.')[0]
+                        self.problem_id = osp.basename(self.files['vtk'][0]).split('.')[-2:]
                 else:
                     self.nums = self.nums_id0
 
@@ -513,7 +516,7 @@ class LoadSim(object):
                 self.nums_zprof = dict()
                 self.phase = []
                 for f in self.files['zprof']:
-                    _, num, ph, _ = osp.basename(f).split('.')
+                    _, num, ph, _ = osp.basename(f).split('.')[-4:]
                     try:
                         self.nums_zprof[ph].append(int(num))
                     except KeyError:
@@ -741,7 +744,8 @@ class LoadSim(object):
                         cls.logger.warning('Could not make directory')
 
                 fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
-                                '.{0:s}.mod.p'.format(cls.basename))
+                                 '.{0:s}.mod.p'.format(cls.basename))
+                #fpkl = osp.join(savdir, osp.basename(cls.files['hst']) + '.mod.p')
 
                 # Check if the original history file is updated
                 if not force_override and osp.exists(fpkl) and \

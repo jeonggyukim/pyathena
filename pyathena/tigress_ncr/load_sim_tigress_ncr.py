@@ -16,9 +16,9 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
                         StarPar, PDF, H2, Snapshot_HIH2EM):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
-    
+
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 verbose=False):
+                 muH = 1.4271, verbose=False):
         """The constructor for LoadSimTIGRESSNCR class
 
         Parameters
@@ -42,22 +42,44 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
 
         super(LoadSimTIGRESSNCR,self).__init__(basedir, savdir=savdir,
                                                load_method=load_method, verbose=verbose)
-        
+
         # Set unit and domain
-        self.u = Units(muH=1.4271)
+        try:
+            muH = self.par['problem']['muH']
+        except KeyError:
+            pass
+        self.muH = muH
+        self.u = Units(muH=muH)
         self.domain = self._get_domain_from_par(self.par)
-    
+
+    def test_newcool(self):
+        try:
+            if self.par['configure']['new_cooling'] == 'ON':
+                newcool = True
+            else:
+                newcool = False
+        except KeyError:
+            newcool = False
+        return newcool
+
+
+
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
-    def __init__(self, models=None):
+    def __init__(self, models=None, muH=None):
 
         # Default models
         if models is None:
             models = dict()
-
+        if muH is None:
+            muH = dict()
+            for mdl in models:
+                muH[mdl] = 1.4271
         self.models = []
         self.basedirs = dict()
-        
+        self.muH = dict()
+        self.simdict = dict()
+
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
                 print('[LoadSimTIGRESSNCRAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
@@ -65,10 +87,20 @@ class LoadSimTIGRESSNCRAll(object):
             else:
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
+                if mdl in muH:
+                    self.muH[mdl] = muH[mdl]
+                else:
+                    print('[LoadSimTIGRESSNCRAll]: muH for {0:s} has to be set'.format(
+                          mdl))
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
-        
         self.model = model
-        self.sim = LoadSimTIGRESSNCR(self.basedirs[model], savdir=savdir,
-                                     load_method=load_method, verbose=verbose)
+        try:
+            self.sim = self.simdict[model]
+        except KeyError:
+            self.sim = LoadSimTIGRESSNCR(self.basedirs[model], savdir=savdir,
+                                         muH=self.muH[model],
+                                         load_method=load_method, verbose=verbose)
+            self.simdict[model] = self.sim
+
         return self.sim
