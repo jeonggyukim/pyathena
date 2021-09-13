@@ -17,17 +17,20 @@ from ..plt_tools.plt_starpar import scatter_sp
 
 class PDF:
     
-    bins=dict(nH=np.logspace(-5,3,161),
+    bins=dict(nH=np.logspace(-5,4,181),
               nHI=np.logspace(-2,5,141),
               nH2=np.logspace(-2,5,141),
               nHII=np.logspace(-5,3,201),
               xH2=np.linspace(0,0.5,101),
               xHI=np.linspace(0,1.0,101),
+              xHII=np.linspace(0,1.0,101),
               xe=np.logspace(-5,np.log10(2),201),
               T=np.logspace(1,8,281),
               pok=np.logspace(0,7,141),
               chi_PE=np.logspace(-3,4,141),
+              chi_H2=np.logspace(-6,4,201),
               chi_FUV=np.logspace(-3,4,141),
+              Erad_LyC=np.logspace(-18,-10,161),
               Lambda_cool=np.logspace(-30,-20,201),
               xi_CR=np.logspace(-17,-14,121)
     )
@@ -67,16 +70,18 @@ class PDF:
 
     @LoadSim.Decorators.check_pickle
     def read_pdf2d(self, num,
-                   bin_fields=[['nH', 'pok'], ['nH', 'T']],
-                   weight_fields=['nH', 'nH'],
+                   bin_fields=None,
+                   weight_fields=None,
                    bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
         
-        bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
-        weight_fields_def = ['nH', 'nH']
+        bin_fields_def = [['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'],
+                          ['nH', 'T']]
+        weight_fields_def = ['nH', '2nH2', 'nHI', 'nHII',
+                             'nH']
         if self.par['configure']['radps'] == 'ON':
-            bin_field_def += [['T','Lambda_cool'], ['nH','xH2'],
-                              ['T','xHII'], ['T', 'xHI']]
+            bin_fields_def += [['T','Lambda_cool'], ['nH','xH2'],
+                               ['T','xHII'], ['T', 'xHI']]
             weight_fields_def += ['cool_rate', 'nH', 'nH', 'nH']
             if (self.par['cooling']['iCR_attenuation']):
                 bin_fields_def += [['nH','xi_CR']]
@@ -97,11 +102,14 @@ class PDF:
 
         ds = self.load_vtk(num=num)
         res = dict()
-        
-        dd = ds.get_field(np.unique(bin_fields))
+        fields = np.unique(np.append(np.unique(bin_fields),
+                                     np.unique(weight_fields +
+                                               ['xHI','xH2','xHII'])))
+        dd = ds.get_field(fields)
         dd = dd.stack(xyz=['x','y','z']).dropna(dim='xyz')
         for bf,wf in zip(bin_fields,weight_fields):
-            res['-'.join(bf)] = dict()
+            k = '-'.join(bf)
+            res[k] = dict()
             xdat = dd[bf[0]]
             ydat = dd[bf[1]]
             xbins = self.bins[bf[0]]
@@ -113,47 +121,26 @@ class PDF:
             Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins),
                                         weights=weights)
             res[k]['Hw'] = Hw
-# =======
-
-#         dd = ds.get_field(np.unique(bin_fields))
-#         dd = dd.stack(xyz=['x','y','z']).dropna(dim='xyz')
-#         for bf in bin_fields:
-#             k = '-'.join(bf)
-#             res[k] = dict()
-#             xdat = dd[bf[0]]
-#             ydat = dd[bf[1]]
-#             # Volume weighted hist
-#             weights = None
-#             H, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins),
-#                                        weights=weights)
-# >>>>>>> origin/ncr-paper1
             res[k]['H'] = H
             res[k]['xe'] = xe
             res[k]['ye'] = ye
 
-#<<<<<<< HEAD
-            # Weighted hist
-            # Hw, xe, ye = np.histogram2d(xdat, ydat, (self.bins[bf[0]], self.bins[bf[1]]),
-            #                             weights=weights)
-            # res[k]['Hw'] = Hw
-       
-#=======
-
-        # nH-T-MH2
-        k = 'nH-T'
-        xdat = dd['nH']
-        ydat = dd['T']
-        xbins = self.bins['nH']
-        ybins = self.bins['T']
-        weights = dd['xH2']*dd['nH']
-        Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
-        res[k]['MH2'] = Hw
-        weights = dd['xHI']*dd['nH']
-        Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
-        res[k]['MHI'] = Hw
-        weights = dd['xHII']*dd['nH']
-        Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
-        res[k]['MHII'] = Hw
+        # # We don't need this if weights are set as nHI, 2nH2, or nHII
+        # # nH-T weighted by H2, HI, and HII masses
+        # k = 'nH-T'
+        # xdat = dd['nH']
+        # ydat = dd['T']
+        # xbins = self.bins['nH']
+        # ybins = self.bins['T']
+        # weights = 2.0*dd['xH2']*dd['nH']
+        # Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
+        # res[k]['MH2'] = Hw
+        # weights = dd['xHI']*dd['nH']
+        # Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
+        # res[k]['MHI'] = Hw
+        # weights = dd['xHII']*dd['nH']
+        # Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
+        # res[k]['MHII'] = Hw
 
         res['time_code'] = ds.domain['time']
         
@@ -171,16 +158,6 @@ class PDF:
         else:
             hist = 'H'
 
-# <<<<<<< HEAD
-#         c = ax.pcolormesh(dat[bf]['xe'], dat[bf]['ye'], dat[bf][hist].T/dat[bf][hist].sum(),
-#                           norm=norm, cmap=cmap, **kwargs)
-
-#         kx, ky = bf.split('-')
-#         ax.set(xscale=xscale, yscale=yscale,
-#                xlabel=self.dfi[kx]['label'], ylabel=self.dfi[ky]['label'])
-#         return c
-    
-# =======
         if wfield is not None:
             hist = wfield
             ax.annotate(wfield,(0.05,0.95),xycoords='axes fraction',ha='left',va='top')
@@ -197,7 +174,6 @@ class PDF:
         except KeyError:
             pass
 
-# >>>>>>> origin/ncr-paper1
     def plt_pdf2d_all(self, num, suptitle=None, savdir=None,
                       plt_zprof=True, savdir_pkl=None,
                       force_override=False, savefig=True):
@@ -222,19 +198,6 @@ class PDF:
         #     ax.remove()
         # ax = fig.add_subplot(gs[0:2, -1])
 
-# <<<<<<< HEAD
-#         s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=False)
-#         s.plt_pdf2d(axes[1,0], pdf, 'nH-pok', weighted=True)
-#         s.plt_pdf2d(axes[0,1], pdf, 'nH-chi_FUV', weighted=False)
-#         s.plt_pdf2d(axes[1,1], pdf, 'nH-chi_FUV', weighted=True)
-#         try:
-#             s.plt_pdf2d(axes[0,2], pdf, 'T-Lambda_cool', weighted=False)
-#             s.plt_pdf2d(axes[1,2], pdf, 'T-Lambda_cool', weighted=True)
-#         except:
-#             pass
-#         s.plt_pdf2d(axes[0,3], pdf, 'nH-xi_CR', weighted=False)
-#         s.plt_pdf2d(axes[1,3], pdf, 'nH-xi_CR', weighted=True)
-# =======
         #s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=False)
         s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=True)
         #s.plt_pdf2d(axes[0,1], pdf, 'nH-chi_FUV', weighted=False)
@@ -248,7 +211,6 @@ class PDF:
         s.plt_pdf2d(axes[1,2], pdf, 'nH-T', wfield = 'MHI')
         s.plt_pdf2d(axes[1,3], pdf, 'nH-T', wfield = 'MHII')
         s.plt_pdf2d(axes[2,2], pdf, 'nH-chi_H2', weighted=False)
-#>>>>>>> origin/ncr-paper1
 
         ax = axes[2,0]
         # s.plt_proj(ax, prj, 'z', 'Sigma_gas')
@@ -263,14 +225,9 @@ class PDF:
 
         ax = axes[2,1]
         s.plt_slice(ax, slc, 'z', 'chi_FUV', norm=LogNorm(1e-1,1e2))
-# <<<<<<< HEAD
-#         scatter_sp(sp, ax, 'z', kind='slc', dist_max=50.0, kpc=False, norm_factor=5.0, agemax=20.0)
-#         ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
-# =======
         #scatter_sp(sp, ax, 'z', kind='slc', dist_max=50.0, kpc=False, norm_factor=5.0, agemax=20.0)
         ax.axis('off')
         #ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
-#>>>>>>> origin/ncr-paper1
         ax.set(xlim=(ds.domain['le'][0], ds.domain['re'][0]),
                ylim=(ds.domain['le'][1], ds.domain['re'][1]))
 
