@@ -70,4 +70,4 @@ from .plt_tools.make_movie import make_movie, display_movie
 from .plt_tools.set_plt import set_plt_default, set_plt_fancy
 
 # Microphysics
-from .microphysics import cool, rec_rate, photx, dust_draine
+from .microphysics import cool, cool_gnat12, rec_rate, photx, dust_draine
