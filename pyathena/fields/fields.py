@@ -215,7 +215,7 @@ def set_derived_fields_def(par, x0, newcool):
                          name='cmap_vr')
     take_log[f] = True
     
-    # Cooling
+    # Cooling related
     if par['configure']['cooling'] == 'ON':
         # T [K]
         f = 'T'
@@ -228,12 +228,26 @@ def set_derived_fields_def(par, x0, newcool):
             field_dep[f] = set(['temperature'])
             def _T(d, u):
                 return d['temperature']
+
         func[f] = _T
         label[f] = r'$T\;[{\rm K}]$'
         cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
         vminmax[f] = (1e1,1e7)
         take_log[f] = True
 
+        # Td [K]
+        if newcool:
+            f = 'Td'
+            field_dep[f] = set(['temperature_dust'])
+            def _Td(d, u):
+                return d['temperature_dust']
+
+            func[f] = _Td
+            label[f] = r'$T_{\rm d}\;[{\rm K}]$'
+            cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
+            vminmax[f] = (1e0,1e2)
+            take_log[f] = True
+        
         f = 'cool_rate'
         field_dep[f] = set(['cool_rate'])
         def _cool_rate(d, u):
@@ -274,6 +288,46 @@ def set_derived_fields_def(par, x0, newcool):
         vminmax[f] = (1e-30,1e-20)
         take_log[f] = True
 
+        f = 'nHLambda_cool'
+        field_dep[f] = set(['density','cool_rate'])
+        def _nHLambda_cool(d, u):
+            return d['cool_rate']/d['density']
+        func[f] = _nHLambda_cool
+        label[f] = r'$n_{\rm H}\Lambda\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
+        cmap[f] = 'cubehelix_r'
+        vminmax[f] = (1e-30,1e-20)
+        take_log[f] = True
+
+        f = 'nHLambda_cool_net'
+        field_dep[f] = set(['density','cool_rate'])
+        def _nHLambda_cool_net(d, u):
+            return (d['cool_rate'] - d['heat_cool'])/d['density']
+        func[f] = _nHLambda_cool_net
+        label[f] = r'$n_{\rm H}\Lambda_{\rm net}\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
+        cmap[f] = 'cubehelix_r'
+        vminmax[f] = (1e-30,1e-20)
+        take_log[f] = True
+        
+        f = 'Gamma_heat'
+        field_dep[f] = set(['density','heat_rate'])
+        def _Gamma_heat(d, u):
+            return d['heat_rate']/d['density']
+        func[f] = _Gamma_heat
+        label[f] = r'$\Gamma_{\rm heat}\;[{\rm erg}\,{\rm s}^{-1}]$'
+        cmap[f] = 'cubehelix_r'
+        vminmax[f] = (1e-30,1e-20)
+        take_log[f] = True
+
+        f = 't_cool'
+        field_dep[f] = set(['pressure', 'cool_rate'])
+        def _t_cool(d, u):
+            return d['pressure']/d['cool_rate']*u.Myr
+        func[f] = _t_cool
+        label[f] = r'$t_{\rm cool}\;[{\rm yr}]$'
+        cmap[f] = 'cubehelix_r'
+        vminmax[f] = (1e-4,1e2)
+        take_log[f] = True
+        
     return func, field_dep, label, cmap, vminmax, take_log    
 
 def set_derived_fields_mag(par, x0):
