@@ -9,9 +9,9 @@ module load anaconda3/2020.11
 
 # create an environment
 
-conda env create -f pyathena_env.yml
+conda env create -f env.yml
 
-conda activate pyathena
+conda activate pyathena-yt4
 
 # installing mpi4py on stellar
 # https://researchcomputing.princeton.edu/support/knowledge-base/mpi4py
