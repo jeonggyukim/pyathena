@@ -139,6 +139,10 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         df['Z_gas'] = par['problem']['Z_gas']
         df['Z_dust'] = par['problem']['Z_dust']
 
+        # Initial feedback radius (rinit in Kim & Ostriker 2015)
+        df['dx'] = df['domain']['dx'][0]
+        df['r_init'] = par['problem']['rblast_over_hdx']*(0.5*df['dx'])
+        
         # Shell formation time
         df['t_sf'] = float(h.loc[(h['Mi']+h['Mh']).max() ==
                                 (h['Mi']+h['Mh']), 'time'])
@@ -149,7 +153,15 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         df['pok_bub_sf'] = float(h.loc[h['time'] == df['t_sf'], 'pok_bub'])
         df['Ethm_sf'] = float(h.loc[h['time'] == df['t_sf'], 'Ethm'])
         df['Ekin_sf'] = float(h.loc[h['time'] == df['t_sf'], 'Ekin'])
+        df['vrsh_sf'] = float(h.loc[h['time'] == df['t_sf'], 'vrsh'])
+        df['vrbub_sf'] = float(h.loc[h['time'] == df['t_sf'], 'vrbub'])
+
+        df['dx_over_r_sf'] = df['dx']/df['r_sf']
         
+        # Momentum at 10*t_sf
+        idx = (h['time'] - 10.0*df['t_sf']).abs().argsort()[0]
+        df['pr_10t_sf'] = h['pr'].iloc[idx]
+
         # Plot styles
         df['cmapZ'] = mpl.cm.plasma_r
         df['normZ'] = mpl.colors.LogNorm(0.003,3.0)
@@ -164,6 +176,7 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
             return df
         else:
             return pd.Series(df, name=self.basename)
+
 
         
 class LoadSimFeedbackTestAll(object):
@@ -196,38 +209,45 @@ class LoadSimFeedbackTestAll(object):
 
 def load_all_feedback_test_sn(force_override=False):
 
-    basedir = '/tigress/jk11/FEEDBACK-TEST/FEEDBACK-TEST'
+    #basedir = '/tigress/jk11/FEEDBACK-TEST/FEEDBACK-TEST'
+    basedir = '/scratch/gpfs/jk11/FEEDBACK-TEST/'
     models = dict(
 
-        SN_n001_Z0001_N128=osp.join(basedir,'SN-n0.01-Z0.001-N128'),
-        SN_n01_Z0001_N128=osp.join(basedir,'SN-n0.1-Z0.001-N128'),
-        SN_n1_Z0001_N128=osp.join(basedir,'SN-n1-Z0.001-N128'),
-        SN_n10_Z0001_N128=osp.join(basedir,'SN-n10-Z0.001-N128'),
-        SN_n100_Z0001_N128=osp.join(basedir,'SN-n100-Z0.001-N128'),
+        # SN_n001_Z0001_N128=osp.join(basedir,'SN-n0.01-Z0.001-N128'),
+        # SN_n01_Z0001_N128=osp.join(basedir,'SN-n0.1-Z0.001-N128'),
+        # SN_n1_Z0001_N128=osp.join(basedir,'SN-n1-Z0.001-N128'),
+        # SN_n10_Z0001_N128=osp.join(basedir,'SN-n10-Z0.001-N128'),
+        # SN_n100_Z0001_N128=osp.join(basedir,'SN-n100-Z0.001-N128'),
 
-        SN_n001_Z001_N128=osp.join(basedir,'SN-n0.01-Z0.01-N128'),
-        SN_n01_Z001_N128=osp.join(basedir,'SN-n0.1-Z0.01-N128'),
-        SN_n1_Z001_N128=osp.join(basedir,'SN-n1-Z0.01-N128'),
-        SN_n10_Z001_N128=osp.join(basedir,'SN-n10-Z0.01-N128'),
-        SN_n100_Z001_N128=osp.join(basedir,'SN-n100-Z0.01-N128'),
+        # SN_n001_Z001_N128=osp.join(basedir,'SN-n0.01-Z0.01-N128'),
+        # SN_n01_Z001_N128=osp.join(basedir,'SN-n0.1-Z0.01-N128'),
+        # SN_n1_Z001_N128=osp.join(basedir,'SN-n1-Z0.01-N128'),
+        # SN_n10_Z001_N128=osp.join(basedir,'SN-n10-Z0.01-N128'),
+        # SN_n100_Z001_N128=osp.join(basedir,'SN-n100-Z0.01-N128'),
 
-        SN_n001_Z01_N128=osp.join(basedir,'SN-n0.01-Z0.1-N128'),
-        SN_n01_Z01_N128=osp.join(basedir,'SN-n0.1-Z0.1-N128'),
-        SN_n1_Z01_N128=osp.join(basedir,'SN-n1-Z0.1-N128'),
-        SN_n10_Z01_N128=osp.join(basedir,'SN-n10-Z0.1-N128'),
-        SN_n100_Z01_N128=osp.join(basedir,'SN-n100-Z0.1-N128'),
+        # SN_n001_Z01_N128=osp.join(basedir,'SN-n0.01-Z0.1-N128'),
+        # SN_n01_Z01_N128=osp.join(basedir,'SN-n0.1-Z0.1-N128'),
+        # SN_n1_Z01_N128=osp.join(basedir,'SN-n1-Z0.1-N128'),
+        # SN_n10_Z01_N128=osp.join(basedir,'SN-n10-Z0.1-N128'),
+        # SN_n100_Z01_N128=osp.join(basedir,'SN-n100-Z0.1-N128'),
 
         SN_n001_Z1_N128=osp.join(basedir,'SN-n0.01-Z1-N128'),
         SN_n01_Z1_N128=osp.join(basedir,'SN-n0.1-Z1-N128'),
         SN_n1_Z1_N128=osp.join(basedir,'SN-n1-Z1-N128'),
-        SN_n10_Z1_N128=osp.join(basedir,'SN-n10-Z1-N128'),
-        SN_n100_Z1_N128=osp.join(basedir,'SN-n100-Z1-N128'),
+        # SN_n10_Z1_N128=osp.join(basedir,'SN-n10-Z1-N128'),
+        # SN_n100_Z1_N128=osp.join(basedir,'SN-n100-Z1-N128'),
 
-        SN_n001_Z3_N128=osp.join(basedir,'SN-n0.01-Z3-N128'),
-        SN_n01_Z3_N128=osp.join(basedir,'SN-n0.1-Z3-N128'),
-        SN_n1_Z3_N128=osp.join(basedir,'SN-n1-Z3-N128'),
-        SN_n10_Z3_N128=osp.join(basedir,'SN-n10-Z3-N128'),
-        SN_n100_Z3_N128=osp.join(basedir,'SN-n100-Z3-N128'),
+        SN_n001_Z1_N256=osp.join(basedir,'SN-n0.01-Z1-N256'),
+        SN_n01_Z1_N256=osp.join(basedir,'SN-n0.1-Z1-N256'),
+        SN_n1_Z1_N256=osp.join(basedir,'SN-n1-Z1-N256'),
+        # SN_n10_Z1_N256=osp.join(basedir,'SN-n10-Z1-N256'),
+        # SN_n100_Z1_N256=osp.join(basedir,'SN-n100-Z1-N256'),
+
+        # SN_n001_Z3_N128=osp.join(basedir,'SN-n0.01-Z3-N128'),
+        # SN_n01_Z3_N128=osp.join(basedir,'SN-n0.1-Z3-N128'),
+        # SN_n1_Z3_N128=osp.join(basedir,'SN-n1-Z3-N128'),
+        # SN_n10_Z3_N128=osp.join(basedir,'SN-n10-Z3-N128'),
+        # SN_n100_Z3_N128=osp.join(basedir,'SN-n100-Z3-N128'),
 
     )
     

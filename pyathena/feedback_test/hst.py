@@ -52,21 +52,44 @@ class Hst:
         hst['Rsh'] = hst['Rsh_den']/hst['Msh']*u.pc
         # shell mass in Msun
         hst['Msh'] *= u.Msun*vol
-        # hot gas mass in Msun
-        hst['Mh'] *= u.Msun*vol
-        # warm gas mass in Msun
-        hst['Mw'] *= u.Msun*vol
-        # intermediate temperature gas in Msun
-        hst['Mi'] *= u.Msun*vol
-        # cold gas mass in Msun
-        hst['Mc'] *= u.Msun*vol
-        # Hot and ionized
-        hst['Mhi'] = hst['Mh'] + hst['Mi']
-        
+        try:
+            # hot gas mass in Msun
+            hst['Mh'] *= u.Msun*vol
+        except KeyError:
+            hst['Mhot'] *= u.Msun*vol
+
+        try:
+            # warm gas mass in Msun
+            hst['Mw'] *= u.Msun*vol
+        except KeyError:
+            hst['Mwarm'] *= u.Msun*vol
+
+        try:
+            # intermediate temperature gas in Msun
+            hst['Mi'] *= u.Msun*vol
+        except KeyError:
+            hst['Minter'] *= u.Msun*vol
+            
+        try:
+            # cold gas mass in Msun
+            hst['Mc'] *= u.Msun*vol
+        except KeyError:
+            hst['Mcold'] *= u.Msun*vol
+
+        try:
+            # Hot and ionized
+            hst['Mhi'] = hst['Mh'] + hst['Mi']
+        except KeyError:
+            hst['Mhi'] = hst['Mhot'] + hst['Minter']
+            
         # Total/hot gas/shell momentum in Msun*km/s
         pr_conv = vol*(u.mass*u.velocity).to('Msun km s-1').value
         hst['pr'] *= pr_conv
-        hst['pr_h'] *= pr_conv
+        try:
+            hst['pr_h'] *= pr_conv
+        except KeyError:
+            hst['pr_hot'] *= pr_conv
+            
         hst['prsh'] *= pr_conv
 
         # energy in ergs
@@ -76,7 +99,12 @@ class Hst:
         for ph in ('c','u','w','i','h'):
             hst['Ethm_'+ph] *= E_conv
             hst['Ekin_'+ph] *= E_conv
-            
+
+        # Mean cool/heat rates
+        hst['cool_rate'] *= vol
+        hst['heat_rate'] *= vol
+        hst['net_cr'] *= vol
+
         # SNR velocity in km/s
         # hst['vsnr'] = hst['pr']/(hst['Msh'] + hst['Mi'] + hst['Mh'])
         # SNR radius
@@ -119,13 +147,6 @@ class Hst:
         hst['RIF'] = hst['RIF']/hst['RIF_vol']*u.pc
         hst['RDF'] = hst['RDF']/hst['RDF_vol']*u.pc
         
-        # Expected radial momentum injection
-        if par['radps']['apply_force'] == 1 and par['configure']['ionrad']:
-            # Radiation pressure only (in the optically-thick limit)
-            hst['pr_inject'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
-                                        hst['time_code'], initial=0.0)
-            hst['pr_inject'] *= vol*(u.mass*u.velocity).value
-
         # Total/escaping luminosity in Lsun
         ifreq = dict()
         for f in ('PH','LW','PE','PE_unatt'):
@@ -133,7 +154,23 @@ class Hst:
                 ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
             except KeyError:
                 pass
+            
+        # Total luminosity in Lsun
+        hst['Ltot'] = 0.0
+        for k,v in ifreq.items():
+            if v >= 0:
+                hst['Ltot'] += hst[f'Ltot{v}']
 
+        # Expected radial momentum injection
+        if par['radps']['apply_force'] == 1 and par['configure']['ionrad']:
+            # Radiation pressure only (in the optically-thick limit)
+            hst['pr_inject'] = cumtrapz(hst['Ltot']/ac.c.to(u.velocity).value,
+                                        hst['time_code'], initial=0.0)
+            hst['pr_inject'] *= vol*(u.mass*u.velocity).value
+
+        hst['Ltot'] *= vol*u.Lsun
+        
+        # Other luminosity
         for i in range(par['radps']['nfreq']):
             for k, v in ifreq.items():
                 if i == v:
@@ -145,6 +182,7 @@ class Hst:
                                            (ac.L_sun.cgs.value)/hnu
                     except KeyError:
                         pass
+                
 
 
                     
