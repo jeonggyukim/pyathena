@@ -375,7 +375,8 @@ def coolLya(nH, T, xe, xHI):
 
     ne = xe*nH
     T4 = T*1.0e-4
-    fac = 6.3803e-9*np.power(T4, 1.17)
+    # fac = 6.3803e-9*np.power(T4, 1.17)
+    fac = 5.30856e-08*np.power(T4,1.4897e-01)/(1.0 + np.power(0.2*T4, 0.64897))
     k01e = fac*np.exp(-11.84/T4)
     q01 = k01e*ne
     q10 = (g0HI_/g1HI_)*fac*ne
