@@ -11,9 +11,10 @@ from .zprof import Zprof
 from .slc_prj import SliceProj
 from .starpar import StarPar
 from .snapshot_HIH2EM import Snapshot_HIH2EM
+from .profile_1d import Profile1D
 
 class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
-                        StarPar, PDF, H2, Snapshot_HIH2EM):
+                        StarPar, PDF, H2, Profile1D, Snapshot_HIH2EM):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
 
