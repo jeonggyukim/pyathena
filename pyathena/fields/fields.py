@@ -388,6 +388,21 @@ def set_derived_fields_mag(par, x0):
     vminmax[f] = (1e-1, 1e2)
     cmap[f] = 'cividis'
     take_log[f] = True
+
+    # Alfven velocity [km/s]
+    f = 'vA'
+    field_dep[f] = set(['density', 'cell_centered_B'])
+    def _vA(d, u):
+        return (d['cell_centered_B1']**2 +
+                d['cell_centered_B2']**2 +
+                d['cell_centered_B3']**2)**0.5*np.sqrt(u.energy_density.cgs.value)\
+            /np.sqrt(d['density']*u.density.cgs.value)/1e5
+    
+    func[f] = _vA
+    label[f] = r'$v_A\;[{\rm km}\,{\rm s}^{-1}]$'
+    vminmax[f] = (0.1, 1000.0)
+    cmap[f] = 'cividis'
+    take_log[f] = True
     
     return func, field_dep, label, cmap, vminmax, take_log
 
