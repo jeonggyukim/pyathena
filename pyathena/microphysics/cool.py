@@ -196,6 +196,9 @@ def coolCII(nH, T, xe, xHI, xH2, xCII):
     
     return q01/(q01 + q10 + A10CII_)*A10CII_*E10CII_*xCII
 
+def coolHIion(nH, T, xe, xHI):
+    eV_cgs = (1.0*au.eV).cgs.value
+    return 13.6*eV_cgs*coeff_kcoll_H(T)*nH*xe*xHI
 
 def coolCI(nH, T, xe, xHI, xH2, xCI):
     
