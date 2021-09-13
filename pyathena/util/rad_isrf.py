@@ -6,8 +6,18 @@ from scipy.interpolate import interp1d
 
 def F_E_Dr78(E):
     """Photon flux for Draine's ISRF
-    E : Photon energy (in eV)
+
+    Parameters
+    ----------
+    E : array of floats
+        Photon energy (in eV)
+
+    Returns
+    -------
+    F(E) : array of floats
+        Angle-averaged photon flux [photons / cm^2 / s / sr / eV]
     """
+    
     if E is not None and not isinstance(E, au.quantity.Quantity):
         E = (E*au.eV).to(au.eV)
 
@@ -18,6 +28,21 @@ def nuJnu_Dr78(E):
     return (E**2*F_E_Dr78(E)).to('erg s-1 cm-2 sr-1')
 
 def Jnu_vD82(wav):
+    """Estimate of ISRF at optical wavelengths by van Dishoeck & Black (1982)
+    see Fig 1 in Heays et al. (2017)
+
+    Parameters
+    ----------
+    wav : array of float
+        wavelength in angstrom
+
+    Returns
+    -------
+    Jnu : array of float
+         Mean intensity Jnu in cgs units
+    
+    """
+    
     if wav is not None and not isinstance(wav, au.quantity.Quantity):
         wav = (wav*au.angstrom).to(au.angstrom)
     else:
@@ -27,6 +52,18 @@ def Jnu_vD82(wav):
     return 2.44e-16*w**2.7/au.cm**2/au.s/au.Hz
 
 def Jnu_MMP83(wav):
+    """ISRF etimation by Mathis, Mezger, & Panagia (1983)
+
+    Parameters
+    ----------
+    wav : array of float
+        wavelength in angstrom
+
+    Returns
+    -------
+    Jnu : array of float
+         Mean intensity Jnu in cgs units
+    """
     w = np.array([0.0912,0.1,0.11,0.13,0.143,0.18,0.2,0.21,0.216,0.23,0.25,0.346,0.435,0.55,0.7,0.9,
                   1.2,1.8,2.2,2.4,3.4,4.0,5.0,6.0,8.0])*1e4*au.angstrom
     unit = au.erg/au.cm**2/au.s/au.micron
