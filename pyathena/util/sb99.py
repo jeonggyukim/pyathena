@@ -254,16 +254,16 @@ class SB99(object):
 
         if plt_isrf:
             fig, axes = plt.subplots(3, 2, figsize=(12, 12),
-                                     gridspec_kw=dict(width_ratios=(0.98,0.02), 
+                                     gridspec_kw=dict(width_ratios=(0.98,0.02),
                                                       height_ratios=(1/3.0,1/3.0,1/3.0),
-                                                      wspace=0.05, hspace=0.13),)
+                                                      wspace=0.05, hspace=0.11),)
         else:
             fig, axes = plt.subplots(2, 2, figsize=(12, 9),
-                                     gridspec_kw=dict(width_ratios=(0.98,0.02), 
+                                     gridspec_kw=dict(width_ratios=(0.98,0.02),
                                                       height_ratios=(0.65,0.35),
-                                                      wspace=0.05, hspace=0.01),)            
+                                                      wspace=0.05, hspace=0.01),)
 
-        # Dust opacity first
+        # Dust opacity
         irow = 0
         plt.sca(axes[irow,0])
         plt.tick_params(right=False, which='both', axis='y')
@@ -273,7 +273,7 @@ class SB99(object):
         df = d.dfa['Rv31']
         plt.semilogy(df.lwav*1e4, df.Cext/muH, c='k', label='ext')
         plt.semilogy(df.lwav*1e4, df.kappa_abs, c='k', ls='--', label='abs')
-        plt.xlim(*(axes[0,0].get_xlim()))
+        plt.xlim(1e2,2068)
         plt.ylim(1e2,2.5e3)
         plt.ylabel(r'$\kappa_{\rm d}\;[{\rm cm}^2\,{\rm g}^{-1}]$')
         plt.legend()
@@ -306,12 +306,15 @@ class SB99(object):
         sax0.set_xlabel(r'$h\nu\;[{\rm eV}]$', labelpad=10)
         # secax.tick_params(axis='x', which='major', pad=15)
 
-        ytext = 2e3
+        ytext = 1.8e3
         plt.annotate('LyC', ((912+plt.gca().get_xlim()[0])*0.5,ytext),
                      xycoords='data', ha='center')
         plt.annotate('LW', ((912+1108)*0.5,ytext), xycoords='data', ha='center')
         plt.annotate('PE', ((1108+2068)*0.5,ytext), xycoords='data', ha='center')
         
+        plt.sca(axes[irow,1])
+        plt.axis('off')
+
         irow += 1
         plt.sca(axes[irow,0])
         norm = mpl.colors.Normalize(0.0, tmax)
@@ -338,13 +341,9 @@ class SB99(object):
             plt.ylim(1e28, 1e35)
         
         plt.yscale('log')
-        plt.ylabel(r'$L_{\lambda}/M_{\ast}\;[{\rm erg}\,{\rm s}^{-1}\,\AA^{-1}]$')
+        plt.ylabel(r'$L_{\lambda}/M_{\ast}\;[{\rm erg}\,{\rm s}^{-1}\,\AA^{-1}\,M_{\odot}^{-1}]$')
         sm = plt.cm.ScalarMappable(cmap=cmap, norm=Normalize(0, tmax))
         plt.colorbar(sm, cax=axes[irow,1], label=r'$t_{\rm age}\;[{\rm Myr}]$')
-            
-
-        plt.sca(axes[irow,1])
-        plt.axis('off')
 
         for ax in axes[:,0]:
             plt.sca(ax)
@@ -554,18 +553,24 @@ def plt_nuJnu_mid_plane_parallel(ax, Sigma_gas=10.0*au.M_sun/au.pc**2, plt_dr78=
     Jlambda0 = (Llambda/area/4.0).to('erg s-1 cm-2 angstrom-1')
     
     plt.sca(ax)
-    l, = plt.loglog(rr['wav'], rr['wav']*Jlambda, label=r'OML+10')
-    plt.loglog(rr['wav'], rr['wav']*Jlambda0, c=l.get_color(), alpha=0.5, ls='--', label=r'OML+10 w/o atten.')
+    l, = plt.loglog(rr['wav'], #rr['wav']*
+                    Jlambda, label=r'SB99 + Ostriker et al. (2010)')
+    plt.loglog(rr['wav'], #rr['wav']*
+               Jlambda0, c=l.get_color(), alpha=0.5, ls='--', label=r'')
     
     if plt_dr78:
         from pyathena.util import rad_isrf
         wav2 = np.logspace(np.log10(912), np.log10(2068), 1000)*au.angstrom
         nu2 = (ac.c/wav2).to('Hz')
         E = (nu2*ac.h).to('eV')
-        plt.semilogy(wav2, rad_isrf.nuJnu_Dr78(E), label='Draine78')
+        # Note that J_lambda = nuJnu/lambda
+        plt.semilogy(wav2, rad_isrf.nuJnu_Dr78(E)/wav2, label='Draine (1978)')
         #plt.loglog(wav2, nu2*rad_isrf.Jnu_MMP83(wav2), c='C1', label='Mathis+83')
 
-    plt.legend(loc=2)    
-    plt.xlim(1e2,1e4)
-    plt.ylim(1e-5,3e-3)
-    plt.ylabel(r'$\lambda J_{\lambda}\;[{\rm erg\,{\rm s}^{-1}\,{\rm cm}^{-2}\,{\rm sr}^{-1}}]$')
+    plt.legend(loc=4)
+    plt.xlim(1e2,2068)
+    plt.xscale('linear')
+    plt.ylim(1e-8,5e-6)
+    plt.ylabel(r'$J_{\lambda}\;[{\rm erg}\,{\rm s}^{-1}\,{\rm cm}^{-2}\,{\rm sr}^{-1}\AA^{-1}]$')
+
+    return None
