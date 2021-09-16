@@ -4,7 +4,9 @@
 #SBATCH --ntasks=12              # total number of tasks
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=00:30:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=12:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --error=do_tasks-%j.err
+#SBATCH --output=do_tasks-%j.out
 
 module purge
 module load anaconda3/2020.11 openmpi/gcc/4.1.0
@@ -16,4 +18,4 @@ export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
 OUTDIR=$1
 
 cd $HOME/pyathena
-srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1> scripts/do_tasks-$SLURM_JOB_ID.out 2> scripts/do_tasks-$SLURM_JOB_ID.err
+srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR

@@ -4,7 +4,7 @@
 #SBATCH --ntasks=24              # total number of tasks
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=12:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=00:30:00          # total run time limit (HH:MM:SS)
 
 module purge
 module load anaconda3/2020.11 openmpi/gcc/4.1.0
@@ -22,6 +22,17 @@ if [[ $# -eq 2 ]]; then
   echo "Do tasks started"
   cd $HOME/pyathena
   srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> scripts/join-$SLURM_JOB_ID.out 2>> scripts/join-$SLURM_JOB_ID.err
+
+elif [[ $# -eq 1 ]]; then
+  INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$1
+  OUTDIR=/tigress/changgoo/TIGRESS-NCRSP/$1
+  cd $HOME/pyathena/scripts
+  srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1> join-$SLURM_JOB_ID.out 2> join-$SLURM_JOB_ID.err
+
+  echo "Do tasks started"
+  cd $HOME/pyathena
+  srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> scripts/join-$SLURM_JOB_ID.out 2>> scripts/join-$SLURM_JOB_ID.err
+
 else
   echo "Move everything from scratch"
   cd $HOME/pyathena/scripts
