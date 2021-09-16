@@ -26,6 +26,8 @@ class Hst:
         # total volume of domain (code unit)
         vol = domain['Lx'].prod()        
 
+        iWind = par['feedback']['iWind']
+
         # Time in code unit
         hst['time_code'] = hst['time']
         # Time in Myr
@@ -91,7 +93,7 @@ class Hst:
             hst['pr_hot'] *= pr_conv
             
         hst['prsh'] *= pr_conv
-
+        
         # energy in ergs
         E_conv = vol*(u.energy).cgs.value
         hst['Ethm'] *= E_conv
@@ -129,6 +131,14 @@ class Hst:
         if par['configure']['radps'] == 'ON':
             hst = self._calc_radiation(hst)
         #hst.index = hst['time_code']
+
+        if iWind:
+            hst['wind_Minj'] *= vol*u.Msun
+            hst['wind_Einj'] *= vol*u.erg
+            hst['wind_pinj'] *= vol*u.Msun*u.kms
+            hst['wind_Mdot'] *= vol*u.Msun/u.Myr
+            hst['wind_Edot'] *= vol*u.erg/u.s
+            hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr        
         
         self.hst = hst
         
