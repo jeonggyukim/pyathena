@@ -61,7 +61,15 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
             newcool = False
         return newcool
 
-
+    def test_spiralarm(self):
+        try:
+            if self.par['configure']['SpiralArm'] == 'yes':
+                arm = True
+            else:
+                arm = False
+        except KeyError:
+            arm = False
+        return arm
 
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
@@ -103,3 +111,27 @@ class LoadSimTIGRESSNCRAll(object):
             self.simdict[model] = self.sim
 
         return self.sim
+
+    # adding two objects
+    def __add__(self, o):
+        for mdl in o.models:
+            if not (mdl in self.models):
+                self.models += [mdl]
+                self.basedirs[mdl] = o.basedirs[mdl]
+                self.muH[mdl] = o.muH[mdl]
+                if mdl in o.simdict: self.simdict[mdl] = o.simdict[mdl]
+
+        return self
+
+    # get self class with only one key
+    def __getitem__(self, key):
+        return self.set_model(key)
+
+    def __setitem__(self, key, value):
+        if (type(value) == LoadSimTIGRESSNCR):
+            self.models.append(key)
+            self.simdict[key] = value
+            self.basedirs[key] = value.basedir
+            self.muH[key] = value.muH
+        else:
+            print("Assigment only accepts LoadSimTIGRESSNCR")
