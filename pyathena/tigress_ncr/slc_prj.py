@@ -62,14 +62,18 @@ class SliceProj:
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
 
-        fields_def = ['nH', 'nH2', 'ne', 'vz', 'T', 'cs', 'vx', 'vy', 'vz', 'pok']
-        if self.par['configure']['radps'] == 'ON':
-            if (self.par['cooling']['iCR_attenuation']):
-                fields_def += ['xi_CR']
-            if self.par['radps']['iPhotIon'] == 1:
-                fields_def += ['Erad_LyC']
-            if self.par['cooling']['iPEheating'] == 1:
-                fields_def += ['chi_FUV']
+        fields_def = ['nH', 'vz', 'T', 'cs', 'vx', 'vy', 'vz', 'pok', 'specific_scalar[0]']
+        try:
+            if self.par['configure']['radps'] == 'ON':
+                fields_def += ['nH2', 'ne']
+                if (self.par['cooling']['iCR_attenuation']):
+                    fields_def += ['xi_CR']
+                if self.par['radps']['iPhotIon'] == 1:
+                    fields_def += ['Erad_LyC']
+                if self.par['cooling']['iPEheating'] == 1:
+                    fields_def += ['chi_FUV']
+        except KeyError:
+            pass
         if self.par['configure']['gas'] == 'mhd':
             fields_def += ['Bx','By','Bz','Bmag']
 
@@ -99,7 +103,12 @@ class SliceProj:
                  savdir=None, force_override=False):
 
         axtoi = dict(x=0, y=1, z=2)
-        fields = ['nH', 'nH2', 'nesq']
+        fields = ['nH']
+        try:
+            if self.par['configure']['radps'] == 'ON':
+                fields += ['nH2', 'nesq']
+        except KeyError:
+            pass
         axes = np.atleast_1d(axes)
 
         ds = self.load_vtk(num=num)
@@ -116,9 +125,12 @@ class SliceProj:
 
             res[ax] = dict()
             res[ax]['Sigma_gas'] = (np.sum(dat['nH'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_H2'] = (2.0*np.sum(dat['nH2'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_HI'] = res[ax]['Sigma_gas'] - res[ax]['Sigma_H2']
-            res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
+            try:
+                res[ax]['Sigma_H2'] = (2.0*np.sum(dat['nH2'], axis=2-i)*conv_Sigma).data
+                res[ax]['Sigma_HI'] = res[ax]['Sigma_gas'] - res[ax]['Sigma_H2']
+                res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
+            except KeyError:
+                res[ax]['Sigma_HI'] = res[ax]['Sigma_gas']
 
         return res
 
@@ -130,8 +142,71 @@ class SliceProj:
             slc_dset = slc_to_xarray(slc, axis)
         return slc_dset
 
+    def read_slc_time_series(self, num1, num2):
+        slc_list = []
+        for num in range(num1,num2):
+            slc = self.read_slc_xarray(num)
+            sp = self.read_starpar(num)
+            slc = slc.assign_coords(time=sp['time'])
+            slc_list.append(slc)
+        slc_dset=xr.concat(slc_list,dim='time')
+        t1 = slc_dset.time.data.min()
+        t2 = slc_dset.time.data.max()
+        hst = self.read_hst()
+        slc_dset.attrs['sfr'] = hst[t1:t2]['sfr10'].mean()
+
+        return slc_dset
+
+    def slc_to_flux(self, slc):
+        import astropy.constants as ac
+        dset=xr.Dataset()
+        dset['density'] = slc['nH']
+        dset['velocity1'] = slc['vx']
+        dset['velocity2'] = slc['vy']
+        dset['velocity3'] = slc['vz']
+        Bunits = np.sqrt(self.u.energy_density.cgs.value)*np.sqrt(4.0*np.pi)*1e6
+        dset['magnetic_field1'] = slc['Bx']/Bunits
+        dset['magnetic_field2'] = slc['By']/Bunits
+        dset['magnetic_field3'] = slc['Bz']/Bunits
+        pok_units = (self.u.energy_density/ac.k_B).cgs.value
+        dset['pressure'] = slc['pok']/pok_units
+
+        dset['ekin']=0.5*dset['density']*(dset['velocity1']**2+dset['velocity2']**2+dset['velocity3']**2)
+        dset['eth']=1.5*dset['pressure']
+        dset['emag']=0.5*(dset['magnetic_field1']**2+
+                          dset['magnetic_field2']**2+
+                          dset['magnetic_field3']**2)
+        dset['cs']=np.sqrt(dset['pressure']/dset['density'])
+
+        zsign=(np.abs(dset.z)/dset.z).fillna(1)
+        dset['vout']=dset['velocity3']*zsign
+        dset['Bout']=dset['magnetic_field3']*zsign
+        dset['massflux']=dset['density']*dset['vout']
+        dset['momflux_mag']=dset['emag'] - dset['magnetic_field3']**2
+        dset['momflux_kin']=dset['density']*dset['vout']**2
+        dset['momflux_th']=dset['pressure']
+        dset['momflux']=dset['momflux_kin']+dset['momflux_th']+dset['momflux_mag']
+
+        dset['energyflux_kin_z']=0.5*dset['density']*dset['vout']**3
+        dset['energyflux_kin']=dset['vout']*dset['ekin']
+        dset['energyflux_th']=dset['vout']*2.5*dset['pressure']
+        dset['energyflux']=dset['energyflux_kin']+dset['energyflux_th']
+        dset['poyntingflux'] =2.0*dset['vout']*dset['emag']
+        dset['poyntingflux']-=dset['Bout']*(dset['velocity1']*dset['magnetic_field1']+
+                                            dset['velocity2']*dset['magnetic_field2']+
+                                            dset['velocity3']*dset['magnetic_field3'])
+        if 'specific_scalar0' in dset:
+            dset['Z']=dset['specific_scalar0']
+            #dset['yZ']=dset['specific_scalar0']/ZISM
+            dset['metalflux']=dset['specific_scalar0']*dset['density']*dset['vout']
+
+        if 'sfr' in slc.attrs:
+            dset.attrs['sfr'] = slc.attrs['sfr']
+
+        return dset
+
     @staticmethod
-    def plt_slice(ax, slc, axis='z', field='density', cmap=None, norm=None):
+    def plt_slice(ax, slc, axis='z', field='density', cmap=None, norm=None, jshift=0):
         try:
             if cmap is None:
                 cmap = cmap_def[field]
@@ -141,13 +216,17 @@ class SliceProj:
             elif norm is 'linear':
                 norm = mpl.colors.Normalize()
 
-            ax.imshow(slc[axis][field], cmap=cmap,
+            data = slc[axis][field]
+            if (jshift !=0) and (axis=='z'):
+                import scipy.ndimage as sciim
+                data=sciim.interpolation.shift(data,(-jshift,0), mode='wrap')
+            ax.imshow(data, cmap=cmap,
                       extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
         except KeyError:
             pass
 
     @staticmethod
-    def plt_proj(ax, prj, axis='z', field='Sigma_gas',
+    def plt_proj(ax, prj, axis='z', field='Sigma_gas', jshift=0,
                  cmap=None, norm=None, vmin=None, vmax=None):
         try:
             vminmax = dict(Sigma_gas=(1e-2,1e2))
@@ -167,7 +246,11 @@ class SliceProj:
             elif norm is 'linear':
                 norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
 
-            ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
+            data = prj[axis][field]
+            if (jshift !=0) and (axis=='z'):
+                import scipy.ndimage as sciim
+                data=sciim.interpolation.shift(data,(-jshift,0), mode='wrap')
+            ax.imshow(data, cmap=cmap, extent=prj['extent'][axis],
                       norm=norm, origin='lower', interpolation='none')
         except KeyError:
             pass
@@ -178,7 +261,8 @@ class SliceProj:
                      #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
                      #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
-                     suptitle=None, savdir_pkl=None, savdir=None, force_override=False, savefig=True):
+                     suptitle=None, savdir_pkl=None, savdir=None, force_override=False,
+                     savefig=True):
         """Plot 12-panel projection, slice plots in the z and y directions
 
         Parameters
@@ -235,9 +319,31 @@ class SliceProj:
         sp = self.load_starpar_vtk(num)
 
         extent = dat['prj']['extent']['z']
+
+        # spiral arm model -- rolling y position
+        if (self.test_spiralarm()):
+            Om = self.par['problem']['Omega']
+            pattern = self.par['problem']['pattern']
+            vy0 = self.par['problem']['R0']*(1-pattern)*Om
+            Ly = ds.domain['Lx'][1]
+            dy = ds.domain['dx'][1]
+            ymin = ds.domain['le'][1]
+            yshift=np.mod(vy0*ds.domain['time'],Ly)
+            jshift=yshift/dy
+            ynew = sp['x2'].copy()
+            ynew -= ymin + yshift
+            negy = ynew.loc[ynew<0].copy()
+            ynew.loc[ynew<0] = negy + Ly
+            sp['x2'] = ynew + ymin
+            self.logger.info('[plt_snapshot] y-position will be rolled ' + \
+                              'with vy0={0} and yshift={1}'.format(vy0,yshift))
+        else:
+            jshift = 0
+
         for i, (ax, f) in enumerate(zip(g1, fields_xy)):
             ax.set_aspect(ds.domain['Lx'][1]/ds.domain['Lx'][0])
-            self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
+            self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f],
+                    jshift=jshift)
 
             if i == 0:
                 scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
@@ -246,7 +352,7 @@ class SliceProj:
             ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
             ax.text(0.5, 0.92, label[f], **texteffect(fontsize='x-large'),
                     ha='center', transform=ax.transAxes)
-            if i == 2:
+            if i == (nxy//2-1):
                 ax.set(xlabel='x [pc]', ylabel='y [pc]')
             else:
                 ax.axes.get_xaxis().set_visible(False)

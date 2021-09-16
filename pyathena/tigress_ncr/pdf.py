@@ -39,17 +39,20 @@ class PDF:
                    bin_fields=None, bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
         bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
-        if self.par['configure']['radps'] == 'ON':
-            bin_fields_def+= [['T','Lambda_cool'], ['nH', 'xH2'],
-                              ['T', 'xHII'], ['T', 'xHI']]
-            if (self.par['cooling']['iCR_attenuation']):
-                bin_fields_def+=[['nH','xi_CR']]
-            if (self.par['cooling']['iPEheating'] == 1):
-                bin_fields_def+= [['nH','chi_FUV']]
-            if (self.par['radps']['iPhotDiss'] == 1):
-                bin_fields_def+= [['nH','chi_H2']]
-            if (self.par['radps']['iPhotIon'] == 1):
-                bin_fields_def+= [['nH','Erad_LyC']]
+        try:
+            if self.par['configure']['radps'] == 'ON':
+                bin_fields_def+= [['T','Lambda_cool'], ['nH', 'xH2'],
+                                  ['T', 'xHII'], ['T', 'xHI']]
+                if (self.par['cooling']['iCR_attenuation']):
+                    bin_fields_def+=[['nH','xi_CR']]
+                if (self.par['cooling']['iPEheating'] == 1):
+                    bin_fields_def+= [['nH','chi_FUV']]
+                if (self.par['radps']['iPhotDiss'] == 1):
+                    bin_fields_def+= [['nH','chi_H2']]
+                if (self.par['radps']['iPhotIon'] == 1):
+                    bin_fields_def+= [['nH','Erad_LyC']]
+        except KeyError:
+            pass
 
         if bin_fields is None:
             bin_fields = bin_fields_def
@@ -86,17 +89,20 @@ class PDF:
         ydat = dd['T']
         xbins = self.bins['nH']
         ybins = self.bins['T']
-        weights = dd['xH2']*dd['nH']
-        Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
-        res[k]['MH2'] = Hw
-        weights = dd['xHI']*dd['nH']
+        if 'xH2' in dd:
+            weights = dd['xH2']*dd['nH']
+            Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
+            res[k]['MH2'] = Hw
+        if 'xHI' in dd:
+            weights = dd['xHI']*dd['nH']
+        else:
+            weights = dd['nH']
         Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
         res[k]['MHI'] = Hw
-        weights = dd['xHII']*dd['nH']
-        Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
-        res[k]['MHII'] = Hw
-
-
+        if 'xHII' in dd:
+            weights = dd['xHII']*dd['nH']
+            Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
+            res[k]['MHII'] = Hw
 
         return res
 
