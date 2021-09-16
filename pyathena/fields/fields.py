@@ -12,6 +12,7 @@ from ..plt_tools.cmap_shift import cmap_shift
 from ..plt_tools.cmap_custom import get_my_cmap
 from ..microphysics.cool import get_xe_mol
 from .xray_emissivity import get_xray_emissivity
+from ..classic.cooling import coolftn
 
 def static_vars(**kwargs):
     def decorate(func):
@@ -236,9 +237,16 @@ def set_derived_fields_def(par, x0, newcool):
                 return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
                     (ac.k_B/u.energy_density).cgs.value
         else:
-            field_dep[f] = set(['temperature'])
+            #try:
+            #field_dep[f] = set(['temperature'])
+            #def _T(d, u):
+            #    return d['temperature']
+            field_dep[f] = set(['density','pressure'])
             def _T(d, u):
-                return d['temperature']
+                T1 = d['pressure']/d['density']*(u.velocity**2*ac.m_p/ac.k_B).cgs.value
+                T1data = T1.data
+                T1.data = coolftn().get_temp(T1data)
+                return T1
         func[f] = _T
         label[f] = r'$T\;[{\rm K}]$'
         cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
