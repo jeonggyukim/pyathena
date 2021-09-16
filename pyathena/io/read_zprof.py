@@ -67,7 +67,10 @@ def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
         # Read time
         with open(fname, 'r') as f:
             h = f.readline()
-            time.append(float(h[h.rfind('t=') + 2:]))
+            try:
+                time.append(float(h[h.rfind('t=') + 2:]))
+            except ValueError:
+                raise ValueError(f)
 
         # read pickle if exists
         df = read_zprof(fname, force_override=False)
