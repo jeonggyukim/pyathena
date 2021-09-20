@@ -15,7 +15,7 @@ export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
 
 if [[ $# -eq 2 ]]; then
   INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$1
-  OUTDIR=/tigress/changgoo/TIGRESS-NCR/$2
+  OUTDIR=/tigress/changgoo/TIGRESS-NCRSP/$2
   cd $HOME/pyathena/scripts
   srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1> join-$SLURM_JOB_ID.out 2> join-$SLURM_JOB_ID.err
 
@@ -25,7 +25,7 @@ if [[ $# -eq 2 ]]; then
 
 elif [[ $# -eq 1 ]]; then
   INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$1
-  OUTDIR=/tigress/changgoo/TIGRESS-NCR/$1
+  OUTDIR=/tigress/changgoo/TIGRESS-NCRSP/$1
   cd $HOME/pyathena/scripts
   srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1> join-$SLURM_JOB_ID.out 2> join-$SLURM_JOB_ID.err
 
@@ -42,7 +42,7 @@ else
     echo $dir
     echo "join started"
     INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$dir
-    OUTDIR=/tigress/changgoo/TIGRESS-NCR/$dir
+    OUTDIR=/tigress/changgoo/TIGRESS-NCRSP/$dir
     srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1>> join-$SLURM_JOB_ID.out 2>> join-$SLURM_JOB_ID.err
   done
 
