@@ -2,9 +2,12 @@
 
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from ..load_sim import LoadSim
 from ..util.mass_to_lum import mass_to_lum
+from .rt_plane_parallel import calc_Jrad_pp
+
 
 class StarPar():
 
@@ -27,7 +30,7 @@ class StarPar():
 
         rr = pd.DataFrame(rr)
         return rr
-    
+
     @LoadSim.Decorators.check_pickle
     def read_starpar(self, num, savdir=None, force_override=False):
 
@@ -36,7 +39,7 @@ class StarPar():
         domain = self.domain
         par = self.par
         LxLy = domain['Lx'][0]*domain['Lx'][1]
-        
+
         try:
             agemax = par['radps']['agemax_rad']
         except KeyError:
@@ -46,7 +49,7 @@ class StarPar():
         sp['age'] *= u.Myr
         sp['mage'] *= u.Myr
         sp['mass'] *= u.Msun
-        
+
         # Select non-runaway starpar particles with mass-weighted age < agemax_rad
         isrc = np.logical_and(sp['mage'] < agemax,
                               sp['mass'] != 0.0)
@@ -62,10 +65,10 @@ class StarPar():
         r['nstars'] = sp.nstars
         r['isrc'] = isrc
         r['nsrc'] = np.sum(isrc)
-        
+
         # Select only sources
         sp = sp[(sp['mage'] < agemax) & (sp['mass'] != 0.0)].copy()
-        
+
         # Calculate luminosity of source particles
         LtoM = mass_to_lum(model='SB99')
         sp['Qi'] = LtoM.calc_Qi_SB99(sp['mass'], sp['mage'])
@@ -75,7 +78,7 @@ class StarPar():
 
         # Save source as separate DataFrame
         r['sp_src'] = sp
-        
+
         r['z_max'] = np.max(sp['x3'])
         r['z_min'] = np.min(sp['x3'])
         r['z_mean_mass'] = np.average(sp['x3'], weights=sp['mass'])
@@ -92,10 +95,26 @@ class StarPar():
         r['L_LW_tot'] = np.sum(sp['L_LW'])
         r['L_PE_tot'] = np.sum(sp['L_PE'])
         r['L_FUV_tot'] = np.sum(sp['L_FUV'])
-        
+
         # Ionizing photon per unit area
         r['Phi_i'] = r['Qi_tot']/LxLy
         # FUV luminosity per unit area
         r['Sigma_FUV'] = r['L_FUV_tot']/LxLy
-        
+
         return r
+
+    @LoadSim.Decorators.check_pickle
+    def get_Jrad_pp_all(self, savdir=None, force_override=False):
+        zpa = self.read_zprof('whole', savdir=savdir, force_override=False)
+        PE_pp = []
+        LW_pp = []
+        for i in self.nums_starpar:
+            print(i, end=' ')
+
+            Jrad, zpc = calc_Jrad_pp(self, i)
+            PE_pp.append(xr.DataArray(Jrad['PE'],coords=[zpc],dims=['z']).assign_coords(time=self.time))
+            LW_pp.append(xr.DataArray(Jrad['LW'],coords=[zpc],dims=['z']).assign_coords(time=self.time))
+        dset = xr.Dataset()
+        dset['PE'] = xr.concat(PE_pp,dim='time')
+        dset['LW'] = xr.concat(LW_pp,dim='time')
+        return dset

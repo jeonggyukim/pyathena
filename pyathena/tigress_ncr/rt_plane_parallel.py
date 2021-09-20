@@ -4,7 +4,7 @@ import pandas as pd
 import numpy as np
 from scipy.special import expn
 import xarray as xr
-import astropy.units as au    
+import astropy.units as au
 import astropy.constants as ac
 
 def J_over_JUV_inside_slab(tau, tau_SF):
@@ -27,24 +27,24 @@ def J_over_JUV_outside_slab(tau, tau_SF):
     """
     # if not np.all(np.abs(tau) >= 0.5*tau_SF):
     #     raise ValueError("optical depth must be larger than or equal to tau_SF/2")
-    
+
     return 0.5/tau_SF*(expn(2,tau - 0.5*tau_SF) - expn(2,tau + 0.5*tau_SF))
 
 def J_over_JUV_avg_slab(tau_SF):
     """
     Compute the mean intensity averaged over the entrie volume of the slab
     from -Lz/2 < z < Lz/2
-    or 
+    or
     from -tau_SF/2 < tau < tau_SF/2
     """
-    
+
     return 1.0/tau_SF*(1.0 - (0.5 - expn(3,tau_SF))/tau_SF)
 
 
 def read_rad_lost(filename, force_override=False, verbose=False):
     """
     Function to read rad_lost.txt and pickle
-    
+
     Parameters:
        filename : string
            Name of the file to open, including extension
@@ -55,7 +55,7 @@ def read_rad_lost(filename, force_override=False, verbose=False):
        df, da : tuple
           (pandas dataframe, xarray dataarray)
     """
-    
+
     fpkl = filename + '.p'
     if not force_override and os.path.exists(fpkl) and \
        os.path.getmtime(fpkl) > os.path.getmtime(filename):
@@ -84,13 +84,20 @@ def read_rad_lost(filename, force_override=False, verbose=False):
 def calc_Jrad_pp(s, num):
     """
     Function to calculate z-profile of mean intensity Jrad in the plane-parallel approximation
+    Call read_zprof only once.
     """
-    
+
     from scipy import interpolate
-    
+
     rsp = s.read_starpar(num, force_override=False)
-    zpa = s.read_zprof('whole')
-    
+    if hasattr(s,'zp'):
+        if 'whole' in s.zp:
+            zpa = s.zp['whole']
+        else:
+            zpa = s.zp
+    else:
+        zpa = s.read_zprof('whole')
+
     domain = s.domain
     u = s.u
     par = s.par
@@ -110,7 +117,8 @@ def calc_Jrad_pp(s, num):
     zme = zmc + 0.5*domain['dx'][2]
 
     # zprofile
-    zp = zpa.sel(time=rsp['time'], method='nearest')
+    zp = zpa.sel(time=rsp['time']*u.Myr, method='nearest')
+    s.time = rsp['time']*u.Myr
 
     zstar = rsp['sp_src']['x3']
     S4pi = dict()
@@ -132,7 +140,7 @@ def calc_Jrad_pp(s, num):
             Jrad[f].append(calc_Jrad(z_, S4pi[f], zstar, fp, fm, dz))
 
         Jrad[f] = np.array(Jrad[f])
-        
+
     return Jrad, zpc
 
 def calc_Jrad(z, S4pi, zstar, fp, fm, dz_pc):
@@ -153,5 +161,5 @@ def calc_Jrad(z, S4pi, zstar, fp, fm, dz_pc):
             J += S4pi_*J_over_JUV_avg_slab(tau_SF)
             #J += SFUV4pi_*J_over_JUV_inside_slab(0.0, tau_SF)
             pass
-        
+
     return J
