@@ -9,8 +9,6 @@ from yt.config import ytcfg
 from yt.fields.derived_field import DerivedField
 from yt.funcs import \
     mylog, \
-    only_on_root, \
-    issue_deprecation_warning, \
     parse_h5_attr
 from yt.utilities.exceptions import YTFieldNotFound
 from yt.utilities.exceptions import YTException
