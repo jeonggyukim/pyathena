@@ -18,6 +18,7 @@ class Hst:
     def read_hst(self, savdir=None, force_override=False):
         """Function to read hst and convert quantities to convenient units
         """
+        if hasattr(self,'hst') and (not force_override): return self.hst
 
         par = self.par
         u = self.u

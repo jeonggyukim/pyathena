@@ -71,6 +71,31 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
             arm = False
         return arm
 
+    def show_timeit(self):
+        import matplotlib.pyplot as plt
+        try:
+            time = pd.read_csv(self.files['timeit'],delim_whitespace=True)
+
+            tfields = [k.split('_')[0] for k in time.keys() if k.endswith('tot')]
+
+            for tf in tfields:
+                if tf == 'rayt': continue
+                plt.plot(time['time'],time[tf].cumsum()/time['all'].cumsum(),label=tf)
+            plt.legend()
+        except KeyError:
+            print("No timeit plot is available")
+
+    def get_timeit_mean(self):
+        try:
+            time = pd.read_csv(self.files['timeit'],delim_whitespace=True)
+
+            tfields = [k.split('_')[0] for k in time.keys() if k.endswith('tot')]
+
+            return time[tfields].mean()
+        except:
+            print("No timeit file is available")
+
+
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None, muH=None):
