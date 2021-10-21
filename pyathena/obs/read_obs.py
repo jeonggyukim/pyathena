@@ -11,7 +11,7 @@ to_Avir = (1.0*au.pc*(au.km/au.s)**2/(ac.G*au.M_sun)).to('')
 
 class ReadObs():
 
-    def __init__(self):
+    def __init__(self,readall=False):
 
         local = pathlib.Path(__file__).parent.absolute()
 
@@ -20,6 +20,10 @@ class ReadObs():
         self.files['Sun18'] = os.path.join(local,'../../data/Sun18-Table3.txt')
         self.files['Sun20'] = os.path.join(local,'../../data/Sun20-Table3.txt')
         self.files['Sun20b'] = os.path.join(local,'../../data/Sun20b-TableB1.txt')
+        self.files['Reyes20'] = os.path.join(local,'../../data/delosReyes20.txt')
+        self.files['K21a'] = os.path.join(local,'../../data/Kennicutt21-Table1.txt')
+        self.files['K21b'] = os.path.join(local,'../../data/Kennicutt21-Table2.txt')
+        self.files['K21c'] = os.path.join(local,'../../data/Kennicutt21-Table3.txt')
         self.files['Lee16'] = os.path.join(local,'../../data/Lee16-Table3.txt')
         self.files['Ochsendorf17T4'] = os.path.join(local,'../../data/Ochsendorf17-Table4.txt')
         self.files['Ochsendorf17T5'] = os.path.join(local,'../../data/Ochsendorf17-Table5.txt')
@@ -30,18 +34,22 @@ class ReadObs():
         self.files['Bigiel102'] = os.path.join(local,'../../data/Bigiel10-Table2.txt')
         self.files['Bigiel103'] = os.path.join(local,'../../data/Bigiel10-Table3.txt')
         self.files['Leroy08'] = os.path.join(local,'../../data/Leroy08-Table7.txt')
-        self.df['Sun18'] = self._read_Sun18()
-        self.df['Sun20'] = self._read_Sun20()
-        self.df['Sun20b'] = self._read_Sun20b()
-        self.df['Lee16'] = self._read_Lee16()
-        self.df['Ochsendorf17T4'] = self._read_Ochsendorf17T4()
-        self.df['Ochsendorf17T5'] = self._read_Ochsendorf17T5()
-        self.df['VE16T2'] = self._read_VE16T2()
-        self.df['VE16T3'] = self._read_VE16T3()
-        self.df['Evans14'] = self._read_Evans14()
-        self.df['Bigiel10_inner'] = self._read_Bigiel10_inner()
-        self.df['Bigiel10_outer'] = self._read_Bigiel10_outer()
-        self.df['Leroy08'] = self._read_Leroy08()
+
+        if readall:
+            self.df['Sun18'] = self._read_Sun18()
+            self.df['Sun20'] = self._read_Sun20()
+            self.df['Sun20b'] = self._read_Sun20b()
+            self.df['Reyes20'] = self._read_Reyes20()
+            self.df['K21'] = self._read_Kennicutt21()
+            self.df['Lee16'] = self._read_Lee16()
+            self.df['Ochsendorf17T4'] = self._read_Ochsendorf17T4()
+            self.df['Ochsendorf17T5'] = self._read_Ochsendorf17T5()
+            self.df['VE16T2'] = self._read_VE16T2()
+            self.df['VE16T3'] = self._read_VE16T3()
+            self.df['Evans14'] = self._read_Evans14()
+            self.df['Bigiel10_inner'] = self._read_Bigiel10_inner()
+            self.df['Bigiel10_outer'] = self._read_Bigiel10_outer()
+            self.df['Leroy08'] = self._read_Leroy08()
 
     def _read_Evans14(self):
         df = pd.read_csv(self.files['Evans14'], sep='\s+', skiprows=2,
@@ -94,6 +102,29 @@ class ReadObs():
 
     def get_Sun20b(self):
         return self.df['Sun20b']
+
+    def _read_Reyes20(self):
+        df = pd.read_fwf(self.files['Reyes20'],skiprows=151,
+                     names=['Seq','Name','n_logSFRuncorr','logSFRuncorr','e_logSFRuncorr',
+                            'n_logSFR','logSFR','e_logSFR','logSigSFR',
+                            'logSigHI','r_logSigHI','n_logSigH2','logSigH2','r_logSigH2'])
+        df2 = pd.read_fwf(self.files['K21c'],skiprows=17,names=['Seq','Name','logSigDust'])
+        df.index = df.Name
+        df2.index =df2.Name
+        df = df.assign(logSigDust=df2.logSigDust)
+        df = df.assign(logSig=np.log10(10**df.logSigHI+(10**df.logSigH2).fillna(0)))
+        return df
+
+    def _read_Kennicutt21(self,tnum=2):
+        if tnum == 1:
+            df = pd.read_fwf(self.files['K21a'],skiprows=73,
+                         names=['Seq','Name','RAh','RAm','RAs','DE-','DEd','DEm','DEs',
+                                'Distance','Diam','DiamRadio','logIRlum','logSFR','fExt',
+                                'logMassH2','r_logMassH2','logMassDust','MapFlag'])
+        elif tnum == 2:
+            df = pd.read_fwf(self.files['K21b'],skiprows=20,
+                         names=['Seq','Name','logSigH2','logSigSFR','logSigDust','vRot','tDyn'])
+        return df
 
     def _read_Lee16(self):
         df = pd.read_fwf(self.files['Lee16'], skiprows=30,
