@@ -34,9 +34,10 @@ from .outflow import Outflow
 from .sfr import get_SFR_mean
 from .starpar import StarPar
 from .xray import Xray
+from .fits import Fits
 
 class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
-                     DustPol, Virial, Virial2, Outflow, Fields, Xray,
+                     DustPol, Virial, Virial2, Outflow, Fields, Xray, Fits,
                      PltSnapshot2Panel,PltSnapshotVTK2D,PltSnapshotCombined):
     """LoadSim class for analyzing sf_cloud simulations.
     """
