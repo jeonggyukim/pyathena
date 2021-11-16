@@ -38,6 +38,8 @@ class Hst:
         dvol = domain['dx'].prod()
         # total volume of domain (code unit)
         vol = domain['Lx'].prod()
+        vol_cgs = vol*u.cm**3
+        Myr_cgs = u.time
         nscalars = par['configure']['nscalars']
         
         if par['configure']['new_cooling'] == 'ON':
@@ -45,10 +47,13 @@ class Hst:
         else:
             newcool =False
 
-        if par['radps']['irayt'] == 1:
+        try:
+            if par['radps']['irayt'] == 1:
+                rayt = True
+            else:
+                rayt = False
+        except KeyError:
             rayt = True
-        else:
-            rayt = False
             
         if par['configure']['sixray'] == 'ON':
             sixray = True
@@ -65,10 +70,14 @@ class Hst:
                    alpha_vir=par['problem']['alpha_vir'])
             
         iWind = par['feedback']['iWind']
+
         try:
             iPhot = par['radps']['iPhot']
-        except:
-            iPhot = par['radps']['iPhotIon']
+        except KeyError:
+            try:
+                iPhot = par['radps']['iPhotIon']
+            except KeyError:
+                iPhot = True
             
         iRadp = par['radps']['apply_force']
         
@@ -190,6 +199,34 @@ class Hst:
                                     format(c.format(k)))
                 continue
 
+
+        ###########################
+        # Outflow energy #
+        ###########################
+        cols = ['Ekin', 'Ethm']
+        if iWind:
+            cols += ['Ekin_s1', 'Ethm_s1']
+        for c in cols:
+            try:
+                hst['d'+c] *= vol*u.Msun*(u.kms)**2/u.Myr
+                hst[c+'_of'] = integrate.cumtrapz(hst['d'+c], hst['time'], initial=0.0)
+            except KeyError:
+                self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
+                continue
+            
+        #################################################
+        # Energy cooled away in wind polluted gas [erg] #
+        #################################################
+        if iWind:
+            Myr_cgs = (1.0*au.Myr).to('s').value
+            c = 'net_cool_s1'
+            hst[c] *= vol_cgs
+            hst[c+'_cumul'] = integrate.cumtrapz(hst[c], hst['time'], initial=0.0)*Myr_cgs
+            
+            # Conversion factor for energy rate
+            # conv_Edot = (1.0*au.M_sun*(au.km/au.s)**2/au.Myr).cgs.value
+            # hst['']conv_Edot*(h['dEthm_s1']+h['dEkin_s1'])
+            
         ###########################
         # Outflow radial momentum #
         ###########################
@@ -198,7 +235,7 @@ class Hst:
             cols += ['pr_cl_neu', 'pr_H2', 'pr_HI', 'pr_H2_cl', 'pr_HI_cl',
                      'pr_xcm_cl_neu', 'pr_xcm_H2', 'pr_xcm_HI',
                      'pr_xcm_H2_cl', 'pr_xcm_HI_cl']
-
+            
         for c in cols:
             try:
                 hst['d'+c] *= vol*u.Msun*u.kms/u.Myr
@@ -494,10 +531,7 @@ class PlotHst(object):
                 method(self.axes[i])
 
         if savfig:
-            if len(self.models) == 1:
-                savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst')
-            else:
-                savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst_compare')
+            savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
@@ -730,6 +764,8 @@ class PlotHst(object):
 
             plt.plot(x, Ftot_int, ls=ls, c='grey', lw=3, alpha=0.7)
             plt.plot(x, h['pr'] + h['pr_of'] - h['pr'].iloc[0], ls=ls, c='k', label='tot')
+            # plt.plot(x, h['pr_xcm'] + h['pr_xcm_of'] - h['pr_xcm'].iloc[0], lw=4,
+            #          ls=ls, c='k', label='tot')
 
         plt.setp(ax, **setp_kwargs)
         labels = [r'$\int F_{\rm thm}dt$',

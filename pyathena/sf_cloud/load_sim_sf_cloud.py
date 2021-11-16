@@ -585,6 +585,8 @@ def load_all_sf_cloud(models=None,
                       force_override=False):
 
     if models is None:
+
+        # 192 resolution tests
         models = dict(
 
             M1E5R20_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R20-PH-A4-B2-S4-N192',
@@ -608,27 +610,36 @@ def load_all_sf_cloud(models=None,
             M1E6R7p5_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-SN-A4-B2-S4-N192',
             M1E6R7p5_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-PHRP-A4-B2-S4-N192',
 
-            M1E6R15_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PH-A4-B2-S4-N192',
-            M1E6R15_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-RP-A4-B2-S4-N192',
-            M1E6R15_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-SN-A4-B2-S4-N192',
-            M1E6R15_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PHRP-A4-B2-S4-N192',
+            M1E6R60_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PH-A4-B2-S4-N192',
+            M1E6R60_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-RP-A4-B2-S4-N192',
+            M1E6R60_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-SN-A4-B2-S4-N192',
+            M1E6R60_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PHRP-A4-B2-S4-N192',
 
             M1E6R30_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-PH-A4-B2-S4-N192',
             M1E6R30_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-RP-A4-B2-S4-N192',
             M1E6R30_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-SN-A4-B2-S4-N192',
             M1E6R30_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-PHRP-A4-B2-S4-N192',
 
-            M1E6R60_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PH-A4-B2-S4-N192',
-            M1E6R60_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-RP-A4-B2-S4-N192',
-            M1E6R60_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-SN-A4-B2-S4-N192',
-            M1E6R60_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PHRP-A4-B2-S4-N192',
+            M1E6R15_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PH-A4-B2-S4-N192',
+            M1E6R15_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-RP-A4-B2-S4-N192',
+            M1E6R15_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-SN-A4-B2-S4-N192',
+            M1E6R15_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PHRP-A4-B2-S4-N192',
 
+            M5E5R40_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M5E5R40-PHRP-A4-B2-S4-N192',
+            M5E5R20_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M5E5R20-PHRP-A4-B2-S4-N192',
+            M5E5R10_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M5E5R10-PHRP-A4-B2-S4-N192',
+
+            M2E5R30_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R30-PHRP-A4-B2-S4-N192',
+            M2E5R15_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R15-PHRP-A4-B2-S4-N192',
+            M2E5R7p5_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R7.5-PHRP-A4-B2-S4-N192',
+            
         )
 
         
     # models = dict(
 
-    #     ### Tests
+    
+    #     ### Old Tests
         
     #     # 5pc cloud
     #     # No feedback

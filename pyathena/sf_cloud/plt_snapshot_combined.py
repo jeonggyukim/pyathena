@@ -32,15 +32,14 @@ class PltSnapshotCombined:
             copyfile(fout, fout2)
             print('Copied movie file to {0:s}'.format(fout2))
     
-    def plt_snapshot_combined(self, num, dim='z', zoom=1.0,
-                              slice_domain_center=True, savfig=True):
+    def plt_snapshot_combined(self, num, dim='z', pos=0.0, zoom=1.0, savfig=True):
         """Plot slices, projections, pdf, and mass history
         
         Parameters
         ----------
-        slice_domain_center : bool
-            If True, plot slices through the domain center.
-            If False, plot slices through the most massive starpar.
+        pos : float or str
+            If float, plot slices through the position.
+            If 'star', plot slices through the most massive starpar.
         """
 
         if self.par['radps']['irayt'] == 0:
@@ -62,8 +61,7 @@ class PltSnapshotCombined:
             
         ds = self.load_vtk(num)
         sp = self.load_starpar_vtk(num)
-        if sp.empty or slice_domain_center:
-            pos = 0.0
+        if sp.empty or isinstance(pos, float) or isinstance(pos, int):
             x0,y0 = (0.0,0.0)
         else:
             spmm = sp[sp['mass'] == sp['mass'].max()]
@@ -84,6 +82,7 @@ class PltSnapshotCombined:
         hL = 0.5*self.domain['Lx'][0]/zoom
 
         # SLICES
+        print(dim,fields,pos)
         dd = ds.get_slice(dim, fields, pos)
         if zoom > 1.0:
             if dim == 'z':
