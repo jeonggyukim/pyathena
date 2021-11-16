@@ -106,3 +106,45 @@ class Profile1D:
         res['time'] = ds.domain['time']*self.u.Myr
         
         return res
+    
+    @LoadSim.Decorators.check_pickle
+    def get_Rsh(self, num, prefix='Rsh', savdir=None, force_override=False):
+        r = self.get_profile1d(num, fields_y=['nH'], field_x='r',
+                               bins=200, statistic=['mean','median'],
+                               force_override=False)
+
+        from scipy.interpolate import interp1d
+        
+        x = r['r']['binc']
+        y1 = r['nH']['median']
+        y2 = r['nH']['mean']
+        f1 = interp1d(x, y1, kind='quadratic')#, bounds_error=False, fill_value='extrapolate')
+        f2 = interp1d(x, y2, kind='quadratic')
+        x = np.linspace(x.min(), x.max(), 1000)
+        idx1 = np.where(f1(x) == f1(x).max())[0][0]
+        idx2 = np.where(f2(x) == f2(x).max())[0][0]
+        Rsh1 = x[idx1]
+        Rsh2 = x[idx2]
+        time = r['time'] # time in Myr
+
+        return Rsh1, Rsh2, time
+    
+    def get_Rsh_all(self, nums=None):
+        if nums is None:
+            nums = self.nums[1::5]
+            
+        res = dict()
+        res['Rsh1'] = []
+        res['Rsh2'] = []
+        res['time'] = []
+        print('nums: ', end=' ')
+        for num in nums:
+            print(num, end=' ')
+            Rsh1, Rsh2, time = self.get_Rsh(num)
+            res['Rsh1'].append(Rsh1)
+            res['Rsh2'].append(Rsh2)
+            res['time'].append(time)
+
+        return res
+
+    
