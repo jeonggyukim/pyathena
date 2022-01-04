@@ -12,19 +12,19 @@ def get_SFR_mean(h, t0_SF=0.0, t1_SF=90.0):
     def func(x, a):
         return a*x
 
-    Mstar_final = max(h['Mstar'].values)
+    Mstar_final = max(h['M_sp'].values)
 
     if t0_SF == 0.0:
-        idx_SF0, = h['Mstar'].to_numpy().nonzero()
+        idx_SF0, = h['M_sp'].to_numpy().nonzero()
         t0 = h['time'][idx_SF0[0]-1]
     else:
-        t0 = h['time'][h.Mstar > 1e-2*t0_SF*Mstar_final].values[0]
+        t0 = h['time'][h['M_sp'] > 1e-2*t0_SF*Mstar_final].values[0]
         
-    t1 = h['time'][h.Mstar > 1e-2*t1_SF*Mstar_final].values[0]
+    t1 = h['time'][h['M_sp'] > 1e-2*t1_SF*Mstar_final].values[0]
     
     h_ = h[(h['time'] >= t0) & (h['time'] <= t1)]
     xdata = h_['time'].values - t0
-    ydata = h_['Mstar'].values
+    ydata = h_['M_sp'].values
     SFR_mean, pcov = curve_fit(func, xdata, ydata)
 
     #plt.plot(h['time'],h['Mstar'])

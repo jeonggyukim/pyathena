@@ -15,7 +15,7 @@ import astropy.units as au
 from ..util.units import Units
 
 def read_vtk(filename, id0_only=False):
-    """Convenience wrapper function to read Athena vtk output file 
+    """Convenience wrapper function to read Athena vtk output file
     using AthenaDataSet class.
 
     Parameters
@@ -30,14 +30,14 @@ def read_vtk(filename, id0_only=False):
     -------
     ds : AthenaDataSet
     """
-    
+
     return AthenaDataSet(filename, id0_only=id0_only)
 
 class AthenaDataSet(object):
-    
+
     def __init__(self, filename, id0_only=False, units=Units(), dfi=None):
         """Class to read athena vtk file.
-        
+
         Parameters
         ----------
         filename : string
@@ -50,7 +50,7 @@ class AthenaDataSet(object):
         dfi : dict
             Dictionary containing derived fields info
         """
-        
+
         if not osp.exists(filename):
             raise IOError(('File does not exist: {0:s}'.format(filename)))
 
@@ -84,7 +84,7 @@ class AthenaDataSet(object):
                                          format(problem_id, num, suffix, ext))
             fnames = glob.glob(fname_pattern)
             self.fnames += fnames
-            
+
         if nonzero_id:
             from collections import OrderedDict
             self.fnames = list(OrderedDict.fromkeys(self.fnames))
@@ -92,7 +92,7 @@ class AthenaDataSet(object):
         self.grid = self._set_grid()
         self.domain = self._set_domain()
         self.set_region()
-        
+
         # Need separte field_map for different grids
         if self.domain['all_grid_equal']:
             self._field_map = _set_field_map(self.grid[0])
@@ -114,18 +114,18 @@ class AthenaDataSet(object):
         xc : numpy array
             Unique cell-centered cooridnates
         """
-        
+
         xc = dict()
         for axis, le, re, dx in zip(('x', 'y', 'z'), \
             self.region['gle'], self.region['gre'], self.domain['dx']):
                 xc[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
-        
+
         return xc
-        
+
     def set_region(self, le=None, re=None):
         """Set region and find overlapping grids.
         """
-        
+
         if le is None:
             le = self.domain['le']
         if re is None:
@@ -147,7 +147,7 @@ class AthenaDataSet(object):
                 gidx.append(i)
                 gle_all.append(g['le'])
                 gre_all.append(g['re'])
-                
+
         gidx = np.array(gidx)
         if len(gidx) == 0:
             raise ValueError('Check left/right edges:', le, re, \
@@ -193,7 +193,7 @@ class AthenaDataSet(object):
                            gleu=gleu, greu=greu,\
                            gle=gle, gre=gre,
                            NGrid=NGrid, Nxg=Nxg, Nxr=Nxr)
-        
+
     def get_slice(self, axis, field='density', pos='c', method='nearest'):
         """Read slice of fields.
 
@@ -207,7 +207,7 @@ class AthenaDataSet(object):
             Slice through If 'c' or 'center', get a slice through the domain
             center. Default value is 'c'.
         method : str
-            
+
 
         Returns
         -------
@@ -238,7 +238,7 @@ class AthenaDataSet(object):
             slc = dat.sel(method='nearest', **{ax:pos})
 
         return slc
-    
+
     def get_field(self, field='density', le=None, re=None, as_xarray=True):
         """Read 3d fields data.
 
@@ -264,12 +264,12 @@ class AthenaDataSet(object):
 
         # Derived field list
         dflist = set(field) - set(self.field_list)
-        
+
         if not bool(dflist):
             # dflist is an empty set, we can read all fields directly from vtk
             # file
             return self._get_field(field, le, re, as_xarray)
-        
+
         # If we are here, need to read all union of all input fields and those
         # required to calculate derived fields
 
@@ -281,7 +281,7 @@ class AthenaDataSet(object):
                     tmp.append(f)
 
             raise KeyError("Unrecognized field name(s):", tmp)
-        
+
         # Field names that are in the vtk file
         flist = set(field) - dflist
 
@@ -302,7 +302,7 @@ class AthenaDataSet(object):
 
         field = list(flist_dep | flist)
         dat = self._get_field(field, le, re, as_xarray)
-        
+
         # Calculate derived fields
         for f in dflist:
             dat[f] = self.dfi[f]['func'](dat, self.u)
@@ -314,17 +314,17 @@ class AthenaDataSet(object):
         else:
             for f in fdrop_list:
                 del dat[f]
-        
+
         return dat.squeeze()
-    
+
     def _get_field(self, field='density', le=None, re=None, as_xarray=True):
 
         field = np.atleast_1d(field)
-        
+
         # Create region
         self.set_region(le=le, re=re)
         arr = self._get_array(field)
-    
+
         # Works only for 3d data
         if as_xarray:
             # Cell center positions
@@ -342,21 +342,24 @@ class AthenaDataSet(object):
                         dat[k + str(i+1)] = (('z','y','x'), v[..., i])
                 else:
                     dat[k] = (('z','y','x'), v)
-                
-            return xr.Dataset(dat, coords=x, attrs={'domain':self.domain})
+
+            attrs = dict()
+            for k, v in self.domain.items():
+                attrs[k] = v
+            return xr.Dataset(dat, coords=x, attrs=attrs)
         else:
             if len(field) == 1:
                 return arr[field[0]]
             else:
                 # Return a dictionary of numpy arrays
                 return arr
-    
+
     def _get_array(self, field):
 
         arr = dict()
         for f in field:
             arr[f] = self._set_array(f)
-            
+
         # Read from individual grids and copy to data
         le = self.region['gle']
         dx = self.domain['dx']
@@ -370,7 +373,7 @@ class AthenaDataSet(object):
                 arr[f][slc] = self._read_array(g, f)
 
         return arr
-    
+
     def _read_array(self, grid, field):
 
         if field in grid['data']:
@@ -386,19 +389,19 @@ class AthenaDataSet(object):
                 struct.unpack('>' + fm['ndata']*fm['dtype'],
                               fp.read(fm['dsize'])))
             fp.close()
-            
+
             if fm['nvar'] == 1:
                 shape = np.flipud(grid['Nx'])
             else:
                 shape = (*np.flipud(grid['Nx']), fm['nvar'])
-            
+
             grid['data'][field].shape = shape
-            
+
             return grid['data'][field]
 
-        
+
     def _set_array(self, field):
-        
+
         dtype = self._field_map[field]['dtype']
         nvar = self._field_map[field]['nvar']
         Nxr = self.region['Nxr']
@@ -411,19 +414,19 @@ class AthenaDataSet(object):
 
         return np.empty(shape, dtype=dtype)
 
-    
+
     def _set_domain(self):
-        
+
         domain = dict()
         grid = self.grid
         ngrid = len(grid)
-        
+
         # Grid left/right edges
         gle = np.empty((ngrid, 3), dtype='float32')
         gre = np.empty((ngrid, 3), dtype='float32')
         dx = np.empty((ngrid, 3), dtype='float32')
         Nx = np.ones_like(dx, dtype='int')
-        
+
         for i, g in enumerate(grid):
             gle[i, :] = g['le']
             gre[i, :] = g['re']
@@ -456,9 +459,9 @@ class AthenaDataSet(object):
             _vtk_parse_line(line, tmpgrid)
         file.close()
         domain['time'] = tmpgrid['time']
-        
+
         return domain
-    
+
     def _set_grid(self):
         grid = []
         # Record filename and data_offset
@@ -469,7 +472,7 @@ class AthenaDataSet(object):
             g['filename'] = fname
             g['read_field'] = None
             g['read_type'] = None
-            
+
             while g['read_field'] is None:
                 g['data_offset'] = file.tell()
                 line = file.readline()
@@ -479,17 +482,17 @@ class AthenaDataSet(object):
             g['Nx'] -= 1
             g['Nx'][g['Nx'] == 0] = 1
             g['dx'][g['Nx'] == 1] = 1.0
-            
+
             # Right edge
             g['re'] = g['le'] + g['Nx']*g['dx']
             grid.append(g)
 
         return grid
-       
+
 
 
 def _parse_filename(filename):
-    """Break up a filename into its component 
+    """Break up a filename into its component
     to check the extension and extract the output number.
 
     Parameters
@@ -500,12 +503,12 @@ def _parse_filename(filename):
     Returns
     -------
     tuple containing dirname, problem_id, output number, extension, mpi flag, nonzero_id flag
-    
+
     Examples
     --------
     >>> _parse_filename('/basedir/id0/problem_id.0000.vtk')
     ('/basedir', 'problem_id', '0000', 'vtk', True, False)
-    
+
     >>> _parse_filename('/basedir/id10/problem_id-id10.0000.d1.vtk')
     ('/basedir', 'problem_id', '0000', 'vtk', True, True)
 
@@ -524,7 +527,7 @@ def _parse_filename(filename):
         mpi_mode = True
     else:
         mpi_mode = False
-        
+
     base = os.path.basename(filename)
     base_split = base.split('.')
     if len(base_split) == 3:
@@ -533,22 +536,30 @@ def _parse_filename(filename):
         suffix = None
         ext = base_split[-1]
     else:
-        # If dirname is idXX where XX>0, (2d vtk slices)
-        # need to remove idXX string from the problem_id
+        try:
+            inum = -3
+            test = int(base_split[inum])
+            # If dirname is idXX where XX>0, (2d vtk slices)
+            # need to remove idXX string from the problem_id
+            suffix = base_split[-2]
+        except ValueError:
+            inum = -2
+            suffix = None
+
         if mpi_mode and int(dirname_last[2:]) != 0:
-            problem_id = '.'.join(base_split[:-3])
+            problem_id = '.'.join(base_split[:inum])
             problem_id = problem_id.replace('-' + dirname_last,'')
             nonzero_id = True
         else:
-            problem_id = '.'.join(base_split[:-3])
-        num = base_split[-3]
-        suffix = base_split[-2]
+            problem_id = '.'.join(base_split[:inum])
+
+        num = base_split[inum]
         ext = base_split[-1]
 
     return dirname, problem_id, num, suffix, ext, mpi_mode, nonzero_id
-        
 
-    
+
+
 def _set_field_map(grid):
 
     fp = open(grid['filename'], 'rb')
@@ -584,14 +595,14 @@ def _set_field_map(grid):
             field_map[field]['ndata'] = Nx[0]*(Nx[1]+1)*Nx[2]
         elif field == 'face_centered_B3':
             field_map[field]['ndata'] = Nx[0]*Nx[1]*(Nx[2]+1)
-        
+
         if sp[2] == b'int':
             dtype = 'i'
         elif sp[2] == b'float':
             dtype = 'f'
         elif sp[2] == b'double':
             dtype = 'd'
-            
+
         field_map[field]['dtype'] = dtype
         field_map[field]['dsize'] = field_map[field]['ndata']*struct.calcsize(dtype)
         fp.seek(field_map[field]['dsize'], 1)
@@ -617,7 +628,7 @@ def _vtk_parse_line(line, grid):
             grid['level'] = int(sp[time_index + 3].rstrip(b','))
         if b'domain' in sp:
             grid['domain'] = int(sp[time_index + 5].rstrip(b','))
-        if sp[0] == b"PRIMITIVE": 
+        if sp[0] == b"PRIMITIVE":
             grid['prim_var_type'] = True
     elif b"DIMENSIONS" in sp:
         grid['Nx'] = np.array(sp[-3:]).astype('int')

@@ -78,7 +78,7 @@ class SliceProj:
             res[ax] = dict()
             res[ax]['Sigma'] = (np.sum(dat['density'], axis=2-i)*conv_Sigma).data
             if 'xH2' in fields:
-                res[ax]['Sigma_H2'] = (np.sum(dat['density']*dat['xH2'],
+                res[ax]['Sigma_H2'] = (np.sum(2.0*dat['density']*dat['xH2'],
                                               axis=2-i)*conv_Sigma).data
             if 'xHI' in fields:
                 res[ax]['Sigma_HI'] = (np.sum(dat['density']*dat['xHI'],

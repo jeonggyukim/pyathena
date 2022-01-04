@@ -1,0 +1,38 @@
+#!/bin/bash
+#SBATCH --job-name=join_vtk
+#SBATCH -N 1
+#SBATCH -p shared
+#SBATCH -n 14
+#SBATCH -t 00:30:00
+##SBATCH --mail-type=begin
+##SBATCH --mail-type=end
+##SBATCH --mail-user=kimjg@princeton.edu
+#SBATCH --error=join_vtk_%j.err
+#SBATCH --output=join_vtk_%j.out
+#
+
+NPROCS=14
+RANGE="0:100:1"
+BASENAME="gmc"
+
+INDIR="/scratch/gpfs/jk11/GMC/M1E5R20.R.B4.A2.S1.N256"
+OUTDIR="/tigress/${USER}/GMC/M1E5R20.R.B4.A2.S1.N256/vtk"
+
+SCRIPT="/tigress/${USER}/scripts/vtk/join_parallel.py"
+
+module load intel-mpi
+
+# Create run directory
+if [ ! -d $OUTDIR ] ; then
+    mkdir -p $OUTDIR
+else
+    : #rm -rf $OUTDIR/*
+fi
+
+echo "Starting:"
+
+srun -n $NPROCS --mpi=pmi2 python $SCRIPT -b $BASENAME -i $INDIR -o $OUTDIR -r $RANGE
+
+date
+
+echo "join vtk finished"

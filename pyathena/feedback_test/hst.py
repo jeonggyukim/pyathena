@@ -9,6 +9,9 @@ import astropy.units as au
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
 
+from scipy import integrate
+from scipy.integrate import cumtrapz
+
 class Hst:
 
     @LoadSim.Decorators.check_pickle_hst
@@ -25,6 +28,14 @@ class Hst:
         dvol = domain['dx'].prod()
         # total volume of domain (code unit)
         vol = domain['Lx'].prod()        
+        vol_cgs = vol*u.cm**3
+        Myr_cgs = (1.0*au.Myr).to('s').value
+
+        iWind = par['feedback']['iWind']
+        if par['configure']['new_cooling'] == 'ON':
+            newcool = True
+        else:
+            newcool =False
 
         # Time in code unit
         hst['time_code'] = hst['time']
@@ -52,26 +63,125 @@ class Hst:
         hst['Rsh'] = hst['Rsh_den']/hst['Msh']*u.pc
         # shell mass in Msun
         hst['Msh'] *= u.Msun*vol
-        # hot gas mass in Msun
-        hst['Mhot'] *= u.Msun*vol
-        # warm gas mass in Msun
-        hst['Mwarm'] *= u.Msun*vol
-        # intermediate temperature gas in Msun
-        hst['Minter'] *= u.Msun*vol
-        # cold gas mass in Msun
-        hst['Mcold'] *= u.Msun*vol
+        try:
+            # hot gas mass in Msun
+            hst['Mh'] *= u.Msun*vol
+        except KeyError:
+            hst['Mhot'] *= u.Msun*vol
+
+        try:
+            # warm gas mass in Msun
+            hst['Mw'] *= u.Msun*vol
+        except KeyError:
+            hst['Mwarm'] *= u.Msun*vol
+
+        try:
+            # intermediate temperature gas in Msun
+            hst['Mi'] *= u.Msun*vol
+        except KeyError:
+            hst['Minter'] *= u.Msun*vol
+            
+        try:
+            # cold gas mass in Msun
+            hst['Mc'] *= u.Msun*vol
+        except KeyError:
+            hst['Mcold'] *= u.Msun*vol
+
+        try:
+            # Hot and ionized
+            hst['Mhi'] = hst['Mh'] + hst['Mi']
+        except KeyError:
+            hst['Mhi'] = hst['Mhot'] + hst['Minter']
+
+
+        # Mass of molecular, atomic, and ionized gas
+        # H2, HI, HII: sum of passive scalars
+        # mol, ato, ion: density of cells with H2/HI/HII fraction > 50%
+        if newcool:
+            cols = ['M_H2', 'M_HI', 'M_HII', 'M_mol', 'M_ato', 'M_ion']
+            for c in cols:
+                try:
+                    hst[c] *= vol*u.Msun
+                except KeyError:
+                    continue
+
 
         # Total/hot gas/shell momentum in Msun*km/s
-        hst['pr'] *= vol*(u.mass*u.velocity).value
-        hst['pr_hot'] *= vol*(u.mass*u.velocity).value
-        hst['pr_sh'] *= vol*(u.mass*u.velocity).value
+        pr_conv = vol*(u.mass*u.velocity).to('Msun km s-1').value
+        hst['pr'] *= pr_conv
+        try:
+            hst['pr_h'] *= pr_conv
+        except KeyError:
+            hst['pr_hot'] *= pr_conv
+            
+        hst['prsh'] *= pr_conv
 
-        hst['vr_sh'] = hst['pr_sh']/hst['Msh']
+        ########################
+        # Outward radial force #
+        ########################
+        cols = ['Fthm']
+        if par['radps']['apply_force'] == 1:
+            cols += ['Frad']
+
+        for c in cols:
+            try:
+                hst[c] *= vol*u.Msun*u.kms/u.Myr
+                hst[c + '_int'] = integrate.cumtrapz(hst[c], hst['time'], initial=0.0)
+            except KeyError:
+                self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
+                continue        
+        
+        # energy in ergs
+        E_conv = vol*(u.energy).cgs.value
+        hst['Ethm'] *= E_conv
+        hst['Ekin'] *= E_conv
+        for ph in ('c','u','w','i','h'):
+            hst['Ethm_'+ph] *= E_conv
+            hst['Ekin_'+ph] *= E_conv
+
+        # Mean cool/heat rates
+        hst['cool_rate'] *= vol_cgs
+        hst['heat_rate'] *= vol_cgs
+        hst['net_cr'] *= vol_cgs
+        hst['net_cr_cumul'] = integrate.cumtrapz(hst['net_cr'],
+                                                 hst['time'], initial=0.0)*Myr_cgs
+        hst['heat_rate_cumul'] = integrate.cumtrapz(hst['heat_rate'],
+                                                    hst['time'], initial=0.0)*Myr_cgs
+        hst['cool_rate_cumul'] = integrate.cumtrapz(hst['cool_rate'],
+                                                    hst['time'], initial=0.0)*Myr_cgs
+
+        # SNR velocity in km/s
+        # hst['vsnr'] = hst['pr']/(hst['Msh'] + hst['Mi'] + hst['Mh'])
+        # SNR radius
+        # hst['Rsnr'] = hst['pr']/(hst['Msh'] + hst['Mi'] + hst['Mh'])
+        
+        # Dimensionless deceleration parameter
+        # hst['eta'] = hst['vsnr']*hst['time_code']/hst['Rsnr']
+
+        vol_cgs = vol*u.length.cgs.value**3
+        hst['pok_bub'] = (hst['Ethm_i'] + hst['Ethm_h'])/\
+            ((hst['Vi'] + hst['Vh'])*vol_cgs)/ac.k_B.cgs.value
+
+        hst['Vbub'] *= vol
+        hst['Rbub'] = (3.0*hst['Vbub']/(4.0*np.pi))**(1.0/3.0)
+        hst['vrbub'] = np.gradient(hst['Rbub'], hst['time_code'])
+        hst['etabub'] = hst['vrbub']*hst['time']/hst['Rbub']
+
+        hst['vrsh'] = np.gradient(hst['Rsh'], hst['time_code'])
+        hst['etash'] = hst['vrsh']*hst['time']/hst['Rsh']
         
         # Radiation feedback turned on
         if par['configure']['radps'] == 'ON':
             hst = self._calc_radiation(hst)
         #hst.index = hst['time_code']
+
+        if iWind:
+            hst['wind_Minj'] *= vol*u.Msun
+            hst['wind_Einj'] *= vol*u.erg
+            hst['wind_pinj'] *= vol*u.Msun*u.kms
+            hst['wind_Mdot'] *= vol*u.Msun/u.Myr
+            hst['wind_Edot'] *= vol*u.erg/u.s
+            hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr        
         
         self.hst = hst
         
@@ -89,14 +199,19 @@ class Hst:
         # Ionization/dissociation fronts
         hst['RIF'] = hst['RIF']/hst['RIF_vol']*u.pc
         hst['RDF'] = hst['RDF']/hst['RDF_vol']*u.pc
-        
-        # Expected radial momentum injection
-        if par['radps']['apply_force'] == 1 and par['configure']['ionrad']:
-            # Radiation pressure only (in the optically-thick limit)
-            hst['pr_inject'] = cumtrapz(hst['Ltot0']/ac.c.to(u.velocity).value,
-                                        hst['time_code'], initial=0.0)
-            hst['pr_inject'] *= vol*(u.mass*u.velocity).value
 
+        # Effective radius of Stromgren sphere based on cells with Erad_PH > 0
+        vol = domain['Lx'].prod()
+        try:
+            hst['V_Erad_PH'] *= vol*u.pc
+            hst['Reff_Erad_PH'] = (3.0*hst['V_Erad_PH']/(4.0*np.pi))**(1.0/3.0)
+
+            hst['nHII_Erad_PH'] *= vol/hst['V_Erad_PH']
+            hst['nHIIsq_Erad_PH'] *= vol/hst['V_Erad_PH']
+            hst['clumping_HII'] = hst['nHIIsq_Erad_PH']/hst['nHII_Erad_PH']**2
+        except KeyError:
+            pass
+        
         # Total/escaping luminosity in Lsun
         ifreq = dict()
         for f in ('PH','LW','PE','PE_unatt'):
@@ -104,19 +219,53 @@ class Hst:
                 ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
             except KeyError:
                 pass
+            
+        # Total luminosity
+        hst['Ltot'] = 0.0
+        for k,v in ifreq.items():
+            if v >= 0:
+                hst['Ltot'] += vol*hst[f'Ltot{v}'] # in code units first
 
+        # Expected radial momentum injection
+        if par['radps']['apply_force'] == 1 and par['configure']['ionrad']:
+            # Radiation pressure only (in the optically-thick limit)
+            hst['pr_inj_rad'] = cumtrapz(hst['Ltot']/ac.c.to(u.velocity).value,
+                                        hst['time_code'], initial=0.0)
+            hst['pr_inj_rad'] *= (u.mass*u.velocity).value
+
+        # Total luminosity in Lsun
+        hst['Ltot'] *= u.Lsun
+        
+        # Other luminosities
         for i in range(par['radps']['nfreq']):
             for k, v in ifreq.items():
                 if i == v:
                     try:
-                        hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
-                        hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
+                        hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*u.Lsun*vol
+                        hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*u.Lsun*vol
+                        hst[f'Ldust_{k}'] = hst[f'Ldust{i}']*u.Lsun*vol
+                        # Photon rate
                         hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
                         hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
+                                           (ac.L_sun.cgs.value)/hnu
+                        hst[f'Qesc_{k}'] = hst[f'Lesc_{k}'].values * \
+                                           (ac.L_sun.cgs.value)/hnu
+                        hst[f'Qdust_{k}'] = hst[f'Ldust_{k}'].values * \
                                            (ac.L_sun.cgs.value)/hnu
                     except KeyError:
                         pass
 
+        try:
+            col = ['phot_rate_HI', 'phot_rate_H2',
+                   'rec_rate_rad_HII', 'rec_rate_gr_HII']
+            for c in col:
+                hst[c] *= vol
 
-                    
+            hst['phot_rate'] = hst['phot_rate_HI'] + hst['phot_rate_H2']
+            hst['rec_rate_HII'] = hst['rec_rate_rad_HII'] + hst['rec_rate_gr_HII']
+        except:
+            pass
+            
         return hst
+
+

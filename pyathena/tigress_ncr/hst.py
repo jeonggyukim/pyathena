@@ -1,6 +1,7 @@
 # read_hst.py
 
 import os
+import os.path as osp
 import numpy as np
 import pandas as pd
 from scipy import integrate
@@ -21,7 +22,7 @@ class Hst:
         par = self.par
         u = self.u
         domain = self.domain
-        
+
         # volume of resolution element (code unit)
         dvol = domain['dx'].prod()
         # total volume of domain (code unit)
@@ -30,7 +31,10 @@ class Hst:
         LxLy = domain['Lx'][0]*domain['Lx'][1]
 
         Omega = self.par['problem']['Omega']
-        time_orb = 2*np.pi/Omega*u.Myr # Orbital time in Myr
+        if Omega>0:
+            time_orb = 2*np.pi/Omega*u.Myr # Orbital time in Myr
+        else:
+            time_orb = 1.0
         try:
             if self.par['configure']['new_cooling'] == 'ON':
                 newcool = True
@@ -40,8 +44,9 @@ class Hst:
             newcool = False
         nscalars = self.par['configure']['nscalars']
 
+
         hst = read_hst(self.files['hst'], force_override=force_override)
-        
+
         h = pd.DataFrame()
 
         if self.par['configure']['gas'] == 'mhd':
@@ -62,7 +67,7 @@ class Hst:
         #    (par['configure']['radps'] == 'ON' or par['configure']['sixray'] == 'ON'):
         #     for c in ('dt_cool_min','dt_xH2_min','dt_xHII_min'):
         #         hst[c] *= u.Myr*vol
-        
+
         # Total gas mass in Msun
         h['mass'] = hst['mass']*vol*u.Msun
         h['mass_sp'] = hst['msp']*vol*u.Msun
@@ -78,9 +83,11 @@ class Hst:
             h['Sigma_HII'] = h['M_HII']/(LxLy*u.pc**2)
 
         # Total outflow mass
+        h['massflux_lbd_d'] = hst['F3_lower']*u.mass_flux
+        h['massflux_ubd_d'] = hst['F3_upper']*u.mass_flux
         h['mass_out'] = integrate.cumtrapz(hst['F3_upper'] - hst['F3_lower'], hst['time'], initial=0.0)
         h['mass_out'] = h['mass_out']/(domain['Nx'][2]*domain['dx'][2])*vol*u.Msun
-        
+
         # Mass surface density in Msun/pc^2
         h['Sigma_gas'] = h['mass']/(LxLy*u.pc**2)
         h['Sigma_sp'] = h['mass_sp']/(LxLy*u.pc**2)
@@ -96,11 +103,11 @@ class Hst:
             h['Sigma_snej'] = h['mass_snej']/(LxLy*u.pc**2)
         except:
             pass
-        
+
         # H mass/surface density in Msun
         #h['M_gas'] = h['mass']/u.muH
         #h['Sigma_gas'] = h['M_gas']/(LxLy*u.pc**2)
-            
+
         # Mass, volume fraction, scale height
         h['H'] = np.sqrt(hst['H2'] / hst['mass'])
         for ph in ['c','u','w','h1','h2']:
@@ -110,7 +117,7 @@ class Hst:
                 np.sqrt(hst['H2{}'.format(ph)] / hst['M{}'.format(ph)])
         #print(h['mf_c'])
         #h['Vmid_2p'] = hst['Vmid_2p']
-        
+
         # mf, vf, H of thermally bistable (cold + unstable + warm) medium
         h['mf_2p'] = h['mf_c'] + h['mf_u'] + h['mf_w']
         h['vf_2p'] = h['vf_c'] + h['vf_u'] + h['vf_w']
@@ -134,7 +141,7 @@ class Hst:
                     np.sqrt(2*hst['x{}ME'.format(ax)]/hst['mass'])
             h['v{}_2p'.format(ax)] = \
                 np.sqrt(2*hst['x{}KE_2p'.format(ax)]/hst['mass']/h['mf_2p'])
-            
+
         h['cs'] = np.sqrt(hst['P']/hst['mass'])
         h['Pth_mid'] = hst['Pth']*u.pok
         h['Pth_mid_2p'] = hst['Pth_2p']*u.pok/hst['Vmid_2p']
@@ -157,7 +164,7 @@ class Hst:
                 radps = False
         except KeyError:
             radps = False
-        
+
         if radps:
             # Total/escaping luminosity in Lsun
             ifreq = dict()
@@ -166,7 +173,7 @@ class Hst:
                     ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
                 except KeyError:
                     pass
-            
+
             for i in range(par['radps']['nfreq']):
                 for k, v in ifreq.items():
                     if i == v:
@@ -212,11 +219,19 @@ class Hst:
             h['xi_CR0'] = hst['xi_CR0']
         except KeyError:
             pass
-        
+
         h.index = h['time_code']
-        
+
         self.hst = h
-        
+
+        # SN data
+        if osp.exists(self.files['sn']):
+            sn = read_hst(self.files['sn'],force_override=force_override)
+            snr = get_snr(sn['time']*self.u.Myr,hst['time']*self.u.Myr)
+
+            self.sn = sn
+            self.snr = snr/LxLy
+
         return h
 
 def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_override=False),
@@ -234,11 +249,11 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
                     ylim='R8',
                     figsize=None,
                    ):
-    
+
     if ylim == 'R8':
         ylim=dict(Sigma_gas=(5,13),
                   Sigma_sp=(0,4),
-                  Sigma_out=(0,1),
+                  Sigma_out=(0.01,10),
                   sfr10=(1e-4,4e-2),
                   sfr40=(1e-4,4e-2),
                   dt=(1e-4,1e-2),
@@ -282,8 +297,8 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
                   mf_c=(1e-2,1.0),
                   mf_u=(1e-2,1.0),
                   mf_w=(1e-1,1.0),)
-        
-    
+
+
     ylabel = dict(Sigma_gas=r'$\Sigma_{\rm gas}\;[M_{\odot}\,{\rm pc}^{-2}]$',
                   Sigma_sp=r'$\Sigma_{\rm *,formed}\;[M_{\odot}\,{\rm pc}^{-2}]$',
                   Sigma_out=r'$\Sigma_{\rm of}\;[M_{\odot}\,{\rm pc}^{-2}]$',
@@ -307,10 +322,10 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
                   mf_u=r'$f_{M,{\rm u}}$',
                   mf_w=r'$f_{M,{\rm w}}$',
                  )
-    
+
     yscale = dict(Sigma_gas='linear',
                   Sigma_sp='linear',
-                  Sigma_out='linear',
+                  Sigma_out='log',
                   sfr10='log',
                   sfr40='log',
                   dt='log',
@@ -331,10 +346,10 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
                   mf_u='log',
                   mf_w='log',
                  )
-    
+
     if models is None:
         models = sa.models
-        
+
     nc = ncol
     nr = round(len(column)/nc)
     if figsize is None:
@@ -343,7 +358,7 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
     fig, axes = plt.subplots(nr, nc, figsize=figsize,
                              constrained_layout=True)
     axes = axes.flatten()
-    
+
     for i,mdl in enumerate(models):
         s = sa.set_model(mdl)
         print(mdl)
@@ -357,14 +372,38 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
                 ax.plot(h['time'], h[col], c=c[i], lw=lw[i], label=label)
             except KeyError:
                 pass
-            
+
     for j,(ax,col) in enumerate(zip(axes,column)):
         ax.set(xlabel=r'${\rm time}\,[{\rm Myr}]$', ylabel=ylabel[col],
                yscale=yscale[col], ylim=ylim[col])
-        
+
         if xlim is not None:
             ax.set(xlim=xlim)
 
     axes[0].legend(loc='best', fontsize='small')
-            
+
     return fig
+
+
+def get_snr(sntime,time,tbin='auto',snth=100.):
+    import xarray as xr
+    snt = sntime.to_numpy()
+    t = time.to_numpy()
+    if tbin is 'auto':
+        tbin=0.
+        dtbin=0.1
+        snrmean=0.
+        while (tbin < 40) & (snrmean < snth):
+            tbin += dtbin
+            idx=np.less(snt[np.newaxis,:],t[:,np.newaxis]) & \
+            np.greater(snt[np.newaxis,:],(t[:,np.newaxis]-tbin))
+            snr=idx.sum(axis=1)
+            snrmean=snr.mean()
+
+        snr = snr/tbin
+    else:
+        idx=np.less(snt[np.newaxis,:],t[:,np.newaxis]) & \
+        np.greater(snt[np.newaxis,:],(t[:,np.newaxis]-tbin))
+        snr=idx.sum(axis=1)/tbin
+    snr=xr.DataArray(snr,coords=[time],dims=['time'])
+    return snr
