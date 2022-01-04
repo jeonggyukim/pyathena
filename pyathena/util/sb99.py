@@ -183,7 +183,12 @@ class SB99(object):
                 Cabs[k].append(simps(10.0**f_Cabs(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], w[k])/ \
                                simps(10.0**f_J(np.log10(w[k]))*w[k], w[k]))
                 hnu[k].append(simps(10.0**f_J(np.log10(w[k])), w[k])/ \
-                               simps(10.0**f_J(np.log10(w[k]))*w[k], w[k]))
+                               simps(10.0**f_J(np.log10(w[k]))*w[k], w[k])*hc_cgs/(1.0*au.eV).cgs.value*1e4)
+
+        for k in w.keys():
+            Cext[k] = np.array(Cext[k])
+            Cabs[k] = np.array(Cabs[k])
+            hnu[k] = np.array(hnu[k])
 
         if i == 0:
             w = dict()
@@ -210,6 +215,7 @@ class SB99(object):
         L['UV'] = L['LyC'] + L['LW'] + L['PE']
         L['FUV'] = L['LW'] + L['PE']
 
+
         # Momentum injection rate (Msun km/s / Myr / Msun)
         pdot = dict()
         for v in ('tot', 'LyC', 'LW', 'PE', 'OPT', 'UV', 'FUV'):
@@ -231,12 +237,53 @@ class SB99(object):
             Cabs_mean[k] = np.average(Cabs[k], weights=L[k])
             hnu_mean[k] = np.average(hnu[k], weights=L[k])
 
+        # Photoionization cross section, mean energy of photoelectrons
+        from ..microphysics.photx import PhotX,get_sigma_pi_H2
+
+        sigma_pi_H = []
+        sigma_pi_H2 = []
+        dhnu_H_LyC = []
+        dhnu_H2_LyC = []
+        hnu_LyC = []
+        
+        ph = PhotX()
+        l_th_H = ph.get_Eth(1,1,unit='Angstrom') # threshold wavelength
+        l_th_H2 = hc_cgs*1e8/(15.2*eV_cgs)
+        for i, (time_, df_) in enumerate(dfg):
+            #print(time_,self.tmax_Myr)
+            if time_*1e-6 > self.tmax_Myr:
+                continue
+            
+            idx0 = df_.wav <= l_th_H
+            E_th = hc_cgs/(df_.wav[idx0]*1e-8)/eV_cgs
+            sigma_pi_H_l = ph.get_sigma(1,1,E_th)
+            sigma_pi_H2_l = get_sigma_pi_H2(E_th.values)
+        
+            Jl = 10.0**(df_.logf[idx0] - self.logM)
+            l = df_[idx0].wav
+            int_Jl_dl = simps(Jl, l)
+            int_lJl_dl = simps(Jl*l, l)
+            int_sigma_H_lJl_dl = simps(Jl*l*sigma_pi_H_l, l)
+            int_sigma_H2_lJl_dl = simps(Jl*l*sigma_pi_H2_l, l)
+            hnu_LyC.append(hc_cgs*1e8*int_Jl_dl/int_lJl_dl/eV_cgs)
+            sigma_pi_H.append(int_sigma_H_lJl_dl/int_lJl_dl)
+            sigma_pi_H2.append(int_sigma_H2_lJl_dl/int_lJl_dl)
+            dhnu_H_LyC.append(1e8*hc_cgs*simps(Jl*l*sigma_pi_H_l*(1/l - 1/l_th_H), l)/int_sigma_H_lJl_dl/eV_cgs)
+            dhnu_H2_LyC.append(1e8*hc_cgs*simps(Jl*l*sigma_pi_H2_l*(1/l - 1/l_th_H2), l)/int_sigma_H2_lJl_dl/eV_cgs)
+
+        dhnu_H_LyC = np.array(dhnu_H_LyC)
+        dhnu_H2_LyC = np.array(dhnu_H2_LyC)
+        sigma_pi_H = np.array(sigma_pi_H)
+        sigma_pi_H2 = np.array(sigma_pi_H2)
+        
         r = dict(df=df, df_dust=df_dust,
                  time_yr=time, time_Myr=time_Myr,
                  wav=wav, logf=logf, logM=self.logM,
                  L=L, pdot=pdot, tdecay_lum=tdecay_lum,
                  wav0=wav0, wav1=wav1, wav2=wav2, wav3=wav3,
                  Cabs=Cabs, Cext=Cext, hnu=hnu,
+                 hnu_LyC=hnu_LyC, dhnu_H_LyC=dhnu_H_LyC, dhnu_H2_LyC=dhnu_H2_LyC,
+                 sigma_pi_H=sigma_pi_H, sigma_pi_H2=sigma_pi_H2,
                  Cabs_mean=Cabs_mean, Cext_mean=Cext_mean, hnu_mean=hnu_mean)
 
         return r
