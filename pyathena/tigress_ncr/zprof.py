@@ -51,11 +51,21 @@ class Zprof(ReadZprofBase):
 
         return ds
 
-    def load_zprof_for_sfr(self):
+    def load_zprof_for_sfr(self,fromfile=True,tofile=True):
         """Process zprof data for pressure/weight analysis
         """
+        if fromfile:
+            try:
+                with xr.open_dataset(os.path.join(self.savdir,'zprof','zprof_sfr.nc')) as zp_pw:
+                    self.logger.info('zprof_sfr.nc is loaded')
+                    self.zp_pw = zp_pw
+            except:
+                self.logger.warning('file not found: load from zprof')
+                pass
+
         if hasattr(self,'zp_pw'):
             return self.zp_pw
+
         zp = self.read_zprof(phase=['2p','h','whole'])
 
         zplist=[]
@@ -100,11 +110,28 @@ class Zprof(ReadZprofBase):
         momzp['A']=zp['A']
 
         self.zp_pw = momzp
+
+        if tofile:
+            momzp.to_netcdf(os.path.join(self.savdir,'zprof','zprof_sfr.nc'))
+            self.logger.info('zprof_sfr.nc is saved')
+
         return momzp
 
-    def load_zprof_for_wind(self):
+    def load_zprof_for_wind(self,fromfile=True,tofile=True):
         """Process zprof data for pressure/weight analysis
         """
+        if fromfile:
+            try:
+                with xr.open_dataset(os.path.join(self.savdir,'zprof','zprof_out.nc')) as zp_out:
+                    self.logger.info('zprof_out.nc is loaded')
+                    self.zp_outflux = zp_out
+                with xr.open_dataset(os.path.join(self.savdir,'zprof','zprof_net.nc')) as zp_net:
+                    self.logger.info('zprof_net.nc is loaded')
+                    self.zp_netflux = zp_net
+            except:
+                self.logger.warning('file not found: fluxes will be loaded from zprof')
+                pass
+
         if hasattr(self,'zp_outflux') and hasattr(self,'zp_netflux'):
             return self.zp_outflux,self.zp_netflux
         if self.test_newcool():
@@ -195,9 +222,28 @@ class Zprof(ReadZprofBase):
         self.zp_netflux = netflux
         self.zp_outflux = outflux
 
+        if tofile:
+            outflux.to_netcdf(os.path.join(self.savdir,'zprof','zprof_out.nc'))
+            self.logger.info('zprof_out.nc is saved')
+            netflux.to_netcdf(os.path.join(self.savdir,'zprof','zprof_net.nc'))
+            self.logger.info('zprof_net.nc is saved')
+
         return outflux, netflux
 
-    def load_zprof_for_phase(self,thermal_only=False):
+    def load_zprof_for_phase(self,thermal_only=False,fromfile=True,tofile=True):
+        if fromfile:
+            try:
+                with xr.open_dataset(os.path.join(self.savdir,'zprof','zprof_th.nc')) as zp_th:
+                    self.logger.info('zprof_th.nc is loaded')
+                    self.zp_th = zp_th
+                if not thermal_only:
+                    with xr.open_dataset(os.path.join(self.savdir,'zprof','zprof_ch.nc')) as zp_ch:
+                        self.logger.info('zprof_ch.nc is loaded')
+                        self.zp_ch = zp_ch
+            except:
+                self.logger.warning('file not found: phases will be loaded from zprof')
+                pass
+
         if hasattr(self,'zp_ch'):
             if thermal_only:
                 return self.zp_th
@@ -235,7 +281,14 @@ class Zprof(ReadZprofBase):
         if not thermal_only: zpch = _to_dset(zpch)
 
         self.zp_th = zpth
-        if not thermal_only: self.zp_ch = zpch
+        if tofile:
+            zpth.to_netcdf(os.path.join(self.savdir,'zprof','zprof_th.nc'))
+            self.logger.info('zprof_th.nc is saved')
+        if not thermal_only:
+            self.zp_ch = zpch
+            if tofile:
+                zpch.to_netcdf(os.path.join(self.savdir,'zprof','zprof_ch.nc'))
+                self.logger.info('zprof_ch.nc is saved')
 
         if thermal_only:
             return zpth
