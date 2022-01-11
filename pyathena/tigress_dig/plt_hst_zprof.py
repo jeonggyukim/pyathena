@@ -7,8 +7,6 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 class PltHstZprof:
-
-    mpl.rcParams['font.size'] = 15
     
     def plt_hst(self, savname=None, force_override=False):
         """Function to draw time evolution of Sigma_SFR, escape fraction, etc.
