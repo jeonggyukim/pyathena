@@ -123,15 +123,15 @@ class ReadObs():
     def get_Sun20b(self):
         return self.df['Sun20bTA'],self.df['Sun20bTB']
 
-    def _read_Sun20b(self):
-        df = pd.read_fwf(self.files['Sun20b'], skiprows=27,
-                         names=['Galaxy','scale','rgal','Center','Arm',
-                                'Interarm','ICO21','Sigma','Vdisp','Pturb',
-                                'alphavir'])
-        return df
+    # def _read_Sun20b(self):
+    #     df = pd.read_fwf(self.files['Sun20b'], skiprows=27,
+    #                      names=['Galaxy','scale','rgal','Center','Arm',
+    #                             'Interarm','ICO21','Sigma','Vdisp','Pturb',
+    #                             'alphavir'])
+    #     return df
 
-    def get_Sun20b(self):
-        return self.df['Sun20b']
+    # def get_Sun20b(self):
+    #     return self.df['Sun20b']
 
     def _read_Lee16(self):
         df = pd.read_fwf(self.files['Lee16'], skiprows=30,

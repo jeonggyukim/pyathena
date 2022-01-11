@@ -34,9 +34,10 @@ from .outflow import Outflow
 from .sfr import get_SFR_mean
 from .starpar import StarPar
 from .xray import Xray
+from .fits import Fits
 
 class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
-                     DustPol, Virial, Virial2, Outflow, Fields, Xray,
+                     DustPol, Virial, Virial2, Outflow, Fields, Xray, Fits,
                      PltSnapshot2Panel,PltSnapshotVTK2D,PltSnapshotCombined):
     """LoadSim class for analyzing sf_cloud simulations.
     """
@@ -120,6 +121,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             df['iPhot'] = par['radps']['iPhotIon']
 
         df['iRadp'] = par['radps']['apply_force']
+        # print(df['iRadp'],df['iPhot'],df['iSN'],df['iWind'])
         
         df['Nx'] = int(par['domain1']['Nx1'])
         df['tlim'] = par['time']['tlim']
@@ -194,37 +196,58 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             df['color'] = 'C0'
             df['edgecolor'] = 'none'
             df['feedback'] = 'RP'
-            df['offset'] = -2
+            df['offsetx'] = -1.5
+            df['offsety'] = 1.0
         elif df['iPhot'] and not df['iRadp'] and not df['iWind'] and not df['iSN']: # PH
             df['marker'] = 'o'
             df['color'] = 'C1'
             df['edgecolor'] = 'none'
             df['feedback'] = 'PH'
-            df['offset'] = -1
+            df['offsetx'] = -0.5
+            df['offsety'] = 1.0
         elif df['iWind'] and not df['iPhot'] and not df['iRadp'] and not df['iSN']: # WN
             df['marker'] = 'P'
             df['color'] = 'C2'
             df['edgecolor'] = 'none'
             df['feedback'] = 'WN'
-            df['offset'] = 0
+            df['offsetx'] = 0.5
+            df['offsety'] = 1.0
         elif df['iSN'] and not df['iPhot'] and not df['iRadp'] and not df['iWind']: # SN
             df['marker'] = 'X'
             df['color'] = 'C3'
             df['edgecolor'] = 'none'
             df['feedback'] = 'SN'
-            df['offset'] = 1
+            df['offsetx'] = 1.5
+            df['offsety'] = 1.0
         elif df['iPhot'] and df['iRadp'] and not df['iWind'] and not df['iSN']: # PHRP
             df['marker'] = 'D'
             df['color'] = 'C4'
             df['edgecolor'] = 'none'
             df['feedback'] = 'PHRP'
-            df['offset'] = 2
-        else:
+            df['offsetx'] = -1
+            df['offsety'] = -1.0
+        elif df['iPhot'] and df['iRadp'] and df['iWind'] and not df['iSN']: # PHRPWN
             df['marker'] = '^'
             df['color'] = 'C5'
             df['edgecolor'] = 'none'
-            df['offset'] = 3
-            prnit('offset')
+            df['feedback'] = 'PHRPWN'
+            df['offsetx'] = 0.0
+            df['offsety'] = -1.0
+        elif df['iPhot'] and df['iRadp'] and df['iWind'] and df['iSN']: # ALL
+            df['marker'] = '*'
+            df['color'] = 'C6'
+            df['edgecolor'] = 'none'
+            df['feedback'] = 'ALL'
+            df['offsetx'] = 1.0
+            df['offsety'] = -1.0
+        else: # NOFB
+            df['marker'] = 'v'
+            df['color'] = 'grey'
+            df['edgecolor'] = 'none'
+            df['feedback'] = 'ALL'
+            df['offsetx'] = 0
+            df['offsety'] = -3.0
+            
         if df['alpha_vir'] != 4.0:
             df['edgecolor'] = 'k'
             
@@ -557,50 +580,66 @@ class LoadSimSFCloudAll(Compare):
         return leg
 
     
-def load_all_sf_cloud(force_override=False):
+def load_all_sf_cloud(models=None,
+                      fpkl='/tigress/jk11/SF-CLOUD/pickles/sf-cloud-all.p',
+                      force_override=False):
 
-    models = dict(
+    if models is None:
 
-        M1E5R20_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R20-PH-A4-B2-S4-N192',
-        M1E5R20_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R20-RP-A4-B2-S4-N192',
-        M1E5R20_SN_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-SN-A4-B2-S4-N128',
-        M1E5R20_PHRP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A4-B2-S4-N128',
+        # 192 resolution tests
+        models = dict(
 
-        M1E5R10_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-PH-A4-B2-S4-N192',
-        M1E5R10_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-RP-A4-B2-S4-N192',
-        M1E5R10_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-SN-A4-B2-S4-N192',
-        M1E5R10_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-PHRP-A4-B2-S4-N192',
+            M1E5R20_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R20-PH-A4-B2-S4-N192',
+            M1E5R20_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R20-RP-A4-B2-S4-N192',
+            M1E5R20_WN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R20-WN-A4-B2-S4-N192',
+            M1E5R20_SN_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-SN-A4-B2-S4-N128',
+            M1E5R20_PHRP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A4-B2-S4-N128',
 
-        M1E5R05_PH_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PH-A4-B2-S4-N128',
-        M1E5R05_RP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-RP-A4-B2-S4-N128',
-        M1E5R05_SN_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-SN-A4-B2-S4-N128',
-        M1E5R05_PHRP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A4-B2-S4-N128',
+            M1E5R10_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-PH-A4-B2-S4-N192',
+            M1E5R10_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-RP-A4-B2-S4-N192',
+            M1E5R10_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-SN-A4-B2-S4-N192',
+            M1E5R10_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E5R10-PHRP-A4-B2-S4-N192',
+
+            M1E5R05_PH_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PH-A4-B2-S4-N128',
+            M1E5R05_RP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-RP-A4-B2-S4-N128',
+            M1E5R05_SN_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-SN-A4-B2-S4-N128',
+            M1E5R05_PHRP_A4B2S4_N128='/tigress/jk11/SF-CLOUD/M1E5R05-PHRP-A4-B2-S4-N128',
+
+            M1E6R7p5_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-PH-A4-B2-S4-N192',
+            M1E6R7p5_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-RP-A4-B2-S4-N192',
+            M1E6R7p5_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-SN-A4-B2-S4-N192',
+            M1E6R7p5_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-PHRP-A4-B2-S4-N192',
+
+            M1E6R60_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PH-A4-B2-S4-N192',
+            M1E6R60_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-RP-A4-B2-S4-N192',
+            M1E6R60_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-SN-A4-B2-S4-N192',
+            M1E6R60_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PHRP-A4-B2-S4-N192',
+
+            M1E6R30_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-PH-A4-B2-S4-N192',
+            M1E6R30_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-RP-A4-B2-S4-N192',
+            M1E6R30_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-SN-A4-B2-S4-N192',
+            M1E6R30_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-PHRP-A4-B2-S4-N192',
+
+            M1E6R15_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PH-A4-B2-S4-N192',
+            M1E6R15_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-RP-A4-B2-S4-N192',
+            M1E6R15_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-SN-A4-B2-S4-N192',
+            M1E6R15_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PHRP-A4-B2-S4-N192',
+
+            M5E5R40_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M5E5R40-PHRP-A4-B2-S4-N192',
+            M5E5R20_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M5E5R20-PHRP-A4-B2-S4-N192',
+            M5E5R10_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M5E5R10-PHRP-A4-B2-S4-N192',
+
+            M2E5R30_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R30-PHRP-A4-B2-S4-N192',
+            M2E5R15_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R15-PHRP-A4-B2-S4-N192',
+            M2E5R7p5_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R7.5-PHRP-A4-B2-S4-N192',
+            
+        )
+
         
-        M1E6R7p5_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-PH-A4-B2-S4-N192',
-        M1E6R7p5_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-RP-A4-B2-S4-N192',
-        M1E6R7p5_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-SN-A4-B2-S4-N192',
-        M1E6R7p5_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R7.5-PHRP-A4-B2-S4-N192',
-
-        M1E6R15_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PH-A4-B2-S4-N192',
-        M1E6R15_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-RP-A4-B2-S4-N192',
-        M1E6R15_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-SN-A4-B2-S4-N192',
-        M1E6R15_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R15-PHRP-A4-B2-S4-N192',
-
-        M1E6R30_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-PH-A4-B2-S4-N192',
-        M1E6R30_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-RP-A4-B2-S4-N192',
-        M1E6R30_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-SN-A4-B2-S4-N192',
-        M1E6R30_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R30-PHRP-A4-B2-S4-N192',
-        
-        M1E6R60_PH_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PH-A4-B2-S4-N192',
-        M1E6R60_RP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-RP-A4-B2-S4-N192',
-        M1E6R60_SN_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-SN-A4-B2-S4-N192',
-        M1E6R60_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M1E6R60-PHRP-A4-B2-S4-N192',
-        
-    )
-    
     # models = dict(
 
-    #     ### Tests
+    
+    #     ### Old Tests
         
     #     # 5pc cloud
     #     # No feedback
@@ -656,7 +695,6 @@ def load_all_sf_cloud(force_override=False):
     sa = LoadSimSFCloudAll(models)
 
     # Check if pickle exists
-    fpkl = osp.join('/tigress/jk11/SF-CLOUD/pickles/sf-cloud-all.p')
     if not force_override and osp.isfile(fpkl):
         r = pd.read_pickle(fpkl)
         return sa, r
