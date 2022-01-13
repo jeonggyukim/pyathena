@@ -4,6 +4,7 @@ import astropy.units as au
 import astropy.constants as ac
 import sys, os
 import matplotlib.pyplot as plt
+from matplotlib.colors import LogNorm
 import argparse
 import pyathena as pa
 
@@ -162,8 +163,10 @@ if __name__ == '__main__':
             zmin,zmax = zrange
             savdir = '{}/jointpdf_z{:02d}-{:02d}/'.format(s.savdir,int(zmin/100),int(zmax/100))
             if not os.path.isdir(savdir): os.mkdir(savdir)
-            pdf = jointpdf(ds,zmin=zmin,zmax=zmax,verbose=False)
             fname = '{}{}.{:04d}.pdf.nc'.format(savdir,s.basename,num)
-            pdf.to_netcdf(fname)
-            pdf.close()
+            if not os.path.isfile(fname):
+                print("Creating...",end=" ")
+                pdf = jointpdf(ds,s.par,zmin=zmin,zmax=zmax,verbose=False)
+                pdf.to_netcdf(fname)
+                pdf.close()
             print(fname)
