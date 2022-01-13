@@ -1,0 +1,93 @@
+Title: Revisiting the Integrated Star Formation Law. II. Starbursts and 
+       the Combined Global Schmidt Law  
+Authors: Kennicutt, R.C, de los Reyes M.A.C.
+Table: Dust surface densities for spiral galaxies from 
+       Paper I [2019ApJ...872...16D]
+================================================================================
+Byte-by-byte Description of file: apjabd3a2t3_mrt.txt
+--------------------------------------------------------------------------------
+   Bytes Format Units         Label       Explanations
+--------------------------------------------------------------------------------
+   1-  2 I2     ---           Seq         Running index number (1)
+   4- 14 A11    ---           Name        Galaxy ID preferred by NED
+  16- 21 F6.3   [solMass/pc2] logSigDust  Log dust mass surface density
+--------------------------------------------------------------------------------
+Note (1): Index numbers 1-23 are local circumnuclear disks while the rest,
+          24-112, are LIRGs.
+--------------------------------------------------------------------------------
+ 1 MESSIER 074 -0.99
+ 2 NGC 0925    -1.41
+ 3 NGC 1291    -1.59
+ 4 NGC 1365    -1.21
+ 5 IC 0342     -0.81
+ 6 NGC 1566    -1.29
+ 7 NGC 1800    -0.31
+ 8 NGC 2146    -0.54
+ 9 NGC 2273    -1.33
+10 NGC 2403    -1.08
+11 NGC 2841    -1.14
+12 MESSIER 081 -1.19
+13 NGC 3079    -0.79
+14 NGC 3147    -0.71
+15 NGC 3190    -0.90
+16 NGC 3184    -0.96
+17 NGC 3198    -1.17
+18 NGC 3338    -1.08
+19 MESSIER 095 -1.22
+20 NGC 3504    -0.63
+21 NGC 3521    -0.93
+22 MESSIER 066 -0.48
+23 NGC 3631    -0.65
+24 NGC 3718    -1.08
+25 NGC 3870    -0.31
+26 NGC 3938    -1.09
+27 NGC 4051    -0.88
+28 NGC 4100    -0.86
+29 NGC 4102    -0.39
+30 NGC 4138    -0.32
+31 NGC 4144    -1.47
+32 NGC 4178    -1.23
+33 NGC 4189    -0.69
+34 MESSIER 098 -1.40
+35 NGC 4216    -1.21
+36 MESSIER 099 -0.68
+37 MESSIER 106 -0.73
+38 NGC 4294    -0.84
+39 NGC 4299    -0.77
+40 MESSIER 100 -0.82
+41 NGC 4351    -0.85
+42 NGC 4402    -0.62
+43 NGC 4419    -1.20
+44 NGC 4424    -0.06
+45 NGC 4449    -0.47
+46 NGC 4457    -0.19
+47 MESSIER 088 -0.58
+48 NGC 4519    -1.14
+49 NGC 4532    -0.87
+50 NGC 4535    -1.01
+51 NGC 4536    -1.32
+52 NGC 4559    -1.65
+53 MESSIER 090 -0.52
+54 NGC 4571    -0.99
+55 MESSIER 058 -0.79
+56 NGC 4618    -0.89
+57 NGC 4625    -0.57
+58 NGC 4639    -1.20
+59 NGC 4651    -1.05
+60 NGC 4654    -0.84
+61 NGC 4689    -0.81
+62 NGC 4698    -2.10
+63 NGC 4725    -1.12
+64 MESSIER 094  0.18
+65 NGC 4808    -0.92
+66 MESSIER 064 -0.07
+67 NGC 5023    -1.26
+68 NGC 5033    -1.30
+69 MESSIER 063 -0.41
+70 NGC 5204    -1.21
+71 NGC 5350    -0.73
+72 MESSIER 101 -1.28
+73 NGC 6814    -0.79
+74 NGC 6946    -0.65
+75 NGC 7331    -1.10
+76 NGC 7793    -1.15

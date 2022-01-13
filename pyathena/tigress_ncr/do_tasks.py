@@ -64,6 +64,7 @@ if __name__ == '__main__':
         print('Unreachable objects:', n, end=' ')
         print('Remaining Garbage:', end=' ')
         pprint.pprint(gc.garbage)
+        sys.stdout.flush()
 
     # Make movies
     COMM.barrier()
