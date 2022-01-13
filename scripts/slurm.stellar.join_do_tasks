@@ -16,22 +16,25 @@ export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
 if [[ $# -eq 2 ]]; then
   INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$1
   OUTDIR=/tigress/changgoo/TIGRESS-NCR/$2
-  cd $HOME/pyathena/scripts
-  srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1> join-$SLURM_JOB_ID.out 2> join-$SLURM_JOB_ID.err
 
   echo "Do tasks started"
   cd $HOME/pyathena
-  srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> scripts/join-$SLURM_JOB_ID.out 2>> scripts/join-$SLURM_JOB_ID.err
+  srun python pyathena/tigress_ncr/do_tasks.py -b $INDIR 1> scripts/logs/join-$SLURM_JOB_ID.out 2> scripts/logs/join-$SLURM_JOB_ID.err
+#
+  cd $HOME/pyathena/scripts
+  srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1>> logs/join-$SLURM_JOB_ID.out 2>> logs/join-$SLURM_JOB_ID.err
+
 
 elif [[ $# -eq 1 ]]; then
   INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$1
   OUTDIR=/tigress/changgoo/TIGRESS-NCR/$1
-  cd $HOME/pyathena/scripts
-  srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1> join-$SLURM_JOB_ID.out 2> join-$SLURM_JOB_ID.err
 
   echo "Do tasks started"
   cd $HOME/pyathena
-  srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> scripts/join-$SLURM_JOB_ID.out 2>> scripts/join-$SLURM_JOB_ID.err
+  srun python pyathena/tigress_ncr/do_tasks.py -b $INDIR 1> scripts/logs/join-$SLURM_JOB_ID.out 2> scripts/logs/join-$SLURM_JOB_ID.err
+
+  cd $HOME/pyathena/scripts
+  srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1>> logs/join-$SLURM_JOB_ID.out 2>> logs/join-$SLURM_JOB_ID.err
 
 else
   echo "Move everything from scratch"
@@ -43,13 +46,13 @@ else
     echo "join started"
     INDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$dir
     OUTDIR=/tigress/changgoo/TIGRESS-NCR/$dir
-    srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1>> join-$SLURM_JOB_ID.out 2>> join-$SLURM_JOB_ID.err
+    srun python move_output.py -i $INDIR -o $OUTDIR -j -r 1>> logs/join-$SLURM_JOB_ID.out 2>> logs/join-$SLURM_JOB_ID.err
   done
 
-  for dir in $DIRS
-  do
-    echo "do tasks started"
-    OUTDIR=/tigress/changgoo/TIGRESS-NCR/$dir
-    srun python ../pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> join-$SLURM_JOB_ID.out 2>> join-$SLURM_JOB_ID.err
-  done
+#  for dir in $DIRS
+#  do
+#    echo "do tasks started"
+#    OUTDIR=/tigress/changgoo/TIGRESS-NCR/$dir
+#    srun python ../pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> join-$SLURM_JOB_ID.out 2>> join-$SLURM_JOB_ID.err
+#  done
 fi
