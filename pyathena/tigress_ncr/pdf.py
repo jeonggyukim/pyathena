@@ -8,6 +8,7 @@ import numpy as np
 import astropy.units as au
 import astropy.constants as ac
 from matplotlib.colors import Normalize, LogNorm
+import xarray as xr
 
 from ..classic.utils import texteffect
 from ..plt_tools.cmap_custom import get_my_cmap
@@ -16,23 +17,25 @@ from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp
 
 class PDF:
-
-    bins=dict(nH=np.logspace(-5,3,81),
-              nHI=np.logspace(-2,5,71),
-              nH2=np.logspace(-2,5,71),
-              xH2=np.linspace(0,0.5,51),
-              xHI=np.linspace(0,1.0,51),
-              xHII=np.linspace(0,1.0,51),
-              nHII=np.logspace(-5,3,101),
-              T=np.logspace(1,8,141),
-              pok=np.logspace(0,7,71),
-              chi_PE=np.logspace(-3,4,71),
-              chi_FUV=np.logspace(-3,4,71),
-              chi_H2=np.logspace(-3,4,71),
-              Erad_LyC=np.logspace(-17,-12,51),
-              Lambda_cool=np.logspace(-30,-20,101),
-              xi_CR=np.logspace(-17,-14,61)
-    )
+    binranges = dict(nH=(-6,4),T=(1,8),pok=(0,7),
+                     nHI=(-6,4),nH2=(-6,4),nHII=(-6,4),ne=(-6,4),
+                     xH2=(0,0.5),xHII=(0,1.0),xHI=(0,1.0),
+                     chi_PE=(-3,4),chi_FUV=(-3,4),chi_H2=(-3,4),xi_CR=(-18,-12),
+                     Erad_LyC=(-30,-10),Lambda_cool=(-30,-18))
+    dbins = dict(vz=10,xH2=0.01,xHII=0.01,xHI=0.01)
+    nologs = ['vz','xH2','xHII','xHI']
+    bins = dict()
+    for k,v in binranges.items():
+        bmin, bmax = v
+        try:
+            dbin = dbins[k]
+        except:
+            dbin = 0.1
+        nbin = int((bmax-bmin)/dbin)+1
+        if k in nologs:
+            bins[k] = np.linspace(bmin,bmax,nbin)
+        else:
+            bins[k] = np.logspace(bmin,bmax,nbin)
 
     @LoadSim.Decorators.check_pickle
     def read_pdf2d(self, num,
@@ -237,3 +240,126 @@ class PDF:
             plt.close()
 
         return fig
+
+    def load_one_jointpdf(self,xf,yf,wf,num=None,ivtk=None,zrange=(0,300),
+            force_override=False):
+        '''Load joind pdfs of a variety of qunatities for a given zrange
+
+        Parameters
+        ----------
+        xf : str
+            x field name
+        yf : str
+            y field name
+        wf : str
+            weight field name
+        num : int
+            vtk snapshot number
+        ivtk : int
+            vtk snapshot index
+        zrange : tuple (zmin,zmax)
+            range of |z| over which pdfs are calculated
+
+        '''
+        ds = self.load_vtk(num=num,ivtk=ivtk)
+        zmin,zmax = zrange
+        savdir = '{}/jointpdf_z{:02d}-{:02d}/{}-{}-{}'.format(self.savdir,int(zmin/100),int(zmax/100),xf,yf,wf)
+        if not os.path.isdir(savdir): os.makedirs(savdir)
+        fbase = os.path.basename(self.fvtk)
+        fpdf = '{}{}'.format(savdir,fbase).replace('.vtk','.pdf.nc')
+        if not force_override and osp.exists(fpdf) and osp.getmtime(fpdf) > osp.getmtime(self.fvtk):
+            self.logger.info('[load_one_jointpdf]: Reading Joint PDFs of {} and {} weigthed by {} at z in +-({},{})'.format(xf,yf,wf,zmin,zmax))
+            pdf = xr.open_dataarray(fpdf)
+        else:
+            self.logger.info('[load_one_jointpdf]: Creating Joint PDFs of {} and {} weigthed by {} at z in +-({},{})'.format(xf,yf,wf,zmin,zmax))
+            pdf = self.one_jointpdf(ds,xf,yf,wf,zmin=zmin,zmax=zmax)
+            pdf.to_netcdf(fpdf)
+        pdf.close()
+        return pdf
+
+    def one_jointpdf(self,ds,xf,yf,wf,zmin=0,zmax=300):
+        if wf is None:
+            fields = np.unique([xf,yf])
+        else:
+            fields = np.unique([xf,yf,wf])
+        self.logger.info('[one_jointpdf] reading {}'.format(fields))
+
+        data = ds.get_field(fields)
+        data_zcut = xr.concat([data.sel(z=slice(-zmax,-zmin)),data.sel(z=slice(zmin,zmax))],dim='z')
+        data = data.stack(xyz=['x','y','z']).dropna(dim='xyz')
+
+        if wf is None:
+            h=np.histogram2d(data[xf],data[yf],bins=[self.bins[xf],self.bins[yf]])
+        else:
+            h=np.histogram2d(data[xf],data[yf],bins=[self.bins[xf],self.bins[yf]],weights=data[wf])
+        xe = h[1]
+        ye = h[2]
+        if not (xf in self.nologs):
+            xe = np.log10(xe)
+            xf = 'log_'+xf
+        if not (yf in self.nologs):
+            ye = np.log10(ye)
+            yf = 'log_'+yf
+        xc = 0.5*(xe[1:]+xe[:-1])
+        yc = 0.5*(ye[1:]+ye[:-1])
+        dx = xe[1]-xe[0]
+        dy = ye[1]-ye[0]
+        pdf = xr.DataArray(h[0].T,coords=[yc,xc],dims=[yf,xf])
+        pdf.name = wf
+
+        return pdf
+
+def plot_pair(pdf,wf='vol',fields=None):
+    if fields is None: fields = list(pdf.dims.keys())
+    nf = len(fields)
+    fig, axes = plt.subplots(nf,nf,figsize=(4*nf,3*nf))
+
+    # 1D histogram
+    for i,xf in enumerate(fields):
+        plt.sca(axes[i,i])
+        try:
+            yf = fields[i+1]
+            key = '{}-{}-{}'.format(xf,yf,wf)
+        except:
+            yf = fields[0]
+            key = '{}-{}-{}'.format(yf,xf,wf)
+        xc = pdf[xf]
+        yc = pdf[yf]
+        dy = yc[1]-yc[0]
+        plt.step(xc,pdf[key].sum(dim=yf)*dy,where='mid')
+
+        plt.yscale('log')
+        plt.ylabel('d{}/dlog{}'.format(wf[0].upper(),xf))
+        plt.xlabel(xf)
+
+    # 2D histogram in bottom-left
+    keylist=[]
+    axlist=[]
+    for i,xf in enumerate(fields):
+        for j,yf in enumerate(fields):
+            key ='{}-{}-{}'.format(xf,yf,wf)
+            if key in pdf:
+                keylist.append(key)
+                axlist.append(axes[j,i])
+            else:
+                if i != j:
+                    axes[j,i].axis('off')
+
+    for key,ax in zip(keylist,axlist):
+        xf,yf,wf = key.split('-')
+        xc = pdf[xf]
+        yc = pdf[yf]
+        dx = xc[1]-xc[0]
+        dy = yc[1]-yc[0]
+        xmin = xc.min() - 0.5*dx
+        xmax = xc.max() - 0.5*dx
+        ymin = yc.min() - 0.5*dy
+        ymax = yc.max() - 0.5*dy
+        plt.sca(ax)
+        plt.imshow(pdf[key],norm=LogNorm(),extent=[xmin,xmax,ymin,ymax],
+                   origin='lower',interpolation='nearest')
+        ax.set_aspect('auto')
+        plt.xlabel(xf)
+        plt.ylabel(yf)
+
+
