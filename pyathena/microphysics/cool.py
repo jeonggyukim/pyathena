@@ -160,6 +160,9 @@ def q10CII_(nH, T, xe, xHI, xH2):
     # Eqs (17.16) and (17.17) in Draine (2011)
     T2 = T*1e-2;
     k10e = 4.53e-8*np.sqrt(1.0e4/T)
+    # Omega10e = (1.55+1.25*T*1e-4)/(1 + 0.35*(T*1e-4)**1.25)
+    # k10e = 8.629e-8/np.sqrt(T*1e-4)*Omega10e
+
     k10HI = 7.58e-10*np.power(T2, 0.1281+0.0087*np.log(T2))
 
     k10oH2 = np.zeros_like(T)
@@ -193,6 +196,9 @@ def coolCII(nH, T, xe, xHI, xH2, xCII):
     
     return q01/(q01 + q10 + A10CII_)*A10CII_*E10CII_*xCII
 
+def coolHIion(nH, T, xe, xHI):
+    eV_cgs = (1.0*au.eV).cgs.value
+    return 13.6*eV_cgs*coeff_kcoll_H(T)*nH*xe*xHI
 
 def coolCI(nH, T, xe, xHI, xH2, xCI):
     
@@ -270,6 +276,41 @@ def coolCI(nH, T, xe, xHI, xH2, xCI):
     return cool3Level_(q01,q10,q02,q20,q12,q21,A10CI_,A20CI_,
                        A21CI_,E10CI_,E20CI_,E21CI_,xCI)
 
+def coolOII(nH, T, xe, xOII):
+    
+    T4 = T*1e-4
+    kB_cgs = ac.k_B.cgs.value
+    # OII, 3 level system
+    g0OII_ = 4  # 4S_3/2
+    g1OII_ = 6  # 2D_5/2
+    g2OII_ = 4  # 2D_3/2
+    A10OII_ = 3.6e-5
+    A20OII_ = 1.6e-4
+    A21OII_ = 1.3e-7
+    E10OII_ = (ac.h*ac.c/(3728.8*au.angstrom)).to('erg').value
+    E20OII_ = (ac.h*ac.c/(3726.0*au.angstrom)).to('erg').value 
+    E21OII_ = (ac.h*ac.c/(497.1*au.micron)).to('erg').value    
+    
+    # Draine (2011)
+    Omega10e = 0.803*T4**(0.023-0.008*np.log(T4))
+    Omega20e = 0.550*T4**(0.054-0.004*np.log(T4))
+    Omega21e = 1.434*T4**(-0.176+0.004*np.log(T4))
+    
+    prefactor = 8.629e-8/np.sqrt(T4)
+    k10e = prefactor*Omega10e/g1OII_
+    k20e = prefactor*Omega20e/g2OII_
+    k21e = prefactor*Omega21e/g2OII_
+    
+    # Total collisional rates
+    q10 = nH*k10e*xe
+    q20 = nH*k20e*xe
+    q21 = nH*k21e*xe
+    q01 = (g1OII_/g0OII_) * q10 * np.exp(-E10OII_/(kB_cgs*T))
+    q02 = (g2OII_/g0OII_) * q20 * np.exp(-E20OII_/(kB_cgs*T))
+    q12 = (g2OII_/g1OII_) * q21 * np.exp(-E21OII_/(kB_cgs*T))
+
+    return cool3Level_(q01, q10, q02, q20, q12, q21, A10OII_, A20OII_, 
+                       A21OII_, E10OII_, E20OII_, E21OII_, xOII)
 
 def coolOI(nH, T, xe, xHI, xH2, xOI):
 
@@ -334,12 +375,152 @@ def coolLya(nH, T, xe, xHI):
 
     ne = xe*nH
     T4 = T*1.0e-4
-    fac = 6.3803e-9*np.power(T4, 1.17)
+    # fac = 6.3803e-9*np.power(T4, 1.17)
+    fac = 5.30856e-08*np.power(T4,1.4897e-01)/(1.0 + np.power(0.2*T4, 0.64897))
     k01e = fac*np.exp(-11.84/T4)
     q01 = k01e*ne
     q10 = (g0HI_/g1HI_)*fac*ne
 
     return q01/(q01 + q10 + A10HI_)*A10HI_*E10HI_*xHI
+
+def coolHI(nH, T, xHI, xe):
+
+    # Neutral Hydrogen cooling (Lya + Lyb + two photon) taken from DESPOTIC
+
+    #TLyA = (3.0/4.0*(ac.h*ac.c*ac.Ryd).to('eV')/ac.k_B).to('K').value
+    #TLyB = (8.0/9.0*(ac.h*ac.c*ac.Ryd).to('eV')/ac.k_B).to('K').value
+    
+    TLyA = 118415.63430152694
+    TLyB = 140344.45546847637
+
+    kB = ac.k_B.cgs.value
+    upsilon2s = 0.35
+    upsilon2p = 0.69
+    upsilon3s = 0.077
+    upsilon3p = 0.14
+    upsilon3d = 0.073
+    fac = 8.629e-6/(2*np.sqrt(T))
+    exfacLyA = np.exp(-TLyA/T)
+    exfacLyB = np.exp(-TLyB/T)
+    Lambda2p = fac * exfacLyA * upsilon2s * xHI * xe * nH * kB * TLyA
+    LambdaLyA = fac * exfacLyA * upsilon2p * xHI * xe * nH * kB * TLyA
+    LambdaLyB = fac * exfacLyB * (upsilon3s + upsilon3p + upsilon3d) * xHI * xe * nH * kB * TLyB
+    
+    return Lambda2p + LambdaLyA + LambdaLyB
+
+def coolH2G17(nH, T, xHI, xH2, xHII, xe, xHe=0.1):
+    """
+    H2 Cooling from Gong et al. (2017)
+    """
+    
+    Tmax_H2 = 6000.  # maximum temperature above which use Tmax
+    Tmin_H2 = 10.    # minimum temperature below which cut off cooling
+
+    # Note: limit extended to T< 10K and T>6000K
+    T = np.where(T > Tmax_H2, Tmax_H2, T)
+
+    logT3 = np.log10(T*1.0e-3)
+    logT3_2 = logT3 * logT3
+    logT3_3 = logT3_2 * logT3
+    logT3_4 = logT3_3 * logT3
+    logT3_5 = logT3_4 * logT3
+    
+    # HI
+    LHI = np.where(T < 100.0,
+                   np.power(10, -16.818342e0 +3.7383713e1*logT3 \
+                            + 5.8145166e1*logT3_2 + 4.8656103e1*logT3_3 \
+                            + 2.0159831e1*logT3_4 + 3.8479610e0*logT3_5), 0.0)
+    LHI += np.where(np.logical_and(T >= 100.0, T < 1000.0),
+                    np.power(10, -2.4311209e1 +3.5692468e0*logT3 \
+                             - 1.1332860e1*logT3_2 - 2.7850082e1*logT3_3 \
+                             - 2.1328264e1*logT3_4 - 4.2519023e0*logT3_5), 0.0)
+    LHI += np.where(T >= 1000.0,
+                    np.power(10, -2.4311209e1 +4.6450521e0*logT3 + \
+                             - 3.7209846e0*logT3_2 + 5.9369081e0*logT3_3
+                             - 5.5108049e0*logT3_4 + 1.5538288e0*logT3_5), 0.0)
+
+    # H2 
+    LH2 = np.power(10, -2.3962112e1 +2.09433740e0*logT3 \
+                   -0.77151436e0*logT3_2 +0.43693353e0*logT3_3 \
+                   -0.14913216e0*logT3_4 -0.033638326e0*logT3_5)
+    # He 
+    LHe = np.power(10, -2.3689237e1 +2.1892372e0*logT3 \
+                   -0.81520438e0*logT3_2 +0.29036281e0*logT3_3 \
+                   -0.16596184e0*logT3_4 +0.19191375e0*logT3_5)
+    # H+
+    LHplus = np.power(10, -2.1716699e1 +1.3865783e0*logT3 \
+                      -0.37915285e0*logT3_2 +0.11453688e0*logT3_3 \
+                      -0.23214154e0*logT3_4 +0.058538864e0*logT3_5)
+    # e
+    Le = np.where(T < 200.0,
+                  np.power(10, -3.4286155e1 -4.8537163e1*logT3 \
+                           -7.7121176e1*logT3_2 -5.1352459e1*logT3_3 \
+                           -1.5169150e1*logT3_4 -0.98120322e0*logT3_5),
+                  np.power(10, -2.2190316e1 +1.5728955e0*logT3 \
+                           -0.213351e0*logT3_2 +0.96149759e0*logT3_3 \
+                           -0.91023195e0*logT3_4 +0.13749749e0*logT3_5)
+                  )
+
+    # total cooling in low density limit
+    Gamma_n0 = LHI*xHI*nH + LH2*xH2*nH + LHe*xHe*nH + LHplus*xHII*nH + Le*xe*nH
+    # cooling rate at LTE, from Hollenbach + McKee 1979
+    T3 = T*1.0e-3
+    Gamma_LTE_HR = (9.5e-22*np.power(T3, 3.76))/(1.+0.12*np.power(T3, 2.1))* \
+        np.exp(-np.power(0.13/T3, 3))+ 3.e-24*np.exp(-0.51/T3)
+    Gamma_LTE_HV = 6.7e-19*np.exp(-5.86/T3) + 1.6e-18*np.exp(-11.7/T3)
+    Gamma_LTE = Gamma_LTE_HR +  Gamma_LTE_HV
+    # Total cooling rate
+    Gamma_tot = np.where(Gamma_n0 > 1e-100,
+                         Gamma_LTE / (1.0 + Gamma_LTE/Gamma_n0),
+                         0.0)
+    Gamma_tot = np.where(T >= Tmin_H2, Gamma_tot, 0.0)
+
+    return Gamma_tot * xH2;
+
+def coolH2(nH, T, xHI, xH2):
+    """
+    Cooling by rotation-vibration lines of H2
+    from Moseley et al. (2021)
+    """
+    
+    n1 = 50.0
+    n2 = 450.0
+    n3 = 25.0
+    n4 = 900
+    T3 = T*1e-3
+    T3inv = 1.0/T3
+    nH2 = xH2*nH
+    nHI = xHI*nH
+    x1 = nHI + 5.0*nH2
+    x2 = nHI + 4.5*nH2
+    x3 = nHI + 0.75*nH2
+    x4 = nHI + 0.05*nH2
+    sqrtT3 = np.power(T3,0.5)
+    f1 = 1.1e-25*sqrtT3*np.exp(-0.51*T3inv)* \
+        (0.7*x1/(1.0 + x1/n1) + 0.3*x1/(1.0 + x1/(10.0*n1)))
+    f2 = 2.0e-25*T3*np.exp(-T3inv)* \
+        (0.35*x2/(1.0 + x2/n2) + 0.65*x2/(1.0 + x2/(10.0*n2)))
+    f3 = 2.4e-24*sqrtT3*T3*np.exp(-2.0*T3inv)* \
+        (x3/(1.0 + x3/n3))
+    f4 = 1.7e-23*sqrtT3*T3*np.exp(-4.0*T3inv)* \
+        (0.45*x4/(1.0 + x4/n4) + 0.55*x4/(1.0 + x4/(10.0*n4)))
+    
+    return xH2*(f1 + f2 + f3 + f4)
+
+
+def coolffH(nH, T, xe, xHII):
+    """free-free power for hydrogen (Z=1)
+    """
+    # Frequency-averaged Gaunt factor (Eq.10.11 in Draine 2011)
+    gff_T = 1.0 + 0.44/(1.0 + 0.058* np.log(T/10**5.4)**2)
+    return 1.422e-25*gff_T*(T*1e-4)**0.5*nH*xe*xHII
+
+def coolrecH(nH, T, xe, xHII):
+    from .rec_rate import RecRate
+    rec = RecRate()
+    Err_B = (0.684 - 0.0416*np.log(T*1e-4))*ac.k_B.cgs.value*T
+    return Err_B*rec.get_rec_rate_H_caseB(T)*nH*xe*xHII
+
 
 def coolRec(nH, T, xe, Z_d, chi_PE):
     # Weingartner & Draine (2001) Table 3

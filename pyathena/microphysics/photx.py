@@ -1,11 +1,14 @@
 import numpy as np
 import os
+import os.path as osp
+import pathlib
+
 import astropy.units as au
 import astropy.constants as ac
 
-# __all__ = ['PhotCrossSection']
+__all__ = ['PhotX']
 
-class PhotCrossSection(object):
+class PhotX(object):
     """
     Computes photoionization cross-sections as described in Verner 96
     http://adsabs.harvard.edu/abs/1996ApJ...465..487V
@@ -18,12 +21,9 @@ class PhotCrossSection(object):
     def __init__(self, datadir=None):
         # Read Verner et al. 1996 photoionization cross-section table
         if datadir is None:
-            local = os.path.dirname(os.path.realpath('__file__'))
-            fname = os.path.join(local, '../data/verner96_photx.dat')
-            # fname = os.path.join(os.path.expanduser('~'),
-            #                      'Dropbox/code/tigress_cooling/data/verner96_photx.dat')
-        else:
-            fname = os.path.join(datadir, 'verner96_photx.dat')
+            basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
+                               '../../data/microphysics')
+            fname = os.path.join(basedir, 'verner96_photx.dat')
             
         dat = np.loadtxt(fname, unpack=True)
         self._dat = dat
@@ -118,3 +118,28 @@ class PhotCrossSection(object):
             sigma[indx] = 0.0
 
         return sigma
+    
+def get_sigma_pi_H2(E):
+    """H2 photoionization cross-section [cm^-2]
+    Table 1 in Baczynski et al. (2015)
+    Piecewise constant cross-section to the analytical results
+    of Liu & Shemansky (2012)
+
+    E : array of floats
+        Photon energy in eV
+    """
+    return 1e-18*np.piecewise(E, [E < 15.2, 
+                            ((E >= 15.2) & (E < 15.45)),
+                            ((E >= 15.45) & (E < 15.70)),
+                            ((E >= 15.7) & (E < 15.95)), 
+                            ((E >= 15.95) & (E < 16.20)), 
+                            ((E >= 16.2) & (E < 16.40)), 
+                            ((E >= 16.4) & (E < 16.65)), 
+                            ((E >= 16.65) & (E < 16.85)), 
+                            ((E >= 16.85) & (E < 17.0)), 
+                            ((E >= 17.0) & (E < 17.2)), 
+                            ((E >= 17.2) & (E < 17.65)), 
+                            ((E >= 17.65) & (E < 18.1)), 
+                            E >= 18.1],
+                            [0.0,0.09,1.15,3.0,5.0,6.75,8.0,9.0,9.5,9.8,10.1,9.85,
+                             lambda E: 9.85/(E/18.1)**3])
