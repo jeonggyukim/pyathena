@@ -17,11 +17,12 @@ from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp
 
 class PDF:
-    binranges = dict(nH=(-6,4),T=(1,8),pok=(0,7),
-                     nHI=(-6,4),nH2=(-6,4),nHII=(-6,4),ne=(-6,4),
+    binranges = dict(nH=(-6,6),T=(0,9),pok=(0,10),
+                     nHI=(-6,6),nH2=(-6,6),nHII=(-6,6),ne=(-6,6),
                      xH2=(0,0.5),xHII=(0,1.0),xHI=(0,1.0),
                      chi_PE=(-3,4),chi_FUV=(-3,4),chi_H2=(-3,4),xi_CR=(-18,-12),
-                     Erad_LyC=(-30,-10),Lambda_cool=(-30,-18))
+                     Erad_LyC=(-30,-10),
+                     Lambda_cool=(-30,-18),cool_rate=(-30,-18),heat_rate=(-30,-18))
     dbins = dict(vz=10,xH2=0.01,xHII=0.01,xHI=0.01)
     nologs = ['vz','xH2','xHII','xHI']
     bins = dict()
@@ -241,7 +242,7 @@ class PDF:
 
         return fig
 
-    def load_one_jointpdf(self,xf,yf,wf,num=None,ivtk=None,zrange=(0,300),
+    def load_one_jointpdf(self,xf,yf,wf,ds=None,num=None,ivtk=None,zrange=(0,300),
             force_override=False):
         '''Load joind pdfs of a variety of qunatities for a given zrange
 
@@ -261,17 +262,17 @@ class PDF:
             range of |z| over which pdfs are calculated
 
         '''
-        ds = self.load_vtk(num=num,ivtk=ivtk)
+        if ds is None: ds = self.load_vtk(num=num,ivtk=ivtk)
         zmin,zmax = zrange
         savdir = '{}/jointpdf_z{:02d}-{:02d}/{}-{}-{}'.format(self.savdir,int(zmin/100),int(zmax/100),xf,yf,wf)
         if not os.path.isdir(savdir): os.makedirs(savdir)
         fbase = os.path.basename(self.fvtk)
-        fpdf = '{}{}'.format(savdir,fbase).replace('.vtk','.pdf.nc')
+        fpdf = os.path.join(savdir,fbase.replace('.vtk','.pdf.nc'))
         if not force_override and osp.exists(fpdf) and osp.getmtime(fpdf) > osp.getmtime(self.fvtk):
-            self.logger.info('[load_one_jointpdf]: Reading Joint PDFs of {} and {} weigthed by {} at z in +-({},{})'.format(xf,yf,wf,zmin,zmax))
+            self.logger.info('[jointpdf]: Reading Joint PDFs of {} and {} weigthed by {} at z in +-({},{})'.format(xf,yf,wf,zmin,zmax))
             pdf = xr.open_dataarray(fpdf)
         else:
-            self.logger.info('[load_one_jointpdf]: Creating Joint PDFs of {} and {} weigthed by {} at z in +-({},{})'.format(xf,yf,wf,zmin,zmax))
+            self.logger.info('[jointpdf]: Creating Joint PDFs of {} and {} weigthed by {} at z in +-({},{})'.format(xf,yf,wf,zmin,zmax))
             pdf = self.one_jointpdf(ds,xf,yf,wf,zmin=zmin,zmax=zmax)
             pdf.to_netcdf(fpdf)
         pdf.close()
@@ -282,16 +283,16 @@ class PDF:
             fields = np.unique([xf,yf])
         else:
             fields = np.unique([xf,yf,wf])
-        self.logger.info('[one_jointpdf] reading {}'.format(fields))
+        self.logger.info('[jointpdf] reading {}'.format(fields))
 
         data = ds.get_field(fields)
         data_zcut = xr.concat([data.sel(z=slice(-zmax,-zmin)),data.sel(z=slice(zmin,zmax))],dim='z')
-        data = data.stack(xyz=['x','y','z']).dropna(dim='xyz')
+        data_zcut = data_zcut.stack(xyz=['x','y','z']).dropna(dim='xyz')
 
         if wf is None:
-            h=np.histogram2d(data[xf],data[yf],bins=[self.bins[xf],self.bins[yf]])
+            h=np.histogram2d(data_zcut[xf],data_zcut[yf],bins=[self.bins[xf],self.bins[yf]])
         else:
-            h=np.histogram2d(data[xf],data[yf],bins=[self.bins[xf],self.bins[yf]],weights=data[wf])
+            h=np.histogram2d(data_zcut[xf],data_zcut[yf],bins=[self.bins[xf],self.bins[yf]],weights=data_zcut[wf])
         xe = h[1]
         ye = h[2]
         if not (xf in self.nologs):
@@ -304,7 +305,7 @@ class PDF:
         yc = 0.5*(ye[1:]+ye[:-1])
         dx = xe[1]-xe[0]
         dy = ye[1]-ye[0]
-        pdf = xr.DataArray(h[0].T,coords=[yc,xc],dims=[yf,xf])
+        pdf = xr.DataArray(h[0].T/dx/dy,coords=[yc,xc],dims=[yf,xf])
         pdf.name = wf
 
         return pdf
