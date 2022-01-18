@@ -118,7 +118,10 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
     
     # Set nH and chi_PE as new dimensions
     log_nH = np.log10(dd.sel(z=0,y=0,method='nearest')['nH'].data)
-    log_chi_PE = np.log10(dd.sel(z=0,x=0,method='nearest')['chi_PE_ext'].data)
+    # log_chi_PE = np.log10(dd.sel(z=0,x=0,method='nearest')['chi_PE_ext'].data)
+    log_chi_PE = np.linspace(s.par['problem']['log_chi_min'],
+                             s.par['problem']['log_chi_max'], 
+                             s.par['domain1']['Nx2'])
     dd = dd.rename(dict(x='log_nH'))
     dd = dd.assign_coords(dict(log_nH=log_nH))
 

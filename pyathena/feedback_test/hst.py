@@ -59,10 +59,14 @@ class Hst:
         # Total gas mass in Msun
         hst['mass'] *= vol*u.Msun
 
-        # Mass weighted SNR position in pc
-        hst['Rsh'] = hst['Rsh_den']/hst['Msh']*u.pc
-        # shell mass in Msun
-        hst['Msh'] *= u.Msun*vol
+        try:
+            # Mass weighted SNR position in pc
+            hst['Rsh'] = hst['Rsh_den']/hst['Msh']*u.pc
+            # shell mass in Msun
+            hst['Msh'] *= u.Msun*vol
+        except KeyError:
+            pass
+
         try:
             # hot gas mass in Msun
             hst['Mh'] *= u.Msun*vol
@@ -175,18 +179,31 @@ class Hst:
             hst = self._calc_radiation(hst)
         #hst.index = hst['time_code']
 
-        if iWind:
-            hst['wind_Minj'] *= vol*u.Msun
-            hst['wind_Einj'] *= vol*u.erg
-            hst['wind_pinj'] *= vol*u.Msun*u.kms
-            hst['wind_Mdot'] *= vol*u.Msun/u.Myr
-            hst['wind_Edot'] *= vol*u.erg/u.s
-            hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr        
+        # Wind feedback turned on
+        if par['feedback']['iWind'] > 0:
+            hst = self._calc_wind(hst)
+
         
         self.hst = hst
         
         return hst
 
+    def _calc_wind(self, hst):
+        par = self.par
+        u = self.u
+        domain = self.domain
+        # total volume of domain (code unit)
+        vol = domain['Lx'].prod()        
+
+        hst['wind_Minj'] *= vol*u.Msun
+        hst['wind_Einj'] *= vol*u.erg
+        hst['wind_pinj'] *= vol*u.Msun*u.kms
+        hst['wind_Mdot'] *= vol*u.Msun/u.Myr
+        hst['wind_Edot'] *= vol*u.erg/u.s
+        hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr        
+
+        return hst
+    
     def _calc_radiation(self, hst):
         
         par = self.par

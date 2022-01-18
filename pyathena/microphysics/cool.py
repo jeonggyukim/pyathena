@@ -8,8 +8,9 @@ from ..util.spline import GlobalSpline2D
 # See also Gong, Ostriker, & Wolfire (2017) and https://github.com/munan/tigress_cooling
 
 def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Zg=1.0, Zd=1.0):
-    phi_s = (1.0 - xe/1.2)*0.67/(1.0 + xe/0.05)
-    k1619 = 5.0e-8*(T*1e-2)**(-0.48)
+    xe_max = 1.2006199779862501
+    phi_s = (1.0 - xe/xe_max)*0.67/(1.0 + xe/0.05)
+    k1619 = 1.0e-7*(T*1e-2)**(-0.5)
     k1621 = 1e-9
     k1620 = 1e-14*Zd
     k1622 = 1e-14*Zd
