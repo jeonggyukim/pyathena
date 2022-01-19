@@ -355,10 +355,19 @@ class AthenaDataSet(object):
                 return arr
 
     def _get_array(self, field):
+        if hasattr(self,'arr'):
+            field_to_read=[]
+            for f in field:
+                if f in self.arr: continue
+                field_to_read.append(f)
+            if len(field_to_read) == 0:
+                return self.arr
+        else:
+            field_to_read=field
+            self.arr = dict()
 
-        arr = dict()
-        for f in field:
-            arr[f] = self._set_array(f)
+        for f in field_to_read:
+            self.arr[f] = self._set_array(f)
 
         # Read from individual grids and copy to data
         le = self.region['gle']
@@ -369,10 +378,10 @@ class AthenaDataSet(object):
             iu = il + g['Nx']
             slc = tuple([slice(l, u) for l, u in zip(il[::-1], iu[::-1])])
 
-            for f in field:
-                arr[f][slc] = self._read_array(g, f)
+            for f in field_to_read:
+                self.arr[f][slc] = self._read_array(g, f)
 
-        return arr
+        return self.arr
 
     def _read_array(self, grid, field):
 
