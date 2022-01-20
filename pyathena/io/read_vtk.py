@@ -336,7 +336,8 @@ class AthenaDataSet(object):
                 x[axis] = np.arange(le + 0.5*dx, re + 0.25*dx, dx)
 
             dat = dict()
-            for k, v in arr.items():
+            for k in field:
+                v = arr[k]
                 if len(v.shape) > self.domain['ndim']:
                     for i in range(v.shape[-1]):
                         dat[k + str(i+1)] = (('z','y','x'), v[..., i])
@@ -366,6 +367,7 @@ class AthenaDataSet(object):
             field_to_read=field
             self.arr = dict()
 
+        print(field_to_read,self.arr.keys())
         for f in field_to_read:
             self.arr[f] = self._set_array(f)
 

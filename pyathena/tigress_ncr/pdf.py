@@ -15,16 +15,18 @@ from ..plt_tools.cmap_custom import get_my_cmap
 from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp
+from ..classic.cooling import coolftn
+from ..io.read_hst import read_hst
 
 class PDF:
     binranges = dict(nH=(-6,6),T=(0,9),pok=(0,10),
                      nHI=(-6,6),nH2=(-6,6),nHII=(-6,6),ne=(-6,6),
-                     xH2=(0,0.5),xHII=(0,1.0),xHI=(0,1.0),
+                     xH2=(0,0.5),xHII=(0,1.0),xHI=(0,1.0),xe=(0,1.2),
                      chi_PE=(-3,4),chi_FUV=(-3,4),chi_H2=(-3,4),xi_CR=(-18,-12),
                      Erad_LyC=(-30,-10),
                      Lambda_cool=(-30,-18),cool_rate=(-30,-18),heat_rate=(-30,-18))
-    dbins = dict(vz=10,xH2=0.01,xHII=0.01,xHI=0.01)
-    nologs = ['vz','xH2','xHII','xHI']
+    dbins = dict(vz=10,xH2=0.01,xHII=0.01,xHI=0.01,xe=0.01)
+    nologs = ['vz','xH2','xHII','xHI','xe']
     bins = dict()
     for k,v in binranges.items():
         bmin, bmax = v
@@ -263,6 +265,11 @@ class PDF:
 
         '''
         if ds is None: ds = self.load_vtk(num=num,ivtk=ivtk)
+        if (not self.test_newcool()) and (not hasattr(self,'heat_ratio')):
+            hst = read_hst(self.files['hst'])
+            self.heat_ratio = hst['heat_ratio']
+            self.heat_ratio.index = hst['time']
+
         zmin,zmax = zrange
         savdir = '{}/jointpdf_z{:02d}-{:02d}/{}-{}-{}'.format(self.savdir,int(zmin/100),int(zmax/100),xf,yf,wf)
         if not os.path.isdir(savdir): os.makedirs(savdir)
@@ -280,14 +287,35 @@ class PDF:
 
     def one_jointpdf(self,ds,xf,yf,wf,zmin=0,zmax=300):
         if wf is None:
-            fields = np.unique([xf,yf])
+            fields = {xf,yf}
         else:
-            fields = np.unique([xf,yf,wf])
+            fields = {xf,yf,wf}
+        recal = False
+        if not self.test_newcool() and \
+          ('net_cool_rate' in fields or 'heat_rate' in fields):
+            fields = fields - {'heat_rate','net_cool_rate'}
+            fields.add('pressure')
+            fields.add('density')
+            recal = True
+
         self.logger.info('[jointpdf] reading {}'.format(fields))
 
-        data = ds.get_field(fields)
-        data_zcut = xr.concat([data.sel(z=slice(-zmax,-zmin)),data.sel(z=slice(zmin,zmax))],dim='z')
+        data = ds.get_field(list(fields))
+
+        data_zcut = xr.concat([data.sel(z=slice(-zmax,-zmin)),
+                               data.sel(z=slice(zmin,zmax))],dim='z')
         data_zcut = data_zcut.stack(xyz=['x','y','z']).dropna(dim='xyz')
+        if not self.test_newcool() and recal:
+            heat_ratio = np.interp(ds.domain['time'],self.heat_ratio.index,self.heat_ratio)
+            nH = data_zcut['density']
+            T1 = data_zcut['pressure']/data_zcut['density']
+            T1 *= (self.u.velocity**2*ac.m_p/ac.k_B).cgs.value
+            T1data = T1.data
+            cool = nH*nH*coolftn().get_cool(T1data)
+            heat = heat_ratio*nH*coolftn().get_heat(T1data)
+            net_cool = cool-heat
+            data_zcut['heat_rate'] = heat
+            data_zcut['net_cool_rate'] = net_cool
 
         if wf is None:
             h=np.histogram2d(data_zcut[xf],data_zcut[yf],bins=[self.bins[xf],self.bins[yf]])

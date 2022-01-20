@@ -11,7 +11,7 @@ import pandas as pd
 
 def read_hst(filename, force_override=False, verbose=False):
     """ Function to read athena history file and pickle
-    
+
     Parameters
     ----------
     filename : string
@@ -53,7 +53,7 @@ def read_hst(filename, force_override=False, verbose=False):
 
     return hst
 
-      
+
 def _get_hst_var(filename):
     """Read variable names from history file
 
