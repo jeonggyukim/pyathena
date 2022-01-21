@@ -46,19 +46,21 @@ class PDF:
 
         ds = self.load_vtk(num=num)
         res = dict()
-        
+
         for bf in bin_fields:
             try:
                 dd = ds.get_field(bf)
-            except KeyError:
+            except KeyError as e:
+                print(e.message)
                 continue
+            
             k = '-'.join(bf)
             res[k] = dict()
             xdat = dd[bf[0]].data.flatten()
             ydat = dd[bf[1]].data.flatten()
             # Volume weighted hist
             weights = None
-            H, xe, ye = np.histogram2d(xdat, ydat, (self.bins[bf[0]], self.bins[bf[1]]),
+            H, xe, ye = np.histogram2d(xdat, ydat, (bins[bf[0]], bins[bf[1]]),
                                        weights=weights)
             res[k]['H'] = H
             res[k]['xe'] = xe
@@ -66,7 +68,7 @@ class PDF:
             
             # Density weighted hist
             weights = (ds.get_field('nH'))['nH'].data.flatten()
-            Hw, xe, ye = np.histogram2d(xdat, ydat, (self.bins[bf[0]], self.bins[bf[1]]),
+            Hw, xe, ye = np.histogram2d(xdat, ydat, (bins[bf[0]], bins[bf[1]]),
                                         weights=weights)
             res[k]['Hw'] = Hw
 

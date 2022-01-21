@@ -7,23 +7,27 @@ from ..util.spline import GlobalSpline2D
 # Original C version implemented in Athena-TIGRESS
 # See also Gong, Ostriker, & Wolfire (2017) and https://github.com/munan/tigress_cooling
 
-def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Zg=1.0, Zd=1.0):
-    phi_s = (1.0 - xe/1.2)*0.67/(1.0 + xe/0.05)
-    k1619 = 5.0e-8*(T*1e-2)**(-0.48)
+def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Z_g=1.0, Z_d=1.0):
+    xe_max = 1.2006199779862501
+    k1620 = 1e-14*Z_d
+    k1622 = 1e-14*Z_d
     k1621 = 1e-9
-    k1620 = 1e-14*Zd
-    k1622 = 1e-14*Zd
-    xS = 5.3e-6*Zg # From Draine's Table 9.5 (Diffuse H2)
+    k1619 = 1.0e-7*(T*1e-2)**(-0.5)
+    phi_s = (1.0 - xe/xe_max)*0.67/(1.0 + xe/0.05)
+    xS = 5.3e-6*Z_g # From Draine's Table 9.5 (Diffuse H2)
     A = k1619*(1.0 + k1621/k1622*xS)
     B = k1620 + k1621*xS
     return 2.0*xH2*((B**2 + 4.0*A*xi_cr*(1.0 + phi_s)/nH)**0.5 - B)/(2.0*k1619)
 
-def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=True):
+def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=True, CRPhot=True):
 
     xCtot = xCstd*Z_g
     small_ = 1e-50
     k_C_cr = 3.85*xi_CR
     k_C_photo = 3.5e-10*G_CI
+    if CRphotC:
+        k_C_photo += 520.0*2.0*xH2*xi_CR
+        
     lnT = np.log(T)
     k_Cplus_e = np.where(T < 10.0,
                          9.982641225129824e-11,
@@ -31,43 +35,39 @@ def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=T
     if gr_rec:
         psi_gr = 1.7*G_PE*np.sqrt(T)/(nH*xe + small_) + small_
         cCp_ = np.array([45.58, 6.089e-3, 1.128, 4.331e2, 4.845e-2,0.8120, 1.333e-4])
-        k_Cplus_gr = 1.0e-14*cCp_[0]/(1.0 + cCp_[1]*np.power(psi_gr, cCp_[2]) * 
+        k_Cplus_gr = 1.0e-14*cCp_[0]/(1.0 + cCp_[1]*np.power(psi_gr, cCp_[2]) *
                                       (1.0 + cCp_[3] * np.power(T, cCp_[4])
                                        * np.power( psi_gr, -cCp_[5]-cCp_[6]*lnT ))) * Z_d
     else:
         k_Cplus_gr = 0.0
-        
+
     k_Cplus_H2 = 3.3e-13 * np.power(T, -1.3) * np.exp(-23./T)
-        
+
     c = (k_C_cr + k_C_photo) / nH
     al = k_Cplus_e*xe + k_Cplus_gr + k_Cplus_H2*xH2 + c
     ar = xCtot * c
-    
+
     return ar / al
 
 
-def get_xCO(nH, xH2, xCII, Z_d, Z_g, xi_CR, chi_CO, xCstd=1.6e-4):
+def get_xCO(nH, xH2, xCII, xOII, Z_d, Z_g, xi_CR, chi_CO,
+            xCstd=1.6e-4, xOstd=3.2e-4):
 
     xCtot = xCstd*Z_g
+    xOtot = xOstd*Z_g
     kcr16 = xi_CR*1e16
     term1 = np.maximum(4e3*Z_d/kcr16**2,1.0)
     ncrit = np.power(term1, chi_CO**(1.0/3.0))*(50*kcr16/np.power(Z_d,1.4))
-    #xCO = np.where(nH > ncrit2, 1.0, nH/ncrit2)
     xCO = nH**2/(nH**2 + ncrit**2)
     xCO = xCO*(2.0*xH2)
-    xCO = xCO*(xCtot - xCII)
-
-    # xCO = np.minimum(xCO, 2.0*xH2*xCtot)
-    # xCO = np.minimum(xCO, xCtot - xCII)
-    # xCO = np.minimum(xCO, 2.0*xH2)
-    #xCO = np.minimum(xCO, xCtot - xCII)
+    xCO = xCO*np.minimum(xCtot - xCII,xOtot-xOII)
     
     return xCO,ncrit
 
 def get_charge_param(nH, T, xe, chi_PE, phi=1.0):
     # Charging parameter
     # (WD01 does not recommend using their eqaution for x < 100)
-    # return np.maximum(1.7*chi_PE*np.sqrt(T)/(xe*nH*phi), 100.0) 
+    # return np.maximum(1.7*chi_PE*np.sqrt(T)/(xe*nH*phi), 100.0)
     return 1.7*chi_PE*np.sqrt(T)/(xe*nH*phi) + 50.0
 
 def heatPE(nH, T, xe, Z_d, chi_PE):
@@ -77,7 +77,7 @@ def heatPE(nH, T, xe, Z_d, chi_PE):
     x = get_charge_param(nH, T, xe, chi_PE)
     eps = (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
         (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
-    
+
     return 1.7e-26*chi_PE*Z_d*eps
 
 def heatPE_BT94(nH, T, xe, Z_d, chi_PE):
@@ -112,36 +112,71 @@ def heatCR(nH, xe, xHI, xH2, xi_CR):
                    (13 + 4*(log_nH - 4.0)/3)*eV_cgs, 0.0) + \
           np.where(np.logical_and(log_nH >= 7.0, log_nH < 10.0),
                    (17 + (log_nH - 7.0)/3)*eV_cgs, 0.0) + \
-          np.where(log_nH >= 10.0, 18.0*eV_cgs, 0.0)    
+          np.where(log_nH >= 10.0, 18.0*eV_cgs, 0.0)
 
     return ktot*(xHI*qHI + 2.0*xH2*qH2)
 
-def heatH2form(nH, T, xHI, xH2, Z_d):
-    # Hollenbach & McKee (1978)
+def heatH2form(nH, T, xHI, xH2, Z_d, kgr_H2=3.0e-17, ikgr_H2=0):
     eV_cgs = (1.0*au.eV).cgs.value
+
+    if ikgr_H2 == 0: # Constant coeff
+        kgr = kgr_H2
+    else:
+        T2 = T*1e-2
+        kgr = kgr_H2*Z_d*sqrt(T2)*2.0/(1+0.4*np.sqrt(T2)+0.2*T2+0.08*T2*T2)
+    
+    # Hollenbach & McKee (1978) Eq (6.43), (6.45)
     de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
     ncrit = 1e6/np.sqrt(T)/de
     f = nH/(nH + ncrit)
 
-    return 3.0e-17*Z_d*nH*xHI*(0.2 + 4.2*f)*eV_cgs
+    return kgr*Z_d*nH*xHI*(0.2 + 4.2*f)*eV_cgs
 
 def heatH2pump(nH, T, xHI, xH2, xi_diss_H2):
     # Hollenbach & McKee (1978)
+    f_pump = 9.0 # Use Draine & Bertoldi (1996) value (9.0 in HM79) 
     eV_cgs = (1.0*au.eV).cgs.value
     de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
     ncrit = 1e6/np.sqrt(T)/de
     f = nH/(nH + ncrit)
 
-    return 9.0*2.2*xi_diss_H2*xH2*f*eV_cgs
+    return f_pump*2.2*xi_diss_H2*xH2*f*eV_cgs
 
 def heatH2diss(xH2, xi_diss_H2):
     eV_cgs = (1.0*au.eV).cgs.value
 
     return 0.4*xi_diss_H2*xH2*eV_cgs
 
+def coolH2colldiss(nH, T, xHI, xH2):
+
+    eV_cgs = (1.0*au.eV).cgs.value
+    temp_coll_ = 7e2
+    small_ = 1e-50
+    
+    Tinv = 1/T
+    logT4 = np.log10(T*1e-4)
+    k9l_ = 6.67e-12 * np.sqrt(T) * np.exp(-(1. + 63590.*Tinv))
+    k9h_ = 3.52e-9 * np.exp(-43900.0*Tinv)
+    k10l_ = 5.996e-30 * np.power(T, 4.1881) / \
+        np.power((1.0 + 6.761e-6*T), 5.6881) * np.exp(-54657.4*Tinv)
+    k10h_ = 1.3e-9 * np.exp(-53300.0*Tinv)
+    ncrH2_ = np.power(10, (4.845 - 1.3*logT4 + 1.62*logT4*logT4))
+    ncrHI_ = np.power(10, (3.0 - 0.416*logT4 - 0.327*logT4*logT4))
+    ncrinv = xHI/ncrHI_ + 2.0*xH2/ncrH2_
+    ncrinv = np.maximum(ncrinv, small_)
+    n2ncr = nH * ncrinv
+    k_H2_HI  = np.power(10, np.log10(k9h_) * n2ncr/(1. + n2ncr)
+                        + np.log10(k9l_) / (1. + n2ncr))
+    k_H2_H2 = np.power(10, np.log10(k10h_) *  n2ncr/(1. + n2ncr)
+                       + np.log10(k10l_) / (1. + n2ncr))
+    xi_coll_H2_ = k_H2_H2*nH*xH2 + k_H2_HI*nH*xHI
+    xi_coll_H2 = np.where(T > temp_coll_, xi_coll_H2_, 0.0)
+    
+    return 4.48*eV_cgs*xH2*xi_coll_H2
+
 def heatH2pump_Burton90(nH, T, xHI, xH2, xi_diss_H2):
-    # Burton, Hollenbach, & Tielens (1990)
-    kpump = 6.94*xi_diss_H2
+    # Burton, Hollenbach, & Tielens (1990) (Eq. A1)
+    kpump = 9.0*xi_diss_H2
     Cdex = 1e-12*(1.4*np.exp(-18100.0/(T + 1200.0))*xH2 + \
                   np.exp(-1000.0/T)*xHI)*np.sqrt(T)*nH
     Crad = 2e-7
@@ -152,11 +187,11 @@ def heatH2pump_Burton90(nH, T, xHI, xH2, xi_diss_H2):
 def q10CII_(nH, T, xe, xHI, xH2):
     """Compute collisional de-excitation rate [s^-1]
     """
-        
+
     # Ortho-to-para ratio of H2
     fp_ = 0.25
     fo_ = 0.75
-    
+
     # Eqs (17.16) and (17.17) in Draine (2011)
     T2 = T*1e-2;
     k10e = 4.53e-8*np.sqrt(1.0e4/T)
@@ -177,7 +212,7 @@ def q10CII_(nH, T, xe, xHI, xH2):
     k10pH2 = np.where(T < 500.0,
                       (4.43 + 0.33*T2)*1.0e-10,
                       3.88997286356e-10*tmp)
-    
+
     k10H2 = k10oH2*fo_ + k10pH2*fp_
 
     return nH*(k10e*xe + k10HI*xHI + k10H2*xH2)
@@ -186,14 +221,14 @@ def coolCII(nH, T, xe, xHI, xH2, xCII):
 
     g0CII_ = 2.
     g1CII_ = 4.
-    
+
     A10CII_ = 2.3e-6
     E10CII_ = 1.26e-14
     kB_cgs = ac.k_B.cgs.value
 
     q10 = q10CII_(nH, T, xe, xHI, xH2)
     q01 = (g1CII_/g0CII_)*q10*np.exp(-E10CII_/(kB_cgs*T))
-    
+
     return q01/(q01 + q10 + A10CII_)*A10CII_*E10CII_*xCII
 
 def coolHIion(nH, T, xe, xHI):
@@ -201,11 +236,11 @@ def coolHIion(nH, T, xe, xHI):
     return 13.6*eV_cgs*coeff_kcoll_H(T)*nH*xe*xHI
 
 def coolCI(nH, T, xe, xHI, xH2, xCI):
-    
+
     kB_cgs = ac.k_B.cgs.value
     fp_ = 0.25
     fo_ = 0.75
-    
+
     # CI, 3 level system
     g0CI_ = 1
     g1CI_ = 3
@@ -216,7 +251,7 @@ def coolCI(nH, T, xe, xHI, xH2, xCI):
     E10CI_ = 3.261e-15
     E20CI_ = 8.624e-15
     E21CI_ = 5.363e-15
-    
+
     # e-collisional coefficents (Johnson, Burke, & Kingston 1987; JPhysB, 20, 2553)
     T2 = T*1e-2
     lnT2 = np.log(T2)
@@ -244,7 +279,7 @@ def coolCI(nH, T, xe, xHI, xH2, xCI):
                            lnT - 0.57443)*lnT -7.4387,
                           (((9.78573e-2*lnT - 3.19268)*lnT +3.85049e1)*\
                            lnT - 2.02193e2)*lnT +3.86186e2)
-    
+
     k10e = fac * np.exp(lngamma10e)/g1CI_
     k20e = fac * np.exp(lngamma20e)/g2CI_
     k21e = fac * np.exp(lngamma21e)/g2CI_
@@ -260,11 +295,11 @@ def coolCI(nH, T, xe, xHI, xH2, xCI):
     k20H2o = 0.69e-10 * np.power(T2, 0.169+0.038*lnT2)
     k21H2p = 1.75e-10 * np.power(T2, 0.072+0.064*lnT2)
     k21H2o = 1.48e-10 * np.power(T2, 0.263+0.031*lnT2)
-    
+
     k10H2 = k10H2p*fp_ + k10H2o*fo_
     k20H2 = k20H2p*fp_ + k20H2o*fo_
     k21H2 = k21H2p*fp_ + k21H2o*fo_
-    
+
     # The totol collisonal rates
     q10 = nH*(k10HI*xHI + k10H2*xH2 + k10e*xe)
     q20 = nH*(k20HI*xHI + k20H2*xH2 + k20e*xe)
@@ -272,12 +307,12 @@ def coolCI(nH, T, xe, xHI, xH2, xCI):
     q01 = (g1CI_/g0CI_) * q10 * np.exp(-E10CI_/(kB_cgs*T))
     q02 = (g2CI_/g0CI_) * q20 * np.exp(-E20CI_/(kB_cgs*T))
     q12 = (g2CI_/g1CI_) * q21 * np.exp(-E21CI_/(kB_cgs*T))
-    
+
     return cool3Level_(q01,q10,q02,q20,q12,q21,A10CI_,A20CI_,
                        A21CI_,E10CI_,E20CI_,E21CI_,xCI)
 
 def coolOII(nH, T, xe, xOII):
-    
+
     T4 = T*1e-4
     kB_cgs = ac.k_B.cgs.value
     # OII, 3 level system
@@ -288,19 +323,19 @@ def coolOII(nH, T, xe, xOII):
     A20OII_ = 1.6e-4
     A21OII_ = 1.3e-7
     E10OII_ = (ac.h*ac.c/(3728.8*au.angstrom)).to('erg').value
-    E20OII_ = (ac.h*ac.c/(3726.0*au.angstrom)).to('erg').value 
-    E21OII_ = (ac.h*ac.c/(497.1*au.micron)).to('erg').value    
-    
+    E20OII_ = (ac.h*ac.c/(3726.0*au.angstrom)).to('erg').value
+    E21OII_ = (ac.h*ac.c/(497.1*au.micron)).to('erg').value
+
     # Draine (2011)
     Omega10e = 0.803*T4**(0.023-0.008*np.log(T4))
     Omega20e = 0.550*T4**(0.054-0.004*np.log(T4))
     Omega21e = 1.434*T4**(-0.176+0.004*np.log(T4))
-    
+
     prefactor = 8.629e-8/np.sqrt(T4)
     k10e = prefactor*Omega10e/g1OII_
     k20e = prefactor*Omega20e/g2OII_
     k21e = prefactor*Omega21e/g2OII_
-    
+
     # Total collisional rates
     q10 = nH*k10e*xe
     q20 = nH*k20e*xe
@@ -309,13 +344,13 @@ def coolOII(nH, T, xe, xOII):
     q02 = (g2OII_/g0OII_) * q20 * np.exp(-E20OII_/(kB_cgs*T))
     q12 = (g2OII_/g1OII_) * q21 * np.exp(-E21OII_/(kB_cgs*T))
 
-    return cool3Level_(q01, q10, q02, q20, q12, q21, A10OII_, A20OII_, 
+    return cool3Level_(q01, q10, q02, q20, q12, q21, A10OII_, A20OII_,
                        A21OII_, E10OII_, E20OII_, E21OII_, xOII)
 
 def coolOI(nH, T, xe, xHI, xH2, xOI):
 
     kB_cgs = ac.k_B.cgs.value
-    
+
     # Ortho-to-para ratio of H2
     fp_ = 0.25
     fo_ = 0.75
@@ -330,7 +365,7 @@ def coolOI(nH, T, xe, xHI, xH2, xOI):
     E10OI_ = 3.144e-14
     E20OI_ = 4.509e-14
     E21OI_ = 1.365e-14
-    
+
     T2 = T*1e-2
     lnT2 = np.log(T2)
     # Collisional rates from  Draine (2011) (Appendix F Table F.6)
@@ -348,7 +383,7 @@ def coolOI(nH, T, xe, xHI, xH2, xOI):
     k10H2 = k10H2p*fp_ + k10H2o*fo_
     k20H2 = k20H2p*fp_ + k20H2o*fo_
     k21H2 = k21H2p*fp_ + k21H2o*fo_
-    
+
     # Electrons; fit from Bell+1998
     k10e = 5.12e-10 * np.power(T, -0.075)
     k20e = 4.86e-10 * np.power(T, -0.026)
@@ -361,12 +396,12 @@ def coolOI(nH, T, xe, xHI, xH2, xOI):
     q02 = (g2OI_/g0OI_) * q20 * np.exp(-E20OI_/(kB_cgs*T))
     q12 = (g2OI_/g1OI_) * q21 * np.exp(-E21OI_/(kB_cgs*T))
 
-    return cool3Level_(q01, q10, q02, q20, q12, q21, A10OI_, A20OI_, 
+    return cool3Level_(q01, q10, q02, q20, q12, q21, A10OI_, A20OI_,
                        A21OI_, E10OI_, E20OI_, E21OI_, xOI)
 
 
 def coolLya(nH, T, xe, xHI):
-    
+
     # HI, 2 level system
     A10HI_ = 6.265e8
     E10HI_ = 1.634e-11
@@ -389,7 +424,7 @@ def coolHI(nH, T, xHI, xe):
 
     #TLyA = (3.0/4.0*(ac.h*ac.c*ac.Ryd).to('eV')/ac.k_B).to('K').value
     #TLyB = (8.0/9.0*(ac.h*ac.c*ac.Ryd).to('eV')/ac.k_B).to('K').value
-    
+
     TLyA = 118415.63430152694
     TLyB = 140344.45546847637
 
@@ -405,14 +440,14 @@ def coolHI(nH, T, xHI, xe):
     Lambda2p = fac * exfacLyA * upsilon2s * xHI * xe * nH * kB * TLyA
     LambdaLyA = fac * exfacLyA * upsilon2p * xHI * xe * nH * kB * TLyA
     LambdaLyB = fac * exfacLyB * (upsilon3s + upsilon3p + upsilon3d) * xHI * xe * nH * kB * TLyB
-    
+
     return Lambda2p + LambdaLyA + LambdaLyB
 
 def coolH2G17(nH, T, xHI, xH2, xHII, xe, xHe=0.1):
     """
     H2 Cooling from Gong et al. (2017)
     """
-    
+
     Tmax_H2 = 6000.  # maximum temperature above which use Tmax
     Tmin_H2 = 10.    # minimum temperature below which cut off cooling
 
@@ -424,7 +459,7 @@ def coolH2G17(nH, T, xHI, xH2, xHII, xe, xHe=0.1):
     logT3_3 = logT3_2 * logT3
     logT3_4 = logT3_3 * logT3
     logT3_5 = logT3_4 * logT3
-    
+
     # HI
     LHI = np.where(T < 100.0,
                    np.power(10, -16.818342e0 +3.7383713e1*logT3 \
@@ -439,11 +474,11 @@ def coolH2G17(nH, T, xHI, xH2, xHII, xe, xHe=0.1):
                              - 3.7209846e0*logT3_2 + 5.9369081e0*logT3_3
                              - 5.5108049e0*logT3_4 + 1.5538288e0*logT3_5), 0.0)
 
-    # H2 
+    # H2
     LH2 = np.power(10, -2.3962112e1 +2.09433740e0*logT3 \
                    -0.77151436e0*logT3_2 +0.43693353e0*logT3_3 \
                    -0.14913216e0*logT3_4 -0.033638326e0*logT3_5)
-    # He 
+    # He
     LHe = np.power(10, -2.3689237e1 +2.1892372e0*logT3 \
                    -0.81520438e0*logT3_2 +0.29036281e0*logT3_3 \
                    -0.16596184e0*logT3_4 +0.19191375e0*logT3_5)
@@ -477,12 +512,12 @@ def coolH2G17(nH, T, xHI, xH2, xHII, xe, xHe=0.1):
 
     return Gamma_tot * xH2;
 
-def coolH2(nH, T, xHI, xH2):
+def coolH2rovib(nH, T, xHI, xH2):
     """
     Cooling by rotation-vibration lines of H2
     from Moseley et al. (2021)
     """
-    
+
     n1 = 50.0
     n2 = 450.0
     n3 = 25.0
@@ -504,8 +539,13 @@ def coolH2(nH, T, xHI, xH2):
         (x3/(1.0 + x3/n3))
     f4 = 1.7e-23*sqrtT3*T3*np.exp(-4.0*T3inv)* \
         (0.45*x4/(1.0 + x4/n4) + 0.55*x4/(1.0 + x4/(10.0*n4)))
-    
+
     return xH2*(f1 + f2 + f3 + f4)
+
+def coolH2colldiss(nH, T, xHI, xH2):
+    eV_cgs=(1.*au.eV).cgs.value
+    xi_coll_H2=coeff_coll_H2(nH, T, xHI, xH2)
+    return 4.48*eV_cgs*xH2*xi_coll_H2
 
 
 def coolffH(nH, T, xe, xHII):
@@ -538,7 +578,7 @@ def coolRec_BT94(nH, T, xe, Z_d, chi_PE):
     ne = nH*xe
     x = get_charge_param(nH, T, xe, chi_PE)
     beta = 0.735*np.power(T,-0.068)
-    
+
     return 3.49e-30*np.power(T, 0.944)*np.power(x, beta)*ne*Z_d
 
 def coolRec_W03(nH, T, xe, Z_d, chi_PE, phi=0.5):
@@ -547,6 +587,12 @@ def coolRec_W03(nH, T, xe, Z_d, chi_PE, phi=0.5):
     beta = 0.735*np.power(T,-0.068)
     return 4.65e-30*np.power(T, 0.944)*np.power(x, beta)*ne*Z_d*phi
 
+def cooldust(nH, T, Td, Z_d):
+    # From Krumholz (2014) or Goldsmith (2001)
+    # Strictly speaking the coupling constant alpha_gd depends on chemical composition
+    alpha_gd = 3.2e-34
+    return Z_d*alpha_gd*nH*np.sqrt(T)*(T - Td)
+    
 def cool3Level_(q01, q10, q02, q20, q12, q21,
                 A10, A20, A21, E10, E20, E21, xs):
     # Equilibrium level population including
@@ -561,7 +607,7 @@ def cool3Level_(q01, q10, q02, q20, q12, q21,
     de = a0 + a1 + a2
     f1 = a1 / de
     f2 = a2 / de
-    
+
     return (f1*A10*E10 + f2*(A20*E20 + A21*E21))*xs
 
 
@@ -572,7 +618,7 @@ def cool2Level_(q01, q10, A10, E10, xs):
 
 def coolCO(nH, T, xe, xHI, xH2, xCO, dvdr):
 
-    # CO cooling table data from Omukai+2010 
+    # CO cooling table data from Omukai+2010
     TCO_ = np.array([10,20,30,50,80,100,300,600,1000,1500,2000])
 
     NeffCO_ = np.array([14.0, 14.5, 15.0, 15.5, 16.0, 16.5,
@@ -594,16 +640,16 @@ def coolCO(nH, T, xe, xHI, xH2, xCO, dvdr):
                         [23.30, 22.23, 21.65, 20.94, 20.32, 20.03, 18.67, 17.89, 17.48, 17.26, 17.12],
                         [23.76, 22.66, 22.06, 21.35, 20.71, 20.42, 19.03, 18.26, 17.93, 17.74, 17.61]])
 
-    nhalfCO_ = np.array([[3.29, 3.49 ,3.67 ,3.97, 4.30, 4.46, 5.17, 5.47, 5.53, 5.30, 4.70], 
-                         [3.27, 3.48 ,3.66 ,3.96, 4.30, 4.45, 5.16, 5.47, 5.53, 5.30, 4.70], 
-                         [3.22, 3.45 ,3.64 ,3.94, 4.29, 4.45, 5.16, 5.47, 5.53, 5.30, 4.70], 
-                         [3.07, 3.34 ,3.56 ,3.89, 4.26, 4.42, 5.15, 5.46, 5.52, 5.30, 4.70], 
-                         [2.72, 3.09 ,3.35 ,3.74, 4.16, 4.34, 5.13, 5.45, 5.51, 5.29, 4.68], 
-                         [2.24, 2.65 ,2.95 ,3.42, 3.92, 4.14, 5.06, 5.41, 5.48, 5.26, 4.64], 
-                         [1.74, 2.15 ,2.47 ,2.95, 3.49, 3.74, 4.86, 5.30, 5.39, 5.17, 4.53], 
-                         [1.24, 1.65 ,1.97 ,2.45, 3.00, 3.25, 4.47, 5.02, 5.16, 4.94, 4.27], 
-                         [0.742, 1.15 ,1.47 ,1.95, 2.50, 2.75, 3.98, 4.57, 4.73, 4.52, 3.84], 
-                         [0.242, 0.652,0.966 ,1.45, 2.00, 2.25, 3.48, 4.07, 4.24, 4.03, 3.35], 
+    nhalfCO_ = np.array([[3.29, 3.49 ,3.67 ,3.97, 4.30, 4.46, 5.17, 5.47, 5.53, 5.30, 4.70],
+                         [3.27, 3.48 ,3.66 ,3.96, 4.30, 4.45, 5.16, 5.47, 5.53, 5.30, 4.70],
+                         [3.22, 3.45 ,3.64 ,3.94, 4.29, 4.45, 5.16, 5.47, 5.53, 5.30, 4.70],
+                         [3.07, 3.34 ,3.56 ,3.89, 4.26, 4.42, 5.15, 5.46, 5.52, 5.30, 4.70],
+                         [2.72, 3.09 ,3.35 ,3.74, 4.16, 4.34, 5.13, 5.45, 5.51, 5.29, 4.68],
+                         [2.24, 2.65 ,2.95 ,3.42, 3.92, 4.14, 5.06, 5.41, 5.48, 5.26, 4.64],
+                         [1.74, 2.15 ,2.47 ,2.95, 3.49, 3.74, 4.86, 5.30, 5.39, 5.17, 4.53],
+                         [1.24, 1.65 ,1.97 ,2.45, 3.00, 3.25, 4.47, 5.02, 5.16, 4.94, 4.27],
+                         [0.742, 1.15 ,1.47 ,1.95, 2.50, 2.75, 3.98, 4.57, 4.73, 4.52, 3.84],
+                         [0.242, 0.652,0.966 ,1.45, 2.00, 2.25, 3.48, 4.07, 4.24, 4.03, 3.35],
                          [-0.258, 0.152,0.466 ,0.95, 1.50, 1.75, 2.98, 3.57, 3.74, 3.53, 2.85]])
 
     alphaCO_ = np.array([[0.439, 0.409, 0.392, 0.370, 0.361, 0.357, 0.385, 0.437, 0.428, 0.354, 0.322],
@@ -644,10 +690,10 @@ def coolCO(nH, T, xe, xHI, xH2, xCO, dvdr):
 
     kB_cgs = ac.k_B.cgs.value
     TmaxCO = 2000.0;
-    
+
     # Calculate effective column of CO
     # maximum escape probability length, in cgs unites
-    Leff_CO_max = 3.086e20 # 100 pc 
+    Leff_CO_max = 3.086e20 # 100 pc
     # vth/Leff_CO_max
     grad_small = np.sqrt(2.0*kB_cgs*T/4.68e-23)/Leff_CO_max
     gradeff = np.maximum(dvdr, grad_small)
@@ -664,7 +710,7 @@ def coolCO(nH, T, xe, xHI, xH2, xCO, dvdr):
     Troot4 = np.power(T1, 0.25)
     neff = nH*(xH2 + 1.75*Troot4*xHI + 680.1/Troot4*xe)
     L0 = 10.0**(-L0CO(T1))
-    
+
     alpha = np.zeros_like(T1)
     LLTE = np.zeros_like(T1)
     nhalf = np.zeros_like(T1)
@@ -675,8 +721,8 @@ def coolCO(nH, T, xe, xHI, xH2, xCO, dvdr):
 
 
     inv_LCO = 1./L0 + neff/LLTE + 1./L0*np.power(neff/nhalf, alpha)*(1. - nhalf*L0/LLTE)
-    
-    return (1./inv_LCO)*neff*xCO*facT    
+
+    return (1./inv_LCO)*neff*xCO*facT
 
 def fshld_H2(NH2, b5=3.0):
     x = 2.0e-15*NH2
@@ -931,11 +977,11 @@ def fshld_CO(logNH2,logNCO):
 
 
 def get_CI_lev(nH, T, xe, xHI, xH2):
-    
+
     kB_cgs = ac.k_B.cgs.value
     fp_ = 0.25
     fo_ = 0.75
-    
+
     # CI, 3 level system
     g0CI_ = 1
     g1CI_ = 3
@@ -946,7 +992,7 @@ def get_CI_lev(nH, T, xe, xHI, xH2):
     E10CI_ = 3.261e-15
     E20CI_ = 8.624e-15
     E21CI_ = 5.363e-15
-    
+
     # e-collisional coefficents (Johnson, Burke, & Kingston 1987; JPhysB, 20, 2553)
     T2 = T*1e-2
     lnT2 = np.log(T2)
@@ -974,7 +1020,7 @@ def get_CI_lev(nH, T, xe, xHI, xH2):
                            lnT - 0.57443)*lnT -7.4387,
                           (((9.78573e-2*lnT - 3.19268)*lnT +3.85049e1)*\
                            lnT - 2.02193e2)*lnT +3.86186e2)
-    
+
     k10e = fac * np.exp(lngamma10e)/g1CI_
     k20e = fac * np.exp(lngamma20e)/g2CI_
     k21e = fac * np.exp(lngamma21e)/g2CI_
@@ -990,11 +1036,11 @@ def get_CI_lev(nH, T, xe, xHI, xH2):
     k20H2o = 0.69e-10 * np.power(T2, 0.169+0.038*lnT2)
     k21H2p = 1.75e-10 * np.power(T2, 0.072+0.064*lnT2)
     k21H2o = 1.48e-10 * np.power(T2, 0.263+0.031*lnT2)
-    
+
     k10H2 = k10H2p*fp_ + k10H2o*fo_
     k20H2 = k20H2p*fp_ + k20H2o*fo_
     k21H2 = k21H2p*fp_ + k21H2o*fo_
-    
+
     # The totol collisonal rates
     q10 = nH*(k10HI*xHI + k10H2*xH2 + k10e*xe)
     q20 = nH*(k20HI*xHI + k20H2*xH2 + k20e*xe)
@@ -1002,7 +1048,7 @@ def get_CI_lev(nH, T, xe, xHI, xH2):
     q01 = (g1CI_/g0CI_) * q10 * np.exp(-E10CI_/(kB_cgs*T))
     q02 = (g2CI_/g0CI_) * q20 * np.exp(-E20CI_/(kB_cgs*T))
     q12 = (g2CI_/g1CI_) * q21 * np.exp(-E21CI_/(kB_cgs*T))
-    
+
     R10 = q10 + A10CI_
     R20 = q20 + A20CI_
     R21 = q21 + A21CI_
@@ -1014,14 +1060,14 @@ def get_CI_lev(nH, T, xe, xHI, xH2):
     f0 = a0 / de
     f1 = a1 / de
     f2 = a2 / de
-    
+
     return (f0, f1, f2)
 
 
 def get_OI_lev(nH, T, xe, xHI, xH2):
 
     kB_cgs = ac.k_B.cgs.value
-    
+
     # Ortho-to-para ratio of H2
     fp_ = 0.25
     fo_ = 0.75
@@ -1036,7 +1082,7 @@ def get_OI_lev(nH, T, xe, xHI, xH2):
     E10OI_ = 3.144e-14
     E20OI_ = 4.509e-14
     E21OI_ = 1.365e-14
-    
+
     T2 = T*1e-2
     lnT2 = np.log(T2)
     # Collisional rates from  Draine (2011) (Appendix F Table F.6)
@@ -1054,7 +1100,7 @@ def get_OI_lev(nH, T, xe, xHI, xH2):
     k10H2 = k10H2p*fp_ + k10H2o*fo_
     k20H2 = k20H2p*fp_ + k20H2o*fo_
     k21H2 = k21H2p*fp_ + k21H2o*fo_
-    
+
     # Electrons; fit from Bell+1998
     k10e = 5.12e-10 * np.power(T, -0.075)
     k20e = 4.86e-10 * np.power(T, -0.026)
@@ -1078,7 +1124,7 @@ def get_OI_lev(nH, T, xe, xHI, xH2):
     f0 = a0 / de
     f1 = a1 / de
     f2 = a2 / de
-    
+
     return (f0, f1, f2)
 
 def coeff_kcoll_H(T):
@@ -1102,7 +1148,7 @@ def coeff_alpha_rr_H(T):
     cc = 115188.0*Tinv
     dd = 1.0 + np.power(cc, 0.407)
     alpha_rr = 2.753e-14*np.power(bb, 1.5)*np.power(dd, -2.242)
-    
+
     return alpha_rr
 
 def coeff_alpha_gr_H(T, G_PE, ne,  Z_d):
@@ -1117,3 +1163,30 @@ def coeff_alpha_gr_H(T, G_PE, ne,  Z_d):
         (1.0 + cHp_[3] * np.power(T, cHp_[4])*np.power(psi_gr, -cHp_[5]-cHp_[6]*lnT)))*Z_d
 
     return alpha_gr
+
+def coeff_coll_H2(nH,T,xHI,xH2):
+    """destruction by collision
+    Glover & Mac Low (2007)
+    (15) H2 + *H -> 3 *H
+    (16) H2 + H2 -> H2 + 2 *H
+    --(9) Density dependent. See Glover+MacLow2007
+    """
+    temp_coll_ = 7.0e2
+    Tinv = 1/T
+    logT4 = np.log10(T*1e-4);
+    k9l_ = 6.67e-12 * np.sqrt(T) * np.exp(-(1. + 63590.*Tinv))
+    k9h_ = 3.52e-9 * np.exp(-43900.0*Tinv)
+    k10l_ = 5.996e-30 * np.power(T, 4.1881) / np.power((1.0 + 6.761e-6*T), 5.6881) * \
+            np.exp(-54657.4*Tinv)
+    k10h_ = 1.3e-9 * np.exp(-53300.0*Tinv)
+    ncrH2_ = np.power(10, (4.845 - 1.3*logT4 + 1.62*logT4*logT4))
+    ncrHI_ = np.power(10, (3.0 - 0.416*logT4 - 0.327*logT4*logT4))
+    ncrinv = np.clip(xHI/ncrHI_ + 2.0*xH2/ncrH2_,0.0,None)
+    n2ncr = nH * ncrinv;
+    k_H2_HI = np.power(10, np.log10(k9h_) * n2ncr/(1. + n2ncr)
+                        + np.log10(k9l_) / (1. + n2ncr))
+    k_H2_H2 = np.power(10, np.log10(k10h_) * n2ncr/(1. + n2ncr)
+              + np.log10(k10l_) / (1. + n2ncr))
+    xi_coll_H2 = k_H2_H2*nH*xH2 + k_H2_HI*nH*xHI
+    return np.where(T>temp_coll_,xi_coll_H2,0.0)
+

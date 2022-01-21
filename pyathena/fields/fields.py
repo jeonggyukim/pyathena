@@ -225,7 +225,7 @@ def set_derived_fields_def(par, x0, newcool):
                                   (abs(vminmax[f][0]) + abs(vminmax[f][1])),
                          name='cmap_vr')
     take_log[f] = True
-    
+
     # Cooling related fields
     if par['configure']['cooling'] == 'ON':
         # T [K] - gas temperature
@@ -297,11 +297,10 @@ def set_derived_fields_def(par, x0, newcool):
         # Net cooling rate per volume [erg/s/cm^3] - nH^2*Lambda - nH*Gamma
         # (averaged over dt_mhd)
         f = 'net_cool_rate'
-        if newcool:
-            field_dep[f] = set(['net_cool_rate'])
-            def _net_cool_rate(d, u):
-                return d['net_cool_rate']
-            func[f] = _net_cool_rate
+        field_dep[f] = set(['net_cool_rate'])
+        def _net_cool_rate(d, u):
+            return d['net_cool_rate']
+        func[f] = _net_cool_rate
         label[f] = r'$\mathcal{L}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
         cmap[f] = 'bwr_r'
         vminmax[f] = (-1e-20,1e-20)
@@ -369,8 +368,8 @@ def set_derived_fields_def(par, x0, newcool):
         cmap[f] = 'cubehelix_r'
         vminmax[f] = (1e-4,1e2)
         take_log[f] = True
-        
-    return func, field_dep, label, cmap, vminmax, take_log    
+
+    return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_mag(par, x0):
 
@@ -389,13 +388,13 @@ def set_derived_fields_mag(par, x0):
                 d['cell_centered_B2']**2 +
                 d['cell_centered_B3']**2)**0.5*np.sqrt(u.energy_density.cgs.value)\
             /np.sqrt(d['density']*u.density.cgs.value)/1e5
-    
+
     func[f] = _vAmag
     label[f] = r'$v_A\;[{\rm km}\,{\rm s}^{-1}]$'
     vminmax[f] = (0.1, 1000.0)
     cmap[f] = 'cividis'
     take_log[f] = True
-    
+
     # vAx [km/s]
     f = 'vAx'
     field_dep[f] = set(['density','cell_centered_B'])
@@ -478,7 +477,7 @@ def set_derived_fields_mag(par, x0):
     vminmax[f] = (1e-1, 1e2)
     cmap[f] = 'cividis'
     take_log[f] = True
-    
+
     return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_newcool(par, x0):
@@ -660,6 +659,21 @@ def set_derived_fields_newcool(par, x0):
     cmap[f] = 'viridis'
     vminmax[f] = (1e2*xCtot,1e4*xCtot)
     take_log[f] = True
+
+    # xOII - single ionized oxygen
+    f = 'xOII'
+    try:
+        xOtot = par['problem']['Z_gas']*par['cooling']['xOstd']
+    except KeyError:
+        xOtot = 3.2e-4*par['problem']['Z_gas']
+    field_dep[f] = set(['xH2','xHI'])
+    def _xOII(d, u):
+        return xOtot*(1.0 - d['xHI'] - 2.0*d['xH2'])
+    func[f] = _xOII
+    label[f] = r'$x_{\rm OII}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (0,xOtot)
+    take_log[f] = False
 
     # xCII - single ionized carbon
     # Use with caution!
@@ -844,7 +858,7 @@ def set_derived_fields_rad(par, x0):
             iPhot = False
     except KeyError:
         iPhot = True
-        
+
     if iPhot:
         f = 'Erad_LyC'
         field_dep[f] = set(['rad_energy_density_PH'])
