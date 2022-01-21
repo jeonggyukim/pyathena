@@ -638,6 +638,21 @@ def set_derived_fields_newcool(par, x0):
     vminmax[f] = (1e2*xCtot,1e4*xCtot)
     take_log[f] = True
 
+    # xOII - single ionized oxygen
+    f = 'xOII'
+    try:
+        xOtot = par['problem']['Z_gas']*par['cooling']['xOstd']
+    except KeyError:
+        xOtot = 3.2e-4*par['problem']['Z_gas']
+    field_dep[f] = set(['xH2','xHI'])
+    def _xOII(d, u):
+        return xOtot*(1.0 - d['xHI'] - 2.0*d['xH2'])
+    func[f] = _xOII
+    label[f] = r'$x_{\rm OII}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (0,xOtot)
+    take_log[f] = False
+
     # xCII - single ionized carbon
     # Use with caution!
     # (Do not apply to hot gas and depend on cooling implementation)
