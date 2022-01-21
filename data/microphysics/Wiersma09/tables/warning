@@ -1,0 +1,10 @@
+Some things to be aware of:
+z_collis.hdf5 and z_photodis.hdf5 have large relative errors below
+10^4 K due to numerical errors. The net cooling rates are quite small
+in this regime, however.
+
+z_collis.hdf5 was ran with 'no induced processes' *not included* since
+it caused cloudy to crash. This results in a slightly unphysical
+enhancement in the iron and carbon cooling rates. There are peaks at
+10^5 and 10^7 that appear (although the error is always less than a
+factor of 2)

@@ -278,16 +278,7 @@ def set_derived_fields_def(par, x0, newcool):
             field_dep[f] = set(['heat_rate'])
             def _heat_rate(d, u):
                 return d['heat_rate']
-        else:
-            field_dep[f] = set(['density','pressure'])
-            def _heat_rate(d, u):
-                nH = d['density'].data
-                T1 = d['pressure']/d['density']*(u.velocity**2*ac.m_p/ac.k_B).cgs.value
-                T1data = T1.data
-                heat = nH*coolftn().get_heat(T1data)
-                T1.data = heat
-                return T1
-        func[f] = _heat_rate
+            func[f] = _heat_rate
         label[f] = r'$\mathcal{G}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
         cmap[f] = 'cubehelix_r'
         vminmax[f] = (1e-28,1e-20)
@@ -295,19 +286,10 @@ def set_derived_fields_def(par, x0, newcool):
 
         f = 'net_cool_rate'
         if newcool:
-            field_dep[f] = set(['cool_rate','heat_rate'])
+            field_dep[f] = set(['net_cool_rate'])
             def _net_cool_rate(d, u):
-                return d['cool_rate'] - d['heat_rate']
-        else:
-            field_dep[f] = set(['density','pressure'])
-            def _net_cool_rate(d, u):
-                nH = d['density'].data
-                T1 = d['pressure']/d['density']*(u.velocity**2*ac.m_p/ac.k_B).cgs.value
-                T1data = T1.data
-                netcool = nH*(nH*coolftn().get_cool(T1data)-coolftn().get_heat(T1data))
-                T1.data = netcool
-                return T1
-        func[f] = _net_cool_rate
+                return d['net_cool_rate']
+            func[f] = _net_cool_rate
         label[f] = r'$\mathcal{L}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
         cmap[f] = 'bwr_r'
         vminmax[f] = (-1e-20,1e-20)

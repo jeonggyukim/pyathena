@@ -1,9 +1,14 @@
 import os
 import os.path as osp
 import pandas as pd
+import numpy as np
+import astropy.constants as ac
+import astropy.units as au
 
 from ..load_sim import LoadSim
 from ..util.units import Units
+from ..io.read_hst import read_hst
+from ..classic.cooling import coolftn
 from .pdf import PDF
 from .h2 import H2
 from .hst import Hst
@@ -94,6 +99,30 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
             return time[tfields].mean()
         except:
             print("No timeit file is available")
+
+    def get_classic_cooling_rate(self, ds):
+        if (not hasattr(self,'heat_ratio')):
+            hst = read_hst(self.files['hst'])
+            self.heat_ratio = hst['heat_ratio']
+            self.heat_ratio.index = hst['time']
+        dd = ds.get_field(['density','pressure'])
+        nH = dd['density']
+        heat_ratio = np.interp(ds.domain['time'],self.heat_ratio.index,self.heat_ratio)
+        T1 = dd['pressure']/dd['density']
+        T1 *= (self.u.velocity**2*ac.m_p/ac.k_B).cgs.value
+        T1data = T1.data
+        temp = nH/nH*coolftn().get_temp(T1data)
+        cool = nH*nH*coolftn().get_cool(T1data)
+        heat = heat_ratio*nH*coolftn().get_heat(T1data)
+        net_cool = cool-heat
+        dd['T'] = temp
+        dd['cool_rate'] = cool
+        dd['heat_rate'] = heat
+        dd['net_cool_rate'] = net_cool
+
+        return dd
+
+
 
 
 class LoadSimTIGRESSNCRAll(object):
