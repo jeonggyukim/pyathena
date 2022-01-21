@@ -7,24 +7,27 @@ from ..util.spline import GlobalSpline2D
 # Original C version implemented in Athena-TIGRESS
 # See also Gong, Ostriker, & Wolfire (2017) and https://github.com/munan/tigress_cooling
 
-def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Zg=1.0, Zd=1.0):
+def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Z_g=1.0, Z_d=1.0):
     xe_max = 1.2006199779862501
-    phi_s = (1.0 - xe/xe_max)*0.67/(1.0 + xe/0.05)
-    k1619 = 1.0e-7*(T*1e-2)**(-0.5)
+    k1620 = 1e-14*Z_d
+    k1622 = 1e-14*Z_d
     k1621 = 1e-9
-    k1620 = 1e-14*Zd
-    k1622 = 1e-14*Zd
-    xS = 5.3e-6*Zg # From Draine's Table 9.5 (Diffuse H2)
+    k1619 = 1.0e-7*(T*1e-2)**(-0.5)
+    phi_s = (1.0 - xe/xe_max)*0.67/(1.0 + xe/0.05)
+    xS = 5.3e-6*Z_g # From Draine's Table 9.5 (Diffuse H2)
     A = k1619*(1.0 + k1621/k1622*xS)
     B = k1620 + k1621*xS
     return 2.0*xH2*((B**2 + 4.0*A*xi_cr*(1.0 + phi_s)/nH)**0.5 - B)/(2.0*k1619)
 
-def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=True):
+def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=True, CRPhot=True):
 
     xCtot = xCstd*Z_g
     small_ = 1e-50
     k_C_cr = 3.85*xi_CR
     k_C_photo = 3.5e-10*G_CI
+    if CRphotC:
+        k_C_photo += 520.0*2.0*xH2*xi_CR
+        
     lnT = np.log(T)
     k_Cplus_e = np.where(T < 10.0,
                          9.982641225129824e-11,
