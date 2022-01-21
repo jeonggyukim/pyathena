@@ -7,40 +7,99 @@ def f1(T, T0=2e4, T1=3.5e4):
     return np.where(T > T1, 1.0,
                     np.where(T <= T0, 0.0, 1.0/(1.0 + np.exp(-10.0*(T - 0.5*(T0+T1))/(T1-T0)))))
 
-def get_cooling_rate(sim,ds):
+def get_cooling_heating(sim,ds):
     '''read necessary fields, calculate cooling from each coolnat'''
     # unit definition
     unitT = sim.u.energy_density/ac.k_B/sim.muH*au.cm**3
 
     # read all necessary native fields
-    field_to_read=['density', 'pressure', 'cool_rate', # velocity (for CO)
+    field_to_read=['density', 'pressure', 'cool_rate', 'heat_rate', # velocity (for CO)
+                   'net_cool_rate',
                    'CR_ionization_rate', 'rad_energy_density_PH',
                    'rad_energy_density_LW', 'rad_energy_density_PE',
+                   'rad_energy_density_LW_diss',
                    'xHI', 'xH2', 'xe']
     dd = ds.get_field(field_to_read)
+
+    # set metallicities
+    Z_g=sim.par['problem']['Z_gas']
+    Z_d=sim.par['problem']['Z_dust']
 
     # get a few derived fields
     dd['xHII'] = 1-dd['xHI']-2.0*dd['xH2']
     dd['T1'] = dd['pressure']/dd['density']*unitT.cgs.value
     dd['mu'] = sim.muH/(1.1+dd['xe']-dd['xH2'])
     dd['T'] = dd['T1']*dd['mu']
+
+    # get weight functions
     w2 = f1(dd['T'],T0=sim.par['cooling']['Thot0'],T1=sim.par['cooling']['Thot1'])
     w1 = 1-w2
+
     # hydrogen cooling
     cool_hyd = get_hydrogen_cooling(dd)*dd['density']
     # other cooling at low T
     cool_other = get_other_cooling(sim,dd)*dd['density']*w1
     # CIE cooling by He and metal
     cool_CIE = get_Lambda_CIE(dd)
-    cool_CIE['metal'] *= sim.par['problem']['Z_gas']*dd['density']**2*w2
-    cool_CIE['He'] *= dd['density']**2*w2
+    cool_CIE['CIE_metal'] *= Z_g*dd['density']**2*w2
+    cool_CIE['CIE_He'] *= dd['density']**2*w2
+
+    # heating
+    heat = get_heating(sim,dd)*dd['density']*w1
+    heat['total'] = dd['heat_rate']
 
     # add ancillary fields
-    cool_hyd['nH'] = dd['density']
-    cool_hyd['T'] = dd['T']
     cool_hyd['total'] = dd['cool_rate']
+    cool = cool_hyd.update(cool_other).update(cool_CIE)
 
-    return cool_hyd.update(cool_other).update(cool_CIE)
+    return dd, cool, heat
+
+def get_heating(s,dd):
+    '''calculate heating'''
+    # set metallicities
+    Z_g=s.par['problem']['Z_gas']
+    Z_d=s.par['problem']['Z_dust']
+    # calculate normalized radiation fields
+    Erad_PE = dd['rad_energy_density_PE']
+    Erad_LW = dd['rad_energy_density_LW']
+    Erad_PH = dd['rad_energy_density_PH']
+    Erad_LW_diss = dd['rad_energy_density_LW_diss']
+    # normalization factors
+    Erad_PE0 = s.par['cooling']['Erad_PE0']/s.u.energy_density.cgs.value
+    Erad_LW0 = s.par['cooling']['Erad_LW0']/s.u.energy_density.cgs.value
+    xi_diss_H2_conv = s.par['cooling']['xi_diss_H2_ISRF']/Erad_LW0
+    eV_ = (1.*au.eV).cgs.value
+    dhnu_H2_diss = 0.4*eV_
+    if 'dhnu_HI_PH' in s.par['radps']:
+        dhnu_HI_PH = s.par['radps']['dhnu_HI_PH']*eV_
+    else:
+        dhnu_HI_PH = 3.45*eV_
+    if 'dhnu_H2_PH' in s.par['radps']:
+        dhnu_H2_PH = s.par['radps']['dhnu_H2_PH']*eV_
+    else:
+        dhnu_H2_PH = 4.42*eV_
+    sigma_HI_PH = s.par['opacity']['sigma_HI_PH']
+    sigma_H2_PH = s.par['opacity']['sigma_H2_PH']
+    hnu_PH = s.par['radps']['hnu_PH']*eV_
+    xi_ph_HI=Erad_PH*s.u.energy_density.cgs.value
+    xi_ph_HI *= ac.c.cgs.value*sigma_HI_PH/hnu_PH
+    xi_ph_H2=Erad_PH*s.u.energy_density.cgs.value
+    xi_ph_H2 *= ac.c.cgs.value*sigma_H2_PH/hnu_PH
+    G_PE = (Erad_PE+Erad_LW)/(Erad_PE0+Erad_LW0)
+    xi_diss_H2=Erad_LW_diss*xi_diss_H2_conv
+
+    heatrate=xr.Dataset()
+    heatrate['PE'] = heatPE(dd['density'],dd['T'],dd['xe'],Z_d,G_PE)
+    heatrate['CR'] = heatCR(dd['density'],dd['xe'],dd['xHI'],dd['xH2'],
+                            dd['CR_ionization_rate'])
+    heatrate['H2_form'] = heatH2form(dd['density'],dd['T'],dd['xHI'],dd['xH2'],Z_d)
+    heatrate['H2_pump'] = heatH2pump(dd['density'],dd['T'],dd['xHI'],dd['xH2'],xi_diss_H2)
+    heatrate['H2_diss'] = heatH2diss(dd['xH2'],xi_diss_H2)
+    heatrate['PH'] = dd['xHI']*xi_ph_HI*dhnu_HI_PH
+    # no heating at high-T
+    heatrate=heatrate.where(dd['T']<s.par['cooling']['Thot1']).fillna(1.e-35)
+
+    return heatrate
 
 def get_hydrogen_cooling(dd):
     '''a wrapper function to calculate H cooling'''
@@ -50,7 +109,7 @@ def get_hydrogen_cooling(dd):
     coolrate['HII_ff']=coolffH(dd['density'],dd['T'],dd['xe'],dd['xHII'])
     coolrate['HII_rec']=coolrecH(dd['density'],dd['T'],dd['xe'],dd['xHII'])
     coolrate['H2_rovib']=coolH2(dd['density'],dd['T'],dd['xHI'],dd['xH2']) # rovib
-    # coolrate['H2colldiss'] = coolH2colldiss(dd['density'],dd['T'],dd['xHI'],dd['xH2'])
+    coolrate['H2_colldiss'] = coolH2colldiss(dd['density'],dd['T'],dd['xHI'],dd['xH2'])
     return coolrate
 
 def get_other_cooling(s,dd):
@@ -89,7 +148,7 @@ def get_other_cooling(s,dd):
             dd['xe'],dd['xHI'],dd['xH2'],dd['xCI'])
     coolrate['CII'] = coolCII(dd['density'],dd['T'],
             dd['xe'],dd['xHI'],dd['xH2'],dd['xCII'])
-    # this is too slow now
+    # for now, this is too slow
     # set_dvdr(dd)
     #coolrate['CO'] = coolCO(dd['density'],dd['T'],
     #        dd['xe'],dd['xHI'],dd['xH2'],dd['xCO'],dd['dvdr'])
@@ -173,9 +232,9 @@ def set_CIE_interpolator(return_xe=False):
                       bounds_error=False, fill_value=0.0)
     if return_xe:
         cgi_xe_mH = interp1d(cg.temp, xe_tot - xe['H'],
-                         bounds_error=False, fill_value=0.0)
+                             bounds_error=False, fill_value=0.0)
         cgi_xe_mHHe = interp1d(cg.temp, xe_tot -xe['H'] - xe['He'],
-                           bounds_error=False, fill_value=0.0)
+                               bounds_error=False, fill_value=0.0)
         cgi_xe_He = interp1d(cg.temp, xe['He'], bounds_error=False, fill_value=0.0)
         return cgi_metal, cgi_He, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He
     else:
@@ -185,6 +244,6 @@ def get_Lambda_CIE(dd):
     '''return Lambda_CIE'''
     Lambda_cool=xr.Dataset()
     cgi_metal,cgi_He=set_CIE_interpolator(return_xe=False)
-    Lambda_cool['metal']=xr.DataArray(cgi_metal(dd['T']),coords=[dd.z,dd.y,dd.x])
-    Lambda_cool['He']=xr.DataArray(cgi_He(dd['T']),coords=[dd.z,dd.y,dd.x])
+    Lambda_cool['CIE_metal']=xr.DataArray(cgi_metal(dd['T']),coords=[dd.z,dd.y,dd.x])
+    Lambda_cool['CIE_He']=xr.DataArray(cgi_He(dd['T']),coords=[dd.z,dd.y,dd.x])
     return Lambda_cool
