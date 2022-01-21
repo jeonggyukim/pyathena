@@ -116,32 +116,67 @@ def heatCR(nH, xe, xHI, xH2, xi_CR):
 
     return ktot*(xHI*qHI + 2.0*xH2*qH2)
 
-def heatH2form(nH, T, xHI, xH2, Z_d):
-    # Hollenbach & McKee (1978)
+def heatH2form(nH, T, xHI, xH2, Z_d, kgr_H2=3.0e-17, ikgr_H2=0):
     eV_cgs = (1.0*au.eV).cgs.value
+
+    if ikgr_H2 == 0: # Constant coeff
+        kgr = kgr_H2
+    else:
+        T2 = T*1e-2
+        kgr = kgr_H2*Z_d*sqrt(T2)*2.0/(1+0.4*np.sqrt(T2)+0.2*T2+0.08*T2*T2)
+    
+    # Hollenbach & McKee (1978) Eq (6.43), (6.45)
     de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
     ncrit = 1e6/np.sqrt(T)/de
     f = nH/(nH + ncrit)
 
-    return 3.0e-17*Z_d*nH*xHI*(0.2 + 4.2*f)*eV_cgs
+    return kgr*Z_d*nH*xHI*(0.2 + 4.2*f)*eV_cgs
 
 def heatH2pump(nH, T, xHI, xH2, xi_diss_H2):
     # Hollenbach & McKee (1978)
+    f_pump = 9.0 # Use Draine & Bertoldi (1996) value (9.0 in HM79) 
     eV_cgs = (1.0*au.eV).cgs.value
     de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
     ncrit = 1e6/np.sqrt(T)/de
     f = nH/(nH + ncrit)
 
-    return 9.0*2.2*xi_diss_H2*xH2*f*eV_cgs
+    return f_pump*2.2*xi_diss_H2*xH2*f*eV_cgs
 
 def heatH2diss(xH2, xi_diss_H2):
     eV_cgs = (1.0*au.eV).cgs.value
 
     return 0.4*xi_diss_H2*xH2*eV_cgs
 
+def coolH2colldiss(nH, T, xHI, xH2):
+
+    eV_cgs = (1.0*au.eV).cgs.value
+    temp_coll_ = 7e2
+    small_ = 1e-50
+    
+    Tinv = 1/T
+    logT4 = np.log10(T*1e-4)
+    k9l_ = 6.67e-12 * np.sqrt(T) * np.exp(-(1. + 63590.*Tinv))
+    k9h_ = 3.52e-9 * np.exp(-43900.0*Tinv)
+    k10l_ = 5.996e-30 * np.power(T, 4.1881) / \
+        np.power((1.0 + 6.761e-6*T), 5.6881) * np.exp(-54657.4*Tinv)
+    k10h_ = 1.3e-9 * np.exp(-53300.0*Tinv)
+    ncrH2_ = np.power(10, (4.845 - 1.3*logT4 + 1.62*logT4*logT4))
+    ncrHI_ = np.power(10, (3.0 - 0.416*logT4 - 0.327*logT4*logT4))
+    ncrinv = xHI/ncrHI_ + 2.0*xH2/ncrH2_
+    ncrinv = np.maximum(ncrinv, small_)
+    n2ncr = nH * ncrinv
+    k_H2_HI  = np.power(10, np.log10(k9h_) * n2ncr/(1. + n2ncr)
+                        + np.log10(k9l_) / (1. + n2ncr))
+    k_H2_H2 = np.power(10, np.log10(k10h_) *  n2ncr/(1. + n2ncr)
+                       + np.log10(k10l_) / (1. + n2ncr))
+    xi_coll_H2_ = k_H2_H2*nH*xH2 + k_H2_HI*nH*xHI
+    xi_coll_H2 = np.where(T > temp_coll_, xi_coll_H2_, 0.0)
+    
+    return 4.48*eV_cgs*xH2*xi_coll_H2
+
 def heatH2pump_Burton90(nH, T, xHI, xH2, xi_diss_H2):
-    # Burton, Hollenbach, & Tielens (1990)
-    kpump = 6.94*xi_diss_H2
+    # Burton, Hollenbach, & Tielens (1990) (Eq. A1)
+    kpump = 9.0*xi_diss_H2
     Cdex = 1e-12*(1.4*np.exp(-18100.0/(T + 1200.0))*xH2 + \
                   np.exp(-1000.0/T)*xHI)*np.sqrt(T)*nH
     Crad = 2e-7
@@ -477,7 +512,7 @@ def coolH2G17(nH, T, xHI, xH2, xHII, xe, xHe=0.1):
 
     return Gamma_tot * xH2;
 
-def coolH2(nH, T, xHI, xH2):
+def coolH2rovib(nH, T, xHI, xH2):
     """
     Cooling by rotation-vibration lines of H2
     from Moseley et al. (2021)
@@ -547,6 +582,12 @@ def coolRec_W03(nH, T, xe, Z_d, chi_PE, phi=0.5):
     beta = 0.735*np.power(T,-0.068)
     return 4.65e-30*np.power(T, 0.944)*np.power(x, beta)*ne*Z_d*phi
 
+def cooldust(nH, T, Td, Z_d):
+    # From Krumholz (2014) or Goldsmith (2001)
+    # Strictly speaking the coupling constant alpha_gd depends on chemical composition
+    alpha_gd = 3.2e-34
+    return Z_d*alpha_gd*nH*np.sqrt(T)*(T - Td)
+    
 def cool3Level_(q01, q10, q02, q20, q12, q21,
                 A10, A20, A21, E10, E20, E21, xs):
     # Equilibrium level population including
