@@ -270,16 +270,23 @@ class SliceProj:
         num : int
             vtk snapshot number
         fields_xy: list of str
-            field names for z projections and slices
+            Field names for z projections and slices
         fields_xz: list of str
             Field names for y projections and slices
         norm_factor : float
-            Normalization factor for starpar size. The smaller the value the
-            bigger the size)
+            Normalization factor for starpar size. Smaller norm_factor for bigger size.
         agemax : float
-            Maximum age of source particles
+            Maximum age of radiation source particles [Myr]
         agemax_sn : float
-            Maximum age of sn particles
+            Maximum age of sn particles [Myr]
+        runaway : bool
+            If True, show runaway star particles
+        suptitle : str
+            Suptitle for snapshot
+        savdir_pkl : str
+            Path to which save (from which load) projections and slices
+        savdir : str
+            Path to which save (from which load) projections and slices
         """
 
         label = dict(Sigma_gas=r'$\Sigma$',

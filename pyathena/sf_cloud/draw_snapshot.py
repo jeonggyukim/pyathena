@@ -73,7 +73,7 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
 def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=False):
     
     from ..classic.plot_tools.scatter_sp import scatter_sp
-    from ..plt_tools.cmap_custom import get_my_cmap
+    from ..plt_tools.cmap import cmap_apply_alpha
     
     # Read data
     ds = s.load_vtk(num)
@@ -204,11 +204,11 @@ def draw_snapshot_rgb(s, num, ax, minimum=20.0, stretch=15000, Q=15):
 def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
     
     from ..classic.plot_tools.scatter_sp import scatter_sp
-    from ..plt_tools.cmap_custom import get_my_cmap
+    from ..plt_tools.cmap import cmap_apply_alpha
     
-    cm1 = get_my_cmap('Blues')
-    cm2 = get_my_cmap('Greens')
-    cm3 = get_my_cmap('Oranges')
+    cm1 = cmap_apply_alpha('Blues')
+    cm2 = cmap_apply_alpha('Greens')
+    cm3 = cmap_apply_alpha('Oranges')
 
     ds = s.load_vtk(num)
     dd = ds.get_field(['nH2','nHI','nHII','ne','T'])

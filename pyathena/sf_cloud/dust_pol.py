@@ -147,6 +147,54 @@ class DustPol:
 
         return fig
 
+    def plt_dust_pol(self, num, dim='y', Nskip=8, ax=None):
+        """Plot dust polarization vector (rotated) with quivers
+        """
+        if ax is None:
+            ax = plt.gca()
+
+        sigmad = self.par['opacity']['sigma_dust_PE0']*au.cm**2/1.87
+        Sigma_thres_Avone = (self.u.muH*(au.u*1.008)/(sigmad)).to('Msun pc-2').value
+        # print(sigmad, Sigma_thres_Avone)
+
+        domain = self.domain
+        dat = self.read_IQU(num)
+        prj = self.read_prj(num)
+        # sp = self.load_starpar_vtk(num_sp)
+        extent = prj['extent'][dim]
+
+        # Draw dust polarization
+        Nx = domain['Nx'][0]
+        Ny = domain['Nx'][0]
+        x = np.linspace(domain['le'][0] + domain['dx'][0]/2,
+                        domain['re'][0] - domain['dx'][0]/2, Nx)
+        y = np.linspace(domain['le'][1] + domain['dx'][1]/2,
+                        domain['re'][1] - domain['dx'][1]/2, Ny)
+        I = dat['I'][dim]
+        Q = dat['Q'][dim]
+        U = dat['U'][dim]
+        ang = np.arctan2(U, Q)/2
+
+        B1proj = dat['B1proj'][dim]
+        B2proj = dat['B2proj'][dim]
+        Bmagproj = np.sqrt(B1proj**2 + B2proj**2)
+        Bmax = 15.0 # Maximum magnetic field strength in microG
+
+        ax.quiver(x[::Nskip], y[::Nskip],
+                  np.cos(ang)[::Nskip,::Nskip]*Bmagproj[::Nskip,::Nskip]/Bmax*2.0,
+                  np.sin(ang)[::Nskip,::Nskip]*Bmagproj[::Nskip,::Nskip]/Bmax*2.0,
+                  headwidth=0, headlength=0, headaxislength=0, 
+                  pivot='mid', color='#02ab2e', scale=30, width=0.004)
+
+        # Draw contour
+        X, Y = np.meshgrid(x,y)
+        Z = prj[dim]['Sigma_HI'] + prj[dim]['Sigma_H2']
+        ax.contour(X,Y,Z, extent=extent, levels=[Sigma_thres_Avone], colors='k',
+                   linewidths=0.75, linestyles='solid')
+
+        return ax
+
+    
     def write_IQU_to_fits(self, num):
 
         def _create_fits_header(r, domain):

@@ -11,7 +11,7 @@ from matplotlib.colors import Normalize, LogNorm
 import xarray as xr
 
 from ..classic.utils import texteffect
-from ..plt_tools.cmap_custom import get_my_cmap
+from ..plt_tools.cmap import cmap_apply_alpha
 from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp
@@ -41,75 +41,97 @@ class PDF:
             bins[k] = np.logspace(bmin,bmax,nbin)
 
     @LoadSim.Decorators.check_pickle
+    def read_pdf2d_avg(self, nums=None, savdir=None, force_override=False):
+        """Take sum of all pdf2d
+        """
+
+        if nums is None:
+            nums = self.nums
+
+        rr = dict()
+        print('[read_pdf2d_avg]:', end=' ')
+        for i,num in enumerate(nums):
+            print(num, end=' ')
+            r = self.read_pdf2d(num, force_override=False)
+            if i == 0:
+                for k in r.keys():
+                    if k == 'time_code':
+                        rr[k] = []
+                    else:
+                        rr[k] = dict()
+                        rr[k]['xe'] = r[k]['xe']
+                        rr[k]['ye'] = r[k]['ye']
+                        rr[k]['H'] = np.zeros_like(r[k]['H'])
+                        rr[k]['Hw'] = np.zeros_like(r[k]['Hw'])
+
+            for k in r.keys():
+                if k == 'time_code':
+                    rr[k].append(r[k])
+                else:
+                    rr[k]['H'] += r[k]['H']
+                    rr[k]['Hw'] += r[k]['Hw']
+
+        return rr    
+
+    @LoadSim.Decorators.check_pickle
     def read_pdf2d(self, num,
-                   bin_fields=None, bins=None, prefix='pdf2d',
+                   bin_fields=None,
+                   weight_fields=None,
+                   bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
-        bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
-        try:
-            if self.par['configure']['radps'] == 'ON':
-                bin_fields_def+= [['T','Lambda_cool'], ['nH', 'xH2'],
-                                  ['T', 'xHII'], ['T', 'xHI']]
-                if (self.par['cooling']['iCR_attenuation']):
-                    bin_fields_def+=[['nH','xi_CR']]
-                if (self.par['cooling']['iPEheating'] == 1):
-                    bin_fields_def+= [['nH','chi_FUV']]
-                if (self.par['radps']['iPhotDiss'] == 1):
-                    bin_fields_def+= [['nH','chi_H2']]
-                if (self.par['radps']['iPhotIon'] == 1):
-                    bin_fields_def+= [['nH','Erad_LyC']]
-        except KeyError:
-            pass
+       
+        bin_fields_def = [['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'],
+                          ['nH', 'T']]
+        weight_fields_def = ['nH', '2nH2', 'nHI', 'nHII',
+                             'nH']
+        if self.par['configure']['radps'] == 'ON':
+            bin_fields_def += [['T','Lambda_cool'], ['nH','xH2'],
+                               ['T','xHII'], ['T', 'xHI']]
+            weight_fields_def += ['cool_rate', 'nH', 'nH', 'nH']
+            if (self.par['cooling']['iCR_attenuation']):
+                bin_fields_def += [['nH','xi_CR']]
+                weight_fields_def += ['nH']
+            if (self.par['cooling']['iPEheating'] == 1):
+                bin_fields_def += [['nH','chi_FUV']]
+                weight_fields_def += ['nH']
+            if (self.par['radps']['iPhotDiss'] == 1):
+                bin_fields_def += [['nH','chi_H2']]
+                weight_fields_def += ['nH']
+            if (self.par['radps']['iPhotIon'] == 1):
+                bin_fields_def += [['nH','Erad_LyC']]
+                weight_fields_def += ['nH']
 
         if bin_fields is None:
             bin_fields = bin_fields_def
+            weight_fields = weight_fields_def
 
         ds = self.load_vtk(num=num)
         res = dict()
-
-        dd = ds.get_field(np.unique(bin_fields))
+        fields = np.unique(np.append(np.unique(bin_fields),
+                                     np.unique(weight_fields +
+                                               ['xHI','xH2','xHII'])))
+        dd = ds.get_field(fields)
         dd = dd.stack(xyz=['x','y','z']).dropna(dim='xyz')
-        for bf in bin_fields:
+        for bf,wf in zip(bin_fields,weight_fields):
             k = '-'.join(bf)
             res[k] = dict()
             xdat = dd[bf[0]]
             ydat = dd[bf[1]]
             xbins = self.bins[bf[0]]
             ybins = self.bins[bf[1]]
-            # Volume weighted hist
-            weights = None
-            H, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins),
-                                       weights=weights)
+            weights = dd[wf]
+            # Unweighted hist (volume-weighted)
+            H, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=None)
+            # Weighted hist
+            Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins),
+                                        weights=weights)
+            res[k]['Hw'] = Hw
             res[k]['H'] = H
             res[k]['xe'] = xe
             res[k]['ye'] = ye
 
-            # Density weighted hist
-            weights = dd['nH']
-            Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins),
-                                        weights=weights)
-            res[k]['Hw'] = Hw
-
-        # nH-T-MH2
-        k = 'nH-T'
-        xdat = dd['nH']
-        ydat = dd['T']
-        xbins = self.bins['nH']
-        ybins = self.bins['T']
-        if 'xH2' in dd:
-            weights = dd['xH2']*dd['nH']
-            Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
-            res[k]['MH2'] = Hw
-        if 'xHI' in dd:
-            weights = dd['xHI']*dd['nH']
-        else:
-            weights = dd['nH']
-        Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
-        res[k]['MHI'] = Hw
-        if 'xHII' in dd:
-            weights = dd['xHII']*dd['nH']
-            Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins), weights=weights)
-            res[k]['MHII'] = Hw
-
+        res['time_code'] = ds.domain['time']
+        
         return res
 
     def plt_pdf2d(self, ax, dat, bf='nH-pok',
@@ -179,7 +201,10 @@ class PDF:
         s.plt_pdf2d(axes[2,2], pdf, 'nH-chi_H2', weighted=False)
 
         ax = axes[2,0]
-        s.plt_proj(ax, prj, 'z', 'Sigma_gas')
+        # s.plt_proj(ax, prj, 'z', 'Sigma_gas')
+        ax.imshow(prj['z']['Sigma_gas'], cmap='pink_r',
+                  extent=prj['extent']['z'], norm=mpl.colors.LogNorm(),
+                  origin='lower', interpolation='none')
         scatter_sp(sp, ax, 'z', kind='prj', kpc=False, norm_factor=5.0, agemax=20.0)
         ax.axis('off')
         #ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
@@ -212,14 +237,14 @@ class PDF:
         # ax2 = fig.add_subplot(gs[2, 5])
 
         # ax = ax1
-        # s.plt_proj(ax, prj, 'y', 'Sigma_gas')
-        # pa.scatter_sp(sp, ax, 'y', kind='prj', kpc=False, norm_factor=20.0, agemax=20.0)
-        # ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
+        s.plt_proj(ax, prj, 'y', 'Sigma_gas')
+        scatter_sp(sp, ax, 'y', kind='prj', kpc=False, norm_factor=20.0, agemax=20.0)
+        ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
 
         # ax = ax2
-        # s.plt_slice(ax, slc, 'y', 'chi_FUV', norm=LogNorm(1e-1,1e2))
-        # pa.scatter_sp(sp, ax, 'y', kind='slc', kpc=False, norm_factor=20.0, agemax=20.0)
-        # ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
+        s.plt_slice(ax, slc, 'y', 'chi_FUV', norm=LogNorm(1e-1,1e2))
+        scatter_sp(sp, ax, 'y', kind='slc', kpc=False, norm_factor=20.0, agemax=20.0)
+        ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
 
         ax = axes[2,3]
         ax.semilogy(hst['time_code'],hst['sfr10'])

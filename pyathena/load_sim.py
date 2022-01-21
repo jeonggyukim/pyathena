@@ -122,7 +122,23 @@ class LoadSim(object):
         except:
             pass
 
-        self.u = units
+
+        try:
+            muH = self.par['problem']['muH']
+            self.u = Units(kind='LV', muH=muH)
+        except KeyError:
+            try:
+                # Some old simulations run with new cooling may not have muH
+                # parameter printed out
+                if self.par['problem']['Z_gas'] != 1.0:
+                    self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
+                                        format(self.par['problem']['Z_gas']) +
+                                        'Caution with muH={0:s}'.format(muH))
+                self.u = units
+            except:
+                self.u = units
+                pass
+
         self.dfi = DerivedFields(self.par).dfi
 
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
@@ -323,14 +339,14 @@ class LoadSim(object):
 
         self.files = dict()
 
-        athinput_patterns = [('stdout.txt',), # Jeong-Gyu
-                             ('out.txt',),    # Jeong-Gyu
-                             ('out.*.txt',),    # Jeong-Gyu
-                             ('log.txt',),    # Jeong-Gyu
+        athinput_patterns = [('stdout.txt',),
+                             ('out.txt',),
+                             ('out.*.txt',),
+                             ('log.txt',),
                              ('*.par',),
-                             ('*.out',),      # Chang-Goo's stdout
-                             ('slurm-*',),    # Erin
-                             ('athinput.*',), # Chang-Goo's restart
+                             ('*.out',),
+                             ('slurm-*',),
+                             ('athinput.*',),
                              ]
 
         hst_patterns = [('id0', '*.hst'),

@@ -18,18 +18,20 @@ class ReadObs():
         self.files = dict()
         self.df = dict()
         self.files['Sun18'] = os.path.join(local,'../../data/Sun18-Table3.txt')
-        self.files['Sun20'] = os.path.join(local,'../../data/Sun20-Table3.txt')
-        self.files['Sun20b'] = os.path.join(local,'../../data/Sun20b-TableB1.txt')
         self.files['Reyes20'] = os.path.join(local,'../../data/delosReyes20.txt')
         self.files['K21a'] = os.path.join(local,'../../data/Kennicutt21-Table1.txt')
         self.files['K21b'] = os.path.join(local,'../../data/Kennicutt21-Table2.txt')
         self.files['K21c'] = os.path.join(local,'../../data/Kennicutt21-Table3.txt')
+        self.files['Sun20a'] = os.path.join(local,'../../data/Sun20a-Table3.txt')
+        self.files['Sun20bTA'] = os.path.join(local,'../../data/Sun20b-TableA1.txt')
+        self.files['Sun20bTB'] = os.path.join(local,'../../data/Sun20b-TableB1.txt')
         self.files['Lee16'] = os.path.join(local,'../../data/Lee16-Table3.txt')
         self.files['Ochsendorf17T4'] = os.path.join(local,'../../data/Ochsendorf17-Table4.txt')
         self.files['Ochsendorf17T5'] = os.path.join(local,'../../data/Ochsendorf17-Table5.txt')
         self.files['VE16T2'] = os.path.join(local,'../../data/Vutisalchavakul16-Table2.txt')
         self.files['VE16T3'] = os.path.join(local,'../../data/Vutisalchavakul16-Table3.txt')
         self.files['Evans14'] = os.path.join(local,'../../data/Evans14-Table1.txt')
+        self.files['MD17'] = os.path.join(local,'../../data/MD17-Table1.txt')
 
         self.files['Bigiel102'] = os.path.join(local,'../../data/Bigiel10-Table2.txt')
         self.files['Bigiel103'] = os.path.join(local,'../../data/Bigiel10-Table3.txt')
@@ -37,8 +39,8 @@ class ReadObs():
 
         if readall:
             self.df['Sun18'] = self._read_Sun18()
-            self.df['Sun20'] = self._read_Sun20()
-            self.df['Sun20b'] = self._read_Sun20b()
+            self.df['Sun20a'] = self._read_Sun20a()
+            self.df['Sun20bTA'], self.df['Sun20bTB'] = self._read_Sun20b()
             self.df['Reyes20'] = self._read_Reyes20()
             self.df['K21'] = self._read_Kennicutt21()
             self.df['Lee16'] = self._read_Lee16()
@@ -47,9 +49,30 @@ class ReadObs():
             self.df['VE16T2'] = self._read_VE16T2()
             self.df['VE16T3'] = self._read_VE16T3()
             self.df['Evans14'] = self._read_Evans14()
+            self.df['MD17'] = self._read_MD17()
             self.df['Bigiel10_inner'] = self._read_Bigiel10_inner()
             self.df['Bigiel10_outer'] = self._read_Bigiel10_outer()
             self.df['Leroy08'] = self._read_Leroy08()
+
+    def _read_MD17(self):
+        df = pd.read_csv(self.files['MD17'], sep='\s+', skiprows=0,
+                         names=['Cloud','Ncomp','Npix','A','l','e_l','b','e_b',
+                                'theta','WCO','NH2','Sigma','vcent','sigmav','Rmax',
+                                'Rmin','Rang','Rgal','INF','Dn','Df','zn','zf','Sn',
+                                'Sf','Rn','Rf','Mn','Mf'])
+
+        # Determine mass and radius based on which distance is more likely
+        df['D'] = np.where(df['INF'] == 0, df['Dn'], df['Df'])
+        df['M'] = np.where(df['INF'] == 0, df['Mn'], df['Mf'])
+        df['R'] = np.where(df['INF'] == 0, df['Rn'], df['Rf'])
+        # Virial parameter
+        df['avir'] = (5.0*(df['sigmav'].values*au.km/au.s)**2\
+                      *(df['R'].values*au.pc)/(ac.G*df['M'].values*au.M_sun)).to('')
+        
+        return df
+
+    def get_MD17(self):
+        return self.df['MD17']
 
     def _read_Evans14(self):
         df = pd.read_csv(self.files['Evans14'], sep='\s+', skiprows=2,
@@ -82,26 +105,28 @@ class ReadObs():
 
     def get_Sun18_main_sample(self):
         return self.df['Sun18'].query('Name != "M31" and Name != "M33" and Name != "Antenna"')
-
-    def _read_Sun20(self):
-        df = pd.read_fwf(self.files['Sun20'], skiprows=27,
+    
+    def _read_Sun20a(self):
+        df = pd.read_fwf(self.files['Sun20a'], skiprows=27,
                          names=['Galaxy','inDisk','fCO120pc','Pturb120pc','PDE120pc',
                                 'fCO60pc','Pturb60pc','PDE60pc','PDEkpc','PDEkpc11',
                                 'SigSFRkpc','Rmolkpc'])
         return df
 
-    def get_Sun20(self):
-        return self.df['Sun20']
-
     def _read_Sun20b(self):
-        df = pd.read_fwf(self.files['Sun20b'], skiprows=27,
-                         names=['Galaxy','scale','rgal','Center','Arm',
-                                'Interarm','ICO21','Sigma','Vdisp','Pturb',
-                                'alphavir'])
-        return df
+        dfA = pd.read_fwf(self.files['Sun20bTA'], skiprows=46,
+                          names=['Galaxy','f_Galaxy','Bar','Arm','Dist','i',
+                                 'PA','Mstar','SFR','Reff','Tnoise','rch','fCO','f_fCO','Nlos'])
+        dfB = pd.read_fwf(self.files['Sun20bTB'], skiprows=27,
+                          names=['Galaxy','scale','rgal','Center','Arm',
+                                 'Interarm','ICO21','Sigma','Vdisp','Pturb','alphavir'])
+        return dfA,dfB
 
+    def get_Sun20a(self):
+        return self.df['Sun20a']
+    
     def get_Sun20b(self):
-        return self.df['Sun20b']
+        return self.df['Sun20bTA'],self.df['Sun20bTB']
 
     def _read_Reyes20(self):
         df = pd.read_fwf(self.files['Reyes20'],skiprows=151,

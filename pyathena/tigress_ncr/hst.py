@@ -84,6 +84,8 @@ class Hst:
             h['Sigma_HII'] = h['M_HII']/(LxLy*u.pc**2)
 
         # Total outflow mass
+        h['massflux_lbd_d'] = hst['F3_lower']*u.mass_flux
+        h['massflux_ubd_d'] = hst['F3_upper']*u.mass_flux
         h['mass_out'] = integrate.cumtrapz(hst['F3_upper'] - hst['F3_lower'], hst['time'], initial=0.0)
         h['mass_out'] = h['mass_out']/(domain['Nx'][2]*domain['dx'][2])*vol*u.Msun
 
@@ -252,7 +254,7 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
     if ylim == 'R8':
         ylim=dict(Sigma_gas=(5,13),
                   Sigma_sp=(0,4),
-                  Sigma_out=(0,1),
+                  Sigma_out=(0.01,10),
                   sfr10=(1e-4,4e-2),
                   sfr40=(1e-4,4e-2),
                   dt=(1e-4,1e-2),
@@ -324,7 +326,7 @@ def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_ove
 
     yscale = dict(Sigma_gas='linear',
                   Sigma_sp='linear',
-                  Sigma_out='linear',
+                  Sigma_out='log',
                   sfr10='log',
                   sfr40='log',
                   dt='log',

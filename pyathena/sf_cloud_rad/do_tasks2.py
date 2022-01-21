@@ -62,7 +62,7 @@ if __name__ == '__main__':
     # _, r = load_all_alphabeta()
     # models = dict(r.loc[models]['basedir'])
 
-    # sa = pa.LoadSimSFCloudAll(models)
+    # sa = pa.LoadSimSFCloudRadAll(models)
 
     models = dict(
         #M1E5R20_R='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N256',
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         M1E6R60_RW='/scratch/gpfs/jk11/GMC/M1E6R20.RW.B2.A2.S4.N256.test',
     )
 
-    sa = pa.LoadSimSFCloudAll(models)
+    sa = pa.LoadSimSFCloudRadAll(models)
     
     models = ['M1E6R60_R','M1E6R60_Rfftp', 'M1E6R60_RS', 'M1E6R60_RW']
     labels = ['R', 'Rfftp', 'RS', 'RW']

@@ -51,6 +51,7 @@ class Units(object):
         # athena/src/units.c This is because in post-processing we want to
         # convert from code units to more convenient ones by "multiplying" these
         # constants
+        self.cm = self.length.to('cm').value
         self.pc = self.length.to('pc').value
         self.kpc = self.length.to('kpc').value
         self.Myr = self.time.to('Myr').value
