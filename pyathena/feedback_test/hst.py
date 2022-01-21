@@ -59,10 +59,14 @@ class Hst:
         # Total gas mass in Msun
         hst['mass'] *= vol*u.Msun
 
-        # Mass weighted SNR position in pc
-        hst['Rsh'] = hst['Rsh_den']/hst['Msh']*u.pc
-        # shell mass in Msun
-        hst['Msh'] *= u.Msun*vol
+        try:
+            # Mass weighted SNR position in pc
+            hst['Rsh'] = hst['Rsh_den']/hst['Msh']*u.pc
+            # shell mass in Msun
+            hst['Msh'] *= u.Msun*vol
+        except KeyError:
+            pass
+
         try:
             # hot gas mass in Msun
             hst['Mh'] *= u.Msun*vol
@@ -175,18 +179,46 @@ class Hst:
             hst = self._calc_radiation(hst)
         #hst.index = hst['time_code']
 
-        if iWind:
-            hst['wind_Minj'] *= vol*u.Msun
-            hst['wind_Einj'] *= vol*u.erg
-            hst['wind_pinj'] *= vol*u.Msun*u.kms
-            hst['wind_Mdot'] *= vol*u.Msun/u.Myr
-            hst['wind_Edot'] *= vol*u.erg/u.s
-            hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr        
+        # Wind feedback turned on
+        if par['feedback']['iWind'] > 0:
+            hst = self._calc_wind(hst)
+
         
         self.hst = hst
         
         return hst
 
+    def _calc_wind(self, hst):
+        par = self.par
+        u = self.u
+        domain = self.domain
+        # total volume of domain (code unit)
+        vol = domain['Lx'].prod()        
+        pr_conv = vol*(u.mass*u.velocity).to('Msun km s-1').value
+
+        hst['wind_Minj'] *= vol*u.Msun
+        hst['wind_Einj'] *= vol*u.erg
+        hst['wind_pinj'] *= vol*u.Msun*u.kms
+        hst['wind_Mdot'] *= vol*u.Msun/u.Myr
+        hst['wind_Edot'] *= vol*u.erg/u.s
+        hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr        
+
+        hst['wind_pr_c'] = hst['pr_c_swind_mixed4']*pr_conv
+        hst['wind_pr_i'] = hst['pr_i_swind_mixed4']*pr_conv
+        hst['wind_pr_w'] = hst['pr_w_swind_mixed4']*pr_conv
+        try:
+            hst['wind_pr_u'] = hst['pr_u_swind_mixed4']*pr_conv
+        except: # typo
+            hst['wind_pr_u'] = hst['pr_y_swind_mixed4']*pr_conv
+            
+        hst['wind_pr_hf'] = hst['pr_hf']*pr_conv
+        hst['wind_pr_hps'] = hst['pr_hps']*pr_conv
+        hst['wind_pr'] = hst['wind_pr_c'] + hst['wind_pr_i'] + \
+            hst['wind_pr_w'] + hst['wind_pr_u'] + hst['wind_pr_hf'] + \
+            hst['wind_pr_hps']
+
+        return hst
+    
     def _calc_radiation(self, hst):
         
         par = self.par
