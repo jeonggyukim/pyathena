@@ -13,7 +13,7 @@ def get_cooling_heating(sim,ds):
     unitT = sim.u.energy_density/ac.k_B/sim.muH*au.cm**3
 
     # read all necessary native fields
-    field_to_read=['density', 'pressure', 'cool_rate', 'heat_rate', # velocity (for CO)
+    field_to_read=['nH', 'pressure', 'cool_rate', 'heat_rate', # velocity (for CO)
                    'net_cool_rate',
                    'CR_ionization_rate', 'rad_energy_density_PH',
                    'rad_energy_density_LW', 'rad_energy_density_PE',
@@ -27,7 +27,7 @@ def get_cooling_heating(sim,ds):
 
     # get a few derived fields
     dd['xHII'] = 1-dd['xHI']-2.0*dd['xH2']
-    dd['T1'] = dd['pressure']/dd['density']*unitT.cgs.value
+    dd['T1'] = dd['pressure']/dd['nH']*unitT.cgs.value
     dd['mu'] = sim.muH/(1.1+dd['xe']-dd['xH2'])
     dd['T'] = dd['T1']*dd['mu']
 
@@ -36,16 +36,16 @@ def get_cooling_heating(sim,ds):
     w1 = 1-w2
 
     # hydrogen cooling
-    cool_hyd = get_hydrogen_cooling(dd)*dd['density']
+    cool_hyd = get_hydrogen_cooling(dd)*dd['nH']
     # other cooling at low T
-    cool_other = get_other_cooling(sim,dd)*dd['density']*w1
+    cool_other = get_other_cooling(sim,dd)*dd['nH']*w1
     # CIE cooling by He and metal
     cool_CIE = get_Lambda_CIE(dd)
-    cool_CIE['CIE_metal'] *= Z_g*dd['density']**2*w2
-    cool_CIE['CIE_He'] *= dd['density']**2*w2
+    cool_CIE['CIE_metal'] *= Z_g*dd['nH']**2*w2
+    cool_CIE['CIE_He'] *= dd['nH']**2*w2
 
     # heating
-    heat = get_heating(sim,dd)*dd['density']*w1
+    heat = get_heating(sim,dd)*dd['nH']*w1
     heat['total'] = dd['heat_rate']
 
     # add ancillary fields
@@ -89,11 +89,11 @@ def get_heating(s,dd):
     xi_diss_H2=Erad_LW_diss*xi_diss_H2_conv
 
     heatrate=xr.Dataset()
-    heatrate['PE'] = heatPE(dd['density'],dd['T'],dd['xe'],Z_d,G_PE)
-    heatrate['CR'] = heatCR(dd['density'],dd['xe'],dd['xHI'],dd['xH2'],
+    heatrate['PE'] = heatPE(dd['nH'],dd['T'],dd['xe'],Z_d,G_PE)
+    heatrate['CR'] = heatCR(dd['nH'],dd['xe'],dd['xHI'],dd['xH2'],
                             dd['CR_ionization_rate'])
-    heatrate['H2_form'] = heatH2form(dd['density'],dd['T'],dd['xHI'],dd['xH2'],Z_d)
-    heatrate['H2_pump'] = heatH2pump(dd['density'],dd['T'],dd['xHI'],dd['xH2'],xi_diss_H2)
+    heatrate['H2_form'] = heatH2form(dd['nH'],dd['T'],dd['xHI'],dd['xH2'],Z_d)
+    heatrate['H2_pump'] = heatH2pump(dd['nH'],dd['T'],dd['xHI'],dd['xH2'],xi_diss_H2)
     heatrate['H2_diss'] = heatH2diss(dd['xH2'],xi_diss_H2)
     heatrate['PH'] = dd['xHI']*xi_ph_HI*dhnu_HI_PH
     # no heating at high-T
@@ -104,12 +104,12 @@ def get_heating(s,dd):
 def get_hydrogen_cooling(dd):
     '''a wrapper function to calculate H cooling'''
     coolrate=xr.Dataset()
-    coolrate['HI_Lya']=coolLya(dd['density'],dd['T'],dd['xe'],dd['xHI'])
-    coolrate['HI_collion']=coolHIion(dd['density'],dd['T'],dd['xe'],dd['xHI'])
-    coolrate['HII_ff']=coolffH(dd['density'],dd['T'],dd['xe'],dd['xHII'])
-    coolrate['HII_rec']=coolrecH(dd['density'],dd['T'],dd['xe'],dd['xHII'])
-    coolrate['H2_rovib']=coolH2(dd['density'],dd['T'],dd['xHI'],dd['xH2']) # rovib
-    coolrate['H2_colldiss'] = coolH2colldiss(dd['density'],dd['T'],dd['xHI'],dd['xH2'])
+    coolrate['HI_Lya']=coolLya(dd['nH'],dd['T'],dd['xe'],dd['xHI'])
+    coolrate['HI_collion']=coolHIion(dd['nH'],dd['T'],dd['xe'],dd['xHI'])
+    coolrate['HII_ff']=coolffH(dd['nH'],dd['T'],dd['xe'],dd['xHII'])
+    coolrate['HII_rec']=coolrecH(dd['nH'],dd['T'],dd['xe'],dd['xHII'])
+    coolrate['H2_rovib']=coolH2(dd['nH'],dd['T'],dd['xHI'],dd['xH2']) # rovib
+    coolrate['H2_colldiss'] = coolH2colldiss(dd['nH'],dd['T'],dd['xHI'],dd['xH2'])
     return coolrate
 
 def get_other_cooling(s,dd):
@@ -135,28 +135,28 @@ def get_other_cooling(s,dd):
     G_CO = G_CI
     # calculate C, O species abundances
     dd['xOII'] = dd['xHII']*s.par['cooling']['xOstd']*s.par['problem']['Z_gas']
-    dd['xCII'] = get_xCII(dd['density'],dd['xe'],dd['xH2'],dd['T'],Z_d,Z_g,
+    dd['xCII'] = get_xCII(dd['nH'],dd['xe'],dd['xH2'],dd['T'],Z_d,Z_g,
                           dd['CR_ionization_rate'],G_PE,G_CI,xCstd=xCstd,gr_rec=True)
-    dd['xCO'],ncrit = get_xCO(dd['density'],dd['xH2'],dd['xCII'],Z_d,Z_g,
+    dd['xCO'],ncrit = get_xCO(dd['nH'],dd['xH2'],dd['xCII'],Z_d,Z_g,
                           dd['CR_ionization_rate'],G_CO,xCstd=xCstd)
     dd['xOI'] = np.clip(xOstd*Z_g - dd['xOII']-dd['xCO'], 1.e-20, None)
     dd['xCI'] = np.clip(xCstd*Z_g - dd['xCII']-dd['xCO'], 1.e-20, None)
 
     # cooling others
     coolrate=xr.Dataset()
-    coolrate['CI'] = coolCI(dd['density'],dd['T'],
+    coolrate['CI'] = coolCI(dd['nH'],dd['T'],
             dd['xe'],dd['xHI'],dd['xH2'],dd['xCI'])
-    coolrate['CII'] = coolCII(dd['density'],dd['T'],
+    coolrate['CII'] = coolCII(dd['nH'],dd['T'],
             dd['xe'],dd['xHI'],dd['xH2'],dd['xCII'])
     # for now, this is too slow
     # set_dvdr(dd)
-    #coolrate['CO'] = coolCO(dd['density'],dd['T'],
+    #coolrate['CO'] = coolCO(dd['nH'],dd['T'],
     #        dd['xe'],dd['xHI'],dd['xH2'],dd['xCO'],dd['dvdr'])
-    coolrate['OI'] = coolOI(dd['density'],dd['T'],
+    coolrate['OI'] = coolOI(dd['nH'],dd['T'],
             dd['xe'],dd['xHI'],dd['xHII'],dd['xOI'])
     coolrate['OII'] = s.par['cooling']['fac_coolingOII']* \
-            coolOII(dd['density'],dd['T'],dd['xe'],dd['xOII'])
-    coolrate['Rec'] = coolRec(dd['density'],dd['T'],dd['xe'],Z_d,G_PE)
+            coolOII(dd['nH'],dd['T'],dd['xe'],dd['xOII'])
+    coolrate['Rec'] = coolRec(dd['nH'],dd['T'],dd['xe'],Z_d,G_PE)
 
     return coolrate
 
@@ -207,21 +207,21 @@ def set_CIE_interpolator(return_xe=False):
 
         for i in range(nstate):
             xe[e] += A*i*cg.ion_frac[e + str(i)].values
-            #cool[e] += A*cg.ion_frac[e + str(i)].values*cg.cool_cie_per_ion[e][:,i]
+            cool[e] += A*cg.ion_frac[e + str(i)].values*cg.cool_cie_per_ion[e][:,i]
 
     for e in elements:
         xe_tot += xe[e]
-        #cool_tot += cool[e]
-
-    for e in elements:
-        nstate = cg.info.loc[e]['number'] + 1
-        A = cg.info.loc[e]['abd']
-        for i in range(nstate):
-            cool[e] += xe_tot*A*cg.ion_frac[e + str(i)].values*\
-                       cg.cool_cie_per_ion[e][:,i]
-
-    for e in elements:
         cool_tot += cool[e]
+
+    #for e in elements:
+    #    nstate = cg.info.loc[e]['number'] + 1
+    #    A = cg.info.loc[e]['abd']
+    #    for i in range(nstate):
+    #        cool[e] += xe_tot*A*cg.ion_frac[e + str(i)].values*\
+    #                   cg.cool_cie_per_ion[e][:,i]
+
+    #for e in elements:
+    #    cool_tot += cool[e]
 
     # Interpolation
     from scipy.interpolate import interp1d
