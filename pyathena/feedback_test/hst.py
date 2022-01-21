@@ -194,6 +194,7 @@ class Hst:
         domain = self.domain
         # total volume of domain (code unit)
         vol = domain['Lx'].prod()        
+        pr_conv = vol*(u.mass*u.velocity).to('Msun km s-1').value
 
         hst['wind_Minj'] *= vol*u.Msun
         hst['wind_Einj'] *= vol*u.erg
@@ -201,6 +202,20 @@ class Hst:
         hst['wind_Mdot'] *= vol*u.Msun/u.Myr
         hst['wind_Edot'] *= vol*u.erg/u.s
         hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr        
+
+        hst['wind_pr_c'] = hst['pr_c_swind_mixed4']*pr_conv
+        hst['wind_pr_i'] = hst['pr_i_swind_mixed4']*pr_conv
+        hst['wind_pr_w'] = hst['pr_w_swind_mixed4']*pr_conv
+        try:
+            hst['wind_pr_u'] = hst['pr_u_swind_mixed4']*pr_conv
+        except: # typo
+            hst['wind_pr_u'] = hst['pr_y_swind_mixed4']*pr_conv
+            
+        hst['wind_pr_hf'] = hst['pr_hf']*pr_conv
+        hst['wind_pr_hps'] = hst['pr_hps']*pr_conv
+        hst['wind_pr'] = hst['wind_pr_c'] + hst['wind_pr_i'] + \
+            hst['wind_pr_w'] + hst['wind_pr_u'] + hst['wind_pr_hf'] + \
+            hst['wind_pr_hps']
 
         return hst
     
