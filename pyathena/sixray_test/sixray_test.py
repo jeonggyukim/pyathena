@@ -6,48 +6,8 @@ import astropy.constants as ac
 
 from ..load_sim import LoadSimAll
 
-def load_sixray_test_all(models=None, cool=False):
+def load_sixray_test_all(models, sel_kwargs=dict(z=0, method='nearest'), cool=False):
 
-    # CR var: CR rate scales with radiation
-    # Unshld: no shielding
-    # Jeans: shielding length = local Jeans length
-
-    # Load data and compute abundances and cooling rates
-    if models is None:
-
-        # New (H2 line cooling added)
-        models = dict(
-
-            Unshld_CRvar_Z1='/scratch/gpfs/jk11/SIXRAY-TEST-UNSHIELDED4/Unshld.CRvar.Z1.0/',
-            Unshld_CRvar_Z01='/scratch/gpfs/jk11/SIXRAY-TEST-UNSHIELDED4/Unshld.CRvar.Z0.1/',
-            Unshld_CRvar_Z001='/scratch/gpfs/jk11/SIXRAY-TEST-UNSHIELDED4/Unshld.CRvar.Z0.01/',
-            Unshld_CRvar_Z3='/scratch/gpfs/jk11/SIXRAY-TEST-UNSHIELDED4/Unshld.CRvar.Z3.0/',
-            Unshld_CRvar_Z1_scaled='/scratch/gpfs/jk11/SIXRAY-TEST-UNSHIELDED4/Unshld.CRvar.Z1.0.scaled/',
-
-            Shld_CRvar_Z1='/scratch/gpfs/jk11/SIXRAY-TEST-SHIELDED-AGAIN4/Lshld.CRvar.Z1.0.power',
-            Shld_CRvar_Z01='/scratch/gpfs/jk11/SIXRAY-TEST-SHIELDED-AGAIN4/Lshld.CRvar.Z0.1.power',
-            Shld_CRvar_Z001='/scratch/gpfs/jk11/SIXRAY-TEST-SHIELDED-AGAIN4/Lshld.CRvar.Z0.01.power',
-            #Shld_CRvar_Z3='/scratch/gpfs/jk11/SIXRAY-TEST-SHIELDED-AGAIN4/Lshld.CRvar.Z3.0.power',
-            
-            # Shld_CRvar_Z1_alt='/scratch/gpfs/jk11/SIXRAY-TEST-SHIELDED-AGAIN3/Lshld.CRvar.Z1.0',
-            #Shld_CRvar_Z01_alt='/scratch/gpfs/jk11/SIXRAY-TEST-SHIELDED-AGAIN3/Lshld.CRvar.Z0.1',
-            #Shld_CRvar_Z001_alt='/scratch/gpfs/jk11/SIXRAY-TEST-SHIELDED-AGAIN3/Lshld.CRvar.Z0.01',
- 
-        )
-        
-        # # Old
-        # models = dict(
-        #     Unshld_CRvar_Z1='/tigress/jk11/SIXRAY-TEST-UNSHIELDED/Unshld.CRvar.Z1.0/',
-        #     Unshld_CRvar_Z01='/tigress/jk11/SIXRAY-TEST-UNSHIELDED/Unshld.CRvar.Z0.1/',
-        #     Unshld_CRvar_Z001='/tigress/jk11/SIXRAY-TEST-UNSHIELDED/Unshld.CRvar.Z0.01/',
-        #     Unshld_CRvar_Z3='/tigress/jk11/SIXRAY-TEST-UNSHIELDED/Unshld.CRvar.Z3.0/',
-        #     Unshld_CRvar_Z1_scaled='/tigress/jk11/SIXRAY-TEST-UNSHIELDED/Unshld.CRvar.Z1.0.scaled/',
-        #     Shld_CRvar_Z1='/tigress/jk11/SIXRAY-TEST-SHIELDED-noCISHLD/Lshld.CRvar.Z1.0',
-        #     Shld_CRvar_Z01='/tigress/jk11/SIXRAY-TEST-SHIELDED-noCISHLD/Lshld.CRvar.Z0.1',
-        #     Shld_CRvar_Z001='/tigress/jk11/SIXRAY-TEST-SHIELDED-noCISHLD/Lshld.CRvar.Z0.01',
-        #     Shld_CRvar_Z3='/tigress/jk11/SIXRAY-TEST-SHIELDED-noCISHLD/Lshld.CRvar.Z3.0',
-        # )
-            
     sa = LoadSimAll(models)
     da = dict()
     print('[load_sixray_test_all] reading simulation data:', end=' ')
@@ -61,7 +21,7 @@ def load_sixray_test_all(models=None, cool=False):
         else:
             dust_model = 'WD01'
         da[mdl] = get_cool_data(s, s.nums[-1],
-                                sel_kwargs=dict(z=0, method='nearest'),
+                                sel_kwargs=sel_kwargs,
                                 cool=cool, dust_model=dust_model)
 
     return sa, da
@@ -72,17 +32,28 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
     D0 = s.par['cooling']['xi_diss_H2_ISRF']
     dvdr = (s.par['problem']['dvdr']*(1.0*au.km/au.s/au.pc).to('s-1')).value
 
-    iCoolH2rovib = s.par['cooling']['iCoolH2rovib']
+    try:
+        iCoolH2rovib = s.par['cooling']['iCoolH2rovib']
+    except KeyError:
+        iCoolH2rovib = 0
+    try:
+        iCoolH2colldiss = s.par['cooling']['iCoolH2colldiss']
+    except KeyError:
+        iCoolH2colldiss = 0
+    try:
+        iCoolDust = s.par['cooling']['iCoolDust']
+    except KeyError:
+        iCoolDust = 0
 
     fields = ['nH','nH2','nHI','xH2','xHII','xe',
-              'xHI','xCII','chi_PE_ext',
+              'xHI','xCII','xOII','chi_PE_ext',
               'chi_LW_ext','chi_H2_ext','chi_CI_ext',
               'T','pok']
     
     if cool:
         fields.append('cool_rate')
         fields.append('heat_rate')
-    if s.par['cooling']['iCoolDust'] == 1:
+    if iCoolDust:
         fields.append('Td')
     
     ds = s.load_vtk(num)
@@ -101,18 +72,19 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
         get_xCO, get_xe_mol, heatPE, heatPE_BT94, heatPE_W03,\
         heatCR, heatH2form, heatH2pump, heatH2diss,\
         coolCII, coolOI, coolRec, coolRec_BT94, coolRec_W03,\
-        coolLya, coolCI, coolCO, coolH2, coolHIion
+        coolLya, coolCI, coolCO, coolHIion, coolH2rovib, coolH2colldiss,\
+        coolrecH, coolffH, cooldust
 
     Z_d = s.par['problem']['Z_dust']
     Z_g = s.par['problem']['Z_gas']
     xCstd = s.par['cooling']['xCstd']
     xOstd = s.par['cooling']['xOstd']
     
-    xCO, ncrit = get_xCO(dd.nH, dd.xH2, dd.xCII, Z_d, Z_g,
-                         dd['xi_CR'], dd['chi_LW_ext'], xCstd)
+    xCO, ncrit = get_xCO(dd.nH, dd.xH2, dd.xCII, dd.xOII, Z_d, Z_g,
+                         dd['xi_CR'], dd['chi_LW_ext'], xCstd, xOstd)
     dd['xCO'] = xCO
     dd['ncrit'] = ncrit
-    dd['xOI'] = np.maximum(0.0, xOstd*Z_g - dd['xCO'])
+    dd['xOI'] = np.maximum(0.0, xOstd*Z_g - dd['xCO'] - dd['xOII'])
     dd['xCI'] = np.maximum(0.0, xCstd*Z_g - dd.xCII - dd.xCO)
     dd['xe_mol'] = get_xe_mol(dd.nH, dd.xH2, dd.xe, dd.T, dd['xi_CR'], Z_g, Z_d)
     
@@ -130,20 +102,22 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
 
     #dd = dd.drop(['nH'])
     #dd = dd.drop(['y'])
-    
     # dd = dd.rename(dict(y='log_chi_PE', chi_PE_ext='chi_PE'))
     # dd = dd.assign_coords(dict(log_chi_PE=log_chi_PE))
-
     # print(sel_kwargs)
     d = dd.sel(**sel_kwargs)
 
+    # Grain charging
+    # Note that G_0 is in Habing units
+    d['charging'] = 1.7*d['chi_PE_ext']*d['T']**0.5/(d['nH']*d['xe'])
+
     # Calculate heat/cool rates
     if cool:
-        if dust_model == 'BT94':
+        if dust_model == 'BT94': # Bakes & Tielens 1994
             d['heatPE'] = heatPE_BT94(d['nH'], d['T'], d['xe'], Z_d, d['chi_PE_ext'])
-        elif dust_model == 'W03':
+        elif dust_model == 'W03': # Wolfire 2003
             d['heatPE'] = heatPE_W03(d['nH'], d['T'], d['xe'], Z_d, d['chi_PE_ext'])
-        else:
+        else: # Weingartner & Draine 2001
             d['heatPE'] = heatPE(d['nH'], d['T'], d['xe'], Z_d, d['chi_PE_ext'])
             
         d['heatCR'] = heatCR(d['nH'], d['xe'], d['xHI'], d['xH2'], d['xi_CR'])
@@ -158,22 +132,30 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
             d['coolRec'] = coolRec_W03(d['nH'],d['T'],d['xe'],Z_d,d['chi_PE_ext'])
         else:
             d['coolRec'] = coolRec(d['nH'],d['T'],d['xe'],Z_d,d['chi_PE_ext'])
+            
         d['coolLya'] = coolLya(d['nH'],d['T'],d['xe'],d['xHI'])
         if iCoolH2rovib == 1:
-            d['coolH2'] = coolH2(d['nH'],d['T'],d['xHI'],d['xH2'])
+            d['coolH2rovib'] = coolH2rovib(d['nH'],d['T'],d['xHI'],d['xH2'])
+            
+        if iCoolH2colldiss == 1:
+            d['coolH2colldiss'] = coolH2colldiss(d['nH'],d['T'],d['xHI'],d['xH2'])
+
+        if iCoolDust == 1:
+            d['cooldust'] = cooldust(d['nH'],d['T'],d['Td'],Z_d)
         d['coolHIion'] = coolHIion(d['nH'],d['T'],d['xe'],d['xHI'])
         d['coolCI'] = coolCI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCI'])
+        d['coolffH'] = coolffH(d['nH'],d['T'],d['xe'],d['xHII'])
+        d['coolrecH'] = coolrecH(d['nH'],d['T'],d['xe'],d['xHII'])
+        
         # d['coolCO'] = np.where(d['xCO'] < 1e-3*xCstd,
         #                        0.0,
         #                        d['cool_rate']/d['nH'] - d['coolCII'] -
         #                        d['coolOI'] - d['coolLya'] - d['coolCI'] - d['coolRec'] -
         #                        d['coolH2'] - d['coolHIion'])
-        d['coolCO'] = coolCO(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCO'],dvdr)
-        d['cool'] = d['coolCI']+d['coolCII']+d['coolOI']+d['coolRec']+d['coolLya']+d['coolCO']
-        d['heat'] = d['heatPE'] + d['heatCR'] + d['heatH2pump'] + d['heatH2form'] + d['heatH2diss']
         
-        # Note that G_0 is in Habing units
-        d['charging'] = 1.7*d['chi_PE_ext']*d['T']**0.5/(d['nH']*d['xe'])
+        d['coolCO'] = coolCO(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCO'],dvdr)
+        # d['cool'] = d['coolCI']+d['coolCII']+d['coolOI']+d['coolRec']+d['coolLya']+d['coolCO']
+        # d['heat'] = d['heatPE'] + d['heatCR'] + d['heatH2pump'] + d['heatH2form'] + d['heatH2diss']
         
     return d
 
@@ -296,12 +278,23 @@ def plt_nP_nT(axes, s, da, model, suptitle,
 
 
 def plt_rates_abd(axes, s, da, model, log_chi0=0.0, xlim=(1e-2,1e3),
-                  ylims=[(1e-29,8e-24),(1e-6,2e0),(1e0,1e5)], shielded=True):
+                  ylims=[(1e-29,2e-23),(1e-7,2e0),(1e0,1e5)], shielded=True):
 
     cmap = plt.get_cmap("tab10")
-    
-    iCoolH2rovib = s.par['cooling']['iCoolH2rovib']
 
+    try:
+        iCoolH2rovib = s.par['cooling']['iCoolH2rovib']
+    except KeyError:
+        iCoolH2rovib = 0
+    try:
+        iCoolH2colldiss = s.par['cooling']['iCoolH2colldiss']
+    except KeyError:
+        iCoolH2colldiss = 0
+    try:
+        iCoolDust = s.par['cooling']['iCoolDust']
+    except KeyError:
+        iCoolDust = 0
+        
     dd = da[model]
     axes = axes.flatten()
     d = dd.sel(log_chi_PE=log_chi0, method='nearest')
@@ -314,26 +307,31 @@ def plt_rates_abd(axes, s, da, model, log_chi0=0.0, xlim=(1e-2,1e3),
     plt.loglog(d['nH'], d['heatCR'], ls='--', label=r'CR', c=cmap(1))
     plt.loglog(d['nH'], d['heatH2form'], ls='--', label=r'${\rm H}_{2,\rm {form}}$', c=cmap(2))
     plt.loglog(d['nH'], d['heatH2diss'], ls='--', label=r'${\rm H}_{2,\rm {diss}}$', c=cmap(3))
-    if shielded:
-        plt.loglog(d['nH'], d['heatH2pump'], ls='--', label=r'${\rm H}_{2,\rm {pump}}$', c=cmap(4))
+    plt.loglog(d['nH'], d['heatH2pump'], ls='--', label=r'${\rm H}_{2,\rm {pump}}$', c=cmap(4))
+    
     lCp, = plt.loglog(d['nH'], d['coolCII'], label=r'${\rm CII}$', c=cmap(5))
     lO, = plt.loglog(d['nH'], d['coolOI'], label=r'${\rm OI}$', c=cmap(6))
     lHp, = plt.loglog(d['nH'], d['coolLya'], label=r'Ly$\alpha$', c=cmap(7))
     lC, = plt.loglog(d['nH'], d['coolCI'], label=r'${\rm CI}$', c=cmap(8))
+    plt.loglog(d['nH'], d['coolRec'], label=r'Rec', c='lightskyblue')
     if iCoolH2rovib == 1:
         lH2, = plt.loglog(d['nH'], d['coolH2'], label=r'${\rm H_2}$', c='deeppink')
-    plt.loglog(d['nH'], d['coolRec'], label=r'Rec', c='lightskyblue')
+    if iCoolH2colldiss:
+        plt.loglog(d['nH'], d['coolH2colldiss'], label='dust', c='royalblue')
+    if iCoolDust:
+        plt.loglog(d['nH'], d['cooldust'], label='dust', c='purple')
+
     if shielded:
         # pass
         # Cool CO
-        # lCO, = plt.loglog(d['nH'], d['coolCO'], label=r'CO', c=cmap(9))
+        lCO, = plt.loglog(d['nH'], d['coolCO'], label=r'CO', c=cmap(9))
         #lCO, = plt.loglog(d['nH'], d['cool_rate']/d['nH'] - d['coolCII'] - d['coolOI'] -
         #                  d['coolLya'] - d['coolCI'] - d['coolRec'], label=r'CO', c='darkblue')
-        lCO, = plt.loglog(d['nH'],
-                          np.where(d['xCO'] < 1e-3*xCstd*Z_g,
-                                   0.0,
-                                   d['cool_rate']/d['nH'] - d['coolCII'] -
-                                   d['coolOI'] - d['coolLya'] - d['coolCI'] - d['coolRec']), label=r'CO', c=cmap(9))
+        # lCO, = plt.loglog(d['nH'],
+        #                   np.where(d['xCO'] < 1e-3*xCstd*Z_g,
+        #                            0.0,
+        #                            d['cool_rate']/d['nH'] - d['coolCII'] -
+        #                            d['coolOI'] - d['coolLya'] - d['coolCI'] - d['coolRec']), label=r'CO', c=cmap(9))
 
         
     plt.loglog(d['nH'], d['cool_rate']/d['nH'], label=r'Total', c='k', lw=2)
@@ -345,12 +343,16 @@ def plt_rates_abd(axes, s, da, model, log_chi0=0.0, xlim=(1e-2,1e3),
     plt.loglog(d['nH'],d['xCI'], ls='-', label=r'${\rm CI}$', c=lC.get_color())
     plt.loglog(d['nH'],d['xCII'], ls='-', label=r'${\rm CII}$', c=lCp.get_color())
     plt.loglog(d['nH'],d['xOI'], ls='-', label=r'${\rm OI}$', c=lO.get_color())
+    #    plt.loglog(d['nH'],d['xOII'], ls='-', label=r'${\rm OII}$', c=lO.get_color())
+    
     if shielded:
         plt.loglog(d['nH'],d['xCO'], ls='-', label=r'${\rm CO}$', c=lCO.get_color())
         plt.loglog(d['nH'],d['xe_mol'], ls='-', label=r'$x_{\rm e,MH^+}$')
 
     plt.sca(axes[2])
     plt.loglog(d['nH'], d['T'], ls='-', c='k')
+    if iCoolDust == 1:
+        plt.loglog(d['nH'], d['Td'], ls='-', c='grey', label=r'$T_{\rm d}$')
     plt.loglog(d['nH'], 1.7*d['chi_PE_ext']*d['T']**0.5/(d['nH']*d['xe'])+50.0,
                ls='--', c='k')
 
