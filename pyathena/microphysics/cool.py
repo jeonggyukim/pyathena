@@ -19,7 +19,6 @@ def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Z_g=1.0, Z_d=1.0):
     B = k1620 + k1621*xS
     return 2.0*xH2*((B**2 + 4.0*A*xi_cr*(1.0 + phi_s)/nH)**0.5 - B)/(2.0*k1619)
 
-def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=True, CRPhot=True):
 def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI,
              xCstd=1.6e-4, gr_rec=True, CRPhotC=True):
 

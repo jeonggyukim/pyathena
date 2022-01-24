@@ -7,10 +7,10 @@ def f1(T, T0=2e4, T1=3.5e4):
     return np.where(T > T1, 1.0,
                     np.where(T <= T0, 0.0, 1.0/(1.0 + np.exp(-10.0*(T - 0.5*(T0+T1))/(T1-T0)))))
 
-def get_cooling_heating(sim,ds):
+def get_cooling_heating(s, ds):
     '''read necessary fields, calculate cooling from each coolnat'''
     # unit definition
-    unitT = sim.u.energy_density/ac.k_B/sim.muH*au.cm**3
+    unitT = s.u.energy_density/ac.k_B/s.u.muH*au.cm**3
 
     # read all necessary native fields
     field_to_read=['nH', 'pressure', 'cool_rate', 'heat_rate', # velocity (for CO)
@@ -22,30 +22,31 @@ def get_cooling_heating(sim,ds):
     dd = ds.get_field(field_to_read)
 
     # set metallicities
-    Z_g=sim.par['problem']['Z_gas']
-    Z_d=sim.par['problem']['Z_dust']
+    Z_g = s.par['problem']['Z_gas']
+    Z_d = s.par['problem']['Z_dust']
 
     # get a few derived fields
-    dd['xHII'] = 1-dd['xHI']-2.0*dd['xH2']
+    dd['xHII'] = 1 - dd['xHI'] - 2.0*dd['xH2']
     dd['T1'] = dd['pressure']/dd['nH']*unitT.cgs.value
-    dd['mu'] = sim.muH/(1.1+dd['xe']-dd['xH2'])
+    dd['mu'] = s.u.muH/(1.1+dd['xe']-dd['xH2'])
     dd['T'] = dd['T1']*dd['mu']
 
     # get weight functions
-    w2 = f1(dd['T'],T0=sim.par['cooling']['Thot0'],T1=sim.par['cooling']['Thot1'])
-    w1 = 1-w2
+    w2 = f1(dd['T'], T0=s.par['cooling']['Thot0'],
+            T1=s.par['cooling']['Thot1'])
+    w1 = 1 - w2
 
     # hydrogen cooling
     cool_hyd = get_hydrogen_cooling(dd)*dd['nH']
     # other cooling at low T
-    cool_other = get_other_cooling(sim,dd)*dd['nH']*w1
+    cool_other = get_other_cooling(s,dd)*dd['nH']*w1
     # CIE cooling by He and metal
     cool_CIE = get_Lambda_CIE(dd)
     cool_CIE['CIE_metal'] *= Z_g*dd['nH']**2*w2
     cool_CIE['CIE_He'] *= dd['nH']**2*w2
 
     # heating
-    heat = get_heating(sim,dd)*dd['nH']*w1
+    heat = get_heating(s, dd)*dd['nH']*w1
     heat['total'] = dd['heat_rate']
 
     # add ancillary fields
@@ -57,8 +58,8 @@ def get_cooling_heating(sim,ds):
 def get_heating(s,dd):
     '''calculate heating'''
     # set metallicities
-    Z_g=s.par['problem']['Z_gas']
-    Z_d=s.par['problem']['Z_dust']
+    Z_g = s.par['problem']['Z_gas']
+    Z_d = s.par['problem']['Z_dust']
     # calculate normalized radiation fields
     Erad_PE = dd['rad_energy_density_PE']
     Erad_LW = dd['rad_energy_density_LW']
@@ -70,6 +71,7 @@ def get_heating(s,dd):
     xi_diss_H2_conv = s.par['cooling']['xi_diss_H2_ISRF']/Erad_LW0
     eV_ = (1.*au.eV).cgs.value
     dhnu_H2_diss = 0.4*eV_
+
     if 'dhnu_HI_PH' in s.par['radps']:
         dhnu_HI_PH = s.par['radps']['dhnu_HI_PH']*eV_
     else:
@@ -78,12 +80,13 @@ def get_heating(s,dd):
         dhnu_H2_PH = s.par['radps']['dhnu_H2_PH']*eV_
     else:
         dhnu_H2_PH = 4.42*eV_
+        
     sigma_HI_PH = s.par['opacity']['sigma_HI_PH']
     sigma_H2_PH = s.par['opacity']['sigma_H2_PH']
     hnu_PH = s.par['radps']['hnu_PH']*eV_
-    xi_ph_HI=Erad_PH*s.u.energy_density.cgs.value
+    xi_ph_HI = Erad_PH*s.u.energy_density.cgs.value
     xi_ph_HI *= ac.c.cgs.value*sigma_HI_PH/hnu_PH
-    xi_ph_H2=Erad_PH*s.u.energy_density.cgs.value
+    xi_ph_H2 = Erad_PH*s.u.energy_density.cgs.value
     xi_ph_H2 *= ac.c.cgs.value*sigma_H2_PH/hnu_PH
     G_PE = (Erad_PE+Erad_LW)/(Erad_PE0+Erad_LW0)
     xi_diss_H2=Erad_LW_diss*xi_diss_H2_conv
@@ -112,18 +115,19 @@ def get_hydrogen_cooling(dd):
     coolrate['H2_colldiss'] = coolH2colldiss(dd['nH'],dd['T'],dd['xHI'],dd['xH2'])
     return coolrate
 
-def get_other_cooling(s,dd):
+def get_other_cooling(s, dd):
     '''function to other cooling at low T
     '''
+
     if not ('xHII' in dd):
         raise KeyError("xHII must set before calling this function")
 
     # set total C, O abundance
-    xOstd=s.par['cooling']['xOstd']
-    xCstd=s.par['cooling']['xCstd']
+    xOstd = s.par['cooling']['xOstd']
+    xCstd = s.par['cooling']['xCstd']
     # set metallicities
-    Z_g=s.par['problem']['Z_gas']
-    Z_d=s.par['problem']['Z_dust']
+    Z_g = s.par['problem']['Z_gas']
+    Z_d = s.par['problem']['Z_dust']
     try:
         if s.par['cooling']['iCRPhotC'] == 1:
             CRPhotC = True
@@ -141,6 +145,8 @@ def get_other_cooling(s,dd):
     G_PE = (Erad_PE+Erad_LW)/(Erad_PE0+Erad_LW0)
     G_CI = Erad_LW/Erad_LW0
     G_CO = G_CI
+
+    coolrate = xr.Dataset()
     # calculate C, O species abundances
     dd['xOII'] = dd['xHII']*s.par['cooling']['xOstd']*s.par['problem']['Z_gas']
     dd['xCII'] = get_xCII(dd['nH'],dd['xe'],dd['xH2'],dd['T'],Z_d,Z_g,
@@ -152,20 +158,20 @@ def get_other_cooling(s,dd):
     dd['xCI'] = np.clip(xCstd*Z_g - dd['xCII']-dd['xCO'], 1.e-20, None)
 
     # cooling others
-    coolrate=xr.Dataset()
     coolrate['CI'] = coolCI(dd['nH'],dd['T'],
-            dd['xe'],dd['xHI'],dd['xH2'],dd['xCI'])
+                            dd['xe'],dd['xHI'],dd['xH2'],dd['xCI'])
     coolrate['CII'] = coolCII(dd['nH'],dd['T'],
-            dd['xe'],dd['xHI'],dd['xH2'],dd['xCII'])
+                              dd['xe'],dd['xHI'],dd['xH2'],dd['xCII'])
     coolrate['OI'] = coolOI(dd['nH'],dd['T'],
                             dd['xe'],dd['xHI'],dd['xH2'],dd['xOI'])
+    coolrate['OII'] = s.par['cooling']['fac_coolingOII'] * \
+        coolOII(dd['nH'],dd['T'],dd['xe'],dd['xOII'])
+    coolrate['Rec'] = coolRec(dd['nH'],dd['T'],dd['xe'],Z_d,G_PE)
+
     # for now, this is too slow
     # set_dvdr(dd)
     #coolrate['CO'] = coolCO(dd['nH'],dd['T'],
     #        dd['xe'],dd['xHI'],dd['xH2'],dd['xCO'],dd['dvdr'])
-    coolrate['OII'] = s.par['cooling']['fac_coolingOII']* \
-            coolOII(dd['nH'],dd['T'],dd['xe'],dd['xOII'])
-    coolrate['Rec'] = coolRec(dd['nH'],dd['T'],dd['xe'],Z_d,G_PE)
 
     return coolrate
 
@@ -191,6 +197,7 @@ def set_CIE_interpolator(return_xe=False):
     '''CIE cooling from Gnat12
     based on /tigress/jk11/notebook/NEWCOOL/paper-fig-transition.ipynb
     '''
+
     # CIE cooling
     from .cool_gnat12 import CoolGnat12
     cg = CoolGnat12(abundance='Asplund09')
