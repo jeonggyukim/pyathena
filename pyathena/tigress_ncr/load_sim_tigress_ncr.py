@@ -125,8 +125,6 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
         return dd
 
 
-
-
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None, muH=None):

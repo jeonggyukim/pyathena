@@ -230,12 +230,20 @@ class RecRate(object):
         return 4.13e-13*T4**(-0.7131 - 0.0115*np.log(T4))
 
     @staticmethod
-    def get_rec_rate_H_caseB(T):
+    def get_rec_rate_H_caseB(T,dr11=False):
         """Compute case B recombination rate coefficient for H
         Table 14.1 in Draine (2011)
         """
-        T4 = T*1e-4
-        return 2.54e-13*T4**(-0.8163 - 0.0208*np.log(T4))
+        if dr11:
+            T4 = T*1e-4
+            return 2.54e-13*T4**(-0.8163 - 0.0208*np.log(T4))
+        else:
+            Tinv = 1.0/T
+            bb = 315614.0*Tinv
+            cc = 115188.0*Tinv
+            k_Hplus_e = 2.753e-14 * np.power(bb, 1.5) * \
+                        np.power(1.0 + np.power(cc, 0.407), -2.242)
+            return k_Hplus_e
 
     
     @staticmethod

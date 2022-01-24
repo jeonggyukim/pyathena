@@ -1,4 +1,4 @@
-from .cool import *
+from ..microphysics.cool import *
 import xarray as xr
 import numpy as np
 
@@ -7,7 +7,7 @@ def f1(T, T0=2e4, T1=3.5e4):
     return np.where(T > T1, 1.0,
                     np.where(T <= T0, 0.0, 1.0/(1.0 + np.exp(-10.0*(T - 0.5*(T0+T1))/(T1-T0)))))
 
-def get_cooling_heating(sim,ds):
+def get_cooling_heating(sim,ds,zrange=None):
     '''read necessary fields, calculate cooling from each coolnat'''
     # unit definition
     unitT = sim.u.energy_density/ac.k_B/sim.muH*au.cm**3
@@ -20,6 +20,13 @@ def get_cooling_heating(sim,ds):
                    'rad_energy_density_LW_diss',
                    'xHI', 'xH2', 'xe']
     dd = ds.get_field(field_to_read)
+    total_cooling = dd['cool_rate'].sum().data
+    total_heating = dd['heat_rate'].sum().data
+    total_netcool = dd['net_cool_rate'].sum().data
+
+    # apply zcut first
+    if zrange is not None:
+        dd = dd.sel(z=zrange)
 
     # set metallicities
     Z_g=sim.par['problem']['Z_gas']
@@ -52,7 +59,17 @@ def get_cooling_heating(sim,ds):
     cool_hyd['total'] = dd['cool_rate']
     cool = cool_hyd.update(cool_other).update(cool_CIE)
 
-    return dd, cool, heat
+    # add total cooling/heating
+    cool.attrs['total_cooling']=total_cooling
+    cool.attrs['total_heating']=total_heating
+    cool.attrs['total_netcool']=total_netcool
+    heat.attrs['total_cooling']=total_cooling
+    heat.attrs['total_heating']=total_heating
+    heat.attrs['total_netcool']=total_netcool
+
+    return dd, \
+           cool.assign_coords(time=ds.domain['time']), \
+           heat.assign_coords(time=ds.domain['time'])
 
 def get_heating(s,dd):
     '''calculate heating'''
@@ -87,15 +104,22 @@ def get_heating(s,dd):
     xi_ph_H2 *= ac.c.cgs.value*sigma_H2_PH/hnu_PH
     G_PE = (Erad_PE+Erad_LW)/(Erad_PE0+Erad_LW0)
     xi_diss_H2=Erad_LW_diss*xi_diss_H2_conv
-
+    # set flags
+    try:
+        ikgr_H2 = s.par['cooling']['ikgr_H2']
+    except KeyError:
+        ikgr_H2 = 0
+    
     heatrate=xr.Dataset()
     heatrate['PE'] = heatPE(dd['nH'],dd['T'],dd['xe'],Z_d,G_PE)
     heatrate['CR'] = heatCR(dd['nH'],dd['xe'],dd['xHI'],dd['xH2'],
                             dd['CR_ionization_rate'])
-    heatrate['H2_form'] = heatH2form(dd['nH'],dd['T'],dd['xHI'],dd['xH2'],Z_d)
+    heatrate['H2_form'] = heatH2form(dd['nH'],dd['T'],dd['xHI'],dd['xH2'],Z_d,
+                                     ikgr_H2=ikgr_H2)
     heatrate['H2_pump'] = heatH2pump(dd['nH'],dd['T'],dd['xHI'],dd['xH2'],xi_diss_H2)
     heatrate['H2_diss'] = heatH2diss(dd['xH2'],xi_diss_H2)
-    heatrate['PH'] = dd['xHI']*xi_ph_HI*dhnu_HI_PH
+    heatrate['PH_HI'] = dd['xHI']*xi_ph_HI*dhnu_HI_PH
+    heatrate['PH_H2'] = dd['xH2']*xi_ph_H2*dhnu_H2_PH
     # no heating at high-T
     heatrate=heatrate.where(dd['T']<s.par['cooling']['Thot1']).fillna(1.e-35)
 
@@ -108,7 +132,7 @@ def get_hydrogen_cooling(dd):
     coolrate['HI_collion']=coolHIion(dd['nH'],dd['T'],dd['xe'],dd['xHI'])
     coolrate['HII_ff']=coolffH(dd['nH'],dd['T'],dd['xe'],dd['xHII'])
     coolrate['HII_rec']=coolrecH(dd['nH'],dd['T'],dd['xe'],dd['xHII'])
-    coolrate['H2_rovib']=coolH2(dd['nH'],dd['T'],dd['xHI'],dd['xH2']) # rovib
+    coolrate['H2_rovib']=coolH2rovib(dd['nH'],dd['T'],dd['xHI'],dd['xH2']) # rovib
     coolrate['H2_colldiss'] = coolH2colldiss(dd['nH'],dd['T'],dd['xHI'],dd['xH2'])
     return coolrate
 
@@ -133,12 +157,18 @@ def get_other_cooling(s,dd):
     G_PE = (Erad_PE+Erad_LW)/(Erad_PE0+Erad_LW0)
     G_CI = Erad_LW/Erad_LW0
     G_CO = G_CI
+    # set flags
+    try:
+        CRphotC = True if s.par['cooling']['iCRPhotC'] == 1 else False
+    except KeyError:
+        CRphotC = False
     # calculate C, O species abundances
     dd['xOII'] = dd['xHII']*s.par['cooling']['xOstd']*s.par['problem']['Z_gas']
     dd['xCII'] = get_xCII(dd['nH'],dd['xe'],dd['xH2'],dd['T'],Z_d,Z_g,
-                          dd['CR_ionization_rate'],G_PE,G_CI,xCstd=xCstd,gr_rec=True)
-    dd['xCO'],ncrit = get_xCO(dd['nH'],dd['xH2'],dd['xCII'],Z_d,Z_g,
-                          dd['CR_ionization_rate'],G_CO,xCstd=xCstd)
+                          dd['CR_ionization_rate'],G_PE,G_CI,xCstd=xCstd,
+                          gr_rec=True,CRphotC=CRphotC)
+    dd['xCO'],ncrit = get_xCO(dd['nH'],dd['xH2'],dd['xCII'],dd['xOII'],Z_d,Z_g,
+                          dd['CR_ionization_rate'],G_CO,xCstd=xCstd,xOstd=xOstd)
     dd['xOI'] = np.clip(xOstd*Z_g - dd['xOII']-dd['xCO'], 1.e-20, None)
     dd['xCI'] = np.clip(xCstd*Z_g - dd['xCII']-dd['xCO'], 1.e-20, None)
 
@@ -153,6 +183,8 @@ def get_other_cooling(s,dd):
     #coolrate['CO'] = coolCO(dd['nH'],dd['T'],
     #        dd['xe'],dd['xHI'],dd['xH2'],dd['xCO'],dd['dvdr'])
     coolrate['OI'] = coolOI(dd['nH'],dd['T'],
+            dd['xe'],dd['xHI'],dd['xH2'],dd['xOI'])
+    coolrate['OIold'] = coolOI(dd['nH'],dd['T'],
             dd['xe'],dd['xHI'],dd['xHII'],dd['xOI'])
     coolrate['OII'] = s.par['cooling']['fac_coolingOII']* \
             coolOII(dd['nH'],dd['T'],dd['xe'],dd['xOII'])
@@ -183,7 +215,7 @@ def set_CIE_interpolator(return_xe=False):
     based on /tigress/jk11/notebook/NEWCOOL/paper-fig-transition.ipynb
     '''
     # CIE cooling
-    from .cool_gnat12 import CoolGnat12
+    from ..microphysics.cool_gnat12 import CoolGnat12
     cg = CoolGnat12(abundance='Asplund09')
     elem_no_ion_frac = []
     xe = dict()
@@ -247,3 +279,53 @@ def get_Lambda_CIE(dd):
     Lambda_cool['CIE_metal']=xr.DataArray(cgi_metal(dd['T']),coords=[dd.z,dd.y,dd.x])
     Lambda_cool['CIE_He']=xr.DataArray(cgi_He(dd['T']),coords=[dd.z,dd.y,dd.x])
     return Lambda_cool
+
+def set_bins_default():
+    binranges = dict(nH=(-6,6),T=(0,9),pok=(0,10),
+                     nHI=(-6,6),nH2=(-6,6),nHII=(-6,6),ne=(-6,6),
+                     xH2=(0,0.5),xHII=(0,1.0),xHI=(0,1.0),xe=(0,1.2),
+                     chi_PE=(-3,4),chi_FUV=(-3,4),chi_H2=(-3,4),xi_CR=(-18,-12),
+                     Erad_LyC=(-30,-10),
+                     Lambda_cool=(-30,-18),cool_rate=(-30,-18),heat_rate=(-30,-18))
+    dbins = dict(vz=10,xH2=0.01,xHII=0.01,xHI=0.01,xe=0.01,nH=0.05,T=0.05)
+    nologs = ['vz','xH2','xHII','xHI','xe']
+    bins = dict()
+    for k,v in binranges.items():
+        bmin, bmax = v
+        try:
+            dbin = dbins[k]
+        except:
+            dbin = 0.1
+        nbin = int((bmax-bmin)/dbin)+1
+        if k in nologs:
+            bins[k] = np.linspace(bmin,bmax,nbin)
+        else:
+            bins[k] = np.logspace(bmin,bmax,nbin)
+    return bins
+
+def get_pdf_xarray(x,y,w,xbin,ybin,xf,yf):
+    h = np.histogram2d(x,y,weights=w,bins=[xbin,ybin])
+    xe = h[1]
+    ye = h[2]
+    xe = np.log10(xe)
+    ye = np.log10(ye)
+    xc = 0.5*(xe[1:]+xe[:-1])
+    yc = 0.5*(ye[1:]+ye[:-1])
+    dx = xe[1]-xe[0]
+    dy = ye[1]-ye[0]
+    pdf = xr.DataArray(h[0].T/dx/dy,coords=[yc,xc],dims=[yf,xf])
+    return pdf
+
+def get_pdfs(xf,yf,data,rate,set_bins=set_bins_default):
+    bins = set_bins()
+    pdfs=xr.Dataset()
+    sources = list(rate.keys())
+    x=data[xf].data.flatten()
+    y=data[yf].data.flatten()
+    xbin = bins[xf]
+    ybin = bins[yf]
+    for s in sources:
+        w = rate[s].data.flatten()
+        pdf = get_pdf_xarray(x,y,w,xbin,ybin,xf,yf)
+        pdfs[s]=pdf
+    return pdfs

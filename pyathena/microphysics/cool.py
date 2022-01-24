@@ -19,7 +19,7 @@ def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Z_g=1.0, Z_d=1.0):
     B = k1620 + k1621*xS
     return 2.0*xH2*((B**2 + 4.0*A*xi_cr*(1.0 + phi_s)/nH)**0.5 - B)/(2.0*k1619)
 
-def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=True, CRPhot=True):
+def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd=1.6e-4, gr_rec=True, CRphotC=False):
 
     xCtot = xCstd*Z_g
     small_ = 1e-50
@@ -123,7 +123,7 @@ def heatH2form(nH, T, xHI, xH2, Z_d, kgr_H2=3.0e-17, ikgr_H2=0):
         kgr = kgr_H2
     else:
         T2 = T*1e-2
-        kgr = kgr_H2*Z_d*sqrt(T2)*2.0/(1+0.4*np.sqrt(T2)+0.2*T2+0.08*T2*T2)
+        kgr = kgr_H2*Z_d*np.sqrt(T2)*2.0/(1+0.4*np.sqrt(T2)+0.2*T2+0.08*T2*T2)
     
     # Hollenbach & McKee (1978) Eq (6.43), (6.45)
     de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
@@ -132,9 +132,10 @@ def heatH2form(nH, T, xHI, xH2, Z_d, kgr_H2=3.0e-17, ikgr_H2=0):
 
     return kgr*Z_d*nH*xHI*(0.2 + 4.2*f)*eV_cgs
 
-def heatH2pump(nH, T, xHI, xH2, xi_diss_H2):
+def heatH2pump(nH, T, xHI, xH2, xi_diss_H2,f_pump=6.94):
+    # f_pump=6.94 is Draine & Bertoldi (1996) value (9.0 in HM79) 
+    # 9.0 is for new version
     # Hollenbach & McKee (1978)
-    f_pump = 9.0 # Use Draine & Bertoldi (1996) value (9.0 in HM79) 
     eV_cgs = (1.0*au.eV).cgs.value
     de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
     ncrit = 1e6/np.sqrt(T)/de
@@ -146,33 +147,6 @@ def heatH2diss(xH2, xi_diss_H2):
     eV_cgs = (1.0*au.eV).cgs.value
 
     return 0.4*xi_diss_H2*xH2*eV_cgs
-
-def coolH2colldiss(nH, T, xHI, xH2):
-
-    eV_cgs = (1.0*au.eV).cgs.value
-    temp_coll_ = 7e2
-    small_ = 1e-50
-    
-    Tinv = 1/T
-    logT4 = np.log10(T*1e-4)
-    k9l_ = 6.67e-12 * np.sqrt(T) * np.exp(-(1. + 63590.*Tinv))
-    k9h_ = 3.52e-9 * np.exp(-43900.0*Tinv)
-    k10l_ = 5.996e-30 * np.power(T, 4.1881) / \
-        np.power((1.0 + 6.761e-6*T), 5.6881) * np.exp(-54657.4*Tinv)
-    k10h_ = 1.3e-9 * np.exp(-53300.0*Tinv)
-    ncrH2_ = np.power(10, (4.845 - 1.3*logT4 + 1.62*logT4*logT4))
-    ncrHI_ = np.power(10, (3.0 - 0.416*logT4 - 0.327*logT4*logT4))
-    ncrinv = xHI/ncrHI_ + 2.0*xH2/ncrH2_
-    ncrinv = np.maximum(ncrinv, small_)
-    n2ncr = nH * ncrinv
-    k_H2_HI  = np.power(10, np.log10(k9h_) * n2ncr/(1. + n2ncr)
-                        + np.log10(k9l_) / (1. + n2ncr))
-    k_H2_H2 = np.power(10, np.log10(k10h_) *  n2ncr/(1. + n2ncr)
-                       + np.log10(k10l_) / (1. + n2ncr))
-    xi_coll_H2_ = k_H2_H2*nH*xH2 + k_H2_HI*nH*xHI
-    xi_coll_H2 = np.where(T > temp_coll_, xi_coll_H2_, 0.0)
-    
-    return 4.48*eV_cgs*xH2*xi_coll_H2
 
 def heatH2pump_Burton90(nH, T, xHI, xH2, xi_diss_H2):
     # Burton, Hollenbach, & Tielens (1990) (Eq. A1)
@@ -560,6 +534,13 @@ def coolrecH(nH, T, xe, xHII):
     rec = RecRate()
     Err_B = (0.684 - 0.0416*np.log(T*1e-4))*ac.k_B.cgs.value*T
     return Err_B*rec.get_rec_rate_H_caseB(T)*nH*xe*xHII
+
+def coolHalpha(nH, T, xe, xHII):
+    """Halpha line Draine eq. 14.8
+    """
+    T4 = T/1.e4
+    alpha_eff = 1.17e-13*T4**(-0.942-0.031*np.log(T4))
+    return alpha_eff*nH*xe*xHII
 
 
 def coolRec(nH, T, xe, Z_d, chi_PE):

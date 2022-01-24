@@ -9,6 +9,8 @@ import argparse
 import pyathena as pa
 import gc
 
+from pyathena.tigress_ncr.get_cooling import get_cooling_heating,get_pdfs
+
 def calc_pdfs(ds,xf='T',yf='Lambda_cool',zmin=0,zmax=300,force_override=False,
               cooling=False,species=False,radiation=False):
     """calculate PDFs for given x and y with a variety of weight fields
@@ -34,7 +36,8 @@ def calc_pdfs(ds,xf='T',yf='Lambda_cool',zmin=0,zmax=300,force_override=False,
         tot_cool_rate = -1
     if species: wfields += ['nHI','nHII','nH2','ne']
     if radiation: 
-        wfields += ['xi_CR','rad_energy_density_PE','rad_energy_density_LW','rad_energy_density_PH']
+        wfields += ['xi_CR','rad_energy_density_PE','rad_energy_density_LW',
+                    'rad_energy_density_PH']
     for zmax,pdf_dict in zip([ds.domain['re'][2],zmax],[pdf_tot,pdf_z]):
         pdfdict = dict()
         for wf in wfields:
@@ -80,15 +83,47 @@ if __name__ == '__main__':
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=True)
-    for num in s.nums:
+    for num in range(200,500):
+        if not (num in s.nums): continue
+        print(num)
+    #for num in s.nums:
         ds = s.load_vtk(num)
-        pdf_z,pdf_tot = calc_pdfs(ds,'T','Lambda_cool',zmin=0,zmax=300,
-                                  force_override=False,
-                                  cooling=True,species=True,radiation=True)
-        pdf_z,pdf_tot = calc_pdfs(ds,'nH','pok',zmin=0,zmax=300,
-                                  force_override=False,
-                                  cooling=True,species=True,radiation=True)
-        pdf_z,pdf_tot = calc_pdfs(ds,'nH','T',zmin=0,zmax=300,
-                                  force_override=False,
-                                  cooling=True,species=True,radiation=True)
+        for zrange in [None,slice(-1000,1000),slice(-300,300)]:
+            if zrange is None:
+                zmin,zmax = 0,s.domain['re'][2]
+            else:
+                zmin,zmax = zrange.start, zrange.stop
+                if zmin < 0: zmin = 0 
+            savdir = '{}/jointpdf_z{:02d}-{:02d}/cooling_heating/'.format(s.savdir,
+                      int(zmin/100),int(zmax/100))
+            if not os.path.isdir(savdir): os.makedirs(savdir)
+            coolfname = '{}.{:04d}.cool.pdf.nc'.format(ds.problem_id,ds.num)
+            heatfname = '{}.{:04d}.heat.pdf.nc'.format(ds.problem_id,ds.num)
+            if not os.path.isfile(os.path.join(savdir,coolfname)):
+                data,coolrate,heatrate=get_cooling_heating(s,ds,zrange=zrange)
+
+                # get total cooling from vtk output for normalization
+                total_cooling=coolrate.attrs['total_cooling']
+                # get total heating from vtk output for normalization
+                total_heating=heatrate.attrs['total_heating']
+
+                pdf_cool = get_pdfs('nH','T',data,coolrate)/total_cooling
+                pdf_heat = get_pdfs('nH','T',data,heatrate)/total_heating
+            
+                pdf_cool.attrs = coolrate.attrs
+                pdf_heat.attrs = heatrate.attrs
+
+                pdf_cool.to_netcdf(os.path.join(savdir,coolfname))
+                pdf_heat.to_netcdf(os.path.join(savdir,heatfname))
+
+            pdf_z,pdf_tot = calc_pdfs(ds,'T','Lambda_cool',zmin=0,zmax=zmax,
+                                      force_override=False,
+                                      cooling=True,species=True,radiation=True)
+            pdf_z,pdf_tot = calc_pdfs(ds,'nH','pok',zmin=0,zmax=zmax,
+                                      force_override=False,
+                                      cooling=True,species=True,radiation=True)
+            pdf_z,pdf_tot = calc_pdfs(ds,'nH','T',zmin=0,zmax=zmax,
+                                      force_override=False,
+                                      cooling=True,species=True,radiation=True)
+
         gc.collect()
