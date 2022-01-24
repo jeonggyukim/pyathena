@@ -147,33 +147,6 @@ def heatH2diss(xH2, xi_diss_H2):
 
     return 0.4*xi_diss_H2*xH2*eV_cgs
 
-def coolH2colldiss(nH, T, xHI, xH2):
-
-    eV_cgs = (1.0*au.eV).cgs.value
-    temp_coll_ = 7e2
-    small_ = 1e-50
-    
-    Tinv = 1/T
-    logT4 = np.log10(T*1e-4)
-    k9l_ = 6.67e-12 * np.sqrt(T) * np.exp(-(1. + 63590.*Tinv))
-    k9h_ = 3.52e-9 * np.exp(-43900.0*Tinv)
-    k10l_ = 5.996e-30 * np.power(T, 4.1881) / \
-        np.power((1.0 + 6.761e-6*T), 5.6881) * np.exp(-54657.4*Tinv)
-    k10h_ = 1.3e-9 * np.exp(-53300.0*Tinv)
-    ncrH2_ = np.power(10, (4.845 - 1.3*logT4 + 1.62*logT4*logT4))
-    ncrHI_ = np.power(10, (3.0 - 0.416*logT4 - 0.327*logT4*logT4))
-    ncrinv = xHI/ncrHI_ + 2.0*xH2/ncrH2_
-    ncrinv = np.maximum(ncrinv, small_)
-    n2ncr = nH * ncrinv
-    k_H2_HI  = np.power(10, np.log10(k9h_) * n2ncr/(1. + n2ncr)
-                        + np.log10(k9l_) / (1. + n2ncr))
-    k_H2_H2 = np.power(10, np.log10(k10h_) *  n2ncr/(1. + n2ncr)
-                       + np.log10(k10l_) / (1. + n2ncr))
-    xi_coll_H2_ = k_H2_H2*nH*xH2 + k_H2_HI*nH*xHI
-    xi_coll_H2 = np.where(T > temp_coll_, xi_coll_H2_, 0.0)
-    
-    return 4.48*eV_cgs*xH2*xi_coll_H2
-
 def heatH2pump_Burton90(nH, T, xHI, xH2, xi_diss_H2):
     # Burton, Hollenbach, & Tielens (1990) (Eq. A1)
     kpump = 9.0*xi_diss_H2
