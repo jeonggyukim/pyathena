@@ -108,7 +108,7 @@ def get_hydrogen_cooling(dd):
     coolrate['HI_collion']=coolHIion(dd['nH'],dd['T'],dd['xe'],dd['xHI'])
     coolrate['HII_ff']=coolffH(dd['nH'],dd['T'],dd['xe'],dd['xHII'])
     coolrate['HII_rec']=coolrecH(dd['nH'],dd['T'],dd['xe'],dd['xHII'])
-    coolrate['H2_rovib']=coolH2(dd['nH'],dd['T'],dd['xHI'],dd['xH2']) # rovib
+    coolrate['H2_rovib']=coolH2rovib(dd['nH'],dd['T'],dd['xHI'],dd['xH2']) # rovib
     coolrate['H2_colldiss'] = coolH2colldiss(dd['nH'],dd['T'],dd['xHI'],dd['xH2'])
     return coolrate
 
@@ -124,6 +124,14 @@ def get_other_cooling(s,dd):
     # set metallicities
     Z_g=s.par['problem']['Z_gas']
     Z_d=s.par['problem']['Z_dust']
+    try:
+        if s.par['cooling']['iCRPhotC'] == 1:
+            CRPhotC = True
+        else:
+            CRPhotC = False
+    except KeyError:
+        CRPhotC = False
+
     # calculate normalized radiation fields
     Erad_PE = dd['rad_energy_density_PE']
     Erad_LW = dd['rad_energy_density_LW']
@@ -136,9 +144,10 @@ def get_other_cooling(s,dd):
     # calculate C, O species abundances
     dd['xOII'] = dd['xHII']*s.par['cooling']['xOstd']*s.par['problem']['Z_gas']
     dd['xCII'] = get_xCII(dd['nH'],dd['xe'],dd['xH2'],dd['T'],Z_d,Z_g,
-                          dd['CR_ionization_rate'],G_PE,G_CI,xCstd=xCstd,gr_rec=True)
-    dd['xCO'],ncrit = get_xCO(dd['nH'],dd['xH2'],dd['xCII'],Z_d,Z_g,
-                          dd['CR_ionization_rate'],G_CO,xCstd=xCstd)
+                          dd['CR_ionization_rate'],G_PE,G_CI,xCstd=xCstd,
+                          gr_rec=True, CRPhotC=CRPhotC)
+    dd['xCO'],ncrit = get_xCO(dd['nH'],dd['xH2'],dd['xCII'],dd['xOII'],Z_d,Z_g,
+                              dd['CR_ionization_rate'],G_CO,xCstd=xCstd,xOstd=xOstd)
     dd['xOI'] = np.clip(xOstd*Z_g - dd['xOII']-dd['xCO'], 1.e-20, None)
     dd['xCI'] = np.clip(xCstd*Z_g - dd['xCII']-dd['xCO'], 1.e-20, None)
 
@@ -148,12 +157,12 @@ def get_other_cooling(s,dd):
             dd['xe'],dd['xHI'],dd['xH2'],dd['xCI'])
     coolrate['CII'] = coolCII(dd['nH'],dd['T'],
             dd['xe'],dd['xHI'],dd['xH2'],dd['xCII'])
+    coolrate['OI'] = coolOI(dd['nH'],dd['T'],
+                            dd['xe'],dd['xHI'],dd['xH2'],dd['xOI'])
     # for now, this is too slow
     # set_dvdr(dd)
     #coolrate['CO'] = coolCO(dd['nH'],dd['T'],
     #        dd['xe'],dd['xHI'],dd['xH2'],dd['xCO'],dd['dvdr'])
-    coolrate['OI'] = coolOI(dd['nH'],dd['T'],
-            dd['xe'],dd['xHI'],dd['xHII'],dd['xOI'])
     coolrate['OII'] = s.par['cooling']['fac_coolingOII']* \
             coolOII(dd['nH'],dd['T'],dd['xe'],dd['xOII'])
     coolrate['Rec'] = coolRec(dd['nH'],dd['T'],dd['xe'],Z_d,G_PE)
