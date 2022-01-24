@@ -193,7 +193,7 @@ def get_other_cooling(s, dd):
 
     # dd['dvdr'] = 1/3.*(np.abs(dvdx)+np.abs(dvdy)+np.abs(dvdz))/s.u.time.cgs.value
 
-def set_CIE_interpolator(return_xe=False):
+def set_CIE_interpolator(return_xe=False, return_Lambda_e=False):
     '''CIE cooling from Gnat12
     based on /tigress/jk11/notebook/NEWCOOL/paper-fig-transition.ipynb
     '''
@@ -217,27 +217,37 @@ def set_CIE_interpolator(return_xe=False):
     # Need to get the total electron abundance first to obtain
     #   cool_rate/nH^2 = Lambda_GF*Abundance*x_e
 
-    for e in elements:
-        nstate = cg.info.loc[e]['number'] + 1
-        A = cg.info.loc[e]['abd']
+    if return_Lambda_e:
+        for e in elements:
+            nstate = cg.info.loc[e]['number'] + 1
+            A = cg.info.loc[e]['abd']
 
-        for i in range(nstate):
-            xe[e] += A*i*cg.ion_frac[e + str(i)].values
-            cool[e] += A*cg.ion_frac[e + str(i)].values*cg.cool_cie_per_ion[e][:,i]
+            for i in range(nstate):
+                xe[e] += A*i*cg.ion_frac[e + str(i)].values
+                cool[e] += A*cg.ion_frac[e + str(i)].values*cg.cool_cie_per_ion[e][:,i]
 
-    for e in elements:
-        xe_tot += xe[e]
-        cool_tot += cool[e]
+        for e in elements:
+            xe_tot += xe[e]
+            cool_tot += cool[e]
 
-    #for e in elements:
-    #    nstate = cg.info.loc[e]['number'] + 1
-    #    A = cg.info.loc[e]['abd']
-    #    for i in range(nstate):
-    #        cool[e] += xe_tot*A*cg.ion_frac[e + str(i)].values*\
-    #                   cg.cool_cie_per_ion[e][:,i]
+    else:
+        for e in elements:
+            nstate = cg.info.loc[e]['number'] + 1
+            A = cg.info.loc[e]['abd']
+            for i in range(nstate):
+                xe[e] += A*i*cg.ion_frac[e + str(i)].values
+        for e in elements:
+            xe_tot += xe[e]
 
-    #for e in elements:
-    #    cool_tot += cool[e]
+        for e in elements:
+           nstate = cg.info.loc[e]['number'] + 1
+           A = cg.info.loc[e]['abd']
+           for i in range(nstate):
+               cool[e] += xe_tot*A*cg.ion_frac[e + str(i)].values*\
+                          cg.cool_cie_per_ion[e][:,i]
+
+        for e in elements:
+           cool_tot += cool[e]
 
     # Interpolation
     from scipy.interpolate import interp1d
