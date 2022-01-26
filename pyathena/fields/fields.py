@@ -937,6 +937,39 @@ def set_derived_fields_rad(par, x0):
 
     return func, field_dep, label, cmap, vminmax, take_log
 
+def set_derived_fields_wind(par, x0):
+
+    func = dict()
+    field_dep = dict()
+    label = dict()
+    cmap = dict()
+    vminmax = dict()
+    take_log = dict()
+
+    # Wind mass fraction
+    f = 'fwind'
+    field_dep[f] = set(['specific_scalar[1]'])
+    def _fwind(d, u):
+        return d['specific_scalar[1]']
+    func[f] = _fwind
+    label[f] = r'$f_{\rm wind}$'
+    cmap[f] = cmap_apply_alpha('Greens')
+    vminmax[f] = (1e-6,1)
+    take_log[f] = True
+
+    # Wind mass density
+    f = 'swind'
+    field_dep[f] = set(['density', 'specific_scalar[1]'])
+    def _swind(d, u):
+        return d['density']*d['specific_scalar[1]']
+    func[f] = _swind
+    label[f] = r'$\rho_{\rm wind}$'
+    cmap[f] = cmap_apply_alpha('Greens')
+    vminmax[f] = (1e-4,1e3)
+    take_log[f] = True
+
+    return func, field_dep, label, cmap, vminmax, take_log
+
 def set_derived_fields_xray(par, x0, newcool):
 
     func = dict()
@@ -1019,6 +1052,14 @@ class DerivedFields(object):
         try:
             if par['configure']['sixray'] == 'ON':
                 dicts_ = set_derived_fields_sixray(par, x0)
+                for d, d_ in zip(dicts, dicts_):
+                    d = d.update(d_)
+        except KeyError:
+            pass
+        
+        try:
+            if par['feedback']['iWind'] != 0:
+                dicts_ = set_derived_fields_wind(par, x0)
                 for d, d_ in zip(dicts, dicts_):
                     d = d.update(d_)
         except KeyError:
