@@ -13,12 +13,17 @@ def get_cooling_heating(s, ds):
     unitT = s.u.energy_density/ac.k_B/s.u.muH*au.cm**3
 
     # read all necessary native fields
-    field_to_read=['nH', 'pressure', 'cool_rate', 'heat_rate', # velocity (for CO)
-                   'net_cool_rate',
-                   'CR_ionization_rate', 'rad_energy_density_PH',
-                   'rad_energy_density_LW', 'rad_energy_density_PE',
-                   'rad_energy_density_LW_diss',
-                   'xHI', 'xH2', 'xe']
+    field_to_read = ['nH', 'pressure', 'cool_rate', 'heat_rate', # velocity (for CO)
+                     'net_cool_rate',
+                     'CR_ionization_rate', 'rad_energy_density_PH',
+                     'rad_energy_density_LW', 'rad_energy_density_PE',
+                     'rad_energy_density_LW_diss',
+                     'xHI', 'xH2', 'xe']
+    if s.par['configure']['sixray'] == 'ON':
+        field_to_read += ['rad_energy_density_LW_ext',
+                          'rad_energy_density_PE_ext',
+                          'rad_energy_density_LW_diss_ext']
+    
     dd = ds.get_field(field_to_read)
 
     # set metallicities
@@ -61,10 +66,16 @@ def get_heating(s,dd):
     Z_g = s.par['problem']['Z_gas']
     Z_d = s.par['problem']['Z_dust']
     # calculate normalized radiation fields
+    Erad_PH = dd['rad_energy_density_PH']
     Erad_PE = dd['rad_energy_density_PE']
     Erad_LW = dd['rad_energy_density_LW']
-    Erad_PH = dd['rad_energy_density_PH']
     Erad_LW_diss = dd['rad_energy_density_LW_diss']
+    if s.par['configure']['sixray'] == 'ON':
+        Erad_PE += dd['rad_energy_density_PE_ext']
+        Erad_LW += dd['rad_energy_density_LW_ext']
+        Erad_LW_diss += dd['rad_energy_density_LW_diss_ext']
+    
+    
     # normalization factors
     Erad_PE0 = s.par['cooling']['Erad_PE0']/s.u.energy_density.cgs.value
     Erad_LW0 = s.par['cooling']['Erad_LW0']/s.u.energy_density.cgs.value
