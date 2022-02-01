@@ -17,7 +17,7 @@ local = pathlib.Path(__file__).parent.absolute()
 
 class SB99(object):
     
-    def __init__(self, basename='/projects/EOSTRIKE/SB99/Z1_M1E6/output/',
+    def __init__(self, basedir='/projects/EOSTRIKE/SB99/Z1_M1E6_GenevaV00/output/',
                  prefix='Z1_M1E6', logM=6.0, tmax_Myr=100.0):
         """
         Parameters
@@ -34,11 +34,12 @@ class SB99(object):
         
         self.logM = logM
         self.tmax_Myr = tmax_Myr
-        self.basename = basename
-        self.fnames = dict()
-        self.fnames['snr'] = osp.join(self.basename, prefix + '.snr1')
-        self.fnames['power'] = osp.join(self.basename, prefix + '.power1')
-        self.fnames['spectrum'] = osp.join(self.basename, prefix + '.spectrum1')
+        self.basedir = basedir
+        self.files = dict()
+        self.files['snr'] = osp.join(self.basedir, prefix + '.snr1')
+        self.files['power'] = osp.join(self.basedir, prefix + '.power1')
+        self.files['spectrum'] = osp.join(self.basedir, prefix + '.spectrum1')
+        self.files['quanta'] = osp.join(self.basedir, prefix + '.quanta1')
         
         # self.dfs = self.read_sn()
         # self.dfw = self.read_wind()
@@ -52,7 +53,7 @@ class SB99(object):
                  'Edot_SN_IB','Einj_SN_IB', 'Mpgen_typ', 'Mpgen_min',
                  'Edot_tot', 'Einj_tot']
         
-        df = pd.read_csv(self.fnames['snr'], names=names, skiprows=7, delimiter='\s+')
+        df = pd.read_csv(self.files['snr'], names=names, skiprows=7, delimiter='\s+')
         for c in df.columns:
             if c == 'time' or c.startswith('Mpgen'):
                 continue
@@ -75,7 +76,7 @@ class SB99(object):
 
         names = ['time','Edot_all','Edot_OB','Edot_RSG','Edot_LBV','Edot_WR','Einj_all',
                  'pdot_all','pdot_OB','pdot_RSG','pdot_LBV','pdot_WR']
-        df = pd.read_csv(self.fnames['power'], names=names, skiprows=7, delimiter='\s+')
+        df = pd.read_csv(self.files['power'], names=names, skiprows=7, delimiter='\s+')
         for c in df.columns:
             if c == 'time':
                 continue
@@ -108,8 +109,8 @@ class SB99(object):
         f_Cext = interp1d(np.log10(df_dust['lwav']), np.log10(df_dust['Cext']))
         f_Cabs = interp1d(np.log10(df_dust['lwav']), np.log10(df_dust['Cext']*(1.0 - df_dust['albedo'])))
 
-        df = pd.read_csv(self.fnames['spectrum'], skiprows=6, sep='\s+',
-                           names=['time', 'wav', 'logf', 'logfstar', 'logfneb'])
+        df = pd.read_csv(self.files['spectrum'], skiprows=6, sep='\s+',
+                         names=['time', 'wav', 'logf', 'logfstar', 'logfneb'])
         df = df.rename(columns={'time': 'time_yr'})
         df['time_Myr'] = df['time_yr']*1e-6
 
@@ -288,6 +289,17 @@ class SB99(object):
 
         return r
 
+    def read_quanta(self):
+        """Function to read ionizing photon rate
+        """
+        names = ['time_yr', 'Q_HI', 'Lfrac_HI', 'Q_HeI', 'Lfrac_HeI',
+                 'Q_HeII', 'Lfrac_HeII', 'logL']
+        df = pd.read_csv(self.files['quanta'], names=names, skiprows=7, delimiter='\s+')
+        df['time_Myr'] = df['time_yr']*1e-6
+        for c in names[1:]:
+            df[c] = 10.0**df[c]
+            
+        return df
 
     @staticmethod
     def plt_spec_sigmad(rr, lambda_Llambda=False, plt_isrf=True, tmax=50.0, nstride=10):
