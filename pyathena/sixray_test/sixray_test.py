@@ -6,21 +6,26 @@ import astropy.constants as ac
 
 from ..load_sim import LoadSimAll
 
-def load_sixray_test_all(models, sel_kwargs=dict(z=0, method='nearest'), cool=False):
-
+def load_sixray_test_all(models, sel_kwargs=dict(z=0, method='nearest'), num=None, cool=False):
+    
     sa = LoadSimAll(models)
     da = dict()
     print('[load_sixray_test_all] reading simulation data:', end=' ')
     for i, mdl in enumerate(sa.models):
         print(mdl, end=' ')
         s = sa.set_model(mdl)
+        if num is None:
+            n = s.nums[-1]
+        else:
+            n = num
+            
         if 'BT94' in mdl:
             dust_model = 'BT94'
         elif 'W03' in mdl:
             dust_model = 'W03'
         else:
             dust_model = 'WD01'
-        da[mdl] = get_cool_data(s, s.nums[-1],
+        da[mdl] = get_cool_data(s, n,
                                 sel_kwargs=sel_kwargs,
                                 cool=cool, dust_model=dust_model)
 
@@ -315,7 +320,7 @@ def plt_rates_abd(axes, s, da, model, log_chi0=0.0, xlim=(1e-2,1e3),
     lC, = plt.loglog(d['nH'], d['coolCI'], label=r'${\rm CI}$', c=cmap(8))
     plt.loglog(d['nH'], d['coolRec'], label=r'Rec', c='lightskyblue')
     if iCoolH2rovib == 1:
-        lH2, = plt.loglog(d['nH'], d['coolH2'], label=r'${\rm H_2}$', c='deeppink')
+        lH2, = plt.loglog(d['nH'], d['coolH2rovib'], label=r'${\rm H_2}$', c='deeppink')
     if iCoolH2colldiss:
         plt.loglog(d['nH'], d['coolH2colldiss'], label='dust', c='royalblue')
     if iCoolDust:
