@@ -4,6 +4,8 @@ import os
 import os.path as osp
 import numpy as np
 import pandas as pd
+import xarray as xr
+import glob
 from scipy import integrate
 import matplotlib.pyplot as plt
 import astropy.units as au
@@ -234,6 +236,26 @@ class Hst:
             self.snr = snr/LxLy
 
         return h
+
+    def read_hst_phase(self):
+        fhstph=glob.glob(self.files['hst'].replace('.hst','.phase*.hst'))
+
+        fhstph.sort()
+
+        nphase = len(fhstph)
+
+        hstph=xr.Dataset()
+        phname = {'0':'whole','1':'CNM','2':'UNM','3':'WNM','4':'WHNM','5':'HNM',
+                  '6':'CIM','7':'UIM','8':'WIM','9':'WHIM','10':'HIM',
+                  '11':'CMM','12':'UMM','13':'WMM','14':'WHMM','15':'HMM',
+                 }
+        for iph in range(nphase):
+            f = self.files['hst'].replace('.hst','.phase{}.hst'.format(iph+1))
+            hstph[phname[str(iph+1)]]=read_hst(f).to_xarray().to_array()
+        hstph=hstph.to_array('phase').to_dataset('variable')
+        hstw=read_hst(self.files['hst'].replace('.hst','.whole.hst')).to_xarray()
+
+        return hstph,hstw
 
 def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_override=False),
                     c=['k', 'C0', 'C1', 'C2', 'C3', 'C4', 'C5'],
