@@ -11,7 +11,7 @@ import gc
 
 from pyathena.tigress_ncr.get_cooling import get_cooling_heating,get_pdfs
 
-def calc_pdfs(ds,xf='T',yf='Lambda_cool',zmin=0,zmax=300,force_override=False,
+def calc_pdfs(s,ds,xf='T',yf='Lambda_cool',zmin=0,zmax=300,force_override=False,
               cooling=False,species=False,radiation=False):
     """calculate PDFs for given x and y with a variety of weight fields
     outputs are stored in individual folders for later uses
@@ -116,13 +116,13 @@ if __name__ == '__main__':
                 pdf_cool.to_netcdf(os.path.join(savdir,coolfname))
                 pdf_heat.to_netcdf(os.path.join(savdir,heatfname))
 
-            pdf_z,pdf_tot = calc_pdfs(ds,'T','Lambda_cool',zmin=0,zmax=zmax,
+            pdf_z,pdf_tot = calc_pdfs(s,ds,'T','Lambda_cool',zmin=0,zmax=zmax,
                                       force_override=False,
                                       cooling=True,species=True,radiation=True)
-            pdf_z,pdf_tot = calc_pdfs(ds,'nH','pok',zmin=0,zmax=zmax,
+            pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','pok',zmin=0,zmax=zmax,
                                       force_override=False,
                                       cooling=True,species=True,radiation=True)
-            pdf_z,pdf_tot = calc_pdfs(ds,'nH','T',zmin=0,zmax=zmax,
+            pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','T',zmin=0,zmax=zmax,
                                       force_override=False,
                                       cooling=True,species=True,radiation=True)
 

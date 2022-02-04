@@ -112,10 +112,10 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
         heat_ratio = np.interp(ds.domain['time'],self.heat_ratio.index,self.heat_ratio)
         T1 = dd['pressure']/dd['density']
         T1 *= (self.u.velocity**2*ac.m_p/ac.k_B).cgs.value
-        T1data = T1.data
+        T1data = np.clip(T1.data,10,None)
         temp = nH/nH*coolftn().get_temp(T1data)
         cool = nH*nH*coolftn().get_cool(T1data)
-        heat = heat_ratio*nH*coolftn().get_heat(T1data)
+        heat = heat_ratio*nH*np.clip(coolftn().get_heat(T1data),0.0,None)
         net_cool = cool-heat
         dd['T'] = temp
         dd['cool_rate'] = cool

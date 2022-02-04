@@ -290,10 +290,6 @@ class PDF:
 
         '''
         if ds is None: ds = self.load_vtk(num=num,ivtk=ivtk)
-        if (not self.test_newcool()) and (not hasattr(self,'heat_ratio')):
-            hst = read_hst(self.files['hst'])
-            self.heat_ratio = hst['heat_ratio']
-            self.heat_ratio.index = hst['time']
 
         zmin,zmax = zrange
         savdir = '{}/jointpdf_z{:02d}-{:02d}/{}-{}-{}'.format(self.savdir,int(zmin/100),int(zmax/100),xf,yf,wf)
@@ -315,32 +311,22 @@ class PDF:
             fields = {xf,yf}
         else:
             fields = {xf,yf,wf}
-        recal = False
-        if not self.test_newcool() and \
-          ('net_cool_rate' in fields or 'heat_rate' in fields):
-            fields = fields - {'heat_rate','net_cool_rate'}
-            fields.add('pressure')
-            fields.add('density')
-            recal = True
+        classic_coolrate = False
+        if not self.test_newcool():
+            for cool_field in ['T','cool_rate','heat_rate','net_cool_rate']:
+                if cool_field in fields:
+                    fields = fields - {cool_field} 
+                    classic_coolrate = True
 
         self.logger.info('[jointpdf] reading {}'.format(fields))
 
         data = ds.get_field(list(fields))
+        if not self.test_newcool() and classic_coolrate:
+            data.update(self.get_classic_cooling_rate(ds))
 
         data_zcut = xr.concat([data.sel(z=slice(-zmax,-zmin)),
                                data.sel(z=slice(zmin,zmax))],dim='z')
         data_zcut = data_zcut.stack(xyz=['x','y','z']).dropna(dim='xyz')
-        if not self.test_newcool() and recal:
-            heat_ratio = np.interp(ds.domain['time'],self.heat_ratio.index,self.heat_ratio)
-            nH = data_zcut['density']
-            T1 = data_zcut['pressure']/data_zcut['density']
-            T1 *= (self.u.velocity**2*ac.m_p/ac.k_B).cgs.value
-            T1data = T1.data
-            cool = nH*nH*coolftn().get_cool(T1data)
-            heat = heat_ratio*nH*coolftn().get_heat(T1data)
-            net_cool = cool-heat
-            data_zcut['heat_rate'] = heat
-            data_zcut['net_cool_rate'] = net_cool
 
         if wf is None:
             h=np.histogram2d(data_zcut[xf],data_zcut[yf],bins=[self.bins[xf],self.bins[yf]])
