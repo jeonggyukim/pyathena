@@ -109,7 +109,7 @@ def get_heating(s,dd):
         ikgr_H2 = s.par['cooling']['ikgr_H2']
     except KeyError:
         ikgr_H2 = 0
-    
+
     heatrate=xr.Dataset()
     heatrate['PE'] = heatPE(dd['nH'],dd['T'],dd['xe'],Z_d,G_PE)
     heatrate['CR'] = heatCR(dd['nH'],dd['xe'],dd['xHI'],dd['xH2'],
@@ -318,8 +318,12 @@ def get_pdf_xarray(x,y,w,xbin,ybin,xf,yf):
     h = np.histogram2d(x,y,weights=w,bins=[xbin,ybin])
     xe = h[1]
     ye = h[2]
-    xe = np.log10(xe)
-    ye = np.log10(ye)
+    dx = xe[1]-xe[0]
+    dy = ye[1]-ye[0]
+    dx2 = xe[2]-xe[1]
+    dy2 = ye[2]-ye[1]
+    if (dx != dx2): xe = np.log10(xe)
+    if (dy != dy2): ye = np.log10(ye)
     xc = 0.5*(xe[1:]+xe[:-1])
     yc = 0.5*(ye[1:]+ye[:-1])
     dx = xe[1]-xe[0]

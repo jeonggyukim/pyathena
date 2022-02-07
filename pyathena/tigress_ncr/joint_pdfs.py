@@ -31,11 +31,11 @@ def calc_pdfs(s,ds,xf='T',yf='Lambda_cool',zmin=0,zmax=300,force_override=False,
     tot_mass = -1
 
     wfields = [None,'nH']
-    if cooling: 
+    if cooling:
         wfields += ['cool_rate','heat_rate','net_cool_rate']
         tot_cool_rate = -1
     if species: wfields += ['nHI','nHII','nH2','ne']
-    if radiation: 
+    if radiation:
         wfields += ['xi_CR','rad_energy_density_PE','rad_energy_density_LW',
                     'rad_energy_density_PH']
     for zmax,pdf_dict in zip([ds.domain['re'][2],zmax],[pdf_tot,pdf_z]):
@@ -54,7 +54,7 @@ def calc_pdfs(s,ds,xf='T',yf='Lambda_cool',zmin=0,zmax=300,force_override=False,
         pdf_dict['volume']=pdfdict['vol']/tot_volume
         pdf_dict['mass']=pdfdict['nH']/tot_mass
 
-        if cooling and (tot_cool_rate < 0): 
+        if cooling and (tot_cool_rate < 0):
             tot_cool_rate = pdfdict['cool_rate'].sum().data*dx*dy
             pdf_dict['net_cooling']=pdfdict['net_cool_rate']/tot_cool_rate
             pdf_dict['cooling']=pdfdict['cool_rate']/tot_cool_rate
@@ -93,7 +93,7 @@ if __name__ == '__main__':
                 zmin,zmax = 0,s.domain['re'][2]
             else:
                 zmin,zmax = zrange.start, zrange.stop
-                if zmin < 0: zmin = 0 
+                if zmin < 0: zmin = 0
             savdir = '{}/jointpdf_z{:02d}-{:02d}/cooling_heating/'.format(s.savdir,
                       int(zmin/100),int(zmax/100))
             if not os.path.isdir(savdir): os.makedirs(savdir)
@@ -109,7 +109,7 @@ if __name__ == '__main__':
 
                 pdf_cool = get_pdfs('nH','T',data,coolrate)/total_cooling
                 pdf_heat = get_pdfs('nH','T',data,heatrate)/total_heating
-            
+
                 pdf_cool.attrs = coolrate.attrs
                 pdf_heat.attrs = heatrate.attrs
 
