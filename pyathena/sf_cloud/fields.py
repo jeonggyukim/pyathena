@@ -13,9 +13,12 @@ class Fields():
         if not 'nH' in fields:
             fields.append('nH')
 
+        if self.par['radps']['irayt']:
+            for f in freq:
+                fields.append('chi_{0:s}'.format(f))
+
         sigmad = dict()
         for f in freq:
-            fields.append('chi_{0:s}'.format(f))
             sigmad[f] = par['opacity']['sigma_dust_{0:s}0'.format(f)]*\
                         s.par['problem']['Z_dust']
             
@@ -50,7 +53,8 @@ class Fields():
             Erad_LW0 = s.par['cooling']['Erad_LW0']
             dd['chi_FUV_ext'] = (Erad_PE0*dd['chi_PE_ext'] +
                                  Erad_LW0*dd['chi_LW_ext'])/(Erad_PE0 + Erad_LW0)
-            dd['chi_FUV'] = (Erad_PE0*dd['chi_PE'] +
-                             Erad_LW0*dd['chi_LW'])/(Erad_PE0 + Erad_LW0)
+            if self.par['radps']['irayt']:
+                dd['chi_FUV'] = (Erad_PE0*dd['chi_PE'] +
+                                 Erad_LW0*dd['chi_LW'])/(Erad_PE0 + Erad_LW0)
             
         return dd

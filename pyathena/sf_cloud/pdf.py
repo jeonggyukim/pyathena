@@ -85,7 +85,9 @@ class PDF:
         
         r = dict()
         ds = self.load_vtk(num)
-        fields = ['nH','xH2','xHII','xHI','pok','T','Bmag','Erad_LyC']
+        fields = ['nH','xH2','xHII','xHI','pok','T','Bmag']
+        if self.par['radps']['iPhotIon'] == 1:
+            fields += ['Erad_LyC']
         
         self.logger.info('Reading fields {0:s}'.format(', '.join(fields)))
         dd = self.get_chi(ds, fields=fields, freq=['LW','PE']) # see ./fields.py
@@ -96,34 +98,8 @@ class PDF:
         idx_HI = (dd['xHI'].data.flatten() > 0.5)
         idx_H2 = (dd['xH2'].data.flatten() > 0.25)
         #idx_HI = ~idx_HII & ~idx_H2
-
+        
         dat_all = {
-            'nH-chi_PE_tot': (dd['nH'].data.flatten(),
-                              (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten(),
-                              dd['nH'].data.flatten()),
-            'nH2-chi_PE_tot': (dd['nH'].data.flatten()[idx_H2],
-                               (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_H2],
-                               dd['nH'].data.flatten()[idx_H2]),
-            'nHI-chi_PE_tot': (dd['nH'].data.flatten()[idx_HI],
-                               (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_HI],
-                               dd['nH'].data.flatten()[idx_HI]),
-            'nHII-chi_PE_tot': (dd['nH'].data.flatten()[idx_HII],
-                                (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_HII],
-                                dd['nH'].data.flatten()[idx_HII]),
-
-            'nH-chi_FUV_tot': (dd['nH'].data.flatten(),
-                               (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten(),
-                               dd['nH'].data.flatten()),
-            'nH2-chi_FUV_tot': (dd['nH'].data.flatten()[idx_H2],
-                                (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_H2],
-                                dd['nH'].data.flatten()[idx_H2]),
-            'nHI-chi_FUV_tot': (dd['nH'].data.flatten()[idx_HI],
-                                (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_HI],
-                                dd['nH'].data.flatten()[idx_HI]),
-            'nHII-chi_FUV_tot': (dd['nH'].data.flatten()[idx_HII],
-                                 (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_HII],
-                                 dd['nH'].data.flatten()[idx_HII]),
-
             'nH-pok': (dd['nH'].data.flatten(),
                        dd['pok'].data.flatten(),
                        dd['nH'].data.flatten()),
@@ -161,16 +137,68 @@ class PDF:
                         dd['nH'].data.flatten()[idx_HI]),
             'nHII-T': (dd['nH'].data.flatten()[idx_HII],
                          dd['T'].data.flatten()[idx_HII],
-                         dd['nH'].data.flatten()[idx_HII]),                   
-
-            'nH-Erad_LyC': (dd['nH'].data.flatten(),
-                            dd['Erad_LyC'].data.flatten(),
-                            dd['nH'].data.flatten()),
-            'nHII-Erad_LyC': (dd['nH'].data.flatten()[idx_HII],
-                              dd['Erad_LyC'].data.flatten()[idx_HII],
-                              dd['nH'].data.flatten()[idx_HII]),
-
+                         dd['nH'].data.flatten()[idx_HII]),
         }
+        if self.par['radps']['irayt']:
+            dat_all['nH-chi_PE_tot'] = (dd['nH'].data.flatten(),
+                                        (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten(),
+                                        dd['nH'].data.flatten())
+            dat_all['nH2-chi_PE_tot'] = (dd['nH'].data.flatten()[idx_H2],
+                                         (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_H2],
+                                         dd['nH'].data.flatten()[idx_H2])
+            dat_all['nHI-chi_PE_tot'] = (dd['nH'].data.flatten()[idx_HI],
+                                         (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_HI],
+                                         dd['nH'].data.flatten()[idx_HI])
+            dat_all['nHII-chi_PE_tot'] = (dd['nH'].data.flatten()[idx_HII],
+                                          (dd['chi_PE_ext'] + dd['chi_PE']).data.flatten()[idx_HII],
+                                          dd['nH'].data.flatten()[idx_HII])
+            
+            dat_all['nH-chi_FUV_tot'] = (dd['nH'].data.flatten(),
+                                         (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten(),
+                                         dd['nH'].data.flatten())
+            dat_all['nH2-chi_FUV_tot'] = (dd['nH'].data.flatten()[idx_H2],
+                                          (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_H2],
+                                          dd['nH'].data.flatten()[idx_H2])
+            dat_all['nHI-chi_FUV_tot'] = (dd['nH'].data.flatten()[idx_HI],
+                                          (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_HI],
+                                          dd['nH'].data.flatten()[idx_HI])
+            dat_all['nHII-chi_FUV_tot'] = (dd['nH'].data.flatten()[idx_HII],
+                                           (dd['chi_FUV_ext'] + dd['chi_FUV']).data.flatten()[idx_HII],
+                                           dd['nH'].data.flatten()[idx_HII])
+        else:
+            dat_all['nH-chi_PE_tot'] = (dd['nH'].data.flatten(),
+                                        (dd['chi_PE_ext']).data.flatten(),
+                                        dd['nH'].data.flatten())
+            dat_all['nH2-chi_PE_tot'] = (dd['nH'].data.flatten()[idx_H2],
+                                         (dd['chi_PE_ext']).data.flatten()[idx_H2],
+                                         dd['nH'].data.flatten()[idx_H2])
+            dat_all['nHI-chi_PE_tot'] = (dd['nH'].data.flatten()[idx_HI],
+                                         (dd['chi_PE_ext']).data.flatten()[idx_HI],
+                                         dd['nH'].data.flatten()[idx_HI])
+            dat_all['nHII-chi_PE_tot'] = (dd['nH'].data.flatten()[idx_HII],
+                                          (dd['chi_PE_ext']).data.flatten()[idx_HII],
+                                          dd['nH'].data.flatten()[idx_HII])
+            
+            dat_all['nH-chi_FUV_tot'] = (dd['nH'].data.flatten(),
+                                         (dd['chi_FUV_ext']).data.flatten(),
+                                         dd['nH'].data.flatten())
+            dat_all['nH2-chi_FUV_tot'] = (dd['nH'].data.flatten()[idx_H2],
+                                          (dd['chi_FUV_ext']).data.flatten()[idx_H2],
+                                          dd['nH'].data.flatten()[idx_H2])
+            dat_all['nHI-chi_FUV_tot'] = (dd['nH'].data.flatten()[idx_HI],
+                                          (dd['chi_FUV_ext']).data.flatten()[idx_HI],
+                                          dd['nH'].data.flatten()[idx_HI])
+            dat_all['nHII-chi_FUV_tot'] = (dd['nH'].data.flatten()[idx_HII],
+                                           (dd['chi_FUV_ext']).data.flatten()[idx_HII],
+                                           dd['nH'].data.flatten()[idx_HII])
+
+        if self.par['radps']['iPhotIon'] == 1:
+            dat_all['nH-Erad_LyC'] = (dd['nH'].data.flatten(),
+                                      dd['Erad_LyC'].data.flatten(),
+                                      dd['nH'].data.flatten())
+            dat_all['nHII-Erad_LyC'] = (dd['nH'].data.flatten()[idx_HII],
+                                        dd['Erad_LyC'].data.flatten()[idx_HII],
+                                        dd['nH'].data.flatten()[idx_HII])
 
         for k, (xdat,ydat,wdat) in dat_all.items():
             r[k] = dict()
