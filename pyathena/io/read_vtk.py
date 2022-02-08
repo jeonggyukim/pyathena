@@ -122,6 +122,22 @@ class AthenaDataSet(object):
 
         return xc
 
+    def get_cc_ijk(s, x1, x2, x3):
+        """Compute closest cell-center integer indices in which a particle resides
+
+        Parameters
+        ----------
+        x1,x2,x3 : array of floats
+            Particle position
+        """
+        domain = s.domain
+        le1,le2,le3 = domain['le']
+        dx1,dx2,dx3 = domain['dx']
+
+        return (np.floor((x1 - le1)/dx1).astype(int),
+                np.floor((x2 - le2)/dx2).astype(int),
+                np.floor((x3 - le3)/dx3).astype(int))
+
     def set_region(self, le=None, re=None):
         """Set region and find overlapping grids.
         """
