@@ -585,7 +585,7 @@ class SB99(object):
 
 def plt_nuJnu_mid_plane_parallel(ax, Sigma_gas=10.0*au.M_sun/au.pc**2, plt_dr78=True):
 
-    sb2 = SB99('/projects/EOSTRIKE/SB99/Z1_SFR1/output/', prefix='Z1_SFR1', logM=0.0)
+    sb2 = SB99('/projects/EOSTRIKE/SB99/Z1_SFR1_GenevaV00/output/', prefix='Z1_SFR1', logM=0.0)
     rr = sb2.read_rad()
     w = rr['wav'].values*1e-4
     d = DustDraine()
