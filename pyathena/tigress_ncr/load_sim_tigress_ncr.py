@@ -1,6 +1,7 @@
 import os
 import os.path as osp
 import pandas as pd
+import numpy as np
 
 from ..load_sim import LoadSim
 from ..util.units import Units
@@ -63,6 +64,30 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
             newcool = False
         return newcool
 
+    def calc_deltay(self, time):
+        """
+        Function to calculate the y-offset at radial edges of the domain
+        
+        Parameters
+        ----------
+        time : float
+            simulation time in code unit
+
+        Returns
+        -------
+        Delta y = (q*Omega0*Lx*t) mod (Ly)
+        """
+        
+        par = self.par
+        domain = self.domain
+        u = self.u
+
+        # Compute Delta y = (q*Omega0*Lx*t) mod (Ly)
+        qshear = par['problem']['qshear']
+        Omega0 = par['problem']['Omega']*(u.kms*u.pc)
+        deltay = np.fmod(qshear*Omega0*domain['Lx'][0]*time, domain['Lx'][1])
+
+        return deltay
 
 
 class LoadSimTIGRESSNCRAll(object):
