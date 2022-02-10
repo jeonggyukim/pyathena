@@ -82,7 +82,7 @@ for m in models:
 
         pdf.attrs['total_cooling'] = total_cooling
         pdf.attrs['total_heating'] = total_heating
-        pdf.assign_coords(time=ds.domain['time'])
+        pdf = pdf.assign_coords(time=ds.domain['time'])
         pdf.to_netcdf(os.path.join(savdir,coolpdfname))
 
         S_X = xr.Dataset()
@@ -92,7 +92,7 @@ for m in models:
         S_X['full_yz']=(data['full-Xray'].sum(dim='x')*s.domain['dx'][0]*s.u.cm/4/np.pi)
         S_X['full_xz']=(data['full-Xray'].sum(dim='y')*s.domain['dx'][1]*s.u.cm/4/np.pi)
         S_X['full_xy']=(data['full-Xray'].sum(dim='z')*s.domain['dx'][2]*s.u.cm/4/np.pi)
-        S_X.assign_coords(time=ds.domain['time'])
+        S_X = S_X.assign_coords(time=ds.domain['time'])
         S_X.to_netcdf(os.path.join(savdir,sxname))
 
         gc.collect()

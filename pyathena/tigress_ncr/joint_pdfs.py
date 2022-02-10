@@ -107,14 +107,23 @@ if __name__ == '__main__':
                 # get total heating from vtk output for normalization
                 total_heating=heatrate.attrs['total_heating']
 
-                pdf_cool = get_pdfs('nH','T',data,coolrate)/total_cooling
-                pdf_heat = get_pdfs('nH','T',data,heatrate)/total_heating
+                pdf_cool = get_pdfs('nH','T',data,coolrate).assign_coords(time=ds.domain['time'])/total_cooling
+                pdf_heat = get_pdfs('nH','T',data,heatrate).assign_coords(time=ds.domain['time'])/total_heating
+
+                pdf_cool_xHI = get_pdfs('T','xHI',data,coolrate).assign_coords(time=ds.domain['time'])/total_cooling
+                pdf_heat_xHI = get_pdfs('T','xHI',data,heatrate).assign_coords(time=ds.domain['time'])/total_heating
 
                 pdf_cool.attrs = coolrate.attrs
                 pdf_heat.attrs = heatrate.attrs
 
+                pdf_cool_xHI.attrs = coolrate.attrs
+                pdf_heat_xHI.attrs = heatrate.attrs
+
                 pdf_cool.to_netcdf(os.path.join(savdir,coolfname))
                 pdf_heat.to_netcdf(os.path.join(savdir,heatfname))
+
+                pdf_cool_xHI.to_netcdf(os.path.join(savdir,coolfname.replace('.cool.','.xHI.cool.')))
+                pdf_heat_xHI.to_netcdf(os.path.join(savdir,coolfname.replace('.heat.','.xHI.heat.')))
 
             pdf_z,pdf_tot = calc_pdfs(s,ds,'T','Lambda_cool',zmin=0,zmax=zmax,
                                       force_override=False,

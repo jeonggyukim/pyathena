@@ -298,7 +298,7 @@ def set_bins_default():
                      chi_PE=(-3,4),chi_FUV=(-3,4),chi_H2=(-3,4),xi_CR=(-18,-12),
                      Erad_LyC=(-30,-10),net_cool_rate=(-30,-18),
                      Lambda_cool=(-30,-18),cool_rate=(-30,-18),heat_rate=(-30,-18))
-    dbins = dict(vz=10,xH2=0.01,xHII=0.01,xHI=0.01,xe=0.01,nH=0.05,T=0.05)
+    dbins = dict(vz=10,xH2=0.005,xHII=0.01,xHI=0.01,xe=0.01,nH=0.05,T=0.05)
     nologs = ['vz','xH2','xHII','xHI','xe']
     bins = dict()
     for k,v in binranges.items():
