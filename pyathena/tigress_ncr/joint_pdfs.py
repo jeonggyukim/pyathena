@@ -6,6 +6,9 @@ import sys, os
 import matplotlib.pyplot as plt
 from matplotlib.colors import LogNorm
 import argparse
+
+sys.path.insert(0,'../../')
+
 import pyathena as pa
 import gc
 
@@ -123,16 +126,16 @@ if __name__ == '__main__':
                 pdf_heat.to_netcdf(os.path.join(savdir,heatfname))
 
                 pdf_cool_xHI.to_netcdf(os.path.join(savdir,coolfname.replace('.cool.','.xHI.cool.')))
-                pdf_heat_xHI.to_netcdf(os.path.join(savdir,coolfname.replace('.heat.','.xHI.heat.')))
+                pdf_heat_xHI.to_netcdf(os.path.join(savdir,heatfname.replace('.heat.','.xHI.heat.')))
 
-            pdf_z,pdf_tot = calc_pdfs(s,ds,'T','Lambda_cool',zmin=0,zmax=zmax,
-                                      force_override=False,
-                                      cooling=True,species=True,radiation=True)
-            pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','pok',zmin=0,zmax=zmax,
-                                      force_override=False,
-                                      cooling=True,species=True,radiation=True)
-            pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','T',zmin=0,zmax=zmax,
-                                      force_override=False,
-                                      cooling=True,species=True,radiation=True)
+            #pdf_z,pdf_tot = calc_pdfs(s,ds,'T','Lambda_cool',zmin=0,zmax=zmax,
+            #                          force_override=False,
+            #                          cooling=True,species=True,radiation=True)
+            #pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','pok',zmin=0,zmax=zmax,
+            #                          force_override=False,
+            #                          cooling=True,species=True,radiation=True)
+            #pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','T',zmin=0,zmax=zmax,
+            #                          force_override=False,
+            #                          cooling=True,species=True,radiation=True)
 
         gc.collect()
