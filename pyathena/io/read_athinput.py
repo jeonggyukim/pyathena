@@ -6,18 +6,18 @@ import collections
 def read_athinput(filename, as_namedtuple=False, verbose=False):
     """
     Function to read athinput and configure block from simulation log
-    
+
     Parameters
     ----------
     filename : string
         Name of the file to open, including extension
     verbose : bool
         Print verbose message
-    
+
     Returns
     -------
     par : dict or namedtuple
-        Each item is a dictionary or namedtuple containing individual input 
+        Each item is a dictionary or namedtuple containing individual input
         block.
     """
 
@@ -51,7 +51,7 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
                 iend = i
 
     lines = lines[istart:iend]
-    
+
     # Parse lines
     reblock = re.compile(r"<\w+>\s*")
     ##  reparam=re.compile(r"[-\[\]\w]+\s*=")
@@ -88,10 +88,14 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
             for i, lsplit_ in enumerate(lsplit):
                 if lsplit_ == '=':
                     i0 = i
+                if lsplit_ == '#':
+                    i1 = i
+                    i1_found=True
                     break
 
             pname = '_'.join(lsplit[:i0])
-            value = lsplit[i0+1]
+            if i1_found: value = ' '.join(lsplit[i0+1:i1])
+            else: value = lsplit[i0+1]
 
             # Evaluate if value is floating point number (or real number) or integer or string
             # Too complicated...there must be a better way...
