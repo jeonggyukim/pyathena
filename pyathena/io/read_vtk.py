@@ -369,7 +369,7 @@ class AthenaDataSet(object):
             field_to_read=field
             self.arr = dict()
 
-        print(field_to_read,self.arr.keys())
+        # print(field_to_read,self.arr.keys())
         for f in field_to_read:
             self.arr[f] = self._set_array(f)
 
