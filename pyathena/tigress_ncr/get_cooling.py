@@ -312,7 +312,7 @@ def set_bins_default():
             bins[k] = np.linspace(bmin,bmax,nbin)
         else:
             bins[k] = np.logspace(bmin,bmax,nbin)
-    return bins
+    return bins, nologs
 
 def get_pdf_xarray(x,y,w,xbin,ybin,xf,yf):
     h = np.histogram2d(x,y,weights=w,bins=[xbin,ybin])
@@ -332,7 +332,7 @@ def get_pdf_xarray(x,y,w,xbin,ybin,xf,yf):
     return pdf
 
 def get_pdfs(xf,yf,data,rate,set_bins=set_bins_default):
-    bins = set_bins()
+    bins, nologs = set_bins()
     pdfs=xr.Dataset()
     sources = list(rate.keys())
     x=data[xf].data.flatten()

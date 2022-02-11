@@ -37,6 +37,13 @@ def calc_pdfs(s,ds,xf='T',yf='Lambda_cool',zmin=0,zmax=300,force_override=False,
     if cooling:
         wfields += ['cool_rate','heat_rate','net_cool_rate']
         tot_cool_rate = -1
+        if not s.test_newcool():
+            data = s.get_classic_cooling_rate(ds)
+            ds.arr['T'] = data['T'].data
+            ds.arr['cool_rate'] = data['cool_rate'].data
+            ds.arr['heat_rate'] = data['heat_rate'].data
+            ds.arr['net_cool_rate'] = data['net_cool_rate'].data
+            ds.arr['Lambda_cool'] = data['Lambda_cool'].data
     if species: wfields += ['nHI','nHII','nH2','ne']
     if radiation:
         wfields += ['xi_CR','rad_energy_density_PE','rad_energy_density_LW',
@@ -97,45 +104,59 @@ if __name__ == '__main__':
             else:
                 zmin,zmax = zrange.start, zrange.stop
                 if zmin < 0: zmin = 0
-            savdir = '{}/jointpdf_z{:02d}-{:02d}/cooling_heating/'.format(s.savdir,
-                      int(zmin/100),int(zmax/100))
-            if not os.path.isdir(savdir): os.makedirs(savdir)
-            coolfname = '{}.{:04d}.cool.pdf.nc'.format(ds.problem_id,ds.num)
-            heatfname = '{}.{:04d}.heat.pdf.nc'.format(ds.problem_id,ds.num)
-            if not os.path.isfile(os.path.join(savdir,coolfname)):
-                data,coolrate,heatrate=get_cooling_heating(s,ds,zrange=zrange)
+            if s.test_newcool():
+                # do this only for new cooling
+                savdir = '{}/jointpdf_z{:02d}-{:02d}/cooling_heating/'.format(s.savdir,
+                          int(zmin/100),int(zmax/100))
+                if not os.path.isdir(savdir): os.makedirs(savdir)
+                coolfname = '{}.{:04d}.cool.pdf.nc'.format(ds.problem_id,ds.num)
+                heatfname = '{}.{:04d}.heat.pdf.nc'.format(ds.problem_id,ds.num)
+                #if not os.path.isfile(os.path.join(savdir,coolfname)):
+                if not os.path.isfile(os.path.join(savdir,coolfname.replace('.cool.','.xHI.cool.'))):
+                    data,coolrate,heatrate=get_cooling_heating(s,ds,zrange=zrange)
 
-                # get total cooling from vtk output for normalization
-                total_cooling=coolrate.attrs['total_cooling']
-                # get total heating from vtk output for normalization
-                total_heating=heatrate.attrs['total_heating']
+                    # get total cooling from vtk output for normalization
+                    total_cooling=coolrate.attrs['total_cooling']
+                    # get total heating from vtk output for normalization
+                    total_heating=heatrate.attrs['total_heating']
 
-                pdf_cool = get_pdfs('nH','T',data,coolrate).assign_coords(time=ds.domain['time'])/total_cooling
-                pdf_heat = get_pdfs('nH','T',data,heatrate).assign_coords(time=ds.domain['time'])/total_heating
+                    pdf_cool = get_pdfs('nH','T',data,coolrate).assign_coords(time=ds.domain['time'])/total_cooling
+                    pdf_heat = get_pdfs('nH','T',data,heatrate).assign_coords(time=ds.domain['time'])/total_heating
 
-                pdf_cool_xHI = get_pdfs('T','xHI',data,coolrate).assign_coords(time=ds.domain['time'])/total_cooling
-                pdf_heat_xHI = get_pdfs('T','xHI',data,heatrate).assign_coords(time=ds.domain['time'])/total_heating
+                    pdf_cool_xHI = get_pdfs('T','xHI',data,coolrate).assign_coords(time=ds.domain['time'])/total_cooling
+                    pdf_heat_xHI = get_pdfs('T','xHI',data,heatrate).assign_coords(time=ds.domain['time'])/total_heating
 
-                pdf_cool.attrs = coolrate.attrs
-                pdf_heat.attrs = heatrate.attrs
+                    pdf_cool.attrs = coolrate.attrs
+                    pdf_heat.attrs = heatrate.attrs
 
-                pdf_cool_xHI.attrs = coolrate.attrs
-                pdf_heat_xHI.attrs = heatrate.attrs
+                    pdf_cool_xHI.attrs = coolrate.attrs
+                    pdf_heat_xHI.attrs = heatrate.attrs
 
-                pdf_cool.to_netcdf(os.path.join(savdir,coolfname))
-                pdf_heat.to_netcdf(os.path.join(savdir,heatfname))
+                    pdf_cool.to_netcdf(os.path.join(savdir,coolfname))
+                    pdf_heat.to_netcdf(os.path.join(savdir,heatfname))
 
-                pdf_cool_xHI.to_netcdf(os.path.join(savdir,coolfname.replace('.cool.','.xHI.cool.')))
-                pdf_heat_xHI.to_netcdf(os.path.join(savdir,heatfname.replace('.heat.','.xHI.heat.')))
+                    pdf_cool_xHI.to_netcdf(os.path.join(savdir,coolfname.replace('.cool.','.xHI.cool.')))
+                    pdf_heat_xHI.to_netcdf(os.path.join(savdir,heatfname.replace('.heat.','.xHI.heat.')))
 
-            #pdf_z,pdf_tot = calc_pdfs(s,ds,'T','Lambda_cool',zmin=0,zmax=zmax,
-            #                          force_override=False,
-            #                          cooling=True,species=True,radiation=True)
-            #pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','pok',zmin=0,zmax=zmax,
-            #                          force_override=False,
-            #                          cooling=True,species=True,radiation=True)
-            #pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','T',zmin=0,zmax=zmax,
-            #                          force_override=False,
-            #                          cooling=True,species=True,radiation=True)
+                pdf_z,pdf_tot = calc_pdfs(s,ds,'T','Lambda_cool',zmin=0,zmax=zmax,
+                                          force_override=False,
+                                          cooling=True,species=True,radiation=True)
+                pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','pok',zmin=0,zmax=zmax,
+                                          force_override=False,
+                                          cooling=True,species=True,radiation=True)
+                pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','T',zmin=0,zmax=zmax,
+                                          force_override=False,
+                                          cooling=True,species=True,radiation=True)
+            else:
+                pdf_z,pdf_tot = calc_pdfs(s,ds,'T','Lambda_cool',zmin=0,zmax=zmax,
+                                          force_override=False,
+                                          cooling=True,species=False,radiation=False)
+                pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','pok',zmin=0,zmax=zmax,
+                                          force_override=False,
+                                          cooling=True,species=False,radiation=False)
+                pdf_z,pdf_tot = calc_pdfs(s,ds,'nH','T',zmin=0,zmax=zmax,
+                                          force_override=False,
+                                          cooling=True,species=False,radiation=False)
+
 
         gc.collect()

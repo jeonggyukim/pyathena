@@ -17,28 +17,10 @@ from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp
 from ..classic.cooling import coolftn
 from ..io.read_hst import read_hst
+from .get_cooling import set_bins_default
 
 class PDF:
-    binranges = dict(nH=(-6,6),T=(0,9),pok=(0,10),
-                     nHI=(-6,6),nH2=(-6,6),nHII=(-6,6),ne=(-6,6),
-                     xH2=(0,0.5),xHII=(0,1.0),xHI=(0,1.0),xe=(0,1.2),
-                     chi_PE=(-3,4),chi_FUV=(-3,4),chi_H2=(-3,4),xi_CR=(-18,-12),
-                     Erad_LyC=(-30,-10),
-                     Lambda_cool=(-30,-18),cool_rate=(-30,-18),heat_rate=(-30,-18))
-    dbins = dict(vz=10,xH2=0.01,xHII=0.01,xHI=0.01,xe=0.01)
-    nologs = ['vz','xH2','xHII','xHI','xe']
-    bins = dict()
-    for k,v in binranges.items():
-        bmin, bmax = v
-        try:
-            dbin = dbins[k]
-        except:
-            dbin = 0.1
-        nbin = int((bmax-bmin)/dbin)+1
-        if k in nologs:
-            bins[k] = np.linspace(bmin,bmax,nbin)
-        else:
-            bins[k] = np.logspace(bmin,bmax,nbin)
+    bins,nologs = set_bins_default()
 
     @LoadSim.Decorators.check_pickle
     def read_pdf2d_avg(self, nums=None, savdir=None, force_override=False):
@@ -71,7 +53,7 @@ class PDF:
                     rr[k]['H'] += r[k]['H']
                     rr[k]['Hw'] += r[k]['Hw']
 
-        return rr    
+        return rr
 
     @LoadSim.Decorators.check_pickle
     def read_pdf2d(self, num,
@@ -79,7 +61,7 @@ class PDF:
                    weight_fields=None,
                    bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
-       
+
         bin_fields_def = [['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'],
                           ['nH', 'T']]
         weight_fields_def = ['nH', '2nH2', 'nHI', 'nHII',
@@ -131,7 +113,7 @@ class PDF:
             res[k]['ye'] = ye
 
         res['time_code'] = ds.domain['time']
-        
+
         return res
 
     def plt_pdf2d(self, ax, dat, bf='nH-pok',
@@ -289,8 +271,6 @@ class PDF:
             range of |z| over which pdfs are calculated
 
         '''
-        if ds is None: ds = self.load_vtk(num=num,ivtk=ivtk)
-
         zmin,zmax = zrange
         savdir = '{}/jointpdf_z{:02d}-{:02d}/{}-{}-{}'.format(self.savdir,int(zmin/100),int(zmax/100),xf,yf,wf)
         if not os.path.isdir(savdir): os.makedirs(savdir)
@@ -311,27 +291,22 @@ class PDF:
             fields = {xf,yf}
         else:
             fields = {xf,yf,wf}
-        classic_coolrate = False
-        if not self.test_newcool():
-            for cool_field in ['T','cool_rate','heat_rate','net_cool_rate']:
-                if cool_field in fields:
-                    fields = fields - {cool_field} 
-                    classic_coolrate = True
 
         self.logger.info('[jointpdf] reading {}'.format(fields))
 
         data = ds.get_field(list(fields))
-        if not self.test_newcool() and classic_coolrate:
-            data.update(self.get_classic_cooling_rate(ds))
 
         data_zcut = xr.concat([data.sel(z=slice(-zmax,-zmin)),
                                data.sel(z=slice(zmin,zmax))],dim='z')
-        data_zcut = data_zcut.stack(xyz=['x','y','z']).dropna(dim='xyz')
+
+        x = data_zcut[xf].data.flatten()
+        y = data_zcut[yf].data.flatten()
 
         if wf is None:
-            h=np.histogram2d(data_zcut[xf],data_zcut[yf],bins=[self.bins[xf],self.bins[yf]])
+            h=np.histogram2d(x,y,bins=[self.bins[xf],self.bins[yf]])
         else:
-            h=np.histogram2d(data_zcut[xf],data_zcut[yf],bins=[self.bins[xf],self.bins[yf]],weights=data_zcut[wf])
+            w = data_zcut[wf].data.flatten()
+            h=np.histogram2d(x,y,bins=[self.bins[xf],self.bins[yf]],weights=w)
         xe = h[1]
         ye = h[2]
         if not (xf in self.nologs):

@@ -264,6 +264,8 @@ class AthenaDataSet(object):
 
         # Derived field list
         dflist = set(field) - set(self.field_list)
+        if hasattr(self,'arr'):
+            dflist = dflist - set(list(self.arr.keys()))
 
         if not bool(dflist):
             # dflist is an empty set, we can read all fields directly from vtk

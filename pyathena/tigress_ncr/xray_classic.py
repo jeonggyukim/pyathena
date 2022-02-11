@@ -10,6 +10,7 @@ import argparse
 sys.path.insert(0,'../../')
 
 import pyathena as pa
+from pyathena.io.read_hst import read_hst
 import gc
 
 from pyathena.tigress_ncr.get_cooling import get_cooling_heating,get_pdfs,set_bins_default,get_pdf_xarray
@@ -50,6 +51,11 @@ for m in models:
     pid = ds.problem_id
     if suite == 'classic':
         nums = range(200,501)
+        if (not hasattr(s,'heat_ratio')):
+            hst = read_hst(s.files['hst'],force_override=True)
+            s.heat_ratio = hst['heat_ratio']
+            s.heat_ratio.index = hst['time']
+
     elif suite == 'icm':
         nums = s.nums
     for num in nums:

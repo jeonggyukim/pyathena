@@ -141,13 +141,15 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
         T1 *= (self.u.velocity**2*ac.m_p/ac.k_B).cgs.value
         T1data = np.clip(T1.data,10,None)
         temp = nH/nH*coolftn().get_temp(T1data)
-        cool = nH*nH*coolftn().get_cool(T1data)
+        Lambda_cool = nH/nH*coolftn().get_cool(T1data)
+        cool = nH*nH*Lambda_cool
         heat = heat_ratio*nH*np.clip(coolftn().get_heat(T1data),0.0,None)
         net_cool = cool-heat
         dd['T'] = temp
         dd['cool_rate'] = cool
         dd['heat_rate'] = heat
         dd['net_cool_rate'] = net_cool
+        dd['Lambda_cool'] = Lambda_cool
 
         return dd
 
