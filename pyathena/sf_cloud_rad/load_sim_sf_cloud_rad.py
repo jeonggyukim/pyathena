@@ -377,101 +377,101 @@ def load_all_sf_cloud_rad(force_override=False):
     models = dict(
         # A series (B=2)
         # A1
-        A1S1='/tigress/jk11/GMC/M1E5R20.R.B2.A1.S1.N256',
-        A1S2='/tigress/jk11/GMC/M1E5R20.R.B2.A1.S2.N256',
-        A1S3='/tigress/jk11/GMC/M1E5R20.R.B2.A1.S3.N256',
-        A1S4='/tigress/jk11/GMC/M1E5R20.R.B2.A1.S4.N256',
-        A1S5='/tigress/jk11/GMC/M1E5R20.R.B2.A1.S5.N256',
+        A1S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A1.S1.N256',
+        A1S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A1.S2.N256',
+        A1S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A1.S3.N256',
+        A1S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A1.S4.N256',
+        A1S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A1.S5.N256',
 
         # A2
-        A2S1='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S1.N256',
-        A2S2='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S2.N256',
-        A2S3='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S3.N256',
-        A2S4='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N256',
-        A2S5='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S5.N256',
+        A2S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S1.N256',
+        A2S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S2.N256',
+        A2S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S3.N256',
+        A2S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S4.N256',
+        A2S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S5.N256',
 
         # A3
-        A3S1='/tigress/jk11/GMC/M1E5R20.R.B2.A3.S1.N256',
-        A3S2='/tigress/jk11/GMC/M1E5R20.R.B2.A3.S2.N256',
-        A3S3='/tigress/jk11/GMC/M1E5R20.R.B2.A3.S3.N256',
-        A3S4='/tigress/jk11/GMC/M1E5R20.R.B2.A3.S4.N256',
-        A3S5='/tigress/jk11/GMC/M1E5R20.R.B2.A3.S5.N256',
+        A3S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S1.N256',
+        A3S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S2.N256',
+        A3S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S3.N256',
+        A3S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S4.N256',
+        A3S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S5.N256',
         
         # A4
-        A4S1='/tigress/jk11/GMC/M1E5R20.R.B2.A4.S1.N256',
-        A4S2='/tigress/jk11/GMC/M1E5R20.R.B2.A4.S2.N256',
-        A4S3='/tigress/jk11/GMC/M1E5R20.R.B2.A4.S3.N256',
-        A4S4='/tigress/jk11/GMC/M1E5R20.R.B2.A4.S4.N256',
-        A4S5='/tigress/jk11/GMC/M1E5R20.R.B2.A4.S5.N256',
+        A4S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S1.N256',
+        A4S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S2.N256',
+        A4S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S3.N256',
+        A4S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S4.N256',
+        A4S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S5.N256',
 
         # A5
-        A5S1='/tigress/jk11/GMC/M1E5R20.R.B2.A5.S1.N256',
-        A5S2='/tigress/jk11/GMC/M1E5R20.R.B2.A5.S2.N256',
-        A5S3='/tigress/jk11/GMC/M1E5R20.R.B2.A5.S3.N256',
-        A5S4='/tigress/jk11/GMC/M1E5R20.R.B2.A5.S4.N256',
-        A5S5='/tigress/jk11/GMC/M1E5R20.R.B2.A5.S5.N256',
+        A5S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A5.S1.N256',
+        A5S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A5.S2.N256',
+        A5S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A5.S3.N256',
+        A5S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A5.S4.N256',
+        A5S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A5.S5.N256',
 
         # B series (A=2)
         # B0.5
-        B05S1='/tigress/jk11/GMC/M1E5R20.R.B0.5.A2.S1.N256',
-        B05S2='/tigress/jk11/GMC/M1E5R20.R.B0.5.A2.S2.N256',
-        B05S3='/tigress/jk11/GMC/M1E5R20.R.B0.5.A2.S3.N256',
-        B05S4='/tigress/jk11/GMC/M1E5R20.R.B0.5.A2.S4.N256',
-        B05S5='/tigress/jk11/GMC/M1E5R20.R.B0.5.A2.S5.N256',
+        B05S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B0.5.A2.S1.N256',
+        B05S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B0.5.A2.S2.N256',
+        B05S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B0.5.A2.S3.N256',
+        B05S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B0.5.A2.S4.N256',
+        B05S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B0.5.A2.S5.N256',
 
         # B1
-        B1S1='/tigress/jk11/GMC/M1E5R20.R.B1.A2.S1.N256',
-        B1S2='/tigress/jk11/GMC/M1E5R20.R.B1.A2.S2.N256',
-        B1S3='/tigress/jk11/GMC/M1E5R20.R.B1.A2.S3.N256',
-        B1S4='/tigress/jk11/GMC/M1E5R20.R.B1.A2.S4.N256',
-        B1S5='/tigress/jk11/GMC/M1E5R20.R.B1.A2.S5.N256',
+        B1S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B1.A2.S1.N256',
+        B1S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B1.A2.S2.N256',
+        B1S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B1.A2.S3.N256',
+        B1S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B1.A2.S4.N256',
+        B1S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B1.A2.S5.N256',
 
         # B2
-        B2S1='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S1.N256',
-        B2S2='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S2.N256',
-        B2S3='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S3.N256',
-        B2S4='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N256',
-        B2S5='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S5.N256',
+        B2S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S1.N256',
+        B2S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S2.N256',
+        B2S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S3.N256',
+        B2S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S4.N256',
+        B2S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S5.N256',
 
         # B4
-        B4S1='/tigress/jk11/GMC/M1E5R20.R.B4.A2.S1.N256',
-        B4S2='/tigress/jk11/GMC/M1E5R20.R.B4.A2.S2.N256',
-        B4S3='/tigress/jk11/GMC/M1E5R20.R.B4.A2.S3.N256',
-        B4S4='/tigress/jk11/GMC/M1E5R20.R.B4.A2.S4.N256',
-        B4S5='/tigress/jk11/GMC/M1E5R20.R.B4.A2.S5.N256',
+        B4S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B4.A2.S1.N256',
+        B4S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B4.A2.S2.N256',
+        B4S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B4.A2.S3.N256',
+        B4S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B4.A2.S4.N256',
+        B4S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B4.A2.S5.N256',
 
         # B8
-        B8S1='/tigress/jk11/GMC/M1E5R20.R.B8.A2.S1.N256',
-        B8S2='/tigress/jk11/GMC/M1E5R20.R.B8.A2.S2.N256',
-        B8S3='/tigress/jk11/GMC/M1E5R20.R.B8.A2.S3.N256',
-        B8S4='/tigress/jk11/GMC/M1E5R20.R.B8.A2.S4.N256',
-        B8S5='/tigress/jk11/GMC/M1E5R20.R.B8.A2.S5.N256',
+        B8S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B8.A2.S1.N256',
+        B8S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B8.A2.S2.N256',
+        B8S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B8.A2.S3.N256',
+        B8S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B8.A2.S4.N256',
+        B8S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B8.A2.S5.N256',
 
         # Binf
-        BinfS1='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256',
-        BinfS2='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S2.N256',
-        BinfS3='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S3.N256',
-        BinfS4='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S4.N256',
-        BinfS5='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
+        BinfS1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S1.N256',
+        BinfS2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S2.N256',
+        BinfS3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S3.N256',
+        BinfS4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S4.N256',
+        BinfS5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S5.N256',
 
-        # BinfS1='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S1.N256.again',
-        # BinfS2='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S2.N256',
-        # BinfS3='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S3.N256',
-        # BinfS4='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S4.N256',
-        # BinfS5='/tigress/jk11/GMC/M1E5R20.R.Binf.A2.S5.N256',
+        # BinfS1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S1.N256.again',
+        # BinfS2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S2.N256',
+        # BinfS3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S3.N256',
+        # BinfS4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S4.N256',
+        # BinfS5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.Binf.A2.S5.N256',
 
         # Low resolution
-        B2S1_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S1.N128/',
-        B2S2_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S2.N128/',
-        B2S3_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S3.N128/',
-        B2S4_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N128/',
-        B2S5_N128='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S5.N128/',
+        B2S1_N128='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S1.N128/',
+        B2S2_N128='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S2.N128/',
+        B2S3_N128='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S3.N128/',
+        B2S4_N128='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S4.N128/',
+        B2S5_N128='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S5.N128/',
 
         # High resolution
-        B2S4_N512='/tigress/jk11/GMC/M1E5R20.RS.B2.A2.S4.N512',
+        B2S4_N512='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S4.N512',
         
         # B16
-        # B16S1='/tigress/jk11/GMC/M1E5R20.R.B16.A2.S1.N256.old',
+        # B16S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B16.A2.S1.N256.old',
         )
     
     sa = LoadSimSFCloudRadAll(models)
@@ -479,7 +479,7 @@ def load_all_sf_cloud_rad(force_override=False):
     markers = ['o','v','^','s','*']
 
     # Check if pickle exists
-    fpkl = osp.join('/tigress/jk11/GMC/pickles/alphabeta.p')
+    fpkl = osp.join('/tigress/jk11/SF-CLOUD-RAD/pickles/alphabeta.p')
     if not force_override and osp.isfile(fpkl):
         r = pd.read_pickle(fpkl)
         return sa, r
