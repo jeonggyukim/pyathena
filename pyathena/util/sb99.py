@@ -1,12 +1,14 @@
 import pathlib
 import xarray as xr
+import os
 import os.path as osp
 import numpy as np
 import astropy.units as au
 import astropy.constants as ac
 import pandas as pd
-from scipy.integrate import simps, trapz
+from scipy.integrate import simps, trapz, cumulative_trapezoid
 from scipy.interpolate import interp1d
+
 from ..microphysics.dust_draine import DustDraine
 
 import matplotlib.pyplot as plt
@@ -17,33 +19,79 @@ local = pathlib.Path(__file__).parent.absolute()
 
 class SB99(object):
     
-    def __init__(self, basedir='/projects/EOSTRIKE/SB99/Z1_M1E6_GenevaV00/output/',
-                 prefix='Z1_M1E6', logM=6.0, tmax_Myr=100.0):
+    def __init__(self, basedir='/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV00_dt01',
+                 verbose=True):
+        
         """
         Parameters
         ----------
-        logM : float
-             Mass of a (coeval) cluster in log10 M/Msun
-        tmax_Myr : float
-             Maximum age in Myr
+        basedir : str
+            directory name in which SB99 simulation results are located
+        verbose : bool
+            Print some useful parameters
 
-        Returns
+        Methods
         -------
-        df : pandas DataFrame
+        read_sn()
+        read_rad()        
+        read_wind()
+
         """
         
-        self.logM = logM
-        self.tmax_Myr = tmax_Myr
         self.basedir = basedir
-        self.files = dict()
-        self.files['snr'] = osp.join(self.basedir, prefix + '.snr1')
-        self.files['power'] = osp.join(self.basedir, prefix + '.power1')
-        self.files['spectrum'] = osp.join(self.basedir, prefix + '.spectrum1')
-        self.files['quanta'] = osp.join(self.basedir, prefix + '.quanta1')
+        self.verbose = verbose
+
+        self._find_files()
+        self._read_params()
         
-        # self.dfs = self.read_sn()
-        # self.dfw = self.read_wind()
-        # self.rr = self.read_rad()
+    def _find_files(self):
+
+        ff = os.listdir(self.basedir)
+        prefixes = []
+        for f in ff:
+            prefixes.append(f.split('.')[0])
+            
+        most_common = lambda lst: max(set(lst), key=lst.count)
+        self.prefix = most_common(prefixes)
+        
+        self.files = dict()
+        for f in ff:
+            name = f.split('.')[-1][:-1]
+            self.files[name] = osp.join(self.basedir, f)
+
+        return None
+
+    def _read_params(self):
+        """Read some parameters
+        """
+
+        with open(self.files['output'], 'r') as fp:
+            l = fp.readlines()
+            l = [l_.strip() for l_ in l]
+            l = list(filter(None, l))
+
+        # Set cluster mass
+        self.cont_SF = int(l[3]) > 0
+
+        for i,l_ in enumerate(l):
+            if l_.startswith('LAST GRID POINT:'):
+                self.tmax_Myr = float(l[i+1])/1e6
+            if l_.startswith('TIME STEP FOR PRINTING OUT THE SYNTHETIC SPECTRA:'):
+                self.dt_Myr_spec = float(l[i+1])/1e6
+            
+        if not self.cont_SF:
+            self.logM = np.log10(float(l[5]))
+            if self.verbose:
+                print('[SB99] Fixed mass', end=' ; ')
+                print('logM:', self.logM)
+        else:
+            self.logM = 0.0
+            self.SFR = float(sb.par[7])
+            if self.verbose:
+                print('continuous SF')
+                print('SFR:', self.SFR)
+
+        self.par = l
         
     def read_sn(self):
         """Function to read snr1 (supernova rate) output
@@ -77,6 +125,8 @@ class SB99(object):
         names = ['time','Edot_all','Edot_OB','Edot_RSG','Edot_LBV','Edot_WR','Einj_all',
                  'pdot_all','pdot_OB','pdot_RSG','pdot_LBV','pdot_WR']
         df = pd.read_csv(self.files['power'], names=names, skiprows=7, delimiter='\s+')
+
+        # Normalize by cluster mass
         for c in df.columns:
             if c == 'time':
                 continue
@@ -85,15 +135,38 @@ class SB99(object):
         df = df.rename(columns={'time': 'time_yr'})
         df['time_Myr'] = df['time_yr']*1e-6
 
-        # Wind terminal velocity
-        for v in ('all', 'OB','RSG', 'LBV', 'WR'):
-            df['Vw_' + v] = (2.0*df['Edot_' + v]/df['pdot_' + v])/1e5
+        # Edot and pdot are given in cgs units
+        # Note that unit of pdot is converted later
         
-        # Move column
+        # Wind terminal velocity [km s-1]
+        Vw_conv = (1.0*au.cm/au.s).to('km s-1')
+        for v in ('all', 'OB','RSG', 'LBV', 'WR'):
+            df['Vw_' + v] = (2.0*df['Edot_' + v]/df['pdot_' + v])*Vw_conv
+
+        # Wind mass loss rate [Msun Myr-1 Msun-1]
+        Mdot_conv = (1.0*au.g/au.s).to('Msun Myr-1').value
+        for v in ('all', 'OB','RSG', 'LBV', 'WR'):
+            df['Mdot_' + v] = df['pdot_' + v] / (df['Vw_' + v]/Vw_conv)*Mdot_conv
+
+        # Momentum injection rate [Msun km s-1 Myr-1 Msun-1]
+        pdot_conv = (1.0*au.g*au.cm/au.s**2).to('Msun km s-1 Myr-1').value
+        for v in ('all', 'OB','RSG', 'LBV', 'WR'):
+            df['pdot_' + v] = df['pdot_' + v]*pdot_conv
+
+        # Time averaged energy, momentum injection rates \int_0^t q dt / \int_0^t dt
+        for v in ('all', 'OB','RSG', 'LBV', 'WR'):
+            df['Edot_' + v + '_avg'] = cumulative_trapezoid(df['Edot_'+v], x=df['time_Myr'], initial=0.0)/\
+                    cumulative_trapezoid(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
+            df['pdot_' + v + '_avg'] = cumulative_trapezoid(df['pdot_'+v], x=df['time_Myr'], initial=0.0)/\
+                    cumulative_trapezoid(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
+            df['Edot_' + v + '_avg'].iloc[0] = df['Edot_' + v + '_avg'].iloc[1]
+            df['pdot_' + v + '_avg'].iloc[0] = df['pdot_' + v + '_avg'].iloc[1]
+
+        # Move time to the first column
         cols = df.columns.tolist()
         cols = cols[-1:] + cols[:-1]
         df = df[cols]
-    
+        
         return df
 
     def read_rad(self):
@@ -216,27 +289,16 @@ class SB99(object):
         L['UV'] = L['LyC'] + L['LW'] + L['PE']
         L['FUV'] = L['LW'] + L['PE']
 
-
         # Momentum injection rate (Msun km/s / Myr / Msun)
         pdot = dict()
         for v in ('tot', 'LyC', 'LW', 'PE', 'OPT', 'UV', 'FUV'):
             pdot[v] = (((L[v]*au.L_sun/ac.c).to('g cm s-2')).to('Msun km s-1 Myr-1')).value
-        
+
         # Luminosity-weighted effective timescale
         # (e-folding timescale if L is decaying exponentially)
         tdecay_lum = dict()
         for k in L.keys():
             tdecay_lum[k] = trapz(L[k]*time_Myr, time_Myr)/trapz(L[k], time_Myr)
-
-        Cext_mean = dict()
-        Cabs_mean = dict()
-        hnu_mean = dict()
-
-        # Luminosity-weighted average cross-section, photon energy
-        for k in Cext.keys():
-            Cext_mean[k] = np.average(Cext[k], weights=L[k])
-            Cabs_mean[k] = np.average(Cabs[k], weights=L[k])
-            hnu_mean[k] = np.average(hnu[k], weights=L[k])
 
         # Photoionization cross section, mean energy of photoelectrons
         from ..microphysics.photx import PhotX,get_sigma_pi_H2
@@ -276,7 +338,7 @@ class SB99(object):
         dhnu_H2_LyC = np.array(dhnu_H2_LyC)
         sigma_pi_H = np.array(sigma_pi_H)
         sigma_pi_H2 = np.array(sigma_pi_H2)
-        
+       
         r = dict(df=df, df_dust=df_dust,
                  time_yr=time, time_Myr=time_Myr,
                  wav=wav, logf=logf, logM=self.logM,
@@ -284,9 +346,42 @@ class SB99(object):
                  wav0=wav0, wav1=wav1, wav2=wav2, wav3=wav3,
                  Cabs=Cabs, Cext=Cext, hnu=hnu,
                  hnu_LyC=hnu_LyC, dhnu_H_LyC=dhnu_H_LyC, dhnu_H2_LyC=dhnu_H2_LyC,
-                 sigma_pi_H=sigma_pi_H, sigma_pi_H2=sigma_pi_H2,
-                 Cabs_mean=Cabs_mean, Cext_mean=Cext_mean, hnu_mean=hnu_mean)
+                 sigma_pi_H=sigma_pi_H, sigma_pi_H2=sigma_pi_H2)
 
+        # Photon luminosity
+        r['Q'] = dict()
+        Q_conv = (1.0*ac.L_sun/au.eV).cgs.value
+        for k in r['hnu'].keys():
+            r['Q'][k] = r['L'][k]/r['hnu'][k]*Q_conv        
+
+        # Compute time-averaged quantities: q_avg = \int_0^t q * weight dt / \int_0^t weight dt, where weight=1, L, Q
+        for kk in ['L','Q']:
+            r[kk+'_avg'] = dict()
+            for k in r[kk].keys():
+                r[kk+'_avg'][k] = cumulative_trapezoid(r[kk][k], x=r['time_Myr'], initial=0.0)/\
+                                cumulative_trapezoid(np.repeat(1.0,len(r['time_Myr'])), x=r['time_Myr'], initial=0.0)
+                r[kk+'_avg'][k][0] = r[kk+'_avg'][k][1]
+
+        for kk in ['hnu','Cabs','Cext','Cext']:
+            r[kk+'_Lavg'] = dict()
+            for k in r[kk].keys():
+                r[kk+'_Lavg'][k] = cumulative_trapezoid(r[kk][k]*r['L'][k], x=r['time_Myr'], initial=0.0)/\
+                                cumulative_trapezoid(r['L'][k], x=r['time_Myr'], initial=0.0)
+                r[kk+'_Lavg'][k][0] = r[kk+'_Lavg'][k][1]
+
+        for kk in ['hnu','Cabs','Cext','Cext']:
+            r[kk+'_Qavg'] = dict()
+            for k in r[kk].keys():
+                r[kk+'_Qavg'][k] = cumulative_trapezoid(r[kk][k]*r['Q'][k], x=r['time_Myr'], initial=0.0)/\
+                                cumulative_trapezoid(r['Q'][k], x=r['time_Myr'], initial=0.0)
+                r[kk+'_Qavg'][k][0] = r[kk+'_Qavg'][k][1]
+
+        # Q-weighted average for quantities related to ionizing radiation
+        for k in ['dhnu_H_LyC','dhnu_H2_LyC','sigma_pi_H','sigma_pi_H2']:
+            r[k+'_Qavg'] = cumulative_trapezoid(r[k]*r['Q']['LyC'], x=r['time_Myr'], initial=0.0)/\
+                cumulative_trapezoid(np.repeat(1.0,len(r['Q']['LyC'])), x=r['time_Myr'], initial=0.0)
+            r[k+'_Qavg'][0] = r[k+'_Qavg'][1]
+            
         return r
 
     def read_quanta(self):
@@ -296,9 +391,16 @@ class SB99(object):
                  'Q_HeII', 'Lfrac_HeII', 'logL']
         df = pd.read_csv(self.files['quanta'], names=names, skiprows=7, delimiter='\s+')
         df['time_Myr'] = df['time_yr']*1e-6
-        for c in names[1:]:
-            df[c] = 10.0**df[c]
-            
+        
+        # Normalize by cluster mass
+        for c in df.columns:
+            if c.startswith('time') or c.startswith('Lfrac'):
+                continue
+            df[c] = 10.0**(df[c] - self.logM)
+
+        # for c in names[1:]:
+        #     df[c] = 10.0**df[c]
+
         return df
 
     @staticmethod
@@ -472,7 +574,6 @@ class SB99(object):
     @staticmethod
     def plt_lum_cumul(ax, rr, rw, rs, normed=True, plt_sn=False):
 
-        from scipy.integrate import cumulative_trapezoid
         integrate_L_cum = lambda L, t: cumulative_trapezoid((L*au.L_sun).cgs.value, 
                                                             (t*au.yr).cgs.value, initial=0.0)
 
@@ -517,7 +618,6 @@ class SB99(object):
     @staticmethod
     def plt_pdot_cumul(ax, rr, rw, rs, normed=True, plt_sn=False):
 
-        from scipy.integrate import cumulative_trapezoid
         integrate_pdot = lambda pdot, t: cumulative_trapezoid(
             pdot, t*au.Myr, initial=0.0)
 
