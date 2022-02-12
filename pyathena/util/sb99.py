@@ -379,7 +379,7 @@ class SB99(object):
         # Q-weighted average for quantities related to ionizing radiation
         for k in ['dhnu_H_LyC','dhnu_H2_LyC','sigma_pi_H','sigma_pi_H2']:
             r[k+'_Qavg'] = cumulative_trapezoid(r[k]*r['Q']['LyC'], x=r['time_Myr'], initial=0.0)/\
-                cumulative_trapezoid(np.repeat(1.0,len(r['Q']['LyC'])), x=r['time_Myr'], initial=0.0)
+                cumulative_trapezoid(r['Q']['LyC'], x=r['time_Myr'], initial=0.0)
             r[k+'_Qavg'][0] = r[k+'_Qavg'][1]
             
         return r
