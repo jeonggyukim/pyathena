@@ -20,7 +20,7 @@ def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Z_g=1.0, Z_d=1.0):
     return 2.0*xH2*((B**2 + 4.0*A*xi_cr*(1.0 + phi_s)/nH)**0.5 - B)/(2.0*k1619)
 
 def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI,
-             xCstd=1.6e-4, gr_rec=True, CRPhotC=True):
+             xCstd=1.6e-4, gr_rec=True, CRPhotC=True, iCII_rec_rate=0):
 
     xCtot = xCstd*Z_g
     small_ = 1e-50
@@ -28,11 +28,15 @@ def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI,
     k_C_photo = 3.5e-10*G_CI
     if CRPhotC:
         k_C_photo += 520.0*2.0*xH2*xi_CR
+
+    if (iCII_rec_rate == 0):
+        lnT = np.log(T)
+        k_Cplus_e = np.where(T < 10.0,
+                             9.982641225129824e-11,
+                             np.exp(-0.7529152*lnT - 21.293937))
+    else:
+        k_Cplus_e = CII_rec_rate(T)
         
-    lnT = np.log(T)
-    k_Cplus_e = np.where(T < 10.0,
-                         9.982641225129824e-11,
-                         np.exp(-0.7529152*lnT - 21.293937))
     if gr_rec:
         psi_gr = 1.7*G_PE*np.sqrt(T)/(nH*xe + small_) + small_
         cCp_ = np.array([45.58, 6.089e-3, 1.128, 4.331e2, 4.845e-2,0.8120, 1.333e-4])
@@ -534,7 +538,6 @@ def coolrecH(nH, T, xe, xHII):
     rec = RecRate()
     Err_B = (0.684 - 0.0416*np.log(T*1e-4))*ac.k_B.cgs.value*T
     return Err_B*rec.get_rec_rate_H_caseB(T)*nH*xe*xHII
-
 
 def coolRec(nH, T, xe, Z_d, chi_PE):
     # Weingartner & Draine (2001) Table 3
@@ -1163,4 +1166,21 @@ def coeff_coll_H2(nH,T,xHI,xH2):
               + np.log10(k10l_) / (1. + n2ncr))
     xi_coll_H2 = k_H2_H2*nH*xH2 + k_H2_HI*nH*xHI
     return np.where(T>temp_coll_,xi_coll_H2,0.0)
+
+
+def CII_rec_rate(T):
+    A = 2.995e-9
+    B = 0.7849
+    T0 =  6.670e-3
+    T1 = 1.943e6
+    C = 0.1597
+    T2 = 4.955e4
+    BN = B + C * np.exp(-T2/T)
+    term1 = np.sqrt(T/T0)
+    term2 = np.sqrt(T/T1)
+    alpha_rr = A/(term1*np.power(1.0+term1, 1.0-BN)*np.power(1.0+term2, 1.0+BN) )
+    alpha_dr = np.power( T, -3.0/2.0 ) * ( 6.346e-9 * np.exp(-1.217e1/T) +
+                                           9.793e-09 * np.exp(-7.38e1/T) +
+                                           1.634e-06 * np.exp(-1.523e+04/T) )
+    return alpha_rr + alpha_dr
 
