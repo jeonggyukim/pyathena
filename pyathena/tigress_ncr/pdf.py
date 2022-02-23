@@ -15,25 +15,26 @@ from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp
 
+bins_def=dict(
+    nH=np.logspace(-5,4,181),
+    nHI=np.logspace(-2,5,141),
+    nH2=np.logspace(-2,5,141),
+    nHII=np.logspace(-5,3,201),
+    xH2=np.linspace(0,0.5,101),
+    xHI=np.linspace(0,1.0,101),
+    xHII=np.linspace(0,1.0,101),
+    xe=np.logspace(-5,np.log10(2),201),
+    T=np.logspace(1,8,281),
+    pok=np.logspace(0,7,141),
+    chi_PE=np.logspace(-3,4,141),
+    chi_H2=np.logspace(-6,4,201),
+    chi_FUV=np.logspace(-3,4,141),
+    Erad_LyC=np.logspace(-18,-10,161),
+    Lambda_cool=np.logspace(-30,-20,201),
+    xi_CR=np.logspace(-17,-14,121)
+)
+
 class PDF:
-    
-    bins=dict(nH=np.logspace(-5,4,181),
-              nHI=np.logspace(-2,5,141),
-              nH2=np.logspace(-2,5,141),
-              nHII=np.logspace(-5,3,201),
-              xH2=np.linspace(0,0.5,101),
-              xHI=np.linspace(0,1.0,101),
-              xHII=np.linspace(0,1.0,101),
-              xe=np.logspace(-5,np.log10(2),201),
-              T=np.logspace(1,8,281),
-              pok=np.logspace(0,7,141),
-              chi_PE=np.logspace(-3,4,141),
-              chi_H2=np.logspace(-6,4,201),
-              chi_FUV=np.logspace(-3,4,141),
-              Erad_LyC=np.logspace(-18,-10,161),
-              Lambda_cool=np.logspace(-30,-20,201),
-              xi_CR=np.logspace(-17,-14,121)
-    )
 
     @LoadSim.Decorators.check_pickle
     def read_pdf2d_avg(self, nums=None, savdir=None, force_override=False):
