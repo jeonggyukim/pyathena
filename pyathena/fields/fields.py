@@ -595,7 +595,7 @@ def set_derived_fields_newcool(par, x0):
         return (d['density']*d['xe'])**2
     func[f] = _nesq
     label[f] = r'$n_{\rm e}^2$'
-    cmap[f] = 'viridis'
+    cmap[f] = 'plasma'
     vminmax[f] = (1e-8, 1e6)
     take_log[f] = True
 
@@ -838,6 +838,7 @@ def set_derived_fields_rad(par, x0):
         iPhot = True
 
     if iPhot:
+        # Radiation energy density of ionizing radiation in cgs units
         f = 'Erad_LyC'
         field_dep[f] = set(['rad_energy_density_PH'])
         def _Erad_LyC(d, u):
@@ -848,6 +849,36 @@ def set_derived_fields_rad(par, x0):
         vminmax[f] = (5e-16,5e-11)
         take_log[f] = True
 
+        # Dimensionless ionization parameter Uion = Erad_LyC/(hnu_LyC*nH)
+        f = 'Uion'
+        field_dep[f] = set(['density','rad_energy_density_PH'])
+        def _Uion(d, u):
+            return d['rad_energy_density_PH']*u.energy_density.cgs.value/ \
+                    ((par['radps']['hnu_PH']*au.eV).cgs.value*d['density'])
+        func[f] = _Uion
+        label[f] = r'$\mathcal{U}_{\rm ion}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-7,1e2)
+        take_log[f] = True
+
+        # Halpha emissivity [erg/s/cm^-3/sr]
+        # Caution: Draine (2011)'s alpha_eff_Halpha valid for ~1000 K < T < ~30000 K
+        # Better to use this for warm gas only
+        f = 'j_Halpha'
+        field_dep[f] = set(['density', 'pressure', 'xe', 'xHI', 'xH2', 'rad_energy_density_PH'])
+        def _j_Halpha(d, u):
+            hnu_Halpha = (ac.h*ac.c/(6562.8*au.angstrom)).to('erg')
+            alpha_eff_Halpha = lambda T: 1.17e-13*(T*1e-4)**(-0.942-0.031*np.log(T*1e-4))
+            # j_Halpha = nHII*ne*alpha_eff_Halpha*hnu_Halpha/(4pi)
+            return d['density']**2*(1.0 - d['xHI'] - d['xH2'])*d['xe']*\
+                alpha_eff_Halpha(d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                    (ac.k_B/u.energy_density).cgs.value)*hnu_Halpha/(4.0*np.pi)
+        func[f] = _j_Halpha
+        label[f] = r'$\mathcal{j}_{\rm H\alpha}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm sr}^{-1}]$'
+        cmap[f] = 'plasma'
+        vminmax[f] = (1e-22,1e-30)
+        take_log[f] = True
+        
     # Normalized FUV radiation field strength (Draine field unit)
     f = 'Erad_FUV'
     field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
