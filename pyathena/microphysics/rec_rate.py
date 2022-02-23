@@ -222,7 +222,7 @@ class RecRate(object):
                 raise
 
     @staticmethod
-    def get_rec_rate_H_caseA(T):
+    def get_rec_rate_H_caseA_Dr11(T):
         """Compute case A recombination rate coefficient for H
         Table 14.1 in Draine (2011)
         """
@@ -230,13 +230,23 @@ class RecRate(object):
         return 4.13e-13*T4**(-0.7131 - 0.0115*np.log(T4))
 
     @staticmethod
-    def get_rec_rate_H_caseB(T):
+    def get_rec_rate_H_caseB_Dr11(T):
         """Compute case B recombination rate coefficient for H
         Table 14.1 in Draine (2011)
         """
         T4 = T*1e-4
         return 2.54e-13*T4**(-0.8163 - 0.0208*np.log(T4))
 
+    @staticmethod
+    def get_rec_rate_H_caseB(T):
+        """Compute case B recombination rate coefficient for H
+        This is what we use in Athena-TIGRESS (fit to Ferland)
+        """
+        Tinv = 1.0/T
+        bb = 315614.0*Tinv
+        cc = 115188.0*Tinv
+        dd = 1.0 + np.power(cc, 0.407)
+        return 2.753e-14*np.power(bb, 1.5)*np.power(dd, -2.242)
     
     @staticmethod
     def get_alpha_gr(T, psi, Z):

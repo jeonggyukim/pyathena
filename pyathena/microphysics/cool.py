@@ -1115,7 +1115,7 @@ def coeff_kcoll_H(T):
     return k_coll
 
 def coeff_alpha_rr_H(T):
-    """Radiative recombination
+    """Gong+17's fit to Ferland+92 radiative recombination
     """
     Tinv = 1/T
     bb = 315614.0*Tinv
