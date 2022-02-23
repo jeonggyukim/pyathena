@@ -35,6 +35,7 @@ class SB99(object):
         read_sn()
         read_rad()        
         read_wind()
+        read_quanta()
 
         """
         
@@ -62,7 +63,8 @@ class SB99(object):
         return None
 
     def _read_params(self):
-        """Read some parameters
+        """Read some important parameters
+        Full information contained in self.par
         """
 
         with open(self.files['output'], 'r') as fp:
@@ -86,7 +88,7 @@ class SB99(object):
                 print('logM:', self.logM)
         else:
             self.logM = 0.0
-            self.SFR = float(sb.par[7])
+            self.SFR = float(l[7])
             if self.verbose:
                 print('continuous SF')
                 print('SFR:', self.SFR)
@@ -181,6 +183,9 @@ class SB99(object):
         df_dust = d.dfa['Rv31']
         f_Cext = interp1d(np.log10(df_dust['lwav']), np.log10(df_dust['Cext']))
         f_Cabs = interp1d(np.log10(df_dust['lwav']), np.log10(df_dust['Cext']*(1.0 - df_dust['albedo'])))
+        f_Crpr = interp1d(np.log10(df_dust['lwav']),
+                          np.log10(df_dust['Cext']*(1.0 - df_dust['albedo']) + \
+                                   (1.0 - df_dust['cos'])*df_dust['Cext']*df_dust['albedo']))
 
         df = pd.read_csv(self.files['spectrum'], skiprows=6, sep='\s+',
                          names=['time', 'wav', 'logf', 'logfstar', 'logfneb'])
@@ -245,10 +250,12 @@ class SB99(object):
 
                 Cext = dict()
                 Cabs = dict()
+                Crpr = dict()
                 hnu = dict()
                 for k in w.keys():
                     Cext[k] = []
                     Cabs[k] = []
+                    Crpr[k] = []
                     hnu[k] = []
 
             for k in w.keys():
@@ -256,12 +263,15 @@ class SB99(object):
                                simps(10.0**f_J(np.log10(w[k]))*w[k], w[k]))
                 Cabs[k].append(simps(10.0**f_Cabs(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], w[k])/ \
                                simps(10.0**f_J(np.log10(w[k]))*w[k], w[k]))
+                Crpr[k].append(simps(10.0**f_Crpr(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], w[k])/ \
+                               simps(10.0**f_J(np.log10(w[k]))*w[k], w[k]))
                 hnu[k].append(simps(10.0**f_J(np.log10(w[k])), w[k])/ \
                                simps(10.0**f_J(np.log10(w[k]))*w[k], w[k])*hc_cgs/(1.0*au.eV).cgs.value*1e4)
 
         for k in w.keys():
             Cext[k] = np.array(Cext[k])
             Cabs[k] = np.array(Cabs[k])
+            Crpr[k] = np.array(Crpr[k])
             hnu[k] = np.array(hnu[k])
 
         if i == 0:
@@ -344,7 +354,7 @@ class SB99(object):
                  wav=wav, logf=logf, logM=self.logM,
                  L=L, pdot=pdot, tdecay_lum=tdecay_lum,
                  wav0=wav0, wav1=wav1, wav2=wav2, wav3=wav3,
-                 Cabs=Cabs, Cext=Cext, hnu=hnu,
+                 Cabs=Cabs, Cext=Cext, Crpr=Crpr, hnu=hnu,
                  hnu_LyC=hnu_LyC, dhnu_H_LyC=dhnu_H_LyC, dhnu_H2_LyC=dhnu_H2_LyC,
                  sigma_pi_H=sigma_pi_H, sigma_pi_H2=sigma_pi_H2)
 
@@ -559,7 +569,7 @@ class SB99(object):
                  label=r'${\rm LyC}\;(<912\,{\rm \AA})$', c='C0', ls='-')
         plt.plot(rr['time_Myr'], (rr['L']['UV']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
                  label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--')
-        plt.plot(rw['time_Myr'], (rw['pdot_all'].values*au.dyne/au.M_sun).to('km s-1 Myr-1'),
+        plt.plot(rw['time_Myr'], rw['pdot_all'].values,
                  label=r'$\dot{p}_{\rm wind}/M_{\ast}$', c='C7')
         plt.xlim(0,20)
         plt.ylim(1e-1,5e1)
@@ -616,7 +626,7 @@ class SB99(object):
         return ax
 
     @staticmethod
-    def plt_pdot_cumul(ax, rr, rw, rs, normed=True, plt_sn=False):
+    def plt_pdot_cumul(ax, rr, rw, rs, normed=False, plt_sn=False):
 
         integrate_pdot = lambda pdot, t: cumulative_trapezoid(
             pdot, t*au.Myr, initial=0.0)
@@ -683,10 +693,11 @@ class SB99(object):
         return fig
 
 
-def plt_nuJnu_mid_plane_parallel(ax, Sigma_gas=10.0*au.M_sun/au.pc**2, plt_dr78=True):
+def plt_nuJnu_mid_plane_parallel(ax,
+                                 Sigma_gas=10.0*au.M_sun/au.pc**2, plt_dr78=True):
 
-    sb2 = SB99('/projects/EOSTRIKE/SB99/Z1_SFR1_GenevaV00/output/', prefix='Z1_SFR1', logM=0.0)
-    rr = sb2.read_rad()
+    sb = SB99('/projects/EOSTRIKE/SB99/Z014_SFR1_GenevaV00_dt20')
+    rr = sb.read_rad()
     w = rr['wav'].values*1e-4
     d = DustDraine()
     dfdr = d.dfa['Rv31']
@@ -733,3 +744,57 @@ def plt_nuJnu_mid_plane_parallel(ax, Sigma_gas=10.0*au.M_sun/au.pc**2, plt_dr78=
     plt.ylabel(r'$J_{\lambda}\;[{\rm erg}\,{\rm s}^{-1}\,{\rm cm}^{-2}\,{\rm sr}^{-1}\AA^{-1}]$')
 
     return None
+
+def print_lum_weighted_avg_quantities(rr, tmax=50.0):
+    """Function to print some useful numbers for radiation
+    """
+    L_tot = rr['L']['tot']
+    L_LyC = rr['L']['LyC']
+    L_PE = rr['L']['PE']
+    L_LW = rr['L']['LW']
+    L_OPT = rr['L']['OPT']
+    time = rr['time_yr']
+    print('Luminosity-weighted timescale \int t*L dt/\int L dt:',rr['tdecay_lum'])
+    print('Bolometric at t=0:', L_tot[0], L_tot.max(), time[L_tot==L_tot.max()][0]/1e6)
+    print('Bolometric at maximum:', L_tot.max())
+    print('Time at maximum of Bolometric:', time[L_tot==L_tot.max()][0]/1e6)
+
+    print('Lyman Continuum')
+    idx = L_LyC.cumsum()/L_LyC.cumsum()[-1] > 0.5
+    print('- 50% of LyC photons are emitted in the first', time[idx][0]/1e6,'Myr')
+    idx = L_LyC.cumsum()/L_LyC.cumsum()[-1] > 0.90
+    print('- 90% of LyC photons are emitted in the first', time[idx][0]/1e6,'Myr')
+    idx = L_LyC.cumsum()/L_LyC.cumsum()[-1] > 0.95
+    print('- 95% of LyC photons are emitted in the first', time[idx][0]/1e6,'Myr')
+    idx = L_LyC/L_LyC[0] < 0.5
+    print('- 50% of the initial value at',time[idx][0]/1e6, 'Myr')
+
+    print('FUV (LW+PE)')
+    L_FUV = L_PE + L_LW
+    idx = (L_FUV).cumsum()/L_FUV.cumsum()[-1] > 0.5
+    print('- 50% of FUV photons are emitted in the first', time[idx][0]/1e6,'Myr')
+    idx = (L_FUV).cumsum()/L_FUV.cumsum()[-1] > 0.9
+    print('- 90% of FUV photons are emitted in the first', time[idx][0]/1e6,'Myr')
+    idx = (L_FUV).cumsum()/L_FUV.cumsum()[-1] > 0.95
+    print('- 95% of FUV photons are emitted in the first', time[idx][0]/1e6,'Myr')
+    idx = L_FUV/L_FUV[0] < 0.5
+    print('- 50% of the initial value at',time[idx][0]/1e6, 'Myr')
+    
+    idx = rr['time_Myr'] < tmax
+    for k in ['LyC','LW','PE','OPT']:
+        print(k, ':')
+        print('Cabs Cext Crpr hnu : {0:5.2e}, {1:5.2e}, {2:5.2e} {3:5.2e}'.format(
+            np.average(rr['Cabs'][k][idx], weights=rr['L'][k][idx]),
+            np.average(rr['Cext'][k][idx], weights=rr['L'][k][idx]),
+            np.average(rr['Crpr'][k][idx], weights=rr['L'][k][idx]),
+            np.average(rr['hnu'][k][idx], weights=rr['L'][k][idx])
+        ))
+        if k == 'LyC':
+            print('sigma_pi_H dhnu_H {0:5.2e}, {1:5.2e}'.format(
+                np.average(rr['sigma_pi_H'][idx], weights=rr['L'][k][idx]),
+                np.average(rr['dhnu_H_LyC'][idx], weights=rr['L'][k][idx])
+                  ))
+            print('sigma_pi_H2 dhnu_H2 {0:5.2e}, {1:5.2e}'.format(
+                np.average(rr['sigma_pi_H2'][idx], weights=rr['L'][k][idx]),
+                np.average(rr['dhnu_H2_LyC'][idx], weights=rr['L'][k][idx])
+                  ))
