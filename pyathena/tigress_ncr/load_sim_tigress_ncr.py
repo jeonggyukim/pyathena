@@ -6,6 +6,7 @@ import numpy as np
 from ..load_sim import LoadSim
 from ..util.units import Units
 from .pdf import PDF
+from .hist2d import Hist2d
 from .h2 import H2
 from .hst import Hst
 from .zprof import Zprof
@@ -15,7 +16,7 @@ from .snapshot_HIH2EM import Snapshot_HIH2EM
 from .profile_1d import Profile1D
 
 class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
-                        StarPar, PDF, H2, Profile1D, Snapshot_HIH2EM):
+                        StarPar, PDF, Hist2d, H2, Profile1D, Snapshot_HIH2EM):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
 
