@@ -237,7 +237,17 @@ class Hst:
 
         return h
 
-    def read_hst_phase(self):
+    def read_hst_phase(self,iph=0):
+        if iph == 0:
+            f = self.files['hst'].replace('.hst','.whole.hst')
+        else:
+            f = self.files['hst'].replace('.hst','.phase{}.hst'.format(iph))
+
+        h = read_hst(f)
+        h.index = h['time']
+        return h.to_xarray()
+
+    def read_hst_phase_all(self):
         fhstph=glob.glob(self.files['hst'].replace('.hst','.phase*.hst'))
 
         fhstph.sort()
@@ -245,17 +255,15 @@ class Hst:
         nphase = len(fhstph)
 
         hstph=xr.Dataset()
-        phname = {'0':'whole','1':'CNM','2':'UNM','3':'WNM','4':'WHNM','5':'HNM',
-                  '6':'CIM','7':'UIM','8':'WIM','9':'WHIM','10':'HIM',
-                  '11':'CMM','12':'UMM','13':'WMM','14':'WHMM','15':'HMM',
-                 }
-        for iph in range(nphase):
-            f = self.files['hst'].replace('.hst','.phase{}.hst'.format(iph+1))
-            hstph[phname[str(iph+1)]]=read_hst(f).to_xarray().to_array()
+        thphase=['C','U','W1','W2','WH','H']
+        chphase=['I','M','N']
+        nthph = len(thphase)
+        for iph in range(0,nphase):
+            phname = thphase[iph % nthph] + chphase[iph//nthph] +'M'
+            hstph[phname]=self.read_hst_phase(iph+1).to_array()
         hstph=hstph.to_array('phase').to_dataset('variable')
-        hstw=read_hst(self.files['hst'].replace('.hst','.whole.hst')).to_xarray()
 
-        return hstph,hstw
+        return hstph
 
 def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_override=False),
                     c=['k', 'C0', 'C1', 'C2', 'C3', 'C4', 'C5'],

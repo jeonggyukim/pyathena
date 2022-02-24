@@ -16,6 +16,42 @@ from ..classic.utils import texteffect
 
 class Zprof(ReadZprofBase):
 
+    def read_zprof_new(self, phase='all', savdir=None, force_override=False):
+        dct = dict(c='phase1',
+                   u='phase2',
+                   w1='phase3',
+                   w2='phase4',
+                   wh='phase5',
+                   h='phase6',
+                   cmol='phase7',
+                   wmol='phase8',
+                   ci='phase9',
+                   wpi='phase10',
+                   wci='phase11',
+                   hi='phase12',
+                   cnm='phase13',
+                   unm='phase14',
+                   wnm='phase15',
+                   whole='whole')
+
+        if phase == 'all':
+            phase = list(dct.keys())
+        else:
+            phase = np.atleast_1d(phase)
+
+        zplist=[]
+        for ph in phase:
+            zp = self._read_zprof(phase=dct[ph], savdir=savdir,
+                                  force_override=force_override)
+            zplist.append(zp.expand_dims('phase').assign_coords(phase=[ph]))
+
+        zp=xr.concat(zplist,dim='phase')
+
+        self.zp = zp
+
+        return self.zp
+
+
     @LoadSim.Decorators.check_netcdf_zprof
     def _read_zprof(self, phase='whole', savdir=None, force_override=False):
         """Function to read zprof and convert quantities to convenient units.
