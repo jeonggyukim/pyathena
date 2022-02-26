@@ -29,6 +29,7 @@ def draw_jointpdfs(s,num,pdf=None,zrange=None,save=True):
         pdf_heat/=total_heating
         pdf_cool.attrs['total_cooling']=total_cooling
         pdf_heat.attrs['total_heating']=total_heating
+
     cmap_cool = sns.color_palette("Blues", as_cmap=True)
     cmap_heat = sns.color_palette("Reds", as_cmap=True)
     fig = plt.figure(figsize=(15,12))

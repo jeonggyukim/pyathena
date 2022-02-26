@@ -40,7 +40,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
                kpc=False, runaway=False, agemax=20.0, agemax_sn=40.0,
                plt_old=False, u=None):
     """Function to scatter plot star particles. (From pyathena classic)
-    
+
     Parameters
     ----------
     sp : DataFrame
@@ -59,13 +59,13 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
     """
     if sp.empty:
         return None
-    
+
     if u is None:
         u = Units(kind='LV', muH=1.4271)
 
     Msun = u.Msun
     Myr = u.Myr
-    
+
     if len(sp) > 0:
         runaways = (sp['mass'] == 0.0)
         # Clusters
@@ -102,7 +102,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
             ax.scatter(spx, spy, marker='*', color='r',
                        edgecolors=edgecolors, linewidths=linewidths,
                        alpha=alpha, s=10.0/norm_factor)
-        
+
         if len(sp_cl) > 0:
             spx, spy, spz = projection(sp_cl, dim)
             if kpc:
@@ -111,7 +111,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
             if kind == 'slc':
                 xbool = abs(spz) < dist_max
 
-            spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
+            spm = (sp_cl['mass']*Msun)/norm_factor
             spa = sp_cl['age']*Myr
             if plt_old:
                 iyoung = np.where(spa < 1e10)
@@ -143,7 +143,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
 def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
               facecolors='k', linewidths=1.0, bbox_to_anchor=None):
     """Add legend for sink particle mass.
-    
+
     Parameters
     ----------
     ax : matplotlib axes
@@ -154,7 +154,7 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
     location: str
         "top" or "right"
     """
-    
+
     if bbox_to_anchor is None:
         bbox_to_anchor = dict(top=(0.1, 0.95),
                               right=(0.88, 0.83))
@@ -201,7 +201,7 @@ def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r, bbox=[0.125, 0.9, 0.1, 0.015]):
     norm = mpl.colors.Normalize(vmin=0., vmax=agemax)
     cax = fig.add_axes(bbox)
     cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal',
-                                   ticks=[0, agemax/2.0, agemax], extend='max')
+                                   ticks=[0, agemax/2.0, agemax])
 
     # cbar_sp.ax.tick_params(labelsize=14)
     cb.set_label(r'${\rm age}\;[{\rm Myr}]$', fontsize=14)
@@ -213,4 +213,4 @@ def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r, bbox=[0.125, 0.9, 0.1, 0.015]):
     # # Add legends for starpar mass
     # legend_sp(axes[0], norm_factor=1.0, mass=[1e2, 1e3], location='top', fontsize='medium',
     #           bbox_to_anchor=dict(top=(0.22, 0.97), right=(0.48, 0.91)))
-    
+

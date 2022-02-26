@@ -324,7 +324,7 @@ class AthenaDataSet(object):
         field = np.atleast_1d(field)
 
         # Create region
-        self.set_region(le=le, re=re)
+        # self.set_region(le=le, re=re)
         arr = self._get_array(field)
 
         # Works only for 3d data

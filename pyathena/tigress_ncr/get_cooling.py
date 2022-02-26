@@ -1,6 +1,7 @@
 from ..microphysics.cool import *
 import xarray as xr
 import numpy as np
+import pandas as pd
 
 def f1(T, T0=2e4, T1=3.5e4):
     '''transition function'''
@@ -9,6 +10,17 @@ def f1(T, T0=2e4, T1=3.5e4):
 
 def get_cooling_heating(sim,ds,zrange=None):
     '''read necessary fields, calculate cooling from each coolnat'''
+
+    if sim.config_time < pd.to_datetime('2022-02-10 13:21:32 -0500'):
+        cooling_rate_unit = 1.0
+    else:
+        cooling_rate_unit = (sim.u.energy_density/sim.u.time).cgs.value
+
+    if sim.config_time < pd.to_datetime('2022-01-23 21:39:10 -0500'):
+        return_Lambda_e=True
+    else:
+        return_Lambda_e=False
+
     # unit definition
     unitT = sim.u.energy_density/ac.k_B/sim.muH*au.cm**3
 
@@ -20,6 +32,9 @@ def get_cooling_heating(sim,ds,zrange=None):
                    'rad_energy_density_LW_diss',
                    'xHI', 'xH2', 'xe']
     dd = ds.get_field(field_to_read)
+    dd['cool_rate'] *= cooling_rate_unit
+    dd['heat_rate'] *= cooling_rate_unit
+    dd['net_cool_rate'] *= cooling_rate_unit
     total_cooling = dd['cool_rate'].sum().data
     total_heating = dd['heat_rate'].sum().data
     total_netcool = dd['net_cool_rate'].sum().data
@@ -47,7 +62,7 @@ def get_cooling_heating(sim,ds,zrange=None):
     # other cooling at low T
     cool_other = get_other_cooling(sim,dd)*dd['nH']*w1
     # CIE cooling by He and metal
-    cool_CIE = get_Lambda_CIE(dd)
+    cool_CIE = get_Lambda_CIE(dd,return_Lambda_e=return_Lambda_e)
     cool_CIE['CIE_metal'] *= Z_g*dd['nH']**2*w2
     cool_CIE['CIE_He'] *= dd['nH']**2*w2
 
@@ -283,10 +298,10 @@ def set_CIE_interpolator(return_xe=False, return_Lambda_e=False):
     else:
         return cgi_metal, cgi_He
 
-def get_Lambda_CIE(dd):
+def get_Lambda_CIE(dd,return_Lambda_e=True):
     '''return Lambda_CIE'''
     Lambda_cool=xr.Dataset()
-    cgi_metal,cgi_He=set_CIE_interpolator(return_xe=False,return_Lambda_e=True)
+    cgi_metal,cgi_He=set_CIE_interpolator(return_xe=False,return_Lambda_e=return_Lambda_e)
     Lambda_cool['CIE_metal']=xr.DataArray(cgi_metal(dd['T']),coords=[dd.z,dd.y,dd.x])
     Lambda_cool['CIE_He']=xr.DataArray(cgi_He(dd['T']),coords=[dd.z,dd.y,dd.x])
     return Lambda_cool

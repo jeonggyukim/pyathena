@@ -106,8 +106,7 @@ if __name__ == '__main__':
                 if zmin < 0: zmin = 0
             if s.test_newcool():
                 # do this only for new cooling
-                savdir = '{}/jointpdf_z{:02d}-{:02d}/cooling_heating/'.format(s.savdir,
-                          int(zmin/100),int(zmax/100))
+                savdir = s.get_savdir_pdf(zrange=zrange)
                 if not os.path.isdir(savdir): os.makedirs(savdir)
                 coolfname = '{}.{:04d}.cool.pdf.nc'.format(ds.problem_id,ds.num)
                 heatfname = '{}.{:04d}.heat.pdf.nc'.format(ds.problem_id,ds.num)
