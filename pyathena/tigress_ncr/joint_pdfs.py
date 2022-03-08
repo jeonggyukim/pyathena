@@ -93,7 +93,7 @@ if __name__ == '__main__':
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=True)
-    for num in range(200,500):
+    for num in range(200,800):
         if not (num in s.nums): continue
         print(num)
     #for num in s.nums:
