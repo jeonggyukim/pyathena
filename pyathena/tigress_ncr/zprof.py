@@ -24,14 +24,12 @@ class Zprof(ReadZprofBase):
                    wh='phase5',
                    h='phase6',
                    cmol='phase7',
-                   wmol='phase8',
-                   ci='phase9',
-                   wpi='phase10',
-                   wci='phase11',
-                   hi='phase12',
-                   cnm='phase13',
-                   unm='phase14',
-                   wnm='phase15',
+                   ci='phase8',
+                   wpi='phase9',
+                   wci='phase10',
+                   cnm='phase11',
+                   unm='phase12',
+                   wnm='phase13',
                    whole='whole')
 
         if phase == 'all':

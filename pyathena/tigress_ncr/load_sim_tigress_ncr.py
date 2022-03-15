@@ -300,6 +300,10 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
     def get_phase_Tlist():
         return [500,6000,15000,35000,5.e5]
 
+    @staticmethod
+    def get_phase_T1list():
+        return [500,6000,13000,24000,1.e6]
+
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None, muH=None):
