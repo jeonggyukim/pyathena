@@ -122,6 +122,14 @@ class LoadSim(object):
         except:
             pass
 
+        # Get config time
+        try:
+            self.config_time = pd.to_datetime(self.par['configure']['config_date'])
+            if 'PDT' in self.par['configure']['config_date']:
+                self.config_time = self.config_time.tz_localize('US/Pacific')
+        except:
+            # set it using hst file creation time
+            self.config_time = pd.to_datetime(osp.getctime(self.files['hst']),unit='s')
 
         try:
             muH = self.par['problem']['muH']
