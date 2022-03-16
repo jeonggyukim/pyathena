@@ -1,6 +1,8 @@
 from ..load_sim import LoadSim
 
 import numpy as np
+import os.path as osp
+import xarray as xr
 
 bins_def={
     'nH': np.logspace(-4, 4, 81),
@@ -65,9 +67,9 @@ class Hist2d:
 
 
         print('')
-        
-        return rr    
-    
+
+        return rr
+
     @LoadSim.Decorators.check_pickle
     def read_hist2d(self, num,
                     bin_fields=[['nH', 'pok'], ['nH','xH2'], ['nH','fshld_H2']],
@@ -104,7 +106,7 @@ class Hist2d:
         -------
         Dictionary containing bins, histograms, and time_code.
         """
-        
+
         if bins is None:
             bins = bins_def
 
@@ -120,14 +122,18 @@ class Hist2d:
             sel_set = set(re.findall(r'["\'](.*?)["\']',sel_str))
             sel_set -= set(['x','y','z'])
             fields = list(set.union(sel_set, set(fields)))
-            
+
         if (bf_set - set(bins.keys())) != set():
             print('bins not defined:', bf_set - set(bins.keys()))
 
         ds = self.load_vtk(num)
 
-        print('Reading fields:', fields)
-        dd = ds.get_field(fields)
+        try:
+            self.load_chunk(num)
+            dd = self.get_field_from_chunk(fields)
+        except IOError:
+            print('Reading fields from vtk:', fields)
+            dd = ds.get_field(fields)
 
         if sel is not None:
             dd = dd.where(sel, drop=True)
@@ -139,7 +145,7 @@ class Hist2d:
                 k += '-{0:s}'.format(w)
 
             r[k] = dict()
-            
+
             xdat = dd[bf[0]].data.flatten()
             xdat = dd[bf[1]].data.flatten()
             if w is not None:
@@ -155,3 +161,26 @@ class Hist2d:
         r['time_code'] = ds.domain['time']
 
         return r
+
+    def load_chunk(self,num,scratch_dir='/scratch/gpfs/changgoo/TIGRESS-NCR/'):
+        """Read in temporary outputs in scartch directory
+        """
+        scratch_dir += osp.join(self.basename,'midplane_chunk')
+        chunk_file = osp.join(scratch_dir,'{:s}.{:04d}.hLx.nc'.format(self.problem_id,num))
+        if not osp.isfile(chunk_file):
+            raise IOError("File does not exist: {}".format(chunk_file))
+        with xr.open_dataset(chunk_file) as chunk:
+            self.data_chunk = chunk
+
+    def get_field_from_chunk(self,fields):
+        """Get fields using temporary outputs in scartch directory
+        """
+        dd = xr.Dataset()
+        for f in fields:
+            if f in self.data_chunk:
+                dd[f] = self.data_chunk[f]
+            elif f in self.dfi:
+                dd[f] = self.dfi[f]['func'](self.data_chunk,self.u)
+            else:
+                raise IOError("{} is not available".format(f))
+        return dd
