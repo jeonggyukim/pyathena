@@ -147,7 +147,7 @@ class Hist2d:
             r[k] = dict()
 
             xdat = dd[bf[0]].data.flatten()
-            xdat = dd[bf[1]].data.flatten()
+            ydat = dd[bf[1]].data.flatten()
             if w is not None:
                 wdat = dd[w].data.flatten()
             else:
