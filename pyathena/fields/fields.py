@@ -796,7 +796,7 @@ def set_derived_fields_rad(par, x0):
         Erad_PE0 = 7.613e-14
         Erad_LW0 = 1.335e-14
 
-    # Normalized FUV radiation field strength (Draine field unit)
+    # Normalized PE radiation field strength (Draine field unit)
     f = 'chi_PE'
     field_dep[f] = set(['rad_energy_density_PE'])
     def _chi_PE(d, u):
@@ -807,7 +807,7 @@ def set_derived_fields_rad(par, x0):
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
 
-    # Normalized FUV radiation field strength (Draine field unit)
+    # Normalized LW radiation field strength (Draine field unit)
     f = 'chi_LW'
     field_dep[f] = set(['rad_energy_density_LW'])
     def _chi_LW(d, u):
@@ -861,24 +861,24 @@ def set_derived_fields_rad(par, x0):
         vminmax[f] = (1e-7,1e2)
         take_log[f] = True
 
-        # Halpha emissivity [erg/s/cm^-3/sr]
-        # Caution: Draine (2011)'s alpha_eff_Halpha valid for ~1000 K < T < ~30000 K
-        # Better to use this for warm gas only
-        f = 'j_Halpha'
-        field_dep[f] = set(['density', 'pressure', 'xe', 'xHI', 'xH2', 'rad_energy_density_PH'])
-        def _j_Halpha(d, u):
-            hnu_Halpha = (ac.h*ac.c/(6562.8*au.angstrom)).to('erg')
-            alpha_eff_Halpha = lambda T: 1.17e-13*(T*1e-4)**(-0.942-0.031*np.log(T*1e-4))
-            # j_Halpha = nHII*ne*alpha_eff_Halpha*hnu_Halpha/(4pi)
-            return d['density']**2*(1.0 - d['xHI'] - d['xH2'])*d['xe']*\
-                alpha_eff_Halpha(d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                    (ac.k_B/u.energy_density).cgs.value)*hnu_Halpha/(4.0*np.pi)
-        func[f] = _j_Halpha
-        label[f] = r'$\mathcal{j}_{\rm H\alpha}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm sr}^{-1}]$'
-        cmap[f] = 'plasma'
-        vminmax[f] = (1e-22,1e-30)
-        take_log[f] = True
-        
+    # Halpha emissivity [erg/s/cm^-3/sr]
+    # Caution: Draine (2011)'s alpha_eff_Halpha valid for ~1000 K < T < ~30000 K
+    # Better to use this for warm gas only
+    f = 'j_Halpha'
+    field_dep[f] = set(['density', 'pressure', 'xe', 'xHI', 'xH2'])
+    def _j_Halpha(d, u):
+        hnu_Halpha = (ac.h*ac.c/(6562.8*au.angstrom)).to('erg')
+        alpha_eff_Halpha = lambda T: 1.17e-13*(T*1e-4)**(-0.942-0.031*np.log(T*1e-4))
+        # j_Halpha = nHII*ne*alpha_eff_Halpha*hnu_Halpha/(4pi)
+        return d['density']**2*(1.0 - d['xHI'] - d['xH2'])*d['xe']*\
+            alpha_eff_Halpha(d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                (ac.k_B/u.energy_density).cgs.value)*hnu_Halpha/(4.0*np.pi)
+    func[f] = _j_Halpha
+    label[f] = r'$\mathcal{j}_{\rm H\alpha}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm sr}^{-1}]$'
+    cmap[f] = 'plasma'
+    vminmax[f] = (1e-22,1e-30)
+    take_log[f] = True
+
     # Normalized FUV radiation field strength (Draine field unit)
     f = 'Erad_FUV'
     field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
@@ -912,6 +912,105 @@ def set_derived_fields_rad(par, x0):
     cmap[f] = 'gist_earth'
     vminmax[f] = (0,1e22)
     take_log[f] = False
+
+    # Heating rate by H photoionization
+    f = 'heat_rate_HI_phot'
+    field_dep[f] = set(['density','rad_energy_density_PH','xHI'])
+    def _heat_rate_HI_phot(d, u):
+        if 'dhnu_HI_PH' in par['radps']:
+            dhnu_HI_PH = par['radps']['dhnu_HI_PH']*(1.0*au.eV).cgs.value
+        else:
+            dhnu_HI_PH = (par['radps']['hnu_PH'] - 13.6)*(1.0*au.eV).cgs.value
+
+        sigma_HI_PH = par['opacity']['sigma_HI_PH']
+        hnu_PH = par['radps']['hnu_PH']*(1.0*au.eV).cgs.value
+        xi_ph_HI = d['rad_energy_density_PH']*u.energy_density.cgs.value*ac.c.cgs.value/hnu_PH*sigma_HI_PH
+        return d['density']*d['xHI']*xi_ph_HI*dhnu_HI_PH
+
+    func[f] = _heat_rate_HI_phot
+    label[f] = r'$\mathcal{H}_{\rm pi,H}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
+    cmap[f] = 'copper'
+    vminmax[f] = (1e-28,1e-19)
+    take_log[f] = True
+
+    # Heating rate by H photoionization
+    f = 'heat_rate_H2_phot'
+    field_dep[f] = set(['density','rad_energy_density_PH','xH2'])
+    def _heat_rate_H2_phot(d, u):
+        if 'dhnu_H2_PH' in par['radps']:
+            dhnu_H2_PH = par['radps']['dhnu_H2_PH']*(1.0*au.eV).cgs.value
+        else:
+            dhnu_H2_PH = (par['radps']['hnu_PH'] - 15.4)*(1.0*au.eV).cgs.value
+
+        sigma_H2_PH = par['opacity']['sigma_H2_PH']
+        hnu_PH = par['radps']['hnu_PH']*(1.0*au.eV).cgs.value
+        xi_ph_H2 = d['rad_energy_density_PH']*u.energy_density.cgs.value*ac.c.cgs.value/hnu_PH*sigma_H2_PH
+        return d['density']*d['xH2']*xi_ph_H2*dhnu_H2_PH
+
+    func[f] = _heat_rate_H2_phot
+    label[f] = r'$\mathcal{H}_{\rm pi,H_2}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
+    cmap[f] = 'copper'
+    vminmax[f] = (1e-28,1e-19)
+    take_log[f] = True
+
+    # Volumetric absorption rate of LyC radiation by dust (erg/cm^3/s)
+    f = 'heat_rate_dust_LyC'
+    field_dep[f] = set(['density','rad_energy_density_PH'])
+    def _heat_rate_dust_LyC(d, u):
+        conv = u.energy_density.cgs.value*ac.c.cgs.value
+        return d['density']*(d['rad_energy_density_PH']*par['opacity']['sigma_dust_PH0']*par['problem']['Z_dust'])*conv
+
+    func[f] = _heat_rate_dust_LyC
+    label[f] = r'$\mathcal{H}_{\rm d,LyC}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
+    cmap[f] = 'copper'
+    vminmax[f] = (1e-28,1e-19)
+    take_log[f] = True
+
+    # Volumetric absorption rate of FUV radiation by dust (erg/cm^3/s)
+    f = 'heat_rate_dust_FUV'
+    field_dep[f] = set(['density','rad_energy_density_PE','rad_energy_density_LW'])
+    def _heat_rate_dust_FUV(d, u):
+        conv = u.energy_density.cgs.value*ac.c.cgs.value
+        return d['density']*(d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
+                             d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'])*conv
+
+    func[f] = _heat_rate_dust_FUV
+    label[f] = r'$\mathcal{H}_{\rm d,FUV}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
+    cmap[f] = 'copper'
+    vminmax[f] = (1e-28,1e-19)
+    take_log[f] = True
+
+    # Volumetric absorption rate of UV radiation by dust (erg/cm^3/s)
+    f = 'heat_rate_dust_UV'
+    field_dep[f] = set(['density','rad_energy_density_PE','rad_energy_density_LW','rad_energy_density_PH'])
+    def _heat_rate_dust_UV(d, u):
+        conv = u.energy_density.cgs.value*ac.c.cgs.value
+        return d['density']*(d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
+                             d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'] +
+                             d['rad_energy_density_PH']*par['opacity']['sigma_dust_PH0']*par['problem']['Z_dust'])*conv
+
+    func[f] = _heat_rate_dust_UV
+    label[f] = r'$\mathcal{H}_{\rm d,UV}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
+    cmap[f] = 'copper'
+    vminmax[f] = (1e-28,1e-19)
+    take_log[f] = True
+
+    # Grain charge parameter
+    f = 'psi_gr'
+    field_dep[f] = set(['density','pressure','xe','xH2',
+                        'rad_energy_density_LW','rad_energy_density_PE'])
+    def _psi_gr(d, u):
+        G0 = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
+              d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)/1.7
+        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                    (ac.k_B/u.energy_density).cgs.value
+        return G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
+    
+    func[f] = _psi_gr
+    label[f] = r'$\psi_{\rm gr}\;[{\rm cm}^{3}\,{\rm K}^{1/2}]$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1,1000)
+    take_log[f] = True
 
     try:
         if par['configure']['lwrad'] == 'ON':
@@ -1133,4 +1232,3 @@ class DerivedFields(object):
                                scale=self.scale[f],
                                take_log=self.take_log[f],
                                imshow_args=self.imshow_args[f])
-
