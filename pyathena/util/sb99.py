@@ -211,12 +211,15 @@ class SB99(object):
         L_LyC = [] # LyC
         L_LW = [] # LW
         L_PE = [] # PE
-        L_OPT = [] # Optical + IR
+        L_OPT = [] # Optical
+        L_IR = [] # IR
+        L_FUV = []
 
         wav0 = 912.0
         wav1 = 1108.0
         wav2 = 2068.0
-        wav3 = 200000.0
+        wav3 = 10000.0
+        wav4 = 200000.0
 
         for i, (time_, df_) in enumerate(dfg):
             if time_*1e-6 > self.tmax_Myr:
@@ -225,16 +228,20 @@ class SB99(object):
             time[i] = time_
             logf[i, :] = df_.logf
             wav = df_.wav
-            idx0 = wav <= wav0
-            idx1 = np.logical_and(wav <= wav1, wav > wav0)
-            idx2 = np.logical_and(wav <= wav2, wav > wav1)
-            idx3 = np.logical_and(wav <= wav3, wav > wav2)
+            idx0 = wav <= wav0 # LyC
+            idx1 = np.logical_and(wav <= wav1, wav > wav0) # LW
+            idx2 = np.logical_and(wav <= wav2, wav > wav1) # PE
+            idx3 = np.logical_and(wav <= wav3, wav > wav2) # OPT
+            idx4 = np.logical_and(wav <= wav4, wav > wav3) # IR
+            idx5 = np.logical_and(wav <= wav2, wav > wav0) # FUV
 
             L_tot.append(simps(10.0**(df_.logf - self.logM), df_.wav)/Lsun_cgs)
             L_LyC.append(simps(10.0**(df_.logf[idx0] - self.logM), df_.wav[idx0])/Lsun_cgs)
             L_LW.append(simps(10.0**(df_.logf[idx1] - self.logM), df_.wav[idx1])/Lsun_cgs)
             L_PE.append(simps(10.0**(df_.logf[idx2] - self.logM), df_.wav[idx2])/Lsun_cgs)
             L_OPT.append(simps(10.0**(df_.logf[idx3] - self.logM), df_.wav[idx3])/Lsun_cgs)
+            L_IR.append(simps(10.0**(df_.logf[idx4] - self.logM), df_.wav[idx4])/Lsun_cgs)
+            L_FUV.append(simps(10.0**(df_.logf[idx5] - self.logM), df_.wav[idx5])/Lsun_cgs)
 
             # wavelength in micron
             l = wav*1e-4
@@ -246,7 +253,9 @@ class SB99(object):
                 w['LyC'] = np.logspace(np.log10(l.min()), np.log10(wav0*1e-4), 1000)
                 w['LW'] = np.logspace(np.log10(wav0*1e-4), np.log10(wav1*1e-4), 1000)
                 w['PE'] = np.logspace(np.log10(wav1*1e-4), np.log10(wav2*1e-4), 1000)
-                w['OPT'] = np.logspace(np.log10(wav2*1e-4), np.log10(1.0), 1000)
+                w['OPT'] = np.logspace(np.log10(wav2*1e-4), np.log10(wav3*1e-4), 1000)
+                w['IR'] = np.logspace(np.log10(wav3*1e-4), np.log10(wav4*1e-4), 1000)
+                w['FUV'] = np.logspace(np.log10(wav0*1e-4), np.log10(wav2*1e-4), 1000)
 
                 Cext = dict()
                 Cabs = dict()
@@ -280,14 +289,16 @@ class SB99(object):
             w['LW'] = np.logspace(np.log10(wav0*1e-4), np.log10(wav1*1e-4), 1000)
             w['PE'] = np.logspace(np.log10(wav1*1e-4), np.log10(wav2*1e-4), 1000)
             w['OPT'] = np.logspace(np.log10(wav2*1e-4), np.log10(wav3*1e-4), 1000)
+            w['IR'] = np.logspace(np.log10(wav3*1e-4), np.log10(wav4*1e-4), 1000)
+            w['FUV'] = np.logspace(np.log10(wav0*1e-4), np.log10(wav2*1e-4), 1000)
 
         L_tot = np.array(L_tot)
         L_LyC = np.array(L_LyC)
         L_LW = np.array(L_LW)
         L_PE = np.array(L_PE)
         L_OPT = np.array(L_OPT)
-        L_UV = L_LyC + L_PE + L_LW
-        L_FUV = L_PE + L_LW
+        L_IR = np.array(L_IR)
+        L_FUV = np.array(L_FUV)
         time_Myr = time*1e-6
         
         L = dict()
@@ -296,20 +307,29 @@ class SB99(object):
         L['LW'] = np.array(L_LW)
         L['PE'] = np.array(L_PE)
         L['OPT'] = np.array(L_OPT)
-        L['UV'] = L['LyC'] + L['LW'] + L['PE']
-        L['FUV'] = L['LW'] + L['PE']
+        L['IR'] = np.array(L_IR)
+        L['FUV'] = np.array(L_FUV)
+        L['UV'] = L['LyC'] + L['FUV']
 
         # Momentum injection rate (Msun km/s / Myr / Msun)
         pdot = dict()
-        for v in ('tot', 'LyC', 'LW', 'PE', 'OPT', 'UV', 'FUV'):
+        for v in ('tot', 'LyC', 'LW', 'PE', 'OPT', 'IR', 'UV', 'FUV'):
             pdot[v] = (((L[v]*au.L_sun/ac.c).to('g cm s-2')).to('Msun km s-1 Myr-1')).value
 
         # Luminosity-weighted effective timescale
         # (e-folding timescale if L is decaying exponentially)
         tdecay_lum = dict()
+        tcumul_lum_50 = dict()
+        tcumul_lum_90 = dict()
         for k in L.keys():
             tdecay_lum[k] = trapz(L[k]*time_Myr, time_Myr)/trapz(L[k], time_Myr)
 
+            idx50 = L[k].cumsum()/L[k].cumsum()[-1] > 0.5
+            tcumul_lum_50[k] = time_Myr[idx50][0]
+            
+            idx90 = L[k].cumsum()/L[k].cumsum()[-1] > 0.9
+            tcumul_lum_90[k] = time_Myr[idx90][0]
+            
         # Photoionization cross section, mean energy of photoelectrons
         from ..microphysics.photx import PhotX,get_sigma_pi_H2
 
@@ -353,6 +373,7 @@ class SB99(object):
                  time_yr=time, time_Myr=time_Myr,
                  wav=wav, logf=logf, logM=self.logM,
                  L=L, pdot=pdot, tdecay_lum=tdecay_lum,
+                 tcumul_lum_50=tcumul_lum_50, tcumul_lum_90=tcumul_lum_90,
                  wav0=wav0, wav1=wav1, wav2=wav2, wav3=wav3,
                  Cabs=Cabs, Cext=Cext, Crpr=Crpr, hnu=hnu,
                  hnu_LyC=hnu_LyC, dhnu_H_LyC=dhnu_H_LyC, dhnu_H2_LyC=dhnu_H2_LyC,
@@ -372,14 +393,14 @@ class SB99(object):
                                 cumulative_trapezoid(np.repeat(1.0,len(r['time_Myr'])), x=r['time_Myr'], initial=0.0)
                 r[kk+'_avg'][k][0] = r[kk+'_avg'][k][1]
 
-        for kk in ['hnu','Cabs','Cext','Cext']:
+        for kk in ['hnu','Cabs','Cext','Crpr']:
             r[kk+'_Lavg'] = dict()
             for k in r[kk].keys():
                 r[kk+'_Lavg'][k] = cumulative_trapezoid(r[kk][k]*r['L'][k], x=r['time_Myr'], initial=0.0)/\
                                 cumulative_trapezoid(r['L'][k], x=r['time_Myr'], initial=0.0)
                 r[kk+'_Lavg'][k][0] = r[kk+'_Lavg'][k][1]
 
-        for kk in ['hnu','Cabs','Cext','Cext']:
+        for kk in ['hnu','Cabs','Cext','Crpr']:
             r[kk+'_Qavg'] = dict()
             for k in r[kk].keys():
                 r[kk+'_Qavg'][k] = cumulative_trapezoid(r[kk][k]*r['Q'][k], x=r['time_Myr'], initial=0.0)/\
@@ -446,7 +467,7 @@ class SB99(object):
         plt.semilogy(df.lwav*1e4, df.kappa_abs, c='k', ls='--', label='abs')
         plt.xlim(1e2,2068)
         plt.ylim(1e2,2.5e3)
-        plt.ylabel(r'$\kappa_{\rm d}\;[{\rm cm}^2\,{\rm g}^{-1}]$')
+        plt.ylabel(r'$\kappa_{\rm d}(\lambda)\;[{\rm cm}^2\,{\rm g}^{-1}]$')
         plt.legend()
 
         def kappa2sigma(x):
@@ -456,7 +477,7 @@ class SB99(object):
             return x/muH
 
         sax1 = plt.gca().secondary_yaxis('right', functions=(kappa2sigma,sigma2kappa))
-        sax1.set_ylabel(r'$\sigma_{\rm d}\;[{\rm cm}^2\,{\rm H}^{-1}]$')
+        sax1.set_ylabel(r'$\sigma_{\rm d}(\lambda)\;[{\rm cm}^2\,{\rm H}^{-1}]$')
         # axes[1,0].tick_params(right=False, labelright=False)
 
         def l_to_hnu(x):
@@ -555,7 +576,7 @@ class SB99(object):
         plt.xlabel(r'$t_{\rm age}\;[{\rm Myr}]$')
         #plt.ylabel(r'$\Psi\,{\rm and}\,\Psi_w \;[L_{\odot}\,M_{\odot}^{-1}]$')
         plt.ylabel(r'$L/M_{\ast} \;[L_{\odot}\,M_{\odot}^{-1}]$')
-        plt.legend(fontsize='small', loc=4)
+        #plt.legend(fontsize='small', loc=4)
 
         return ax
     
@@ -565,8 +586,8 @@ class SB99(object):
         plt.sca(ax)
         plt.plot(rr['time_Myr'], (rr['L']['tot']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
                  label=r'Bolometric', c='k')
-        plt.plot(rr['time_Myr'], (rr['L']['LyC']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
-                 label=r'${\rm LyC}\;(<912\,{\rm \AA})$', c='C0', ls='-')
+        # plt.plot(rr['time_Myr'], (rr['L']['LyC']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
+        #          label=r'${\rm LyC}\;(<912\,{\rm \AA})$', c='C0', ls='-')
         plt.plot(rr['time_Myr'], (rr['L']['UV']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
                  label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--')
         plt.plot(rw['time_Myr'], rw['pdot_all'].values,
@@ -602,6 +623,8 @@ class SB99(object):
                  label='LW', c='C1')
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['PE'], rr['time_yr'])/norm,
                  label='PE', c='C2')
+        plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['OPT'], rr['time_yr'])/norm,
+                 label='OPT', c='C3')
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['UV'], rr['time_yr'])/norm,
                  label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--')
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['tot'], rr['time_yr'])/norm,
@@ -639,9 +662,9 @@ class SB99(object):
             norm = 1.0
             
         plt.sca(ax)
-        plt.plot(rr['time_Myr'], integrate_pdot(rr['pdot']['LyC'], rr['time_Myr'])/norm,
-                 label='LyC', c='C0')
-        # Skip PE and LW
+        # Skip LyC, PE, and LW
+        # plt.plot(rr['time_Myr'], integrate_pdot(rr['pdot']['LyC'], rr['time_Myr'])/norm,
+        #          label='LyC', c='C0')
         # plt.plot(rr['time_Myr'], integrate_pdot(rr['pdot']['LW'], rr['time_Myr'])/norm,
         #          label='LW', c='C1')
         # plt.plot(rr['time_Myr'], integrate_pdot(rr['pdot']['PE'], rr['time_Myr'])/norm,
@@ -652,7 +675,7 @@ class SB99(object):
                  label='Bolometric', c='k')
 
         # from cgs to astro units
-        pdot_conv = (1.0*au.g*au.cm/au.s**2).to('Msun km s-1 Myr-1')
+        pdot_conv = 1.0 #(1.0*au.g*au.cm/au.s**2).to('Msun km s-1 Myr-1')
         plt.plot(rw['time_Myr'], integrate_pdot(rw['pdot_all']*pdot_conv,
                                                 rw['time_Myr'])/norm,
                  c='C7', label=r'$L_{\rm w}$')
@@ -689,7 +712,27 @@ class SB99(object):
             ax.grid()
             #ax.set_xlim(0,50)
             #ax.set_xscale('linear')
-    
+
+        plt.legend([mpl.lines.Line2D([0],[0],c='k'),
+                    mpl.lines.Line2D([0],[0],c='k',ls='--'),
+                    mpl.lines.Line2D([0],[0],c='C0'),
+                    mpl.lines.Line2D([0],[0],c='C1'),
+                    mpl.lines.Line2D([0],[0],c='C2'),
+                    mpl.lines.Line2D([0],[0],c='C3'),
+                    mpl.lines.Line2D([0],[0],c='C7'),
+                    mpl.lines.Line2D([0],[0],c='C8')],
+                   [r'Bolometric',
+                    r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$',
+                    r'${\rm LyC}\;(<912\,{\rm \AA})$',
+                    r'${\rm LW}\;(912$-$1108\,{\rm \AA})$',
+                    r'${\rm PE}\;(1108$-$2068\,{\rm \AA})$',
+                    r'${\rm OPT}\;(2068$-$10000\,{\rm \AA})$',
+                    # r'$L_{\rm w}/M_{\ast}$',
+                    # r'$L_{\rm sn}/M_{\ast}$'
+                    r'Stellar winds',
+                    r'Supernovae',
+                    ], loc=4, fontsize='small')
+
         return fig
 
 
@@ -707,24 +750,36 @@ def plt_nuJnu_mid_plane_parallel(ax,
                       bounds_error=False)
     
     Sigma_SFR = 2.5e-3
+    Llambda_over_SFR = 10.0**rr['logf'][-1,:]*au.erg/au.s/au.angstrom
     Llambda = Sigma_SFR*10.0**rr['logf'][-1,:]*au.erg/au.s/au.angstrom
-    Sigma = 10.0*au.M_sun/au.pc**2
     area = (1.0*au.kpc)**2
     muH = 1.4*au.u
     kappa_dust_ext = (10.0**f_Cext(np.log10(w))*au.cm**2/au.u).cgs
     kappa_dust_abs = (10.0**f_Cabs(np.log10(w))*au.cm**2/au.u).cgs
-    tau_perp = (Sigma*kappa_dust_abs).to('').value
+    tau_perp = (Sigma_gas*kappa_dust_abs).to('').value
     
     from scipy.special import expn
     # Intensity at the midplane (see Ostriker et al. 2010)
-    Jlambda = (Llambda/area/(4.0*np.pi*tau_perp)*
-               (1.0 - expn(2, 0.5*tau_perp))).to('erg s-1 cm-2 angstrom-1')
+    Jlambda = (Llambda/area/(4.0*np.pi*au.sr*tau_perp)*
+               (1.0 - expn(2, 0.5*tau_perp))).to('erg s-1 cm-2 angstrom-1 sr-1')
     # Naive estimation without attenuation
-    Jlambda0 = (Llambda/area/4.0).to('erg s-1 cm-2 angstrom-1')
+    Jlambda0 = (Llambda/area/4.0/au.sr).to('erg s-1 cm-2 angstrom-1 sr-1')
+
+    ww = rr['wav'].values
+    idx = (ww > 912.0) & (ww < 2068.0)
+    from scipy import integrate
+
+    print(tau_perp)
+    print('FUV emissivity per area [Lsun/pc^2]',
+          integrate.trapz(Sigma_SFR*Llambda_over_SFR[idx],ww[idx]*au.angstrom).to('Lsun')/1e6)
+    print('L_FUV_over_SFR/1e7',(integrate.trapz(Llambda_over_SFR[idx],ww[idx])*au.angstrom).to('Lsun')/1e7)
+    print('J_FUV',integrate.trapz(Jlambda[idx],ww[idx]))
+    print('J_FUV_unatt',integrate.trapz(Jlambda0[idx],ww[idx]))
     
     plt.sca(ax)
-    l, = plt.loglog(rr['wav'], #rr['wav']*
-                    Jlambda, label=r'SB99 + Ostriker et al. (2010)')
+    # Show FUV only
+    l, = plt.loglog(rr['wav'][idx], #rr['wav']*
+                    Jlambda[idx], label=r'SB99 + Ostriker et al. (2010)')
     plt.loglog(rr['wav'], #rr['wav']*
                Jlambda0, c=l.get_color(), alpha=0.5, ls='--', label=r'')
     
@@ -743,7 +798,7 @@ def plt_nuJnu_mid_plane_parallel(ax,
     plt.ylim(1e-8,5e-6)
     plt.ylabel(r'$J_{\lambda}\;[{\rm erg}\,{\rm s}^{-1}\,{\rm cm}^{-2}\,{\rm sr}^{-1}\AA^{-1}]$')
 
-    return None
+    return rr
 
 def print_lum_weighted_avg_quantities(rr, tmax=50.0):
     """Function to print some useful numbers for radiation
@@ -798,3 +853,109 @@ def print_lum_weighted_avg_quantities(rr, tmax=50.0):
                 np.average(rr['sigma_pi_H2'][idx], weights=rr['L'][k][idx]),
                 np.average(rr['dhnu_H2_LyC'][idx], weights=rr['L'][k][idx])
                   ))
+
+
+def plt_cross_sections_hnu(rr):
+
+    #rr = sb.read_rad()
+
+    fig, axes = plt.subplots(3, 1, figsize=(6, 12),
+                             sharex=True, gridspec_kw=dict(hspace=0.1))
+    axes = axes.flatten()
+
+    x = rr['time_Myr']
+
+    # Dust extinction/absorption cross section
+    plt.sca(axes[0])
+    for k in ['LyC','LW','PE','OPT']:
+        l1, = plt.plot(x, rr['Cext'][k], label=k)
+        l2, = plt.plot(x, rr['Cabs'][k], c=l1.get_color(), ls='--')
+    plt.ylabel(r'$\sigma_{\rm d}\;[{\rm cm}^{2}\,{\rm H}^{-1}]$')
+    plt.ylim(0,3e-21)
+    plt.grid(which='both')
+    leg = plt.legend(loc=0)
+    plt.gca().add_artist(leg)
+    plt.legend([mpl.lines.Line2D([0],[0],c='k',ls='-'),
+                mpl.lines.Line2D([0],[0],c='k',ls='--')], ['ext','abs'], loc=2)
+
+    # Mean energy of photons
+    plt.sca(axes[2])
+    for k in ['LyC','LW','PE','OPT']:
+        l1, = plt.plot(x, rr['hnu'][k])
+        if k == 'LyC':
+            plt.plot(x, rr['dhnu_H_LyC'], c=l1.get_color(), ls=':')
+            plt.plot(x, rr['dhnu_H2_LyC'], c=l1.get_color(), ls='-.')
+
+    plt.ylabel(r'photon energy $\;[{\rm eV}]$')
+    plt.ylim(1,30)
+    plt.yscale('log')
+    plt.grid(which='both')
+    # Mean energy of photoejcted electrons
+    # plt.sca(axes[2])
+    # plt.ylabel(r'$q_{\rm pi} \;[{\rm eV}]$')
+
+    # Mean photoionization cross section
+    plt.sca(axes[1])
+    l1, = plt.plot(x, rr['sigma_pi_H'], ls=':', label=r'${\rm H}$')
+    plt.plot(x, rr['sigma_pi_H2'], ls='-.', c=l1.get_color(), label=r'${\rm H}_2$')
+    plt.ylabel(r'$\sigma_{\rm pi} \;[{\rm cm}^2]$')
+    plt.xlabel(r'${\rm age}\;[{\rm Myr}]$')
+    plt.xlim(0,20)
+    plt.grid(which='both')
+    plt.legend()
+    
+    return fig
+    
+
+def print_tbl_data(rr):
+    bands = ['LyC','LW','PE','FUV','OPT']
+    bands2 = ['LyC','LW','PE','FUV','OPT','tot']
+
+    tbl_data = []
+    tbl_data.append(r'\multicolumn{7}{c}{Timescales (Myr)} \\')
+    tbl_data.append(r'\tableline')
+    # t_decay
+    tbl_data.append(r'(1) $t_{\rm decay}$ & ' + 
+                    r' & '.join([r'{0:.1f}'.format(rr['tdecay_lum'][b]) for b in bands2]) + r' \\')
+    # t_cumul_50
+    tbl_data.append(r'(2) $t_{\rm cumul,50\%}$ & ' + 
+                    r' & '.join([r'{0:.1f}'.format(rr['tcumul_lum_50'][b]) for b in bands2]) + r' \\')
+    # t_cumul_90
+    tbl_data.append(r'(3) $t_{\rm cumul,90\%}$ & ' + 
+                    r' & '.join([r'{0:.1f}'.format(rr['tcumul_lum_90'][b]) for b in bands2]) + r' \\')
+
+
+    idx = np.where(rr['time_Myr'] > 20.0)[0][0]
+    # idx = -1
+
+    # Dust cross sections
+    tbl_data.append(r'\tableline')
+    # tbl_data.append(r'\multicolumn{7}{c}{Cross sections ($\sigma_{\rm d}/10^{-21}\cm^{2}$)} \\')
+    tbl_data.append(r'\multicolumn{7}{c}{Cross sections ($\sigma_{\rm d}/10^{-21}\cm^{2}$, $\sigma_{\rm pi}/10^{-18}\cm^{2}$)} \\')
+    tbl_data.append(r'\tableline')
+    tbl_data.append(r'(4) $\langle \sigma_{\rm d,abs} \rangle$ & ' + 
+                    r' & '.join([r'{0:.2f}'.format(rr['Cabs_Lavg'][b][idx]/1e-21) for b in bands]) + r' & - \\')
+    tbl_data.append(r'(5) $\langle \sigma_{\rm d,ext} \rangle$ & ' + 
+                    r' & '.join([r'{0:.2f}'.format(rr['Cext_Lavg'][b][idx]/1e-21) for b in bands]) + r' & - \\')
+    tbl_data.append(r'(6) $\langle \sigma_{\rm d,pr} \rangle$ & ' + 
+                    r' & '.join([r'{0:.2f}'.format(rr['Crpr_Lavg'][b][idx]/1e-21) for b in bands]) + r' & - \\')
+    # Photoionization cross sections
+    tbl_data.append(r'(7) $\langle \sigma_{\rm pi,H} \rangle$ & ' + 
+                    r'{0:.1f}'.format(rr['sigma_pi_H_Qavg'][idx]/1e-18) + r' & - & - & - & - & - \\')
+    tbl_data.append(r'(8) $\langle \sigma_{\rm pi,H_2} \rangle$ & ' + 
+                    r'{0:.1f}'.format(rr['sigma_pi_H2_Qavg'][idx]/1e-18) + r' & - & - & - & - & - \\')
+    # Photon energies
+    tbl_data.append(r'\tableline')
+    tbl_data.append(r'\multicolumn{7}{c}{Photon Energy (${\rm eV}$)} \\')
+    tbl_data.append(r'\tableline')
+    tbl_data.append(r'(9) $\langle h\nu \rangle$ & ' + 
+                    r' & '.join([r'{0:.1f}'.format(rr['hnu_Qavg'][b][idx]) for b in bands]) + r' \\')
+    # Mean energy of photoionization of H
+    tbl_data.append(r'(10) $\langle q_{\rm pi,H} \rangle$ & ' + 
+                    r'{0:.1f}'.format(rr['dhnu_H_LyC_Qavg'][idx]) + r' & - & - & - & - & - \\')
+    # Mean energy of photoionization of H2
+    tbl_data.append(r'(11) $\langle q_{\rm pi,H_2} \rangle$ & ' + 
+                    r'{0:.1f}'.format(rr['dhnu_H2_LyC_Qavg'][idx]) + r' & - & - & - & - & - \\')
+
+    for td in tbl_data:
+        print(td)
