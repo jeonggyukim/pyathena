@@ -136,7 +136,7 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         df['rho'] = cl.rho.cgs.value
         df['nH'] = cl.nH.cgs.value
         df['tff'] = cl.tff.to('Myr').value
-
+        df['tdyn'] = df['R']/df['sigma1d']
         
         if df['mhd']:
             df['muB'] = float(par['problem']['muB'])
@@ -273,15 +273,15 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             df['t_SF2'] = M_sp_final**2 / \
                         integrate.trapz(h['SFR']**2, h.time)
             df['tau_SF2'] = df['t_SF2']/df['tff']
-            df['SFR_mean'] = get_SFR_mean(h, 0.0, 90.0)['SFR_mean']
+            #df['SFR_mean'] = get_SFR_mean(df, h, 0.0, 90.0)['SFR_mean']
             try:
                 df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'M_sp'].iloc[0]/df['M']
             except IndexError:
                 df['SFE_3Myr'] = np.nan
             # depletion time t_dep = M0/SFR_mean
-            df['t_dep'] = df['M']/df['SFR_mean']
+            #df['t_dep'] = df['M']/df['SFR_mean']
             # SFE per free-fall time eps_ff = tff0/tdep
-            df['eps_ff'] = df['tff']/df['t_dep']
+            #df['eps_ff'] = df['tff']/df['t_dep']
             # Time at which molecular/neutral gas mass < 5% of the initial cloud mass
             try:
                 df['t_mol_5%'] = h.loc[h['M_H2_cl'] < 0.05*df['M'], 'time'].iloc[0]
