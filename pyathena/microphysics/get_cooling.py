@@ -75,7 +75,6 @@ def get_heating(s,dd):
         Erad_LW += dd['rad_energy_density_LW_ext']
         Erad_LW_diss += dd['rad_energy_density_LW_diss_ext']
     
-    
     # normalization factors
     Erad_PE0 = s.par['cooling']['Erad_PE0']/s.u.energy_density.cgs.value
     Erad_LW0 = s.par['cooling']['Erad_LW0']/s.u.energy_density.cgs.value
@@ -86,11 +85,14 @@ def get_heating(s,dd):
     if 'dhnu_HI_PH' in s.par['radps']:
         dhnu_HI_PH = s.par['radps']['dhnu_HI_PH']*eV_
     else:
-        dhnu_HI_PH = 3.45*eV_
+        # Energy of photoelectrons calculated incorrectly before
+        dhnu_HI_PH = (s.par['radps']['hnu_PH'] - 13.6)*eV_
     if 'dhnu_H2_PH' in s.par['radps']:
         dhnu_H2_PH = s.par['radps']['dhnu_H2_PH']*eV_
     else:
-        dhnu_H2_PH = 4.42*eV_
+        # no H2 photoionization heating was applied before;
+        # Makes no practical difference because H2 photoionization is negligible
+        dhnu_H2_PH = 0.0
         
     sigma_HI_PH = s.par['opacity']['sigma_HI_PH']
     sigma_H2_PH = s.par['opacity']['sigma_H2_PH']
