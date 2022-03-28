@@ -85,13 +85,13 @@ def analyze_HIH2(s, mdl, dd):
             R = s.par['cooling']['kgr_H2']*Zd
             sigmad = s.par['opacity']['sigma_dust_LW0']*Zd
             d = dd[mdl].sel(log_nH=log_nH, log_chi_PE=log_chi_PE, method='nearest')
-            dx_cgs_ = d.domain['dx'][2]*s.u.length.cgs.value
+            dx_cgs_ = s.domain['dx'][2]*s.u.length.cgs.value
             d['NH'] = d['nH'].cumsum()*dx_cgs_
             d['NHI'] = d['nHI'].cumsum()*dx_cgs_
             d['Av'] = Zd*d['NH']/NH0
             d['2xH2'] = 2.0*d['xH2']
             
-            dx.append(d.domain['dx'][2])
+            dx.append(s.domain['dx'][2])
             dx_cgs.append(dx_cgs_)
             nH.append(10.0**log_nH)
             chi.append(10.0**log_chi_PE)
