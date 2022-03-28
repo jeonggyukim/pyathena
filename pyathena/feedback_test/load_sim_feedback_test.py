@@ -19,8 +19,7 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
     """
     
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 units=Units(kind='LV', muH=1.4271),
-                 verbose=False):
+                 muH=1.4271, verbose=False):
         """The constructor for LoadSimFeedbackTest class
 
         Parameters
@@ -44,8 +43,85 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
 
         super(LoadSimFeedbackTest,self).__init__(basedir, savdir=savdir,
                                                  load_method=load_method,
-                                                 units=units,
                                                  verbose=verbose)
+        # Set unit and domain
+        try:
+            muH = self.par['problem']['muH']
+        except KeyError:
+            pass
+        self.muH = muH
+        self.u = Units(muH=muH)
+        self.domain = self._get_domain_from_par(self.par)
+        if self.test_newcool():
+            self.test_newcool_params()
+
+
+    def test_newcool(self):
+        try:
+            if self.par['configure']['new_cooling'] == 'ON':
+                newcool = True
+            else:
+                newcool = False
+        except KeyError:
+            newcool = False
+        return newcool
+
+    def test_newcool_params(self):
+        s = self
+        try:
+            s.iCoolH2colldiss = s.par['cooling']['iCoolH2colldiss']
+        except KeyError:
+            s.iCoolH2colldiss = 0
+
+        try:
+            s.iCoolH2rovib = s.par['cooling']['iCoolH2rovib']
+        except KeyError:
+            s.iCoolH2rovib = 0
+
+        try:
+            s.iCoolH2rovib = s.par['cooling']['iCoolH2rovib']
+        except KeyError:
+            s.iCoolH2rovib = 0
+
+        try:
+            s.ikgr_H2 = s.par['cooling']['ikgr_H2']
+        except KeyError:
+            s.ikgr_H2 = 0
+
+        # s.config_time = pd.to_datetime(s.par['configure']['config_date'])
+        # if 'PDT' in s.par['configure']['config_date']:
+        #     s.config_time = s.config_time.tz_localize('US/Pacific')
+        # if s.config_time < pd.to_datetime('2021-06-30 20:29:36 -04:00'):
+        #     s.iCoolHIcollion = 0
+        # else:
+        #     s.iCoolHIcollion = 1
+
+            
+    def show_timeit(self):
+        import matplotlib.pyplot as plt
+        try:
+            time = pd.read_csv(self.files['timeit'],delim_whitespace=True)
+
+            tfields = [k.split('_')[0] for k in time.keys() if k.endswith('tot')]
+
+            for tf in tfields:
+                if tf == 'rayt': continue
+                plt.plot(time['time'],time[tf].cumsum()/time['all'].cumsum(),label=tf)
+            plt.legend()
+        except KeyError:
+            print("No timeit plot is available")
+
+            
+
+    def get_timeit_mean(self):
+        try:
+            time = pd.read_csv(self.files['timeit'],delim_whitespace=True)
+
+            tfields = [k.split('_')[0] for k in time.keys() if k.endswith('tot')]
+
+            return time[tfields].mean()
+        except:
+            print("No timeit file is available")
 
     def get_nums(self, t_Myr=None, rounding=True,
                  output='vtk'):
@@ -184,32 +260,32 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
 
 
         
-class LoadSimFeedbackTestAll(object):
-    """Class to load multiple simulations"""
-    def __init__(self, models=None):
+# class LoadSimFeedbackTestAll(object):
+#     """Class to load multiple simulations"""
+#     def __init__(self, models=None):
 
-        # Default models
-        if models is None:
-            models = dict()
+#         # Default models
+#         if models is None:
+#             models = dict()
 
-        # self.models = list(models.keys())
-        self.models = []
-        self.basedirs = dict()
+#         # self.models = list(models.keys())
+#         self.models = []
+#         self.basedirs = dict()
         
-        for mdl, basedir in models.items():
-            if not osp.exists(basedir):
-                print('[LoadSimFeedbackTestAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
-                    mdl,basedir))
-            else:
-                self.models.append(mdl)
-                self.basedirs[mdl] = basedir
+#         for mdl, basedir in models.items():
+#             if not osp.exists(basedir):
+#                 print('[LoadSimFeedbackTestAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
+#                     mdl,basedir))
+#             else:
+#                 self.models.append(mdl)
+#                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+#     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         
-        self.model = model
-        self.sim = LoadSimFeedbackTest(self.basedirs[model], savdir=savdir,
-                                       load_method=load_method, verbose=verbose)
-        return self.sim
+#         self.model = model
+#         self.sim = LoadSimFeedbackTest(self.basedirs[model], savdir=savdir,
+#                                        load_method=load_method, verbose=verbose)
+#         return self.sim
 
 
 def load_all_feedback_test_sn(force_override=False):
@@ -386,3 +462,69 @@ def plt_hst_sn_diff_n(Z=1.0):
     plt.savefig('/tigress/jk11/figures/NEWCOOL/FEEDBACK-TEST-SN/SN-hst-Z{0:g}.png'.format(Z))
     
     return fig
+
+
+class LoadSimFeedbackTestAll(object):
+    """Class to load multiple simulations"""
+    def __init__(self, models=None, muH=None):
+
+        # Default models
+        if models is None:
+            models = dict()
+        if muH is None:
+            muH = dict()
+            for mdl in models:
+                muH[mdl] = 1.4271
+        self.models = []
+        self.basedirs = dict()
+        self.muH = dict()
+        self.simdict = dict()
+
+        for mdl, basedir in models.items():
+            if not osp.exists(basedir):
+                print('[LoadSimFeedbackTestAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
+                    mdl,basedir))
+            else:
+                self.models.append(mdl)
+                self.basedirs[mdl] = basedir
+                if mdl in muH:
+                    self.muH[mdl] = muH[mdl]
+                else:
+                    print('[LoadSimFeedbackTestAll]: muH for {0:s} has to be set'.format(
+                          mdl))
+
+    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+        self.model = model
+        try:
+            self.sim = self.simdict[model]
+        except KeyError:
+            self.sim = LoadSimFeedbackTest(self.basedirs[model], savdir=savdir,
+                                           muH=self.muH[model],
+                                           load_method=load_method, verbose=verbose)
+            self.simdict[model] = self.sim
+
+        return self.sim
+
+    # adding two objects
+    def __add__(self, o):
+        for mdl in o.models:
+            if not (mdl in self.models):
+                self.models += [mdl]
+                self.basedirs[mdl] = o.basedirs[mdl]
+                self.muH[mdl] = o.muH[mdl]
+                if mdl in o.simdict: self.simdict[mdl] = o.simdict[mdl]
+
+        return self
+
+    # get self class with only one key
+    def __getitem__(self, key):
+        return self.set_model(key)
+
+    def __setitem__(self, key, value):
+        if (type(value) == LoadSimFeedbackTest):
+            self.models.append(key)
+            self.simdict[key] = value
+            self.basedirs[key] = value.basedir
+            self.muH[key] = value.muH
+        else:
+            print("Assigment only accepts LoadSimFeedbackTest")
