@@ -1184,3 +1184,21 @@ def CII_rec_rate(T):
                                            1.634e-06 * np.exp(-1.523e+04/T) )
     return alpha_rr + alpha_dr
 
+
+def get_xn_eq(T, nH, zeta_pi=0.0, zeta_cr=0.0, coll_ion=True):
+    """Function to compute equilibrium neutral fraction
+    """
+    T = np.atleast_1d(T)
+    nH = np.atleast_1d(nH)
+    if coll_ion:
+        zeta_ci = nH*coeff_kcoll_H(T)
+    else:
+        zeta_ci = 0.0
+        
+    zeta_rec = nH*coeff_alpha_rr_H(T)
+
+    aa = 1.0 + zeta_ci/zeta_rec
+    bb = -(2.0 + (zeta_pi + zeta_cr + zeta_ci)/zeta_rec)
+    x = -bb/(2.0*aa)*(1 - (np.lib.scimath.sqrt(1 - 4.0*aa/bb**2)).real)
+    
+    return x
