@@ -296,6 +296,29 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
 
         return pdf
 
+    def load_chunk(self,num,scratch_dir='/scratch/gpfs/changgoo/TIGRESS-NCR/'):
+        """Read in temporary outputs in scartch directory
+        """
+        scratch_dir += osp.join(self.basename,'midplane_chunk')
+        chunk_file = osp.join(scratch_dir,'{:s}.{:04d}.hLx.nc'.format(self.problem_id,num))
+        if not osp.isfile(chunk_file):
+            raise IOError("File does not exist: {}".format(chunk_file))
+        with xr.open_dataset(chunk_file) as chunk:
+            self.data_chunk = chunk
+
+    def get_field_from_chunk(self,fields):
+        """Get fields using temporary outputs in scartch directory
+        """
+        dd = xr.Dataset()
+        for f in fields:
+            if f in self.data_chunk:
+                dd[f] = self.data_chunk[f]
+            elif f in self.dfi:
+                dd[f] = self.dfi[f]['func'](self.data_chunk,self.u)
+            else:
+                raise IOError("{} is not available".format(f))
+        return dd
+
     @staticmethod
     def get_phase_Tlist():
         return [500,6000,15000,35000,5.e5]

@@ -13,11 +13,11 @@ import seaborn as sns
 import pyathena as pa
 import gc
 
-def draw_jointpdfs(s,num,pdf=None,zrange=None,save=True):
+def draw_jointpdfs(s,num,pdf=None,zrange=None,save=True,xHI=False):
     '''draw joint PDFs of T and nH for cooling and heating processes
     '''
     savdir = s.get_savdir_pdf(zrange=zrange)
-    pdf_cool, pdf_heat = s.get_coolheat_pdf(num,zrange=zrange)
+    pdf_cool, pdf_heat = s.get_coolheat_pdf(num,zrange=zrange,xHI=xHI)
     coolkey = set(list(pdf_cool.keys()))-{'total','OIold'}
     heatkey = set(list(pdf_heat.keys()))-{'total'}
     if pdf is not None:
@@ -40,7 +40,7 @@ def draw_jointpdfs(s,num,pdf=None,zrange=None,save=True):
     axes=[]
     for c in list(coolkey):
         ax = plt.subplot(gs1[i])
-        pdf_cool[c].plot(norm=LogNorm(1.e-5,10),ax=ax,add_colorbar=False,cmap=cmap_cool)
+        pdf_cool[c].plot(y='T',norm=LogNorm(1.e-5,10),ax=ax,add_colorbar=False,cmap=cmap_cool)
         plt.title('')
         ax.annotate(r'$\mathcal{{L}}_{{\rm {}}}$'.format(c.replace('_','-')),(0.95,0.95),xycoords='axes fraction',
                     fontsize='x-small',ha='right',va='top')
@@ -49,7 +49,7 @@ def draw_jointpdfs(s,num,pdf=None,zrange=None,save=True):
 
     for h in list(heatkey):
         ax = plt.subplot(gs1[i])
-        pdf_heat[h].plot(norm=LogNorm(1.e-5,10),ax=ax,add_colorbar=False,cmap=cmap_heat)
+        pdf_heat[h].plot(y='T',norm=LogNorm(1.e-5,10),ax=ax,add_colorbar=False,cmap=cmap_heat)
         plt.title('')
         ax.annotate(r'$\mathcal{{G}}_{{\rm {}}}$'.format(h.replace('_','-')),
                     (0.95,0.95),xycoords='axes fraction',
@@ -63,51 +63,72 @@ def draw_jointpdfs(s,num,pdf=None,zrange=None,save=True):
             plt.setp(ax.get_xticklabels(), visible=False)
             plt.xlabel('')
         else:
-            plt.xlabel(r'$\log\,n_H\,[{\rm cm^{-3}}]$')
+            if xHI:
+                plt.xlabel(r'$x_{H^0}$')
+            else:
+                plt.xlabel(r'$\log\,n_H\,[{\rm cm^{-3}}]$')
         if i%4 != 0 :
             plt.setp(ax.get_yticklabels(), visible=False)
             plt.ylabel('')
         else:
             plt.ylabel(r'$\log\,T\,[{\rm K}]$')
-        plt.xlim(-5,3)
+        if xHI:
+            plt.xlim(0,1)
+        else:
+            plt.xlim(-5,3)
         plt.ylim(1,8)
 
+    if xHI:
+        xl='xHI'
+        xl1=r'$x_{H^0}$'
+        xl2=r'{d\log T\,dx_{H^0}}[{\rm dex^{-1}}]$'
+    else:
+        xl='nH'
+        xl1=r'$\log\,n_{H}\,[{\rm cm^{-3}]$'
+        xl2=r'{d\log T\,d\log\,n_H}[{\rm dex^{-2}}]$'
     gs2 = gridspec.GridSpec(3, 1)
     gs2.update(left=0.55, right=0.98, hspace=0.05)
     ax = plt.subplot(gs2[0])
-    pdf_cool['total'].plot(norm=LogNorm(1.e-5,10),ax=ax,cmap=cmap_cool,
-                           cbar_kwargs=dict(label=r'$\frac{d^2\mathcal{L}/\mathcal{L}_{\rm tot}}'
-                                            r'{d\log T\,d\log n_H}[{\rm dex^{-2}}]$'))
+    pdf_cool['total'].plot(y='T',norm=LogNorm(1.e-5,10),ax=ax,cmap=cmap_cool,
+                           cbar_kwargs=dict(label=r'$\frac{d^2\mathcal{L}/\mathcal{L}_{\rm tot}}'+xl2))
     plt.title('')
-    plt.xlim(-5,3)
+    if xHI:
+        plt.xlim(0,1)
+    else:
+        plt.xlim(-5,3)
     plt.ylim(1,8)
     plt.setp(ax.get_xticklabels(), visible=False)
     plt.xlabel('')
     plt.ylabel(r'$\log\,T\,[{\rm K}]$')
 
     ax = plt.subplot(gs2[1])
-    pdf_heat['total'].plot(norm=LogNorm(1.e-5,10),ax=ax,cmap=cmap_heat,
-                           cbar_kwargs=dict(label=r'$\frac{d^2\mathcal{G}/\mathcal{G}_{\rm tot}}'
-                                            r'{d\log T\,d\log n_H}[{\rm dex^{-2}}]$'))
+    pdf_heat['total'].plot(y='T',norm=LogNorm(1.e-5,10),ax=ax,cmap=cmap_heat,
+                           cbar_kwargs=dict(label=r'$\frac{d^2\mathcal{G}/\mathcal{G}_{\rm tot}}'+xl2))
     plt.title('')
-    plt.xlim(-5,3)
+    if xHI:
+        plt.xlim(0,1)
+    else:
+        plt.xlim(-5,3)
+    plt.xlabel(xl1)
     plt.ylim(1,8)
     plt.setp(ax.get_xticklabels(), visible=False)
-    plt.xlabel(r'$\log\,n_H\,[{\rm cm^{-3}}]$')
     plt.ylabel(r'$\log\,T\,[{\rm K}]$')
 
     ax = plt.subplot(gs2[2])
     netcool =pdf_cool['total']*pdf_cool.attrs['total_cooling']-pdf_heat['total']*pdf_heat.attrs['total_heating']
     netcool /= pdf_cool.attrs['total_cooling']
-    netcool.plot(norm=LogNorm(1.e-5,10),ax=ax,cmap=cmap_cool,
-                 cbar_kwargs=dict(label=r'$\frac{d^2(\mathcal{L}-\mathcal{G})/\mathcal{L}_{\rm tot}}'
-                                  r'{d\log T\,d\log n_H}[{\rm dex^{-2}}]$'))
+    netcool.plot(y='T',norm=LogNorm(1.e-5,10),ax=ax,cmap=cmap_cool,
+                 cbar_kwargs=dict(label=r'$\frac{d^2(\mathcal{L}-\mathcal{G})/\mathcal{L}_{\rm tot}}'+xl2))
     (-netcool).plot(norm=LogNorm(1.e-5,10),ax=ax,cmap=cmap_heat,add_colorbar=False)
     plt.title('')
-    plt.xlim(-5,3)
     plt.ylim(1,8)
-    plt.xlabel(r'$\log\,n_H\,[{\rm cm^{-3}}]$')
     plt.ylabel(r'$\log\,T\,[{\rm K}]$')
+    if xHI:
+        plt.xlim(0,1)
+    else:
+        plt.xlim(-5,3)
+    plt.xlabel(xl1)
+
 
     if save:
         if pdf is None:
@@ -115,7 +136,7 @@ def draw_jointpdfs(s,num,pdf=None,zrange=None,save=True):
         else:
             plt.savefig(os.path.join(savdir,'{}.coolheat.jointpdf.png'.format(s.problem_id)))
 
-    return fig
+    return fig,pdf_cool,pdf_heat
 
 def draw_Tpdf(s,num,pdf=None,zrange=None,save=True):
     '''draw temperature pdfs of cooling/heating (nH-integrated)
