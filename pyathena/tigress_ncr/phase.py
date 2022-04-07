@@ -224,36 +224,71 @@ def get_dchunk(s,num,scratch_dir='/scratch/gpfs/changgoo/TIGRESS-NCR/'):
         chunk['T1']=chunk['pok']/chunk['nH']
     return chunk,scratch_dir
 
-def define_phase(s,verbose=False):
+def define_phase(s,kind='full',verbose=False):
+    """Phase definition
+
+    kind : str
+      'full' for full 9 phases
+      'four' for CU, WNM, WIM, Hot
+      'five1' for CNM, UNM, WNM, WIM, Hot
+      'five2' for CU, WNM, WIM, WHIM, HIM
+      'six' for CNM, UNM, WNM, WIM, WHIM, HIM
+    """
+
+    pcdict=get_phcolor_dict(cmap=cmr.pride,cmin=0.0,cmax=0.85)
     phdef=[]
     Tlist=list(np.concatenate([[0],s.get_phase_Tlist(),[np.inf]]))
-    # cold molecular (xH2>0.25, T<6000)
     i=1
-    phdef.append(dict(idx=i,name='CMM',Tmin=Tlist[0],Tmax=Tlist[2],abundance='xH2',amin=0.25))
-    # cold neutral (xHI>0.5, T<500)
-    i+=1
-    phdef.append(dict(idx=i,name='CNM',Tmin=Tlist[0],Tmax=Tlist[1],abundance='xHI',amin=0.5))
-    # unstable neutral (xHI>0.5, 500<T<6000)
-    i+=1
-    phdef.append(dict(idx=i,name='UNM',Tmin=Tlist[1],Tmax=Tlist[2],abundance='xHI',amin=0.5))
-    # unstable ionized (xHII>0.5, T<6000)
-    i+=1
-    phdef.append(dict(idx=i,name='UIM',Tmin=Tlist[0],Tmax=Tlist[2],abundance='xHII',amin=0.5))
+    if kind in ['four','five2']:
+        # cold+unstable
+        phdef.append(dict(idx=i,name='CU',Tmin=Tlist[0],Tmax=Tlist[2],abundance=None,amin=0.0,c=pcdict['CNM']))
+    elif kind == 'full':
+        # cold molecular (xH2>0.25, T<6000)
+        phdef.append(dict(idx=i,name='CMM',Tmin=Tlist[0],Tmax=Tlist[2],abundance='xH2',amin=0.25,c=pcdict['CMM']))
+        # cold neutral (xHI>0.5, T<500)
+        i+=1
+        phdef.append(dict(idx=i,name='CNM',Tmin=Tlist[0],Tmax=Tlist[1],abundance='xHI',amin=0.5,c=pcdict['CNM']))
+        # unstable neutral (xHI>0.5, 500<T<6000)
+        i+=1
+        phdef.append(dict(idx=i,name='UNM',Tmin=Tlist[1],Tmax=Tlist[2],abundance='xHI',amin=0.5,c=pcdict['UNM']))
+        # unstable ionized (xHII>0.5, T<6000)
+        i+=1
+        phdef.append(dict(idx=i,name='UIM',Tmin=Tlist[0],Tmax=Tlist[2],abundance='xHII',amin=0.5,c=pcdict['UIM']))
+    else:
+        # cold
+        phdef.append(dict(idx=i,name='CNM',Tmin=Tlist[0],Tmax=Tlist[1],abundance=None,amin=0.0,c=pcdict['CNM']))
+        # Unstable
+        i+=1
+        phdef.append(dict(idx=i,name='UNM',Tmin=Tlist[1],Tmax=Tlist[2],abundance=None,amin=0.0,c=pcdict['UNM']))
+
     # warm neutral (xHI>0.5, 6000<T<35000)
     i+=1
-    phdef.append(dict(idx=i,name='WNM',Tmin=Tlist[2],Tmax=Tlist[4],abundance='xHI',amin=0.5))
-    # warm photo-ionized (xHII>0.5, 6000<T<15000)
-    i+=1
-    phdef.append(dict(idx=i,name='WPIM',Tmin=Tlist[2],Tmax=Tlist[3],abundance='xHII',amin=0.5))
-    # warm collisonally-ionized (xHII>0.5, 15000<T<35000)
-    i+=1
-    phdef.append(dict(idx=i,name='WCIM',Tmin=Tlist[3],Tmax=Tlist[4],abundance='xHII',amin=0.5))
-    # warm-hot ionized (35000<T<5.e5)
-    i+=1
-    phdef.append(dict(idx=i,name='WHIM',Tmin=Tlist[4],Tmax=Tlist[5],abundance=None,amin=0.0))
-    # hot ionized (5.e5<T)
-    i+=1
-    phdef.append(dict(idx=i,name='HIM',Tmin=Tlist[5],Tmax=Tlist[6],abundance=None,amin=0.0))
+    phdef.append(dict(idx=i,name='WNM',Tmin=Tlist[2],Tmax=Tlist[4],abundance='xHI',amin=0.5,c=pcdict['WNM']))
+
+    if kind == 'full':
+        # warm photo-ionized (xHII>0.5, 6000<T<15000)
+        i+=1
+        phdef.append(dict(idx=i,name='WPIM',Tmin=Tlist[2],Tmax=Tlist[3],abundance='xHII',amin=0.5,c=pcdict['WPIM']))
+        # warm collisonally-ionized (xHII>0.5, 15000<T<35000)
+        i+=1
+        phdef.append(dict(idx=i,name='WCIM',Tmin=Tlist[3],Tmax=Tlist[4],abundance='xHII',amin=0.5,c=pcdict['WCIM']))
+    else:
+        # combined warm ionzied
+        i+=1
+        phdef.append(dict(idx=i,name='WIM',Tmin=Tlist[2],Tmax=Tlist[4],abundance='xHII',amin=0.5,c=pcdict['WPIM']))
+
+    if kind in ['four','five1']:
+        # hot ionzied
+        i+=1
+        phdef.append(dict(idx=i,name='Hot',Tmin=Tlist[4],Tmax=Tlist[6],abundance=None,amin=0.0,c=pcdict['HIM']))
+    else:
+        # warm-hot ionized (35000<T<5.e5)
+        i+=1
+        phdef.append(dict(idx=i,name='WHIM',Tmin=Tlist[4],Tmax=Tlist[5],abundance=None,amin=0.0,c=pcdict['WHIM']))
+        # hot ionized (5.e5<T)
+        i+=1
+        phdef.append(dict(idx=i,name='HIM',Tmin=Tlist[5],Tmax=Tlist[6],abundance=None,amin=0.0,c=pcdict['HIM']))
+
     if verbose:
         for ph in phdef:
             T1 = ph['Tmin']
@@ -263,14 +298,16 @@ def define_phase(s,verbose=False):
             amin = ph['amin']
             print('{:5s}'.format(ph['name']),'{:3d}'.format(i),'{:>10}'.format(T1),'<T<','{:10}'.format('{}'.format(T2)),
                   '{:^10s}'.format('{:4s}>{}'.format(a,amin) if a is not None else '...'))
-
     return phdef
 
-def assign_phase(s,dslc,verbose=False):
+def assign_phase(s,dslc,kind='full',verbose=False):
+    from matplotlib.colors import ListedColormap
     phslc = xr.zeros_like(dslc['nH']).astype('int')-1
     phslc.name='phase'
 
-    phdef=define_phase(s)
+    phdef=define_phase(s,kind=kind)
+    phlist = []
+    phcmap = []
     for ph in phdef:
         T1 = ph['Tmin']
         T2 = ph['Tmax']
@@ -278,10 +315,14 @@ def assign_phase(s,dslc,verbose=False):
         a = ph['abundance']
         amin = ph['amin']
         cond = (dslc['T']>T1)*(dslc['T']<=T2)
+        phlist.append(ph['name'])
+        phcmap.append(ph['c'])
         print(ph['name'],i,T1,T2,a,amin)
         if a is not None: cond *= (dslc[a]>amin)
         phslc += cond*i
     phslc.attrs['phdef']=phdef
+    phslc.attrs['phlist']=phlist
+    phslc.attrs['phcmap']=ListedColormap(phcmap)
 
     return phslc
 
