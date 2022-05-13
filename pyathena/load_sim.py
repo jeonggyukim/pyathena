@@ -281,6 +281,10 @@ class LoadSim(object):
                  osp.basename(self.frst), self.rh.time))
 
         return self.rh
+    def create_vtk_tar_all(self,remove_original=False):
+        raw_tardirs = self._find_match([("vtk","????")])
+        for num in [int(f[-4:]) for f in raw_tardir]:
+            self.creat_vtk_tar(num=num, remove_original=remove_original)
 
     def create_vtk_tar(self, num=None, remove_original=False, move=True):
         """Creating tarred vtk from rearranged vtk output
