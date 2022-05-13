@@ -16,6 +16,7 @@ import yt
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet
+from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -177,15 +178,15 @@ class LoadSim(object):
             self.load_method = load_method
 
         if id0:
-            kind = ['vtk_id0', 'vtk']
+            kind = ['vtk_id0', 'vtk', 'vtk_tar']
         else:
-            kind = ['vtk', 'vtk_id0']
+            kind = ['vtk', 'vtk_tar', 'vtk_id0']
 
         self.fvtk = self._get_fvtk(kind[0], num, ivtk)
         if self.fvtk is None or not osp.exists(self.fvtk):
             if id0:
                 self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
-                                 'Try joined vtk')
+                                 'Try joined/tarred vtk')
             else:
                 self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
                                  'Try vtk in id0')
@@ -193,29 +194,40 @@ class LoadSim(object):
             # Check if joined vtk (or vtk in id0) exists
             self.fvtk = self._get_fvtk(kind[1], num, ivtk)
             if self.fvtk is None or not osp.exists(self.fvtk):
+                self.logger.info('[load_vtk]: Vtk file does not exist.')
+
+            # Check if joined vtk (or vtk in id0) exists
+            self.fvtk = self._get_fvtk(kind[2], num, ivtk)
+            if self.fvtk is None or not osp.exists(self.fvtk):
                 self.logger.error('[load_vtk]: Vtk file does not exist.')
 
-        if self.load_method == 'pyathena':
-            self.ds = AthenaDataSet(self.fvtk, units=self.u, dfi=self.dfi)
-            self.domain = self.ds.domain
-            self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
-                osp.basename(self.fvtk), self.ds.domain['time']))
+        if self.fvtk.endswith('vtk'):
+            if self.load_method == 'pyathena':
+                self.ds = AthenaDataSet(self.fvtk, units=self.u, dfi=self.dfi)
+                self.domain = self.ds.domain
+                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
+                    osp.basename(self.fvtk), self.ds.domain['time']))
 
-        elif self.load_method == 'pyathena_classic':
-            self.ds = AthenaDataSetClassic(self.fvtk)
-            self.domain = self.ds.domain
-            self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
-                osp.basename(self.fvtk), self.ds.domain['time']))
+            elif self.load_method == 'pyathena_classic':
+                self.ds = AthenaDataSetClassic(self.fvtk)
+                self.domain = self.ds.domain
+                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
+                    osp.basename(self.fvtk), self.ds.domain['time']))
 
-        elif self.load_method == 'yt':
-            if hasattr(self, 'u'):
-                units_override = self.u.units_override
+            elif self.load_method == 'yt':
+                if hasattr(self, 'u'):
+                    units_override = self.u.units_override
+                else:
+                    units_override = None
+                self.ds = yt.load(self.fvtk, units_override=units_override)
             else:
-                units_override = None
-            self.ds = yt.load(self.fvtk, units_override=units_override)
-        else:
-            self.logger.error('load_method "{0:s}" not recognized.'.format(
-                self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
+                self.logger.error('load_method "{0:s}" not recognized.'.format(
+                    self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
+        elif self.fvtk.endswith('tar'):
+            self.ds = AthenaDataSetTar(self.fvtk, units=self.u, dfi=self.dfi)
+            self.domain = self.ds.domain
+            self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
+                osp.basename(self.fvtk), self.ds.domain['time']))
 
         return self.ds
 
@@ -335,6 +347,7 @@ class LoadSim(object):
         hst: problem_id.hst
         sn: problem_id.sn (file format identical to hst)
         vtk: problem_id.num.vtk
+        vtk_tak: problem_id.num.tar
         starpar_vtk: problem_id.num.starpar.vtk
         zprof: problem_id.num.phase.zprof
         timeit: timtit.txt
@@ -373,7 +386,10 @@ class LoadSim(object):
                         ('*.????.vtk',)]
 
         vtk_id0_patterns = [('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
+                            # ('vtk', '[0-9]'*4, '*.' + '[0-9]'*4 + '.vtk'),
                             ('id0', '*.' + '[0-9]'*4 + '.vtk')]
+
+        vtk_tar_patterns = [('vtk', '*.????.tar')]
 
         starpar_patterns = [('starpar', '*.????.starpar.vtk'),
                             ('id0', '*.????.starpar.vtk'),
@@ -469,7 +485,9 @@ class LoadSim(object):
         if 'vtk' in self.out_fmt:
             self.files['vtk'] = self._find_match(vtk_patterns)
             self.files['vtk_id0'] = self._find_match(vtk_id0_patterns)
-            if not self.files['vtk'] and not self.files['vtk_id0']:
+            self.files['vtk_tar'] = self._find_match(vtk_tar_patterns)
+            if not self.files['vtk'] and not self.files['vtk_id0'] and \
+               not self.files['vtk_tar']:
                 self.logger.warning(
                     'vtk files not found in {0:s}'.format(self.basedir))
                 self.nums = None
@@ -477,6 +495,7 @@ class LoadSim(object):
             else:
                 self.nums = [int(f[-8:-4]) for f in self.files['vtk']]
                 self.nums_id0 = [int(f[-8:-4]) for f in self.files['vtk_id0']]
+                self.nums_tar = [int(f[-8:-4]) for f in self.files['vtk_tar']]
                 if self.nums_id0:
                     self.logger.info('vtk in id0: {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk_id0'][0]),
@@ -491,10 +510,25 @@ class LoadSim(object):
                         self.problem_id = osp.basename(self.files['vtk'][0]).split('.')[-2:]
                 else:
                     self.nums = self.nums_id0
-
+                if self.nums_tar:
+                    self.logger.info('vtk in tar: {0:s} nums: {1:d}-{2:d}'.format(
+                        osp.dirname(self.files['vtk_tar'][0]),
+                        self.nums_tar[0], self.nums_tar[-1]))
+                    if not hasattr(self, 'problem_id'):
+                        self.problem_id = osp.basename(self.files['vtk_tar'][0]).split('.')[-2:]
+                    self.nums = self.nums_tar
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
+            if len(set(sizes)) > 1:
+                size = max(set(sizes), key=sizes.count)
+                flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
+                self.logger.warning('Vtk file size is not unique.')
+                for f in flist:
+                   self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
+
+            # Check (tarred) vtk file size
+            sizes = [os.stat(f).st_size for f in self.files['vtk_tar']]
             if len(set(sizes)) > 1:
                 size = max(set(sizes), key=sizes.count)
                 flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
@@ -615,6 +649,8 @@ class LoadSim(object):
                 fpattern = '{0:s}.{1:04d}.starpar.vtk'
             elif kind == 'rst':
                 fpattern = '{0:s}.{1:04d}.rst'
+            elif kind == 'vtk_tar':
+                fpattern = '{0:s}.{1:04d}.tar'
             else:
                 fpattern = '{0:s}.{1:04d}.vtk'
             fvtk = osp.join(dirname, fpattern.format(self.problem_id, num))
