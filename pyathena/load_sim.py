@@ -13,6 +13,8 @@ import pandas as pd
 import xarray as xr
 import pickle
 import yt
+import tarfile
+import shutil
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet
@@ -259,6 +261,73 @@ class LoadSim(object):
                  osp.basename(self.frst), self.rh.time))
 
         return self.rh
+
+    def create_vtk_tar(self, num=None, remove_original=False, move=True):
+        """Creating tarred vtk from rearranged vtk output
+        or automatically move vtk files under id* to the rearranged vtk folders
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number, e.g., /basedir/vtk/xxxx
+        remove_original : bool
+           Remove original after tar it if True
+        move : bool
+           Move vtk files under id* to /basedir/vtk/xxxx to tar it
+        """
+        # set tar file name
+        dirname = osp.join(self.basedir,'vtk')
+        fpattern = '{0:s}.{1:04d}.tar'
+        tarname = osp.join(dirname, fpattern.format(self.problem_id, num))
+        tardir = os.path.join(dirname,'{0:04d}'.format(num))
+
+        # remove originals
+        def remove_tardir():
+            if osp.isdir(tardir) and remove_original:
+                self.logger_info('[create_vtk_tar] removing originals'
+                                 ' at {}'.format(tardir))
+                try:
+                    shutil.rmtree(tardir)
+                except OSError as e:
+                    print ("Error: %s - %s." % (e.filename, e.strerror))
+
+        # check file existence then move
+        # move files to vtk/num/*.num.tar
+        if osp.isfile(tarname):
+            # if tar file exists, remove original and quit
+            self.logger.info('[create_vtk_tar] tar file already exists')
+            remove_tardir()
+            return
+
+        if not osp.isdir(tardir):
+            self.logger.info('[create_vtk_tar] vtk files are not located'
+                             ' in a separate folder.')
+            # move files under id* to vtk/num
+            if (move):
+                # create folder
+                self.logger.info('[create_vtk_tar] create a folder {:s}'.format(tardir))
+                os.makedirs(tardir)
+                # find files
+                id_files = [self._get_fvtk('vtk_id0',num=num)]
+                id_files += self._find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
+                                              format(self.problem_id, num, 'vtk'))])
+                # move each file
+                self.logger.info('[create_vtk_tar] moving {:d} files to {:s}'.\
+                                 format(len(id_files),tardir))
+                for f in id_files: shutil.move(f,tardir)
+            else:
+                # if tardir doesn't exist, move files under id* or just quit
+                return
+
+        # tar to vtk/problem_id.num.tar
+        self.logger.info('[create_vtk_tar] tarring vtk files')
+
+        tf = tarfile.open(tarname,'x')
+        tf.add(tardir)
+        tf.close()
+
+        # remove_original
+        remove_tardir()
 
     def print_all_properties(self):
         """Print all attributes and callable methods
