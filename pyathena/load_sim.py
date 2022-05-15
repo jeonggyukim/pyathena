@@ -261,13 +261,15 @@ class LoadSim(object):
                  osp.basename(self.frst), self.rh.time))
 
         return self.rh
-    def create_vtk_tar_all(self,remove_original=False):
-        raw_tardirs = self._find_match([("vtk","????")])
-        for num in [int(f[-4:]) for f in raw_tardir]:
-            self.move_to_tardir(num=num)
-            self.creat_vtk_tar(num=num, remove_original=remove_original)
 
-    def move_to_tardir(self, num=None):
+    def create_vtk_tar_all(self,remove_original=False):
+        for num in self.nums_id0:
+            self.move_to_tardir(num=num)
+        raw_tardirs = self._find_match([("vtk","????")])
+        for num in [int(f[-4:]) for f in raw_tardirs]:
+            self.create_vtk_tar(num=num, remove_original=remove_original)
+
+    def move_to_tardir(self, num=None, kind='vtk'):
         """Move vtk files from id* to vtk/XXXX
 
         Parameters
@@ -277,32 +279,34 @@ class LoadSim(object):
 
         """
         # set tar file name
-        dirname = osp.join(self.basedir,'vtk')
+        dirname = osp.join(self.basedir,kind)
         fpattern = '{0:s}.{1:04d}.tar'
         tarname = osp.join(dirname, fpattern.format(self.problem_id, num))
         tardir = os.path.join(dirname,'{0:04d}'.format(num))
 
         # move files to vtk/num/*.num.tar
         if osp.isdir(tardir):
-            self.logger.info('[move_to_tardir] vtk/{:04d} exists'.format(num))
+            self.logger.info('[move_to_tardir] {:s} exists'.format(tardir))
             return
 
         # move files under id* to vtk/num
         # create folder
-        self.logger.info('[create_vtk_tar] create a folder {:s}'.format(tardir))
+        # self.logger.info('[create_vtk_tar] create a folder {:s}'.format(tardir))
         os.makedirs(tardir)
         # find files
-        id_files = [self._get_fvtk('vtk_id0',num=num)]
+        if kind == 'vtk':
+            id_files = [self._get_fvtk('vtk_id0',num=num)]
+        elif kind == 'rst':
+            id_files = [self._get_fvtk('rst',num=num)]
         id_files += self._find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
-                                     format(self.problem_id, num, 'vtk'))])
+                                     format(self.problem_id, num, kind))])
         # move each file
-        self.logger.info('[create_vtk_tar] moving {:d} files to {:s}'.\
+        self.logger.info('[move_to_tardir] moving {:d} files to {:s}'.\
                          format(len(id_files),tardir))
         for f in id_files: shutil.move(f,tardir)
 
-    def create_vtk_tar(self, num=None, remove_original=False):
-        """Creating tarred vtk from rearranged vtk output
-        or automatically move vtk files under id* to the rearranged vtk folders
+    def create_tar(self, num=None, remove_original=False, kind='vtk'):
+        """Creating tarred vtk/rst from rearranged output
 
         Parameters
         ----------
@@ -310,9 +314,11 @@ class LoadSim(object):
            Snapshot number, e.g., /basedir/vtk/xxxx
         remove_original : bool
            Remove original after tar it if True
+        kind : string
+           vtk or rst
         """
         # set tar file name
-        dirname = osp.join(self.basedir,'vtk')
+        dirname = osp.join(self.basedir,kind)
         fpattern = '{0:s}.{1:04d}.tar'
         tarname = osp.join(dirname, fpattern.format(self.problem_id, num))
         tardir = os.path.join(dirname,'{0:04d}'.format(num))
@@ -320,7 +326,7 @@ class LoadSim(object):
         # remove originals
         def remove_tardir():
             if osp.isdir(tardir) and remove_original:
-                self.logger_info('[create_vtk_tar] removing originals'
+                self.logger.info('[create_tar] removing originals'
                                  ' at {}'.format(tardir))
                 try:
                     shutil.rmtree(tardir)
@@ -330,12 +336,12 @@ class LoadSim(object):
         # check file existence
         if osp.isfile(tarname):
             # if tar file exists, remove original and quit
-            self.logger.info('[create_vtk_tar] tar file already exists')
+            self.logger.info('[create_tar] tar file already exists')
             remove_tardir()
             return
 
         # tar to vtk/problem_id.num.tar
-        self.logger.info('[create_vtk_tar] tarring vtk files')
+        self.logger.info('[create_tar] tarring {:s}'.format(tardir))
 
         tf = tarfile.open(tarname,'x')
         tf.add(tardir)
