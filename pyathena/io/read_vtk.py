@@ -396,7 +396,10 @@ class AthenaDataSet(object):
             return grid['data'][field]
         elif field in self.field_list:
             fm = grid['field_map'][field]
-            fp = open(grid['filename'], 'rb')
+            if 'tarinfo' in grid:
+                fp = self.tarfile.extractfile(grid['tarinfo'])
+            else:
+                fp = open(grid['filename'], 'rb')
             fp.seek(fm['offset'])
             fp.readline() # skip header
             if fm['read_table']:
@@ -467,14 +470,16 @@ class AthenaDataSet(object):
         domain['Nx'] = np.round(domain['Lx']/domain['dx']).astype('int')
         domain['ndim'] = 3 # always 3d
 
-        file = open(self.fnames[0], 'rb')
-        tmpgrid = dict()
-        tmpgrid['time'] = None
-        while tmpgrid['time'] is None:
-            line = file.readline()
-            _vtk_parse_line(line, tmpgrid)
-        file.close()
-        domain['time'] = tmpgrid['time']
+        # file = open(self.fnames[0], 'rb')
+        # tmpgrid = dict()
+        # tmpgrid['time'] = None
+        # while tmpgrid['time'] is None:
+        #     line = file.readline()
+        #     _vtk_parse_line(line, tmpgrid)
+        # file.close()
+        # domain['time'] = tmpgrid['time']
+
+        domain['time'] = grid[0]['time']
 
         return domain
 

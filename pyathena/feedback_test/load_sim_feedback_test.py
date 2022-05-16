@@ -220,14 +220,18 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
 
         # Quantities at the time of shell formation
         # Shell formation time
-        df['t_sf'] = float(h.loc[(h['Mi']+h['Mh']).max() ==
+        df['t_sf_M'] = float(h.loc[(h['Mi']+h['Mh']).max() ==
                                 (h['Mi']+h['Mh']), 'time'])
+        df['t_sf_E'] = h.where(h['Ethm']+h['Ekin']-h['Ethm_u']-h['Ekin_u'] > 0.7e51).time.max()
+        df['t_sf']=df['t_sf_E']
         # Radius at the time of shell formation
         df['r_sf'] = float(h.loc[h['time'] == df['t_sf'], 'Rsh'])
         # Mass of ionized and hot gas (T > 2e4K)
         df['Mhi_sf'] = float(h.loc[h['time'] == df['t_sf'], 'Mhi'])
         # Shell mass
         df['Msh_sf'] = float(h.loc[h['time'] == df['t_sf'], 'Msh'])
+        # SNR mass
+        df['Msnr_sf'] = df['Mhi_sf']+df['Msh_sf']
         # Momentum
         df['pr_sf'] = float(h.loc[h['time'] == df['t_sf'], 'pr'])
         df['pok_bub_sf'] = float(h.loc[h['time'] == df['t_sf'], 'pok_bub'])
@@ -259,32 +263,27 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
 
 
 
-# class LoadSimFeedbackTestAll(object):
-#     """Class to load multiple simulations"""
-#     def __init__(self, models=None):
+class LoadSimFeedbackTestAll(object):
+    """Class to load multiple simulations"""
+    def __init__(self, models=None):
+        # self.models = list(models.keys())
+        self.models = []
+        self.basedirs = dict()
 
-#         # Default models
-#         if models is None:
-#             models = dict()
+        for mdl, basedir in models.items():
+            if not osp.exists(basedir):
+                print('[LoadSimFeedbackTestAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
+                    mdl,basedir))
+            else:
+                self.models.append(mdl)
+                self.basedirs[mdl] = basedir
 
-#         # self.models = list(models.keys())
-#         self.models = []
-#         self.basedirs = dict()
+    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
 
-#         for mdl, basedir in models.items():
-#             if not osp.exists(basedir):
-#                 print('[LoadSimFeedbackTestAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
-#                     mdl,basedir))
-#             else:
-#                 self.models.append(mdl)
-#                 self.basedirs[mdl] = basedir
-
-#     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
-
-#         self.model = model
-#         self.sim = LoadSimFeedbackTest(self.basedirs[model], savdir=savdir,
-#                                        load_method=load_method, verbose=verbose)
-#         return self.sim
+        self.model = model
+        self.sim = LoadSimFeedbackTest(self.basedirs[model], savdir=savdir,
+                                       load_method=load_method, verbose=verbose)
+        return self.sim
 
 
 def load_all_feedback_test_sn(force_override=False):
