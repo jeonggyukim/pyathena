@@ -287,7 +287,14 @@ class LoadSim(object):
             self.move_to_tardir(num=num)
         raw_tardirs = self._find_match([("vtk","????")])
         for num in [int(f[-4:]) for f in raw_tardirs]:
-            self.create_vtk_tar(num=num, remove_original=remove_original)
+            self.create_tar(num=num, remove_original=remove_original)
+
+    def create_rst_tar_all(self,remove_original=False):
+            for num in self.nums_id0:
+                self.move_to_tardir(num=num,kind='rst')
+            raw_tardirs = self._find_match([("rst","????")])
+            for num in [int(f[-4:]) for f in raw_tardirs]:
+                self.create_tar(num=num, remove_original=remove_original, kind='rst')
 
     def move_to_tardir(self, num=None, kind='vtk'):
         """Move vtk files from id* to vtk/XXXX
@@ -437,7 +444,7 @@ class LoadSim(object):
         hst: problem_id.hst
         sn: problem_id.sn (file format identical to hst)
         vtk: problem_id.num.vtk
-        vtk_tak: problem_id.num.tar
+        vtk_tar: problem_id.num.tar
         starpar_vtk: problem_id.num.starpar.vtk
         zprof: problem_id.num.phase.zprof
         timeit: timtit.txt
@@ -696,6 +703,7 @@ class LoadSim(object):
         if 'rst' in self.out_fmt:
             if hasattr(self,'problem_id'):
                 rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
+                                ('rst','{}.*.tar'.format(self.problem_id)),
                                 ('id0','{}.*.rst'.format(self.problem_id))]
                 frst = self._find_match(rst_patterns)
                 if frst:
@@ -738,6 +746,8 @@ class LoadSim(object):
             if kind == 'starpar_vtk':
                 fpattern = '{0:s}.{1:04d}.starpar.vtk'
             elif kind == 'rst':
+                fpattern = '{0:s}.{1:04d}.rst'
+            elif kind == 'rst_tar':
                 fpattern = '{0:s}.{1:04d}.rst'
             elif kind == 'vtk_tar':
                 fpattern = '{0:s}.{1:04d}.tar'
