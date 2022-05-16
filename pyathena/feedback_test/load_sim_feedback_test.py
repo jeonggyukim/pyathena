@@ -17,7 +17,7 @@ from .profile_1d import Profile1D
 class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
     """LoadSim class for analyzing LoadSimFeedbackTest simulations.
     """
-    
+
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  muH=1.4271, verbose=False):
         """The constructor for LoadSimFeedbackTest class
@@ -54,7 +54,6 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         self.domain = self._get_domain_from_par(self.par)
         if self.test_newcool():
             self.test_newcool_params()
-
 
     def test_newcool(self):
         try:
@@ -96,7 +95,7 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         # else:
         #     s.iCoolHIcollion = 1
 
-            
+
     def show_timeit(self):
         import matplotlib.pyplot as plt
         try:
@@ -111,7 +110,7 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         except KeyError:
             print("No timeit plot is available")
 
-            
+
 
     def get_timeit_mean(self):
         try:
@@ -149,14 +148,14 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
                 num = int(round(t/dt_output))
             else:
                 num = int(t/dt_output)
-                
+
             nums.append(num)
 
         if len(nums) == 1:
             nums = nums[0]
 
         return nums
-    
+
     def get_dt_output(self):
 
         r = dict()
@@ -165,9 +164,9 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         r['vtk_sp'] = None
         r['rst'] = None
         r['vtk_2d'] = None
-        
+
         for i in range(self.par['job']['maxout']):
-            b = f'output{i+1}'                
+            b = f'output{i+1}'
             try:
                 if self.par[b]['out_fmt'] == 'vtk' and \
                    (self.par[b]['out'] == 'prim' or self.par[b]['out'] == 'cons'):
@@ -183,8 +182,8 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
             except KeyError:
                 continue
         self.dt_output = r
-        
-        return r 
+
+        return r
 
     def get_summary_sn(self, as_dict=False):
 
@@ -238,7 +237,7 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         df['vrbub_sf'] = float(h.loc[h['time'] == df['t_sf'], 'vrbub'])
 
         df['dx_over_r_sf'] = df['dx']/df['r_sf']
-        
+
         # Momentum at 10*t_sf
         idx = (h['time'] - 10.0*df['t_sf']).abs().argsort()[0]
         df['pr_10t_sf'] = h['pr'].iloc[idx]
@@ -252,14 +251,14 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         df['normn'] = mpl.colors.LogNorm(1e-2,1e2)
         df['linecolorn'] = df['cmapn'](df['normn'](df['n0']))
 
-        
+
         if as_dict:
             return df
         else:
             return pd.Series(df, name=self.basename)
 
 
-        
+
 # class LoadSimFeedbackTestAll(object):
 #     """Class to load multiple simulations"""
 #     def __init__(self, models=None):
@@ -271,7 +270,7 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
 #         # self.models = list(models.keys())
 #         self.models = []
 #         self.basedirs = dict()
-        
+
 #         for mdl, basedir in models.items():
 #             if not osp.exists(basedir):
 #                 print('[LoadSimFeedbackTestAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
@@ -281,7 +280,7 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
 #                 self.basedirs[mdl] = basedir
 
 #     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
-        
+
 #         self.model = model
 #         self.sim = LoadSimFeedbackTest(self.basedirs[model], savdir=savdir,
 #                                        load_method=load_method, verbose=verbose)
@@ -331,14 +330,14 @@ def load_all_feedback_test_sn(force_override=False):
         SN_n100_Z3_N128=osp.join(basedir,'SN-n100-Z3-N128'),
 
     )
-    
+
     sa = LoadSimFeedbackTestAll(models)
 
     # Check if pickle exists
     savdir = osp.join('/tigress', getpass.getuser(), 'FEEDBACK-TEST/pickles')
     if not osp.exists(savdir):
         os.makedirs(savdir)
-        
+
     fpkl = osp.join(savdir, 'feedback-test-all.p')
     if not force_override and osp.isfile(fpkl):
         r = pd.read_pickle(fpkl)
@@ -393,7 +392,7 @@ def plt_hst_sn_diff_Z(n0=1.0):
         axes[4].loglog(x, h['pok_bub'], c=c, ls='-')
         #axes[5].loglog(x, h['dt'], c=c, ls='-')
         axes[5].semilogx(x,h['etash'], c=c, ls='-')
-        
+
     plt.setp(axes[3:], xlabel=r'time [Myr]')#, xlim=(1e-3,1e0))
     plt.setp(axes[0], ylabel=r'$R_{\rm snr}\,[{\rm pc}]$')#, ylim=(10,50))
     plt.setp(axes[1], ylabel=r'${\rm mass}\;[M_{\odot}]$')#, ylim=(1e1,2e4))
@@ -403,10 +402,10 @@ def plt_hst_sn_diff_Z(n0=1.0):
     plt.setp(axes[5], ylabel=r'$\eta = v_{\rm s,sh}t/R_{\rm sh}$', ylim=(0, 0.5))
     plt.suptitle('N={0:d}, '.format(d['Nx']) + r'$n_0=$' + '{0:g}'.format(n0) +\
                  r'$\;{\rm cm}^{-3}$')
-    
+
     axes[2].legend(loc=4)
     plt.savefig('/tigress/jk11/figures/NEWCOOL/FEEDBACK-TEST-SN/SN-hst-n{0:g}.png'.format(n0))
-    
+
     return fig
 
 def plt_hst_sn_diff_n(Z=1.0):
@@ -445,7 +444,7 @@ def plt_hst_sn_diff_n(Z=1.0):
         axes[4].loglog(x, h['pok_bub']/d['pok_bub_sf'], c=c, ls='-')
         #axes[5].loglog(x, h['dt'], c=c, ls='-')
         axes[5].semilogx(x,h['etash'], c=c, ls='-')
-        
+
     plt.setp(axes[3:], xlabel=r'time [Myr]', xlim=(5e-2,2e1))
     plt.setp(axes[0], ylabel=r'$R_{\rm snr}/r_{\rm sf}$')#, ylim=(10,50))
     plt.setp(axes[1], ylabel=r'$mass/M_{\rm h,sf}$')#, ylim=(1e1,2e4))
@@ -460,7 +459,7 @@ def plt_hst_sn_diff_n(Z=1.0):
         ax.axvline(1.0, linestyle='-', lw=0.5, color='grey')
     axes[2].legend(loc=4)
     plt.savefig('/tigress/jk11/figures/NEWCOOL/FEEDBACK-TEST-SN/SN-hst-Z{0:g}.png'.format(Z))
-    
+
     return fig
 
 

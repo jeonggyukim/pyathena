@@ -112,6 +112,16 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
     # print(sel_kwargs)
     d = dd.sel(**sel_kwargs)
 
+    xCtot = s.par['problem']['Z_gas']*s.par['cooling']['xCstd']
+    dx_cgs = s.domain['dx'][2]*s.u.length.cgs.value
+    d['NH'] = d['nH'].cumsum()*dx_cgs
+    d['Av'] = s.par['problem']['Z_dust']*d['NH']/1.87e21
+    d['2xH2'] = 2.0*d['xH2']
+    d['2NH2'] = (2.0*d['nH']*d['xH2']).cumsum()*dx_cgs
+    d['NCO'] = (d['nH']*d['xCO']).cumsum()*dx_cgs
+    d['NCI'] = (d['nH']*d['xCI']).cumsum()*dx_cgs
+    d['NCII'] = (d['nH']*d['xCII']).cumsum()*dx_cgs
+    
     # Grain charging
     # Note that G_0 is in Habing units
     d['charging'] = 1.7*d['chi_PE_ext']*d['T']**0.5/(d['nH']*d['xe'])
@@ -367,7 +377,7 @@ def plt_rates_abd(axes, s, da, model, log_chi0=0.0, xlim=(1e-2,1e3),
                c=c, ls='-.')
     axt.spines['right'].set_color(c)
     axt.yaxis.label.set_color(c)
-    axt.tick_params(axis='y', colors=c)
+    axt.tick_params(axis='y', which='both', colors=c)
     axt.set_ylim(1e2,1e7)
     
     for i,ax in enumerate(axes):

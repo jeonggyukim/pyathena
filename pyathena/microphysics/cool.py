@@ -399,6 +399,32 @@ def coolOI(nH, T, xe, xHI, xH2, xOI):
     return cool3Level_(q01, q10, q02, q20, q12, q21, A10OI_, A20OI_,
                        A21OI_, E10OI_, E20OI_, E21OI_, xOI)
 
+def coolHISmith21(nH, T, xe, xHI):
+
+    g1 = 2.0
+    prefactor = 8.62913e-06
+    Tinv = 1.0/T
+    T6 = T*1e-6
+    T6_SQR = T6*T6
+    T6_CUB = T6_SQR*T6
+
+    Upsilon_12_cool = np.where(T6 > 0.3, 3.7354906,
+                               0.616414 + 16.8152*T6 - 32.0571*T6_SQR + 35.5428*T6_CUB)
+    Upsilon_13_cool = np.where(T6 > 0.3, 0.8098996999999998,
+                               0.217382 + 3.92604*T6 - 10.6349*T6_SQR + 13.7721*T6_CUB)
+    Upsilon_14_cool = np.where(T6 > 0.3, 0.3261425,
+                               0.0959324 + 1.89951*T6 - 6.96467*T6_SQR + 10.6362*T6_CUB)
+    Upsilon_15_cool = np.where(T6 > 0.3, 0.16427759999999997,
+                               0.0747075 + 0.670939*T6 - 2.28512*T6_SQR + 3.4796*T6_CUB)
+    
+    # Total = sum_n E1n*exp(-T1n/T)*Upsilon_1n_Cool
+    total = 1.63490e-11*Upsilon_12_cool*np.exp(-118415.6*Tinv) + \
+        1.93766e-11*Upsilon_13_cool*np.exp(-140344.4*Tinv) + \
+        2.04363e-11*Upsilon_14_cool*np.exp(-148019.5*Tinv) + \
+        2.09267e-11*Upsilon_15_cool*np.exp(-151572.0*Tinv)
+    
+    return xHI*nH*xe*prefactor/(g1*np.sqrt(T))*total
+
 
 def coolLya(nH, T, xe, xHI):
 

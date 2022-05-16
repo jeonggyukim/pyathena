@@ -67,36 +67,60 @@ class Hst:
         except KeyError:
             pass
 
-        try:
-            # hot gas mass in Msun
-            hst['Mh'] *= u.Msun*vol
-        except KeyError:
-            hst['Mhot'] *= u.Msun*vol
+        if 'Vhps' in hst.columns and 'Vhf' in hst.columns:
+            hst['Vh'] = hst['Vhps'] + hst['Vhf']
+            
+        if 'Ethm_hps' in hst.columns and 'Ethm_hf' in hst.columns:
+            hst['Ethm_h'] = hst['Ethm_hps'] + hst['Ethm_hf']
+        
+        # try:
+        #     # hot gas mass in Msun
+        #     hst['Mh'] *= u.Msun*vol
+        # except KeyError:
+        #     try:
+        #         hst['Mhot'] *= u.Msun*vol
+        #     except KeyError:
+        #         hst['Mhps'] *= u.Msun*vol
+        #         hst['Mhf'] *= u.Msun*vol
 
-        try:
-            # warm gas mass in Msun
-            hst['Mw'] *= u.Msun*vol
-        except KeyError:
-            hst['Mwarm'] *= u.Msun*vol
+        # try:
+        #     # warm gas mass in Msun
+        #     hst['Mw'] *= u.Msun*vol
+        # except KeyError:
+        #     hst['Mwarm'] *= u.Msun*vol
 
-        try:
-            # intermediate temperature gas in Msun
-            hst['Mi'] *= u.Msun*vol
-        except KeyError:
-            hst['Minter'] *= u.Msun*vol
+        # try:
+        #     # intermediate temperature gas in Msun
+        #     hst['Mi'] *= u.Msun*vol
+        # except KeyError:
+        #     hst['Minter'] *= u.Msun*vol
 
-        try:
-            # cold gas mass in Msun
-            hst['Mc'] *= u.Msun*vol
-        except KeyError:
-            hst['Mcold'] *= u.Msun*vol
+        # try:
+        #     # cold gas mass in Msun
+        #     hst['Mc'] *= u.Msun*vol
+        # except KeyError:
+        #     hst['Mcold'] *= u.Msun*vol
 
-        try:
-            # Hot and ionized
-            hst['Mhi'] = hst['Mh'] + hst['Mi']
-        except KeyError:
-            hst['Mhi'] = hst['Mhot'] + hst['Minter']
 
+        cols = ['Mh', 'Mhot', 'Mhps', 'Mhf', 'Mw', 'Mwarm', 'Mi', 'Minter',
+                'Mc', 'Mcold']
+        for c in cols:
+            try:
+                hst[c] *= vol*u.Msun
+            except KeyError:
+                continue
+            
+        # try:
+        #     # Hot and ionized
+        #     hst['Mhi'] = hst['Mh'] + hst['Mi']
+        # except KeyError:
+        #     try:
+        #         hst['Mhi'] = hst['Mhot'] + hst['Minter']
+        #     except:
+        #         try:
+        #             hst['Mhi'] = hst['Mhf'] + hst['Mhps'] + hst['Minter']
+        #         except Keyerror:
+        #             pass
 
         # Mass of molecular, atomic, and ionized gas
         # H2, HI, HII: sum of passive scalars
@@ -116,8 +140,15 @@ class Hst:
         try:
             hst['pr_h'] *= pr_conv
         except KeyError:
-            hst['pr_hot'] *= pr_conv
-
+            try:
+                hst['pr_hot'] *= pr_conv
+            except KeyError:
+                try:
+                    hst['pr_hf'] *= pr_conv
+                    hst['pr_hps'] *= pr_conv
+                except KeyError:
+                    pass
+                
         hst['prsh'] *= pr_conv
 
         ########################
@@ -140,8 +171,14 @@ class Hst:
         hst['Ethm'] *= E_conv
         hst['Ekin'] *= E_conv
         for ph in ('c','u','w','i','h'):
-            hst['Ethm_'+ph] *= E_conv
-            hst['Ekin_'+ph] *= E_conv
+            try:
+                hst['Ethm_'+ph] *= E_conv
+            except:
+                pass
+            try:
+                hst['Ekin_'+ph] *= E_conv
+            except:
+                pass
 
         # Mean cool/heat rates
         # cooling rate is in code units since Jan 27, 2022
@@ -169,9 +206,12 @@ class Hst:
         # hst['eta'] = hst['vsnr']*hst['time_code']/hst['Rsnr']
 
         vol_cgs = vol*u.length.cgs.value**3
-        hst['pok_bub'] = (hst['Ethm_i'] + hst['Ethm_h'])/\
-            ((hst['Vi'] + hst['Vh'])*vol_cgs)/ac.k_B.cgs.value
-
+        try:
+            hst['pok_bub'] = (hst['Ethm_i'] + hst['Ethm_h'])/\
+                ((hst['Vi'] + hst['Vh'])*vol_cgs)/ac.k_B.cgs.value
+        except:
+            pass
+        
         hst['Vbub'] *= vol
         hst['Rbub'] = (3.0*hst['Vbub']/(4.0*np.pi))**(1.0/3.0)
         hst['vrbub'] = np.gradient(hst['Rbub'], hst['time_code'])
@@ -209,19 +249,23 @@ class Hst:
         hst['wind_Edot'] *= vol*u.erg/u.s
         hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr
 
-        hst['wind_pr_c'] = hst['pr_c_swind_mixed4']*pr_conv
-        hst['wind_pr_i'] = hst['pr_i_swind_mixed4']*pr_conv
-        hst['wind_pr_w'] = hst['pr_w_swind_mixed4']*pr_conv
         try:
-            hst['wind_pr_u'] = hst['pr_u_swind_mixed4']*pr_conv
-        except: # typo
-            hst['wind_pr_u'] = hst['pr_y_swind_mixed4']*pr_conv
-
+            hst['wind_pr_c'] = hst['pr_c_swind_mixed4']*pr_conv
+            hst['wind_pr_i'] = hst['pr_i_swind_mixed4']*pr_conv
+            hst['wind_pr_w'] = hst['pr_w_swind_mixed4']*pr_conv
+            try:
+                hst['wind_pr_u'] = hst['pr_u_swind_mixed4']*pr_conv
+            except: # typo
+                hst['wind_pr_u'] = hst['pr_y_swind_mixed4']*pr_conv
+                
+            hst['wind_pr'] = hst['wind_pr_c'] + hst['wind_pr_i'] + \
+                hst['wind_pr_w'] + hst['wind_pr_u'] + hst['wind_pr_hf'] + \
+                hst['wind_pr_hps']
+        except:
+            pass
+        
         hst['wind_pr_hf'] = hst['pr_hf']*pr_conv
         hst['wind_pr_hps'] = hst['pr_hps']*pr_conv
-        hst['wind_pr'] = hst['wind_pr_c'] + hst['wind_pr_i'] + \
-            hst['wind_pr_w'] + hst['wind_pr_u'] + hst['wind_pr_hf'] + \
-            hst['wind_pr_hps']
 
         return hst
 

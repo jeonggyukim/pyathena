@@ -632,7 +632,8 @@ def load_all_sf_cloud(models=None,
             M2E5R30_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R30-PHRP-A4-B2-S4-N192',
             M2E5R15_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R15-PHRP-A4-B2-S4-N192',
             M2E5R7p5_PHRP_A4B2S4_N192='/tigress/jk11/SF-CLOUD/M2E5R7.5-PHRP-A4-B2-S4-N192',
-            
+
+            M5E5R05_PH_A4_B2_S4_N192='/tigress/jk11/SF-CLOUD/M5E5R05-PH-A4-B2-S4-N192'
         )
 
         
