@@ -1012,6 +1012,56 @@ def set_derived_fields_rad(par, x0):
     vminmax[f] = (1,1000)
     take_log[f] = True
 
+    # PE heating efficiency
+    f = 'eps_pe'
+    field_dep[f] = set(['density','pressure','xe','xH2',
+                        'rad_energy_density_LW','rad_energy_density_PE'])
+    def _eps_pe(d, u):
+        CPE_ = np.array([5.22, 2.25, 0.04996, 0.00430, 0.147, 0.431, 0.692])
+        conv = u.energy_density.cgs.value*ac.c.cgs.value
+        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+            (ac.k_B/u.energy_density).cgs.value
+        chi_FUV = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
+                   d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)
+        G0 = chi_FUV*1.7 # Habing field
+        # Grain charging
+        x = G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
+        eps = (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
+            (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
+        # PE heating rate
+        Gamma_pe = 1.7e-26*chi_FUV*par['problem']['Z_dust']*eps
+        # Dust heating rate
+        Gamma_dust_FUV = (d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
+                          d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'])*conv
+        return Gamma_pe/Gamma_dust_FUV
+    
+    func[f] = _eps_pe
+    label[f] = r'$\epsilon_{\rm pe}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1.0e-3,1)
+    take_log[f] = True
+
+    # PE heating rate
+    f = 'Gamma_pe'
+    field_dep[f] = set(['density','pressure','xe','xH2',
+                        'rad_energy_density_LW','rad_energy_density_PE'])
+    def _eps_PE(d, u):
+        CPE_ = np.array([5.22, 2.25, 0.04996, 0.00430, 0.147, 0.431, 0.692])
+        G0 = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
+              d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)*1.7
+        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                    (ac.k_B/u.energy_density).cgs.value
+        # Grain charging
+        x = G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
+        return (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
+            (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
+    
+    func[f] = _eps_PE
+    label[f] = r'$\epsilon_{\rm PE}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1.0e-3,1)
+    take_log[f] = True
+    
     try:
         if par['configure']['lwrad'] == 'ON':
             # Normalized LW intensity (attenuated by dust and H2 self-shielding)
