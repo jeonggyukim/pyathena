@@ -262,19 +262,12 @@ class LoadSim(object):
 
         return self.rh
 
-    def create_vtk_tar_all(self,remove_original=False):
+    def create_tar_all(self,remove_original=False,kind='vtk'):
         for num in self.nums_id0:
-            self.move_to_tardir(num=num)
-        raw_tardirs = self._find_match([("vtk","????")])
+            self.move_to_tardir(num=num, kind=kind)
+        raw_tardirs = self._find_match([(kind,"????")])
         for num in [int(f[-4:]) for f in raw_tardirs]:
-            self.create_tar(num=num, remove_original=remove_original)
-
-    def create_rst_tar_all(self,remove_original=False):
-            for num in self.nums_id0:
-                self.move_to_tardir(num=num,kind='rst')
-            raw_tardirs = self._find_match([("rst","????")])
-            for num in [int(f[-4:]) for f in raw_tardirs]:
-                self.create_tar(num=num, remove_original=remove_original, kind='rst')
+            self.create_tar(num=num, remove_original=remove_original, kind=kind)
 
     def move_to_tardir(self, num=None, kind='vtk'):
         """Move vtk files from id* to vtk/XXXX
