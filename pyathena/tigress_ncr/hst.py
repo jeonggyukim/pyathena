@@ -225,13 +225,16 @@ class Hst:
         self.hst = h
 
         # SN data
-        if osp.exists(self.files['sn']):
-            sn = read_hst(self.files['sn'],force_override=force_override)
-            snr = get_snr(sn['time']*self.u.Myr,hst['time']*self.u.Myr)
+        try:
+            if osp.exists(self.files['sn']):
+                sn = read_hst(self.files['sn'],force_override=force_override)
+                snr = get_snr(sn['time']*self.u.Myr,hst['time']*self.u.Myr)
 
-            self.sn = sn
-            self.snr = snr/LxLy
-
+                self.sn = sn
+                self.snr = snr/LxLy
+        except:
+            pass
+        
         return h
 
 def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_override=False),
