@@ -349,7 +349,7 @@ class LoadSim(object):
 
         athinput_patterns = [('stdout.txt',),
                              ('out.txt',),
-                             ('out.*.txt',),
+                             ('out*.txt',),
                              ('log.txt',),
                              ('*.par',),
                              ('*.out',),
