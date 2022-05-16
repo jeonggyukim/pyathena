@@ -289,6 +289,28 @@ def coolCI(nH, T, xe, xHI, xH2, xCI):
     return cool3Level_(q01,q10,q02,q20,q12,q21,A10CI_,A20CI_,
                        A21CI_,E10CI_,E20CI_,E21CI_,xCI)
 
+def coolneb(nH, T, xe, xHII, Z_g):
+    aNEB_ = np.array([-0.0050817, 0.00765822, 0.11832144, -0.50515842,
+                      0.81569592,-0.58648172,0.69170381])
+    T4 = T*1e-4
+    lnT4 = np.log(T4)
+    lnT4_2 = lnT4*lnT4
+    lnT4_3 = lnT4_2*lnT4
+    lnT4_4 = lnT4_3*lnT4
+    lnT4_5 = lnT4_4*lnT4
+    lnT4_6 = lnT4_5*lnT4
+    poly_fit = np.power(10.0,
+                        aNEB_[0]*lnT4_6 +
+                        aNEB_[1]*lnT4_5 +
+                        aNEB_[2]*lnT4_4 +
+                        aNEB_[3]*lnT4_3 +
+                        aNEB_[4]*lnT4_2 +
+                        aNEB_[5]*lnT4 + aNEB_[6])
+    f_red = 1/(1.0 + 0.12*np.power(xe*nH*1e-2, 0.38 - 0.12*lnT4))
+    
+    return 3.677602203699553e-21*\
+        Z_g*xHII*xe*nH/np.sqrt(T)*np.exp(-38585.52/T)*poly_fit*f_red
+
 def coolOII(nH, T, xe, xOII):
 
     T4 = T*1e-4
