@@ -1,3 +1,4 @@
 *.err
 *.out
 join_vtk
+*.sh

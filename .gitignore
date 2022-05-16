@@ -5,3 +5,6 @@ __pycache__
 *.pyc
 *.swp
 nohup.*
+working_notebook
+pyathenapp
+data/twind
