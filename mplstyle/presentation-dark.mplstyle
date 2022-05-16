@@ -1,0 +1,46 @@
+figure.figsize: 8,6
+figure.facecolor: black
+figure.edgecolor: black
+figure.dpi: 200
+
+savefig.dpi: 200
+savefig.bbox: tight
+
+font.size: 18
+font.weight: 300
+
+axes.grid: False
+axes.facecolor: black
+axes.edgecolor: lightgray
+axes.labelcolor: white
+axes.linewidth: 2
+axes.spines.right: False
+axes.spines.top: False
+
+xtick.major.width: 2
+ytick.major.width: 2
+xtick.labelsize: medium
+ytick.labelsize: medium
+xtick.top: False
+ytick.right: False
+xtick.direction: out
+ytick.direction: out
+xtick.minor.visible: False
+ytick.minor.visible: False
+xtick.major.size: 5
+ytick.major.size: 5
+xtick.color: white
+ytick.color: white
+
+legend.fontsize: small
+
+lines.linewidth: 2
+
+image.origin: lower
+
+mathtext.fontset: cm
+
+text.color: white
+
+savefig.edgecolor: black
+savefig.facecolor: black
