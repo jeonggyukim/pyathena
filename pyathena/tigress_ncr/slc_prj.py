@@ -257,7 +257,7 @@ class SliceProj:
 
     def plt_snapshot(self, num,
                      fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'chi_FUV'),
-                     fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz', 'Bmag'),
+                     fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz', 'Bmag', 'chi_FUV','Erad_LyC'),
                      #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
                      #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,

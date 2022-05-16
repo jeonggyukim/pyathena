@@ -86,15 +86,18 @@ class Hst:
             h['Sigma_HII'] = h['M_HII']/(LxLy*u.pc**2)
 
         # Total outflow mass
-        h['massflux_lbd_d'] = hst['F3_lower']*u.mass_flux
-        h['massflux_ubd_d'] = hst['F3_upper']*u.mass_flux
-        h['mass_out'] = integrate.cumtrapz(hst['F3_upper'] - hst['F3_lower'], hst['time'], initial=0.0)
-        h['mass_out'] = h['mass_out']/(domain['Nx'][2]*domain['dx'][2])*vol*u.Msun
+        try:
+            h['massflux_lbd_d'] = hst['F3_lower']*u.mass_flux
+            h['massflux_ubd_d'] = hst['F3_upper']*u.mass_flux
+            h['mass_out'] = integrate.cumtrapz(hst['F3_upper'] - hst['F3_lower'], hst['time'], initial=0.0)
+            h['mass_out'] = h['mass_out']/(domain['Nx'][2]*domain['dx'][2])*vol*u.Msun
+            h['Sigma_out'] = h['mass_out']/(LxLy*u.pc**2)
+        except:
+            pass
 
         # Mass surface density in Msun/pc^2
         h['Sigma_gas'] = h['mass']/(LxLy*u.pc**2)
         h['Sigma_sp'] = h['mass_sp']/(LxLy*u.pc**2)
-        h['Sigma_out'] = h['mass_out']/(LxLy*u.pc**2)
 
         # Calculate (cumulative) SN ejecta mass
         # JKIM: only from clustered type II(?)
@@ -112,20 +115,23 @@ class Hst:
         #h['Sigma_gas'] = h['M_gas']/(LxLy*u.pc**2)
 
         # Mass, volume fraction, scale height
-        h['H'] = np.sqrt(hst['H2'] / hst['mass'])
-        for ph in ['c','u','w','h1','h2']:
-            h['mf_{}'.format(ph)] = hst['M{}'.format(ph)]/hst['mass']
-            h['vf_{}'.format(ph)] = hst['V{}'.format(ph)]
-            h['H_{}'.format(ph)] = \
-                np.sqrt(hst['H2{}'.format(ph)] / hst['M{}'.format(ph)])
-        #print(h['mf_c'])
-        #h['Vmid_2p'] = hst['Vmid_2p']
-
-        # mf, vf, H of thermally bistable (cold + unstable + warm) medium
-        h['mf_2p'] = h['mf_c'] + h['mf_u'] + h['mf_w']
-        h['vf_2p'] = h['vf_c'] + h['vf_u'] + h['vf_w']
-        h['H_2p'] = np.sqrt((hst['H2c'] + hst['H2u'] + hst['H2w']) / \
-                            (hst['Mc'] + hst['Mu'] + hst['Mw']))
+        try:
+            h['H'] = np.sqrt(hst['H2'] / hst['mass'])
+        except:
+            pass
+        try:
+            for ph in ['c','u','w','h1','h2']:
+                h['mf_{}'.format(ph)] = hst['M{}'.format(ph)]/hst['mass']
+                h['vf_{}'.format(ph)] = hst['V{}'.format(ph)]
+                h['H_{}'.format(ph)] = \
+                    np.sqrt(hst['H2{}'.format(ph)] / hst['M{}'.format(ph)])
+            # mf, vf, H of thermally bistable (cold + unstable + warm) medium
+            h['mf_2p'] = h['mf_c'] + h['mf_u'] + h['mf_w']
+            h['vf_2p'] = h['vf_c'] + h['vf_u'] + h['vf_w']
+            h['H_2p'] = np.sqrt((hst['H2c'] + hst['H2u'] + hst['H2w']) / \
+                                (hst['Mc'] + hst['Mu'] + hst['Mw']))
+        except:
+            pass
 
         # Kinetic and magnetic energy
         h['KE'] = hst['x1KE'] + hst['x2KE'] + hst['x3KE']
@@ -142,18 +148,26 @@ class Hst:
             if mhd:
                 h['vA{}'.format(ax)] = \
                     np.sqrt(2*hst['x{}ME'.format(ax)]/hst['mass'])
-            h['v{}_2p'.format(ax)] = \
-                np.sqrt(2*hst['x{}KE_2p'.format(ax)]/hst['mass']/h['mf_2p'])
+            try:
+                h['v{}_2p'.format(ax)] = \
+                    np.sqrt(2*hst['x{}KE_2p'.format(ax)]/hst['mass']/h['mf_2p'])
+            except:
+                pass
 
-        h['cs'] = np.sqrt(hst['P']/hst['mass'])
-        h['Pth_mid'] = hst['Pth']*u.pok
-        h['Pth_mid_2p'] = hst['Pth_2p']*u.pok/hst['Vmid_2p']
-        h['Pturb_mid'] = hst['Pturb']*u.pok
-        h['Pturb_mid_2p'] = hst['Pturb_2p']*u.pok/hst['Vmid_2p']
-
-        # Midplane number density
-        h['nmid'] = hst['nmid']
-        h['nmid_2p'] = hst['nmid_2p']/hst['Vmid_2p']
+        try:
+            h['cs'] = np.sqrt(hst['P']/hst['mass'])
+        except:
+            pass
+        try:
+            h['Pth_mid'] = hst['Pth']*u.pok
+            h['Pth_mid_2p'] = hst['Pth_2p']*u.pok/hst['Vmid_2p']
+            h['Pturb_mid'] = hst['Pturb']*u.pok
+            h['Pturb_mid_2p'] = hst['Pturb_2p']*u.pok/hst['Vmid_2p']
+            # Midplane number density
+            h['nmid'] = hst['nmid']
+            h['nmid_2p'] = hst['nmid_2p']/hst['Vmid_2p']
+        except:
+            pass
 
         # Star formation rate per area [Msun/kpc^2/yr]
         h['sfr10'] = hst['sfr10']
@@ -190,6 +204,10 @@ class Hst:
                             except KeyError:
                                 self.logger.info('Ldust not found in hst')
 
+                            try:
+                                h[f'Lxymax_{k}'] = hst[f'Lxymax{i}']*vol*u.Lsun
+                            except KeyError:
+                                self.logger.info('Lxymax not found in hst')
                             hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
                             h[f'Qtot_{k}'] = h[f'Ltot_{k}'].values * \
                                                (ac.L_sun.cgs.value)/hnu

@@ -68,7 +68,7 @@ def cmap_shift(cmap, start=0.0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
         cdict['alpha'].append((si, a, a))
 
     cmap_new = mpl.colors.LinearSegmentedColormap(name, cdict)
-    plt.register_cmap(cmap=cmap_new)
+    # plt.register_cmap(cmap=cmap_new)
 
     return cmap_new
 

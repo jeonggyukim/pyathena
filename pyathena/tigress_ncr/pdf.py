@@ -63,9 +63,9 @@ class PDF:
                    savdir=None, force_override=False):
 
         bin_fields_def = [['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'],
-                          ['nH', 'T']]
+                          ['nH', 'T'],['nH', 'T'],['nH', 'T'],['nH', 'T']]
         weight_fields_def = ['nH', '2nH2', 'nHI', 'nHII',
-                             'nH']
+                             'nH', '2nH2', 'nHI', 'nHII']
         if self.par['configure']['radps'] == 'ON':
             bin_fields_def += [['T','Lambda_cool'], ['nH','xH2'],
                                ['T','xHII'], ['T', 'xHI']]
@@ -96,7 +96,8 @@ class PDF:
         dd = dd.stack(xyz=['x','y','z']).dropna(dim='xyz')
         for bf,wf in zip(bin_fields,weight_fields):
             k = '-'.join(bf)
-            res[k] = dict()
+            if not (k in res):
+                res[k] = dict()
             xdat = dd[bf[0]]
             ydat = dd[bf[1]]
             xbins = self.bins[bf[0]]
@@ -107,8 +108,8 @@ class PDF:
             # Weighted hist
             Hw, xe, ye = np.histogram2d(xdat, ydat, (xbins, ybins),
                                         weights=weights)
-            res[k]['Hw'] = Hw
-            res[k]['H'] = H
+            res[k][wf] = Hw
+            res[k]['vol'] = H
             res[k]['xe'] = xe
             res[k]['ye'] = ye
 
@@ -124,9 +125,9 @@ class PDF:
                   xscale='log', yscale='log'):
 
         if weighted:
-            hist = 'Hw'
+            hist = 'vol'
         else:
-            hist = 'H'
+            hist = 'nH'
 
         if wfield is not None:
             hist = wfield
@@ -169,18 +170,15 @@ class PDF:
         # ax = fig.add_subplot(gs[0:2, -1])
 
         #s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=False)
-        s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=True)
-        #s.plt_pdf2d(axes[0,1], pdf, 'nH-chi_FUV', weighted=False)
-        s.plt_pdf2d(axes[0,1], pdf, 'nH-chi_FUV', weighted=True)
-        #s.plt_pdf2d(axes[0,2], pdf, 'T-Lambda_cool', weighted=False)
-        s.plt_pdf2d(axes[0,2], pdf, 'T-Lambda_cool', weighted=True)
-        #s.plt_pdf2d(axes[0,3], pdf, 'nH-xi_CR', weighted=False)
-        s.plt_pdf2d(axes[0,3], pdf, 'nH-xi_CR', weighted=True)
-        s.plt_pdf2d(axes[1,0], pdf, 'nH-T', weighted=True)
-        s.plt_pdf2d(axes[1,1], pdf, 'nH-T', wfield = 'MH2')
-        s.plt_pdf2d(axes[1,2], pdf, 'nH-T', wfield = 'MHI')
-        s.plt_pdf2d(axes[1,3], pdf, 'nH-T', wfield = 'MHII')
-        s.plt_pdf2d(axes[2,2], pdf, 'nH-chi_H2', weighted=False)
+        s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', wfield = 'vol')
+        s.plt_pdf2d(axes[0,1], pdf, 'nH-pok', wfield = 'nH')
+        s.plt_pdf2d(axes[0,2], pdf, 'nH-chi_FUV', wfield = 'vol')
+        s.plt_pdf2d(axes[0,3], pdf, 'nH-xi_CR', wfield = 'nH')
+        s.plt_pdf2d(axes[1,0], pdf, 'nH-T', wfield = 'nH')
+        s.plt_pdf2d(axes[1,1], pdf, 'nH-T', wfield = '2nH2')
+        s.plt_pdf2d(axes[1,2], pdf, 'nH-T', wfield = 'nHI')
+        s.plt_pdf2d(axes[1,3], pdf, 'nH-T', wfield = 'nHII')
+        s.plt_pdf2d(axes[2,2], pdf, 'nH-chi_H2', wfield = 'vol')
 
         ax = axes[2,0]
         # s.plt_proj(ax, prj, 'z', 'Sigma_gas')
