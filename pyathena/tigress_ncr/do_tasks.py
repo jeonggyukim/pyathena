@@ -15,11 +15,11 @@ import pyathena as pa
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     COMM = MPI.COMM_WORLD
 
-    basedir_def = '/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR'
+    basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
 
     # savdir = '/tigress/jk11/tmp4/'
     # savdir_pkl = '/tigress/jk11/tmp3/'
@@ -27,9 +27,9 @@ if __name__ == '__main__':
     savdir_pkl = None
 
     parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--basedir', type=str,
-                        default=basedir_def,
-                        help='Name of the basedir.')
+    parser.add_argument(
+        "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
+    )
     args = vars(parser.parse_args())
     locals().update(args)
 
@@ -37,32 +37,44 @@ if __name__ == '__main__':
     nums = s.nums
 
     if COMM.rank == 0:
-        print('basedir, nums', s.basedir, nums)
+        print("basedir, nums", s.basedir, nums)
         nums = split_container(nums, COMM.size)
     else:
         nums = None
 
     mynums = COMM.scatter(nums, root=0)
-    print('[rank, mynums]:', COMM.rank, mynums)
+    print("[rank, mynums]:", COMM.rank, mynums)
 
     time0 = time.time()
     for num in mynums:
-        print(num, end=' ')
+        print(num, end=" ")
 
         try:
-            fig = s.plt_snapshot(num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=False)
+            fig = s.plt_snapshot(
+                num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=False
+            )
             plt.close(fig)
-            fig = s.plt_pdf2d_all(num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir)
+            fig = s.plt_pdf2d_all(
+                num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir
+            )
             plt.close(fig)
         except (EOFError, KeyError, pickle.UnpicklingError):
-            fig = s.plt_snapshot(num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True)
+            fig = s.plt_snapshot(
+                num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True
+            )
             plt.close(fig)
-            fig = s.plt_pdf2d_all(num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True)
+            fig = s.plt_pdf2d_all(
+                num,
+                plt_zprof=False,
+                savdir_pkl=savdir_pkl,
+                savdir=savdir,
+                force_override=True,
+            )
             plt.close(fig)
 
         n = gc.collect()
-        print('Unreachable objects:', n, end=' ')
-        print('Remaining Garbage:', end=' ')
+        print("Unreachable objects:", n, end=" ")
+        print("Remaining Garbage:", end=" ")
         pprint.pprint(gc.garbage)
         sys.stdout.flush()
 

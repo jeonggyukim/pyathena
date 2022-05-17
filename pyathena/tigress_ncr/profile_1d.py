@@ -6,11 +6,20 @@ from inspect import getsource
 
 from ..load_sim import LoadSim
 
+
 class Profile1D:
-    
     @LoadSim.Decorators.check_pickle
-    def get_profile1d(self, num, fields_y, field_x='r', bins=None, statistic='mean',
-                      prefix='profile1d', savdir=None, force_override=False):
+    def get_profile1d(
+        self,
+        num,
+        fields_y,
+        field_x="r",
+        bins=None,
+        statistic="mean",
+        prefix="profile1d",
+        savdir=None,
+        force_override=False,
+    ):
         """
         Function to calculate 1D profile(s) and pickle using
         scipy.stats.binned_statistics
@@ -64,20 +73,20 @@ class Profile1D:
 
         fields_y = np.atleast_1d(fields_y)
         statistic = np.atleast_1d(statistic)
-        
+
         ds = self.load_vtk(num)
         ddy = ds.get_field(fields_y)
         ddx = ds.get_field(field_x)
         x1d = ddx[field_x].data.flatten()
         if bins is None:
             bins = np.linspace(x1d.min(), x1d.max(), 50)
-            
+
         res = dict()
         res[field_x] = dict()
         for y in fields_y:
             res[y] = dict()
 
-        get_lambda_name = lambda l: getsource(l).split('=')[0].strip()
+        get_lambda_name = lambda l: getsource(l).split("=")[0].strip()
 
         # Compute statistics
         for y in fields_y:
@@ -91,18 +100,18 @@ class Profile1D:
                         name = st.__name__
                 else:
                     name = st
-                    
+
                 st, bine, _ = stats.binned_statistic(x1d, y1d, st, bins=bins)
                 # Store result
                 res[y][name] = st
-    
+
         # bin edges
-        res[field_x]['bine'] = bine
+        res[field_x]["bine"] = bine
         # bin centers
-        res[field_x]['binc'] = 0.5*(bine[1:] + bine[:-1])
+        res[field_x]["binc"] = 0.5 * (bine[1:] + bine[:-1])
 
         # Time of the snapshot
-        res['time_code'] = ds.domain['time']
-        res['time'] = ds.domain['time']*self.u.Myr
-        
+        res["time_code"] = ds.domain["time"]
+        res["time"] = ds.domain["time"] * self.u.Myr
+
         return res
