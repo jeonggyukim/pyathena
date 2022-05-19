@@ -175,25 +175,14 @@ class LoadSim(object):
             kind = ['vtk_id0', 'vtk', 'vtk_tar']
         else:
             kind = ['vtk', 'vtk_tar', 'vtk_id0']
-
-        self.fvtk = self._get_fvtk(kind[0], num, ivtk)
-        if self.fvtk is None or not osp.exists(self.fvtk):
-            if id0:
-                self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
-                                 'Try joined/tarred vtk')
+        for k in kind:
+            self.fvtk = self._get_fvtk(k, num, ivtk)
+            if self.fvtk is None or not osp.exists(self.fvtk):
+                self.logger.info('[load_vtk]: {:s} Vtk file does not exist. '.format(k))
             else:
-                self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
-                                 'Try vtk in id0')
-
-            # Check if joined vtk (or vtk in id0) exists
-            self.fvtk = self._get_fvtk(kind[1], num, ivtk)
-            if self.fvtk is None or not osp.exists(self.fvtk):
-                self.logger.info('[load_vtk]: Vtk file does not exist.')
-
-            # Check if joined vtk (or vtk in id0) exists
-            self.fvtk = self._get_fvtk(kind[2], num, ivtk)
-            if self.fvtk is None or not osp.exists(self.fvtk):
-                self.logger.error('[load_vtk]: Vtk file does not exist.')
+                break
+        if self.fvtk is None or not osp.exists(self.fvtk):
+            self.logger.error('[load_vtk]: Vtk file does not exist.')
 
         if self.fvtk.endswith('vtk'):
             if self.load_method == 'pyathena':
@@ -274,9 +263,18 @@ class LoadSim(object):
 
         return self.rh
 
-    def create_tar_all(self,remove_original=False,kind='vtk'):
-        for num in self.nums_id0:
-            self.move_to_tardir(num=num, kind=kind)
+    def create_tar_all(self,move=False,remove_original=False,kind='vtk'):
+        try:
+            if kind=='vtk':
+                nums='nums_id0'
+            elif kind=='rst':
+                nums='nums_rst'
+            if hasattr(self,nums):
+                for num in getattr(self,nums):
+                    self.move_to_tardir(num=num, kind=kind)
+        except TypeError:
+            pass
+
         raw_tardirs = self._find_match([(kind,"????")])
         for num in [int(f[-4:]) for f in raw_tardirs]:
             self.create_tar(num=num, remove_original=remove_original, kind=kind)
@@ -296,7 +294,7 @@ class LoadSim(object):
         tarname = osp.join(dirname, fpattern.format(self.problem_id, num))
         tardir = os.path.join(dirname,'{0:04d}'.format(num))
 
-        # move files to vtk/num/*.num.tar
+        # move files to vtk/num/*.num.vtk
         if osp.isdir(tardir):
             self.logger.info('[move_to_tardir] {:s} exists'.format(tardir))
             return
@@ -308,10 +306,16 @@ class LoadSim(object):
         # find files
         if kind == 'vtk':
             id_files = [self._get_fvtk('vtk_id0',num=num)]
+            id_files += self._find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
+                                         format(self.problem_id, num, kind))])
         elif kind == 'rst':
             id_files = [self._get_fvtk('rst',num=num)]
-        id_files += self._find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
-                                     format(self.problem_id, num, kind))])
+            if 'id0' in id_files[0]:
+                id_files += self._find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
+                                             format(self.problem_id, num, kind))])
+            else:
+                id_files += self._find_match([('rst','{0:s}-id*.{1:04d}.{2:s}'.\
+                                             format(self.problem_id, num, kind))])
         # move each file
         self.logger.info('[move_to_tardir] moving {:d} files to {:s}'.\
                          format(len(id_files),tardir))
@@ -468,7 +472,7 @@ class LoadSim(object):
                         ('*.????.vtk',)]
 
         vtk_id0_patterns = [('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
-                            # ('vtk', '[0-9]'*4, '*.' + '[0-9]'*4 + '.vtk'),
+                            #('vtk', '[0-9]'*4, '*.' + '[0-9]'*4 + '.vtk'),
                             ('id0', '*.' + '[0-9]'*4 + '.vtk')]
 
         vtk_tar_patterns = [('vtk', '*.????.tar')]
@@ -568,6 +572,10 @@ class LoadSim(object):
             self.files['vtk'] = self._find_match(vtk_patterns)
             self.files['vtk_id0'] = self._find_match(vtk_id0_patterns)
             self.files['vtk_tar'] = self._find_match(vtk_tar_patterns)
+            #if not self.files['vtk'] and not self.files['vtk_id0'] and \
+            #   not self.files['vtk_tar']:
+            #    self.create_tar_all(kind='vtk')
+            #    self.files['vtk_tar'] = self._find_match(vtk_tar_patterns)
             if not self.files['vtk'] and not self.files['vtk_id0'] and \
                not self.files['vtk_tar']:
                 self.logger.warning(
