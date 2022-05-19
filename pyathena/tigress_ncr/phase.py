@@ -1,18 +1,14 @@
 import matplotlib as mpl
 import numpy as np
 import xarray as xr
-import astropy.units as au
-import astropy.constants as ac
-import sys, os
+import sys
+import os
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
-import argparse
 import cmasher as cmr
+import pyathena as pa
+import astropy.units as au
 
 sys.path.insert(0, "../../")
-
-import pyathena as pa
-import gc
 
 
 def print_blue(txt):
@@ -51,7 +47,7 @@ def recal_nP(dchunk):
                 .dropna(dim="xyz")
                 .data
             )
-            if wf is "vol":
+            if wf == "vol":
                 w = None
             else:
                 w = (
@@ -170,7 +166,7 @@ def add_phase_cuts(
                 plt.plot([1, np.log10(Tlist[1])], mol_cut, **lkwargs)
             elif xs_axis == "x":
                 plt.plot(ion_cut, [np.log10(Tlist[1]), np.log10(Tlist[3])], **lkwargs)
-                plt.plot(mol_cut, [1, np.log10(Tlist[1])], **lwargs)
+                plt.plot(mol_cut, [1, np.log10(Tlist[1])], **lkwargs)
         elif xs == "xHII":
             ion_cut = np.array([xHIIcut, xHIIcut])
             if log:
@@ -280,9 +276,9 @@ def add_phase_cuts(
     for k in label_infos:
         info = label_infos[k]
         if "label" in info:
-            l = info.pop("label")
+            label = info.pop("label")
         else:
-            l = k
+            label = k
         if xs_axis == "x":
             info["xy"] = (info["xy"][1], info["xy"][0])
             va = "bottom" if info["ha"] == "left" else "top"
@@ -293,7 +289,7 @@ def add_phase_cuts(
 
         fg = "k" if k in ["WNM", "WIM", "UIM", "WCIM", "WPIM"] else "w"
         te = pa.classic.texteffect(fontsize="xx-small", foreground=fg, linewidth=2)
-        plt.annotate(l, color=phcolors[k], weight="bold", **info, **te)
+        plt.annotate(label, color=phcolors[k], weight="bold", **info, **te)
 
     #
     if xHI_CIE:

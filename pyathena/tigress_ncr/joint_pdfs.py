@@ -1,18 +1,10 @@
 import numpy as np
-import xarray as xr
-import astropy.units as au
-import astropy.constants as ac
-import sys, os
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
+import os
 import argparse
-
-sys.path.insert(0, "../../")
-
 import pyathena as pa
 import gc
 
-from pyathena.tigress_ncr.get_cooling import get_cooling_heating, get_pdfs
+from .get_cooling import get_cooling_heating, get_pdfs
 
 
 def calc_pdfs(

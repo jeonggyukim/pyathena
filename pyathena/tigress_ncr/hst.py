@@ -274,6 +274,12 @@ class Hst:
 
         return h
 
+    def test_phase_sep_hst(self):
+        fhstph = glob.glob(self.files["hst"].replace(".hst", ".phase*.hst"))
+        fhstph.sort()
+        nphase = len(fhstph)
+        return nphase>0
+
     def read_hst_phase(self, iph=0):
         if iph == 0:
             f = self.files["hst"].replace(".hst", ".whole.hst")
@@ -292,15 +298,24 @@ class Hst:
         nphase = len(fhstph)
 
         hstph = xr.Dataset()
-        thphase = ["C", "U", "W1", "W2", "WH", "H"]
-        chphase = ["I", "M", "N"]
-        nthph = len(thphase)
-        for iph in range(0, nphase):
-            phname = thphase[iph % nthph] + chphase[iph // nthph] + "M"
-            hstph[phname] = self.read_hst_phase(iph + 1).to_array()
+        for iph in range(1, nphase+1):
+            phname = self.get_hst_phase_name(iph)
+            hstph[phname] = self.read_hst_phase(iph).to_array()
         hstph = hstph.to_array("phase").to_dataset("variable")
 
         return hstph
+
+    def get_hst_phase_name(self, iph):
+        if iph == 0: return "whole"
+
+        thphase = ["C", "U", "W1", "W2", "WH", "H"]
+        chphase = ["I", "M", "N"]
+
+        nthph = len(thphase)
+        nchph = len(chphase)
+        if iph > nthph*nchph:
+            raise KeyError("{} phases are defined, but iph={} is given".format(nthph*nchph,iph))
+        return thphase[(iph-1) % nthph] + chphase[(iph-1) // nthph] + "M"
 
 
 def plt_hst_compare(

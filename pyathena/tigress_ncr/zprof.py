@@ -9,7 +9,7 @@ import numpy as np
 import astropy.units as au
 import astropy.constants as ac
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm, Normalize
+from matplotlib.colors import LogNorm
 
 from ..load_sim import LoadSim
 from ..io.read_zprof import read_zprof_all, ReadZprofBase
@@ -89,7 +89,6 @@ class Zprof(ReadZprofBase):
         u = self.u
         # Divide all variables by total area Lx*Ly
         domain = self.domain
-        dxdy = domain["dx"][0] * domain["dx"][1]
         LxLy = domain["Lx"][0] * domain["Lx"][1]
 
         ds = ds / LxLy
@@ -108,6 +107,7 @@ class Zprof(ReadZprofBase):
                 ds["Erad2"] * u.energy_density * ac.c.cgs.value / (4.0 * np.pi)
             )
         except KeyError:
+            self.logger.info("Radiation fields are not available")
             pass
 
         # ds._set_attrs(ds.domain)
@@ -124,7 +124,7 @@ class Zprof(ReadZprofBase):
                 ) as zp_pw:
                     self.logger.info("zprof_sfr.nc is loaded")
                     self.zp_pw = zp_pw
-            except:
+            except OSError:
                 self.logger.warning("file not found: load from zprof")
                 pass
 
@@ -213,7 +213,7 @@ class Zprof(ReadZprofBase):
                 ) as zp_net:
                     self.logger.info("zprof_net.nc is loaded")
                     self.zp_netflux = zp_net
-            except:
+            except OSError:
                 self.logger.warning("file not found: fluxes will be loaded from zprof")
                 pass
 
@@ -240,7 +240,6 @@ class Zprof(ReadZprofBase):
         zp = zp.to_array().to_dataset("phase").rename(rename_dict)
         zp = zp.to_array("phase").to_dataset("variable")
 
-        dm = self.domain
         u = self.u
         pflux = xr.Dataset()
         pflux["mass"] = zp["pFzd"] * u.mass_flux
@@ -339,7 +338,7 @@ class Zprof(ReadZprofBase):
                     ) as zp_ch:
                         self.logger.info("zprof_ch.nc is loaded")
                         self.zp_ch = zp_ch
-            except:
+            except OSError:
                 self.logger.warning("file not found: phases will be loaded from zprof")
                 pass
 
@@ -672,7 +671,8 @@ def plt_pressure_weight_tevol(sim, rolling=None, normed=True):
     # time evolution of midplane values
     plt.sca(axes[0])
     plt.plot(wtevol.time, wtevol.sel(variable="W", phase="whole"), label=r"$W$")
-    # plt.plot(ptevol.time,ptevol.sel(variable='Ptot',phase='whole'),label=r'$P_{\rm tot}$')
+    # plt.plot(ptevol.time,ptevol.sel(variable='Ptot',phase='whole'),
+    #   label=r'$P_{\rm tot}$')
     # plt.plot(wtevol.time,wtevol.sel(variable='W',phase='2p'),label=r'$W^{\rm 2p}$')
     plt.plot(
         ptevol.time,
