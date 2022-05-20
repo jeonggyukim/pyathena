@@ -129,14 +129,21 @@ class LoadSimTIGRESSNCR(
         except KeyError:
             print("No timeit plot is available")
 
-    def get_timeit_mean(self):
+    def get_timeit(self):
         try:
             time = pd.read_csv(self.files["timeit"], delim_whitespace=True)
 
             tfields = [k.split("_")[0] for k in time.keys() if k.endswith("tot")]
 
-            return time[tfields].mean()
-        except:
+            return time[tfields]
+        except KeyError:
+            print("No timeit file is available")
+            raise KeyError
+
+    def get_timeit_mean(self):
+        try:
+            return self.get_timeit().mean()
+        except KeyError:
             print("No timeit file is available")
 
     def get_classic_cooling_rate(self, ds):

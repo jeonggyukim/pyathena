@@ -606,7 +606,8 @@ class LoadSim(object):
                         self.nums_tar[0], self.nums_tar[-1]))
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(self.files['vtk_tar'][0]).split('.')[-2:]
-                    self.nums = self.nums_tar
+                    if not self.nums_id0:
+                        self.nums = self.nums_tar
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
@@ -697,6 +698,7 @@ class LoadSim(object):
             if hasattr(self,'problem_id'):
                 rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
                                 ('rst','{}.*.tar'.format(self.problem_id)),
+                                ('rst','????','{}.????.rst'.format(self.problem_id)),
                                 ('id0','{}.*.rst'.format(self.problem_id))]
                 frst = self._find_match(rst_patterns)
                 if frst:
@@ -730,7 +732,7 @@ class LoadSim(object):
         """
 
         try:
-            dirname = osp.dirname(self.files[kind][0])
+            dirname = osp.dirname(self.files[kind][num])
         except IndexError:
             return None
         if ivtk is not None:
@@ -741,7 +743,7 @@ class LoadSim(object):
             elif kind == 'rst':
                 fpattern = '{0:s}.{1:04d}.rst'
             elif kind == 'rst_tar':
-                fpattern = '{0:s}.{1:04d}.rst'
+                fpattern = '{0:s}.{1:04d}.tar'
             elif kind == 'vtk_tar':
                 fpattern = '{0:s}.{1:04d}.tar'
             else:
