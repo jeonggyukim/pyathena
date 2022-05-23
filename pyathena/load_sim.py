@@ -178,7 +178,8 @@ class LoadSim(object):
         for k in kind:
             self.fvtk = self._get_fvtk(k, num, ivtk)
             if self.fvtk is None or not osp.exists(self.fvtk):
-                self.logger.info('[load_vtk]: {:s} Vtk file does not exist. '.format(k))
+                # self.logger.info('[load_vtk]: {:s} Vtk file does not exist. '.format(k))
+                continue
             else:
                 break
         if self.fvtk is None or not osp.exists(self.fvtk):
@@ -300,9 +301,7 @@ class LoadSim(object):
             return
 
         # move files under id* to vtk/num
-        # create folder
-        # self.logger.info('[create_vtk_tar] create a folder {:s}'.format(tardir))
-        os.makedirs(tardir)
+
         # find files
         if kind == 'vtk':
             id_files = [self._get_fvtk('vtk_id0',num=num)]
@@ -316,6 +315,9 @@ class LoadSim(object):
             else:
                 id_files += self._find_match([('rst','{0:s}-id*.{1:04d}.{2:s}'.\
                                              format(self.problem_id, num, kind))])
+        # create folder
+        # self.logger.info('[create_vtk_tar] create a folder {:s}'.format(tardir))
+        os.makedirs(tardir)
         # move each file
         self.logger.info('[move_to_tardir] moving {:d} files to {:s}'.\
                          format(len(id_files),tardir))
@@ -477,6 +479,8 @@ class LoadSim(object):
 
         vtk_tar_patterns = [('vtk', '*.????.tar')]
 
+        vtk_rawtar_patterns = [('vtk', '[0-9]'*4, '*.' + '[0-9]'*4 + '.vtk')]
+
         starpar_patterns = [('starpar', '*.????.starpar.vtk'),
                             ('id0', '*.????.starpar.vtk'),
                             ('*.????.starpar.vtk',)]
@@ -567,6 +571,15 @@ class LoadSim(object):
                 self.nums_sphst[0], self.nums_sphst[-1]))
 
         # Find vtk files
+        if 'vtk' in self.out_fmt:
+            self.files['vtk_rawtar'] = self._find_match(vtk_rawtar_patterns)
+            if self.files['vtk_rawtar']:
+                self.nums_rawtar = np.unique([int(f[-8:-4]) for f in self.files['vtk_rawtar']])
+                self.logger.warning('vtk files found in vtk/???? -->'
+                                    ' need to call create_tar')
+            else:
+                self.nums_rawtar = None
+
         # vtk files in both basedir (joined) and in basedir/id0
         if 'vtk' in self.out_fmt:
             self.files['vtk'] = self._find_match(vtk_patterns)
@@ -697,10 +710,14 @@ class LoadSim(object):
         if 'rst' in self.out_fmt:
             if hasattr(self,'problem_id'):
                 rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
-                                ('rst','{}.*.tar'.format(self.problem_id)),
+                                ('id0','{}.*.rst'.format(self.problem_id)),
                                 ('rst','????','{}.????.rst'.format(self.problem_id)),
-                                ('id0','{}.*.rst'.format(self.problem_id))]
-                frst = self._find_match(rst_patterns)
+                                ('rst','{}.*.tar'.format(self.problem_id)),
+                                ]
+                frst = []
+                for rp in rst_patterns:
+                    frst += self._find_match([rp])
+                # frst = self._find_match(rst_patterns)
                 if frst:
                     self.files['rst'] = frst
                     self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
@@ -732,7 +749,7 @@ class LoadSim(object):
         """
 
         try:
-            dirname = osp.dirname(self.files[kind][num])
+            dirname = osp.dirname(self.files[kind][0])
         except IndexError:
             return None
         if ivtk is not None:

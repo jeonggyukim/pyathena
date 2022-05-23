@@ -34,6 +34,22 @@ if __name__ == "__main__":
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
+    # tar vtk files
+    if s.nums_rawtar is not None:
+        nums = s.nums_rawtar
+        if COMM.rank == 0:
+            print("basedir, nums", s.basedir, nums)
+            nums = split_container(nums, COMM.size)
+        else:
+            nums = None
+
+        mynums = COMM.scatter(nums, root=0)
+        for num in mynums:
+            s.create_tar(num=num,kind='vtk',remove_original=True)
+        COMM.barrier()
+
+        # reading it again
+        s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
     nums = s.nums
 
     if COMM.rank == 0:
