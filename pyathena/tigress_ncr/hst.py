@@ -49,6 +49,10 @@ class Hst:
         nscalars = self.par["configure"]["nscalars"]
 
         hst = read_hst(self.files["hst"], force_override=force_override)
+        if self.test_phase_sep_hst():
+            self.logger.info("[read_hst]: Reading phase separated history files...")
+            hw = self.read_hst_phase(iph=0, force_override=force_override).sel(time=hst['time'])
+            hph = self.read_hst_phase_all(force_override=force_override).sel(time=hst['time'])
 
         h = pd.DataFrame()
 
@@ -87,9 +91,6 @@ class Hst:
 
         # Total outflow mass
         if self.test_phase_sep_hst():
-            self.logger.info("[read_hst]: Reading phase separated history files...")
-            hph = self.read_hst_phase_all(force_override=force_override)
-            hw = self.read_hst_phase(iph=0, force_override=force_override)
             h["massflux_lbd_d"] = hw["Fzm_lower"] * u.mass_flux
             h["massflux_ubd_d"] = hw["Fzm_upper"] * u.mass_flux
             h["mass_out"] = (hw["Fzm_upper_dt"] - hw["Fzm_lower_dt"]) * LxLy * u.Msun

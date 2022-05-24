@@ -14,6 +14,7 @@ import pickle
 import pyathena as pa
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
+from pyathena.tigress_ncr.phase import *
 
 if __name__ == "__main__":
 
@@ -87,6 +88,26 @@ if __name__ == "__main__":
                 force_override=True,
             )
             plt.close(fig)
+
+        try:
+            npfile=os.path.join(s.basedir,'np_pdf',
+                                '{}.{:04d}.np_pdf.nc'.format(s.basename,num))
+            if not os.path.isdir(os.path.dirname(npfile)):
+                os.makedirs(os.path.dirname(npfile))
+            if not os.path.isfile(npfile):
+                ds=s.load_vtk(num)
+                dchunk=ds.get_field(['nH','pok','T',
+                                     'xHI','xHII','xH2',
+                                     'cool_rate','net_cool_rate'])
+                dchunk['T1'] = dchunk['pok']/dchunk['nH']
+                dchunk=dchunk.sel(z=slice(-300,300))
+                print(" creating nP ", end=" ")
+                pdf_dset = recal_nP(dchunk)
+                pdf_dset.to_netcdf(npfile)
+            else:
+                print(" skipping nP ", end=" ")
+        except IOError:
+            print(" passing nP ", end=" ")
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
