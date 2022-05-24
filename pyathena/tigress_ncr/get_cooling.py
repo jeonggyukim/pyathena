@@ -145,19 +145,36 @@ def get_heating(s, dd):
         ikgr_H2 = s.par["cooling"]["ikgr_H2"]
     except KeyError:
         ikgr_H2 = 0
+    try:
+        kgr_H2 = s.par["cooling"]["kgr_H2"]
+    except KeyError:
+        kgr_H2 = 3.e-17
 
     heatrate = xr.Dataset()
     heatrate["PE"] = heatPE(dd["nH"], dd["T"], dd["xe"], Z_d, G_PE)
     heatrate["CR"] = heatCR(
-        dd["nH"], dd["xe"], dd["xHI"], dd["xH2"], dd["CR_ionization_rate"]
+        dd["nH"], dd["xe"], dd["xHI"], dd["xH2"], dd["CR_ionization_rate"],
+        old = s.oldCRheating
     )
-    heatrate["H2_form"] = heatH2form(
-        dd["nH"], dd["T"], dd["xHI"], dd["xH2"], Z_d, ikgr_H2=ikgr_H2
+    heatrate["H2"] = heatH2(
+        dd["nH"],
+        dd["T"],
+        dd["xHI"],
+        dd["xH2"],
+        xi_diss_H2,
+        Z_d,
+        kind="V18",
+        xi_diss_H2_ISRF=s.par["cooling"]["xi_diss_H2_ISRF"],
+        kgr_H2 = kgr_H2,
+        ikgr_H2=ikgr_H2,
     )
-    heatrate["H2_pump"] = heatH2pump(
-        dd["nH"], dd["T"], dd["xHI"], dd["xH2"], xi_diss_H2
-    )
-    heatrate["H2_diss"] = heatH2diss(dd["xH2"], xi_diss_H2)
+    # heatrate["H2_form"] = heatH2form(
+    #     dd["nH"], dd["T"], dd["xHI"], dd["xH2"], Z_d, ikgr_H2=ikgr_H2
+    # )
+    # heatrate["H2_pump"] = heatH2pump(
+    #     dd["nH"], dd["T"], dd["xHI"], dd["xH2"], xi_diss_H2
+    # )
+    # heatrate["H2_diss"] = heatH2diss(dd["xH2"], xi_diss_H2)
     heatrate["PH_HI"] = dd["xHI"] * xi_ph_HI * dhnu_HI_PH
     heatrate["PH_H2"] = dd["xH2"] * xi_ph_H2 * dhnu_H2_PH
     # no heating at high-T
@@ -204,6 +221,10 @@ def get_other_cooling(s, dd):
         CRphotC = True if s.par["cooling"]["iCRPhotC"] == 1 else False
     except KeyError:
         CRphotC = False
+    try:
+        iCII_rec_rate = True if s.par["cooling"]["iCRPhotC"] == 1 else False
+    except KeyError:
+        iCII_rec_rate = False
     # calculate C, O species abundances
     dd["xOII"] = dd["xHII"] * s.par["cooling"]["xOstd"] * s.par["problem"]["Z_gas"]
     dd["xCII"] = get_xCII(
@@ -219,6 +240,7 @@ def get_other_cooling(s, dd):
         xCstd=xCstd,
         gr_rec=True,
         CRphotC=CRphotC,
+        iCII_rec_rate=iCII_rec_rate
     )
     dd["xCO"], ncrit = get_xCO(
         dd["nH"],
@@ -253,9 +275,12 @@ def get_other_cooling(s, dd):
     coolrate["OIold"] = coolOI(
         dd["nH"], dd["T"], dd["xe"], dd["xHI"], dd["xHII"], dd["xOI"]
     )
-    coolrate["OII"] = s.par["cooling"]["fac_coolingOII"] * coolOII(
-        dd["nH"], dd["T"], dd["xe"], dd["xOII"]
-    )
+    if "fac_coolingOII" in s.par["cooling"]:
+        coolrate["OII"] = s.par["cooling"]["fac_coolingOII"] * coolOII(
+            dd["nH"], dd["T"], dd["xe"], dd["xOII"]
+        )
+    else:
+        coolrate["neb"] = coolneb(dd["nH"], dd["T"], dd["xe"], dd["xHII"], Z_g)
     coolrate["Rec"] = coolRec(dd["nH"], dd["T"], dd["xe"], Z_d, G_PE)
 
     return coolrate

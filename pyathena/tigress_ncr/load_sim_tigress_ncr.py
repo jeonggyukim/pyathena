@@ -111,6 +111,13 @@ class LoadSimTIGRESSNCR(
         else:
             s.iCoolHIcollion = 1
 
+        # check this is run with corrected CR heating
+        # 85a7857bb7c797686a4e9630cba71f326e1097cd
+        if s.config_time < pd.to_datetime("2022-05-23 22:23:43 -04:00"):
+            s.oldCRheating = 1
+        else:
+            s.oldCRheating = 0
+
     def show_timeit(self):
         import matplotlib.pyplot as plt
 
