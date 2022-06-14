@@ -118,6 +118,11 @@ class LoadSimTIGRESSNCR(
         else:
             s.oldCRheating = 0
 
+        try:
+            s.iH2heating = s.par["cooling"]["iH2heating"]
+        except KeyError:
+            s.iH2heating = -1
+
     def show_timeit(self):
         import matplotlib.pyplot as plt
 

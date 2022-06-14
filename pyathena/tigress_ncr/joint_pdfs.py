@@ -1,10 +1,14 @@
 import numpy as np
 import os
+import sys
 import argparse
 import pyathena as pa
 import gc
+from mpi4py import MPI
+import pprint
 
-from .get_cooling import get_cooling_heating, get_pdfs
+from pyathena.util.split_container import split_container
+from pyathena.tigress_ncr.get_cooling import get_cooling_heating, get_pdfs
 
 
 def calc_pdfs(
@@ -95,6 +99,7 @@ def calc_pdfs(
 
 
 if __name__ == "__main__":
+    COMM = MPI.COMM_WORLD
     basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full"
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -103,11 +108,39 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     locals().update(args)
 
-    s = pa.LoadSimTIGRESSNCR(basedir, verbose=True)
+    s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
+
+    # tar vtk files
+    if s.nums_rawtar is not None:
+        nums = s.nums_rawtar
+        if COMM.rank == 0:
+            print("basedir, nums", s.basedir, nums)
+            nums = split_container(nums, COMM.size)
+        else:
+            nums = None
+
+        mynums = COMM.scatter(nums, root=0)
+        for num in mynums:
+            s.create_tar(num=num,kind='vtk',remove_original=False)
+        COMM.barrier()
+
+        # reading it again
+        s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
+    nums = s.nums
+
+    if COMM.rank == 0:
+        print("basedir, nums", s.basedir, nums)
+        nums = split_container(nums, COMM.size)
+    else:
+        nums = None
+
+    mynums = COMM.scatter(nums, root=0)
+    print("[rank, mynums]:", COMM.rank, mynums)
+
     for num in range(200, 800):
-        if not (num in s.nums):
+        if not (num in mynums):
             continue
-        print(num)
+        print(num, end=" ")
         # for num in s.nums:
         ds = s.load_vtk(num)
         for zrange in [None, slice(-1000, 1000), slice(-300, 300)]:
@@ -176,79 +209,38 @@ if __name__ == "__main__":
                     pdf_heat_xHI.to_netcdf(
                         os.path.join(savdir, heatfname.replace(".heat.", ".xHI.heat."))
                     )
-
-                pdf_z, pdf_tot = calc_pdfs(
-                    s,
-                    ds,
-                    "T",
-                    "Lambda_cool",
-                    zmin=0,
-                    zmax=zmax,
-                    force_override=False,
-                    cooling=True,
-                    species=True,
-                    radiation=True,
-                )
-                pdf_z, pdf_tot = calc_pdfs(
-                    s,
-                    ds,
-                    "nH",
-                    "pok",
-                    zmin=0,
-                    zmax=zmax,
-                    force_override=False,
-                    cooling=True,
-                    species=True,
-                    radiation=True,
-                )
-                pdf_z, pdf_tot = calc_pdfs(
-                    s,
-                    ds,
-                    "nH",
-                    "T",
-                    zmin=0,
-                    zmax=zmax,
-                    force_override=False,
-                    cooling=True,
-                    species=True,
-                    radiation=True,
-                )
+                for xf, yf in zip(['T','nH','nH'],['Lambda_cool','pok','T']):
+                    pdf_z, pdf_tot = calc_pdfs(
+                        s,
+                        ds,
+                        xf,
+                        yf,
+                        zmin=0,
+                        zmax=zmax,
+                        force_override=False,
+                        cooling=True,
+                        species=True,
+                        radiation=True,
+                    )
             else:
-                pdf_z, pdf_tot = calc_pdfs(
-                    s,
-                    ds,
-                    "T",
-                    "Lambda_cool",
-                    zmin=0,
-                    zmax=zmax,
-                    force_override=False,
-                    cooling=True,
-                    species=False,
-                    radiation=False,
-                )
-                pdf_z, pdf_tot = calc_pdfs(
-                    s,
-                    ds,
-                    "nH",
-                    "pok",
-                    zmin=0,
-                    zmax=zmax,
-                    force_override=False,
-                    cooling=True,
-                    species=False,
-                    radiation=False,
-                )
-                pdf_z, pdf_tot = calc_pdfs(
-                    s,
-                    ds,
-                    "nH",
-                    "T",
-                    zmin=0,
-                    zmax=zmax,
-                    force_override=False,
-                    cooling=True,
-                    species=False,
-                    radiation=False,
-                )
+                for xf, yf in zip(['T','nH','nH'],['Lambda_cool','pok','T']):
+                    pdf_z, pdf_tot = calc_pdfs(
+                        s,
+                        ds,
+                        xf,
+                        yf,
+                        zmin=0,
+                        zmax=zmax,
+                        force_override=False,
+                        cooling=True,
+                        species=False,
+                        radiation=False,
+                    )
 
-        gc.collect()
+        n = gc.collect()
+        print("Unreachable objects:", n, end=" ")
+        print("Remaining Garbage:", end=" ")
+        pprint.pprint(gc.garbage)
+        sys.stdout.flush()
+
+

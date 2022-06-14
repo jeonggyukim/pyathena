@@ -353,7 +353,7 @@ class PDF:
         if not os.path.isdir(savdir):
             os.makedirs(savdir)
         fbase = os.path.basename(self.fvtk)
-        fpdf = os.path.join(savdir, fbase.replace(".vtk", ".pdf.nc"))
+        fpdf = os.path.join(savdir, fbase[:-4]+".pdf.nc")
         if (
             not force_override
             and osp.exists(fpdf)
@@ -364,7 +364,7 @@ class PDF:
                     xf, yf, wf, zmin, zmax
                 )
             )
-            pdf = xr.open_dataarray(fpdf)
+            pdf = xr.open_dataarray(fpdf, engine='netcdf4')
         else:
             self.logger.info(
                 "[jointpdf]: Creating Joint PDFs of {} and {} weigthed by {} at z in +-({},{})".format(

@@ -109,16 +109,16 @@ class Hst:
 
         # Calculate (cumulative) SN ejecta mass
         # JKIM: only from clustered type II(?)
-        try:
-            sn = read_hst(self.files["sn"], force_override=force_override)
-            t_ = np.array(hst["time"])
-            Nsn, snbin = np.histogram(sn.time, bins=np.concatenate(([t_[0]], t_)))
-            h["mass_snej"] = (
-                Nsn.cumsum() * self.par["feedback"]["MejII"]
-            )  # Mass of SN ejecta [Msun]
-            h["Sigma_snej"] = h["mass_snej"] / (LxLy * u.pc ** 2)
-        except KeyError:
-            pass
+        # try:
+        #     sn = read_hst(self.files["sn"], force_override=force_override)
+        #     t_ = np.array(hst["time"])
+        #     Nsn, snbin = np.histogram(sn.time, bins=np.concatenate(([t_[0]], t_)))
+        #     h["mass_snej"] = (
+        #         Nsn.cumsum() * self.par["feedback"]["MejII"]
+        #     )  # Mass of SN ejecta [Msun]
+        #     h["Sigma_snej"] = h["mass_snej"] / (LxLy * u.pc ** 2)
+        # except KeyError:
+        #     pass
 
         # H mass/surface density in Msun
         # h['M_gas'] = h['mass']/u.muH
@@ -306,15 +306,15 @@ class Hst:
         self.hst = h
 
         # SN data
-        try:
-            if osp.exists(self.files["sn"]):
-                sn = read_hst(self.files["sn"], force_override=force_override)
-                snr = get_snr(sn["time"] * self.u.Myr, hst["time"] * self.u.Myr)
+        # try:
+        #     if osp.exists(self.files["sn"]):
+        #         sn = read_hst(self.files["sn"], force_override=force_override)
+        #         snr = get_snr(sn["time"] * self.u.Myr, hst["time"] * self.u.Myr)
 
-                self.sn = sn
-                self.snr = snr / LxLy
-        except:
-            pass
+        #         self.sn = sn
+        #         self.snr = snr / LxLy
+        # except:
+        #     pass
 
         return h
 
