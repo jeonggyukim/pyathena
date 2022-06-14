@@ -208,15 +208,15 @@ def heatCR(nH, xe, xHI, xH2, xi_CR, old=False):
 
 
 def heatH2(
-    nH, T, xHI, xH2, xi_diss_H2, Zd, kind="V18",
+    nH, T, xHI, xH2, xi_diss_H2, Zd, kind=0,
     xi_diss_H2_ISRF=5.7e-11, kgr_H2=3.e-17, ikgr_H2=1
 ):
-    if kind == "V18":
-        f_pump = 8.0  # Sternberg (2014)
-    elif kind == "HM79":
-        f_pump = 9.0  # Hollenbach & McKee (1978)
-    elif kind == "DB96":
-        f_pump = 6.94  # Draine & Bertoldi (1996)
+    if kind == 1:
+        f_pump = 8.0*2.0  # Sternberg (2014)
+    elif kind == 0:
+        f_pump = 9.0*2.2  # Hollenbach & McKee (1978)
+    elif kind == -1:
+        f_pump = 6.94*2.2  # Draine & Bertoldi (1996)
 
     eV_cgs = (1.0 * au.eV).cgs.value
 
@@ -235,7 +235,7 @@ def heatH2(
     # ncrit
     if kind == "V18":
         A = 2.0e-7
-        D = xi_diss_H2 / (1e11 * xi_diss_H2_ISRF)
+        D = xi_diss_H2 # / (1e11 * xi_diss_H2_ISRF)
         t = 1.0 + T * 1e-3
         geff_H = np.power(10.0, -11.06 + 0.0555 / t - 2.390 / (t * t))
         geff_H2 = np.power(10.0, -11.08 - 3.671 / t - 2.023 / (t * t))
@@ -248,7 +248,7 @@ def heatH2(
 
     f = 1.0 / (1.0 + ncrit / nH)
 
-    heatH2pump = f_pump * 2.2 * xi_diss_H2 * xH2 * f
+    heatH2pump = f_pump  * xi_diss_H2 * xH2 * f
     heatH2form = kgr * nH * xHI * (0.2 + 4.2 * f)
     heatH2diss = xi_diss_H2 * xH2 * 0.4
     return (heatH2pump + heatH2form + heatH2diss) * eV_cgs

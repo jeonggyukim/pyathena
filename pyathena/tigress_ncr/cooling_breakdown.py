@@ -235,28 +235,32 @@ def draw_Tpdf(s, num, pdf=None, zrange=None, save=True):
     plt.step(x, pdf_cool_T["total"], label="total", where="mid", color="k", lw=1)
     for c in ["CI", "CII", "OI", "H2_rovib", "H2_colldiss"]:
         ls = ":" if c in exclude_cool else "-"
-        plt.step(x, pdf_cool_T[c], label=c, where="mid", ls=ls)
+        if c in pdf_cool_T:
+            plt.step(x, pdf_cool_T[c], label=c, where="mid", ls=ls)
 
     plt.ylabel(r"$\frac{d\mathcal{L}/\mathcal{L}_{\rm tot}}{d\log T}[{\rm dex^{-1}}]$")
 
     plt.sca(axes[2])
     plt.step(x, pdf_cool_T["total"], label="total", where="mid", color="k", lw=1)
-    for c in ["OII", "Rec", "HI_Lya", "HII_rec"]:
+    for c in ["neb", "OII", "grRec", "Rec", "HI_Lya", "HII_rec"]:
         ls = ":" if c in exclude_cool else "-"
-        plt.step(x, pdf_cool_T[c], label=c, where="mid", ls=ls)
+        if c in pdf_cool_T:
+            plt.step(x, pdf_cool_T[c], label=c, where="mid", ls=ls)
     plt.ylabel(r"$\frac{d\mathcal{L}/\mathcal{L}_{\rm tot}}{d\log T}[{\rm dex^{-1}}]$")
 
     plt.sca(axes[4])
     plt.step(x, pdf_cool_T["total"], label="total", where="mid", color="k", lw=1)
     for c in ["HI_collion", "HII_ff", "CIE_metal", "CIE_He"]:
         ls = ":" if c in exclude_cool else "-"
-        plt.step(x, pdf_cool_T[c], label=c, where="mid", ls=ls)
+        if c in pdf_cool_T:
+            plt.step(x, pdf_cool_T[c], label=c, where="mid", ls=ls)
     plt.ylabel(r"$\frac{d\mathcal{L}/\mathcal{L}_{\rm tot}}{d\log T}[{\rm dex^{-1}}]$")
 
     plt.sca(axes[1])
     plt.step(x, pdf_heat_T["total"], label="total", where="mid", color="k", lw=1)
-    for h in ["PE", "CR", "H2_pump", "H2_diss", "H2_form"]:
-        plt.step(x, pdf_heat_T[h], label=h, where="mid")
+    for h in ["PE", "CR", "H2", "H2_pump", "H2_diss", "H2_form"]:
+        if h in pdf_heat_T:
+            plt.step(x, pdf_heat_T[h], label=h, where="mid")
     plt.ylabel(r"$\frac{d\mathcal{G}/\mathcal{G}_{\rm tot}}{d\log T}[{\rm dex^{-1}}]$")
 
     plt.sca(axes[3])

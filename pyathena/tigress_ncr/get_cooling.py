@@ -30,6 +30,11 @@ def get_cooling_heating(sim, ds, zrange=None):
     else:
         return_Lambda_e = False
 
+    if 'iCoolHCIE' in sim.par['cooling']:
+        iCoolHCIE = sim.par['cooling']['iCoolHCIE']
+    else:
+        iCoolHCIE = 0
+
     # unit definition
     unitT = sim.u.energy_density / ac.k_B / sim.muH * au.cm ** 3
 
@@ -75,22 +80,27 @@ def get_cooling_heating(sim, ds, zrange=None):
     w2 = f1(dd["T"], T0=sim.par["cooling"]["Thot0"], T1=sim.par["cooling"]["Thot1"])
     w1 = 1 - w2
 
-    # hydrogen cooling
+    # non-equilibrium hydrogen cooling
     cool_hyd = get_hydrogen_cooling(dd) * dd["nH"]
     # other cooling at low T
     cool_other = get_other_cooling(sim, dd) * dd["nH"] * w1
     # CIE cooling by He and metal
     cool_CIE = get_Lambda_CIE(dd, return_Lambda_e=return_Lambda_e)
     cool_CIE["CIE_metal"] *= Z_g * dd["nH"] ** 2 * w2
-    cool_CIE["CIE_He"] *= dd["nH"] ** 2 * w2
+    cool_CIE["CIE_He"] *= dd["nH"] ** 2 #* w2
+    if (iCoolHCIE):
+        # CIE hydrogen cooling
+        cool_CIE["CIE_H"] *= dd["nH"] ** 2 * w2
+        # non-equilibrium hydrogen cooling
+        cool_hyd *= w1
 
     # heating
     heat = get_heating(sim, dd) * dd["nH"] * w1
     heat["total"] = dd["heat_rate"]
 
     # add ancillary fields
-    cool_hyd["total"] = dd["cool_rate"]
     cool = cool_hyd.update(cool_other).update(cool_CIE)
+    cool["total"] = dd["cool_rate"]
 
     # add total cooling/heating
     cool.attrs["total_cooling"] = total_cooling
@@ -163,7 +173,7 @@ def get_heating(s, dd):
         dd["xH2"],
         xi_diss_H2,
         Z_d,
-        kind="V18",
+        kind=s.iH2heating,
         xi_diss_H2_ISRF=s.par["cooling"]["xi_diss_H2_ISRF"],
         kgr_H2 = kgr_H2,
         ikgr_H2=ikgr_H2,
@@ -190,8 +200,6 @@ def get_hydrogen_cooling(dd):
     coolrate["HI_collion"] = coolHIion(dd["nH"], dd["T"], dd["xe"], dd["xHI"])
     coolrate["HII_ff"] = coolffH(dd["nH"], dd["T"], dd["xe"], dd["xHII"])
     coolrate["HII_rec"] = coolrecH(dd["nH"], dd["T"], dd["xe"], dd["xHII"])
-    coolrate["H2_rovib"] = coolH2rovib(dd["nH"], dd["T"], dd["xHI"], dd["xH2"])  # rovib
-    coolrate["H2_colldiss"] = coolH2colldiss(dd["nH"], dd["T"], dd["xHI"], dd["xH2"])
     return coolrate
 
 
@@ -259,9 +267,14 @@ def get_other_cooling(s, dd):
 
     # cooling others
     coolrate = xr.Dataset()
+    # H2 cooling
+    coolrate["H2_rovib"] = coolH2rovib(dd["nH"], dd["T"], dd["xHI"], dd["xH2"])  # rovib
+    coolrate["H2_colldiss"] = coolH2colldiss(dd["nH"], dd["T"], dd["xHI"], dd["xH2"])
+    # CI
     coolrate["CI"] = coolCI(
         dd["nH"], dd["T"], dd["xe"], dd["xHI"], dd["xH2"], dd["xCI"]
     )
+    # CII
     coolrate["CII"] = coolCII(
         dd["nH"], dd["T"], dd["xe"], dd["xHI"], dd["xH2"], dd["xCII"]
     )
@@ -269,19 +282,20 @@ def get_other_cooling(s, dd):
     # set_dvdr(dd)
     # coolrate['CO'] = coolCO(dd['nH'],dd['T'],
     #        dd['xe'],dd['xHI'],dd['xH2'],dd['xCO'],dd['dvdr'])
+    # OI
     coolrate["OI"] = coolOI(
         dd["nH"], dd["T"], dd["xe"], dd["xHI"], dd["xH2"], dd["xOI"]
     )
-    coolrate["OIold"] = coolOI(
-        dd["nH"], dd["T"], dd["xe"], dd["xHI"], dd["xHII"], dd["xOI"]
-    )
+    # coolrate["OIold"] = coolOI(
+    #     dd["nH"], dd["T"], dd["xe"], dd["xHI"], dd["xHII"], dd["xOI"]
+    # )
     if "fac_coolingOII" in s.par["cooling"]:
         coolrate["OII"] = s.par["cooling"]["fac_coolingOII"] * coolOII(
             dd["nH"], dd["T"], dd["xe"], dd["xOII"]
         )
     else:
         coolrate["neb"] = coolneb(dd["nH"], dd["T"], dd["xe"], dd["xHII"], Z_g)
-    coolrate["Rec"] = coolRec(dd["nH"], dd["T"], dd["xe"], Z_d, G_PE)
+    coolrate["grRec"] = coolRec(dd["nH"], dd["T"], dd["xe"], Z_d, G_PE)
 
     return coolrate
 
@@ -375,29 +389,32 @@ def set_CIE_interpolator(return_xe=False, return_Lambda_e=False):
         cg.temp, cool_tot - cool["He"] - cool["H"], bounds_error=False, fill_value=0.0
     )
     cgi_He = interp1d(cg.temp, cool["He"], bounds_error=False, fill_value=0.0)
+
+    cgi_H = interp1d(cg.temp, cool["H"], bounds_error=False, fill_value=0.0)
     if return_xe:
-        cgi_xe_mH = interp1d(
-            cg.temp, xe_tot - xe["H"], bounds_error=False, fill_value=0.0
+        cgi_xe = interp1d(
+            cg.temp, xe_tot, bounds_error=False, fill_value=0.0
         )
         cgi_xe_mHHe = interp1d(
             cg.temp, xe_tot - xe["H"] - xe["He"], bounds_error=False, fill_value=0.0
         )
         cgi_xe_He = interp1d(cg.temp, xe["He"], bounds_error=False, fill_value=0.0)
-        return cgi_metal, cgi_He, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He
+        return cgi_metal, cgi_He, cgi_H, cgi_xe, cgi_xe_mHHe, cgi_xe_He
     else:
-        return cgi_metal, cgi_He
+        return cgi_metal, cgi_He, cgi_H
 
 
-def get_Lambda_CIE(dd, return_Lambda_e=True):
+def get_Lambda_CIE(dd, return_Lambda_e=False):
     """return Lambda_CIE"""
     Lambda_cool = xr.Dataset()
-    cgi_metal, cgi_He = set_CIE_interpolator(
+    cgi_metal, cgi_He, cgi_H = set_CIE_interpolator(
         return_xe=False, return_Lambda_e=return_Lambda_e
     )
     Lambda_cool["CIE_metal"] = xr.DataArray(
         cgi_metal(dd["T"]), coords=[dd.z, dd.y, dd.x]
     )
     Lambda_cool["CIE_He"] = xr.DataArray(cgi_He(dd["T"]), coords=[dd.z, dd.y, dd.x])
+    Lambda_cool["CIE_H"] = xr.DataArray(cgi_H(dd["T"]), coords=[dd.z, dd.y, dd.x])
     return Lambda_cool
 
 
