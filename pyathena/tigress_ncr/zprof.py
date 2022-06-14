@@ -39,8 +39,8 @@ class Zprof(ReadZprofBase):
 
         return self.zp
 
-    def get_phase_shorthand(self, kind="new"):
-        if kind == "new":
+    def get_phase_shorthand(self):
+        if self.test_phase_sep_hst():
             phase_name = [
                 "c",
                 "u",
@@ -55,8 +55,9 @@ class Zprof(ReadZprofBase):
                 "cnm",
                 "unm",
                 "wnm",
+                "hotnothers"
             ]
-        elif kind == "old":
+        else:
             phase_name = [
                 "c",
                 "u",

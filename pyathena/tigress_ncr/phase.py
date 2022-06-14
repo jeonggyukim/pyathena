@@ -551,6 +551,21 @@ def define_phase(s, kind="full", verbose=False):
 
 
 def assign_phase(s, dslc, kind="full", verbose=False):
+    """Assign phase to the data chunk
+
+    Parameters
+    ==========
+    s : object, LoadSimTIGRESSNCR
+    dslc : xarray.Dataset
+        must have nH, T, xHI, xHII, xH2
+    kind : str
+        phase definition type
+        'full' for full 9 phases
+        'four' for CU, WNM, WIM, Hot
+        'five1' for CNM, UNM, WNM, WIM, Hot
+        'five2' for CU, WNM, WIM, WHIM, HIM
+        'six' for CNM, UNM, WNM, WIM, WHIM, HIM
+    """
     from matplotlib.colors import ListedColormap
 
     phslc = xr.zeros_like(dslc["nH"]).astype("int") - 1
@@ -568,7 +583,7 @@ def assign_phase(s, dslc, kind="full", verbose=False):
         cond = (dslc["T"] > T1) * (dslc["T"] <= T2)
         phlist.append(ph["name"])
         phcmap.append(ph["c"])
-        print(ph["name"], i, T1, T2, a, amin)
+        if verbose: print(ph["name"], i, T1, T2, a, amin)
         if a is not None:
             cond *= dslc[a] > amin
         phslc += cond * i
