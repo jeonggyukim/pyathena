@@ -51,6 +51,7 @@ if __name__ == "__main__":
 
         # reading it again
         s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
+    s.pdf = PDF1D(s)
     nums = s.nums
 
     if COMM.rank == 0:
@@ -89,6 +90,7 @@ if __name__ == "__main__":
             )
             plt.close(fig)
 
+        # 2d pdf
         try:
             npfile=os.path.join(s.basedir,'np_pdf',
                                 '{}.{:04d}.np_pdf.nc'.format(s.basename,num))
@@ -108,6 +110,8 @@ if __name__ == "__main__":
                 print(" skipping nP ", end=" ")
         except IOError:
             print(" passing nP ", end=" ")
+        # 1d pdfs
+        s.pdf.recal_1Dpdfs(num,force_override=True)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")

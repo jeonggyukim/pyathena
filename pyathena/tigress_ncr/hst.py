@@ -52,7 +52,7 @@ class Hst:
         if self.test_phase_sep_hst():
             self.logger.info("[read_hst]: Reading phase separated history files...")
             hw = self.read_hst_phase(iph=0, force_override=force_override).sel(time=hst['time'])
-            hph = self.read_hst_phase_all(force_override=force_override).sel(time=hst['time'])
+            hph = self.read_hst_phase_all(force_override=force_override,reduced=False).sel(time=hst['time'])
 
         h = pd.DataFrame()
 
@@ -334,7 +334,7 @@ class Hst:
         h.index = h["time"]
         return h.to_xarray()
 
-    def read_hst_phase_all(self, force_override=False):
+    def read_hst_phase_all(self, force_override=False, reduced=True):
         fhstph = glob.glob(self.files["hst"].replace(".hst", ".phase*.hst"))
 
         fhstph.sort()
@@ -349,6 +349,15 @@ class Hst:
             ).to_array()
         hstph = hstph.to_array("phase").to_dataset("variable")
 
+        if reduced:
+            ph_reduced = dict(CMM=['CMM','UMM','W1MM','W2MM'],
+                            CNM=['CNM'], UNM=['UNM'], WNM=['W1NM','W2NM'],
+                            UIM=['CIM','UIM'], WPIM=['W1IM'], WCIM=['W2IM'],
+                            WHIM=['WHIM','WHNM','WHMM'],HIM=['HIM','HNM','HMM']
+                            )
+            hlist=[hstph.sel(phase=phases).sum(dim='phase').assign_coords(phase=phname)
+                   for phname, phases in ph_reduced.items()]
+            hstph=xr.concat(hlist,dim='phase')
         return hstph
 
     def get_hst_phase_name(self, iph):
@@ -366,6 +375,39 @@ class Hst:
             )
         return thphase[(iph - 1) % nthph] + chphase[(iph - 1) // nthph] + "M"
 
+    def add_header_from_other_model(self,sim2):
+        def get_header(hf):
+            header = ''
+            with open(hf,'r') as fp:
+                for l in fp:
+                    if l.startswith('#'):
+                        header+=l
+                    else:
+                        break
+            return header
+
+        # hst
+        hf = self.files['hst']
+        hf2 = sim2.files['hst']
+        if len(get_header(hf)) > 0:
+            print('header exists!')
+            return
+
+        with open(hf, 'r') as original: data = original.read()
+        header = get_header(hf2)
+        with open(hf, 'w') as modified: modified.write(header + data)
+
+        fhstph = sorted(glob.glob(hf.replace(".hst", ".phase*.hst"))+glob.glob(hf.replace(".hst", ".whole.hst")))
+        fhstph2 = sorted(glob.glob(hf2.replace(".hst", ".phase*.hst"))+glob.glob(hf2.replace(".hst", ".whole.hst")))
+
+        if len(fhstph) != len(fhstph2):
+            print('Number of phases are inconsistent!')
+            return
+
+        for hf,hf2 in zip(fhstph,fhstph2):
+            with open(hf, 'r') as original: data = original.read()
+            header = get_header(hf2)
+            with open(hf, 'w') as modified: modified.write(header + data)
 
 def plt_hst_compare(
     sa,
