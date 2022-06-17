@@ -111,7 +111,7 @@ if __name__ == "__main__":
         except IOError:
             print(" passing nP ", end=" ")
         # 1d pdfs
-        s.pdf.recal_1Dpdfs(num,force_override=True)
+        s.pdf.recal_1Dpdfs(num,force_override=False)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")

@@ -584,7 +584,8 @@ def assign_phase(s, dslc, kind="full", verbose=False):
         cond = (dslc["T"] > T1) * (dslc["T"] <= T2)
         phlist.append(ph["name"])
         phcmap.append(ph["c"])
-        if verbose: print(ph["name"], i, T1, T2, a, amin)
+        if verbose:
+            print(ph["name"], i, T1, T2, a, amin)
         if a is not None:
             cond *= dslc[a] > amin
         phslc += cond * i
@@ -645,96 +646,148 @@ def draw_phase(ph):
         axes[1].set_ylabel("Phase")
         axes[0].set_aspect("equal")
 
+
 import tqdm
 
+
 class PDF1D:
-    def __init__(self,s):
-        self.phdef = define_phase(s, kind='full')
+    def __init__(self, s, scrbase="/scratch/gpfs/changgoo/TIGRESS-NCR/"):
+        self.scrbase = scrbase
+        self.phdef = define_phase(s, kind="full")
         self.sim = s
+        self.basedir = s.basedir
 
     @staticmethod
-    def Tpdf(data,tf='T',wf=None,Tbin=0.01,Tmin=0,Tmax=9,normed=True):
-        Tbins = 10.**np.arange(Tmin,Tmax+Tbin,Tbin)
-        h,b = np.histogram(data[tf].data.flatten(),
-                           bins=Tbins,
-                           weights=data[wf].data.flatten() if wf in data else None)
-        if normed: h=h/h.sum()/Tbin
-        else: h=h/Tbin
+    def Tpdf(data, tf="T", wf=None, Tbin=0.01, Tmin=0, Tmax=9, normed=True):
+        Tbins = 10.0 ** np.arange(Tmin, Tmax + Tbin, Tbin)
+        h, b = np.histogram(
+            data[tf].data.flatten(),
+            bins=Tbins,
+            weights=data[wf].data.flatten() if wf in data else None,
+        )
+        if normed:
+            h = h / h.sum() / Tbin
+        else:
+            h = h / Tbin
 
-        return h,b
+        return h, b
 
-
-    def recal_1Dpdfs(self,num,
-    scrbase='/scratch/gpfs/changgoo/TIGRESS-NCR/',
-    force_override=False):
+    def recal_1Dpdfs(self, num, force_override=False, to_scratch=False):
         s = self.sim
-        scratch_dir= os.path.join(scrbase,s.basename,'midplane_chunk')
+        if to_scratch:
+            out_dir = os.path.join(self.scrbase, s.basename)
+        else:
+            out_dir = s.basedir
 
         # check files first
-        all_exist=True
-        for tf in ['T','T1','pok','nH']:
-            pdfdir=os.path.join(scratch_dir,'../1D-pdfs','{}-pdf'.format(tf))
-            os.makedirs(pdfdir,exist_ok=True)
-            fname=os.path.join(pdfdir,'{}.{:04d}.nc'.format(s.problem_id,num))
-            if os.path.isfile(fname): continue
-            all_exist=False
+        all_exist = True
+        for tf in ["T", "T1", "pok", "nH"]:
+            pdfdir = os.path.join(out_dir, "1D-pdfs", "{}-pdf".format(tf))
+            os.makedirs(pdfdir, exist_ok=True)
+            fname = os.path.join(pdfdir, "{}.{:04d}.nc".format(s.problem_id, num))
+            if os.path.isfile(fname):
+                continue
+            all_exist = False
         if not force_override:
-            if all_exist: return True
+            if all_exist:
+                return True
 
         try:
             s.load_chunk(num)
-            dchunk=s.get_field_from_chunk(['nH','pok','T','xHI','xHII','xH2','cool_rate','heat_rate','net_cool_rate'])
-            dchunk['T1'] = dchunk['pok']/dchunk['nH']
-            dchunk['nH2'] = dchunk['nH']*dchunk['xH2']*2
-            dchunk['netcool'] = dchunk['cool_rate']-dchunk['heat_rate']
-            dchunk=dchunk.sel(z=slice(-300,300))
+            dchunk = s.get_field_from_chunk(
+                [
+                    "nH",
+                    "pok",
+                    "T",
+                    "xHI",
+                    "xHII",
+                    "xH2",
+                    "cool_rate",
+                    "heat_rate",
+                    "net_cool_rate",
+                ]
+            )
+            dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
+            dchunk["nH2"] = dchunk["nH"] * dchunk["xH2"] * 2
+            dchunk["netcool"] = dchunk["cool_rate"] - dchunk["heat_rate"]
+            dchunk = dchunk.sel(z=slice(-300, 300))
         except OSError:
             try:
-                ds=s.load_vtk(num)
-                dchunk=ds.get_field(['nH','pok','T','xHI','xHII','xH2','cool_rate','heat_rate','net_cool_rate'])
-                dchunk['T1'] = dchunk['pok']/dchunk['nH']
-                dchunk['nH2'] = dchunk['nH']*dchunk['xH2']*2
-                dchunk['netcool'] = dchunk['cool_rate']-dchunk['heat_rate']
-                dchunk=dchunk.sel(z=slice(-300,300))
+                ds = s.load_vtk(num)
+                dchunk = ds.get_field(
+                    [
+                        "nH",
+                        "pok",
+                        "T",
+                        "xHI",
+                        "xHII",
+                        "xH2",
+                        "cool_rate",
+                        "heat_rate",
+                        "net_cool_rate",
+                    ]
+                )
+                dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
+                dchunk["nH2"] = dchunk["nH"] * dchunk["xH2"] * 2
+                dchunk["netcool"] = dchunk["cool_rate"] - dchunk["heat_rate"]
+                dchunk = dchunk.sel(z=slice(-300, 300))
             except OSError:
                 return False
 
-        ph = assign_phase(s,dchunk,kind='full',verbose=False)
-        bin_params=dict(nH=(-6,4,0.05),T=(0,9,0.05),T1=(0,9,0.05),pok=(0,7,0.05))
+        ph = assign_phase(s, dchunk, kind="full", verbose=False)
+        bin_params = dict(
+            nH=(-6, 4, 0.05), T=(0, 9, 0.05), T1=(0, 9, 0.05), pok=(0, 7, 0.05)
+        )
 
         pdf_all = []
-        for tf in ['T','T1','pok','nH']:
-            pdfdir=os.path.join(scratch_dir,'../1D-pdfs','{}-pdf'.format(tf))
-            os.makedirs(pdfdir,exist_ok=True)
-            fname=os.path.join(pdfdir,'{}.{:04d}.nc'.format(s.problem_id,num))
+        for tf in ["T", "T1", "pok", "nH"]:
+            pdfdir = os.path.join(out_dir, "1D-pdfs", "{}-pdf".format(tf))
+            os.makedirs(pdfdir, exist_ok=True)
+            fname = os.path.join(pdfdir, "{}.{:04d}.nc".format(s.problem_id, num))
             if not force_override:
-                if os.path.isfile(fname): continue
+                if os.path.isfile(fname):
+                    continue
 
             Tmin, Tmax, Tbin = bin_params[tf]
             pdf = xr.Dataset()
-            for wf in ['vol','nH','nH2',
-                        'net_cool_rate','cool_rate',
-                        'heat_rate','netcool']:
+            for wf in [
+                "vol",
+                "nH",
+                "nH2",
+                "net_cool_rate",
+                "cool_rate",
+                "heat_rate",
+                "netcool",
+            ]:
                 ph_pdf = xr.Dataset()
-                for i,phinfo in enumerate(ph.attrs['phdef']):
-                    c=phinfo['c']
-                    phname=phinfo['name']
-                    h,b = self.Tpdf(dchunk.where(ph == i),wf=wf,tf=tf,
-                               Tmin=Tmin,Tmax=Tmax,Tbin=Tbin,normed=False)
-                    ph_pdf[phname]=xr.DataArray(h,coords=[b[:-1]],dims=[tf])
-                pdf[wf if wf != 'nH' else 'mass']=ph_pdf.to_array('phase')
-            pdf.to_array('weight').to_netcdf(fname)
+                for i, phinfo in enumerate(ph.attrs["phdef"]):
+                    c = phinfo["c"]
+                    phname = phinfo["name"]
+                    h, b = self.Tpdf(
+                        dchunk.where(ph == i),
+                        wf=wf,
+                        tf=tf,
+                        Tmin=Tmin,
+                        Tmax=Tmax,
+                        Tbin=Tbin,
+                        normed=False,
+                    )
+                    ph_pdf[phname] = xr.DataArray(h, coords=[b[:-1]], dims=[tf])
+                pdf[wf if wf != "nH" else "mass"] = ph_pdf.to_array("phase")
+            pdf.to_array("weight").to_netcdf(fname)
             pdf.close()
         return True
 
-    def recal_all(self,nmin=200,force_override=False):
+    def recal_all(self, nmin=200, force_override=False):
         import gc
-        s=self.sim
-        passed=[]
-        created=[]
+
+        s = self.sim
+        passed = []
+        created = []
         for num in tqdm.tqdm(s.nums):
-            if num < nmin: continue
-            if self.recal_1Dpdfs(num,force_override=force_override):
+            if num < nmin:
+                continue
+            if self.recal_1Dpdfs(num, force_override=force_override):
                 created.append(num)
             else:
                 passed.append(num)
@@ -747,30 +800,49 @@ class PDF1D:
                 print_red(num)
 
     @staticmethod
-    def load_1Dpdf(s,num,tf,scrbase='/scratch/gpfs/changgoo/TIGRESS-NCR/'):
-        scratch_dir= os.path.join(scrbase,s.basename,'midplane_chunk')
+    def load_1Dpdf(s, num, tf, from_scratch=False):
+        if from_scratch:
+            out_dir = os.path.join(self.scrbase, s.basename)
+        else:
+            out_dir = s.basedir
 
-        pdfdir=os.path.join(scratch_dir,'../1D-pdfs','{}-pdf'.format(tf))
-        fname=os.path.join(pdfdir,'{}.{:04d}.nc'.format(s.problem_id,num))
+        pdfdir = os.path.join(out_dir, "1D-pdfs", "{}-pdf".format(tf))
+        fname = os.path.join(pdfdir, "{}.{:04d}.nc".format(s.problem_id, num))
         if os.path.isfile(fname):
             with xr.open_dataarray(fname) as dset:
-                return dset.to_dataset('weight')
+                return dset.to_dataset("weight")
         else:
             raise OSError
 
-    def loader(self,s,tf):
-        dt = s.par['output2']['dt']
-        pdflist=[]
-        for num in tqdm.tqdm(s.nums):
+    def loader(self, s, tf, save=False, read_from_file=True):
+        out_dir = s.basedir
+        pdfdir = os.path.join(out_dir, "1D-pdfs", "{}-pdf".format(tf))
+        fname = os.path.join(pdfdir, "{}.nc".format(s.problem_id))
+        if read_from_file:
             try:
-                pdflist.append(self.load_1Dpdf(s,num,tf).assign_coords(time=num*dt*s.u.Myr))
+                with xr.open_dataset(fname) as dset:
+                    setattr(self, tf, dset)
+                    return
             except OSError:
                 pass
-        setattr(self,tf,xr.concat(pdflist,dim='time'))
 
-    def load_all(self):
-        for tf in ['T','T1','pok','nH']:
-            self.loader(self.sim,tf)
+        dt = s.par["output2"]["dt"]
+        pdflist = []
+        for num in tqdm.tqdm(s.nums):
+            try:
+                pdflist.append(
+                    self.load_1Dpdf(s, num, tf).assign_coords(time=num * dt * s.u.Myr)
+                )
+            except OSError:
+                pass
+        setattr(self, tf, xr.concat(pdflist, dim="time"))
+
+        if save: getattr(self,tf).to_netcdf(fname)
+
+    def load_all(self,save=True):
+        for tf in ["T", "T1", "pok", "nH"]:
+            self.loader(self.sim, tf, save=save)
+
 
 if __name__ == "__main__":
     s = pa.LoadSimTIGRESSNCR(
