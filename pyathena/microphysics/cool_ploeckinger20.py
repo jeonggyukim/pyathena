@@ -4,7 +4,12 @@ import astropy.constants as ac
 import numpy as np
 
 def read_P20(shielded=True, z=0.0, logZ=0.0, verbose=False):
+    """Function to read the fiducial model of Ploeckinger et al. (2020) cooling
+    table (UVB_dust1_CR1_G1_shield1)
 
+    https://ui.adsabs.harvard.edu/abs/2020MNRAS.497.4857P/abstract
+    """
+    
     if shielded:
         fname='/tigress/jk11/code/Ploeckinger20/UVB_dust1_CR1_G1_shield1.hdf5'
     else:
@@ -49,7 +54,7 @@ def read_P20(shielded=True, z=0.0, logZ=0.0, verbose=False):
     r['heatTotalPrim'] = heat[idx_z,idx_Z,:,23]
     #r['heatTotalMetal'] = heat[idx_z,idx_Z,:,24]
     r['heat'] = heat[idx_z,idx_Z,:,:]
-    r['cool'] = heat[idx_z,idx_Z,:,:]
+    r['cool'] = cool[idx_z,idx_Z,:,:]
     
     r['IdentifierHeating'] = list(f['IdentifierHeating'])
     r['IdentifierCooling'] = list(f['IdentifierCooling'])
