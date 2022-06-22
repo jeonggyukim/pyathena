@@ -51,7 +51,7 @@ def Jnu_vD82(wav):
     w = wav.value
     return 2.44e-16*w**2.7/au.cm**2/au.s/au.Hz
 
-def Jnu_MMP83(wav):
+def Jlambda_MMP83(wav):
     """ISRF etimation by Mathis, Mezger, & Panagia (1983)
 
     Parameters
@@ -61,19 +61,24 @@ def Jnu_MMP83(wav):
 
     Returns
     -------
-    Jnu : array of float
-         Mean intensity Jnu in cgs units
+    Jlambda : array of float
+         Mean intensity Jlambda in cgs units
     """
     w = np.array([0.0912,0.1,0.11,0.13,0.143,0.18,0.2,0.21,0.216,0.23,0.25,0.346,0.435,0.55,0.7,0.9,
                   1.2,1.8,2.2,2.4,3.4,4.0,5.0,6.0,8.0])*1e4*au.angstrom
     unit = au.erg/au.cm**2/au.s/au.micron
+    # Note that there is a typo at w=3.4 micron
     four_pi_Jlambda = np.array([1.07,1.47,2.04,2.05,1.82,1.24,1.04,0.961,0.917,0.825,0.727,1.3,1.5,1.57,1.53,1.32,
                                 0.926,0.406,0.241,0.189,0.0649,0.0379,0.0176,0.00921,0.00322])*1e-2*unit
-    Jnu = (four_pi_Jlambda/(4.0*np.pi*au.sr)*(w**2/ac.c)).to('erg cm-2 s-1 Hz-1 sr-1')
-    nu = (ac.c/w).to('Hz')
-    f_Jnu = interp1d(w, Jnu, bounds_error=False, fill_value=np.nan)
     
-    return f_Jnu(wav)
+    #Jnu = (four_pi_Jlambda/(4.0*np.pi*au.sr)*(w**2/ac.c)).to('erg cm-2 s-1 Hz-1 sr-1')
+    Jlambda = (four_pi_Jlambda/(4.0*np.pi*au.sr)).to('erg cm-2 s-1 angstrom-1 sr-1')
+    #nu = (ac.c/w).to('Hz')
+    #f_Jnu = interp1d(w, Jnu, bounds_error=False, fill_value=np.nan)
+    f_Jlambda = interp1d(w, Jlambda, bounds_error=False, fill_value=np.nan)
+    
+    #return f_Jnu(wav)
+    return f_Jlambda(wav)
 
 # def Jnu_MMP83(wav):
     
