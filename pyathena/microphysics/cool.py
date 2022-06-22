@@ -98,11 +98,28 @@ def heatPE_W03(nH, T, xe, Z_d, chi_PE, phi=0.5):
 
 def heatCR(nH, xe, xHI, xH2, xi_CR):
 
-    # Heating rate per ionization in atomic region
-    # See Eq.30.1 in Draine (2011)
+    eV_cgs = (1.0*au.eV).cgs.value
+    qHI = (6.5 + 26.4*np.sqrt(xe / (xe + 0.07)))*eV_cgs
+
+    # Heating rate per ionization in molecular region
+    # See Appendix B in Krumholz 2014 (Despotic)
+    log_nH = np.log10(nH)
+    qH2 = np.zeros_like(nH)
+    qH2 = np.where(log_nH < 2.0, 10.0*eV_cgs, 0.0) + \
+          np.where(np.logical_and(log_nH >= 2.0, log_nH < 4.0),
+                   (10 + 3*(log_nH - 2.0)*0.5)*eV_cgs, 0.0) + \
+          np.where(np.logical_and(log_nH >= 4.0, log_nH < 7.0),
+                   (13 + 4*(log_nH - 4.0)/3)*eV_cgs, 0.0) + \
+          np.where(np.logical_and(log_nH >= 7.0, log_nH < 10.0),
+                   (17 + (log_nH - 7.0)/3)*eV_cgs, 0.0) + \
+          np.where(log_nH >= 10.0, 18.0*eV_cgs, 0.0)
+
+    return xi_CR*(xHI*qHI + 2.0*xH2*qH2)
+
+def heatCR_old(nH, xe, xHI, xH2, xi_CR):
+
     eV_cgs = (1.0*au.eV).cgs.value
     xHetot = 0.1
-    # JKIM: Isn't the last term 1.5*xHetot?
     ktot = xi_CR*((2.3*xH2 + 1.5*xHI)*(xHI + 2.0*xH2) + 1.1*xHetot)
     qHI = (6.5 + 26.4*np.sqrt(xe / (xe + 0.07)))*eV_cgs
 
@@ -121,21 +138,38 @@ def heatCR(nH, xe, xHI, xH2, xi_CR):
 
     return ktot*(xHI*qHI + 2.0*xH2*qH2)
 
-def heatH2form(nH, T, xHI, xH2, Z_d, kgr_H2=3.0e-17, ikgr_H2=0):
+def heatH2(nH, T, xHI, xH2, Z_d, kgr_H2, xi_diss_H2, ikgr_H2, iH2heating):
+    
     eV_cgs = (1.0*au.eV).cgs.value
-
+    f_pump = 8.0
+    
     if ikgr_H2 == 0: # Constant coeff
-        kgr = kgr_H2
+        kgr = kgr_H2*Z_d
     else:
         T2 = T*1e-2
         kgr = kgr_H2*Z_d*sqrt(T2)*2.0/(1+0.4*np.sqrt(T2)+0.2*T2+0.08*T2*T2)
     
-    # Hollenbach & McKee (1978) Eq (6.43), (6.45)
-    de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
-    ncrit = 1e6/np.sqrt(T)/de
-    f = nH/(nH + ncrit)
+    if iH2heating == 1:
+        A = 2.0e-7
+        D = xi_diss_H2
+        t = 1.0 + T*1e-3
+        geff_H  = np.power(10.0, -11.06 + 0.0555/t - 2.390/(t*t))
+        geff_H2 = np.power(10.0, -11.08 - 3.671/t - 2.023/(t*t))
+        ncrit = (A + D) / (geff_H*xHI + geff_H2*xH2)
+        f = 1.0/(1.0 + ncrit/nH)
+        heatH2form = kgr*nH*xHI*(0.2 + 4.2*f)*eV_cgs
+        heatH2diss = xi_diss_H2*xH2*0.4*eV_cgs
+        heatH2pump = xi_diss_H2*xH2*f_pump*2.0*f*eV_cgs
+    else:
+        # Hollenbach & McKee (1978) Eq (6.43), (6.45)
+        de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
+        ncrit = 1e6/np.sqrt(T)/de
+        f = nH/(nH + ncrit)
+        heatH2form = kgr*nH*xHI*(0.2 + 4.2*f)*eV_cgs
+        heatH2diss = xi_diss_H2*xH2*0.4*eV_cgs
+        heatH2pump = xi_diss_H2*xH2*f_pump*2.2*f*eV_cgs
 
-    return kgr*Z_d*nH*xHI*(0.2 + 4.2*f)*eV_cgs
+    return heatH2form,heatH2diss,heatH2pump
 
 def heatH2pump(nH, T, xHI, xH2, xi_diss_H2):
     # Hollenbach & McKee (1978)
@@ -194,6 +228,7 @@ def q10CII_(nH, T, xe, xHI, xH2):
     k10H2 = k10oH2*fo_ + k10pH2*fp_
 
     return nH*(k10e*xe + k10HI*xHI + k10H2*xH2)
+
 
 def coolCII(nH, T, xe, xHI, xH2, xCII):
 
