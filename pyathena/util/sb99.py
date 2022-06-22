@@ -554,21 +554,21 @@ class SB99(object):
         return fig
 
     @staticmethod
-    def plt_lum_evol(ax, rr, rw, rs, plt_sn=False):
+    def plt_lum_evol(ax, rr, rw, rs, lw=2, plt_sn=False):
 
         #pa.set_plt_fancy()
         plt.sca(ax)
-        plt.plot(rr['time_Myr'], rr['L']['tot'], label=r'Bolometric', c='k')
-        plt.plot(rr['time_Myr'], rr['L']['UV'], label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--')
-        plt.plot(rr['time_Myr'], rr['L']['LyC'], label=r'${\rm LyC}\;(<912\,{\rm \AA})$', c='C0')
-        plt.plot(rr['time_Myr'], rr['L']['LW'], label=r'${\rm LW}\;(912$-$1108\,{\rm \AA})$', c='C1')
-        plt.plot(rr['time_Myr'], rr['L']['PE'], label=r'${\rm PE}\;(1108$-$2068\,{\rm \AA})$', c='C2')
-        plt.plot(rr['time_Myr'], rr['L']['OPT'], label=r'${\rm OPT}\;(2068$-$10000\,{\rm \AA})$', c='C3')
+        plt.plot(rr['time_Myr'], rr['L']['tot'], label=r'Bolometric', c='k', lw=lw)
+        plt.plot(rr['time_Myr'], rr['L']['UV'], label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--', lw=lw)
+        plt.plot(rr['time_Myr'], rr['L']['LyC'], label=r'${\rm LyC}\;(<912\,{\rm \AA})$', c='C0', lw=lw)
+        plt.plot(rr['time_Myr'], rr['L']['LW'], label=r'${\rm LW}\;(912$-$1108\,{\rm \AA})$', c='C1', lw=lw)
+        plt.plot(rr['time_Myr'], rr['L']['PE'], label=r'${\rm PE}\;(1108$-$2068\,{\rm \AA})$', c='C2', lw=lw)
+        plt.plot(rr['time_Myr'], rr['L']['OPT'], label=r'${\rm OPT}\;(2068$-$10000\,{\rm \AA})$', c='C3', lw=lw)
         plt.plot(rw['time_Myr'], rw['Edot_all']/(1.0*au.L_sun).cgs.value, c='C7', 
-                 label=r'$L_{\rm w}/M_{\ast}$')
+                 label=r'$L_{\rm w}/M_{\ast}$', lw=lw)
         if plt_sn:
             plt.plot(rs['time_Myr'], rs['Edot_SN']/(1.0*au.L_sun).cgs.value, c='C8', 
-                     label=r'$L_{\rm sn}/M_{\ast}$')
+                     label=r'$L_{\rm sn}/M_{\ast}$', lw=lw)
 
         plt.yscale('log')
         plt.xlim(0, 20)
@@ -581,17 +581,17 @@ class SB99(object):
         return ax
     
     @staticmethod
-    def plt_pdot_evol(ax, rr, rw, rs):
+    def plt_pdot_evol(ax, rr, rw, rs, lw=2):
 
         plt.sca(ax)
         plt.plot(rr['time_Myr'], (rr['L']['tot']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
-                 label=r'Bolometric', c='k')
+                 label=r'Bolometric', c='k', lw=lw)
         # plt.plot(rr['time_Myr'], (rr['L']['LyC']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
         #          label=r'${\rm LyC}\;(<912\,{\rm \AA})$', c='C0', ls='-')
         plt.plot(rr['time_Myr'], (rr['L']['UV']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
-                 label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--')
+                 label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--', lw=lw)
         plt.plot(rw['time_Myr'], rw['pdot_all'].values,
-                 label=r'$\dot{p}_{\rm wind}/M_{\ast}$', c='C7')
+                 label=r'$\dot{p}_{\rm wind}/M_{\ast}$', c='C7', lw=lw)
         plt.xlim(0,20)
         plt.ylim(1e-1,5e1)
         plt.yscale('log')
@@ -603,7 +603,7 @@ class SB99(object):
         return ax
 
     @staticmethod
-    def plt_lum_cumul(ax, rr, rw, rs, normed=True, plt_sn=False):
+    def plt_lum_cumul(ax, rr, rw, rs, normed=True, plt_sn=False, lw=2):
 
         integrate_L_cum = lambda L, t: cumulative_trapezoid((L*au.L_sun).cgs.value, 
                                                             (t*au.yr).cgs.value, initial=0.0)
@@ -618,21 +618,21 @@ class SB99(object):
             
         plt.sca(ax)
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['LyC'], rr['time_yr'])/norm,
-                 label='LyC', c='C0')
+                 label='LyC', c='C0', lw=lw)
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['LW'], rr['time_yr'])/norm,
-                 label='LW', c='C1')
+                 label='LW', c='C1', lw=lw)
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['PE'], rr['time_yr'])/norm,
-                 label='PE', c='C2')
+                 label='PE', c='C2', lw=lw)
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['OPT'], rr['time_yr'])/norm,
-                 label='OPT', c='C3')
+                 label='OPT', c='C3', lw=lw)
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['UV'], rr['time_yr'])/norm,
-                 label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--')
+                 label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--', lw=lw)
         plt.plot(rr['time_Myr'], integrate_L_cum(rr['L']['tot'], rr['time_yr'])/norm,
-                 label='Bolometric', c='k')
-        plt.plot(rw['time_Myr'], rw['Einj_all'], c='C7', label=r'$L_{\rm w}$')
+                 label='Bolometric', c='k', lw=lw)
+        plt.plot(rw['time_Myr'], rw['Einj_all'], c='C7', label=r'$L_{\rm w}$', lw=lw)
 
         if plt_sn:
-            plt.plot(rs['time_Myr'], rs['Einj_SN'], c='C8', label=r'$L_{\rm sn}$')
+            plt.plot(rs['time_Myr'], rs['Einj_SN'], c='C8', label=r'$L_{\rm sn}$', lw=lw)
 
         plt.xscale('log')
         plt.yscale('log')
@@ -649,7 +649,7 @@ class SB99(object):
         return ax
 
     @staticmethod
-    def plt_pdot_cumul(ax, rr, rw, rs, normed=False, plt_sn=False):
+    def plt_pdot_cumul(ax, rr, rw, rs, normed=False, plt_sn=False, lw=2):
 
         integrate_pdot = lambda pdot, t: cumulative_trapezoid(
             pdot, t*au.Myr, initial=0.0)
@@ -670,15 +670,15 @@ class SB99(object):
         # plt.plot(rr['time_Myr'], integrate_pdot(rr['pdot']['PE'], rr['time_Myr'])/norm,
         #          label='PE', c='C2')
         plt.plot(rr['time_Myr'], integrate_pdot(rr['pdot']['UV'], rr['time_Myr'])/norm,
-                 label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--')
+                 label=r'${\rm LyC+FUV}\;(<2068\,{\rm \AA})$', c='k', ls='--', lw=lw)
         plt.plot(rr['time_Myr'], integrate_pdot(rr['pdot']['tot'], rr['time_Myr'])/norm,
-                 label='Bolometric', c='k')
+                 label='Bolometric', c='k', lw=lw)
 
         # from cgs to astro units
         pdot_conv = 1.0 #(1.0*au.g*au.cm/au.s**2).to('Msun km s-1 Myr-1')
         plt.plot(rw['time_Myr'], integrate_pdot(rw['pdot_all']*pdot_conv,
                                                 rw['time_Myr'])/norm,
-                 c='C7', label=r'$L_{\rm w}$')
+                 c='C7', label=r'$L_{\rm w}$', lw=lw)
 
         # if plt_sn:
         #     plt.plot(rs['time_Myr'], rs['Einj_SN'], c='C8', label=r'$L_{\rm sn}$')
@@ -698,15 +698,16 @@ class SB99(object):
         return ax
 
     @staticmethod
-    def plt_Edot_pdot_evol_cumul(rr, rw, rs, plt_sn=True, normed=False):
-    
-        fig, axes = plt.subplots(2,2,figsize=(12, 10), constrained_layout=True,
-                                 gridspec_kw=dict(height_ratios=[0.5,0.5]))
-        axes = axes.flatten()
-        SB99.plt_lum_evol(axes[0], rr, rw, rs, plt_sn=plt_sn)
-        SB99.plt_pdot_evol(axes[1], rr, rw, rs)
-        SB99.plt_lum_cumul(axes[2], rr, rw, rs, normed=normed, plt_sn=plt_sn)
-        SB99.plt_pdot_cumul(axes[3], rr, rw, rs, normed=normed, plt_sn=plt_sn)
+    def plt_Edot_pdot_evol_cumul(rr, rw, rs, plt_sn=True, lw=2, normed=False, fig=None, axes=None):
+        if fig is None:
+            fig, axes = plt.subplots(2,2,figsize=(12, 10), constrained_layout=True,
+                                     gridspec_kw=dict(height_ratios=[0.5,0.5]))
+            axes = axes.flatten()
+            
+        SB99.plt_lum_evol(axes[0], rr, rw, rs, plt_sn=plt_sn, lw=lw)
+        SB99.plt_pdot_evol(axes[1], rr, rw, rs, lw=lw)
+        SB99.plt_lum_cumul(axes[2], rr, rw, rs, normed=normed, plt_sn=plt_sn, lw=lw)
+        SB99.plt_pdot_cumul(axes[3], rr, rw, rs, normed=normed, plt_sn=plt_sn, lw=lw)
         
         for ax in axes:
             ax.grid()
@@ -733,13 +734,13 @@ class SB99(object):
                     r'Supernovae',
                     ], loc=4, fontsize='small')
 
-        return fig
+        return fig, axes
 
 
 def plt_nuJnu_mid_plane_parallel(ax,
                                  Sigma_gas=10.0*au.M_sun/au.pc**2, plt_dr78=True):
 
-    sb = SB99('/projects/EOSTRIKE/SB99/Z014_SFR1_GenevaV00_dt20')
+    sb = SB99('/projects/EOSTRIKE/SB99/Z014_SFR1_GenevaV00_logdt')
     rr = sb.read_rad()
     w = rr['wav'].values*1e-4
     d = DustDraine()
@@ -748,14 +749,15 @@ def plt_nuJnu_mid_plane_parallel(ax,
                       bounds_error=False)
     f_Cabs = interp1d(np.log10(dfdr['lwav']), np.log10(dfdr['Cext']*(1.0 - dfdr['albedo'])),
                       bounds_error=False)
-    
+
+    print('max time', rr['time_Myr'][-1])
     Sigma_SFR = 2.5e-3
     Llambda_over_SFR = 10.0**rr['logf'][-1,:]*au.erg/au.s/au.angstrom
     Llambda = Sigma_SFR*10.0**rr['logf'][-1,:]*au.erg/au.s/au.angstrom
     area = (1.0*au.kpc)**2
     muH = 1.4*au.u
-    kappa_dust_ext = (10.0**f_Cext(np.log10(w))*au.cm**2/au.u).cgs
-    kappa_dust_abs = (10.0**f_Cabs(np.log10(w))*au.cm**2/au.u).cgs
+    kappa_dust_ext = (10.0**f_Cext(np.log10(w))*au.cm**2/au.g).cgs
+    kappa_dust_abs = (10.0**f_Cabs(np.log10(w))*au.cm**2/au.g).cgs
     tau_perp = (Sigma_gas*kappa_dust_abs).to('').value
     
     from scipy.special import expn
@@ -959,3 +961,166 @@ def print_tbl_data(rr):
 
     for td in tbl_data:
         print(td)
+
+
+from pyathena.microphysics.dust_draine import DustDraine
+from pyathena.util.sb99 import SB99
+from scipy.interpolate import interp1d
+from scipy.special import expn
+from scipy import integrate
+
+def get_ISRF_SB99_plane_parallel(Sigma_gas=10.0*au.M_sun/au.pc**2,
+                                 Sigma_SFR=2.5e-3*au.M_sun/au.kpc**2/au.yr,
+                                 age_Myr=0.99e3,
+                                 Z_dust=1.0, dust_kind='Rv31', rotation='V00',
+                                 Z_star=0.014, verbose=True):
+    
+    Z_gas = Z_dust
+    Z_star_str = '{0:03d}'.format(int(Z_star*1000))
+    model = '/projects/EOSTRIKE/SB99/Z{0:s}_SFR1_Geneva{1:s}_logdt_10Gyr'.\
+        format(Z_star_str, rotation)
+    print(Z_star,Z_star_str)
+    print(model)
+    sb = SB99(model, verbose=verbose)
+    rr = sb.read_rad()
+    
+    if sb.cont_SF:
+        SFR = sb.SFR*au.M_sun/au.yr
+    else:
+        print('SB99 does not assume continuous SF!')
+        raise
+
+    d = DustDraine()
+    if dust_kind in ['Rv31', 'Rv31', 'Rv55', 'LMCavg', 'SMCbar']:
+        dfdr = d.dfa[dust_kind]
+    else:
+        print('dust_kind {0:s} not supported'.format(dust_kind))
+        raise
+    
+    # Cross sections
+    f_Cabs = interp1d(np.log10(dfdr['lwav']), 
+                      np.log10(Z_dust*dfdr['K_abs']/d.GTD['Rv31']),
+                      bounds_error=False)
+    
+    # wavelength in micron
+    w_micron = rr['wav'].values*1e-4
+    w_angstrom = rr['wav'].values
+    
+    # Luminosity per SFR and area at maximum time
+    #idx = -1
+    idx = np.where(rr['time_Myr'] > age_Myr)[0][0]
+    Llambda_per_SFR = 10.0**rr['logf'][idx, :]*au.erg/au.s/au.angstrom/SFR
+    Llambda_per_area = Sigma_SFR*Llambda_per_SFR
+
+    muH = (1.4 - 0.02*Z_gas)*au.u
+    
+    #kappa_dust_ext = Z_dust*(10.0**f_Cext(np.log10(w_micron))*au.cm**2/au.u).cgs
+    kappa_dust_abs = Z_dust*(10.0**f_Cabs(np.log10(w_micron))*au.cm**2/au.g).cgs
+    
+    # Wavelength-dependent perpendicular dust optical depth
+    tau_perp = (Sigma_gas*kappa_dust_abs).to('').value
+    
+    # Naive estimation without attenuation
+    Jlambda_unatt = (Llambda_per_area/(4.0*np.pi*au.sr)).to('erg s-1 cm-2 angstrom-1 sr-1')
+    # Intensity at the midplane (see Ostriker et al. 2010)
+    Jlambda = Jlambda_unatt/tau_perp*(1.0 - expn(2, 0.5*tau_perp))
+    
+    ###################################
+    # Wavelength integrated quantities
+    ###################################
+    w_bdry = np.array([0,912,2068,10000])
+    band = np.array(['LyC','FUV','OPT'])
+    nband = len(band)
+    
+    J_unatt = dict()
+    J = dict()
+    L_per_area = dict()
+    L_per_SFR = dict()
+    for i in range(nband):
+        b = band[i]
+        idx = (w_angstrom > w_bdry[i]) & (w_angstrom <= w_bdry[i+1])
+        # Naive estimate of mean intensity (L/area/4pi)
+        J_unatt[b] = integrate.trapz(Jlambda_unatt[idx],
+                                     w_angstrom[idx]*au.angstrom)
+        # Mean intensity with dust attenuation
+        J[b] = integrate.trapz(Jlambda[idx],
+                               w_angstrom[idx]*au.angstrom)
+        # Luminosity per unit area
+        L_per_area[b] = (integrate.trapz(Llambda_per_area[idx],
+                                         w_angstrom[idx]*au.angstrom)).to('Lsun kpc-2')
+        L_per_SFR[b] = (integrate.trapz(Llambda_per_SFR[idx],
+                                        w_angstrom[idx])*au.angstrom).to('Lsun Msun-1 yr')
+        
+        
+    r = dict()
+    r['sb'] = sb
+    r['sb_rad'] = rr
+    r['Z_star'] = Z_star
+    r['Z_star_str'] = Z_star_str
+    r['Z_dust'] = Z_dust
+    r['SFR'] = SFR
+    r['Sigma_gas'] = Sigma_gas
+    r['Sigma_SFR'] = Sigma_SFR
+    r['w_micron'] = w_micron
+    r['w_angstrom'] = w_angstrom
+    r['tau_perp'] = tau_perp
+    r['Jlambda_unatt'] = Jlambda_unatt
+    r['Jlambda'] = Jlambda
+    r['J_unatt'] = J_unatt
+    r['J'] = J
+    r['L_per_area'] = L_per_area
+    r['L_per_SFR'] = L_per_SFR
+    r['Llambda_per_area'] = Llambda_per_area
+    r['Llambda_per_SFR'] = Llambda_per_SFR
+    
+#     idx = (w_angstrom > 912.0) & (w_angstrom < 2068.0)
+#     # Mean FUV intensity (naive estimate)
+#     J_FUV_unatt = integrate.trapz(Jlambda_unatt[idx],
+#                                   w_angstrom[idx]*au.angstrom)
+#     # Mean FUV intensity
+#     J_FUV = integrate.trapz(Jlambda[idx],
+#                             w_angstrom[idx]*au.angstrom)
+
+#     # FUV luminosity per unit area
+#     Sigma_FUV = (integrate.trapz(Llambda_per_area[idx],
+#                            w_angstrom[idx]*au.angstrom)).to('Lsun kpc-2')
+#     L_FUV_per_SFR = (integrate.trapz(Llambda_per_SFR[idx],
+#                            w_angstrom[idx])*au.angstrom).to('Lsun Msun-1 yr')
+    
+    # Jlambda = (Llambda_per_area/(4.0*np.pi*au.sr*tau_perp)*
+    #           (1.0 - expn(2, 0.5*tau_perp))).to('erg s-1 cm-2 angstrom-1 sr-1')
+    
+    # wavelength in Angstrom
+
+#     print('Z_dust',Z_dust)
+#     #print('correction factor:',1/tau_perp*(1.0 - expn(2, 0.5*tau_perp)))
+#     print('Llambda_over_SFR',Llambda_over_SFR)
+
+#     r = dict()
+#     # r['Z_star'] = Z_star
+#     r['Z_star'] = Z_star
+#     r['Z_dust'] = Z_dust
+#     r['SFR'] = SFR
+#     r['Sigma_gas'] = Sigma_gas
+#     r['Sigma_SFR'] = Sigma_SFR
+#     r['w_angstrom'] = w_angstrom
+#     r['Jlambda_unatt'] = Jlambda_unatt
+#     r['Jlambda'] = Jlambda
+#     r['Sigma_FUV'] = Sigma_FUV
+#     r['J_FUV_unatt'] = J_FUV_unatt
+#     r['J_FUV'] = J_FUV
+#     r['tau_perp'] = tau_perp
+#     r['L_FUV_per_SFR'] = L_FUV_per_SFR
+    
+#     r['sb'] = sb
+#     r['rr'] = rr
+    
+#     if verbose:
+#         print('Z_star, Z_dust', Z_star, Z_dust)
+#         print('Sigma_FUV : {:g}'.format(Sigma_FUV))
+#         print('L_FUV_per_SFR : {:g}'.format(L_FUV_per_SFR))
+#         print('J_FUV_unatt: {:g}'.format(J_FUV_unatt))
+#         print('J_FUV : {:g}'.format(J_FUV))
+#         print('Overall correction factor : {:g}'.format(J_FUV/J_FUV_unatt))
+
+    return r
