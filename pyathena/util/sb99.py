@@ -969,18 +969,16 @@ from scipy.interpolate import interp1d
 from scipy.special import expn
 from scipy import integrate
 
+
 def get_ISRF_SB99_plane_parallel(Sigma_gas=10.0*au.M_sun/au.pc**2,
                                  Sigma_SFR=2.5e-3*au.M_sun/au.kpc**2/au.yr,
                                  age_Myr=0.99e3,
-                                 Z_dust=1.0, dust_kind='Rv31', rotation='V00',
-                                 Z_star=0.014, verbose=True):
+                                 Z_dust=1.0, dust_kind='Rv31', Z_star=0.014, verbose=True):
     
     Z_gas = Z_dust
     Z_star_str = '{0:03d}'.format(int(Z_star*1000))
-    model = '/projects/EOSTRIKE/SB99/Z{0:s}_SFR1_Geneva{1:s}_logdt_10Gyr'.\
-        format(Z_star_str, rotation)
-    print(Z_star,Z_star_str)
-    print(model)
+    model = '/projects/EOSTRIKE/SB99/Z{0:s}_SFR1_GenevaV00_logdt_10Gyr'.format(Z_star_str)
+
     sb = SB99(model, verbose=verbose)
     rr = sb.read_rad()
     
@@ -1070,25 +1068,23 @@ def get_ISRF_SB99_plane_parallel(Sigma_gas=10.0*au.M_sun/au.pc**2,
     r['J'] = J
     r['L_per_area'] = L_per_area
     r['L_per_SFR'] = L_per_SFR
-    r['Llambda_per_area'] = Llambda_per_area
-    r['Llambda_per_SFR'] = Llambda_per_SFR
     
-#     idx = (w_angstrom > 912.0) & (w_angstrom < 2068.0)
-#     # Mean FUV intensity (naive estimate)
-#     J_FUV_unatt = integrate.trapz(Jlambda_unatt[idx],
-#                                   w_angstrom[idx]*au.angstrom)
-#     # Mean FUV intensity
-#     J_FUV = integrate.trapz(Jlambda[idx],
-#                             w_angstrom[idx]*au.angstrom)
+    r['Jlambda'] = (Llambda_per_area/(4.0*np.pi*au.sr*tau_perp)*
+                    (1.0 - expn(2, 0.5*tau_perp))).to('erg s-1 cm-2 angstrom-1 sr-1')
 
-#     # FUV luminosity per unit area
-#     Sigma_FUV = (integrate.trapz(Llambda_per_area[idx],
-#                            w_angstrom[idx]*au.angstrom)).to('Lsun kpc-2')
-#     L_FUV_per_SFR = (integrate.trapz(Llambda_per_SFR[idx],
-#                            w_angstrom[idx])*au.angstrom).to('Lsun Msun-1 yr')
+    idx = (w_angstrom > 912.0) & (w_angstrom < 2068.0)
+    # Mean FUV intensity (naive estimate)
+    r['J_FUV_unatt'] = integrate.trapz(Jlambda_unatt[idx],
+                                  w_angstrom[idx]*au.angstrom)
+    # Mean FUV intensity
+    r['J_FUV'] = integrate.trapz(Jlambda[idx],
+                            w_angstrom[idx]*au.angstrom)
+    # FUV luminosity per unit area
+    r['Sigma_FUV'] = (integrate.trapz(Llambda_per_area[idx],
+                                      w_angstrom[idx]*au.angstrom)).to('Lsun kpc-2')
+    r['L_FUV_per_SFR'] = (integrate.trapz(Llambda_per_SFR[idx],
+                           w_angstrom[idx])*au.angstrom).to('Lsun Msun-1 yr')
     
-    # Jlambda = (Llambda_per_area/(4.0*np.pi*au.sr*tau_perp)*
-    #           (1.0 - expn(2, 0.5*tau_perp))).to('erg s-1 cm-2 angstrom-1 sr-1')
     
     # wavelength in Angstrom
 
@@ -1115,12 +1111,12 @@ def get_ISRF_SB99_plane_parallel(Sigma_gas=10.0*au.M_sun/au.pc**2,
 #     r['sb'] = sb
 #     r['rr'] = rr
     
-#     if verbose:
-#         print('Z_star, Z_dust', Z_star, Z_dust)
-#         print('Sigma_FUV : {:g}'.format(Sigma_FUV))
-#         print('L_FUV_per_SFR : {:g}'.format(L_FUV_per_SFR))
-#         print('J_FUV_unatt: {:g}'.format(J_FUV_unatt))
-#         print('J_FUV : {:g}'.format(J_FUV))
-#         print('Overall correction factor : {:g}'.format(J_FUV/J_FUV_unatt))
+    if verbose:
+        print('Z_star, Z_dust', Z_star, Z_dust)
+        print('Sigma_FUV : {:g}'.format(r['Sigma_FUV']))
+        print('L_FUV_per_SFR : {:g}'.format(r['L_FUV_per_SFR']))
+        print('J_FUV_unatt: {:g}'.format(r['J_FUV_unatt']))
+        print('J_FUV : {:g}'.format(r['J_FUV']))
+        print('Overall correction factor : {:g}'.format(r['J_FUV']/r['J_FUV_unatt']))
 
     return r
