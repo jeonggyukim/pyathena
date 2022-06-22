@@ -3,6 +3,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import astropy.units as au
 import astropy.constants as ac
+import pandas as pd
 
 from ..load_sim import LoadSimAll
 
@@ -32,6 +33,21 @@ def load_sixray_test_all(models, sel_kwargs=dict(z=0, method='nearest'), num=Non
     return sa, da
 
 def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
+
+    if s.config_time > pd.to_datetime('2022-05-20 00:00:00 -04:00'):
+        CRfix = True
+    else:
+        CRfix = False
+
+    if s.config_time > pd.to_datetime('2022-05-01 00:00:00 -04:00'):
+        nebcool = True
+    else:
+        nebcool = False
+
+    if s.config_time > pd.to_datetime('2022-05-01 00:00:00 -04:00'):
+        crate_code_unit = True
+    else:
+        crate_code_unit = False
 
     # Dissociation rate for unshielded ISRF [s^-1]
     D0 = s.par['cooling']['xi_diss_H2_ISRF']
@@ -75,11 +91,13 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
     
     from pyathena.microphysics.cool import \
         get_xCO, get_xe_mol, heatPE, heatPE_BT94, heatPE_W03,\
-        heatCR, heatH2form, heatH2pump, heatH2diss,\
+        heatCR_old, heatCR, heatH2, \
         coolCII, coolOI, coolRec, coolRec_BT94, coolRec_W03,\
         coolLya, coolCI, coolCO, coolHIion, coolH2rovib, coolH2colldiss,\
-        coolrecH, coolffH, cooldust
+        coolrecH, coolffH, cooldust, coolneb, coolOII
 
+        # heatH2form, heatH2pump, heatH2diss,\
+            
     Z_d = s.par['problem']['Z_dust']
     Z_g = s.par['problem']['Z_gas']
     xCstd = s.par['cooling']['xCstd']
@@ -112,6 +130,16 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
     # print(sel_kwargs)
     d = dd.sel(**sel_kwargs)
 
+    if s.config_time > pd.to_datetime('2022-05-01 00:00:00 -04:00'):
+        # cool_rate and heat_rate in code unit
+        crate_code_unit = True
+        conv = (s.u.erg/s.u.cm**3/s.u.s)
+        if cool:
+            d['cool_rate'] *= conv
+            d['heat_rate'] *= conv
+    else:
+        crate_code_unit = False
+
     xCtot = s.par['problem']['Z_gas']*s.par['cooling']['xCstd']
     dx_cgs = s.domain['dx'][2]*s.u.length.cgs.value
     d['NH'] = d['nH'].cumsum()*dx_cgs
@@ -135,10 +163,20 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
         else: # Weingartner & Draine 2001
             d['heatPE'] = heatPE(d['nH'], d['T'], d['xe'], Z_d, d['chi_PE_ext'])
             
-        d['heatCR'] = heatCR(d['nH'], d['xe'], d['xHI'], d['xH2'], d['xi_CR'])
-        d['heatH2pump'] = heatH2pump(d['nH'], d['T'], d['xHI'], d['xH2'], d['chi_H2_ext']*D0)
-        d['heatH2form'] = heatH2form(d['nH'], d['T'], d['xHI'], d['xH2'], Z_d)
-        d['heatH2diss'] = heatH2diss(d['xH2'], d['chi_H2_ext']*D0)
+        if CRfix:
+            d['heatCR'] = heatCR(d['nH'], d['xe'], d['xHI'], d['xH2'], d['xi_CR'])
+        else:
+            d['heatCR'] = heatCR_old(d['nH'], d['xe'], d['xHI'], d['xH2'], d['xi_CR'])
+            
+        # d['heatH2pump'] = heatH2pump(d['nH'], d['T'], d['xHI'], d['xH2'], d['chi_H2_ext']*D0)
+        # d['heatH2form'] = heatH2form(d['nH'], d['T'], d['xHI'], d['xH2'], Z_d)
+        # d['heatH2diss'] = heatH2diss(d['xH2'], d['chi_H2_ext']*D0)
+
+        d['heatH2form'], d['heatH2diss'], d['heatH2pump'] = \
+            heatH2(d['nH'], d['T'], d['xHI'], d['xH2'], Z_d,
+                   s.par['cooling']['kgr_H2'], d['chi_H2_ext']*D0,
+                   s.par['cooling']['ikgr_H2'], s.par['cooling']['iH2heating'])
+
         d['coolCII'] = coolCII(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCII'])
         d['coolOI'] = coolOI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xOI'])
         if dust_model == 'BT94':
@@ -161,6 +199,13 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
         d['coolCI'] = coolCI(d['nH'],d['T'],d['xe'],d['xHI'],d['xH2'],d['xCI'])
         d['coolffH'] = coolffH(d['nH'],d['T'],d['xe'],d['xHII'])
         d['coolrecH'] = coolrecH(d['nH'],d['T'],d['xe'],d['xHII'])
+
+        if nebcool:
+            d['coolneb'] = coolneb(d['nH'],d['T'],d['xe'],d['xHII'],Z_g)
+        else:
+            d['coolneb'] = s.par['cooling']['fac_coolingOII']*\
+                coolOII(d['nH'],d['T'],d['xe'],d['xOII'])
+            
         
         # d['coolCO'] = np.where(d['xCO'] < 1e-3*xCstd,
         #                        0.0,
@@ -292,7 +337,7 @@ def plt_nP_nT(axes, s, da, model, suptitle,
     return axes
 
 
-def plt_rates_abd(axes, s, da, model, log_chi0=0.0, xlim=(1e-2,1e3),
+def plt_rates_abd(axes, s, da, model, lw=2.0, log_chi0=0.0, xlim=(1e-2,1e3),
                   ylims=[(1e-29,2e-23),(1e-7,2e0),(1e0,1e5)], shielded=True):
 
     cmap = plt.get_cmap("tab10")
@@ -318,28 +363,32 @@ def plt_rates_abd(axes, s, da, model, log_chi0=0.0, xlim=(1e-2,1e3),
     Z_d = s.par['problem']['Z_dust']
 
     plt.sca(axes[0])
-    plt.loglog(d['nH'], d['heatPE'], ls='--', label=r'PE', c=cmap(0))
-    plt.loglog(d['nH'], d['heatCR'], ls='--', label=r'CR', c=cmap(1))
-    plt.loglog(d['nH'], d['heatH2form'], ls='--', label=r'${\rm H}_{2,\rm {form}}$', c=cmap(2))
-    plt.loglog(d['nH'], d['heatH2diss'], ls='--', label=r'${\rm H}_{2,\rm {diss}}$', c=cmap(3))
-    plt.loglog(d['nH'], d['heatH2pump'], ls='--', label=r'${\rm H}_{2,\rm {pump}}$', c=cmap(4))
+    plt.loglog(d['nH'], d['heatPE'], ls='--', lw=lw, label=r'PE', c=cmap(0))
+    plt.loglog(d['nH'], d['heatCR'], ls='--', lw=lw, label=r'CR', c=cmap(1))
+    plt.loglog(d['nH'], d['heatH2form'], ls='--', lw=lw, label=r'${\rm H}_{2,\rm {form}}$', c=cmap(2))
+    plt.loglog(d['nH'], d['heatH2diss'], ls='--', lw=lw, label=r'${\rm H}_{2,\rm {diss}}$', c=cmap(3))
+    # plt.loglog(d['nH'], d['heatH2pump'], ls='--', lw=lw, label=r'${\rm H}_{2,\rm {pump}}$', c=cmap(4))
+    # plt.loglog(d['nH'], d['heatH2pump'], ls='--', lw=lw, label='_nolegend_', c=cmap(4))
     
-    lCp, = plt.loglog(d['nH'], d['coolCII'], label=r'${\rm CII}$', c=cmap(5))
-    lO, = plt.loglog(d['nH'], d['coolOI'], label=r'${\rm OI}$', c=cmap(6))
-    lHp, = plt.loglog(d['nH'], d['coolLya'], label=r'Ly$\alpha$', c=cmap(7))
-    lC, = plt.loglog(d['nH'], d['coolCI'], label=r'${\rm CI}$', c=cmap(8))
-    plt.loglog(d['nH'], d['coolRec'], label=r'Rec', c='lightskyblue')
+    lCp, = plt.loglog(d['nH'], d['coolCII'], lw=lw, label=r'${\rm CII}$', c=cmap(5))
+    lO, = plt.loglog(d['nH'], d['coolOI'], lw=lw, label=r'${\rm OI}$', c=cmap(6))
+    lHp, = plt.loglog(d['nH'], d['coolLya'], lw=lw, label=r'Ly$\alpha$', c=cmap(7))
+    lC, = plt.loglog(d['nH'], d['coolCI'], lw=lw, label=r'${\rm CI}$', c=cmap(8))
+    plt.loglog(d['nH'], d['coolRec'], lw=lw, label=r'grRec', c='lightskyblue')
     if iCoolH2rovib == 1:
-        lH2, = plt.loglog(d['nH'], d['coolH2rovib'], label=r'${\rm H_2}$', c='deeppink')
-    if iCoolH2colldiss:
-        plt.loglog(d['nH'], d['coolH2colldiss'], label='dust', c='royalblue')
+        lH2, = plt.loglog(d['nH'], d['coolH2rovib'], lw=lw, label=r'${\rm H_2}$', c='deeppink')
+    #if iCoolH2colldiss:
+    #    plt.loglog(d['nH'], d['coolH2colldiss'], lw=lw, label='dust', c='royalblue')
     if iCoolDust:
-        plt.loglog(d['nH'], d['cooldust'], label='dust', c='purple')
+        plt.loglog(d['nH'], d['cooldust'], lw=lw, label='dust', c='purple')
+
+    # Nebula cooling
+    lneb, = plt.loglog(d['nH'], d['coolneb'], lw=lw, label=r'neb', c='lawngreen')
 
     if shielded:
         # pass
         # Cool CO
-        lCO, = plt.loglog(d['nH'], d['coolCO'], label=r'CO', c=cmap(9))
+        lCO, = plt.loglog(d['nH'], d['coolCO'], lw=lw, label=r'CO', c=cmap(9))
         #lCO, = plt.loglog(d['nH'], d['cool_rate']/d['nH'] - d['coolCII'] - d['coolOI'] -
         #                  d['coolLya'] - d['coolCI'] - d['coolRec'], label=r'CO', c='darkblue')
         # lCO, = plt.loglog(d['nH'],
@@ -348,33 +397,35 @@ def plt_rates_abd(axes, s, da, model, log_chi0=0.0, xlim=(1e-2,1e3),
         #                            d['cool_rate']/d['nH'] - d['coolCII'] -
         #                            d['coolOI'] - d['coolLya'] - d['coolCI'] - d['coolRec']), label=r'CO', c=cmap(9))
 
-        
-    plt.loglog(d['nH'], d['cool_rate']/d['nH'], label=r'Total', c='k', lw=2)
+    plt.loglog(d['nH'], d['cool_rate']/d['nH'], lw=lw, label=r'total', c='k')
 
     plt.sca(axes[1])
-    plt.loglog(d['nH'],d['xHII'], label=r'${\rm HII}$', c=lHp.get_color())
-    plt.loglog(d['nH'],d['xe'], label=r'e', c='k')
-    plt.loglog(d['nH'],2.0*d['xH2'], label=r'${\rm H}_2$', c='deeppink')
-    plt.loglog(d['nH'],d['xCI'], ls='-', label=r'${\rm CI}$', c=lC.get_color())
-    plt.loglog(d['nH'],d['xCII'], ls='-', label=r'${\rm CII}$', c=lCp.get_color())
-    plt.loglog(d['nH'],d['xOI'], ls='-', label=r'${\rm OI}$', c=lO.get_color())
-    #    plt.loglog(d['nH'],d['xOII'], ls='-', label=r'${\rm OII}$', c=lO.get_color())
+    plt.loglog(d['nH'],d['xHII'], lw=lw, label=r'${\rm H^+}$', c=lHp.get_color())
+    plt.loglog(d['nH'],d['xe'], lw=lw, label=r'e', c='k')
+    plt.loglog(d['nH'],2.0*d['xH2'], lw=lw, label=r'$2{\rm H}_2$', c='deeppink')
+    plt.loglog(d['nH'],d['xCI'], ls='-', lw=lw, label=r'${\rm C}$', c=lC.get_color())
+    plt.loglog(d['nH'],d['xCII'], ls='-', lw=lw, label=r'${\rm C^+}$', c=lCp.get_color())
+    plt.loglog(d['nH'],d['xOI'], ls='-', lw=lw, label=r'${\rm O}$', c=lO.get_color())
+    plt.loglog(d['nH'],d['xOII'], ls='-', label=r'${\rm O^+}$', c=lneb.get_color())
     
     if shielded:
-        plt.loglog(d['nH'],d['xCO'], ls='-', label=r'${\rm CO}$', c=lCO.get_color())
-        plt.loglog(d['nH'],d['xe_mol'], ls='-', label=r'$x_{\rm e,MH^+}$')
+        plt.loglog(d['nH'],d['xCO'], ls='-', lw=lw, label=r'${\rm CO}$', c=lCO.get_color())
+        plt.loglog(d['nH'],d['xe_mol'], ls='-', lw=lw, label=r'$M{\rm H^+}$')
 
     plt.sca(axes[2])
-    plt.loglog(d['nH'], d['T'], ls='-', c='k')
-    if iCoolDust == 1:
-        plt.loglog(d['nH'], d['Td'], ls='-', c='grey', label=r'$T_{\rm d}$')
-    plt.loglog(d['nH'], 1.7*d['chi_PE_ext']*d['T']**0.5/(d['nH']*d['xe'])+50.0,
-               ls='--', c='k')
+    plt.loglog(d['nH'], d['T'], ls='-', c='k', lw=lw)
+    if iCoolDust == 1 and shielded:
+        plt.loglog(d['nH'], d['Td'], ls='-', c='grey', lw=lw, label=r'$T_{\rm d}$')
+    # plt.loglog(d['nH'], 1.7*d['chi_PE_ext']*d['T']**0.5/(d['nH']*d['xe'])+50.0,
+    #            ls='--', c='k')
+    plt.loglog(d['nH'], 1.7*d['chi_PE_ext']*d['T']**0.5/(d['nH']*d['xe']),
+               lw=lw, ls='--', c='k')
 
     c = 'r'
     axt = axes[2].twinx()
+
     axt.loglog(d['nH'],d['pok']*ac.k_B.cgs.value/d['cool_rate']/(1.0*au.yr.to('s')),
-               c=c, ls='-.')
+               lw=lw, c=c, ls='-.')
     axt.spines['right'].set_color(c)
     axt.yaxis.label.set_color(c)
     axt.tick_params(axis='y', which='both', colors=c)
