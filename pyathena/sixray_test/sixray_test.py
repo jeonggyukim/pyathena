@@ -219,11 +219,12 @@ def get_cool_data(s, num, sel_kwargs=dict(), cool=True, dust_model='WD01'):
         
     return d
 
-def get_PTn_at_Pminmax(d, jump=1, kernel_width=12):
+def get_PTn_at_Pminmax(d, jump=1, kernel_width=12, mask=True):
     
     from scipy import interpolate
     from scipy.signal import find_peaks
     from astropy.convolution import Gaussian1DKernel, Box1DKernel, convolve
+
 
     x = np.linspace(np.log10(d['nH']).min(),np.log10(d['nH']).max(),1200)
 
@@ -233,6 +234,7 @@ def get_PTn_at_Pminmax(d, jump=1, kernel_width=12):
     gT = Gaussian1DKernel(kernel_width)
     #gT = Box1DKernel(15)
     
+    chi = 10.0**d['log_chi_PE'][::jump]
     Pmin = np.zeros_like(d['log_chi_PE'][::jump])
     Pmax = np.zeros_like(d['log_chi_PE'][::jump])
     Tmin = np.zeros_like(d['log_chi_PE'][::jump])
@@ -287,7 +289,22 @@ def get_PTn_at_Pminmax(d, jump=1, kernel_width=12):
     r['nmin'] = nmin
     r['nmax'] = nmax
     r['Tmin2'] = Tmin2
-    
+    r['chi'] = chi
+    # Two-phase pressure
+    r['Ptwo'] = np.sqrt(r['Pmin']*r['Pmax'])
+
+    if mask:
+        # Mask peculiar values
+        idx = r['Pmax']/r['chi'] < 8e2
+        r['Pmin'][idx] = np.nan
+        r['Pmax'][idx] = np.nan
+        r['Tmin'][idx] = np.nan
+        r['Tmax'][idx] = np.nan
+        r['nmin'][idx] = np.nan
+        r['nmax'][idx] = np.nan
+        r['Tmin2'][idx] = np.nan
+        r['Ptwo'][idx] = np.nan
+        
     return r
 
 def plt_nP_nT(axes, s, da, model, suptitle,
