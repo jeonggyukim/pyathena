@@ -2,6 +2,8 @@
 
 import os
 import os.path as osp
+import glob
+import xarray as xr
 import numpy as np
 import pandas as pd
 from scipy import integrate
@@ -29,6 +31,8 @@ class Hst:
         vol = domain['Lx'].prod()
         # Area of domain (code unit)
         LxLy = domain['Lx'][0]*domain['Lx'][1]
+        # Lz
+        Lz = domain['Lx'][2]
 
         Omega = self.par['problem']['Omega']
         if Omega>0:
@@ -83,10 +87,18 @@ class Hst:
             h['Sigma_HII'] = h['M_HII']/(LxLy*u.pc**2)
 
         # Total outflow mass
-        h['massflux_lbd_d'] = hst['F3_lower']*u.mass_flux
-        h['massflux_ubd_d'] = hst['F3_upper']*u.mass_flux
-        h['mass_out'] = integrate.cumtrapz(hst['F3_upper'] - hst['F3_lower'], hst['time'], initial=0.0)
-        h['mass_out'] = h['mass_out']/(domain['Nx'][2]*domain['dx'][2])*vol*u.Msun
+        if self.test_phase_sep_hst():
+            self.logger.info("[read_hst]: Reading phase separated history files...")
+            hph = self.read_hst_phase_all()
+            hw = self.read_hst_phase(iph=0)
+            h['massflux_lbd_d'] = hw['Fzm_lower']*u.mass_flux
+            h['massflux_ubd_d'] = hw['Fzm_upper']*u.mass_flux
+            h['mass_out'] = (hw['Fzm_upper_dt']-hw['Fzm_lower_dt'])*LxLy*u.Msun
+        else:
+            h['massflux_lbd_d'] = hst['F3_lower']*u.mass_flux
+            h['massflux_ubd_d'] = hst['F3_upper']*u.mass_flux
+            h['mass_out'] = integrate.cumtrapz(hst['F3_upper'] - hst['F3_lower'], hst['time'], initial=0.0)
+            h['mass_out'] = h['mass_out']*LxLy*u.Msun
 
         # Mass surface density in Msun/pc^2
         h['Sigma_gas'] = h['mass']/(LxLy*u.pc**2)
@@ -101,35 +113,60 @@ class Hst:
             Nsn, snbin = np.histogram(sn.time, bins=np.concatenate(([t_[0]], t_)))
             h['mass_snej'] = Nsn.cumsum()*self.par['feedback']['MejII'] # Mass of SN ejecta [Msun]
             h['Sigma_snej'] = h['mass_snej']/(LxLy*u.pc**2)
-        except:
+        except KeyError:
             pass
 
         # H mass/surface density in Msun
         #h['M_gas'] = h['mass']/u.muH
         #h['Sigma_gas'] = h['M_gas']/(LxLy*u.pc**2)
 
-        # Mass, volume fraction, scale height
-        h['H'] = np.sqrt(hst['H2'] / hst['mass'])
-        for ph in ['c','u','w','h1','h2']:
-            h['mf_{}'.format(ph)] = hst['M{}'.format(ph)]/hst['mass']
-            h['vf_{}'.format(ph)] = hst['V{}'.format(ph)]
-            h['H_{}'.format(ph)] = \
-                np.sqrt(hst['H2{}'.format(ph)] / hst['M{}'.format(ph)])
-        #print(h['mf_c'])
-        #h['Vmid_2p'] = hst['Vmid_2p']
+        if self.test_phase_sep_hst():
+            h['H'] = np.sqrt(hw['H2']/hw['mass'])
+            for ph in ['c','u','w1','w2','h1','h2']:
+                if ph == 'h1':
+                    phlist = ['WH' + tail for tail in ['MM','IM','NM']]
+                elif ph == 'h2':
+                    phlist = ['H' + tail for tail in ['MM','IM','NM']]
+                else:
+                    phlist = [ph.upper() + tail for tail in ['MM','IM','NM']]
+                h['mf_{}'.format(ph)] = hph['mass'].sel(phase=phlist).sum(dim='phase')/hw['mass']
+                h['vf_{}'.format(ph)] = hph['vol'].sel(phase=phlist).sum(dim='phase')/hw['vol']
+                h['H_{}'.format(ph)] = \
+                    np.sqrt(hph['H2'].sel(phase=phlist).sum(dim='phase')/hph['mass'].sel(phase=phlist).sum(dim='phase'))
+            h['mf_w'] = h['mf_w1'] + h['mf_w2']
+            h['vf_w'] = h['vf_w1'] + h['vf_w2']
+            h['H_w'] = np.sqrt((h['H_w1']**2*h['mf_w1'] +
+                                h['H_w2']**2*h['mf_w2'])/
+                                (h['mf_w']))
+            h['mf_2p'] = h['mf_c'] + h['mf_u'] + h['mf_w']
+            h['vf_2p'] = h['vf_c'] + h['vf_u'] + h['vf_w']
+            h['H_2p'] = np.sqrt((h['H_c']**2*h['mf_c'] +
+                                 h['H_u']**2*h['mf_u'] +
+                                 h['H_w']**2*h['mf_w'])/
+                                 (h['mf_2p']))
+        else:
+            # Mass, volume fraction, scale height
+            h['H'] = np.sqrt(hst['H2'] / hst['mass'])
+            for ph in ['c','u','w','h1','h2']:
+                h['mf_{}'.format(ph)] = hst['M{}'.format(ph)]/hst['mass']
+                h['vf_{}'.format(ph)] = hst['V{}'.format(ph)]
+                h['H_{}'.format(ph)] = \
+                    np.sqrt(hst['H2{}'.format(ph)] / hst['M{}'.format(ph)])
+            #print(h['mf_c'])
+            #h['Vmid_2p'] = hst['Vmid_2p']
 
-        # mf, vf, H of thermally bistable (cold + unstable + warm) medium
-        h['mf_2p'] = h['mf_c'] + h['mf_u'] + h['mf_w']
-        h['vf_2p'] = h['vf_c'] + h['vf_u'] + h['vf_w']
-        h['H_2p'] = np.sqrt((hst['H2c'] + hst['H2u'] + hst['H2w']) / \
-                            (hst['Mc'] + hst['Mu'] + hst['Mw']))
+            # mf, vf, H of thermally bistable (cold + unstable + warm) medium
+            h['mf_2p'] = h['mf_c'] + h['mf_u'] + h['mf_w']
+            h['vf_2p'] = h['vf_c'] + h['vf_u'] + h['vf_w']
+            h['H_2p'] = np.sqrt((hst['H2c'] + hst['H2u'] + hst['H2w']) / \
+                                (hst['Mc'] + hst['Mu'] + hst['Mw']))
 
         # Kinetic and magnetic energy
         h['KE'] = hst['x1KE'] + hst['x2KE'] + hst['x3KE']
         if mhd:
             h['ME'] = hst['x1ME'] + hst['x2ME'] + hst['x3ME']
 
-        hst['x2KE'] = hst['x2dke']
+        # hst['x2KE'] = hst['x2dke']
         for ax in ('1','2','3'):
             Ekf = 'x{}KE'.format(ax)
             if ax == '2':
@@ -139,14 +176,30 @@ class Hst:
             if mhd:
                 h['vA{}'.format(ax)] = \
                     np.sqrt(2*hst['x{}ME'.format(ax)]/hst['mass'])
-            h['v{}_2p'.format(ax)] = \
-                np.sqrt(2*hst['x{}KE_2p'.format(ax)]/hst['mass']/h['mf_2p'])
+            if self.test_phase_sep_hst():
+                phlist = ['C' + tail for tail in ['MM','IM','NM']]
+                phlist += ['U' + tail for tail in ['MM','IM','NM']]
+                phlist += ['W1' + tail for tail in ['MM','IM','NM']]
+                phlist += ['W2' + tail for tail in ['MM','IM','NM']]
+                m2p = hph['mass'].sel(phase=phlist).sum(dim='phase')
+                ke2p = hph['x{}KE'.format(ax)].sel(phase=phlist).sum(dim='phase')
+                h['v{}_2p'.format(ax)] = np.sqrt(2*ke2p/m2p)
+            else:
+                h['v{}_2p'.format(ax)] = \
+                    np.sqrt(2*hst['x{}KE_2p'.format(ax)]/hst['mass']/h['mf_2p'])
 
-        h['cs'] = np.sqrt(hst['P']/hst['mass'])
-        h['Pth_mid'] = hst['Pth']*u.pok
-        h['Pth_mid_2p'] = hst['Pth_2p']*u.pok/hst['Vmid_2p']
-        h['Pturb_mid'] = hst['Pturb']*u.pok
-        h['Pturb_mid_2p'] = hst['Pturb_2p']*u.pok/hst['Vmid_2p']
+        if self.test_phase_sep_hst():
+            h['cs'] = np.sqrt(hw['P']/hw['mass'])
+            h['Pth_mid'] = hst['Pth_mid']*u.pok
+            h['Pth_mid_2p'] = hst['Pth_mid_2p']*u.pok/hst['Vmid_2p']
+            h['Pturb_mid'] = hst['Pturb_mid']*u.pok
+            h['Pturb_mid_2p'] = hst['Pturb_mid_2p']*u.pok/hst['Vmid_2p']
+        else:
+            h['cs'] = np.sqrt(hst['P']/hst['mass'])
+            h['Pth_mid'] = hst['Pth']*u.pok
+            h['Pth_mid_2p'] = hst['Pth_2p']*u.pok/hst['Vmid_2p']
+            h['Pturb_mid'] = hst['Pturb']*u.pok
+            h['Pturb_mid_2p'] = hst['Pturb_2p']*u.pok/hst['Vmid_2p']
 
         # Midplane number density
         h['nmid'] = hst['nmid']
@@ -234,8 +287,51 @@ class Hst:
                 self.snr = snr/LxLy
         except:
             pass
-        
+
         return h
+
+    def test_phase_sep_hst(self):
+        fhstph = glob.glob(self.files["hst"].replace(".hst", ".phase*.hst"))
+        fhstph.sort()
+        nphase = len(fhstph)
+        return nphase>0
+
+    def read_hst_phase(self, iph=0):
+        if iph == 0:
+            f = self.files["hst"].replace(".hst", ".whole.hst")
+        else:
+            f = self.files["hst"].replace(".hst", ".phase{}.hst".format(iph))
+
+        h = read_hst(f)
+        h.index = h["time"]
+        return h.to_xarray()
+
+    def read_hst_phase_all(self):
+        fhstph = glob.glob(self.files["hst"].replace(".hst", ".phase*.hst"))
+
+        fhstph.sort()
+
+        nphase = len(fhstph)
+
+        hstph = xr.Dataset()
+        for iph in range(1, nphase+1):
+            phname = self.get_hst_phase_name(iph)
+            hstph[phname] = self.read_hst_phase(iph).to_array()
+        hstph = hstph.to_array("phase").to_dataset("variable")
+
+        return hstph
+
+    def get_hst_phase_name(self, iph):
+        if iph == 0: return "whole"
+
+        thphase = ["C", "U", "W1", "W2", "WH", "H"]
+        chphase = ["I", "M", "N"]
+
+        nthph = len(thphase)
+        nchph = len(chphase)
+        if iph > nthph*nchph:
+            raise KeyError("{} phases are defined, but iph={} is given".format(nthph*nchph,iph))
+        return thphase[(iph-1) % nthph] + chphase[(iph-1) // nthph] + "M"
 
 def plt_hst_compare(sa, models=None, read_hst_kwargs=dict(savdir=None, force_override=False),
                     c=['k', 'C0', 'C1', 'C2', 'C3', 'C4', 'C5'],
