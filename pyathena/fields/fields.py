@@ -460,6 +460,13 @@ def set_derived_fields_mag(par, x0):
 
 def set_derived_fields_newcool(par, x0):
 
+    try:
+        Erad_PE0 = par['cooling']['Erad_PE0']
+        Erad_LW0 = par['cooling']['Erad_LW0']
+    except KeyError:
+        Erad_PE0 = 7.613e-14
+        Erad_LW0 = 1.335e-14
+
     func = dict()
     field_dep = dict()
     label = dict()

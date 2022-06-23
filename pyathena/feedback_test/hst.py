@@ -133,7 +133,6 @@ class Hst:
                 except KeyError:
                     continue
 
-
         # Total/hot gas/shell momentum in Msun*km/s
         pr_conv = vol*(u.mass*u.velocity).to('Msun km s-1').value
         hst['pr'] *= pr_conv
@@ -187,6 +186,7 @@ class Hst:
             L_conv = vol*(u.energy/u.time).cgs.value
         else:
             L_conv = vol_cgs
+            
         hst['cool_rate'] *= L_conv
         hst['heat_rate'] *= L_conv
         hst['net_cr'] *= L_conv
@@ -301,6 +301,12 @@ class Hst:
                 ifreq[f] = par['radps']['ifreq_{0:s}'.format(f)]
             except KeyError:
                 pass
+
+        # total volume of domain (code unit)
+        if self.config_time > pd.to_datetime('2022-05-01 00:00:00 -04:00'):
+            vol = 1.0
+        else:
+            vol = domain['Lx'].prod()
 
         # Total luminosity
         hst['Ltot'] = 0.0
