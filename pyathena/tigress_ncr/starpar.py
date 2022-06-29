@@ -266,10 +266,13 @@ class StarPar():
         # Maximum distance that PPs can travel from individual sources 
         # in the optically-thin limit
         tau = 0.0 # optical depth from the source
-        sp_src['dmax_eps'] = 1/(4.0*np.pi*mray)**0.5*sp_src['eps_src_LyC']**0.5*\
-                                np.exp(-0.5*tau)*eps_PP**-0.5*domain['dx'][0]
-        sp_src['dmax_eff'] = np.minimum(par['radps']['xymaxPP'], sp_src['dmax_eps'])
+        try:
+            sp_src['dmax_eps'] = 1/(4.0*np.pi*mray)**0.5*sp_src['eps_src_LyC']**0.5*\
+                np.exp(-0.5*tau)*eps_PP**-0.5*domain['dx'][0]
+        except ZeroDivisionError:
+            sp_src['dmax_eps'] = par['radps']['xymaxPP']
 
+        sp_src['dmax_eff'] = np.minimum(par['radps']['xymaxPP'], sp_src['dmax_eps'])
         self.sp_src = sp_src
 
         return sp_src
