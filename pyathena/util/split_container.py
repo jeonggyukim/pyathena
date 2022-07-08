@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-from mpi4py import MPI
+try:
+    from mpi4py import MPI
+except ImportError as error:
+    import warnings
+    warnings.warn("deprecated", ImportWarning)
+    pass
+
 import numpy as np
 
 def split_container(container, count):
