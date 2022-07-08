@@ -183,7 +183,7 @@ def set_aux(model='solar',verbose=False):
         aux['surface_density']['clim']=(1,1000)
         aux['magnetic_field_strength']['clim']=(0.01,100)
 
-    elif model is 'multi_SN':
+    elif model == 'multi_SN':
         aux['nH']['clim']=(2.e-5,2.e2)
         aux['pok']['clim']=(50,1.e5)
     else:
