@@ -203,7 +203,7 @@ def set_derived_fields_def(par, x0, newcool):
     cmap[f] = cmap_shift(mpl.cm.BrBG,
                          midpoint=abs(vminmax[f][0]) / \
                                   (abs(vminmax[f][0]) + abs(vminmax[f][1])),
-                         name='cmap_vr')
+                         name='cmap_pyathena_Mr')
     take_log[f] = False
 
     # Absolute value of radial momentum w.r.t. x0 [km/s cm^-3]
@@ -222,7 +222,7 @@ def set_derived_fields_def(par, x0, newcool):
     cmap[f] = cmap_shift(mpl.cm.BrBG,
                          midpoint=abs(vminmax[f][0]) / \
                                   (abs(vminmax[f][0]) + abs(vminmax[f][1])),
-                         name='cmap_vr')
+                         name='cmap_pyathena_Mr_abs')
     take_log[f] = True
 
     # Cooling related fields
@@ -241,7 +241,7 @@ def set_derived_fields_def(par, x0, newcool):
 
         func[f] = _T
         label[f] = r'$T\;[{\rm K}]$'
-        cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
+        cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_pyathena_T')
         vminmax[f] = (1e1,1e7)
         take_log[f] = True
 
@@ -254,7 +254,7 @@ def set_derived_fields_def(par, x0, newcool):
 
             func[f] = _Td
             label[f] = r'$T_{\rm d}\;[{\rm K}]$'
-            cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
+            cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_pyathena_Td')
             vminmax[f] = (1e0,1e2)
             take_log[f] = True
 
@@ -703,7 +703,7 @@ def set_derived_fields_newcool(par, x0):
         return d['pressure']*(u.energy_density/ac.k_B).cgs.value/(d['density']*(1.1 + d['xe'] - d['xH2']))
     func[f] = _T_alt
     label[f] = r'$T_{\rm alt}\;[{\rm K}]$'
-    cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_T')
+    cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_pyathena_T')
     vminmax[f] = (1e1,1e7)
     take_log[f] = True
 
