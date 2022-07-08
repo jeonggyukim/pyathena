@@ -488,8 +488,8 @@ def get_snr(sntime,time,tbin='auto',snth=100.):
     import xarray as xr
     snt = sntime.to_numpy()
     t = time.to_numpy()
-    if tbin is 'auto':
-        tbin=0.
+    if tbin == 'auto':
+        tbin = 0.0
         dtbin=0.1
         snrmean=0.
         while (tbin < 40) & (snrmean < snth):
