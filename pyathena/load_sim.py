@@ -179,10 +179,16 @@ class LoadSim(object):
         if load_method is not None:
             self.load_method = load_method
 
+        if not self.files['vtk_id0']:
+            id0 = False
+            
         if id0:
             kind = ['vtk_id0', 'vtk', 'vtk_tar']
         else:
-            kind = ['vtk', 'vtk_tar', 'vtk_id0']
+            if self.files['vtk']:
+                kind = ['vtk', 'vtk_tar', 'vtk_id0']
+            else:
+                kind = ['vtk_tar', 'vtk', 'vtk_id0']
 
         self.fvtk = self._get_fvtk(kind[0], num, ivtk)
         if self.fvtk is None or not osp.exists(self.fvtk):
