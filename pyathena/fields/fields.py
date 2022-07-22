@@ -660,8 +660,8 @@ def set_derived_fields_newcool(par, x0):
     vminmax[f] = (0,xOtot)
     take_log[f] = False
 
-    # xCII - single ionized carbon
-    # Use with caution!
+    # xCII - singly ionized carbon
+    # Use with caution.
     # (Do not apply to hot gas and depend on cooling implementation)
     f = 'xCII'
     try:
@@ -670,6 +670,7 @@ def set_derived_fields_newcool(par, x0):
     except KeyError:
         xCtot = 1.6e-4*par['problem']['Z_gas']
         xOtot = 3.2e-4*par['problem']['Z_gas']
+
     field_dep[f] = set(['xe','xH2','xHI','pressure','density','CR_ionization_rate'])
     def _xCII(d, u):
         d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
@@ -685,6 +686,32 @@ def set_derived_fields_newcool(par, x0):
     vminmax[f] = (0,xCtot)
     take_log[f] = False
 
+    # xCII - singlly ionized carbon (use when CR ionization is uniform everywhere)
+    # Use with caution.
+    # (Do not apply to hot gas and depend on cooling implementation)
+    f = 'xCII_alt'
+    try:
+        xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
+        xOtot = par['problem']['Z_gas']*par['cooling']['xOstd']
+    except KeyError:
+        xCtot = 1.6e-4*par['problem']['Z_gas']
+        xOtot = 3.2e-4*par['problem']['Z_gas']
+
+    field_dep[f] = set(['xe','xH2','xHI','pressure','density'])
+    def _xCII_alt(d, u):
+        d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+            (ac.k_B/u.energy_density).cgs.value
+        xe_mol = get_xe_mol(d['density'],d['xH2'],d['xe'],d['T'],par['problem']['xi_CR0'],
+                            par['problem']['Z_gas'],par['problem']['Z_dust'])
+        # Apply floor and ceiling
+        return np.maximum(0.0,np.minimum(xCtot,
+                    d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2'])*(1.0 + xOtot) - xe_mol))
+    func[f] = _xCII_alt
+    label[f] = r'$x_{\rm CII}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (0,xCtot)
+    take_log[f] = False
+
     # xi_CR
     f = 'xi_CR'
     field_dep[f] = set(['CR_ionization_rate'])
@@ -693,7 +720,7 @@ def set_derived_fields_newcool(par, x0):
     func[f] = _xi_CR
     label[f] = r'$\xi_{\rm CR}\;[{\rm s}^{-1}]$'
     cmap[f] = 'viridis'
-    vminmax[f] = (1e-15,1e-17)
+    vminmax[f] = (1e-17,1e-15)
     take_log[f] = True
 
     # T_alt [K]
