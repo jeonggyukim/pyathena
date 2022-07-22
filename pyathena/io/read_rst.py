@@ -464,7 +464,7 @@ def _degrade(rstdata,scalar=0):
 
     rstdata_new={}
     for f in cc_varnames:
-        if f is 'ENERGY':
+        if f == 'ENERGY':
             data=_to_eint(rstdata)
         else:
             data=rstdata[f].copy()
@@ -478,17 +478,17 @@ def _degrade(rstdata,scalar=0):
 
     for f in fc_varnames:
         data=rstdata[f].copy()
-        if f is '1-FIELD':
+        if f == '1-FIELD':
             newdata=np.zeros(shape+np.array([0,0,1]),dtype='d')
             for j in range(2):
                 for k in range(2):
                     newdata += data[k::2,j::2,::2]
-        if f is '2-FIELD':
+        if f == '2-FIELD':
             newdata=np.zeros(shape+np.array([0,1,0]),dtype='d')
             for i in range(2):
                 for k in range(2):
                     newdata += data[k::2,::2,i::2]
-        if f is '3-FIELD':
+        if f == '3-FIELD':
             newdata=np.zeros(shape+np.array([1,0,0]),dtype='d')
             for j in range(2):
                 for i in range(2):
@@ -512,7 +512,7 @@ def _refine(rstdata,scalar=0):
     if scalar: cc_varnames += scalar_varnames
     rstdata_new={}
     for f in cc_varnames:
-        if f is 'ENERGY':
+        if f == 'ENERGY':
             data=_to_eint(rstdata)
         else:
             data=rstdata[f]
@@ -527,7 +527,7 @@ def _refine(rstdata,scalar=0):
     for f in fc_varnames:
         data=rstdata[f]
         shape=np.array(data.shape)*2
-        if f is '1-FIELD':
+        if f == '1-FIELD':
             newdata=np.zeros(shape-np.array([0,0,1]),dtype='d')
             idata = 0.5*(data[:,:,:-1]+data[:,:,1:])
 
@@ -536,7 +536,7 @@ def _refine(rstdata,scalar=0):
                     newdata[k::2,j::2,::2] = data.copy()
                     newdata[k::2,j::2,1::2] = idata.copy()
 
-        if f is '2-FIELD':
+        if f == '2-FIELD':
             newdata=np.zeros(shape-np.array([0,1,0]),dtype='d')
             idata = 0.5*(data[:,:-1,:]+data[:,1:,:])
             for i in range(2):
@@ -544,7 +544,7 @@ def _refine(rstdata,scalar=0):
                     newdata[k::2,::2,i::2] = data.copy()
                     newdata[k::2,1::2,i::2] = idata.copy()
 
-        if f is '3-FIELD':
+        if f == '3-FIELD':
             newdata=np.zeros(shape-np.array([1,0,0]),dtype='d')
             idata = 0.5*(data[:-1,:,:]+data[1:,:,:])
             for j in range(2):
