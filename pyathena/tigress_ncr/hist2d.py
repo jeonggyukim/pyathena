@@ -72,8 +72,9 @@ class Hist2d:
 
     @LoadSim.Decorators.check_pickle
     def read_hist2d(self, num,
-                    bin_fields=[['nH', 'pok'], ['nH','xH2'], ['nH','fshld_H2']],
-                    weights=[None,None,None],
+                    bin_fields=[['nH', 'pok'], ['nH','xH2'], ['nH','fshld_H2'],
+                                ['T','xH2'], ['T','fshld_H2']],
+                    weights=[None,None,None,None,None],
                     bins=None,
                     sel=None, # Selection function
                     prefix='hist2d',
