@@ -20,7 +20,7 @@ def read_vtk(filename, id0_only=False):
 
     Parameters
     ----------
-    filename : string
+    filename : str
         Name of the file to open, including extension
     id0_only : bool
         Flag to enforce to read vtk file in id0 directory only.
@@ -599,6 +599,7 @@ def _set_field_map(grid):
         field = sp[1].decode('utf-8')
         field_map[field] = dict()
         field_map[field]['read_table'] = False
+        field_map[field]['title'] = line
         if b"SCALARS" in line:
             tmp = fp.readline()
             field_map[field]['read_table'] = True
