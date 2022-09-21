@@ -59,24 +59,28 @@ class Zprof(ReadZprofBase):
             ]
         else:
             phase_name = [
-                "c",
-                "u",
-                "w",
-                "h1",
-                "h2",
-                "mol",
-                "pi",
-                "HIcc",
-                "HIc",
-                "HIuc",
-                "HIu",
-                "HIw",
-                "HIwh",
+                    "c",
+                    "u",
+                    "w",
+                    "h1",
+                    "h2",
             ]
+            if self.test_newcool():
+                phase_name += [
+                    "mol",
+                    "pi",
+                    "HIcc",
+                    "HIc",
+                    "HIuc",
+                    "HIu",
+                    "HIw",
+                    "HIwh",
+                ]
         return phase_name
 
     @LoadSim.Decorators.check_netcdf_zprof
-    def _read_zprof(self, phase="whole", savdir=None, force_override=False):
+    def _read_zprof(self, phase="whole", savdir=None, force_override=False,
+        pickling=False):
         """Function to read zprof and convert quantities to convenient units.
         """
 
@@ -85,7 +89,9 @@ class Zprof(ReadZprofBase):
             self.problem_id,
             phase=phase,
             savdir=savdir,
+            verbose=self.verbose,
             force_override=force_override,
+            pickling=pickling
         )
         u = self.u
         # Divide all variables by total area Lx*Ly

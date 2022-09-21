@@ -12,7 +12,8 @@ import pandas as pd
 import xarray as xr
 
 def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
-                   force_override=False):
+                   verbose=False,
+                   force_override=False, pickling=False):
     """Function to read all zprof files in directory and make a Dataset object
     and write to a NetCDF file.
 
@@ -44,21 +45,19 @@ def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
     # Find all files with "/dirname/problem_id.xxxx.phase.zprof"
     fname_base = '{0:s}.????.{1:s}.zprof'.format(problem_id, phase)
     fnames = sorted(glob.glob(osp.join(dirname, fname_base)))
+    # print(dirname,fname_base,fnames)
+    # fnetcdf = '{0:s}.{1:s}.zprof.nc'.format(problem_id, phase)
+    # if savdir is not None:
+    #     fnetcdf = osp.join(savdir, fnetcdf)
+    # else:
+    #     fnetcdf = osp.join(dirname, fnetcdf)
 
-    fnetcdf = '{0:s}.{1:s}.zprof.nc'.format(problem_id, phase)
-    if savdir is not None:
-        fnetcdf = osp.join(savdir, fnetcdf)
-    else:
-        fnetcdf = osp.join(dirname, fnetcdf)
-
-    print(fnetcdf)
-
-    # Check if netcdf file exists and compare last modified times
-    mtime_max = np.array([osp.getmtime(fname) for fname in fnames]).max()
-    if not force_override and osp.exists(fnetcdf) and \
-        osp.getmtime(fnetcdf) > mtime_max:
-        da = xr.open_dataset(fnetcdf)
-        return da
+    # # Check if netcdf file exists and compare last modified times
+    # mtime_max = np.array([osp.getmtime(fname) for fname in fnames]).max()
+    # if not force_override and osp.exists(fnetcdf) and \
+    #     osp.getmtime(fnetcdf) > mtime_max:
+    #     da = xr.open_dataset(fnetcdf)
+    #     return da
 
     # If here, need to create a new dataarray
     time = []
@@ -73,7 +72,8 @@ def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
                 raise ValueError(f)
 
         # read pickle if exists
-        df = read_zprof(fname, force_override=False)
+        df = read_zprof(fname, verbose=verbose,
+                        force_override=force_override, pickling=pickling)
         if i == 0: # save z coordinates
             z = (np.array(df['z'])).astype(float)
         df.drop(columns='z', inplace=True)
@@ -89,25 +89,32 @@ def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
     # Coordinates: time and z
     time = (np.array(time)).astype(float)
     fields = np.array(df.columns)
-    df_all = np.stack(df_all, axis=0)
+    try:
+        df_all = np.stack(df_all, axis=0)
+    except ValueError:
+        print(df_all[0].shape)
+        for i,df in enumerate(df_all):
+            if df.shape != df_all[0].shape:
+                print(i,df.shape)
+        raise ValueError
     data_vars = dict()
     for i, f in enumerate(fields):
         data_vars[f] = (('z', 'time'), df_all[...,i].T)
 
     ds = xr.Dataset(data_vars, coords=dict(z=z, time=time))
 
-    # Somehow overwriting using mode='w' doesn't work..
-    if osp.exists(fnetcdf):
-        os.remove(fnetcdf)
+    # # Somehow overwriting using mode='w' doesn't work..
+    # if osp.exists(fnetcdf):
+    #     os.remove(fnetcdf)
 
-    try:
-        ds.to_netcdf(fnetcdf, mode='w')
-    except IOError:
-        pass
+    # try:
+    #     ds.to_netcdf(fnetcdf, mode='w')
+    # except IOError:
+    #     pass
 
     return ds
 
-def read_zprof(filename, force_override=False, verbose=False):
+def read_zprof(filename, pickling=False, force_override=False, verbose=False):
     """
     Function to read one zprof file and pickle
 
@@ -127,7 +134,8 @@ def read_zprof(filename, force_override=False, verbose=False):
 
     fpkl = filename + '.p'
     if not force_override and osp.exists(fpkl) and \
-       osp.getmtime(fpkl) > osp.getmtime(filename):
+       osp.getmtime(fpkl) > osp.getmtime(filename) and \
+       pickling:
         df = pd.read_pickle(fpkl)
         if verbose:
             print('[read_zprof]: reading from existing pickle.')
@@ -149,11 +157,12 @@ def read_zprof(filename, force_override=False, verbose=False):
 
         # c engine does not support regex separators
         df = pd.read_csv(filename, names=vlist, skiprows=skiprows,
-                         comment='#', sep=',', engine='python')
-        try:
-            df.to_pickle(fpkl)
-        except IOError:
-            pass
+                         comment='#', sep=',', engine='c')
+        if pickling:
+            try:
+                df.to_pickle(fpkl)
+            except IOError:
+                pass
 
     return df
 
