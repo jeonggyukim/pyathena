@@ -43,6 +43,7 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
                     flag = False
                 else:
                     iend = i
+                    break
     else: # from restart
         for i, line in enumerate(lines):
             if '<comment>' in line:

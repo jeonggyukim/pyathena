@@ -166,7 +166,11 @@ class SliceProj:
         for num in range(num1, num2):
             slc = self.read_slc_xarray(num)
             sp = self.read_starpar(num)
-            slc = slc.assign_coords(time=sp["time"])
+            if sp is None:
+                ds = self.load_vtk(num)
+                slc = slc.assign_coords(time=ds.domain["time"])
+            else:
+                slc = slc.assign_coords(time=sp["time"])
             slc_list.append(slc)
         slc_dset = xr.concat(slc_list, dim="time")
         t1 = slc_dset.time.data.min()

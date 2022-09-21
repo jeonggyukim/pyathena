@@ -109,6 +109,7 @@ class LoadSim(object):
 
         self.load_method = load_method
         self.logger = self._get_logger(verbose=verbose)
+        self.verbose = verbose
 
         if savdir is None:
             self.savdir = self.basedir
@@ -250,7 +251,7 @@ class LoadSim(object):
         return self.sp
 
     def load_rst(self, num=None, irst=None, verbose=False):
-        if num is None and ivtk is None:
+        if num is None and irst is None:
             raise ValueError('Specify either num or irst')
 
         # get starpar_vtk file name and check if it exist
@@ -353,9 +354,9 @@ class LoadSim(object):
 
         # check file existence
         if osp.isfile(tarname):
-            # if tar file exists, remove original and quit
+            # if tar file exists, just quit
             self.logger.info('[create_tar] tar file already exists')
-            remove_tardir()
+            # remove_tardir()
             return
 
         # tar to vtk/problem_id.num.tar
