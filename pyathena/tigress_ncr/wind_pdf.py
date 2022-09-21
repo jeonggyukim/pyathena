@@ -101,9 +101,10 @@ def create_wind_pdf(dset, sim):
         pdf_ds.attrs["dbin"] = dbin
         pdf_ds.attrs["sfr"] = dset.attrs["sfr"]
         pdf_ds.attrs["NxNyNt"] = Nx * Ny * Nt
-        pdf_ds.to_netcdf(
-            "{}/vz_pdf/{}.pdf-out.{:d}.nc".format(sim.basedir, sim.basename, z)
-        )
+
+        fname = "{}/vz_pdf/{}.pdf-out.{:d}.nc".format(sim.basedir, sim.basename, z)
+        if os.path.isfile(fname): os.remove(fname)
+        pdf_ds.to_netcdf(fname)
         pdf_ds.close()
 
         pdf_ds = xr.Dataset()
@@ -118,29 +119,38 @@ def create_wind_pdf(dset, sim):
         pdf_ds.attrs["dbin"] = dbin
         pdf_ds.attrs["sfr"] = dset.attrs["sfr"]
         pdf_ds.attrs["NxNyNt"] = Nx * Ny * Nt
-        pdf_ds.to_netcdf(
-            "{}/vz_pdf/{}.pdf-in.{:d}.nc".format(sim.basedir, sim.basename, z)
-        )
+
+        fname = "{}/vz_pdf/{}.pdf-in.{:d}.nc".format(sim.basedir, sim.basename, z)
+        if os.path.isfile(fname): os.remove(fname)
+        pdf_ds.to_netcdf(fname)
         pdf_ds.close()
 
 
 def get_pdf_fname(sim, out="out", z0=500):
     return "{}/vz_pdf/{}.pdf-{}.{:d}.nc".format(sim.basedir, sim.basename, out, z0)
 
+def test_wind_pdf(sim):
+    exist = True
+    for z0 in [500,1000]:
+        for dr in ['out','in']:
+            pdfname = get_pdf_fname(sim, out=dr, z0=z0)
+            if not os.path.isfile(pdfname):
+                exist = False
+    return exist
 
 def load_wind_pdf(sim, z0=500):
     pdfname = get_pdf_fname(sim, z0=z0)
-    pdf = xr.open_dataset(pdfname)
-    units = dict()
-    units["massflux"] = sim.u.mass_flux.to("Msun/(kpc^2*yr)").value
-    units["metalflux"] = sim.u.mass_flux.to("Msun/(kpc^2*yr)").value
-    units["energyflux"] = sim.u.energy_flux.to("erg/(kpc^2*yr)").value
-    units["momflux"] = sim.u.momentum_flux.to("(Msun*km)/(kpc^2*yr*s)").value
+    with xr.open_dataset(pdfname) as pdf:
+        units = dict()
+        units["massflux"] = sim.u.mass_flux.to("Msun/(kpc^2*yr)").value
+        units["metalflux"] = sim.u.mass_flux.to("Msun/(kpc^2*yr)").value
+        units["energyflux"] = sim.u.energy_flux.to("erg/(kpc^2*yr)").value
+        units["momflux"] = sim.u.momentum_flux.to("(Msun*km)/(kpc^2*yr*s)").value
 
-    for f, u in units.items():
-        pdf.attrs[f + "_unit"] = u
-    vout = 10.0 ** pdf.vout
-    cs = 10.0 ** pdf.cs
-    pdf["vBz"] = np.sqrt(5 * (cs) ** 2 + (vout) ** 2)
+        for f, u in units.items():
+            pdf.attrs[f + "_unit"] = u
+        vout = 10.0 ** pdf.vout
+        cs = 10.0 ** pdf.cs
+        pdf["vBz"] = np.sqrt(5 * (cs) ** 2 + (vout) ** 2)
 
     return pdf
