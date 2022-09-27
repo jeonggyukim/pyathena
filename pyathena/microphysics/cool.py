@@ -173,7 +173,7 @@ def heatCR(nH, xe, xHI, xH2, xi_CR, old=False):
     eV_cgs = (1.0 * au.eV).cgs.value
     xHetot = 0.1
     # JKIM: Isn't the last term 1.5*xHetot?
-    ktot = xi_CR * ((2.3 * xH2 + 1.5 * xHI) * (xHI + 2.0 * xH2) + 1.1 * xHetot)
+    if old: ktot = xi_CR * ((2.3 * xH2 + 1.5 * xHI) * (xHI + 2.0 * xH2) + 1.1 * xHetot)
     qHI = (6.5 + 26.4 * np.sqrt(xe / (xe + 0.07))) * eV_cgs
 
     # Heating rate per ionization in molecular region
@@ -213,9 +213,9 @@ def heatH2(
 ):
     if kind == 1:
         f_pump = 8.0*2.0  # Sternberg (2014)
-    elif kind == 0:
+    elif kind == 2:
         f_pump = 9.0*2.2  # Hollenbach & McKee (1978)
-    elif kind == -1:
+    elif kind == 3:
         f_pump = 6.94*2.2  # Draine & Bertoldi (1996)
 
     eV_cgs = (1.0 * au.eV).cgs.value
@@ -233,7 +233,7 @@ def heatH2(
         )
 
     # ncrit
-    if kind == "V18":
+    if kind == 1:
         A = 2.0e-7
         D = xi_diss_H2 # / (1e11 * xi_diss_H2_ISRF)
         t = 1.0 + T * 1e-3
@@ -794,7 +794,8 @@ def coolffH(nH, T, xe, xHII):
     """free-free power for hydrogen (Z=1)
     """
     # Frequency-averaged Gaunt factor (Eq.10.11 in Draine 2011)
-    gff_T = 1.0 + 0.44 / (1.0 + 0.058 * np.log(T / 10 ** 5.4) ** 2)
+    a = np.log(3.9810717e-6*T)
+    gff_T = 1.0 + 0.44 / (1.0 + 0.058 * a * a)
     return 1.422e-25 * gff_T * (T * 1e-4) ** 0.5 * nH * xe * xHII
 
 
