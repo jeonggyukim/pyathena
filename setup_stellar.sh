@@ -9,7 +9,7 @@ module load anaconda3/2020.11
 
 # create an environment
 
-conda env create -f pyathena_env.yml
+conda env create -f env.yml
 
 conda activate pyathena
 
