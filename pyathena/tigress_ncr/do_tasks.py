@@ -46,7 +46,7 @@ if __name__ == "__main__":
 
         mynums = COMM.scatter(nums, root=0)
         for num in mynums:
-            s.create_tar(num=num,kind='vtk',remove_original=True)
+            s.create_tar(num=num,kind='vtk',remove_original=True,overwrite=True)
         COMM.barrier()
 
         # reading it again

@@ -62,7 +62,7 @@ def _convert_field_name(name):
     elif name == b'star_particle_metal_mass[7]':
         return 'metal_mass[7]'
 
-def read_starpar_vtk(filename, force_override=False, verbose=False):
+def read_starpar_vtk(filename, force_override=False, from_pickle=False, verbose=False):
     """
     Read athena starpar vtk output.
     Returns a dictionary containing mass, position, velocity, age, etc.
@@ -73,6 +73,9 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
         Name of the file to open, including extension
     force_override : bool
         Flag to force read of hst file even when pickle exists
+    from_pickle : bool
+        Read from existing pickle file (if True and exists) or
+        original VTK file (if False)
 
     Returns
     -------
@@ -80,16 +83,17 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
         Pandas DataFrame object
     """
 
-    fpkl = filename + '.p'
-    if (not force_override) and os.path.exists(fpkl) and \
-       (os.path.getmtime(fpkl) > os.path.getmtime(filename)):
-        hst = pd.read_pickle(fpkl)
-        if verbose:
-            print('[read_starpar_vtk]: reading from existing pickle.')
-    else:
-        if verbose:
-            print('[read_starpar_vtk]: pickle does not exist or starpar file updated.' + \
-                      ' Reading {0:s}'.format(filename))
+    if from_pickle:
+        fpkl = filename + '.p'
+        if (not force_override) and os.path.exists(fpkl) and \
+        (os.path.getmtime(fpkl) > os.path.getmtime(filename)):
+            hst = pd.read_pickle(fpkl)
+            if verbose:
+                print('[read_starpar_vtk]: reading from existing pickle.')
+        else:
+            if verbose:
+                print('[read_starpar_vtk]: pickle does not exist or starpar file updated.' + \
+                        ' Reading {0:s}'.format(filename))
 
     # Check for existance of file
     if not os.path.isfile(filename):
@@ -176,9 +180,10 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
 
     df.time = time
     df.nstars = nstars
-    try:
-        df.to_pickle(fpkl)
-    except IOError:
-        pass
+    if from_pickle:
+        try:
+            df.to_pickle(fpkl)
+        except IOError:
+            pass
 
     return df

@@ -217,7 +217,7 @@ class LoadSim(object):
         return self.ds
 
     def load_starpar_vtk(self, num=None, ivtk=None, force_override=False,
-                         verbose=False):
+                         from_pickle=False, verbose=False):
         """Function to read Athena starpar_vtk file using pythena and
         return DataFrame object.
 
@@ -229,6 +229,9 @@ class LoadSim(object):
            Read i-th file in the vtk file list. Overrides num if both are given.
         force_override : bool
            Flag to force read of starpar_vtk file even when pickle exists
+        from_pickle : bool
+           Read from existing pickle file (if True and exists) or
+           original VTK file (if False)
 
         Returns
         -------
@@ -244,7 +247,7 @@ class LoadSim(object):
             self.logger.error('[load_starpar_vtk]: Starpar vtk file does not exist.')
 
         self.sp = read_starpar_vtk(self.fstarvtk,
-                force_override=force_override, verbose=verbose)
+                force_override=force_override, from_pickle=from_pickle, verbose=verbose)
         self.logger.info('[load_starpar_vtk]: {0:s}. Time: {1:f}'.format(\
                  osp.basename(self.fstarvtk), self.sp.time))
 
@@ -265,7 +268,7 @@ class LoadSim(object):
 
         return self.rh
 
-    def create_tar_all(self,move=False,remove_original=False,kind='vtk'):
+    def create_tar_all(self,move=False,remove_original=False,overwrite=False,kind='vtk'):
         try:
             if kind=='vtk':
                 nums='nums_id0'
@@ -279,7 +282,8 @@ class LoadSim(object):
 
         raw_tardirs = self._find_match([(kind,"????")])
         for num in [int(f[-4:]) for f in raw_tardirs]:
-            self.create_tar(num=num, remove_original=remove_original, kind=kind)
+            self.create_tar(num=num, remove_original=remove_original,
+                            overwrite=overwrite, kind=kind)
 
     def move_to_tardir(self, num=None, kind='vtk'):
         """Move vtk files from id* to vtk/XXXX
@@ -324,7 +328,7 @@ class LoadSim(object):
                          format(len(id_files),tardir))
         for f in id_files: shutil.move(f,tardir)
 
-    def create_tar(self, num=None, remove_original=False, kind='vtk'):
+    def create_tar(self, num=None, remove_original=False, overwrite=False, kind='vtk'):
         """Creating tarred vtk/rst from rearranged output
 
         Parameters
@@ -356,8 +360,11 @@ class LoadSim(object):
         if osp.isfile(tarname):
             # if tar file exists, just quit
             self.logger.info('[create_tar] tar file already exists')
-            # remove_tardir()
-            return
+            if overwrite:
+                os.remove(tarname)
+            else:
+                # remove_tardir()
+                return
 
         # tar to vtk/problem_id.num.tar
         self.logger.info('[create_tar] tarring {:s}'.format(tardir))

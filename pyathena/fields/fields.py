@@ -478,6 +478,19 @@ def set_derived_fields_mag(par, x0):
     cmap[f] = 'cividis'
     take_log[f] = True
 
+    # PB/kB [K cm^-3] - magnetic pressure
+    f = 'pok_mag'
+    field_dep[f] = set(['cell_centered_B'])
+    def _pok_mag(d, u):
+        return 0.5*(d['cell_centered_B1']**2 +
+                    d['cell_centered_B2']**2 +
+                    d['cell_centered_B3']**2) * (u.energy_density/ac.k_B).cgs.value
+    func[f] = _pok_mag
+    label[f] = r'$P_B/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'inferno'
+    vminmax[f] = (1e2,1e7)
+    take_log[f] = True
+
     return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_newcool(par, x0):
@@ -539,7 +552,7 @@ def set_derived_fields_newcool(par, x0):
     def _nHI(d, u):
         return d['density']*d['xHI']
     func[f] = _nHI
-    label[f] = r'$n_{\rm H^0}\;[{\rm cm^{-3}}]$'
+    label[f] = r'$n_{\rm H}\;[{\rm cm^{-3}}]$'
     cmap[f] = cmap_apply_alpha('Blues')
     vminmax[f] = (1e-3,1e4)
     take_log[f] = True
@@ -550,7 +563,7 @@ def set_derived_fields_newcool(par, x0):
     def _xHI(d, u):
         return d['xHI']
     func[f] = _xHI
-    label[f] = r'$x_{\rm H^0}$'
+    label[f] = r'$x_{\rm H}$'
     cmap[f] = 'viridis'
     vminmax[f] = (0.0, 1.0)
     take_log[f] = False
