@@ -15,6 +15,7 @@ import pyathena as pa
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigress_ncr.phase import *
+from pyathena.tigress_ncr.cooling_breakdown import *
 
 if __name__ == "__main__":
 
@@ -112,6 +113,9 @@ if __name__ == "__main__":
             print(" passing nP ", end=" ")
         # 1d pdfs
         s.pdf.recal_1Dpdfs(num,force_override=False)
+
+        # coolheat breakdown
+        if s.test_newcool(): f1 = draw_Tpdf(s,num)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
