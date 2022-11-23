@@ -52,6 +52,7 @@ if __name__ == "__main__":
 
         # reading it again
         s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
+
     s.pdf = PDF1D(s)
     nums = s.nums
 
@@ -99,9 +100,11 @@ if __name__ == "__main__":
                 os.makedirs(os.path.dirname(npfile))
             if not os.path.isfile(npfile):
                 ds=s.load_vtk(num)
-                dchunk=ds.get_field(['nH','pok','T',
-                                     'xHI','xHII','xH2',
-                                     'cool_rate','net_cool_rate'])
+                flist = ['nH','pok','T']
+                if s.test_newcool():
+                    flist.append(['xe','xHI','xHII','xH2',
+                                  'cool_rate','net_cool_rate'])
+                dchunk=ds.get_field(flist)
                 dchunk['T1'] = dchunk['pok']/dchunk['nH']
                 dchunk=dchunk.sel(z=slice(-300,300))
                 print(" creating nP ", end=" ")
@@ -111,8 +114,9 @@ if __name__ == "__main__":
                 print(" skipping nP ", end=" ")
         except IOError:
             print(" passing nP ", end=" ")
+
         # 1d pdfs
-        s.pdf.recal_1Dpdfs(num,force_override=False)
+        s.pdf.recal_1Dpdfs(num,force_override=True)
 
         # coolheat breakdown
         if s.test_newcool(): f1 = draw_Tpdf(s,num)

@@ -21,10 +21,14 @@ def print_red(txt):
 
 
 # recalculate PDFs with finer bins
-def recal_nP(dchunk):
+def recal_nP(dchunk,NCR=True):
     dset = xr.Dataset()
-    for xs in [None, "xHI", "xHII"]:
-        for wf in ["vol", "nH", "net_cool_rate"]:
+    alist = [None]
+    if NCR: alist.append["xHI", "xHII"]
+    wlist = ["vol", "nH"]
+    if NCR: wlist.append["net_cool_rate"]
+    for xs in alist:
+        for wf in wlist:
             xbins = np.logspace(-6, 6, 601)
             ybins = np.logspace(0, 10, 501)
             if xs is None:
@@ -335,11 +339,13 @@ def define_phase(s, kind="full", verbose=False):
       'five1' for CNM, UNM, WNM, WIM, Hot
       'five2' for CU, WNM, WIM, WHIM, HIM
       'six' for CNM, UNM, WNM, WIM, WHIM, HIM
+      'classic' for CNM, UNM, WNM, WHIM, HIM
     """
 
     pcdict = get_phcolor_dict(cmap=cmr.pride, cmin=0.0, cmax=0.85)
     phdef = []
-    Tlist = list(np.concatenate([[0], s.get_phase_Tlist(), [np.inf]]))
+    Tlist = s.get_phase_Tlist(kind="classic" if kind == "classic" else "ncr")
+    Tlist = list(np.concatenate([[0], Tlist, [np.inf]]))
     i = 1
     if kind in ["four", "five2"]:
         # cold+unstable
@@ -434,18 +440,32 @@ def define_phase(s, kind="full", verbose=False):
         )
 
     # warm neutral (xHI>0.5, 6000<T<35000)
-    i += 1
-    phdef.append(
-        dict(
-            idx=i,
-            name="WNM",
-            Tmin=Tlist[2],
-            Tmax=Tlist[4],
-            abundance="xHI",
-            amin=0.5,
-            c=pcdict["WNM"],
+    if kind == 'classic':
+        i += 1
+        phdef.append(
+            dict(
+                idx=i,
+                name="WNM",
+                Tmin=Tlist[2],
+                Tmax=Tlist[4],
+                abundance=None,
+                amin=0.0,
+                c=pcdict["WNM"],
+            )
         )
-    )
+    else:
+        i += 1
+        phdef.append(
+            dict(
+                idx=i,
+                name="WNM",
+                Tmin=Tlist[2],
+                Tmax=Tlist[4],
+                abundance="xHI",
+                amin=0.5,
+                c=pcdict["WNM"],
+            )
+        )
 
     if kind == "full":
         # warm photo-ionized (xHII>0.5, 6000<T<15000)
@@ -474,7 +494,7 @@ def define_phase(s, kind="full", verbose=False):
                 c=pcdict["WCIM"],
             )
         )
-    else:
+    elif (kind != 'classic'):
         # combined warm ionzied
         i += 1
         phdef.append(
@@ -586,7 +606,7 @@ def assign_phase(s, dslc, kind="full", verbose=False):
         phcmap.append(ph["c"])
         if verbose:
             print(ph["name"], i, T1, T2, a, amin)
-        if a is not None:
+        if (a is not None) & (s.test_newcool()):
             cond *= dslc[a] > amin
         phslc += cond * i
     phslc.attrs["phdef"] = phdef
@@ -691,50 +711,50 @@ class PDF1D:
         if not force_override:
             if all_exist:
                 return True
-
+        flist = ["nH", "pok", "T"]
+        wflist = ["vol", "nH"]
+        if s.test_newcool():
+            flist.append([
+                            "xe",
+                            "xHI",
+                            "xHII",
+                            "xH2",
+                            "cool_rate",
+                            "heat_rate",
+                            "net_cool_rate",
+                        ])
+            wflist.append([
+                "ne",
+                "nHI",
+                "nHII",
+                "nH2",
+                "net_cool_rate",
+                "cool_rate",
+                "heat_rate",
+                "netcool",
+                ])
+            phkind='full'
+        else:
+            phkind='classic'
         try:
             s.load_chunk(num)
-            dchunk = s.get_field_from_chunk(
-                [
-                    "nH",
-                    "pok",
-                    "T",
-                    "xHI",
-                    "xHII",
-                    "xH2",
-                    "cool_rate",
-                    "heat_rate",
-                    "net_cool_rate",
-                ]
-            )
-            dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
-            dchunk["nH2"] = dchunk["nH"] * dchunk["xH2"] * 2
-            dchunk["netcool"] = dchunk["cool_rate"] - dchunk["heat_rate"]
-            dchunk = dchunk.sel(z=slice(-300, 300))
+            dchunk = s.get_field_from_chunk(flist)
         except OSError:
             try:
                 ds = s.load_vtk(num)
-                dchunk = ds.get_field(
-                    [
-                        "nH",
-                        "pok",
-                        "T",
-                        "xHI",
-                        "xHII",
-                        "xH2",
-                        "cool_rate",
-                        "heat_rate",
-                        "net_cool_rate",
-                    ]
-                )
-                dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
-                dchunk["nH2"] = dchunk["nH"] * dchunk["xH2"] * 2
-                dchunk["netcool"] = dchunk["cool_rate"] - dchunk["heat_rate"]
-                dchunk = dchunk.sel(z=slice(-300, 300))
+                dchunk = ds.get_field(flist)
             except OSError:
                 return False
+        dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
+        if s.test_newcool():
+            dchunk["ne"] = dchunk["nH"] * dchunk["xe"]
+            dchunk["nH2"] = dchunk["nH"] * dchunk["xH2"] * 2
+            dchunk["nHI"] = dchunk["nH"] * dchunk["xHI"]
+            dchunk["nHII"] = dchunk["nH"] * dchunk["xHII"]
+            dchunk["netcool"] = dchunk["cool_rate"] - dchunk["heat_rate"]
+        dchunk = dchunk.sel(z=slice(-300, 300))
 
-        ph = assign_phase(s, dchunk, kind="full", verbose=False)
+        ph = assign_phase(s, dchunk, kind=phkind, verbose=False)
         bin_params = dict(
             nH=(-6, 4, 0.05), T=(0, 9, 0.05), T1=(0, 9, 0.05), pok=(0, 7, 0.05)
         )
@@ -750,15 +770,7 @@ class PDF1D:
 
             Tmin, Tmax, Tbin = bin_params[tf]
             pdf = xr.Dataset()
-            for wf in [
-                "vol",
-                "nH",
-                "nH2",
-                "net_cool_rate",
-                "cool_rate",
-                "heat_rate",
-                "netcool",
-            ]:
+            for wf in wflist:
                 ph_pdf = xr.Dataset()
                 for i, phinfo in enumerate(ph.attrs["phdef"]):
                     c = phinfo["c"]
@@ -774,7 +786,15 @@ class PDF1D:
                     )
                     ph_pdf[phname] = xr.DataArray(h, coords=[b[:-1]], dims=[tf])
                 pdf[wf if wf != "nH" else "mass"] = ph_pdf.to_array("phase")
-            pdf.to_array("weight").to_netcdf(fname)
+            try:
+                pdf.to_array("weight").to_netcdf(fname)
+            except PermissionError:
+                if force_override:
+                    os.remove(fname)
+                    pdf.to_array("weight").to_netcdf(fname)
+                else:
+                    pdf.close()
+                    return False
             pdf.close()
         return True
 
@@ -839,9 +859,9 @@ class PDF1D:
 
         if save: getattr(self,tf).to_netcdf(fname)
 
-    def load_all(self,save=True):
+    def load_all(self,save=True, read_from_file=True):
         for tf in ["T", "T1", "pok", "nH"]:
-            self.loader(self.sim, tf, save=save)
+            self.loader(self.sim, tf, save=save, read_from_file=read_from_file)
 
 
 if __name__ == "__main__":

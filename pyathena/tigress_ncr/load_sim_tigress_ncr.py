@@ -395,8 +395,11 @@ class LoadSimTIGRESSNCR(
         return dd
 
     @staticmethod
-    def get_phase_Tlist():
-        return [500, 6000, 15000, 35000, 5.0e5]
+    def get_phase_Tlist(kind='ncr'):
+        if kind == 'ncr':
+            return [500, 6000, 15000, 35000, 5.0e5]
+        elif kind == 'classic':
+            return [200, 5000, 15000, 20000, 5.0e5]
 
     @staticmethod
     def get_phase_T1list():
