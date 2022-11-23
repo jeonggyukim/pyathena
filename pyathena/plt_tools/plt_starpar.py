@@ -111,7 +111,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
             if kind == 'slc':
                 xbool = abs(spz) < dist_max
 
-            spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
+            spm = sp_cl['mass']*Msun/norm_factor
             spa = sp_cl['age']*Myr
             if plt_old:
                 iyoung = np.where(spa < 1e10)
@@ -121,23 +121,23 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
 
             if kind == 'slc':
                 if plt_old:
-                    islab = np.where(xbool*(spa < 1e10))
+                    islab = np.where(xbool & (spa < 1e10))
                 else:
-                    islab = np.where(xbool*(spa < agemax))
+                    islab = np.where(xbool & (spa < agemax))
                 ax.scatter(spx.iloc[islab], spy.iloc[islab],
                            s=spm.iloc[islab], c=spa.iloc[islab],
                            marker=marker, edgecolors=edgecolors, linewidths=linewidths,
                            vmin=0, vmax=agemax, cmap=cmap, alpha=alpha)
-
-            ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung],
-                       s=spm.iloc[iyoung], c=spa.iloc[iyoung],
-                       marker=marker, edgecolors=edgecolors, linewidths=linewidths,
-                       vmin=0, vmax=agemax, cmap=cmap, alpha=alpha)
-            if not plt_old:
-                ax.scatter(spx.iloc[iyoung2], spy.iloc[iyoung2],
-                           s=spm.iloc[iyoung2], c='grey',
-                           marker=marker, edgecolors=edgecolors, linewidths=linewidths,
-                           alpha=alpha)
+            else:
+                ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung],
+                        s=spm.iloc[iyoung], c=spa.iloc[iyoung],
+                        marker=marker, edgecolors=edgecolors, linewidths=linewidths,
+                        vmin=0, vmax=agemax, cmap=cmap, alpha=alpha)
+                if not plt_old:
+                    ax.scatter(spx.iloc[iyoung2], spy.iloc[iyoung2],
+                            s=spm.iloc[iyoung2], c='grey',
+                            marker=marker, edgecolors=edgecolors, linewidths=linewidths,
+                            alpha=alpha)
 
 
 def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
@@ -157,7 +157,7 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
 
     if bbox_to_anchor is None:
         bbox_to_anchor = dict(top=(0.1, 0.95),
-                              right=(0.88, 0.83))
+                              right=(0.92, 0.95))
     else:
         if location not in bbox_to_anchor:
             raise(
@@ -170,7 +170,7 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
     for m in mass:
         label = r"$10^{0:g}\;M_\odot$".format(np.log10(m))
         s = ax.scatter(ext[1]*2, ext[3]*2,
-                       s=np.sqrt(m)/norm_factor,
+                       s=m/norm_factor,
                        color='k', alpha=1.0, label=label,
                        linewidths=linewidths, facecolors=facecolors)
         ss.append(s)
@@ -182,7 +182,7 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
         legend = ax.legend(ss, labels, scatterpoints=1, fontsize=fontsize,
                            ncol=len(ss), frameon=False, loc=2,
                            bbox_to_anchor=bbox_to_anchor[location],
-                           bbox_transform=plt.gcf().transFigure,
+                           bbox_transform=ax.transAxes,
                            columnspacing=0.1, labelspacing=0.1, handletextpad=0.05)
         # for t in legend.get_texts():
         #         t.set_va('bottom')
@@ -191,16 +191,18 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
                            frameon=False, loc=2,
                            columnspacing=0.02, labelspacing=0.02, handletextpad=0.02,
                            bbox_to_anchor=bbox_to_anchor[location],
-                           bbox_transform=plt.gcf().transFigure)
+                           bbox_transform=ax.transAxes)
 
     return legend
 
-def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r, bbox=[0.125, 0.9, 0.1, 0.015]):
+def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r,
+                orientation='horizontal',
+                bbox=[0.125, 0.9, 0.1, 0.015]):
 
     # Add starpar age colorbar
     norm = mpl.colors.Normalize(vmin=0., vmax=agemax)
     cax = fig.add_axes(bbox)
-    cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal',
+    cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation=orientation,
                                    ticks=[0, agemax/2.0, agemax])
 
     # cbar_sp.ax.tick_params(labelsize=14)
