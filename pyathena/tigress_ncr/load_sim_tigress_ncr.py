@@ -201,7 +201,7 @@ class LoadSimTIGRESSNCR(
         return savdir
 
     def get_dhnu_PH(self):
-        with open(self.files["athinput"].replace("out.txt", "err.txt"), "r") as fp:
+        with open(self.files["athinput"].replace("out", "err"), "r") as fp:
             i = 0
             imax = 10000
             while i < imax:

@@ -116,7 +116,7 @@ if __name__ == "__main__":
             print(" passing nP ", end=" ")
 
         # 1d pdfs
-        s.pdf.recal_1Dpdfs(num,force_override=True)
+        s.pdf.recal_1Dpdfs(num,force_override=False)
 
         # coolheat breakdown
         if s.test_newcool(): f1 = draw_Tpdf(s,num)

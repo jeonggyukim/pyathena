@@ -24,9 +24,9 @@ def print_red(txt):
 def recal_nP(dchunk,NCR=True):
     dset = xr.Dataset()
     alist = [None]
-    if NCR: alist.append["xHI", "xHII"]
+    if NCR: alist.append(["xHI", "xHII"])
     wlist = ["vol", "nH"]
-    if NCR: wlist.append["net_cool_rate"]
+    if NCR: wlist.append(["net_cool_rate"])
     for xs in alist:
         for wf in wlist:
             xbins = np.logspace(-6, 6, 601)
@@ -745,7 +745,7 @@ class PDF1D:
                 dchunk = ds.get_field(flist)
             except OSError:
                 return False
-        dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
+        dchunk["T1"] = dchunk["pok"] / dchunk["nH"] / self.sim.muH
         if s.test_newcool():
             dchunk["ne"] = dchunk["nH"] * dchunk["xe"]
             dchunk["nH2"] = dchunk["nH"] * dchunk["xH2"] * 2
