@@ -348,7 +348,7 @@ class Hst:
                 iph, force_override=force_override
             ).to_array()
         hstph = hstph.to_array("phase").to_dataset("variable")
-
+        reduced = reduced & self.test_newcool()
         if reduced:
             ph_reduced = dict(CMM=['CMM','UMM','W1MM','W2MM'],
                             CNM=['CNM'], UNM=['UNM'], WNM=['W1NM','W2NM'],
@@ -363,17 +363,19 @@ class Hst:
     def get_hst_phase_name(self, iph):
         if iph == 0:
             return "whole"
+        if self.test_newcool():
+            thphase = ["C", "U", "W1", "W2", "WH", "H"]
+            chphase = ["I", "M", "N"]
 
-        thphase = ["C", "U", "W1", "W2", "WH", "H"]
-        chphase = ["I", "M", "N"]
-
-        nthph = len(thphase)
-        nchph = len(chphase)
-        if iph > nthph * nchph:
-            raise KeyError(
-                "{} phases are defined, but iph={} is given".format(nthph * nchph, iph)
-            )
-        return thphase[(iph - 1) % nthph] + chphase[(iph - 1) // nthph] + "M"
+            nthph = len(thphase)
+            nchph = len(chphase)
+            if iph > nthph * nchph:
+                raise KeyError(
+                    "{} phases are defined, but iph={} is given".format(nthph * nchph, iph)
+                )
+            return thphase[(iph - 1) % nthph] + chphase[(iph - 1) // nthph] + "M"
+        else:
+            return ['CNM','UNM','WNM','WHIM','HIM'][iph-1]
 
     def add_header_from_other_model(self,sim2):
         def get_header(hf):
