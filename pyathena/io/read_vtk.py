@@ -404,9 +404,7 @@ class AthenaDataSet(object):
             fp.readline() # skip header
             if fm['read_table']:
                 fp.readline()
-            grid['data'][field] = np.asarray(
-                struct.unpack('>' + fm['ndata']*fm['dtype'],
-                              fp.read(fm['dsize'])))
+            grid['data'][field]= (np.frombuffer(buffer=fp.read(fm['dsize']),dtype=fm['dtype'])).newbyteorder() # New method for converting the binary data
             fp.close()
 
             if fm['nvar'] == 1:
