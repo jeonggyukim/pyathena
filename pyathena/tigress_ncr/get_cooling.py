@@ -615,4 +615,7 @@ def get_pdfs(xf, yf, data, rate, set_bins=set_bins_default):
         w = rate[s].data.flatten()
         pdf = get_pdf_xarray(x, y, w, xbin, ybin, xf, yf)
         pdfs[s] = pdf
+    pdf = get_pdf_xarray(x, y, None, xbin, ybin, xf, yf)
+    pdfs['vol'] = pdf
+
     return pdfs

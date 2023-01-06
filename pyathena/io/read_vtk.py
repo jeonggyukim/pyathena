@@ -12,7 +12,9 @@ import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
 
+from ..fields.fields import DerivedFields
 from ..util.units import Units
+
 
 def read_vtk(filename, id0_only=False):
     """Convenience wrapper function to read Athena vtk output file
@@ -35,7 +37,7 @@ def read_vtk(filename, id0_only=False):
 
 class AthenaDataSet(object):
 
-    def __init__(self, filename, id0_only=False, units=Units(), dfi=None):
+    def __init__(self, filename, id0_only=False, units=Units(), par=None, dfi=None):
         """Class to read athena vtk file.
 
         Parameters
@@ -68,11 +70,6 @@ class AthenaDataSet(object):
         self.mpi_mode = mpi_mode
         self.fnames = [filename]
         self.u = units
-        self.dfi = dfi
-        if dfi is not None:
-            self.derived_field_list = list(dfi.keys())
-        else:
-            self.derived_field_list = None
 
         # Find all vtk file names and add to flist
         if mpi_mode:
@@ -105,6 +102,11 @@ class AthenaDataSet(object):
 
         self.field_list = list(self._field_map.keys())
 
+        self.dfi = DerivedFields(par,field_list=self.field_list).dfi
+        if self.dfi is not None:
+            self.derived_field_list = list(self.dfi.keys())
+        else:
+            self.derived_field_list = None
 
     def get_cc_pos(self):
         """Compute cell center positions
@@ -401,9 +403,11 @@ class AthenaDataSet(object):
             fp.readline() # skip header
             if fm['read_table']:
                 fp.readline()
-            grid['data'][field] = np.asarray(
-                struct.unpack('>' + fm['ndata']*fm['dtype'],
-                              fp.read(fm['dsize'])))
+            # grid['data'][field] = np.asarray(
+            #     struct.unpack('>' + fm['ndata']*fm['dtype'],
+            #                   fp.read(fm['dsize'])))
+            grid['data'][field] = (np.frombuffer(buffer=fp.read(fm['dsize']),
+                                                 dtype=fm['dtype'])).newbyteorder()
             fp.close()
 
             if fm['nvar'] == 1:

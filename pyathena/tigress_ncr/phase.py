@@ -24,9 +24,9 @@ def print_red(txt):
 def recal_nP(dchunk,NCR=True):
     dset = xr.Dataset()
     alist = [None]
-    if NCR: alist.append(["xHI", "xHII"])
+    if NCR: alist += ["xHI", "xHII"]
     wlist = ["vol", "nH"]
-    if NCR: wlist.append(["net_cool_rate"])
+    if NCR: wlist += ["net_cool_rate"]
     for xs in alist:
         for wf in wlist:
             xbins = np.logspace(-6, 6, 601)
@@ -714,25 +714,25 @@ class PDF1D:
         flist = ["nH", "pok", "T"]
         wflist = ["vol", "nH"]
         if s.test_newcool():
-            flist.append([
-                            "xe",
-                            "xHI",
-                            "xHII",
-                            "xH2",
-                            "cool_rate",
-                            "heat_rate",
-                            "net_cool_rate",
-                        ])
-            wflist.append([
-                "ne",
-                "nHI",
-                "nHII",
-                "nH2",
-                "net_cool_rate",
-                "cool_rate",
-                "heat_rate",
-                "netcool",
-                ])
+            flist+=[
+                    "xe",
+                    "xHI",
+                    "xHII",
+                    "xH2",
+                    "cool_rate",
+                    "heat_rate",
+                    "net_cool_rate",
+                    ]
+            wflist += [
+                        "ne",
+                        "nHI",
+                        "nHII",
+                        "nH2",
+                        "net_cool_rate",
+                        "cool_rate",
+                        "heat_rate",
+                        "netcool",
+                        ]
             phkind='full'
         else:
             phkind='classic'

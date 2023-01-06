@@ -24,6 +24,8 @@ cmap_def = dict(
     nH=plt.cm.Spectral_r,
     T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3.0 / 7.0),
     vz=plt.cm.bwr,
+    vy=plt.cm.bwr,
+    vx=plt.cm.bwr,
     chi_FUV=plt.cm.viridis,
     Erad_LyC=plt.cm.viridis,
     xi_CR=plt.cm.viridis,
@@ -37,11 +39,15 @@ norm_def = dict(
     nH=LogNorm(1e-4, 1e3),
     T=LogNorm(1e1, 1e7),
     vz=Normalize(-200, 200),
+    vx=Normalize(-200, 200),
+    vy=Normalize(-200, 200),
     chi_FUV=LogNorm(1e-2, 1e2),
     Erad_LyC=LogNorm(1e-16, 5e-13),
     xi_CR=LogNorm(5e-17, 1e-15),
     Bmag=LogNorm(1.0e-2, 1.0e2),
 )
+
+tiny = 1.e-30
 
 
 class SliceProj:
@@ -79,7 +85,7 @@ class SliceProj:
         ]
         try:
             if self.par["configure"]["radps"] == "ON":
-                fields_def += ["nH2", "ne"]
+                fields_def += ["nH2", "ne", "nHII"]
                 if self.par["cooling"]["iCR_attenuation"]:
                     fields_def += ["xi_CR"]
                 if self.par["radps"]["iPhotIon"] == 1:
@@ -256,7 +262,7 @@ class SliceProj:
 
                 data = sciim.interpolation.shift(data, (-jshift, 0), mode="wrap")
             ax.imshow(
-                data,
+                data+tiny,
                 cmap=cmap,
                 extent=slc["extent"][axis],
                 norm=norm,
@@ -372,6 +378,8 @@ class SliceProj:
             nH=r"$n_{\rm H}$",
             T=r"$T$",
             vz=r"$v_z$",
+            vy=r"$v_y$",
+            vx=r"$v_x$",
             chi_FUV=r"$\mathcal{E}_{\rm FUV}$",
             Erad_LyC=r"$\mathcal{E}_{\rm LyC}$",
             xi_CR=r"$\xi_{\rm CR}$",
@@ -385,6 +393,8 @@ class SliceProj:
             nH="slc",
             T="slc",
             vz="slc",
+            vy="slc",
+            vx="slc",
             chi_FUV="slc",
             Erad_LyC="slc",
             xi_CR="slc",

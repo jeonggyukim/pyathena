@@ -48,6 +48,7 @@ if __name__ == "__main__":
         mynums = COMM.scatter(nums, root=0)
         for num in mynums:
             s.create_tar(num=num,kind='vtk',remove_original=True,overwrite=True)
+            gc.collect()
         COMM.barrier()
 
         # reading it again
@@ -70,28 +71,53 @@ if __name__ == "__main__":
         print(num, end=" ")
 
         try:
-            fig = s.plt_snapshot(
-                num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=False
-            )
-            plt.close(fig)
-            fig = s.plt_pdf2d_all(
-                num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir
-            )
-            plt.close(fig)
+            if s.test_newcool():
+                fig = s.plt_snapshot(
+                    num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=False,
+                    norm_factor=2,
+                )
+                plt.close(fig)
+                fig = s.plt_pdf2d_all(
+                    num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir
+                )
+                plt.close(fig)
+            else:
+                fig = s.plt_snapshot(
+                    num,
+                    savdir_pkl=savdir_pkl,
+                    savdir=savdir,
+                    force_override=True,
+                    fields_xy=("Sigma_gas", "nH", "T", "Bmag"),
+                    fields_xz=("Sigma_gas", "nH", "T", "vz", "Bmag"),
+                    norm_factor=4,
+                    agemax=40,
+                )
         except (EOFError, KeyError, pickle.UnpicklingError):
-            fig = s.plt_snapshot(
-                num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True
-            )
-            plt.close(fig)
-            fig = s.plt_pdf2d_all(
-                num,
-                plt_zprof=False,
-                savdir_pkl=savdir_pkl,
-                savdir=savdir,
-                force_override=True,
-            )
-            plt.close(fig)
-
+            if s.test_newcool():
+                fig = s.plt_snapshot(
+                    num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True,
+                    norm_factor=2,
+                )
+                plt.close(fig)
+                fig = s.plt_pdf2d_all(
+                    num,
+                    plt_zprof=False,
+                    savdir_pkl=savdir_pkl,
+                    savdir=savdir,
+                    force_override=True,
+                )
+                plt.close(fig)
+            else:
+                fig = s.plt_snapshot(
+                    num,
+                    savdir_pkl=savdir_pkl,
+                    savdir=savdir,
+                    force_override=True,
+                    fields_xy=("Sigma_gas", "nH", "T", "Bmag"),
+                    fields_xz=("Sigma_gas", "nH", "T", "vz", "Bmag"),
+                    norm_factor=4,
+                    agemax=40,
+                )
         # 2d pdf
         try:
             npfile=os.path.join(s.basedir,'np_pdf',
@@ -102,18 +128,18 @@ if __name__ == "__main__":
                 ds=s.load_vtk(num)
                 flist = ['nH','pok','T']
                 if s.test_newcool():
-                    flist.append(['xe','xHI','xHII','xH2',
-                                  'cool_rate','net_cool_rate'])
+                    flist += ['xe','xHI','xHII','xH2',
+                              'cool_rate','net_cool_rate']
                 dchunk=ds.get_field(flist)
                 dchunk['T1'] = dchunk['pok']/dchunk['nH']
                 dchunk=dchunk.sel(z=slice(-300,300))
-                print(" creating nP ", end=" ")
-                pdf_dset = recal_nP(dchunk)
+                print(" creating nP ")
+                pdf_dset = recal_nP(dchunk,NCR=s.test_newcool())
                 pdf_dset.to_netcdf(npfile)
             else:
-                print(" skipping nP ", end=" ")
+                print(" skipping nP ")
         except IOError:
-            print(" passing nP ", end=" ")
+            print(" passing nP ")
 
         # 1d pdfs
         s.pdf.recal_1Dpdfs(num,force_override=False)

@@ -14,6 +14,7 @@ import astropy.units as au
 import tarfile
 from .read_vtk import AthenaDataSet,_parse_filename,_vtk_parse_line
 
+from ..fields.fields import DerivedFields
 from ..util.units import Units
 
 def read_vtk_tar(filename, id0_only=False):
@@ -37,7 +38,7 @@ def read_vtk_tar(filename, id0_only=False):
 
 class AthenaDataSetTar(AthenaDataSet):
 
-    def __init__(self, filename, id0_only=False, units=Units(), dfi=None):
+    def __init__(self, filename, id0_only=False, units=Units(), par=None, dfi=None):
         """Class to read athena vtk file.
 
         Parameters
@@ -70,11 +71,6 @@ class AthenaDataSetTar(AthenaDataSet):
         self.mpi_mode = mpi_mode
         self.fnames = [filename]
         self.u = units
-        self.dfi = dfi
-        if dfi is not None:
-            self.derived_field_list = list(dfi.keys())
-        else:
-            self.derived_field_list = None
 
         # open tar file
         if ext == 'tar':
@@ -99,6 +95,11 @@ class AthenaDataSetTar(AthenaDataSet):
             self._field_map = self.grid[0]['field_map']
 
         self.field_list = list(self._field_map.keys())
+        self.dfi = DerivedFields(par,field_list=self.field_list).dfi
+        if self.dfi is not None:
+            self.derived_field_list = list(self.dfi.keys())
+        else:
+            self.derived_field_list = None
 
     def _set_grid(self):
         grid = []

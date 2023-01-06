@@ -20,7 +20,7 @@ def static_vars(**kwargs):
         return func
     return decorate
 
-def set_derived_fields_def(par, x0, newcool):
+def set_derived_fields_def(par, x0, field_list):
     """
     Function to define derived fields info, for example,
     functions to calculate derived fields, dependency, label, colormap, etc.
@@ -41,6 +41,10 @@ def set_derived_fields_def(par, x0, newcool):
     -------
     Tuple of dictionaries containing derived fields info
     """
+    if field_list is None:
+        field_list_def = ['density', 'pressure', 'velocity']
+    else:
+        field_list_def = field_list
 
     func = dict()
     field_dep = dict()
@@ -166,7 +170,7 @@ def set_derived_fields_def(par, x0, newcool):
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
-    # cs [km/s]
+    # cs [km/s] - isothermal sound speed
     f = 'cs'
     field_dep[f] = set(['pressure','density'])
     def _cs(d, u):
@@ -177,13 +181,13 @@ def set_derived_fields_def(par, x0, newcool):
     vminmax[f] = (0.1,1e3)
     take_log[f] = True
 
-    # cs [km/s] - sound speed
+    # cs [km/s] - adiabatic sound speed
     f = 'csound'
     field_dep[f] = set(['pressure','density'])
     def _csound(d, u):
         return np.sqrt(par['problem']['gamma']*d['pressure']/d['density'])
     func[f] = _csound
-    label[f] = r'$c_s\;[{\rm km}\,{\rm s}^{-1}]$'
+    label[f] = r'$a_s\;[{\rm km}\,{\rm s}^{-1}]$'
     cmap[f] = 'magma'
     vminmax[f] = (0.1,1e3)
     take_log[f] = True
@@ -230,7 +234,11 @@ def set_derived_fields_def(par, x0, newcool):
     if par['configure']['cooling'] == 'ON':
         # T [K] - gas temperature
         f = 'T'
-        if newcool:
+        if 'temperature' in field_list_def:
+            field_dep[f] = set(['temperature'])
+            def _T(d, u):
+                return d['temperature']
+        elif 'xe' in field_list_def:
             field_dep[f] = set(['density','pressure','xe','xH2'])
             def _T(d, u):
                 return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
@@ -249,7 +257,7 @@ def set_derived_fields_def(par, x0, newcool):
         take_log[f] = True
 
         # Td [K] - dust temperature
-        if newcool:
+        if 'temperature_dust' in field_list_def:
             f = 'Td'
             field_dep[f] = set(['temperature_dust'])
             def _Td(d, u):
@@ -263,7 +271,7 @@ def set_derived_fields_def(par, x0, newcool):
 
         # Cooling rate per volume [erg/s/cm^3] - nH^2*Lambda
         f = 'cool_rate'
-        if newcool:
+        if 'cool_rate' in field_list_def:
             field_dep[f] = set(['cool_rate'])
             def _cool_rate(d, u):
                 return d['cool_rate']
@@ -284,11 +292,15 @@ def set_derived_fields_def(par, x0, newcool):
 
         # Heating rate per volume [erg/s/cm^3] - nH*Gamma
         f = 'heat_rate'
-        if newcool:
+        if 'heat_rate' in field_list_def:
             field_dep[f] = set(['heat_rate'])
             def _heat_rate(d, u):
                 return d['heat_rate']
-            func[f] = _heat_rate
+        else:
+            field_dep[f] = set(['density'])
+            def _heat_rate(d, u):
+                return d['density']*2.e-26 # need to be multiplyied by heat_ratio later
+        func[f] = _heat_rate
         label[f] = r'$\mathcal{G}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
         cmap[f] = 'cubehelix_r'
         vminmax[f] = (1e-28,1e-20)
@@ -296,19 +308,20 @@ def set_derived_fields_def(par, x0, newcool):
 
         # Net cooling rate per volume [erg/s/cm^3] - nH^2*Lambda - nH*Gamma
         # (averaged over dt_mhd)
-        f = 'net_cool_rate'
-        field_dep[f] = set(['net_cool_rate'])
-        def _net_cool_rate(d, u):
-            return d['net_cool_rate']
-        func[f] = _net_cool_rate
-        label[f] = r'$\mathcal{L}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
-        cmap[f] = 'bwr_r'
-        vminmax[f] = (-1e-20,1e-20)
-        take_log[f] = False
+        if 'net_cool_rate' in field_list_def:
+            f = 'net_cool_rate'
+            field_dep[f] = set(['net_cool_rate'])
+            def _net_cool_rate(d, u):
+                return d['net_cool_rate']
+            func[f] = _net_cool_rate
+            label[f] = r'$\mathcal{L}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
+            cmap[f] = 'bwr_r'
+            vminmax[f] = (-1e-20,1e-20)
+            take_log[f] = False
 
         # Cooling efficiency [erg*cm^3/s]
         f = 'Lambda_cool'
-        if newcool:
+        if 'cool_rate' in field_list_def:
             field_dep[f] = set(['density','cool_rate'])
             def _Lambda_cool(d, u):
                 return d['cool_rate']/d['density']**2
@@ -326,52 +339,69 @@ def set_derived_fields_def(par, x0, newcool):
         take_log[f] = True
 
         # Specific cooling rate [erg/s/H]
-        f = 'nHLambda_cool'
-        field_dep[f] = set(['density','cool_rate'])
-        def _nHLambda_cool(d, u):
-            return d['cool_rate']/d['density']
-        func[f] = _nHLambda_cool
-        label[f] = r'$n_{\rm H}\Lambda\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
-        cmap[f] = 'cubehelix_r'
-        vminmax[f] = (1e-30,1e-20)
-        take_log[f] = True
+        if 'cool_rate' in field_list_def:
+            f = 'nHLambda_cool'
+            field_dep[f] = set(['density','cool_rate'])
+            def _nHLambda_cool(d, u):
+                return d['cool_rate']/d['density']
+            func[f] = _nHLambda_cool
+            label[f] = r'$n_{\rm H}\Lambda\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
+            cmap[f] = 'cubehelix_r'
+            vminmax[f] = (1e-30,1e-20)
+            take_log[f] = True
+
+            # Cooling time [Myr]
+            f = 't_cool'
+            field_dep[f] = set(['pressure', 'cool_rate'])
+            def _t_cool(d, u):
+                return d['pressure']/d['cool_rate']*u.Myr
+            func[f] = _t_cool
+            label[f] = r'$t_{\rm cool}\;[{\rm yr}]$'
+            cmap[f] = 'cubehelix_r'
+            vminmax[f] = (1e-4,1e2)
+            take_log[f] = True
 
         # Specific net cooling rate [erg/s/H]
-        f = 'nHLambda_cool_net'
-        field_dep[f] = set(['density','cool_rate','heat_rate'])
-        def _nHLambda_cool_net(d, u):
-            return (d['cool_rate'] - d['heat_cool'])/d['density']
-        func[f] = _nHLambda_cool_net
-        label[f] = r'$n_{\rm H}\Lambda_{\rm net}\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
-        cmap[f] = 'cubehelix_r'
-        vminmax[f] = (1e-30,1e-20)
-        take_log[f] = True
+        if 'heat_rate' in field_list_def:
+            f = 'nHLambda_cool_net'
+            field_dep[f] = set(['density','cool_rate','heat_rate'])
+            def _nHLambda_cool_net(d, u):
+                return (d['cool_rate'] - d['heat_cool'])/d['density']
+            func[f] = _nHLambda_cool_net
+            label[f] = r'$n_{\rm H}\Lambda_{\rm net}\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
+            cmap[f] = 'cubehelix_r'
+            vminmax[f] = (1e-30,1e-20)
+            take_log[f] = True
 
-        # Heating efficiency [erg/s/H]
-        f = 'Gamma_heat'
-        field_dep[f] = set(['density','heat_rate'])
-        def _Gamma_heat(d, u):
-            return d['heat_rate']/d['density']
-        func[f] = _Gamma_heat
-        label[f] = r'$\Gamma_{\rm heat}\;[{\rm erg}\,{\rm s}^{-1}]$'
-        cmap[f] = 'cubehelix_r'
-        vminmax[f] = (1e-30,1e-20)
-        take_log[f] = True
+            # Heating efficiency [erg/s/H]
+            f = 'Gamma_heat'
+            field_dep[f] = set(['density','heat_rate'])
+            def _Gamma_heat(d, u):
+                return d['heat_rate']/d['density']
+            func[f] = _Gamma_heat
+            label[f] = r'$\Gamma_{\rm heat}\;[{\rm erg}\,{\rm s}^{-1}]$'
+            cmap[f] = 'cubehelix_r'
+            vminmax[f] = (1e-30,1e-20)
+            take_log[f] = True
 
-        # Cooling time [Myr]
-        f = 't_cool'
-        field_dep[f] = set(['pressure', 'cool_rate'])
-        def _t_cool(d, u):
-            return d['pressure']/d['cool_rate']*u.Myr
-        func[f] = _t_cool
-        label[f] = r'$t_{\rm cool}\;[{\rm yr}]$'
-        cmap[f] = 'cubehelix_r'
-        vminmax[f] = (1e-4,1e2)
-        take_log[f] = True
+            # Heating time [Myr]
+            f = 't_heat'
+            field_dep[f] = set(['pressure', 'heat_rate'])
+            def _t_cool(d, u):
+                return d['pressure']/d['cool_rate']*u.Myr
+            func[f] = _t_cool
+            label[f] = r'$t_{\rm heat}\;[{\rm yr}]$'
+            cmap[f] = 'cubehelix_r'
+            vminmax[f] = (1e-4,1e2)
+            take_log[f] = True
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_mag(par, x0):
+def set_derived_fields_mag(par, x0, field_list):
+    if field_list is None:
+        field_list_def = ['density', 'cell_centered_B']
+    else:
+        field_list_def = field_list
 
     func = dict()
     field_dep = dict()
@@ -493,7 +523,11 @@ def set_derived_fields_mag(par, x0):
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_newcool(par, x0):
+def set_derived_fields_newcool(par, x0, field_list):
+    if field_list is None:
+        field_list_def = ['density', 'xH2', 'xHI', 'xe']
+    else:
+        field_list_def = field_list
 
     func = dict()
     field_dep = dict()
@@ -646,32 +680,33 @@ def set_derived_fields_newcool(par, x0):
     take_log[f] = True
 
     # xCI - atomic neutral carbon
-    try:
-        xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
-    except KeyError:
-        xCtot = 1.6e-4
-        print('xCtot not found. Use {:.1f}.'.format(xCtot))
-    f = 'xCI'
-    field_dep[f] = set(['xCI_over_xCtot'])
-    def _xCI(d, u):
-        # Apply floor and ceiling
-        return np.maximum(0.0,np.minimum(xCtot,d['xCI_over_xCtot']*xCtot))
-    func[f] = _xCI
-    label[f] = r'$x_{\rm CI}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (0,xCtot)
-    take_log[f] = False
+    if 'xCI_over_xCtot' in field_list_def:
+        try:
+            xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
+        except KeyError:
+            xCtot = 1.6e-4
+            print('xCtot not found. Use {:.1f}.'.format(xCtot))
+        f = 'xCI'
+        field_dep[f] = set(['xCI_over_xCtot'])
+        def _xCI(d, u):
+            # Apply floor and ceiling
+            return np.maximum(0.0,np.minimum(xCtot,d['xCI_over_xCtot']*xCtot))
+        func[f] = _xCI
+        label[f] = r'$x_{\rm CI}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (0,xCtot)
+        take_log[f] = False
 
-    # nCI
-    f = 'nCI'
-    field_dep[f] = set(['density','xCI_over_xCtot'])
-    def _nCI(d, u):
-        return d['density']*xCtot*np.maximum(0.0,np.minimum(1.0,d['xCI_over_xCtot']))
-    func[f] = _nCI
-    label[f] = r'$x_{\rm CI}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e2*xCtot,1e4*xCtot)
-    take_log[f] = True
+        # nCI
+        f = 'nCI'
+        field_dep[f] = set(['density','xCI_over_xCtot'])
+        def _nCI(d, u):
+            return d['density']*xCtot*np.maximum(0.0,np.minimum(1.0,d['xCI_over_xCtot']))
+        func[f] = _nCI
+        label[f] = r'$x_{\rm CI}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e2*xCtot,1e4*xCtot)
+        take_log[f] = True
 
     # xOII - single ionized oxygen
     f = 'xOII'
@@ -738,7 +773,11 @@ def set_derived_fields_newcool(par, x0):
     return func, field_dep, label, cmap, vminmax, take_log
 
 
-def set_derived_fields_sixray(par, x0):
+def set_derived_fields_sixray(par, x0, field_list):
+    if field_list is None:
+        field_list_def = ['rad_energy_density_PE_ext', 'rad_energy_density_LW_ext']
+    else:
+        field_list_def = field_list
 
     func = dict()
     field_dep = dict()
@@ -755,64 +794,91 @@ def set_derived_fields_sixray(par, x0):
         Erad_LW0 = 1.335e-14
 
     # Normalized FUV radiation field strength (Draine ISRF)
-    f = 'chi_PE_ext'
-    field_dep[f] = set(['rad_energy_density_PE_ext'])
-    def _chi_PE_ext(d, u):
-        return d['rad_energy_density_PE_ext']*(u.energy_density.cgs.value/Erad_PE0)
-    func[f] = _chi_PE_ext
-    label[f] = r'$\chi_{\rm PE,ext}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
+    if 'rad_energy_density_PE_ext' in field_list_def:
+        f = 'chi_PE_ext'
+        field_dep[f] = set(['rad_energy_density_PE_ext'])
+        def _chi_PE_ext(d, u):
+            return d['rad_energy_density_PE_ext']*(u.energy_density.cgs.value/Erad_PE0)
+        func[f] = _chi_PE_ext
+        label[f] = r'$\chi_{\rm PE,ext}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-4,1e4)
+        take_log[f] = True
 
     # Normalized LW radiation field
-    f = 'chi_LW_ext'
-    field_dep[f] = set(['rad_energy_density_LW_ext'])
-    def _chi_LW_ext(d, u):
-        return d['rad_energy_density_LW_ext']*(u.energy_density.cgs.value/Erad_LW0)
-    func[f] = _chi_LW_ext
-    label[f] = r'$\chi_{\rm LW,ext}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
+    if 'rad_energy_density_LW_ext' in field_list_def:
+        f = 'chi_LW_ext'
+        field_dep[f] = set(['rad_energy_density_LW_ext'])
+        def _chi_LW_ext(d, u):
+            return d['rad_energy_density_LW_ext']*(u.energy_density.cgs.value/Erad_LW0)
+        func[f] = _chi_LW_ext
+        label[f] = r'$\chi_{\rm LW,ext}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-4,1e4)
+        take_log[f] = True
 
-    # Normalized FUV radiation field strength (Draine field unit)
-    f = 'chi_FUV_ext'
-    field_dep[f] = set(['rad_energy_density_PE_ext','rad_energy_density_LW_ext'])
-    def _chi_FUV_ext(d, u):
-        return (d['rad_energy_density_PE_ext'] + d['rad_energy_density_LW_ext'])*\
-            (u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
-    func[f] = _chi_FUV_ext
-    label[f] = r'$\chi_{\rm FUV,ext}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
+        # Normalized FUV radiation field strength (Draine field unit)
+        f = 'chi_FUV_ext'
+        field_dep[f] = set(['rad_energy_density_PE_ext','rad_energy_density_LW_ext'])
+        def _chi_FUV_ext(d, u):
+            return (d['rad_energy_density_PE_ext'] + d['rad_energy_density_LW_ext'])*\
+                (u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
+        func[f] = _chi_FUV_ext
+        label[f] = r'$\chi_{\rm FUV,ext}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-4,1e4)
+        take_log[f] = True
 
     # Normalized LW radiation field
-    f = 'chi_CI_ext'
-    field_dep[f] = set(['rad_energy_density_CI_ext'])
-    def _chi_CI_ext(d, u):
-        return d['rad_energy_density_CI_ext']*(u.energy_density.cgs.value/Erad_LW0)
-    func[f] = _chi_CI_ext
-    label[f] = r'$\chi_{\rm CI,ext}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
+    if 'rad_energy_density_CI_ext' in field_list_def:
+        f = 'chi_CI_ext'
+        field_dep[f] = set(['rad_energy_density_CI_ext'])
+        def _chi_CI_ext(d, u):
+            return d['rad_energy_density_CI_ext']*(u.energy_density.cgs.value/Erad_LW0)
+        func[f] = _chi_CI_ext
+        label[f] = r'$\chi_{\rm CI,ext}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-4,1e4)
+        take_log[f] = True
 
     # Normalized LW radiation field strength (Draine ISRF)
-    f = 'chi_H2_ext'
-    field_dep[f] = set(['rad_energy_density_LW_diss_ext'])
-    def _chi_H2_ext(d, u):
-        return d['rad_energy_density_LW_diss_ext']*(u.energy_density.cgs.value/Erad_LW0)
-    func[f] = _chi_H2_ext
-    label[f] = r'$\chi_{\rm H2,ext}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-8,1e2)
-    take_log[f] = True
+    if 'rad_energy_density_LW_diss_ext' in field_list_def:
+        f = 'chi_H2_ext'
+        field_dep[f] = set(['rad_energy_density_LW_diss_ext'])
+        def _chi_H2_ext(d, u):
+            return d['rad_energy_density_LW_diss_ext']*(u.energy_density.cgs.value/Erad_LW0)
+        func[f] = _chi_H2_ext
+        label[f] = r'$\chi_{\rm H2,ext}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-8,1e2)
+        take_log[f] = True
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_rad(par, x0):
+def set_derived_fields_rad(par, x0, field_list):
+    if field_list is None:
+        field_list_def = ['rad_energy_density_PE', 'rad_energy_density_PE_unatt']
+        try:
+            if (par['radps']['iPhotIon'] == 1):
+                iPhot = True
+            else:
+                iPhot = False
+        except KeyError:
+            iPhot = True
+        if iPhot:
+            field_list_def.append('rad_energy_density_PH')
+
+        try:
+            if par['configure']['lwrad'] == 'ON':
+                iLWrad = True
+            else:
+                iLWrad = False
+        except KeyError:
+            iLWrad = False
+        if iLWrad:
+            field_list_def.append(['rad_energy_density_LW','rad_energy_density_LW_diss'])
+    else:
+        field_list_def = field_list
 
     func = dict()
     field_dep = dict()
@@ -832,130 +898,60 @@ def set_derived_fields_rad(par, x0):
         Erad_LW0 = 1.335e-14
 
     # Normalized FUV radiation field strength (Draine field unit)
-    f = 'chi_PE'
-    field_dep[f] = set(['rad_energy_density_PE'])
-    def _chi_PE(d, u):
-        return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE0)
-    func[f] = _chi_PE
-    label[f] = r'$\chi_{\rm PE}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    # Normalized FUV radiation field strength (Draine field unit)
-    f = 'chi_LW'
-    field_dep[f] = set(['rad_energy_density_LW'])
-    def _chi_LW(d, u):
-        return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
-    func[f] = _chi_LW
-    label[f] = r'$\chi_{\rm LW}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    # Normalized FUV radiation field strength (Draine field unit)
-    f = 'chi_FUV'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
-    def _chi_FUV(d, u):
-        return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*(u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
-    func[f] = _chi_FUV
-    label[f] = r'$\chi_{\rm FUV}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    try:
-        if (par['radps']['iPhotIon'] == 1):
-            iPhot = True
-        else:
-            iPhot = False
-    except KeyError:
-        iPhot = True
-
-    if iPhot:
-        f = 'Erad_LyC'
-        field_dep[f] = set(['rad_energy_density_PH'])
-        def _Erad_LyC(d, u):
-            return d['rad_energy_density_PH']*u.energy_density.cgs.value
-        func[f] = _Erad_LyC
-        label[f] = r'$\mathcal{E}_{\rm LyC}\;[{\rm erg\,{\rm cm}^{-3}}]$'
+    if 'rad_energy_density_PE' in field_list_def:
+        f = 'chi_PE'
+        field_dep[f] = set(['rad_energy_density_PE'])
+        def _chi_PE(d, u):
+            return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE0)
+        func[f] = _chi_PE
+        label[f] = r'$\chi_{\rm PE}$'
         cmap[f] = 'viridis'
-        vminmax[f] = (5e-16,5e-11)
+        vminmax[f] = (1e-4,1e4)
         take_log[f] = True
 
+        # NHeff (based on dust attenuation of photoelectric band)
+        if 'rad_energy_density_PE_unatt' in field_list_def:
+            f = 'NHeff'
+            field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_PE_unatt'])
+            def _NHeff(d, u):
+                return 1e21/par['radps']['kappa_dust_PE']*kappa_dust_PE_def*\
+                    np.log(d['rad_energy_density_PE_unatt']/d['rad_energy_density_PE'])
+            func[f] = _NHeff
+            label[f] = r'$N_{\rm H,eff}\;[{\rm cm^{-2}}]$'
+            cmap[f] = 'gist_earth'
+            vminmax[f] = (0,1e22)
+            take_log[f] = False
+
     # Normalized FUV radiation field strength (Draine field unit)
-    f = 'Erad_FUV'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
-    def _Erad_FUV(d, u):
-        return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*u.energy_density.cgs.value
-    func[f] = _Erad_FUV
-    label[f] = r'$\mathcal{E}_{\rm FUV}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (5e-16,5e-11)
-    take_log[f] = True
+    if 'rad_energy_density_LW' in field_list_def:
+        f = 'chi_LW'
+        field_dep[f] = set(['rad_energy_density_LW'])
+        def _chi_LW(d, u):
+            return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
+        func[f] = _chi_LW
+        label[f] = r'$\chi_{\rm LW}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-4,1e4)
+        take_log[f] = True
 
-    # heat_ratio (G0) ; temporary output
-    f = 'heat_ratio'
-    field_dep[f] = set(['heat_ratio'])
-    def _heat_ratio(d, u):
-        return d['heat_ratio']
-    func[f] = _heat_ratio
-    label[f] = r'heat_ratio'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-1,1e4)
-    take_log[f] = True
+        # Normalized LW intensity (attenuated by dust and H2 self-shielding)
+        # From Sternberg+14,
+        # For Draine ISRF and 912 < lambda/angstrom < 1108,
+        # The total photon density is 6.9e-4/cm^3, or flux 2.07e7/cm^2/s
+        # Energy density is u_LW = 1.33e-14 erg/cm^3 and
+        # the mean energy of photons is ~12eV
+        # (cf. Mathis ISRF gives u_LW = 9.56e-15 erg/cm^3; see also Heays+17)
+        f = 'chi_LW'
+        field_dep[f] = set(['rad_energy_density_LW'])
+        def _chi_LW(d, u):
+            return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
+        func[f] = _chi_LW
+        label[f] = r'$\chi_{\rm LW}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-4,1e4)
+        take_log[f] = True
 
-    # NHeff (based on dust attenuation of photoelectric band)
-    f = 'NHeff'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_PE_unatt'])
-    def _NHeff(d, u):
-        return 1e21/par['radps']['kappa_dust_PE']*kappa_dust_PE_def*\
-            np.log(d['rad_energy_density_PE_unatt']/d['rad_energy_density_PE'])
-    func[f] = _NHeff
-    label[f] = r'$N_{\rm H,eff}\;[{\rm cm^{-2}}]$'
-    cmap[f] = 'gist_earth'
-    vminmax[f] = (0,1e22)
-    take_log[f] = False
-
-    try:
-        if par['configure']['lwrad'] == 'ON':
-            # Normalized LW intensity (attenuated by dust and H2 self-shielding)
-            # From Sternberg+14,
-            # For Draine ISRF and 912 < lambda/angstrom < 1108,
-            # The total photon density is 6.9e-4/cm^3, or flux 2.07e7/cm^2/s
-            # Energy density is u_LW = 1.33e-14 erg/cm^3 and
-            # the mean energy of photons is ~12eV
-            # (cf. Mathis ISRF gives u_LW = 9.56e-15 erg/cm^3; see also Heays+17)
-            f = 'chi_LW'
-            field_dep[f] = set(['rad_energy_density_LW'])
-            def _chi_LW(d, u):
-                return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_LW
-            label[f] = r'$\chi_{\rm LW}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-4,1e4)
-            take_log[f] = True
-
-            f = 'chi_H2'
-            field_dep[f] = set(['rad_energy_density_LW_diss'])
-            def _chi_H2(d, u):
-                return d['rad_energy_density_LW_diss']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_H2
-            label[f] = r'$\chi_{\rm H_2}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-8,1e4)
-            take_log[f] = True
-
-            f = 'chi_CI'
-            field_dep[f] = set(['rad_energy_density_CI'])
-            def _chi_CI(d, u):
-                return d['rad_energy_density_CI']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_CI
-            label[f] = r'$\chi_{\rm C^0}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-8,1e4)
-            take_log[f] = True
-
+        if 'rad_energy_density_LW_diss' in field_list_def:
             # fshld_H2 (effective)
             f = 'fshld_H2'
             field_dep[f] = set(['rad_energy_density_LW','rad_energy_density_LW_diss'])
@@ -967,12 +963,82 @@ def set_derived_fields_rad(par, x0):
             vminmax[f] = (1e-6,1e0)
             take_log[f] = True
 
-    except KeyError:
-        pass
+        if 'rad_energy_density_PE' in field_list_def:
+            # Normalized FUV radiation field strength (Draine field unit)
+            f = 'chi_FUV'
+            field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
+            def _chi_FUV(d, u):
+                return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*(u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
+            func[f] = _chi_FUV
+            label[f] = r'$\chi_{\rm FUV}$'
+            cmap[f] = 'viridis'
+            vminmax[f] = (1e-4,1e4)
+            take_log[f] = True
+
+            # Normalized FUV radiation field strength (Draine field unit)
+            f = 'Erad_FUV'
+            field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
+            def _Erad_FUV(d, u):
+                return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*u.energy_density.cgs.value
+            func[f] = _Erad_FUV
+            label[f] = r'$\mathcal{E}_{\rm FUV}$'
+            cmap[f] = 'viridis'
+            vminmax[f] = (5e-16,5e-11)
+            take_log[f] = True
+
+    if 'rad_energy_density_PH' in field_list_def:
+        f = 'Erad_LyC'
+        field_dep[f] = set(['rad_energy_density_PH'])
+        def _Erad_LyC(d, u):
+            return d['rad_energy_density_PH']*u.energy_density.cgs.value
+        func[f] = _Erad_LyC
+        label[f] = r'$\mathcal{E}_{\rm LyC}\;[{\rm erg\,{\rm cm}^{-3}}]$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (5e-16,5e-11)
+        take_log[f] = True
+
+    if 'heat_ratio' in field_list_def:
+        # heat_ratio (G0) ; temporary output
+        f = 'heat_ratio'
+        field_dep[f] = set(['heat_ratio'])
+        def _heat_ratio(d, u):
+            return d['heat_ratio']
+        func[f] = _heat_ratio
+        label[f] = r'heat_ratio'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-1,1e4)
+        take_log[f] = True
+
+
+    if 'rad_energy_density_LW_diss' in field_list_def:
+        f = 'chi_H2'
+        field_dep[f] = set(['rad_energy_density_LW_diss'])
+        def _chi_H2(d, u):
+            return d['rad_energy_density_LW_diss']*(u.energy_density.cgs.value/Erad_LW0)
+        func[f] = _chi_H2
+        label[f] = r'$\chi_{\rm H_2}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-8,1e4)
+        take_log[f] = True
+
+    if 'rad_energy_density_CI' in field_list_def:
+        f = 'chi_CI'
+        field_dep[f] = set(['rad_energy_density_CI'])
+        def _chi_CI(d, u):
+            return d['rad_energy_density_CI']*(u.energy_density.cgs.value/Erad_LW0)
+        func[f] = _chi_CI
+        label[f] = r'$\chi_{\rm C^0}$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e-8,1e4)
+        take_log[f] = True
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_xray(par, x0, newcool):
+def set_derived_fields_xray(par, x0, field_list):
+    if field_list is None:
+        field_list_def = ['density', 'pressure', 'velocity']
+    else:
+        field_list_def = field_list
 
     func = dict()
     field_dep = dict()
@@ -989,35 +1055,31 @@ def set_derived_fields_xray(par, x0, newcool):
     energy = True # If set to False, returns photon emissivity [#/s/cm^3]
 
     # Normalized FUV radiation field strength (Draine field unit)
-    f = 'j_X'
-    if newcool:
-        field_dep[f] = set(['density','pressure','xe','xH2'])
-    else:
-        field_dep[f] = set(['density','temperature'])
-    # Frequency integrated volume emissivity
-    def _j_Xray(d, u):
-        if newcool:
-            d['temperature'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                               (ac.k_B/u.energy_density).cgs.value
-        em = get_xray_emissivity(d['temperature'].data, Z_gas,
-                                 emin, emax, energy=energy)
-        return d['density']**2*em
-    func[f] = _j_Xray
-    label[f] = r'$j_{\rm X}$ (0.5-7.0 keV) $[{\rm erg}\,{\rm s}^{-1}\,{\rm cm}^{-3}]$'
-    cmap[f] = 'plasma'
-    vminmax[f] = (1e-34,1e-25)
-    take_log[f] = True
+
+    if 'temperature' in field_list_def:
+        f = 'j_X'
+        # Frequency integrated volume emissivity
+        field_dep[f] = set(['temperature'])
+        def _j_Xray(d, u):
+            em = get_xray_emissivity(d['temperature'].data, Z_gas,
+                                    emin, emax, energy=energy)
+            return d['density']**2*em
+        func[f] = _j_Xray
+        label[f] = r'$j_{\rm X}$ (0.5-7.0 keV) $[{\rm erg}\,{\rm s}^{-1}\,{\rm cm}^{-3}]$'
+        cmap[f] = 'plasma'
+        vminmax[f] = (1e-34,1e-25)
+        take_log[f] = True
 
     return func, field_dep, label, cmap, vminmax, take_log
 
 
 class DerivedFields(object):
 
-    def __init__(self, par, x0=np.array([0.0,0.0,0.0])):
+    def __init__(self, par, field_list=None, x0=np.array([0.0,0.0,0.0])):
 
         # Create a dictionary containing all information about derived fields
         self.dfi = dict()
-
+        self.field_list = field_list
         try:
             if par['configure']['new_cooling'] == 'ON':
                 newcool = True
@@ -1028,24 +1090,24 @@ class DerivedFields(object):
 
         self.func, self.field_dep, \
             self.label, self.cmap, \
-            self.vminmax, self.take_log = set_derived_fields_def(par, x0, newcool)
+            self.vminmax, self.take_log = set_derived_fields_def(par, x0, field_list)
 
         dicts = (self.func, self.field_dep, self.label, self.cmap, \
                  self.vminmax, self.take_log)
 
         if par['configure']['gas'] == 'mhd':
-            dicts_ = set_derived_fields_mag(par, x0)
+            dicts_ = set_derived_fields_mag(par, x0, field_list)
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
         if newcool:
-            dicts_ = set_derived_fields_newcool(par, x0)
+            dicts_ = set_derived_fields_newcool(par, x0, field_list)
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
         try:
             if par['configure']['radps'] == 'ON':
-                dicts_ = set_derived_fields_rad(par, x0)
+                dicts_ = set_derived_fields_rad(par, x0, field_list)
                 for d, d_ in zip(dicts, dicts_):
                     d = d.update(d_)
         except KeyError:
@@ -1053,7 +1115,7 @@ class DerivedFields(object):
 
         try:
             if par['configure']['sixray'] == 'ON':
-                dicts_ = set_derived_fields_sixray(par, x0)
+                dicts_ = set_derived_fields_sixray(par, x0, field_list)
                 for d, d_ in zip(dicts, dicts_):
                     d = d.update(d_)
         except KeyError:
@@ -1063,7 +1125,7 @@ class DerivedFields(object):
         try:
             if par['feedback']['iSN'] > 0 or par['feedback']['iWind'] > 0 or \
                par['feedback']['iEarly'] > 0:
-                dicts_ = set_derived_fields_xray(par, x0, newcool)
+                dicts_ = set_derived_fields_xray(par, x0, field_list)
                 for d, d_ in zip(dicts, dicts_):
                     d = d.update(d_)
         except KeyError:

@@ -111,7 +111,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
             if kind == 'slc':
                 xbool = abs(spz) < dist_max
 
-            spm = sp_cl['mass']*Msun/norm_factor
+            spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
             spa = sp_cl['age']*Myr
             if plt_old:
                 iyoung = np.where(spa < 1e10)
