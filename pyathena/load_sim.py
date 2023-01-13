@@ -616,22 +616,23 @@ class LoadSim(object):
             self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
         else:
             self.logger.info('timeit.txt not found.')
-
-        # Find problem_id.loop_time.txt
-        flooptime = self._find_match(looptime_patterns)
-        if flooptime:
-            self.files['loop_time'] = flooptime[0]
-            self.logger.info('loop_time: {0:s}'.format(self.files['loop_time']))
-        else:
-            self.logger.info('{}.loop_time.txt not found.'.format(self.problem_id))
-
-        # Find problem_id.task_time.txt
-        ftasktime = self._find_match(tasktime_patterns)
-        if ftasktime:
-            self.files['task_time'] = ftasktime[0]
-            self.logger.info('task_time: {0:s}'.format(self.files['task_time']))
-        else:
-            self.logger.info('{}.task_time.txt not found.'.format(self.problem_id))
+        
+        if self.athena_pp:
+            # Find problem_id.loop_time.txt
+            flooptime = self._find_match(looptime_patterns)
+            if flooptime:
+                self.files['loop_time'] = flooptime[0]
+                self.logger.info('loop_time: {0:s}'.format(self.files['loop_time']))
+            else:
+                self.logger.info('{}.loop_time.txt not found.'.format(self.problem_id))
+    
+            # Find problem_id.task_time.txt
+            ftasktime = self._find_match(tasktime_patterns)
+            if ftasktime:
+                self.files['task_time'] = ftasktime[0]
+                self.logger.info('task_time: {0:s}'.format(self.files['task_time']))
+            else:
+                self.logger.info('{}.task_time.txt not found.'.format(self.problem_id))
 
         # Find history dump and
         # Extract problem_id (prefix for vtk and hitsory file names)
