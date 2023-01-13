@@ -19,6 +19,7 @@ import shutil
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet
 from .io.read_vtk_tar import AthenaDataSetTar
+from .io.read_hdf5 import read_hdf5
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -282,7 +283,12 @@ class LoadSim(object):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
 
         if self.load_method == 'pyathena':
-            raise ValueError("pyathena hdf5 reader has not yet implemented")
+            if self.par['mesh']['refinement'] != 'none':
+                self.logger.error('load_method "{0:s}" does not support mesh\
+                        refinement data. Use "yt" instead'.format(self.load_method))
+                self.ds = None
+            else:
+                self.ds = read_hdf5(self.fhdf5)
 
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
