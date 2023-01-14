@@ -25,6 +25,9 @@ __all__ = [
            # NCR
            "LoadSimTIGRESSNCR",
            "LoadSimTIGRESSNCRAll",
+           # GC
+           "LoadSimTIGRESSGC",
+           "LoadSimTIGRESSGCAll",
            # Single SN
            "LoadSimTIGRESSSingleSN",
            "LoadSimTIGRESSSingleSNAll",
@@ -56,6 +59,7 @@ from .tigress_dig.load_sim_tigress_dig import LoadSimTIGRESSDIG, LoadSimTIGRESSD
 from .tigress_single_sn.load_sim_tigress_single_sn import LoadSimTIGRESSSingleSN, LoadSimTIGRESSSingleSNAll
 from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSXCOAll
 from .tigress_ncr.load_sim_tigress_ncr import LoadSimTIGRESSNCR, LoadSimTIGRESSNCRAll
+from .tigress_gc.load_sim_tigress_gc import LoadSimTIGRESSGC, LoadSimTIGRESSGCAll
 
 # ReadObs class
 from .obs.read_obs import ReadObs
