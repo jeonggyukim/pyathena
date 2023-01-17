@@ -504,13 +504,18 @@ class LoadSim(object):
         """Function to find all output files under basedir and create "files" dictionary.
 
         hst: problem_id.hst
-        sn: problem_id.sn (file format identical to hst)
+        
+        (athena only)
         vtk: problem_id.num.vtk
+        sn: problem_id.sn (file format identical to hst)
         vtk_tar: problem_id.num.tar
         starpar_vtk: problem_id.num.starpar.vtk
-        hdf5: problem_id.out?.num.athdf
         zprof: problem_id.num.phase.zprof
+        sphst: *.star
         timeit: timtit.txt
+        
+        (athena_pp only)
+        hdf5: problem_id.out?.num.athdf
         loop_time: problem_id.loop_time.txt
         task_time: problem_id.task_time.txt
         """
@@ -583,7 +588,13 @@ class LoadSim(object):
             #                 if 'output' in k]
             self.out_fmt = []
             # Determine if this is Athena++ or Athena data
-            self.athena_pp = True if 'mesh' in self.par else False
+            if 'mesh' in self.par:
+                self.athena_pp = True
+                self.logger.info('athena_pp simulation')
+            else:
+                self.athena_pp = False
+                self.logger.info('athena_pp simulation')
+
             if self.athena_pp:
                 for k in self.par.keys():
                     if 'output' in k:
@@ -609,14 +620,15 @@ class LoadSim(object):
                                 format(self.basedir))
             self.out_fmt = self._out_fmt_def
 
-        # Find timeit.txt
-        ftimeit = self._find_match(timeit_patterns)
-        if ftimeit:
-            self.files['timeit'] = ftimeit[0]
-            self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
-        else:
-            self.logger.info('timeit.txt not found.')
-        
+        if not self.athena_pp:
+            # Find timeit.txt
+            ftimeit = self._find_match(timeit_patterns)
+            if ftimeit:
+                self.files['timeit'] = ftimeit[0]
+                self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
+            else:
+                self.logger.info('timeit.txt not found.')
+
         if self.athena_pp:
             # Find problem_id.loop_time.txt
             flooptime = self._find_match(looptime_patterns)
@@ -635,7 +647,7 @@ class LoadSim(object):
                 self.logger.info('{}.task_time.txt not found.'.format(self.problem_id))
 
         # Find history dump and
-        # Extract problem_id (prefix for vtk and hitsory file names)
+        # Extract problem_id (prefix for output file names)
         # Assumes that problem_id does not contain '.'
         if 'hst' in self.out_fmt:
             fhst = self._find_match(hst_patterns)
@@ -649,29 +661,30 @@ class LoadSim(object):
                                     format(self.basedir))
 
         # Find sn dump
-        fsn = self._find_match(sn_patterns)
-        if fsn:
-            self.files['sn'] = fsn[0]
-            self.logger.info('sn: {0:s}'.format(self.files['sn']))
-        else:
-            if self.par is not None:
-                # Issue warning only if iSN is nonzero
-                try:
-                    if self.par['feedback']['iSN'] != 0:
-                        self.logger.warning('Could not find sn file in {0:s},' +
-                        ' but <feedback>/iSN={1:d}'.\
-                        format(self.basedir, self.par['feedback']['iSN']))
-                except KeyError:
-                    pass
+        if self.athena_pp:
+            fsn = self._find_match(sn_patterns)
+            if fsn:
+                self.files['sn'] = fsn[0]
+                self.logger.info('sn: {0:s}'.format(self.files['sn']))
+            else:
+                if self.par is not None:
+                    # Issue warning only if iSN is nonzero
+                    try:
+                        if self.par['feedback']['iSN'] != 0:
+                            self.logger.warning('Could not find sn file in {0:s},' +
+                            ' but <feedback>/iSN={1:d}'.\
+                            format(self.basedir, self.par['feedback']['iSN']))
+                    except KeyError:
+                        pass
 
-        # Find sphst dump
-        fsphst = self._find_match(sphst_patterns)
-        if fsphst:
-            self.files['sphst'] = fsphst
-            self.nums_sphst = [int(f[-10:-5]) for f in self.files['sphst']]
-            self.logger.info('sphst: {0:s} nums: {1:d}-{2:d}'.format(
-                osp.dirname(self.files['sphst'][0]),
-                self.nums_sphst[0], self.nums_sphst[-1]))
+            # Find sphst dump
+            fsphst = self._find_match(sphst_patterns)
+            if fsphst:
+                self.files['sphst'] = fsphst
+                self.nums_sphst = [int(f[-10:-5]) for f in self.files['sphst']]
+                self.logger.info('sphst: {0:s} nums: {1:d}-{2:d}'.format(
+                    osp.dirname(self.files['sphst'][0]),
+                    self.nums_sphst[0], self.nums_sphst[-1]))
 
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
