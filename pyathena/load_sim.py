@@ -510,13 +510,13 @@ class LoadSim(object):
         return domain
 
     def _find_match(self, patterns):
-            glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
-            for p in patterns:
-                f = glob_match(p)
-                if f:
-                    break
-
-            return f
+        glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
+        for p in patterns:
+            f = glob_match(p)
+            if f:
+                break
+            
+        return f
 
     def _find_files(self):
         """Function to find all output files under basedir and create "files" dictionary.
@@ -957,13 +957,13 @@ class LoadSim(object):
         levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
         if verbose is True:
-            self.loglevel_def = 'INFO'
+            self.loglevel = 'INFO'
         elif verbose is False:
-            self.loglevel_def = 'WARNING'
+            self.loglevel = 'WARNING'
         elif verbose in levels + [l.lower() for l in levels]:
-            self.loglevel_def = verbose.upper()
+            self.loglevel = verbose.upper()
         elif isinstance(verbose, int):
-            self.loglevel_def = verbose
+            self.loglevel = verbose
         else:
             raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
 
@@ -972,23 +972,23 @@ class LoadSim(object):
         try:
             if not l.hasHandlers():
                 h = logging.StreamHandler()
-                f = logging.Formatter('%(name)s-%(levelname)s: %(message)s')
+                f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
                 # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
                 h.setFormatter(f)
                 l.addHandler(h)
-                l.setLevel(self.loglevel_def)
+                l.setLevel(self.loglevel)
             else:
-                l.setLevel(self.loglevel_def)
+                l.setLevel(self.loglevel)
         except AttributeError: # for python 2 compatibility
             if not len(l.handlers):
                 h = logging.StreamHandler()
-                f = logging.Formatter('%(name)s-%(levelname)s: %(message)s')
+                f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
                 # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
                 h.setFormatter(f)
                 l.addHandler(h)
-                l.setLevel(self.loglevel_def)
+                l.setLevel(self.loglevel)
             else:
-                l.setLevel(self.loglevel_def)
+                l.setLevel(self.loglevel)
 
         return l
 
