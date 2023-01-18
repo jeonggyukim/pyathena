@@ -251,7 +251,8 @@ class LoadSim(object):
 
         return self.ds
 
-    def load_hdf5(self, num=None, ihdf5=None, outid=None, load_method=None):
+    def load_hdf5(self, num=None, ihdf5=None,
+                  outvar=None, outid=None, load_method=None):
         """Function to read Athena hdf5 file using pythena or yt and
         return DataSet object.
 
@@ -261,12 +262,17 @@ class LoadSim(object):
            Snapshot number, e.g., /basedir/problem_id.out?.?????.athdf
         ihdf5 : int
            Read i-th file in the hdf5 file list. Overrides num if both are given.
+        outvar : str
+           variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim' or 'cons'.
+           Overrides outid.
+        outid : int
+           output block number (output[n] in the input file).
         load_method : str
            'pyathena' or 'yt'
 
         Returns
         -------
-        ds : AthenaDataSet or yt datasets
+        ds : xarray AthenaDataSet or yt datasets
         """
 
         if num is None and ihdf5 is None:
@@ -275,10 +281,22 @@ class LoadSim(object):
         # Override load_method
         if load_method is not None:
             self.load_method = load_method
-        # TODO(SMOON) support multiple hdf5 outputs
-        if outid is None:
-            outid = self.hdf5_outid
-        self.fhdf5 = self._get_fhdf5(outid, num, ihdf5)
+            
+        if outid is None and outvar is None:
+            outid = self._hdf5_outid_def
+            outvar = self._hdf5_outvar_def
+        elif outid is not None:
+            if not outid in self.hdf5_outid:
+                self.logger.error('Invalid hdf5 output id!')
+            idx = [i for i,v in enumerate(self.hdf5_outid) if v == outid][0]
+            outvar = self.hdf5_outvar[idx]
+        elif outvar is not None:
+            if not outvar in self.hdf5_outvar:
+                self.logger.error('Invalid hdf5 variable!')
+            idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
+            outid = self.hdf5_outid[idx]
+            
+        self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
         if self.fhdf5 is None or not osp.exists(self.fhdf5):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
 
@@ -586,19 +604,31 @@ class LoadSim(object):
             self.logger.info('athinput: {0:s}'.format(self.files['athinput']))
             # self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
             #                 if 'output' in k]
-            self.out_fmt = []
             # Determine if this is Athena++ or Athena data
             if 'mesh' in self.par:
                 self.athena_pp = True
                 self.logger.info('athena_pp simulation')
             else:
                 self.athena_pp = False
-                self.logger.info('athena_pp simulation')
+                self.logger.info('athena simulation')
 
+            self.out_fmt = []
             if self.athena_pp:
                 for k in self.par.keys():
                     if 'output' in k:
                         self.out_fmt.append(self.par[k]['file_type'])
+                    
+                if self.out_fmt.count('hdf5') > 0:
+                    self.hdf5_outid = []
+                    self.hdf5_outvar = []
+                    for k in self.par.keys():
+                        if 'output' in k and self.par[k]['file_type'] == 'hdf5':
+                            self.hdf5_outid.append(int(re.split('(\d+)',k)[1]))
+                            self.hdf5_outvar.append(self.par[k]['variable'])
+                    for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+                        if 'prim' in v or 'cons' in v:
+                            self._hdf5_outid_def = i
+                            self._hdf5_outvar_def = v
             else:
                 for k in self.par.keys():
                     if 'output' in k:
@@ -745,21 +775,30 @@ class LoadSim(object):
         # Find hdf5 files
         # hdf5 files in basedir
         if 'hdf5' in self.out_fmt:
-            self.files['hdf5'] = self._find_match(hdf5_patterns)
-            if not self.files['hdf5']:
-                self.logger.warning(
-                    'hdf5 files not found in {0:s}'.format(self.basedir))
-                self.nums_hdf5 = None
-            else:
-                self.nums_hdf5 = [int(f[-11:-6]) for f in self.files['hdf5']]
-                self.logger.info('hdf5: {0:s} nums: {1:d}-{2:d}'.format(
-                    osp.dirname(self.files['hdf5'][0]),
-                    self.nums_hdf5[0], self.nums_hdf5[-1]))
-                if not hasattr(self, 'problem_id'):
-                    self.problem_id = osp.basename(self.files['hdf5'][0]).split('.')[-2:]
-                # TODO(SMOON) support multiple hdf5 outputs
-                self.hdf5_outid = int(self.files['hdf5'][0][-13])
-
+            self.files['hdf5'] = dict()
+            self.nums_hdf5 = dict()
+            for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+                hdf5_patterns_ = []
+                for p in hdf5_patterns:
+                    p = list(p)
+                    p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
+                    hdf5_patterns_.append(tuple(p))
+                self.files['hdf5'][v] = self._find_match(hdf5_patterns_)
+                if not self.files['hdf5'][v]:
+                    self.logger.warning(
+                        'hdf5 ({0:s}) files not found in {1:s}'.\
+                        format(v,self.basedir))
+                    self.nums_hdf5[v] = None
+                else:
+                    self.nums_hdf5[v] = [int(f[-11:-6]) \
+                                              for f in self.files['hdf5'][v]]
+                    self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        v, osp.dirname(self.files['hdf5'][v][0]),
+                        self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
+                    if not hasattr(self, 'problem_id'):
+                        self.problem_id = osp.basename(
+                            self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
+        
         # Find starpar files
         if 'starpar_vtk' in self.out_fmt:
             fstarpar = self._find_match(starpar_patterns)
@@ -889,19 +928,20 @@ class LoadSim(object):
 
         return fvtk
 
-    def _get_fhdf5(self, outid, num=None, ihdf5=None):
+    def _get_fhdf5(self, outid, outvar, num=None, ihdf5=None):
         """Get hdf5 file path
         """
 
         try:
-            dirname = osp.dirname(self.files['hdf5'][0])
+            dirname = osp.dirname(self.files['hdf5'][outvar][0])
         except IndexError:
             return None
         if ihdf5 is not None:
-            fhdf5 = self.files['hdf5'][ihdf5]
+            fhdf5 = self.files['hdf5'][outvar][ihdf5]
         else:
             fpattern = '{0:s}.out{1:d}.{2:05d}.athdf'
-            fhdf5 = osp.join(dirname, fpattern.format(self.problem_id, outid, num))
+            fhdf5 = osp.join(dirname, fpattern.format(
+                self.problem_id, outid, num))
 
         return fhdf5
 
