@@ -798,6 +798,8 @@ class LoadSim(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(
                             self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
+            # Set nums array
+            self.nums = self.nums_hdf5[self._hdf5_outvar_def]
         
         # Find starpar files
         if 'starpar_vtk' in self.out_fmt:
