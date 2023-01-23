@@ -19,6 +19,7 @@ import shutil
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet
 from .io.read_vtk_tar import AthenaDataSetTar
+from .io.read_hdf5 import read_hdf5
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -149,8 +150,9 @@ class LoadSim(object):
             except:
                 self.u = units
                 pass
-
-        self.dfi = DerivedFields(self.par).dfi
+        if not self.athena_pp:
+            # TODO(SMOON) Make DerivedFields work with athena++
+            self.dfi = DerivedFields(self.par).dfi
 
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
         """Function to read Athena vtk file using pythena or yt and
@@ -246,6 +248,75 @@ class LoadSim(object):
             else:
                 self.logger.error('load_method "{0:s}" not recognized.'.format(
                     self.load_method) + ' Use either "yt" or "pyathena".')
+
+        return self.ds
+
+    def load_hdf5(self, num=None, ihdf5=None,
+                  outvar=None, outid=None, load_method=None):
+        """Function to read Athena hdf5 file using pythena or yt and
+        return DataSet object.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number, e.g., /basedir/problem_id.out?.?????.athdf
+        ihdf5 : int
+           Read i-th file in the hdf5 file list. Overrides num if both are given.
+        outvar : str
+           variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim' or 'cons'.
+           Overrides outid.
+        outid : int
+           output block number (output[n] in the input file).
+        load_method : str
+           'pyathena' or 'yt'
+
+        Returns
+        -------
+        ds : xarray AthenaDataSet or yt datasets
+        """
+
+        if num is None and ihdf5 is None:
+            raise ValueError('Specify either num or ihdf5')
+
+        # Override load_method
+        if load_method is not None:
+            self.load_method = load_method
+            
+        if outid is None and outvar is None:
+            outid = self._hdf5_outid_def
+            outvar = self._hdf5_outvar_def
+        elif outid is not None:
+            if not outid in self.hdf5_outid:
+                self.logger.error('Invalid hdf5 output id!')
+            idx = [i for i,v in enumerate(self.hdf5_outid) if v == outid][0]
+            outvar = self.hdf5_outvar[idx]
+        elif outvar is not None:
+            if not outvar in self.hdf5_outvar:
+                self.logger.error('Invalid hdf5 variable!')
+            idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
+            outid = self.hdf5_outid[idx]
+            
+        self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
+        if self.fhdf5 is None or not osp.exists(self.fhdf5):
+            self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
+
+        if self.load_method == 'pyathena':
+            if self.par['mesh']['refinement'] != 'none':
+                self.logger.error('load_method "{0:s}" does not support mesh\
+                        refinement data. Use "yt" instead'.format(self.load_method))
+                self.ds = None
+            else:
+                self.ds = read_hdf5(self.fhdf5)
+
+        elif self.load_method == 'yt':
+            if hasattr(self, 'u'):
+                units_override = self.u.units_override
+            else:
+                units_override = None
+            self.ds = yt.load(self.fhdf5, units_override=units_override)
+        else:
+            self.logger.error('load_method "{0:s}" not recognized.'.format(
+                self.load_method) + ' Use either "yt" or "pyathena".')
 
         return self.ds
 
@@ -439,24 +510,32 @@ class LoadSim(object):
         return domain
 
     def _find_match(self, patterns):
-            glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
-            for p in patterns:
-                f = glob_match(p)
-                if f:
-                    break
-
-            return f
+        glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
+        for p in patterns:
+            f = glob_match(p)
+            if f:
+                break
+            
+        return f
 
     def _find_files(self):
         """Function to find all output files under basedir and create "files" dictionary.
 
         hst: problem_id.hst
-        sn: problem_id.sn (file format identical to hst)
+        
+        (athena only)
         vtk: problem_id.num.vtk
+        sn: problem_id.sn (file format identical to hst)
         vtk_tar: problem_id.num.tar
         starpar_vtk: problem_id.num.starpar.vtk
         zprof: problem_id.num.phase.zprof
+        sphst: *.star
         timeit: timtit.txt
+        
+        (athena_pp only)
+        hdf5: problem_id.out?.num.athdf
+        loop_time: problem_id.loop_time.txt
+        task_time: problem_id.task_time.txt
         """
 
         self._out_fmt_def = ['hst', 'vtk']
@@ -497,6 +576,9 @@ class LoadSim(object):
 
         vtk_tar_patterns = [('vtk', '*.????.tar')]
 
+        hdf5_patterns = [('hdf5', '*.out?.?????.athdf'),
+                         ('*.out?.?????.athdf',)]
+
         starpar_patterns = [('starpar', '*.????.starpar.vtk'),
                             ('id0', '*.????.starpar.vtk'),
                             ('*.????.starpar.vtk',)]
@@ -506,6 +588,10 @@ class LoadSim(object):
 
         timeit_patterns = [('timeit.txt',),
                            ('timeit', 'timeit.txt')]
+
+        looptime_patterns = [('*.loop_time.txt',),]
+
+        tasktime_patterns = [('*.task_time.txt',),]
 
         self.logger.info('basedir: {0:s}'.format(self.basedir))
 
@@ -518,18 +604,43 @@ class LoadSim(object):
             self.logger.info('athinput: {0:s}'.format(self.files['athinput']))
             # self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
             #                 if 'output' in k]
+            # Determine if this is Athena++ or Athena data
+            if 'mesh' in self.par:
+                self.athena_pp = True
+                self.logger.info('athena_pp simulation')
+            else:
+                self.athena_pp = False
+                self.logger.info('athena simulation')
+
             self.out_fmt = []
-            for k in self.par.keys():
-                if 'output' in k:
-                    # Skip if the block number XX (<outputXX>) is greater than maxout
-                    if int(k.replace('output','')) > self.par['job']['maxout']:
-                        continue
-                    if self.par[k]['out_fmt'] == 'vtk' and \
-                       not (self.par[k]['out'] == 'prim' or self.par[k]['out'] == 'cons'):
-                        self.out_fmt.append(self.par[k]['id'] + '.' + \
-                                            self.par[k]['out_fmt'])
-                    else:
-                        self.out_fmt.append(self.par[k]['out_fmt'])
+            if self.athena_pp:
+                for k in self.par.keys():
+                    if 'output' in k:
+                        self.out_fmt.append(self.par[k]['file_type'])
+                    
+                if self.out_fmt.count('hdf5') > 0:
+                    self.hdf5_outid = []
+                    self.hdf5_outvar = []
+                    for k in self.par.keys():
+                        if 'output' in k and self.par[k]['file_type'] == 'hdf5':
+                            self.hdf5_outid.append(int(re.split('(\d+)',k)[1]))
+                            self.hdf5_outvar.append(self.par[k]['variable'])
+                    for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+                        if 'prim' in v or 'cons' in v:
+                            self._hdf5_outid_def = i
+                            self._hdf5_outvar_def = v
+            else:
+                for k in self.par.keys():
+                    if 'output' in k:
+                        # Skip if the block number XX (<outputXX>) is greater than maxout
+                        if int(k.replace('output','')) > self.par['job']['maxout']:
+                            continue
+                        if self.par[k]['out_fmt'] == 'vtk' and \
+                           not (self.par[k]['out'] == 'prim' or self.par[k]['out'] == 'cons'):
+                            self.out_fmt.append(self.par[k]['id'] + '.' + \
+                                                self.par[k]['out_fmt'])
+                        else:
+                            self.out_fmt.append(self.par[k]['out_fmt'])
 
             self.problem_id = self.par['job']['problem_id']
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
@@ -539,16 +650,34 @@ class LoadSim(object):
                                 format(self.basedir))
             self.out_fmt = self._out_fmt_def
 
-        # Find timeit.txt
-        ftimeit = self._find_match(timeit_patterns)
-        if ftimeit:
-            self.files['timeit'] = ftimeit[0]
-            self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
-        else:
-            self.logger.info('timeit.txt not found.')
+        if not self.athena_pp:
+            # Find timeit.txt
+            ftimeit = self._find_match(timeit_patterns)
+            if ftimeit:
+                self.files['timeit'] = ftimeit[0]
+                self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
+            else:
+                self.logger.info('timeit.txt not found.')
+
+        if self.athena_pp:
+            # Find problem_id.loop_time.txt
+            flooptime = self._find_match(looptime_patterns)
+            if flooptime:
+                self.files['loop_time'] = flooptime[0]
+                self.logger.info('loop_time: {0:s}'.format(self.files['loop_time']))
+            else:
+                self.logger.info('{}.loop_time.txt not found.'.format(self.problem_id))
+    
+            # Find problem_id.task_time.txt
+            ftasktime = self._find_match(tasktime_patterns)
+            if ftasktime:
+                self.files['task_time'] = ftasktime[0]
+                self.logger.info('task_time: {0:s}'.format(self.files['task_time']))
+            else:
+                self.logger.info('{}.task_time.txt not found.'.format(self.problem_id))
 
         # Find history dump and
-        # Extract problem_id (prefix for vtk and hitsory file names)
+        # Extract problem_id (prefix for output file names)
         # Assumes that problem_id does not contain '.'
         if 'hst' in self.out_fmt:
             fhst = self._find_match(hst_patterns)
@@ -562,29 +691,30 @@ class LoadSim(object):
                                     format(self.basedir))
 
         # Find sn dump
-        fsn = self._find_match(sn_patterns)
-        if fsn:
-            self.files['sn'] = fsn[0]
-            self.logger.info('sn: {0:s}'.format(self.files['sn']))
-        else:
-            if self.par is not None:
-                # Issue warning only if iSN is nonzero
-                try:
-                    if self.par['feedback']['iSN'] != 0:
-                        self.logger.warning('Could not find sn file in {0:s},' +
-                        ' but <feedback>/iSN={1:d}'.\
-                        format(self.basedir, self.par['feedback']['iSN']))
-                except KeyError:
-                    pass
+        if self.athena_pp:
+            fsn = self._find_match(sn_patterns)
+            if fsn:
+                self.files['sn'] = fsn[0]
+                self.logger.info('sn: {0:s}'.format(self.files['sn']))
+            else:
+                if self.par is not None:
+                    # Issue warning only if iSN is nonzero
+                    try:
+                        if self.par['feedback']['iSN'] != 0:
+                            self.logger.warning('Could not find sn file in {0:s},' +
+                            ' but <feedback>/iSN={1:d}'.\
+                            format(self.basedir, self.par['feedback']['iSN']))
+                    except KeyError:
+                        pass
 
-        # Find sphst dump
-        fsphst = self._find_match(sphst_patterns)
-        if fsphst:
-            self.files['sphst'] = fsphst
-            self.nums_sphst = [int(f[-10:-5]) for f in self.files['sphst']]
-            self.logger.info('sphst: {0:s} nums: {1:d}-{2:d}'.format(
-                osp.dirname(self.files['sphst'][0]),
-                self.nums_sphst[0], self.nums_sphst[-1]))
+            # Find sphst dump
+            fsphst = self._find_match(sphst_patterns)
+            if fsphst:
+                self.files['sphst'] = fsphst
+                self.nums_sphst = [int(f[-10:-5]) for f in self.files['sphst']]
+                self.logger.info('sphst: {0:s} nums: {1:d}-{2:d}'.format(
+                    osp.dirname(self.files['sphst'][0]),
+                    self.nums_sphst[0], self.nums_sphst[-1]))
 
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
@@ -642,6 +772,35 @@ class LoadSim(object):
                 for f in flist:
                    self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
 
+        # Find hdf5 files
+        # hdf5 files in basedir
+        if 'hdf5' in self.out_fmt:
+            self.files['hdf5'] = dict()
+            self.nums_hdf5 = dict()
+            for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+                hdf5_patterns_ = []
+                for p in hdf5_patterns:
+                    p = list(p)
+                    p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
+                    hdf5_patterns_.append(tuple(p))
+                self.files['hdf5'][v] = self._find_match(hdf5_patterns_)
+                if not self.files['hdf5'][v]:
+                    self.logger.warning(
+                        'hdf5 ({0:s}) files not found in {1:s}'.\
+                        format(v,self.basedir))
+                    self.nums_hdf5[v] = None
+                else:
+                    self.nums_hdf5[v] = [int(f[-11:-6]) \
+                                              for f in self.files['hdf5'][v]]
+                    self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        v, osp.dirname(self.files['hdf5'][v][0]),
+                        self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
+                    if not hasattr(self, 'problem_id'):
+                        self.problem_id = osp.basename(
+                            self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
+            # Set nums array
+            self.nums = self.nums_hdf5[self._hdf5_outvar_def]
+        
         # Find starpar files
         if 'starpar_vtk' in self.out_fmt:
             fstarpar = self._find_match(starpar_patterns)
@@ -713,11 +872,16 @@ class LoadSim(object):
             if hasattr(self,'problem_id'):
                 rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
                                 ('rst','{}.*.tar'.format(self.problem_id)),
-                                ('id0','{}.*.rst'.format(self.problem_id))]
+                                ('id0','{}.*.rst'.format(self.problem_id)),
+                                ('{}.*.rst'.format(self.problem_id),)]
                 frst = self._find_match(rst_patterns)
                 if frst:
                     self.files['rst'] = frst
-                    self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
+                    if self.athena_pp:
+                        numbered_rstfiles = [f for f in self.files['rst'] if 'final' not in f]
+                        self.nums_rst = [int(f[-9:-4]) for f in numbered_rstfiles]
+                    else:
+                        self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
                     self.logger.info('rst: {0:s} nums: {1:d}-{2:d}'.format(
                                      osp.dirname(self.files['rst'][0]),
                                      self.nums_rst[0], self.nums_rst[-1]))
@@ -766,6 +930,23 @@ class LoadSim(object):
 
         return fvtk
 
+    def _get_fhdf5(self, outid, outvar, num=None, ihdf5=None):
+        """Get hdf5 file path
+        """
+
+        try:
+            dirname = osp.dirname(self.files['hdf5'][outvar][0])
+        except IndexError:
+            return None
+        if ihdf5 is not None:
+            fhdf5 = self.files['hdf5'][outvar][ihdf5]
+        else:
+            fpattern = '{0:s}.out{1:d}.{2:05d}.athdf'
+            fhdf5 = osp.join(dirname, fpattern.format(
+                self.problem_id, outid, num))
+
+        return fhdf5
+
     def _get_logger(self, verbose=False):
         """Function to set logger and default verbosity.
 
@@ -778,13 +959,13 @@ class LoadSim(object):
         levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
         if verbose is True:
-            self.loglevel_def = 'INFO'
+            self.loglevel = 'INFO'
         elif verbose is False:
-            self.loglevel_def = 'WARNING'
+            self.loglevel = 'WARNING'
         elif verbose in levels + [l.lower() for l in levels]:
-            self.loglevel_def = verbose.upper()
+            self.loglevel = verbose.upper()
         elif isinstance(verbose, int):
-            self.loglevel_def = verbose
+            self.loglevel = verbose
         else:
             raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
 
@@ -793,23 +974,23 @@ class LoadSim(object):
         try:
             if not l.hasHandlers():
                 h = logging.StreamHandler()
-                f = logging.Formatter('%(name)s-%(levelname)s: %(message)s')
+                f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
                 # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
                 h.setFormatter(f)
                 l.addHandler(h)
-                l.setLevel(self.loglevel_def)
+                l.setLevel(self.loglevel)
             else:
-                l.setLevel(self.loglevel_def)
+                l.setLevel(self.loglevel)
         except AttributeError: # for python 2 compatibility
             if not len(l.handlers):
                 h = logging.StreamHandler()
-                f = logging.Formatter('%(name)s-%(levelname)s: %(message)s')
+                f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
                 # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
                 h.setFormatter(f)
                 l.addHandler(h)
-                l.setLevel(self.loglevel_def)
+                l.setLevel(self.loglevel)
             else:
-                l.setLevel(self.loglevel_def)
+                l.setLevel(self.loglevel)
 
         return l
 
