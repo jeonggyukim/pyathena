@@ -492,10 +492,13 @@ class LoadSim(object):
     def _get_domain_from_par(self, par):
         """Get domain info from par['domain1']. Time is set to None.
         """
-        d = par['domain1']
         domain = dict()
-
-        domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
+        if self.athena_pp:
+            d = par['mesh']
+            domain['Nx'] = np.array([d['nx1'], d['nx2'], d['nx3']])
+        else:
+            d = par['domain1']
+            domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
         domain['ndim'] = np.sum(domain['Nx'] > 1)
         domain['le'] = np.array([d['x1min'], d['x2min'], d['x3min']])
         domain['re'] = np.array([d['x1max'], d['x2max'], d['x3max']])
@@ -503,9 +506,7 @@ class LoadSim(object):
         domain['dx'] = domain['Lx']/domain['Nx']
         domain['center'] = 0.5*(domain['le'] + domain['re'])
         domain['time'] = None
-
         self.domain = domain
-
 
         return domain
 
