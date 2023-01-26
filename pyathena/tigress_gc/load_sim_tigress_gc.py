@@ -73,7 +73,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
             rprof['Breg3'] = (rprof.B3.where(rprof.eta<eta0)).weighted(rprof.density).mean(dim=['R','z'])
             rprof['Btrb3'] = np.sqrt(rprof.B_squared3 - rprof.B3**2).where(rprof.eta<eta0).weighted(rprof.density).mean(dim=['R','z'])
             rprof['Breg'] = np.sqrt(rprof.Breg1**2 + rprof.Breg2**2 + rprof.Breg3**2)
-            rprof['Btrb'] = np.sqrt(rprof.Btrb1**2 + rprof.Btrb2**2 + rprof.Btrb3**2)   
+            rprof['Btrb'] = np.sqrt(rprof.Btrb1**2 + rprof.Btrb2**2 + rprof.Btrb3**2)
             self.rprof = rprof
         except:
             self.rprof = None
