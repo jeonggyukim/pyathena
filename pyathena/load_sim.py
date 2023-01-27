@@ -201,15 +201,15 @@ class LoadSim(object):
                 self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
                                  'Try vtk in id0')
 
-            # Check if joined vtk (or vtk in id0) exists
-            self.fvtk = self._get_fvtk(kind[1], num, ivtk)
-            if self.fvtk is None or not osp.exists(self.fvtk):
-                self.logger.info('[load_vtk]: Vtk file does not exist.')
-
-            # Check if joined vtk (or vtk in id0) exists
-            self.fvtk = self._get_fvtk(kind[2], num, ivtk)
-            if self.fvtk is None or not osp.exists(self.fvtk):
-                self.logger.error('[load_vtk]: Vtk file does not exist.')
+            for kind_ in (kind[1], kind[2]):
+                # Check if joined vtk (or vtk in id0) exists
+                self.fvtk = self._get_fvtk(kind_, num, ivtk)
+                if self.fvtk is None or not osp.exists(self.fvtk):
+                    self.logger.info('[load_vtk]: Vtk file does not exist.')
+                else:
+                    self.logger.info('[load_vtk]: Found vtk file in "{}"\
+                                     '.format(kind_))
+                    break
 
         if self.fvtk.endswith('vtk'):
             if self.load_method == 'pyathena':
@@ -754,6 +754,8 @@ class LoadSim(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(self.files['vtk_tar'][0]).split('.')[-2:]
                     self.nums = self.nums_tar
+            self.nums_vtk_all = list(set(self.nums)|set(self.nums_id0)|set(self.nums_tar))
+            self.nums_vtk_all.sort()
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
