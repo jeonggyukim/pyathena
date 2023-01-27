@@ -18,127 +18,16 @@ from ..classic.utils import texteffect
 
 cmap_def = dict(
     Sigma_gas=plt.cm.pink_r,
-    Sigma_H2=plt.cm.pink_r,
-    nH=plt.cm.Spectral_r,
-    T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
-    vz=plt.cm.bwr,
-    chi_FUV=plt.cm.viridis,
-    Erad_LyC=plt.cm.viridis,
-    xi_CR=plt.cm.viridis,
-    Bmag=plt.cm.cividis,
-)
-
-norm_def = dict(
-    Sigma_gas=LogNorm(1e-2,1e2),
-    Sigma_H2=LogNorm(1e-2,1e2),
-    nH=LogNorm(1e-4,1e3),
-    T=LogNorm(1e1,1e7),
-    vz=Normalize(-200,200),
-    chi_FUV=LogNorm(1e-2,1e2),
-    Erad_LyC=LogNorm(1e-16,5e-13),
-    xi_CR=LogNorm(5e-17,1e-15),
-    Bmag=LogNorm(1.e-2,1.e2)
+    density=plt.cm.Spectral_r,
 )
 
 class SliceProj:
 
     @staticmethod
-    def _get_extent(domain):
-
-        r = dict()
-        r['x'] = (domain['le'][1], domain['re'][1],
-                  domain['le'][2], domain['re'][2])
-        r['y'] = (domain['le'][0], domain['re'][0],
-                  domain['le'][2], domain['re'][2])
-        r['z'] = (domain['le'][0], domain['re'][0],
-                  domain['le'][1], domain['re'][1])
-
-        return r
-
-    @LoadSim.Decorators.check_pickle
-    def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
-                 savdir=None, force_override=False):
-
-        fields_def = ['nH', 'nH2', 'ne', 'vz', 'T', 'cs', 'vx', 'vy', 'vz', 'pok']
-        if self.par['configure']['radps'] == 'ON':
-            if (self.par['cooling']['iCR_attenuation']):
-                fields_def += ['xi_CR']
-            if self.par['radps']['iPhotIon'] == 1:
-                fields_def += ['Erad_LyC']
-            if self.par['cooling']['iPEheating'] == 1:
-                fields_def += ['chi_FUV']
-        if self.par['configure']['gas'] == 'mhd':
-            fields_def += ['Bx','By','Bz','Bmag']
-
-        fields = fields_def
-        axes = np.atleast_1d(axes)
-
-        ds = self.load_vtk(num=num)
-        res = dict()
-        res['extent'] = self._get_extent(ds.domain)
-
-        for ax in axes:
-            dat = ds.get_slice(ax, fields, pos='c', method='nearest')
-            res[ax] = dict()
-            for f in fields:
-                res[ax][f] = dat[f].data
-
-        for zpos,zlab in zip([-1000,-500,500,1000],['zn10','zn05','zp05','zp10']):
-            dat = ds.get_slice('z', fields, pos=zpos, method='nearest')
-            res[zlab] = dict()
-            for f in fields:
-                res[zlab][f] = dat[f].data
-
-        return res
-
-    @LoadSim.Decorators.check_pickle
-    def read_prj(self, num, axes=['x', 'y', 'z'], prefix='prj',
-                 savdir=None, force_override=False):
-
-        axtoi = dict(x=0, y=1, z=2)
-        fields = ['nH', 'nH2', 'nesq']
-        axes = np.atleast_1d(axes)
-
-        ds = self.load_vtk(num=num)
-        dat = ds.get_field(fields, as_xarray=True)
-
-        res = dict()
-        res['extent'] = self._get_extent(ds.domain)
-
-        for ax in axes:
-            i = axtoi[ax]
-            dx = ds.domain['dx'][i]*self.u.length
-            conv_Sigma = (dx*self.u.muH*ac.u.cgs/au.cm**3).to('Msun/pc**2')
-
-            res[ax] = dict()
-            res[ax]['Sigma_gas'] = (np.sum(dat['nH'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_H2'] = (2.0*np.sum(dat['nH2'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_HI'] = res[ax]['Sigma_gas'] - res[ax]['Sigma_H2']
-
-        return res
-
-    @staticmethod
-    def plt_slice(ax, slc, axis='z', field='density', cmap=None, norm=None):
-        try:
-            if cmap is None:
-                cmap = cmap_def[field]
-
-            if norm is None:
-                norm = mpl.colors.LogNorm()
-            elif norm == 'linear':
-                norm = mpl.colors.Normalize()
-
-            ax.imshow(slc[axis][field], cmap=cmap,
-                      extent=slc['extent'][axis], norm=norm, origin='lower', interpolation='none')
-        except KeyError:
-            pass
-
-    @staticmethod
-    def plt_proj(ax, prj, axis='z', field='Sigma_gas',
+    def plt_proj(num, axis='z', field='Sigma_gas',
                  cmap=None, norm=None, vmin=None, vmax=None):
         try:
             vminmax = dict(Sigma_gas=(1e-2,1e2))
-            cmap_def = dict(Sigma_gas='pink_r')
 
             if cmap is None:
                 try:
@@ -149,137 +38,13 @@ class SliceProj:
                 vmin = vminmax[field][0]
                 vmax = vminmax[field][1]
 
+            prj = yt.ProjectionPlot(ds, 'z', ('athena_pp', 'density'))
+            prj.set_cmap(("athena_pp", "density"), cmap)
+            prj.set_zlim(("athena_pp", "density"), zmin=vmin, zmax=vmax)
             if norm is None or norm == 'log':
-                norm = mpl.colors.LogNorm(vmin=vmin, vmax=vmax)
+                prj.set_log(("athena_pp", "density"), True)
             elif norm == 'linear':
-                norm = mpl.colors.Normalize(vmin=vmin, vmax=vmax)
-
-            ax.imshow(prj[axis][field], cmap=cmap, extent=prj['extent'][axis],
-                      norm=norm, origin='lower', interpolation='none')
+                prj.set_log(("athena_pp", "density"), False)
+            return prj
         except KeyError:
             pass
-
-    def plt_snapshot(self, num,
-                     fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'chi_FUV'),
-                     fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz', 'Bmag'),
-                     #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
-                     #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
-                     norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
-                     suptitle=None, savdir_pkl=None, savdir=None, force_override=False,
-                     figsize=(26,12),
-                     savefig=True):
-        """Plot 12-panel projection, slice plots in the z and y directions
-
-        Parameters
-        ----------
-        num : int
-            vtk snapshot number
-        fields_xy: list of str
-            Field names for z projections and slices
-        fields_xz: list of str
-            Field names for y projections and slices
-        norm_factor : float
-            Normalization factor for starpar size. Smaller norm_factor for bigger size.
-        agemax : float
-            Maximum age of radiation source particles [Myr]
-        agemax_sn : float
-            Maximum age of sn particles [Myr]
-        runaway : bool
-            If True, show runaway star particles
-        suptitle : str
-            Suptitle for snapshot
-        savdir_pkl : str
-            Path to which save (from which load) projections and slices
-        savdir : str
-            Path to which save (from which load) projections and slices
-        """
-
-        label = dict(Sigma_gas=r'$\Sigma$',
-                     Sigma_H2=r'$\Sigma_{\rm H_2}$',
-                     EM=r'${\rm EM}$',
-                     nH=r'$n_{\rm H}$',
-                     T=r'$T$',
-                     vz=r'$v_z$',
-                     chi_FUV=r'$\mathcal{E}_{\rm FUV}$',
-                     Erad_LyC=r'$\mathcal{E}_{\rm LyC}$',
-                     xi_CR=r'$\xi_{\rm CR}$',
-                     Bmag=r'$|B|$'
-        )
-
-        kind = dict(Sigma_gas='prj', Sigma_H2='prj', EM='prj',
-                    nH='slc', T='slc', vz='slc', chi_FUV='slc',
-                    Erad_LyC='slc', xi_CR='slc', Bmag='slc')
-        nxy = len(fields_xy)
-        nxz = len(fields_xz)
-        ds = self.load_vtk(num=num)
-        LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
-        xwidth = 3
-        ysize = LzoLx*xwidth
-        xsize = ysize/nxy*4 + nxz*xwidth
-        x1 = 0.90*(ysize*4/nxy/xsize)
-        x2 = 0.90*(nxz*xwidth/xsize)
-
-        fig = plt.figure(figsize=(xsize, ysize))#, constrained_layout=True)
-        g1 = ImageGrid(fig, [0.02, 0.05, x1, 0.94], (nxy//2, 2), axes_pad=0.1,
-                       aspect=True, share_all=True, direction='column')
-        g2 = ImageGrid(fig, [x1+0.07, 0.05, x2, 0.94], (1, nxz), axes_pad=0.1,
-                       aspect=True, share_all=True)
-
-        dat = dict()
-        dat['slc'] = self.read_slc(num, savdir=savdir_pkl, force_override=force_override)
-        dat['prj'] = self.read_prj(num, savdir=savdir_pkl, force_override=force_override)
-        sp = self.load_starpar_vtk(num)
-
-        extent = dat['prj']['extent']['z']
-        for i, (ax, f) in enumerate(zip(g1, fields_xy)):
-            ax.set_aspect(ds.domain['Lx'][1]/ds.domain['Lx'][0])
-            self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
-
-            if i == 0:
-                scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
-                           norm_factor=norm_factor, agemax=agemax, agemax_sn=agemax_sn,
-                           runaway=runaway, cmap=plt.cm.cool_r)
-            ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
-            ax.text(0.5, 0.92, label[f], **texteffect(fontsize='x-large'),
-                    ha='center', transform=ax.transAxes)
-            if i == 2:
-                ax.set(xlabel='x [pc]', ylabel='y [pc]')
-            else:
-                ax.axes.get_xaxis().set_visible(False)
-                ax.axes.get_yaxis().set_visible(False)
-
-        extent = dat['prj']['extent']['y']
-        for i, (ax, f) in enumerate(zip(g2, fields_xz)):
-            ax.set_aspect(ds.domain['Lx'][2]/ds.domain['Lx'][0])
-            self.plt_slice(ax, dat[kind[f]], 'y', f, cmap=cmap_def[f], norm=norm_def[f])
-            if i == 0:
-                scatter_sp(sp, ax, 'y', kind='prj', kpc=False,
-                           norm_factor=norm_factor, agemax=agemax,
-                           cmap=plt.cm.cool_r)
-            ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
-            ax.text(0.5, 0.97, label[f], **texteffect(fontsize='x-large'),
-                    ha='center', transform=ax.transAxes)
-            if i == 0:
-                ax.set(xlabel='x [pc]', ylabel='z [pc]')
-            else:
-                ax.axes.get_xaxis().set_visible(False)
-                ax.axes.get_yaxis().set_visible(False)
-
-        if suptitle is None:
-            suptitle = self.basename
-        # fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
-        #              va='center', ha='center', **texteffect(fontsize='xx-large'))
-        fig.suptitle('Model: {0:s}  time='.format(suptitle) + str(int(ds.domain['time'])), x=0.4, y=1.02,
-                     va='center', ha='center', **texteffect(fontsize='xx-large'))
-        # plt.subplots_adjust(top=0.95)
-
-        if savefig:
-            if savdir is None:
-                savdir = osp.join(self.savdir, 'snapshot')
-            if not osp.exists(savdir):
-                os.makedirs(savdir)
-
-            savname = osp.join(savdir, '{0:s}_{1:04d}.png'.format(self.basename, num))
-            plt.savefig(savname, dpi=200, bbox_inches='tight')
-
-        return fig
