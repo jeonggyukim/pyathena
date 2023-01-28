@@ -6,11 +6,12 @@ import numpy as np
 from ..load_sim import LoadSim
 from .hst import Hst
 from .slc_prj import SliceProj
+from .tools import Tools
 
-class LoadSimCoreCollapse(LoadSim, Hst, SliceProj):
+class LoadSimCoreCollapse(LoadSim, Hst, SliceProj, Tools):
     """LoadSim class for analyzing core collapse simulations."""
 
-    def __init__(self, basedir, savdir=None, load_method='yt', verbose=False):
+    def __init__(self, basedir=None, savdir=None, load_method='yt', verbose=False):
         """The constructor for LoadSimCoreCollapse class
 
         Parameters
@@ -31,13 +32,15 @@ class LoadSimCoreCollapse(LoadSim, Hst, SliceProj):
             accepted.
         """
 
-        super(LoadSimCoreCollapse,self).__init__(basedir, savdir=savdir,
-                                               load_method=load_method, verbose=verbose)
-
-        # Set domain
-        self.domain = self._get_domain_from_par(self.par)
+        if basedir is not None:
+            super(LoadSimCoreCollapse,self).__init__(basedir, savdir=savdir,
+                                                   load_method=load_method, verbose=verbose)
+            # Set domain
+            self.domain = self._get_domain_from_par(self.par)
 
         # Set unit system
+        # [L] = L_{J,0}, [M] = M_{J,0}, [V] = c_s
+        self.rho0 = 1.0
         self.cs = 1.0
         self.G = np.pi
         self.tff = np.sqrt(3/32)
