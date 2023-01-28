@@ -4,9 +4,10 @@ import pandas as pd
 import numpy as np
 
 from ..load_sim import LoadSim
+from .hst import Hst
 from .slc_prj import SliceProj
 
-class LoadSimCoreCollapse(LoadSim, SliceProj):
+class LoadSimCoreCollapse(LoadSim, Hst, SliceProj):
     """LoadSim class for analyzing core collapse simulations."""
 
     def __init__(self, basedir, savdir=None, load_method='yt', verbose=False):
@@ -33,8 +34,13 @@ class LoadSimCoreCollapse(LoadSim, SliceProj):
         super(LoadSimCoreCollapse,self).__init__(basedir, savdir=savdir,
                                                load_method=load_method, verbose=verbose)
 
-        # Set unit and domain
+        # Set domain
         self.domain = self._get_domain_from_par(self.par)
+
+        # Set unit system
+        self.cs = 1.0
+        self.G = np.pi
+        self.tff = np.sqrt(3/32)
 
 class LoadSimCoreCollapseAll(object):
     """Class to load multiple simulations"""
