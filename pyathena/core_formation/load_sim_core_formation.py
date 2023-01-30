@@ -7,8 +7,9 @@ from ..load_sim import LoadSim
 from .hst import Hst
 from .slc_prj import SliceProj
 from .tools import Tools
+from .pdf import LognormalPDF
 
-class LoadSimCoreFormation(LoadSim, Hst, SliceProj, Tools):
+class LoadSimCoreFormation(LoadSim, Hst, SliceProj, Tools, LognormalPDF):
     """LoadSim class for analyzing core collapse simulations."""
 
     def __init__(self, basedir=None, savdir=None, load_method='yt', verbose=False):
@@ -33,10 +34,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, Tools):
         """
 
         if basedir is not None:
-            super(LoadSimCoreFormation,self).__init__(basedir, savdir=savdir,
-                                                   load_method=load_method, verbose=verbose)
+            super().__init__(basedir, savdir=savdir, load_method=load_method,
+                             verbose=verbose)
             # Set domain
             self.domain = self._get_domain_from_par(self.par)
+            LognormalPDF.__init__(self, self.par['problem']['Mach'])
 
         # Set unit system
         # [L] = L_{J,0}, [M] = M_{J,0}, [V] = c_s
