@@ -8,11 +8,11 @@ from .hst import Hst
 from .slc_prj import SliceProj
 from .tools import Tools
 
-class LoadSimCoreCollapse(LoadSim, Hst, SliceProj, Tools):
+class LoadSimCoreFormation(LoadSim, Hst, SliceProj, Tools):
     """LoadSim class for analyzing core collapse simulations."""
 
     def __init__(self, basedir=None, savdir=None, load_method='yt', verbose=False):
-        """The constructor for LoadSimCoreCollapse class
+        """The constructor for LoadSimCoreFormation class
 
         Parameters
         ----------
@@ -33,7 +33,7 @@ class LoadSimCoreCollapse(LoadSim, Hst, SliceProj, Tools):
         """
 
         if basedir is not None:
-            super(LoadSimCoreCollapse,self).__init__(basedir, savdir=savdir,
+            super(LoadSimCoreFormation,self).__init__(basedir, savdir=savdir,
                                                    load_method=load_method, verbose=verbose)
             # Set domain
             self.domain = self._get_domain_from_par(self.par)
@@ -45,7 +45,7 @@ class LoadSimCoreCollapse(LoadSim, Hst, SliceProj, Tools):
         self.G = np.pi
         self.tff = np.sqrt(3/32)
 
-class LoadSimCoreCollapseAll(object):
+class LoadSimCoreFormationAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
 
@@ -58,7 +58,7 @@ class LoadSimCoreCollapseAll(object):
 
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
-                print('[LoadSimCoreCollapseAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
+                print('[LoadSimCoreFormationAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
                     mdl,basedir))
             else:
                 self.models.append(mdl)
@@ -69,7 +69,7 @@ class LoadSimCoreCollapseAll(object):
         try:
             self.sim = self.simdict[model]
         except KeyError:
-            self.sim = LoadSimCoreCollapse(self.basedirs[model], savdir=savdir,
+            self.sim = LoadSimCoreFormation(self.basedirs[model], savdir=savdir,
                                            load_method=load_method, verbose=verbose)
             self.simdict[model] = self.sim
 
