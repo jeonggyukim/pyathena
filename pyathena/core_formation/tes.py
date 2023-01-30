@@ -7,8 +7,12 @@ class TES:
 
     Description
     -----------
-    Solve a hydrostatic equation in dimensionless variables:
-        xi = r / L_{J,e}, where L_{J,e} is the Jeans length at the edge density rho_e.
+    Turbulent equilibrium spheres are characterized by two parameters:
+      p: power-law index for the linewidth-size relation
+      xi_s: the sonic radius
+    Given these two parameters, the equilibrium profile is obtained by solving
+    a hydrostatic equation in the following dimensionless variables:
+        xi = r / L_{J,e}, where L_{J,e} the Jeans length at the edge density rho_e.
         u = ln(rho/rho_e)
     Turbulent pressure is taken into account:
         \delta v = c_s (r / lambda)^p = c_s (xi / xi_s)^p
@@ -89,38 +93,3 @@ class TES:
         if rat_c >= 999:
             raise Exception("critical density contrast is out-of-bound")
         return rat_c, r_c, m_c
-
-def get_critical_TES(rhoe, lmb_sonic, p=0.5):
-    """
-    Calculate critical turbulent equilibrium sphere
-
-    Description
-    -----------
-    Critical mass of turbulent equilibrium sphere is given by
-        M_crit = M_{J,e}m_crit(xi_s)
-    where m_crit is the dimensionless critical mass and M_{J,e}
-    is the Jeans mass at the edge density rho_e.
-    This function assumes unit system:
-        [L] = L_{J,0}, [M] = M_{J,0}
-
-    Parameters
-    ----------
-    rhoe : edge density
-    lmb_sonic : sonic radius
-    p (optional) : power law index for the linewidth-size relation
-
-    Returns
-    -------
-    rhoc : central density
-    R : radius of the critical TES
-    M : mass of the critical TES
-    """
-    LJ_e = rhoe**-0.5
-    MJ_e = rhoe**-0.5
-    xi_s = lmb_sonic / LJ_e
-    tes = TES(p, xi_s)
-    rat, xi0, m = tes.get_crit()
-    rhoc = rat*rhoe
-    R = LJ_e*xi0
-    M = MJ_e*m
-    return rhoc, R, M
