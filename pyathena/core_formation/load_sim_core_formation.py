@@ -35,7 +35,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, Tools, LognormalPDF):
 
         if basedir is not None:
             super().__init__(basedir, savdir=savdir, load_method=load_method,
-                             verbose=verbose)
+                             units=None, verbose=verbose)
             # Set domain
             self.domain = self._get_domain_from_par(self.par)
             LognormalPDF.__init__(self, self.par['problem']['Mach'])
