@@ -49,4 +49,4 @@ class Hst:
 
         h.set_index('time', inplace=True)
         self.hst = h
-        return h.to_xarray()
+        return h
