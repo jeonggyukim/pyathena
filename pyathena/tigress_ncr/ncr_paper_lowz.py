@@ -43,7 +43,7 @@ class LowZData(PaperData):
                 head += '-b1'
             elif '.b10.' in m:
                 head += '-b10'
-            
+
             if 'S30' in m:
                 head += '-S30'
             if 'S100' in m:
@@ -130,8 +130,8 @@ class LowZData(PaperData):
         return models, mlist_early
 
     def _set_colors(self):
-        colors1 = cmr.take_cmap_colors('cmr.pride', 4, cmap_range=(0.15, 0.45))
-        colors2 = cmr.take_cmap_colors('cmr.pride_r', 4, cmap_range=(0.15, 0.45))
+        colors1 = cmr.take_cmap_colors('cmr.pride', 4, cmap_range=(0.05, 0.45))
+        colors2 = cmr.take_cmap_colors('cmr.pride_r', 4, cmap_range=(0.05, 0.45))
         self.plt_kwargs = dict()
         for gr in self.mgroup:
             self.plt_kwargs[gr]=dict()
@@ -168,6 +168,7 @@ class LowZData(PaperData):
             h = self.stitch_hsts(self.sa,mearly,m)
             s = self.sa.set_model(m)
             s.h = h
+            s.h['tdep40'] = s.h['Sigma_gas']/s.h['sfr40']*1.e-3
 
     def plot_hst(self,m,y='sfr40',full=True):
         s = self.sa.set_model(m)
@@ -216,6 +217,29 @@ class LowZData(PaperData):
             leg2 = plt.legend(custom_lines2,labels,loc=beta_loc,**kwargs)
             if main: plt.gca().add_artist(leg1)
 
+    def get_PW_time_series(self,m,dt=0,zrange=slice(-10,10),from_files=True,recal=False):
+        s = self.sa.set_model(m)
+        if from_files:
+            fzpmid=os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id))
+            fzpw=os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))
+            if os.path.isfile(fzpmid):
+                with xr.open_dataset(fzpmid) as zpmid:
+                    zpmid.attrs = PaperData.set_zprof_attr()
+                    s.zpmid = zpmid
+            if os.path.isfile(fzpw):
+                with xr.open_dataset(fzpw) as zpwmid: s.zpwmid = zpwmid
+            if (hasattr(s,'zpmid') and hasattr(s,'zpwmid') and (not recal)):
+                # smoothing
+                if dt>0:
+                    window = int(dt/s.zpmid.time.diff(dim='time').median())
+                    zpmid = s.zpmid.rolling(time=window,center=True,min_periods=1).mean()
+                else:
+                    zpmid = s.zpmid
+                return zpmid, s.zpwmid
+
+        zprof = get_PW_zprof(s)
+        zpmid, zpwmid = get_PW_time_series(s,dt=dt,zrange=zrange,recal=recal)
+        return zpmid, zpwmid
 
 
 def add_torb(ax,torb,ticklabels=True):
@@ -283,3 +307,549 @@ def add_boxplot(pdata,group='R8-b1',field='sfr40',offset=0,tslice=None,label=Tru
     ax = plt.gca()
     ax.grid(visible=False)
     ax.xaxis.set_tick_params(which='both',bottom=False,top=False,labelbottom=False)
+
+def get_PW_zprof(s,recal=False):
+    fzpmid=os.path.join(s.basedir,'zprof','{}.PWzprof.nc'.format(s.problem_id))
+    if not recal:
+        if os.path.isfile(fzpmid):
+            with xr.open_dataset(fzpmid) as zpmid:
+                return zpmid
+
+    if hasattr(s,'newzp'):
+        zp = s.newzp
+    else:
+        zp = PaperData.zprof_rename(s)
+
+    zpmid = xr.Dataset()
+    dm = s.domain
+    dz = dm['dx'][2]
+    # calculate weight first
+    uWext=(zp['dWext'].sel(z=slice(0,dm['re'][2]))[:,::-1].cumsum(dim='z')[:,::-1]*dz)
+    lWext=(-zp['dWext'].sel(z=slice(dm['le'][2],0)).cumsum(dim='z')*dz)
+    Wext=xr.concat([lWext,uWext],dim='z')
+    if 'dWsg' in zp:
+        uWsg=(zp['dWsg'].sel(z=slice(0,dm['re'][2]))[:,::-1].cumsum(dim='z')[:,::-1]*dz)
+        lWsg=(-zp['dWsg'].sel(z=slice(dm['le'][2],0)).cumsum(dim='z')*dz)
+        Wsg=xr.concat([lWsg,uWsg],dim='z')
+    W=Wext+Wsg
+    zpmid['Wext']=Wext
+    zpmid['Wsg']=Wsg
+    zpmid['W']=W
+
+    # caculate radiation pressure
+    if 'frad_z0' in zp:
+        frad_list=['frad_z0','frad_z1','frad_z2']
+        for frad in frad_list:
+            uPrad=zp[frad].sel(z=slice(0,dm['re'][2]))[:,::-1].cumsum(dim='z')[:,::-1]*dz
+            lPrad=-zp[frad].sel(z=slice(dm['le'][2],0)).cumsum(dim='z')*dz
+            zpmid[frad]=xr.concat([lPrad,uPrad],dim='z')
+        zpmid['Prad']=zpmid[frad_list].to_array().sum(dim='variable')
+
+    # Pressures/Stresses
+    zpmid['Pth'] = zp['P']
+    zpmid['Pturb'] = 2.0*zp['Ek3']
+    zpmid['Ptot'] = zpmid['Pth']+zpmid['Pturb']
+    if 'PB1' in zp:
+        zpmid['Pmag'] = zp['PB1']+zp['PB2']+zp['PB3']
+        zpmid['Pimag'] = zpmid['Pmag'] - 2.0*zp['PB3']
+        zpmid['dPmag'] = zp['dPB1']+zp['dPB2']+zp['dPB3']
+        zpmid['dPimag'] = zpmid['dPmag'] - 2.0*zp['dPB3']
+        zpmid['oPmag'] = zpmid['Pmag']-zpmid['dPmag']
+        zpmid['oPimag'] = zpmid['Pimag']-zpmid['dPimag']
+        zpmid['Ptot'] += zpmid['Pimag']
+
+    # density, area
+    zpmid['nH'] = zp['d']
+    zpmid['A'] = zp['A']
+
+    # heat and cool
+    if 'cool' in zp:
+        zpmid['heat']= zp['heat']
+        zpmid['cool']= zp['cool']
+        if 'netcool' in zp:
+            zpmid['net_cool']= zp['net_cool']
+        else:
+            zpmid['net_cool']= zp['cool'] - zp['heat']
+
+    # Erad
+    if 'Erad0' in zp: zpmid['Erad0']= zp['Erad0']
+    if 'Erad1' in zp: zpmid['Erad1']= zp['Erad1']
+    if 'Erad2' in zp: zpmid['Erad2']= zp['Erad2']
+
+
+    # rearrange phases
+    twop=zpmid.sel(phase=['CMM','CNM','UNM','WNM']).sum(dim='phase').assign_coords(phase='2p')
+    hot=zpmid.sel(phase=['WHIM','HIM']).sum(dim='phase').assign_coords(phase='hot')
+    if 'WIM' in zpmid.phase:
+        wim=zpmid.sel(phase=['WIM']).sum(dim='phase').assign_coords(phase='WIM')
+        zpmid = xr.concat([twop,wim,hot],dim='phase')
+    else:
+        zpmid = xr.concat([twop,hot],dim='phase')
+
+    if os.path.isfile(fzpmid): os.remove(fzpmid)
+    zpmid.to_netcdf(fzpmid)
+
+    return zpmid
+
+def get_PW_time_series_from_zprof(s,zpmid,sfr=None,dt=0,
+                                    zrange=slice(-10,10),recal=False):
+    if (hasattr(s,'zpmid') and hasattr(s,'zpwmid') and (not recal)):
+        # smoothing
+        if dt>0:
+            window = int(dt/s.zpmid.time.diff(dim='time').median())
+            zpmid_t = s.zpmid.rolling(time=window,center=True,min_periods=1).mean()
+        else:
+            zpmid_t = s.zpmid
+        return zpmid_t, s.zpwmid
+
+    # szeff
+    szeff = np.sqrt(zpmid['Ptot'].sum(dim='z')/zpmid['nH'].sum(dim='z'))
+
+    # select midplane
+    zpmid = zpmid.sel(z=zrange).mean(dim='z')
+    zpwmid = zpmid.sum(dim='phase')
+
+    # SFR from history
+    vol = np.prod(s.domain['Lx'])
+    area = vol/s.domain['Lx'][2]
+
+    h = pa.read_hst(s.files['hst'])
+
+    zpmid['sfr10'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['sfr10']),coords=[zpmid.time])
+    zpmid['sfr40'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['sfr40']),coords=[zpmid.time])
+    zpmid['sfr100'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['sfr100']),coords=[zpmid.time])
+
+    if sfr is None:
+        zpmid['sfr'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['sfr10']),coords=[zpmid.time])
+    else:
+        zpmid['sfr'] = sfr
+
+    # sz from history
+    KE = h['x1KE']+h['x2KE']+h['x3KE']
+    if 'x1ME' in h:
+        szmag = h['x1ME']+h['x2ME']-2.0*h['x3ME']
+        ME = h['x1ME']+h['x2ME']+h['x3ME']
+    else:
+        szmag = 0.0
+        ME = 0.0
+
+    P = (h['totalE'] - KE - ME)*(5/3.-1)
+    szeff_mid = np.sqrt((2.0*h['x3KE']+P+szmag)/h['mass'])
+    zpmid['szeff'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],szeff_mid),coords=[zpmid.time])
+
+    # PDE
+
+    zpmid['sigma_eff'] = szeff
+    zpmid['sigma_eff_mid'] = np.sqrt(zpmid['Ptot']/zpmid['nH'])
+    zpmid['Sigma_gas'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['mass']*s.u.Msun*vol/area),coords=[zpmid.time])
+    rhosd=0.5*s.par['problem']['SurfS']/s.par['problem']['zstar']+s.par['problem']['rhodm']
+    zpmid['PDE1'] = np.pi*zpmid['Sigma_gas']**2/2.0*(ac.G*(ac.M_sun/ac.pc**2)**2/ac.k_B).cgs.value
+    zpmid['PDE2_2p'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['sigma_eff'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
+    zpmid['PDE2_2p_mid'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['sigma_eff_mid'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
+    zpmid['PDE2'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['szeff']*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
+    zpmid['PDE_2p_mid'] = zpmid['PDE1']+zpmid['PDE2_2p_mid']
+    zpmid['PDE_2p'] = zpmid['PDE1']+zpmid['PDE2_2p']
+    zpmid['PDE'] = zpmid['PDE1']+zpmid['PDE2']
+
+    fzpmid=os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id))
+    fzpw=os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))
+    if os.path.isfile(fzpmid): os.remove(fzpmid)
+    if os.path.isfile(fzpw): os.remove(fzpw)
+
+    zpmid.to_netcdf(fzpmid)
+    zpwmid.to_netcdf(fzpw)
+
+    zpmid.attrs = PaperData.set_zprof_attr()
+    s.zpmid = zpmid
+    s.zpwmid = zpwmid
+
+    # smoothing
+    if dt>0:
+        window = int(dt/zpmid.time.diff(dim='time').median())
+        zpmid = zpmid.rolling(time=window,center=True,min_periods=1).mean()
+
+    return zpmid, zpwmid
+
+def plot_DE(pdata,m,tr,xf,yf,label='',ax=None,fit=False,qr=[0.16,0.5,0.84]):
+    Punit_label=r'$/k_B\,[{\rm cm^{-3}\,K}]$'
+    sfr_unit_label=r'$\,[M_\odot{\rm \,kpc^{-2}\,yr}]$'
+
+    if ax is None: ax = plt.gca()
+    plt.sca(ax)
+    s = pdata.sa.set_model(m)
+    zpmid, zpwmid = pdata.get_PW_time_series(m)
+
+    zpmid = zpmid.sel(time=tr)
+    zpwmid = zpwmid.sel(time=tr)
+
+    wpdata=dict(sfr = zpmid['sfr'], W=zpwmid['W']*s.u.pok,PDE=zpmid['PDE_2p'],
+                Ptot=zpmid['Ptot'].sel(phase='2p')/zpmid['A'].sel(phase='2p')*s.u.pok)
+
+    x = wpdata[xf]
+    y = wpdata[yf]
+    plt.plot(x,y,'o',markersize=5,markeredgewidth=0,color=s.color,alpha=0.3)
+    qx = x.quantile(qr).data
+    qy = y.quantile(qr).data
+    plt.errorbar(qx[1],qy[1],
+                 xerr=[[qx[1]-qx[0]],[qx[2]-qx[1]]],
+                 yerr=[[qy[1]-qy[0]],[qy[2]-qy[1]]],
+                 marker='o',markersize=8,ecolor='k',markeredgecolor='k',
+                 color=s.color,zorder=10,label=label)
+    xl = zpmid.attrs['Plabels'][xf]
+    if xf != 'W': xl += r'${}_{\rm ,2p}$'
+    xl += Punit_label
+    if yf == 'sfr':
+        yl = r'$\Sigma_{\rm SFR}$'+sfr_unit_label
+    else:
+        yl = zpmid.attrs['Plabels'][yf]
+        if yf != 'W': yl += r'${}_{\rm ,2p}$'
+        yl+=Punit_label
+    plt.xlabel(xl)
+    plt.ylabel(yl)
+    # draw reference line
+    Prange = np.logspace(2,7)
+    plt.plot(Prange,Prange,ls=':',color='k')
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.xlim(5.e3,5.e5)
+    if yf == 'sfr':
+        plt.ylim(5.e-4,5.e-1)
+    else:
+        plt.ylim(5.e3,5.e5)
+        ax.set_aspect('equal')
+
+    if fit:
+        if xf == 'W' and yf == 'Ptot':
+            plt.plot(Prange,10.**(0.99*np.log10(Prange)+0.083),ls='-',color='k')
+        if xf == 'PDE' and yf == 'Ptot':
+            plt.plot(Prange,10.**(1.03*np.log10(Prange)-0.199),ls='-',color='k')
+        if xf == 'PDE' and yf == 'W':
+            plt.plot(Prange,10.**(1.03*np.log10(Prange)-0.276),ls='-',color='k')
+        if xf == 'W' and yf == 'sfr':
+            plt.plot(Prange,10.**(1.18*np.log10(Prange)-7.32),ls='-',color='k')
+        if xf == 'PDE' and yf == 'sfr':
+            plt.plot(Prange,10.**(1.18*np.log10(Prange)-7.32),ls='-',color='k')
+        if xf == 'Ptot' and yf == 'sfr':
+            plt.plot(Prange,10.**(1.17*np.log10(Prange)-7.43),ls='-',color='k')
+
+def plot_Pcomp(pdata,m,tr,yf,xf='PDE',label='',ax=None,fit=False,qr=[0.16,0.5,0.84]):
+    s = pdata.sa.set_model(m)
+    Punit_label=r'$/k_B\,[{\rm cm^{-3}\,K}]$'
+
+    if ax is None: ax = plt.gca()
+    plt.sca(ax)
+
+    zpmid, zpw = pdata.get_PW_time_series(m)
+
+    zpmid = zpmid.sel(time=tr)
+    zpw = zpw.sel(time=tr)
+
+    wpdata=dict(W=zpw['W']*s.u.pok,PDE=zpmid['PDE'],
+                Ptot=zpmid['Ptot'].sel(phase='2p')/zpmid['A'].sel(phase='2p')*s.u.pok)
+
+    Ptot=zpmid['Ptot'].sel(phase='2p')
+    A = zpmid['A'].sel(phase='2p')
+    x = wpdata[xf]
+    if not yf in zpmid: return
+    y = zpmid[yf].sel(phase='2p')/Ptot
+    plt.plot(x,y,'o',markersize=5,markeredgewidth=0,color=s.color,alpha=0.3)
+    qx = x.quantile(qr).data
+    qy = y.quantile(qr).data
+    plt.errorbar(qx[1],qy[1],
+                 xerr=[[qx[1]-qx[0]],[qx[2]-qx[1]]],
+                 yerr=[[qy[1]-qy[0]],[qy[2]-qy[1]]],
+                 marker='o',markersize=8,ecolor='k',markeredgecolor='k',
+                 color=s.color,zorder=10,label=label)
+    xl = zpmid.attrs['Plabels'][xf]
+    if xf != 'W': xl += r'${}_{\rm ,2p}$'
+    xl += Punit_label
+    yl = zpmid.attrs['Plabels'][yf]
+    if yf != 'W': yl += r'${}_{\rm ,2p}$'
+    yl += r'$/$'+zpmid.attrs['Plabels']['Ptot']+r'${}_{\rm ,2p}$'
+
+    plt.xlabel(xl)
+    plt.ylabel(yl)
+
+
+    # draw reference line
+    Prange = np.logspace(2,7)
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylim(1.e-2,1)
+    plt.xlim(1.e3,1.e6)
+    if fit:
+        if yf == 'Pth':
+            plt.plot(Prange,10.**(-0.275*np.log10(Prange)+0.517),ls='-',color='k')
+        if yf == 'Pturb':
+            plt.plot(Prange,10.**(0.129*np.log10(Prange)-0.918),ls='-',color='k')
+
+def plot_Pcomp_sfr(pdata,m,tr,yf,label='',ax=None,fit=False,qr=[0.16,0.5,0.84]):
+    s = pdata.sa.set_model(m)
+    Punit_label=r'$/k_B\,[{\rm cm^{-3}\,K}]$'
+    sfr_unit_label=r'$\,[M_\odot{\rm \,kpc^{-2}\,yr}]$'
+
+
+    if ax is None: ax = plt.gca()
+    plt.sca(ax)
+
+    zpmid, zpw = pdata.get_PW_time_series(m)
+    zpmid = zpmid.sel(time=tr)
+    zpw = zpw.sel(time=tr)
+
+    x = zpmid['sfr']
+    if not yf in zpmid: return
+    A = zpmid['A'].sel(phase='2p')
+    y = zpmid[yf].sel(phase='2p')/A*s.u.pok
+    plt.plot(x,y,'o',markersize=5,markeredgewidth=0,color=s.color,alpha=0.3)
+    qx = x.quantile(qr).data
+    qy = y.quantile(qr).data
+    plt.errorbar(qx[1],qy[1],
+                 xerr=[[qx[1]-qx[0]],[qx[2]-qx[1]]],
+                 yerr=[[qy[1]-qy[0]],[qy[2]-qy[1]]],
+                 marker='o',markersize=8,ecolor='k',markeredgecolor='k',
+                 color=s.color,zorder=10,label=label)
+    plt.xlabel(r'$\Sigma_{\rm SFR}$'+sfr_unit_label)
+    plt.ylabel(zpmid.attrs['Plabels'][yf]+r'${}_{\rm ,2p}$'+Punit_label)
+
+    # draw reference line
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.xlim(5.e-4,0.5)
+    plt.ylim(1.e3,1.e6)
+    sfrrange = np.logspace(-4,2)
+    if fit:
+        if yf=='Pth':
+            plt.plot(sfrrange,10.**(0.603*np.log10(sfrrange)+4.99),ls='-',color='k')
+#             plt.plot(sfrrange,10.**(0.86*np.log10(sfrrange)+5.69),ls=':',color='k')
+        if yf in ['Pturb']:#,'Pimag','oPimag','dPimag']:
+            plt.plot(sfrrange,10.**(0.960*np.log10(sfrrange)+6.17),ls='-',color='k')
+#             plt.plot(sfrrange,10.**(0.89*np.log10(sfrrange)+6.3),ls=':',color='k')
+        if yf=='Ptot':
+            plt.plot(sfrrange,10.**(0.840*np.log10(sfrrange)+6.26),ls='-',color='k')
+#             plt.plot(sfrrange,10.**(0.847*np.log10(sfrrange)+6.27),ls=':',color='k')
+
+def plot_Upsilon_sfr(pdata,m,tr,xf,yf,label='',ax=None,fit=False,qr=[0.16,0.5,0.84]):
+    s = pdata.sa.set_model(m)
+    yield_conv = ((au.cm**(-3)*au.K*ac.k_B)/(ac.M_sun/ac.kpc**2/au.yr)).to('km/s').value
+    Uunit_label=r'$\,[{\rm km/s}]$'
+    Punit_label=r'$/k_B\,[{\rm cm^{-3}\,K}]$'
+    sfr_unit_label=r'$\,[M_\odot{\rm \,kpc^{-2}\,yr}]$'
+
+    if ax is None: ax = plt.gca()
+    plt.sca(ax)
+
+    zpmid, zpw = pdata.get_PW_time_series(m)
+
+    zpmid = zpmid.sel(time=tr)
+    zpw = zpw.sel(time=tr)
+
+
+    if not yf in zpmid: return
+    A = zpmid['A'].sel(phase='2p')
+    y = zpmid[yf].sel(phase='2p')/A*s.u.pok/zpmid['sfr40']*yield_conv
+    if xf == 'Zgas':
+        x = s.Zgas * zpmid['time']/zpmid['time']
+    elif xf == 'Zdust':
+        x = s.Zdust * zpmid['time']/zpmid['time']
+    else:
+        x = zpmid[xf]
+    plt.plot(x,y,'o',markersize=5,markeredgewidth=0,color=s.color,alpha=0.3)
+
+    qx = x.quantile(qr).data
+    qy = y.quantile(qr).data
+    plt.errorbar(qx[1],qy[1],
+                 xerr=[[qx[1]-qx[0]],[qx[2]-qx[1]]],
+                 yerr=[[qy[1]-qy[0]],[qy[2]-qy[1]]],
+                 marker='o',markersize=8,ecolor='k',markeredgecolor='k',
+                 color=s.color,zorder=10,label=label)
+    if xf == 'sfr': plt.xlabel(r'$\Sigma_{\rm SFR}$'+sfr_unit_label)
+    if xf == 'PDE': plt.xlabel(r'$P_{\rm DE}$'+Punit_label)
+    if xf == 'PDE_2p': plt.xlabel(r'$P_{\rm DE,2p}$'+Punit_label)
+    if xf == 'Zgas': plt.xlabel(r'$Z_{\rm gas}^\prime$')
+    if xf == 'Zdust': plt.xlabel(r'$Z_{\rm dust}^\prime$')
+    plt.ylabel(r'$\Upsilon_{{\rm {}}}$'.format(yf[2:] if yf.startswith('Pi') else yf[1:])+Uunit_label)
+
+
+    # draw reference line
+    plt.yscale('log')
+    plt.xscale('log')
+    plt.ylim(10,3000)
+    if xf == 'sfr':
+        plt.xlim(5.e-4,0.5)
+        sfrrange = np.logspace(-4,2)
+        if fit:
+            if yf=='Pth':
+#                 plt.plot(sfrrange,200*(sfrrange/1.e-2)**(-0.14),ls=':',color='k')
+                plt.plot(sfrrange,110*(sfrrange/1.e-2)**(-0.4),ls='-',color='k')
+            if yf in ['Pturb','Pimag','oPimag','dPimag']:
+            #                 plt.plot(sfrrange,700*(sfrrange/1.e-2)**(-0.11),ls=':',color='k')
+                plt.plot(sfrrange,330*(sfrrange/1.e-2)**(-0.05),ls='-',color='k')
+            if yf=='Ptot':
+#                 plt.plot(sfrrange,770*(sfrrange/1.e-2)**(-0.15),ls=':',color='k')
+                plt.plot(sfrrange,740*(sfrrange/1.e-2)**(-0.2),ls='-',color='k')
+    if xf in ['PDE','PDE_2p']:
+        plt.xlim(1.e3,1.e6)
+        Prange = np.logspace(3,6)
+        if fit:
+            if yf=='Pth':
+                plt.plot(Prange,10.**(-0.506*np.log10(Prange)+4.45),ls='-',color='k')
+            if yf in ['Pturb']:#,'Pimag','oPimag','dPimag']:
+                plt.plot(Prange,10.**(-0.060*np.log10(Prange)+2.81),ls='-',color='k')
+            if yf=='Ptot':
+                plt.plot(Prange,10.**(-0.212*np.log10(Prange)+3.86),ls='-',color='k')
+
+def plot_PWYstack(pdata,m,tr,i,plabel=True,Upsilon=False,
+                 label='',ax=None,qr=[0.16,0.5,0.84],errorbar_color='k'):
+    s = pdata.sa.set_model(m)
+    Punit_label=r'$/k_B\,[10^4{\rm cm^{-3}\,K}]$'
+    Punit = 1.e-4*s.u.pok
+    Pcolors=cmr.get_sub_cmap('cmr.cosmic',0.3,1,N=4).colors
+    Wcolors=cmr.get_sub_cmap('cmr.ember',0.3,1,N=4).colors
+    yield_conv = ((au.cm**(-3)*au.K*ac.k_B)/(ac.M_sun/ac.kpc**2/au.yr)).to('km/s').value
+    Uunit_label=r'$\,[{\rm km/s}]$'
+    if ax is None: ax = plt.gca()
+    plt.sca(ax)
+
+    zpmid, zpw = pdata.get_PW_time_series(m)
+    zpmid = zpmid.sel(time=tr)
+    zpw = zpw.sel(time=tr)
+
+    Ptot=zpmid['Ptot'].sel(phase='2p')
+    A = zpmid['A'].sel(phase='2p')
+
+    # pressure
+    f0 = 0
+    for yf,c,cl in zip(['oPimag','dPimag','Pth','Pturb'],Pcolors,['w','w','k','k']):
+        if not (yf in zpmid): continue
+        if Upsilon:
+            y = zpmid[yf].sel(phase='2p')/A*s.u.pok/zpmid['sfr40']*yield_conv
+            width=0.8
+            offset=0.0
+            align='center'
+        else:
+            y = zpmid[yf].sel(phase='2p')/A*Punit
+            width=-0.4
+            offset=-0.2
+            align='edge'
+        qy = y.quantile(qr).data
+        plt.bar(label,qy[1],bottom=f0,color=c,
+                width=width,align=align)
+
+        if plabel:
+            plt.annotate(zpmid.attrs['Ulabels'][yf] if Upsilon else zpmid.attrs['Plabels'][yf],
+                         (i+offset,f0+0.5*qy[1]),
+                         color=cl, ha='center',va='center')
+        f0 = f0+qy[1]
+    if 'Prad' in zpw:
+        y = zpw['Prad']*Punit
+        qy = y.quantile(qr).data
+        plt.bar(label,qy[1],bottom=f0,color=Wcolors[-1],
+                width=width,align=align)
+    if Upsilon:
+        y = zpmid['Ptot'].sel(phase='2p')/A*s.u.pok/zpmid['sfr40']*yield_conv
+    else:
+        y = zpmid['Ptot'].sel(phase='2p')/A*Punit
+    qy = y.quantile(qr).data
+    if errorbar_color is not None: plt.plot([i+offset,i+offset],[qy[0],qy[2]],color=errorbar_color)
+#     plt.plot([i+offset,i+offset],[qy[1],qy[1]],'or')
+
+    # weight
+    if not Upsilon:
+        f0 = 0
+        for yf,c,cl in zip(['Wsg','Wext'],Wcolors[1:],['w','k']):
+            if not (yf in zpmid): continue
+            y = zpw[yf]*Punit
+            qy = y.quantile(qr).data
+            plt.bar(label,qy[1],bottom=f0,color=c,
+                    width=-width,align=align)
+            if plabel:
+                plt.annotate(zpmid.attrs['Plabels'][yf],(i-offset,f0+0.5*qy[1]),
+                            color=cl, ha='center',va='center')
+            f0 = f0+qy[1]
+        y = (zpw['W'])*Punit
+        qy = y.quantile(qr).data
+        if errorbar_color is not None: plt.plot([i-offset,i-offset],[qy[0],qy[2]],color=errorbar_color)
+        plt.ylabel(r'$P$'+Punit_label)
+    else:
+        plt.ylabel(r'$\Upsilon$'+Uunit_label)
+    ax.tick_params(axis='x', which='minor', bottom=False, top=False)
+
+def plot_PWYbox(pdata,m,tr,i,nmodels,legend=True,Upsilon=False,
+                Pcomps = ['Ptot','Pturb','Pth','dPimag','oPimag'],
+                label='',ax=None, edge_color='k'):
+    s = pdata.sa.set_model(m)
+
+    Punit_label=r'$/k_B\,[10^4{\rm cm^{-3}\,K}]$'
+    Punit = 1.e-4*s.u.pok
+    Pcolors=cmr.get_sub_cmap('cmr.cosmic',0.3,1,N=4).colors
+    Pcolors=cmr.get_sub_cmap('cmr.neutral',0.3,0.9,N=4).colors
+    Wcolors=cmr.get_sub_cmap('cmr.ember',0.3,1,N=4).colors
+    yield_conv = ((au.cm**(-3)*au.K*ac.k_B)/(ac.M_sun/ac.kpc**2/au.yr)).to('km/s').value
+    Uunit_label=r'$\,[{\rm km/s}]$'
+    if ax is None: ax = plt.gca()
+    plt.sca(ax)
+
+    zpmid, zpw = pdata.get_PW_time_series(m)
+    zpmid = zpmid.sel(time=tr)
+    zpw = zpw.sel(time=tr)
+
+    Ptot=zpmid['Ptot'].sel(phase='2p')
+    A = zpmid['A'].sel(phase='2p')
+    ncomp = len(Pcomps)
+    w = 0.8/nmodels
+
+    Ycomp = []
+    pos = []
+    Ylabels = []
+    for j,yf in enumerate(Pcomps):
+        if yf == 'sfr':
+            y = zpmid['sfr40']
+            Ylabels.append(r'$\Sigma_{\rm SFR}$')
+        else:
+            if Upsilon:
+                Ylabels.append(zpmid.attrs['Ulabels'][yf])
+            else:
+                Ylabels.append(zpmid.attrs['Plabels'][yf])
+            if not (yf in zpmid): continue
+            if Upsilon:
+                y = zpmid[yf].sel(phase='2p')/A*s.u.pok/zpmid['sfr40']*yield_conv
+            else:
+                y = zpmid[yf].sel(phase='2p')/A*s.u.pok
+
+        Ycomp.append(y.dropna(dim='time'))
+
+        offset = (i)/nmodels*0.8-0.4 + 0.5*w
+        pos.append(j+offset)
+    box = plt.boxplot(Ycomp,positions=pos,
+                      widths=w,whis=[16,84],showfliers=False,
+                      patch_artist=True,
+#                       showmeans=True,
+#                       meanprops=dict(markerfacecolor='tab:orange',markeredgecolor='w',
+#                                      markersize=5,markeredgewidth=0.5,marker='*')
+                     )
+    for element in ['boxes', 'whiskers', 'fliers', 'means', 'medians', 'caps']:
+        plt.setp(box[element], color=edge_color)
+    plt.setp(box['boxes'],facecolor=s.color)
+
+    plt.xticks(ticks=np.arange(ncomp),labels=Ylabels,fontsize='medium')
+    plt.xlim(-0.5,ncomp-0.5)
+    for c, yf, xc in zip(Pcolors, Pcomps[::-1], np.arange(ncomp)[::-1]):
+        plt.axvspan(xc-0.5,xc+0.5,color=c,alpha=0.1,lw=0)
+    if Upsilon:
+        plt.ylabel(r'$\Upsilon$'+Uunit_label)
+    else:
+        plt.ylabel(r'$P$'+Punit_label)
+    plt.yscale('log')
+    if legend:
+        x0=0.85
+        dx=0.02
+        y0=0.95
+        dy=0.05
+
+        c = s.color
+        plt.annotate('        ',(x0,y0-dy*i),xycoords='axes fraction',
+                     ha='right',va='top',size='xx-small',
+                     backgroundcolor=c,color=c)
+        plt.annotate(label,(x0+dx,y0-dy*i),xycoords='axes fraction',
+                     size='xx-small',ha='left',va='top')
+    ax.tick_params(axis='x', which='minor', bottom=False, top=False)
