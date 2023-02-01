@@ -375,7 +375,8 @@ class PaperData(object):
             fzpw=os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))
             if os.path.isfile(fzpmid):
                 with xr.open_dataset(fzpmid) as zpmid:
-                    s.zpmid = PaperData.set_zprof_attr(zpmid)
+                    zpmid.attrs = PaperData.set_zprof_attr()
+                    s.zpmid = zpmid
             if os.path.isfile(fzpw):
                 with xr.open_dataset(fzpw) as zpwmid: s.zpwmid = zpwmid
 
@@ -384,8 +385,10 @@ class PaperData(object):
         return zpmid, zpwmid
 
     @staticmethod
-    def get_Pmid_time_series(s,sfr=None,dt=0,zrange=slice(-10,10),recal=False):
-        if hasattr(s,'zpmid') and hasattr(s,'zpwmid') and (not recal):
+    def get_Pmid_time_series(s,sfr=None,dt=0,zrange=slice(-10,10),
+                             recal=False, return_zprof=False):
+        if (hasattr(s,'zpmid') and hasattr(s,'zpwmid') and
+           (not recal) and (not return_zprof)):
             # smoothing
             if dt>0:
                 window = int(dt/s.zpmid.time.diff(dim='time').median())
@@ -469,6 +472,8 @@ class PaperData(object):
         # szeff
         szeff = np.sqrt(zpmid['Ptot'].sum(dim='z')/zpmid['nH'].sum(dim='z'))
 
+        if return_zprof: return zpmid
+
         # select midplane
         zpmid = zpmid.sel(z=zrange).mean(dim='z')
         zpwmid = zpmid.sum(dim='phase')
@@ -520,7 +525,8 @@ class PaperData(object):
         zpmid.to_netcdf(fzpmid)
         zpwmid.to_netcdf(fzpw)
 
-        s.zpmid = PaperData.set_zprof_attr(zpmid)
+        zpmid.attrs = PaperData.set_zprof_attr()
+        s.zpmid = zpmid
         s.zpwmid = zpwmid
 
         # smoothing
@@ -531,7 +537,8 @@ class PaperData(object):
         return zpmid, zpwmid
 
     @staticmethod
-    def set_zprof_attr(zpmid):
+    def set_zprof_attr(attrs=None):
+        if attrs is None: attrs=dict()
         # misc.
         phcolors=get_phcolor_dict(cmr.pride,cmin=0.1,cmax=0.8)
         phcolors['WIM']=phcolors['WPIM']
@@ -548,13 +555,13 @@ class PaperData(object):
         Ulabels = {'Ptot':r'$\Upsilon_{\rm tot}$','Pth':r'$\Upsilon_{\rm th}$',
                   'Pturb':r'$\Upsilon_{\rm turb}$','Pimag':r'$\Upsilon_{\rm mag}$',
                   'dPimag':r'$\Upsilon_{\delta B}$','oPimag':r'$\Upsilon_{\overline{B}}$'}
-        zpmid.attrs['colors']=colors
-        zpmid.attrs['labels']=labels
-        zpmid.attrs['Plabels']=Plabels
-        zpmid.attrs['Ulabels']=Ulabels
-        zpmid.attrs['Pcolors']=Pcolors
+        attrs['colors']=colors
+        attrs['labels']=labels
+        attrs['Plabels']=Plabels
+        attrs['Ulabels']=Ulabels
+        attrs['Pcolors']=Pcolors
 
-        return zpmid
+        return attrs
 
     @staticmethod
     def plot_basics(h,name='model',axes=None):

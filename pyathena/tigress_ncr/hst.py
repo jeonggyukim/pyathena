@@ -593,7 +593,7 @@ def get_snr(sntime, time, tbin="auto", snth=100.0):
 
     snt = sntime.to_numpy()
     t = time.to_numpy()
-    if tbin is "auto":
+    if tbin == "auto":
         tbin = 0.0
         dtbin = 0.1
         snrmean = 0.0
