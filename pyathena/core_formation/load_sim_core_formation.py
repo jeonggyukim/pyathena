@@ -4,12 +4,14 @@ import pandas as pd
 import numpy as np
 
 from ..load_sim import LoadSim
+from ..io.timing_reader import TimingReader
 from .hst import Hst
 from .slc_prj import SliceProj
 from .tools import Tools
 from .pdf import LognormalPDF
 
-class LoadSimCoreFormation(LoadSim, Hst, SliceProj, Tools, LognormalPDF):
+class LoadSimCoreFormation(LoadSim, Hst, SliceProj, Tools, LognormalPDF,
+                           TimingReader):
     """LoadSim class for analyzing core collapse simulations."""
 
     def __init__(self, basedir=None, savdir=None, load_method='yt', verbose=False):
@@ -33,19 +35,21 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, Tools, LognormalPDF):
             accepted.
         """
 
-        if basedir is not None:
-            super().__init__(basedir, savdir=savdir, load_method=load_method,
-                             units=None, verbose=verbose)
-            # Set domain
-            self.domain = self._get_domain_from_par(self.par)
-            LognormalPDF.__init__(self, self.par['problem']['Mach'])
-
         # Set unit system
         # [L] = L_{J,0}, [M] = M_{J,0}, [V] = c_s
         self.rho0 = 1.0
         self.cs = 1.0
         self.G = np.pi
         self.tff = np.sqrt(3/32)
+
+        if basedir is not None:
+            super().__init__(basedir, savdir=savdir, load_method=load_method,
+                             units=None, verbose=verbose)
+            LognormalPDF.__init__(self, self.par['problem']['Mach'])
+            TimingReader.__init__(self, self.basedir, self.problem_id)
+
+            # Set domain
+            self.domain = self._get_domain_from_par(self.par)
 
 class LoadSimCoreFormationAll(object):
     """Class to load multiple simulations"""
