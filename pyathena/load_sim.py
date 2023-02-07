@@ -254,7 +254,7 @@ class LoadSim(object):
         return self.ds
 
     def load_hdf5(self, num=None, ihdf5=None,
-                  outvar=None, outid=None, load_method=None):
+                  outvar=None, outid=None, load_method=None, **kwargs):
         """Function to read Athena hdf5 file using pythena or yt and
         return DataSet object.
 
@@ -303,12 +303,7 @@ class LoadSim(object):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
 
         if self.load_method == 'pyathena':
-            if self.par['mesh']['refinement'] != 'none':
-                self.logger.error('load_method "{0:s}" does not support mesh\
-                        refinement data. Use "yt" instead'.format(self.load_method))
-                self.ds = None
-            else:
-                self.ds = read_hdf5(self.fhdf5)
+            self.ds = read_hdf5(self.fhdf5, **kwargs)
 
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):

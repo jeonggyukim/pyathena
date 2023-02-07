@@ -7,7 +7,7 @@ import numpy as np
 
 from .athena_read import athdf
 
-def read_hdf5(filename):
+def read_hdf5(filename, **kwargs):
     """Read Athena hdf5 file and convert it to xarray Dataset
 
     Parameters
@@ -19,8 +19,8 @@ def read_hdf5(filename):
     -------
     xarray.Dataset
     """
-    ds = athdf(filename)
-
+    ds = athdf(filename, **kwargs)
+    
     # Convert to xarray object
     varnames = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
     variables = [(['z', 'y', 'x'], ds[varname]) for varname in varnames]
