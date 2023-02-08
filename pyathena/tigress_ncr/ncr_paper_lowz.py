@@ -38,6 +38,8 @@ class LowZData(PaperData):
                 head = 'R8'
             elif 'LGR4' in m:
                 head = 'LGR4'
+            elif 'LGR8' in m:
+                head = 'LGR8'
 
             if '.b1.' in m:
                 head += '-b1'
@@ -48,6 +50,8 @@ class LowZData(PaperData):
                 head += '-S30'
             if 'S100' in m:
                 head += '-S100'
+            if 'S05' in m:
+                head += '-S05'
             print(head, m)
             if head in mgroup:
                 mgroup[head].append(m)
@@ -59,11 +63,15 @@ class LowZData(PaperData):
         self.mgroup = mgroup
 
     def _set_torb(self):
+        self.torb = dict()
         self.torb_Myr = dict()
         self.torb_code = dict()
         for m in self.mlist:
             s = self.sa.set_model(m)
             torb = 2*np.pi/s.par['problem']['Omega']
+            s.torb_code = torb
+            s.torb_Myr = torb*s.u.Myr
+            self.torb[m] = torb
             if 'R8' in m:
                 self.torb_code['R8'] = torb
                 self.torb_Myr['R8'] = torb*s.u.Myr
@@ -196,6 +204,52 @@ class LowZData(PaperData):
             Zlist.append(s.Zdust)
         return namelist,hlist,Zlist
 
+    def collect_zpdata(self,m,trange=None,reduce=True,recal=False,
+                       func=np.mean,**func_kwargs):
+        zpmid,zpwmid = self.get_PW_time_series(m,recal=recal)
+        if m in self.mlist_early:
+            zpmid_early,zpwmid_early = self.get_PW_time_series(self.mlist_early[m],recal=recal)
+            tmax = zpmid.time.min().data*0.999
+            tmin = zpmid_early.time.min().data
+            zpmid=xr.concat([zpmid_early.sel(time=slice(tmin,tmax)),zpmid],dim='time')
+            zpwmid=xr.concat([zpwmid_early.sel(time=slice(tmin,tmax)),zpwmid],dim='time')
+        s = self.sa.set_model(m)
+
+        if trange is None:
+            trange = slice(s.torb_Myr*2,s.torb_Myr*5)
+
+        zpmid = zpmid.sel(time=trange)
+        zpwmid = zpwmid.sel(time=trange)
+
+        ydata = xr.Dataset()
+
+        yield_conv = ((au.cm**(-3)*au.K*ac.k_B)/(ac.M_sun/ac.kpc**2/au.yr)).to('km/s').value
+        A = zpmid['A'].sel(phase='2p')
+        for yf in ['Ptot','Pturb','Pth','Pimag','oPimag','dPimag','Prad']:
+            y = zpmid[yf].sel(phase='2p')/A*s.u.pok
+            ydata[yf] = y
+            y = zpmid[yf].sel(phase='2p')/A*s.u.pok/zpmid['sfr40']*yield_conv
+            ydata[yf.replace('Pi','Y').replace('P','Y')] = y
+        for yf in ['nH']:
+            y = zpmid[yf].sel(phase='2p')/A
+            ydata[yf] = y
+        for yf in ['sigma_eff_mid','sigma_eff','sigma_turb_mid','sigma_turb',
+                   'sigma_th_mid','sigma_th']:
+            y = zpmid[yf].sel(phase='2p')
+            ydata[yf] = y
+        for yf in ['PDE','sfr10','sfr40','sfr100','Sigma_gas']:
+            ydata[yf] = zpmid[yf]
+        ydata['W'] = zpwmid['W']*s.u.pok
+        ydata['tdep40'] = zpmid['Sigma_gas']/zpmid['sfr40']
+        ydata['Zgas'] = s.Zgas*zpmid['Sigma_gas']/zpmid['Sigma_gas']
+        ydata['Zdust'] = s.Zdust*zpmid['Sigma_gas']/zpmid['Sigma_gas']
+
+        if reduce: ydata = ydata.reduce(func,dim='time',**func_kwargs)
+        ydata = ydata.to_array().drop('phase')
+        ydata = ydata.assign_coords(name=m)
+
+        return ydata
+
     def add_legend(self,kind='R8',main=True,beta=True,beta_loc=5,**kwargs):
         colors = self.plt_kwargs[kind]['colors']
         from matplotlib.lines import Line2D
@@ -217,28 +271,35 @@ class LowZData(PaperData):
             leg2 = plt.legend(custom_lines2,labels,loc=beta_loc,**kwargs)
             if main: plt.gca().add_artist(leg1)
 
-    def get_PW_time_series(self,m,dt=0,zrange=slice(-10,10),from_files=True,recal=False):
+    def get_PW_time_series(self,m,dt=0,zrange=slice(-10,10),recal=False):
         s = self.sa.set_model(m)
-        if from_files:
-            fzpmid=os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id))
-            fzpw=os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))
-            if os.path.isfile(fzpmid):
-                with xr.open_dataset(fzpmid) as zpmid:
-                    zpmid.attrs = PaperData.set_zprof_attr()
-                    s.zpmid = zpmid
-            if os.path.isfile(fzpw):
-                with xr.open_dataset(fzpw) as zpwmid: s.zpwmid = zpwmid
-            if (hasattr(s,'zpmid') and hasattr(s,'zpwmid') and (not recal)):
-                # smoothing
-                if dt>0:
-                    window = int(dt/s.zpmid.time.diff(dim='time').median())
-                    zpmid = s.zpmid.rolling(time=window,center=True,min_periods=1).mean()
-                else:
-                    zpmid = s.zpmid
-                return zpmid, s.zpwmid
 
-        zprof = get_PW_zprof(s)
-        zpmid, zpwmid = get_PW_time_series(s,dt=dt,zrange=zrange,recal=recal)
+        # test needs for recalculation
+        zpfiles = [os.path.join(s.basedir,'zprof','{}.PWzprof.nc'.format(s.problem_id)),
+                   os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id)),
+                   os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))]
+        print("Getting P, W time series for {}".format(m))
+
+        for f in zpfiles:
+            isexist = os.path.isfile(f)
+            if isexist:
+                isold = os.path.getmtime(f) < os.path.getmtime(s.files['zprof'][-1])
+                recal = recal | isold
+                if isold:
+                    print("  -- {} is old".format(f))
+                    break
+            else:
+                print("  -- {} is not available".format(f))
+                recal = recal | (~isexist)
+                break
+
+        if not recal:
+            print("  -- read from files")
+        else:
+            print("  -- recalculate from zprof")
+
+        zprof = get_PW_zprof(s, recal=recal)
+        zpmid, zpwmid = get_PW_time_series_from_zprof(s,zprof,dt=dt,zrange=zrange,recal=recal)
         return zpmid, zpwmid
 
 
@@ -278,8 +339,9 @@ def add_boxplot(pdata,group='R8-b1',field='sfr40',offset=0,tslice=None,label=Tru
     ls = pdata.plt_kwargs[group]['ls']
 
     if 'b10' in group: pos = pos.astype('float')+width*1.1
-    box = plt.boxplot(ylist,positions=pos+offset,widths=width,showfliers=False,patch_artist=True,
-                        medianprops=dict(color='k',ls=ls))
+    box = plt.boxplot(ylist,positions=pos+offset,widths=width,
+                      showfliers=False,patch_artist=True,
+                      medianprops=dict(color='k',ls=ls))
 
     for artist,c in zip(box['boxes'],colors):
         plt.setp(artist, color=c, alpha=0.8, ls = ls)
@@ -391,23 +453,31 @@ def get_PW_zprof(s,recal=False):
 
     return zpmid
 
-def get_PW_time_series_from_zprof(s,zpmid,sfr=None,dt=0,
-                                    zrange=slice(-10,10),recal=False):
-    if (hasattr(s,'zpmid') and hasattr(s,'zpwmid') and (not recal)):
+def get_PW_time_series_from_zprof(s,zprof,sfr=None,dt=0,zrange=slice(-10,10),recal=False):
+    fzpmid=os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id))
+    fzpw=os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))
+
+    if (os.path.isfile(fzpmid) and os.path.isfile(fzpw)) and (not recal):
+        zpmid = xr.open_dataset(fzpmid)
+        zpmid.close()
         # smoothing
         if dt>0:
-            window = int(dt/s.zpmid.time.diff(dim='time').median())
-            zpmid_t = s.zpmid.rolling(time=window,center=True,min_periods=1).mean()
+            window = int(dt/zpmid.time.diff(dim='time').median())
+            zpmid_t = zpmid.rolling(time=window,center=True,min_periods=1).mean()
         else:
-            zpmid_t = s.zpmid
-        return zpmid_t, s.zpwmid
+            zpmid_t = zpmid
+        zpwmid = xr.open_dataset(fzpw)
+        zpwmid.close()
+        return zpmid_t, zpwmid
 
     # szeff
-    szeff = np.sqrt(zpmid['Ptot'].sum(dim='z')/zpmid['nH'].sum(dim='z'))
+    szeff = np.sqrt(zprof['Ptot'].sum(dim='z')/zprof['nH'].sum(dim='z'))
+    vzeff = np.sqrt(zprof['Pturb'].sum(dim='z')/zprof['nH'].sum(dim='z'))
+    cseff = np.sqrt(zprof['Pth'].sum(dim='z')/zprof['nH'].sum(dim='z'))
 
     # select midplane
-    zpmid = zpmid.sel(z=zrange).mean(dim='z')
-    zpwmid = zpmid.sum(dim='phase')
+    zpmid = zprof.sel(z=zrange).mean(dim='z')
+    zpwmid = zprof.sel(z=zrange).mean(dim='z').sum(dim='phase')
 
     # SFR from history
     vol = np.prod(s.domain['Lx'])
@@ -440,7 +510,11 @@ def get_PW_time_series_from_zprof(s,zpmid,sfr=None,dt=0,
     # PDE
 
     zpmid['sigma_eff'] = szeff
+    zpmid['sigma_turb'] = vzeff
+    zpmid['sigma_th'] = cseff
     zpmid['sigma_eff_mid'] = np.sqrt(zpmid['Ptot']/zpmid['nH'])
+    zpmid['sigma_turb_mid'] = np.sqrt(zpmid['Pturb']/zpmid['nH'])
+    zpmid['sigma_th_mid'] = np.sqrt(zpmid['Pth']/zpmid['nH'])
     zpmid['Sigma_gas'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['mass']*s.u.Msun*vol/area),coords=[zpmid.time])
     rhosd=0.5*s.par['problem']['SurfS']/s.par['problem']['zstar']+s.par['problem']['rhodm']
     zpmid['PDE1'] = np.pi*zpmid['Sigma_gas']**2/2.0*(ac.G*(ac.M_sun/ac.pc**2)**2/ac.k_B).cgs.value
@@ -451,8 +525,6 @@ def get_PW_time_series_from_zprof(s,zpmid,sfr=None,dt=0,
     zpmid['PDE_2p'] = zpmid['PDE1']+zpmid['PDE2_2p']
     zpmid['PDE'] = zpmid['PDE1']+zpmid['PDE2']
 
-    fzpmid=os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id))
-    fzpw=os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))
     if os.path.isfile(fzpmid): os.remove(fzpmid)
     if os.path.isfile(fzpw): os.remove(fzpw)
 
@@ -460,8 +532,6 @@ def get_PW_time_series_from_zprof(s,zpmid,sfr=None,dt=0,
     zpwmid.to_netcdf(fzpw)
 
     zpmid.attrs = PaperData.set_zprof_attr()
-    s.zpmid = zpmid
-    s.zpwmid = zpwmid
 
     # smoothing
     if dt>0:
