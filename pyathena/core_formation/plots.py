@@ -1,8 +1,37 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import xarray as xr
+from matplotlib.colors import LogNorm
+
+def plot_projection(s, ds, field=('athena_pp','dens'), axis='z',
+                    vmin=1e-1, vmax=2e2, cmap='pink_r', ax=None, cax=None,
+                    add_colorbar=True, transpose=False):
+    """Requires load_method='yt'"""
+    # create projection using yt
+    prj = ds.proj(field, axis)
+  
+    # some domain informations
+    xmin, ymin, zmin = s.domain['le']
+    xmax, ymax, zmax = s.domain['re']
+    Lx, Ly, Lz = s.domain['Lx']
+    wh = dict(zip(('x','y','z'), ((Ly, Lz), (Lz, Lx), (Lx, Ly))))
+    extent = dict(zip(('x','y','z'), ((ymin,ymax,zmin,zmax),
+                                      (zmin,zmax,xmin,xmax),
+                                      (xmin,xmax,ymin,ymax))))
+    prj = prj.to_frb(width=wh[axis][0], height=wh[axis][1], resolution=800)
+    prj = np.array(prj[field])
+    if ax is not None:
+        plt.sca(ax)
+    if transpose:
+        prj = prj.T
+    img = plt.imshow(prj, norm=LogNorm(vmin, vmax), origin='lower',
+                     extent=extent[axis], cmap=cmap)
+    if add_colorbar:
+        plt.colorbar(cax=cax)
+    return img
 
 def plot_Pspec(s, ds, ax=None):
+    """Requires load_method='pyathena'"""
     # prepare frequencies
     from scipy.fft import fftn, fftfreq, fftshift, ifftn
     from pyathena.util.transform import groupby_bins
@@ -54,7 +83,8 @@ def plot_Pspec(s, ds, ax=None):
     plt.xlim(1/lmax, 1/lmin)
     plt.xlabel(r'$l/L_J$')
 
-def plot_PDF(ds, ax=None):
+def plot_PDF(s, ds, ax=None):
+    """Requires load_method='pyathena'"""
     def gaussian(x, mu, sig):
         return np.exp(-(x - mu)**2 / (2*sig**2))/np.sqrt(2*np.pi*sig**2)
 

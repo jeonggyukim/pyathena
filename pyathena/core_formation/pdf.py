@@ -3,16 +3,13 @@ from scipy.special import erfinv
 
 class LognormalPDF:
     """
-    Lognormal density PDF
+    Lognormal probability distribution function
+
     b is the order unity coefficient that depends on the ratio of the
     compressive and solenoidal modes in the turbulence
     (see Federrath 2010, fig. 8; zeta=0.5 corresponds to the natural
     mixture, at which b~0.4)
 
-    methods
-    -------
-    fx(x):
-    get_contrast(frac)
     """
     def __init__(self, Mach, b=0.4, weight='mass'):
         self.mu = 0.5*np.log(1 + b**2*Mach**2)
