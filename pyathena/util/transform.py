@@ -1,6 +1,7 @@
 import numpy as np
 import xarray as xr
 
+
 def to_spherical(vec, origin):
     """Transform vector components from Cartesian to spherical coordinates
 
@@ -24,13 +25,13 @@ def to_spherical(vec, origin):
     r = np.sqrt(R**2 + (z-z0)**2)
     th = np.arctan2(R, z-z0)
     ph = np.arctan2(y-y0, x-x0)
-    ph = ph.where(ph>=0, other=ph + 2*np.pi)
+    ph = ph.where(ph >= 0, other=ph + 2*np.pi)
     sin_th, cos_th = R/r, (z-z0)/r
     sin_ph, cos_ph = (y-y0)/R, (x-x0)/R
-    sin_th.loc[dict(x=x0,y=y0,z=z0)] = 0
-    cos_th.loc[dict(x=x0,y=y0,z=z0)] = 0
-    sin_ph.loc[dict(x=x0,y=y0)] = 0
-    cos_ph.loc[dict(x=x0,y=y0)] = 0
+    sin_th.loc[dict(x=x0, y=y0, z=z0)] = 0
+    cos_th.loc[dict(x=x0, y=y0, z=z0)] = 0
+    sin_ph.loc[dict(x=x0, y=y0)] = 0
+    cos_ph.loc[dict(x=x0, y=y0)] = 0
     # transform vector components
     v_r = (vx*sin_th*cos_ph + vy*sin_th*sin_ph + vz*cos_th).rename('v_r')
     v_th = (vx*cos_th*cos_ph + vy*cos_th*sin_ph - vz*sin_th).rename('v_theta')
@@ -47,6 +48,7 @@ def to_spherical(vec, origin):
     v_ph.coords['ph'] = ph
     vec_sph = (v_r, v_th, v_ph)
     return vec_sph
+
 
 def groupby_bins(dat, coord, edges, cumulative=False):
     """Alternative to xr.groupby_bins, which is very slow
@@ -69,9 +71,9 @@ def groupby_bins(dat, coord, edges, cumulative=False):
     res: xarray.DataArray
         binned array
     """
-    dat = dat.transpose('z','y','x')
-    fc = dat[coord].data.flatten() # flattened coordinates
-    fd = dat.data.flatten() # flattened data
+    dat = dat.transpose('z', 'y', 'x')
+    fc = dat[coord].data.flatten()  # flattened coordinates
+    fd = dat.data.flatten()  # flattened data
     bin_sum = np.histogram(fc, edges, weights=fd)[0]
     bin_cnt = np.histogram(fc, edges)[0]
     if cumulative:
@@ -80,5 +82,5 @@ def groupby_bins(dat, coord, edges, cumulative=False):
     res = bin_sum / bin_cnt
     # set new coordinates at the bin center
     centers = 0.5*(edges[1:] + edges[:-1])
-    res = xr.DataArray(data=res, coords={coord:centers}, name=dat.name)
+    res = xr.DataArray(data=res, coords={coord: centers}, name=dat.name)
     return res

@@ -2,6 +2,7 @@ from scipy.integrate import odeint, quad
 from scipy.optimize import minimize_scalar, brentq
 import numpy as np
 
+
 class TES:
     """Turbulent Equilibrium Sphere
 
@@ -23,10 +24,10 @@ class TES:
         self.xi_s = xi_s
         self.xi_min = 1e-5
         self.xi_max = 10
-    
+
     def dydx(self, y, x):
         """Hydrostatic equilibrium equation
-        
+
         Parameters
         ----------
         y : array_like
@@ -36,12 +37,14 @@ class TES:
         y1, y2 = y
         dy1 = y2
         f = 1 + (x/self.xi_s)**(2*self.p)
-        dy2 = -(2*self.p*(1 - 1/f) + 2)/x*y2 - 2*self.p*(2*self.p + 1)*(1 - 1/f)/x**2 - 4*np.pi**2*np.exp(y1)/f
+        dy2 = -(2*self.p*(1 - 1/f) + 2)/x*y2\
+              - 2*self.p*(2*self.p + 1)*(1 - 1/f)/x**2\
+              - 4*np.pi**2*np.exp(y1)/f
         return np.array([dy1, dy2])
-    
+
     def solve(self, xi, rat):
         """Solve equilibrium equation
-        
+
         Returns
         -------
         u : array_like
@@ -63,15 +66,15 @@ class TES:
             u = y[istart:,0]
             du = y[istart:,1]
         return u, du
-    
+
     def computeRadius(self, rat):
         """Calculate the dimensionless radius where rho = rho_e"""
         xi0 = brentq(lambda x: self.solve(x, rat)[0], self.xi_min, self.xi_max)
         return xi0
-    
+
     def computeMass(self, rat):
         """Calculate dimensionless mass
-        
+
         Description
         -----------
         The dimensionless mass is defined as
@@ -81,9 +84,9 @@ class TES:
         xi0 = self.computeRadius(rat)
         u, du = self.solve(xi0, rat)
         f = 1 + (xi0/self.xi_s)**(2*self.p)
-        m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi 
+        m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
         return m.squeeze()[()]
-    
+
     def get_crit(self):
         res = minimize_scalar(lambda x: -self.computeMass(x),
                               bounds=(1e0, 1e3), method='Bounded')

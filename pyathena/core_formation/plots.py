@@ -3,13 +3,14 @@ import numpy as np
 import xarray as xr
 from matplotlib.colors import LogNorm
 
+
 def plot_projection(s, ds, field=('athena_pp','dens'), axis='z',
                     vmin=1e-1, vmax=2e2, cmap='pink_r', ax=None, cax=None,
                     add_colorbar=True, transpose=False):
     """Requires load_method='yt'"""
     # create projection using yt
     prj = ds.proj(field, axis)
-  
+
     # some domain informations
     xmin, ymin, zmin = s.domain['le']
     xmax, ymax, zmax = s.domain['re']
@@ -29,6 +30,7 @@ def plot_projection(s, ds, field=('athena_pp','dens'), axis='z',
     if add_colorbar:
         plt.colorbar(cax=cax)
     return img
+
 
 def plot_Pspec(s, ds, ax=None):
     """Requires load_method='pyathena'"""
@@ -83,6 +85,7 @@ def plot_Pspec(s, ds, ax=None):
     plt.xlim(1/lmax, 1/lmin)
     plt.xlabel(r'$l/L_J$')
 
+
 def plot_PDF(s, ds, ax=None):
     """Requires load_method='pyathena'"""
     def gaussian(x, mu, sig):
@@ -111,14 +114,22 @@ def plot_PDF(s, ds, ax=None):
     plt.plot(np.exp(centers), gaussian(centers, mu_m, sig_m), 'b:', lw=1)
 
     # annotations
-    plt.text(0.03, 0.9, r'$\mu = {:.2f}$'.format(mu_v), transform=plt.gca().transAxes, fontsize=15, c='r')
-    plt.text(0.03, 0.8, r'$\sigma = {:.2f}$'.format(sig_v), transform=plt.gca().transAxes, fontsize=15, c='r')
-    plt.text(0.03, 0.7, r'$\sigma^2/2 = {:.2f}$'.format(sig_v**2/2), transform=plt.gca().transAxes, fontsize=15, c='r')
-    plt.text(0.03, 0.6, r'$e^\mu = {:.2f}$'.format(np.exp(mu_v)), transform=plt.gca().transAxes, fontsize=15, c='r')
-    plt.text(0.72, 0.9, r'$\mu = {:.2f}$'.format(mu_m), transform=plt.gca().transAxes, fontsize=15, c='b')
-    plt.text(0.72, 0.8, r'$\sigma = {:.2f}$'.format(sig_m), transform=plt.gca().transAxes, fontsize=15, c='b')
-    plt.text(0.72, 0.7, r'$\sigma^2/2 = {:.2f}$'.format(sig_m**2/2), transform=plt.gca().transAxes, fontsize=15, c='b')
-    plt.text(0.72, 0.6, r'$e^\mu = {:.2f}$'.format(np.exp(mu_m)), transform=plt.gca().transAxes, fontsize=15, c='b')
+    plt.text(0.03, 0.9, r'$\mu = {:.2f}$'.format(mu_v),
+             transform=plt.gca().transAxes, fontsize=15, c='r')
+    plt.text(0.03, 0.8, r'$\sigma = {:.2f}$'.format(sig_v),
+             transform=plt.gca().transAxes, fontsize=15, c='r')
+    plt.text(0.03, 0.7, r'$\sigma^2/2 = {:.2f}$'.format(sig_v**2/2),
+             transform=plt.gca().transAxes, fontsize=15, c='r')
+    plt.text(0.03, 0.6, r'$e^\mu = {:.2f}$'.format(np.exp(mu_v)),
+             transform=plt.gca().transAxes, fontsize=15, c='r')
+    plt.text(0.72, 0.9, r'$\mu = {:.2f}$'.format(mu_m),
+             transform=plt.gca().transAxes, fontsize=15, c='b')
+    plt.text(0.72, 0.8, r'$\sigma = {:.2f}$'.format(sig_m),
+             transform=plt.gca().transAxes, fontsize=15, c='b')
+    plt.text(0.72, 0.7, r'$\sigma^2/2 = {:.2f}$'.format(sig_m**2/2),
+             transform=plt.gca().transAxes, fontsize=15, c='b')
+    plt.text(0.72, 0.6, r'$e^\mu = {:.2f}$'.format(np.exp(mu_m)),
+             transform=plt.gca().transAxes, fontsize=15, c='b')
     plt.xscale('log')
     plt.xlabel(r'$\rho/\rho_0$')
     plt.ylabel('volume or mass fraction')
@@ -126,4 +137,3 @@ def plot_PDF(s, ds, ax=None):
     plt.xlim(1e-4, 1e4)
     plt.ylim(0, 0.3)
     plt.xticks([1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4]);
-

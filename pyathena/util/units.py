@@ -2,6 +2,7 @@ import astropy.units as au
 import astropy.constants as ac
 import numpy as np
 
+
 class Units(object):
     """Simple class for simulation unit.
 
@@ -42,15 +43,16 @@ class Units(object):
         self.energy_density = self.pressure.to('erg/cm**3')
 
         self.mass_flux = (self.density*self.velocity).to('Msun kpc-2 yr-1')
-        self.momentum_flux = (self.density*self.velocity**2).to('Msun km s-1 kpc-2 yr-1')
+        self.momentum_flux = (self.density*self.velocity**2
+                              ).to('Msun km s-1 kpc-2 yr-1')
         self.energy_flux = (self.density*self.velocity**3).to('erg kpc-2 yr-1')
 
         # Define (physical constants in code units)^-1
         #
         # Opposite to the convention chosen by set_units function in
         # athena/src/units.c This is because in post-processing we want to
-        # convert from code units to more convenient ones by "multiplying" these
-        # constants
+        # convert from code units to more convenient ones by "multiplying"
+        # these constants
         self.cm = self.length.to('cm').value
         self.pc = self.length.to('pc').value
         self.kpc = self.length.to('kpc').value
@@ -65,6 +67,9 @@ class Units(object):
         self.muG = np.sqrt(4*np.pi*self.energy_density.cgs.value)/1e-6
 
         # For yt
-        self.units_override = dict(length_unit=(self.length.to('pc').value, 'pc'),
-                                   time_unit=(self.time.to('Myr').value, 'Myr'),
-                                   mass_unit=(self.mass.to('Msun').value, 'Msun'))
+        self.units_override = dict(length_unit=(
+                                       self.length.to('pc').value, 'pc'),
+                                   time_unit=(
+                                       self.time.to('Myr').value, 'Myr'),
+                                   mass_unit=(
+                                       self.mass.to('Msun').value, 'Msun'))
