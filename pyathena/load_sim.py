@@ -51,7 +51,7 @@ class LoadSim(object):
         load_method : str
             'pyathena' or 'yt' or 'pyathenaclassic'
         num : list of int
-            vtk output numbers
+            vtk or hdf5 output numbers
         u : Units object
             simulation unit
         dfi : dict
@@ -754,8 +754,11 @@ class LoadSim(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(self.files['vtk_tar'][0]).split('.')[-2:]
                     self.nums = self.nums_tar
-            self.nums_vtk_all = list(set(self.nums)|set(self.nums_id0)|set(self.nums_tar))
-            self.nums_vtk_all.sort()
+            try:
+                self.nums_vtk_all = list(set(self.nums)|set(self.nums_id0)|set(self.nums_tar))
+                self.nums_vtk_all.sort()
+            except TypeError:
+                self.nums_vtk_all = []
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
