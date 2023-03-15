@@ -207,6 +207,9 @@ class Hst:
                 self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
                 continue
 
+        hst['M_cl_ion'] = hst['M_cl'] - hst['M_cl_neu']
+        hst['M_cl_ion_of'] = hst['M_cl_of'] - hst['M_cl_neu_of']
+            
         ##########
         # Energy #
         ##########
@@ -308,6 +311,10 @@ class Hst:
                 self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
                 continue
 
+        hst['pr_xcm_cl_ion_of'] = hst['pr_xcm_cl_of'] - hst['pr_xcm_cl_neu_of']
+        hst['pr_cl_ion_of'] = hst['pr_cl_of'] - hst['pr_cl_neu_of']
+        hst['M_cl_ion_of'] = hst['M_cl_of'] - hst['M_cl_neu_of']
+
         ########################
         # Outward radial force #
         ########################
@@ -360,6 +367,17 @@ class Hst:
             hst['wind_Edot'] *= vol*u.erg/u.s
             hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr
             
+
+        if iSN:
+            try:
+                hsn = read_hst(self.files['sn'], force_override=force_override)
+                t_ = np.array(hst['time'])
+                Nsn, snbin = np.histogram(hsn.time, bins=np.concatenate(([t_[0]], t_)))
+                hst['Nsn'] = Nsn.cumsum()
+                hst['mass_snej'] = Nsn.cumsum()*self.par['feedback']['MejII'] # Mass of SN ejecta [Msun]
+            except KeyError:
+                pass
+
         return hst
     
             
@@ -545,7 +563,7 @@ class Hst:
         hst['Ltot'] = hst['Ltot_PH'] + hst['Ltot_LW'] + hst['Ltot_PE']
         # Should we multipy Ltot_PE by 1.25?
         hst['Ltot_over_c'] = ((hst['Ltot_PH'] + hst['Ltot_LW'] + self.par['radps']['frad_PE_boost']*hst['Ltot_PE']).values*\
-                              ac.L_sun/ac.c).to('Msun km s-1 Myr-1')
+                              ac.L_sun/ac.c).to('Msun km s-1 Myr-1').value
         hst['Ltot_over_c_int'] = cumtrapz(hst['Ltot_over_c'], hst['time'], initial=0.0)
         
         return hst
