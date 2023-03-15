@@ -44,7 +44,7 @@ def set_plt_fancy():
                                                      '#6d904f',
                                                      '#fe01b1',
                                                      '#06c2ac',
-                                                     '#fe019a', # neon pink
+                                                     '#66ff00', # chartreuse
                                                      '#810f7c',
                                                      '#8b8b8b', # gray
                                                      'black']) +
