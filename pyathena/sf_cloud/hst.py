@@ -575,8 +575,13 @@ class PlotHst(object):
     """
     
     def __init__(self, sa, df, models=None, suptitle=None, tlim=None, normed_x=False,
-                 ls=['-','--',':','-.'],
-                 lw=[1.5, 1.5, 1.5, 1.5],
+                 ls=['-','--',':','-.',
+                     '-','--',':','-.'],
+                 lw=[1.5, 1.5, 1.5, 1.5,
+                     3.0, 3.0, 3.0, 3.0],
+                 linelabels=['solid','dashed','dotted','dot-dashed',
+                             'thick solid','thick dashed',
+                             'thick dotted','thick dot-dashed'],
                  subplots_kwargs=dict(nrows=1, ncols=2,
                                       figsize=(15,5), merge_last_row=False),
                  plt_vars_kwargs=dict(),
@@ -589,9 +594,9 @@ class PlotHst(object):
         else:
             self.models = models
         self.models = np.atleast_1d(self.models)
-        self.linestyles = ['solid','dashed','dotted','dot-dashed']
         self.ls = ls
         self.lw = lw
+        self.linelabels = linelabels
         
         self.get_subplots(**subplots_kwargs)
         if suptitle is None:
@@ -638,11 +643,11 @@ class PlotHst(object):
         if len(self.models) == 1:
             suptitle = 'Model: {0:s}'.format(self.models[0])
         else:
-            for i,(ls, mdl) in enumerate(zip(self.linestyles, self.models)):
+            for i,(linelabel, mdl) in enumerate(zip(self.linelabels, self.models)):
                 if i > 0:
                     suptitle += '\n '
 
-                suptitle += '\n {0:s}: {1:s}'.format(ls,mdl)
+                suptitle += '\n {0:s}: {1:s}'.format(linelabel,mdl)
 
         self.fig.suptitle(suptitle, linespacing=0.7)
         
@@ -735,8 +740,7 @@ class PlotHst(object):
         if iWind:
             labels.extend([r'$M_{\rm wind}$',r'$M_{\ast,{\rm wind}}$'])
 
-        ax.legend(labels, loc=1)
-
+        ax.legend(labels, loc=4)
         
     def plt_volume(self, ax=None, models=None, setp_kwargs=None):
         ax, models, setp_kwargs = self.set_params(ax, models,
@@ -934,3 +938,80 @@ class PlotHst(object):
 # sax = ax.secondary_xaxis('top', functions=(t1,t2))
 # ax.xaxis.set_ticks_position('bottom')
 # sax.set_xlabel(r'$t/t_{\rm ff,0}$', labelpad=12)
+
+
+def plt_hst(sa,df,models,xlim_tau=(0,12),xlim_time=(0,20),colors=None,norm=None):
+    
+    fig,axes = plt.subplots(7,2,figsize=(12,30),constrained_layout=True)
+    
+    for i,mdl in enumerate(models):
+        print(mdl,end=' ')
+        df_ = df.loc[mdl]
+        h = df_['hst']
+        if colors is None:
+            c = df_['linecolor']
+        elif type(norm) == mpl.colors.LogNorm and\
+             type(colors) == mpl.colors.ListedColormap:
+            print(df_['Sigma'])
+            c = colors(norm(df_['Sigma']))
+        else:
+            c = colors[i]
+        M0 = df_['M']
+        vol = df_['domain']['Lx'].prod()
+        
+        # Gas mass
+        axes[0,0].plot(h['tau'],h['M_cl']/M0,label=mdl,c=c)
+        axes[0,0].plot(h['tau'],h['M_cl_ion']/M0,c=c,ls='--')
+        axes[0,1].plot(h['time'],h['M_cl']/M0,c=c)
+        axes[0,1].plot(h['time'],h['M_cl_ion']/M0,c=c,ls='--')
+
+        # Stellar mass
+        axes[1,0].plot(h['tau'],h['M_sp']/M0,c=c)
+        axes[1,1].plot(h['time'],h['M_sp']/M0,c=c)
+        
+        # Outflow mass
+        axes[2,0].plot(h['tau'],h['M_cl_of']/df_['M'],c=c)
+        axes[2,0].plot(h['tau'],h['M_cl_ion_of']/df_['M'],c=c,ls='--')
+        axes[2,1].plot(h['time'],h['M_cl_of']/df_['M'],c=c)
+        axes[2,1].plot(h['time'],h['M_cl_ion_of']/df_['M'],c=c,ls='--')
+
+        # Time averaged outflow velocity
+#         h['pr_xcm_cl_ion_of'] = h['pr_xcm_cl_of'] - h['pr_xcm_cl_neu_of']
+#         h['pr_cl_ion_of'] = h['pr_cl_of'] - h['pr_cl_neu_of']
+#         h['M_cl_ion_of'] = h['M_cl_of'] - h['M_cl_neu_of']
+        axes[3,0].plot(h['tau'], h['pr_xcm_cl_neu_of']/h['M_cl_neu_of'],c=c)
+        axes[3,0].plot(h['tau'], h['pr_xcm_cl_ion_of']/h['M_cl_ion_of'],c=c,ls='--')
+        axes[3,1].plot(h['time'], h['pr_xcm_cl_neu_of']/h['M_cl_neu_of'],c=c)
+        axes[3,1].plot(h['time'], h['pr_xcm_cl_ion_of']/h['M_cl_ion_of'],c=c,ls='--')
+
+        try:
+            # Qi
+            axes[4,0].plot(h['tau'],h['Qtot_PH']/vol,c=c)
+            axes[4,1].plot(h['time'],h['Qtot_PH']/vol,c=c)
+            # L_FUV
+            axes[5,0].plot(h['tau'],h['Ltot_FUV']/vol,c=c)
+            axes[5,1].plot(h['time'],h['Ltot_FUV']/vol,c=c)
+            # fesc
+            axes[6,0].plot(h['tau'],h['fesc_PH'],c=c)
+            axes[6,0].plot(h['tau'],h['fesc_FUV'],c=c,ls='--')
+            axes[6,1].plot(h['time'],h['fesc_PH'],c=c)
+            axes[6,1].plot(h['time'],h['fesc_FUV'],c=c,ls='--')
+        except KeyError:
+            pass
+    
+    plt.setp(axes[0,:], ylim=(1e-3,1), yscale='log', ylabel=r'$M_{\rm gas}/M_0$')
+    plt.setp(axes[1,:], ylim=(1e-3,1), yscale='log', ylabel=r'$M_*/M_0$')
+    plt.setp(axes[2,:], ylim=(0,1), yscale='linear', ylabel=r'$M_{\rm of}/M_0$')
+    plt.setp(axes[3,:], ylim=(0,30), yscale='linear', ylabel=r'$v_{\rm of} \equiv p_{\rm of}/M_{\rm of}$')
+    plt.setp(axes[4,:], ylim=(1e48,1e52), yscale='log', ylabel=r'$Q_{\rm i}\;[{\rm s}^{-1}]$')
+    plt.setp(axes[5,:], ylim=(1e4,1e8), yscale='log', ylabel=r'$L_{\rm FUV}\;[L_{\odot}]$')
+    plt.setp(axes[6,:], ylim=(1e-3,1), yscale='log', ylabel=r'$f_{\rm esc}$')
+ 
+    plt.setp(axes[:,0], xlabel=r'$t/t_{\rm ff,0}$', xlim=xlim_tau)
+    plt.setp(axes[:,1], xlabel=r'$t\,[{\rm Myr}]$', xlim=xlim_time)
+    
+    # Put a legend below current axis
+    fig.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
+               fancybox=True, shadow=True, ncol=3)
+    
+    return fig,axes

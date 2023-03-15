@@ -9,6 +9,7 @@ from matplotlib.colors import Normalize, LogNorm
 from ..plt_tools.cmap import Colormaps
 from ..plt_tools.plt_starpar import scatter_sp
 from ..plt_tools.make_movie import make_movie
+from ..util.cloud import Cloud
 
 mycm = Colormaps().cm
 
@@ -42,6 +43,14 @@ class PltSnapshotCombined:
             If 'star', plot slices through the most massive starpar.
         """
 
+        
+        cl = Cloud(M=self.par['problem']['M_cloud'],
+                   R=self.par['problem']['R_cloud'],
+                   alpha_vir=self.par['problem']['alpha_vir'])
+        norm = dict()
+        norm['nH'] = LogNorm(cl.nH.value*1e-3,cl.nH.value*1e3)
+        norm['pok'] = LogNorm(cl.nH.value*1e-2,cl.nH.value*1e4)
+        
         if self.par['radps']['irayt'] == 0:
             noUV = True
         else:
@@ -96,14 +105,13 @@ class PltSnapshotCombined:
                               (dd.y - x0 <  hL) & (dd.z - y0 <  hL), drop=True)
 
                 
-        dd['nH'].plot.imshow(ax=axes[0], norm=LogNorm(1e0,1e6),
+        dd['nH'].plot.imshow(ax=axes[0], norm=norm['nH'],
                              cmap='Spectral_r', add_labels=False, extend='neither',
                              cbar_kwargs=dict(label=r'$n_{\rm H}\;[{\rm cm}^{-3}]$'))
         dd['T'].plot.imshow(ax=axes[1], norm=LogNorm(1e0,1e6),
-                            #norm=Normalize(5e3,3e4),
                             cmap=mycm['T'], add_labels=False, extend='neither',
                             cbar_kwargs=dict(label=r'$T\;[{\rm K}]$'))
-        dd['pok'].plot.imshow(ax=axes[2], norm=LogNorm(1e3,1e12),
+        dd['pok'].plot.imshow(ax=axes[2], norm=norm['pok'],
                               cmap='inferno', add_labels=False, extend='neither',
                               cbar_kwargs=dict(label=r'$P/k_{\rm B}\;[{\rm cm}^{-3}\,{\rm K}]$'))
 
@@ -123,19 +131,25 @@ class PltSnapshotCombined:
                                     cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
             f = 'Erad_FUV'
             if dd[f].max() != 0.0:
-                dd[f].plot.imshow(ax=axes[4], norm=LogNorm(1e-12,1e-7),
+                dd[f].plot.imshow(ax=axes[4],
+                                  #norm=LogNorm(1e-12,1e-7),
+                                  norm=LogNorm(),
                                   cmap='viridis', add_labels=False, extend='neither',
               cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm FUV}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
 
         else:
             f = 'Erad_LyC'
             if dd[f].max() != 0.0:
-                dd[f].plot.imshow(ax=axes[3], norm=LogNorm(1e-12,1e-7),
+                dd[f].plot.imshow(ax=axes[3],
+                                  norm=LogNorm(1e-14,1e-10),
+                                  # norm=LogNorm(),
                                   cmap='viridis', add_labels=False, extend='neither',
               cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm LyC}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
             f = 'Erad_FUV'
             if dd[f].max() != 0.0:
-                dd[f].plot.imshow(ax=axes[4], norm=LogNorm(1e-12,1e-7),
+                dd[f].plot.imshow(ax=axes[4],
+                                  #norm=LogNorm(1e-12,1e-7),
+                                  norm=LogNorm(),
                                   cmap='viridis', add_labels=False, extend='neither',
               cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm FUV}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
 
@@ -144,7 +158,9 @@ class PltSnapshotCombined:
         axes[5].plot(h['tau'],h['M_sp'], label=r'$M_{\ast}$')
         axes[5].plot(h['tau'],h['M_H2_cl'], label=r'$M_{\rm H_2}$')
         axes[5].plot(h['tau'],h['M_cl_neu'], label=r'$M_{\rm cl,neu}$')
-        axes[5].plot(h['tau'],h['M_cl_of'], ls='--', label=r'$M_{\rm cl,of}$')
+        l,=axes[5].plot(h['tau'],h['M_cl_of'], label=r'$M_{\rm cl,of}$')
+        axes[5].plot(h['tau'],h['M_cl_ion_of'], ls='--', c=l.get_color(),
+                     label=r'$M_{\rm cl,of}$')
         axes[5].axvline(ds.domain['time']*self.u.Myr/self.cl.tff.value, c='grey', lw=0.5)
         axes[5].legend()
         plt.setp(axes[5], xlabel=r'$t/t_{\rm ff,0}$',
