@@ -1062,6 +1062,11 @@ class LoadSim(object):
 
             @functools.wraps(read_hst)
             def wrapper(cls, *args, **kwargs):
+                if 'hst_type' in kwargs:
+                    hst_type = kwargs['hst_type']
+                else:
+                    hst_type = 'hst'
+
                 if 'savdir' in kwargs:
                     savdir = kwargs['savdir']
                 else:
@@ -1080,28 +1085,27 @@ class LoadSim(object):
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not make directory')
 
-                fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
+                fpkl = osp.join(savdir, osp.basename(cls.files[hst_type]) +
                                  '.{0:s}.mod.p'.format(cls.basename))
-                #fpkl = osp.join(savdir, osp.basename(cls.files['hst']) + '.mod.p')
 
                 # Check if the original history file is updated
                 if not force_override and osp.exists(fpkl) and \
-                   osp.getmtime(fpkl) > osp.getmtime(cls.files['hst']):
+                   osp.getmtime(fpkl) > osp.getmtime(cls.files[hst_type]):
                     cls.logger.info('[read_hst]: Reading pickle.')
-                    #print('[read_hst]: Reading pickle.')
-                    hst = pd.read_pickle(fpkl)
-                    cls.hst = hst
-                    return hst
+                    df = pd.read_pickle(fpkl)
+                    return df
                 else:
-                    cls.logger.info('[read_hst]: Reading original hst file.')
-                    # If we are here, force_override is True or history file is updated.
+                    cls.logger.info('[read_hst]: Reading original {0:s} file.'.\
+                                    format(hst_type))
+                    # If we are here, force_override is True or raw data file is updated.
                     # Call read_hst function
-                    hst = read_hst(cls, *args, **kwargs)
+                    df = read_hst(cls, *args, **kwargs)
                     try:
-                        hst.to_pickle(fpkl)
+                        df.to_pickle(fpkl)
                     except (IOError, PermissionError) as e:
-                        cls.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
-                    return hst
+                        cls.logger.warning('[read_hst]: Could not pickle {0:s} to {1:s}.'.\
+                                           format(hst_type, fpkl))
+                    return df
 
             return wrapper
 

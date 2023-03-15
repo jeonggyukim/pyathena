@@ -25,7 +25,71 @@ np.seterr(divide='ignore', invalid='ignore')
 class Hst:
 
     @LoadSim.Decorators.check_pickle_hst
-    def read_hst(self, savdir=None, force_override=False):
+    def read_hst(self, hst_type='hst', savdir=None, force_override=False):
+        if hst_type == 'hst':
+            df = self._read_hst(hst_type='hst', savdir=None, force_override=False)
+        elif hst_type == 'sn':
+            df = self._read_sn(hst_type='sn', savdir=None, force_override=False)
+
+        return df
+    
+    def _read_sn(self, hst_type='sn', savdir=None, force_override=False):
+        """Function to read sn and convert quantities to convenient units
+        """
+
+        def get_snr(sntime,time,tbin='auto',snth=100.):
+            import xarray as xr
+            snt = sntime.to_numpy()
+            t = time.to_numpy()
+            if tbin == 'auto':
+                tbin = 0.0
+                dtbin=0.1
+                snrmean=0.
+                while (tbin < 40) & (snrmean < snth):
+                    tbin += dtbin
+                    idx=np.less(snt[np.newaxis,:],t[:,np.newaxis]) & \
+                    np.greater(snt[np.newaxis,:],(t[:,np.newaxis]-tbin))
+                    snr=idx.sum(axis=1)
+                    snrmean=snr.mean()
+
+                snr = snr/tbin
+            else:
+                idx=np.less(snt[np.newaxis,:],t[:,np.newaxis]) & \
+                np.greater(snt[np.newaxis,:],(t[:,np.newaxis]-tbin))
+                snr=idx.sum(axis=1)/tbin
+            snr = xr.DataArray(snr,coords=[time],dims=['time'])
+            return snr
+
+        hsn = read_hst(self.files['sn'], force_override=force_override)
+        
+        par = self.par
+        u = self.u
+        domain = self.domain
+        # volume of resolution element (code unit)
+        dvol = domain['dx'].prod()
+        # total volume of domain (code unit)
+        vol = domain['Lx'].prod()
+        vol_cgs = vol*u.cm**3
+        Myr_cgs = u.time
+
+        # hsn['snr'] = get_snr(hsn['time']*self.u.Myr,
+        #                      hst['time']*self.u.Myr)
+        
+        cl = Cloud(M=par['problem']['M_cloud'],
+                   R=par['problem']['R_cloud'],
+                   alpha_vir=par['problem']['alpha_vir'])
+
+        # Time in code unit
+        hsn['time_code'] = hsn['time']
+        # Time in Myr
+        hsn['time'] *= u.Myr
+        # Time in freefall time
+        hsn['tau'] = hsn['time']/cl.tff.to('Myr').value
+
+        return hsn
+    
+    #@LoadSim.Decorators.check_pickle_hst
+    def _read_hst(self, hst_type='hst', savdir=None, force_override=False):
         """Function to read hst and convert quantities to convenient units
         """
 
