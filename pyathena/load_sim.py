@@ -692,7 +692,7 @@ class LoadSim(object):
                                     format(self.basedir))
 
         # Find sn dump
-        if self.athena_pp:
+        if not self.athena_pp:
             fsn = self._find_match(sn_patterns)
             if fsn:
                 self.files['sn'] = fsn[0]
