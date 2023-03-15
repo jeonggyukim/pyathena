@@ -68,32 +68,39 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
     def test_newcool_params(self):
         s = self
         try:
-            s.iCoolH2colldiss = s.par['cooling']['iCoolH2colldiss']
+            s.iCoolH2colldiss = s.par["cooling"]["iCoolH2colldiss"]
         except KeyError:
             s.iCoolH2colldiss = 0
 
         try:
-            s.iCoolH2rovib = s.par['cooling']['iCoolH2rovib']
+            s.iCoolH2rovib = s.par["cooling"]["iCoolH2rovib"]
         except KeyError:
             s.iCoolH2rovib = 0
 
         try:
-            s.iCoolH2rovib = s.par['cooling']['iCoolH2rovib']
-        except KeyError:
-            s.iCoolH2rovib = 0
-
-        try:
-            s.ikgr_H2 = s.par['cooling']['ikgr_H2']
+            s.ikgr_H2 = s.par["cooling"]["ikgr_H2"]
         except KeyError:
             s.ikgr_H2 = 0
 
-        # s.config_time = pd.to_datetime(s.par['configure']['config_date'])
-        # if 'PDT' in s.par['configure']['config_date']:
-        #     s.config_time = s.config_time.tz_localize('US/Pacific')
-        # if s.config_time < pd.to_datetime('2021-06-30 20:29:36 -04:00'):
-        #     s.iCoolHIcollion = 0
-        # else:
-        #     s.iCoolHIcollion = 1
+        s.config_time = pd.to_datetime(s.par["configure"]["config_date"])
+        if "PDT" in s.par["configure"]["config_date"]:
+            s.config_time = s.config_time.tz_localize("US/Pacific")
+        if s.config_time < pd.to_datetime("2021-06-30 20:29:36 -04:00"):
+            s.iCoolHIcollion = 0
+        else:
+            s.iCoolHIcollion = 1
+
+        # check this is run with corrected CR heating
+        # 85a7857bb7c797686a4e9630cba71f326e1097cd
+        if s.config_time < pd.to_datetime("2022-05-23 22:23:43 -04:00"):
+            s.oldCRheating = 1
+        else:
+            s.oldCRheating = 0
+
+        try:
+            s.iH2heating = s.par["cooling"]["iH2heating"]
+        except KeyError:
+            s.iH2heating = -1
 
 
     def show_timeit(self):
@@ -109,8 +116,6 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
             plt.legend()
         except KeyError:
             print("No timeit plot is available")
-
-
 
     def get_timeit_mean(self):
         try:

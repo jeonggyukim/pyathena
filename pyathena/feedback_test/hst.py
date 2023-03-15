@@ -1,8 +1,9 @@
 # hst.py
-
 import os
+import glob
 import numpy as np
 import pandas as pd
+import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
 
@@ -356,4 +357,58 @@ class Hst:
 
         return hst
 
+    def test_phase_sep_hst(self):
+        fhstph = glob.glob(self.files["hst"].replace(".hst", ".phase*.hst"))
+        
+        return len(fhstph) > 0
 
+    def read_hst_phase(self, iph=0, force_override=False):
+        if iph == 0:
+            f = self.files["hst"].replace(".hst", ".whole.hst")
+        else:
+            f = self.files["hst"].replace(".hst", ".phase{}.hst".format(iph))
+
+        h = read_hst(f, force_override=force_override)
+        h.index = h["time"]
+        return h.to_xarray()
+
+    def read_hst_phase_all(self, force_override=False, reduced=True):
+        fhstph = glob.glob(self.files["hst"].replace(".hst", ".phase*.hst"))
+        fhstph.sort()
+        nphase = len(fhstph)
+
+        hstph = xr.Dataset()
+        for iph in range(1, nphase + 1):
+            phname = self.get_hst_phase_name(iph)
+            hstph[phname] = self.read_hst_phase(
+                iph, force_override=force_override
+            ).to_array()
+        hstph = hstph.to_array("phase").to_dataset("variable")
+        reduced = reduced & self.test_newcool()
+        if reduced:
+            ph_reduced = dict(CMM=['CMM','UMM','W1MM','W2MM'],
+                            CNM=['CNM'], UNM=['UNM'], WNM=['W1NM','W2NM'],
+                            UIM=['CIM','UIM'], WPIM=['W1IM'], WCIM=['W2IM'],
+                            WHIM=['WHIM','WHNM','WHMM'],HIM=['HIM','HNM','HMM']
+                            )
+            hlist = [hstph.sel(phase=phases).sum(dim='phase').assign_coords(phase=phname)
+                     for phname, phases in ph_reduced.items()]
+            hstph = xr.concat(hlist, dim='phase')
+        return hstph
+
+    def get_hst_phase_name(self, iph):
+        if iph == 0:
+            return "whole"
+        if self.test_newcool():
+            thphase = ["C", "U", "W1", "W2", "WH", "H"]
+            chphase = ["I", "M", "N"]
+
+            nthph = len(thphase)
+            nchph = len(chphase)
+            if iph > nthph * nchph:
+                raise KeyError(
+                    "{} phases are defined, but iph={} is given".format(nthph * nchph, iph)
+                )
+            return thphase[(iph - 1) % nthph] + chphase[(iph - 1) // nthph] + "M"
+        else:
+            return ['CNM','UNM','WNM','WHIM','HIM'][iph-1]
