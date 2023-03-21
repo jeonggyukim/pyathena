@@ -1,8 +1,52 @@
 import matplotlib.pyplot as plt
+from matplotlib import gridspec
 import numpy as np
 import xarray as xr
 from matplotlib.colors import LogNorm
+from pandas import read_csv
+from pathlib import Path
 
+def plot_sinkhistory(s, ds, pds):
+    # find end time
+    ds_end = s.load_hdf5(s.nums[-1], load_method='yt')
+    tend = ds_end.current_time
+
+    # create figure
+    fig = plt.figure(figsize=(18, 12))
+    gs = gridspec.GridSpec(2, 3, wspace=0, hspace=0)
+    ax0 = fig.add_subplot(gs[0,0])
+    ax1 = fig.add_subplot(gs[0,1])
+    ax2 = fig.add_subplot(gs[0,2])
+    ax3 = fig.add_subplot(gs[1,:])
+
+    # plot projections
+    for ax, axis in zip((ax0,ax1,ax2),('z','x','y')):
+        plot_projection(s, ds, ax=ax, axis=axis, add_colorbar=False)
+        ax.set_xticks([])
+        ax.set_yticks([])
+    ax0.plot(pds.x1, pds.x2, '*', color='b', ms=8, mew=0.5, alpha=0.7)
+    ax1.plot(pds.x2, pds.x3, '*', color='b', ms=8, mew=0.5, alpha=0.7)
+    ax2.plot(pds.x3, pds.x1, '*', color='b', ms=8, mew=0.5, alpha=0.7)
+
+    # plot particle history
+    plt.sca(ax3)
+    for ip in np.arange(1, 100):
+        fparhst = Path(s.basedir, "{}.par{}.csv".format(s.problem_id, ip))
+        try:
+            phst = read_csv(fparhst)
+        except FileNotFoundError:
+            break
+        time = phst.iloc[:,0]
+        mass = phst.iloc[:,3]
+        tslc = time < ds.current_time
+        plt.plot(time[tslc], mass[tslc])
+    plt.axvline(ds.current_time, linestyle=':', color='k', linewidth=0.5)
+    plt.xlim(0.19, tend)
+    plt.ylim(1e-2, 1e1)
+    plt.yscale('log')
+    plt.xlabel(r'$t/t_\mathrm{J,0}$')
+    plt.ylabel(r'$M_*/M_\mathrm{J,0}$')
+    return fig
 
 def plot_projection(s, ds, field=('athena_pp','dens'), axis='z',
                     vmin=1e-1, vmax=2e2, cmap='pink_r', ax=None, cax=None,
