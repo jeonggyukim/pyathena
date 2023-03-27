@@ -679,7 +679,7 @@ class LoadSim(object):
             if self.athena_pp:
                 # read output blocks
                 for k in self.par.keys():
-                    if 'output' in k:
+                    if k.startswith('output'):
                         self.out_fmt.append(self.par[k]['file_type'])
 
                     # Save particle output tags
@@ -694,7 +694,7 @@ class LoadSim(object):
                     self.hdf5_outid = []
                     self.hdf5_outvar = []
                     for k in self.par.keys():
-                        if 'output' in k and self.par[k]['file_type'] == 'hdf5':
+                        if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
                             self.hdf5_outid.append(int(re.split('(\d+)',k)[1]))
                             self.hdf5_outvar.append(self.par[k]['variable'])
                     for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
@@ -705,12 +705,12 @@ class LoadSim(object):
                 # if there are partab outputs, save some info
                 if 'partab' in self.out_fmt:
                     for k in self.par.keys():
-                        if 'output' in k and self.par[k]['file_type'] == 'partab':
+                        if k.startswith('output') and self.par[k]['file_type'] == 'partab':
                             self.partab_outid = int(re.split('(\d+)',k)[1])
 
             else:
                 for k in self.par.keys():
-                    if 'output' in k:
+                    if k.startswith('output'):
                         # Skip if the block number XX (<outputXX>) is greater than maxout
                         if int(k.replace('output','')) > self.par['job']['maxout']:
                             continue
