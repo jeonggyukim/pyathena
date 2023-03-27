@@ -532,6 +532,8 @@ class LoadSim(object):
 
         (athena_pp only)
         hdf5: problem_id.out?.num.athdf
+        partab: problem_id.out?.num.par?.tab
+        parhst: problem_id.pid.csv
         loop_time: problem_id.loop_time.txt
         task_time: problem_id.task_time.txt
         """
@@ -580,6 +582,12 @@ class LoadSim(object):
         starpar_patterns = [('starpar', '*.????.starpar.vtk'),
                             ('id0', '*.????.starpar.vtk'),
                             ('*.????.starpar.vtk',)]
+
+        partab_patterns = [('partab', '*.out?.?????.par?.tab'),
+                         ('*.out?.?????.par?.tab',)]
+
+        parhst_patterns = [('parhst', '*.par*.csv'),
+                         ('*.par*.csv',)]
 
         zprof_patterns = [('zprof', '*.zprof'),
                           ('id0', '*.zprof')]
@@ -813,6 +821,34 @@ class LoadSim(object):
             else:
                 self.logger.warning(
                     'starpar files not found in {0:s}.'.format(self.basedir))
+
+        # Find partab files
+        if 'partab' in self.out_fmt:
+            fpartab = self._find_match(partab_patterns)
+            if fpartab:
+                self.files['partab'] = fpartab
+                self.nums_partab = [int(f[-14:-9]) for f in self.files['partab']]
+                self.logger.info('partab: {0:s} nums: {1:d}-{2:d}'.format(
+                    osp.dirname(self.files['partab'][0]),
+                    self.nums_partab[0], self.nums_partab[-1]))
+            else:
+                self.logger.warning(
+                    'partab files not found in {0:s}.'.format(self.basedir))
+
+        # Find parhst files
+        if self.athena_pp:
+            fparhst = self._find_match(parhst_patterns)
+            if fparhst:
+                self.files['parhst'] = fparhst
+                self.particle_id = [int(f.split('/')[-1].split('.')[1].strip('par'))
+                            for f in self.files['parhst']]
+                self.particle_id.sort()
+                self.logger.info('parhst: {0:s} pids: {1:d}-{2:d}'.format(
+                    osp.dirname(self.files['parhst'][0]),
+                    self.particle_id[0], self.particle_id[-1]))
+            else:
+                self.logger.warning(
+                    'parhst files not found in {0:s}.'.format(self.basedir))
 
         # Find zprof files
         # Multiple zprof files for each snapshot.
