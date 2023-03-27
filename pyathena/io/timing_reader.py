@@ -18,8 +18,6 @@ class TimingReader(object):
         load_loop_time
         load_timing
         """
-        self.base = base
-        self.pid = pid
         self.fdict = dict()
         lt = os.path.join(base, '{}.loop_time.txt'.format(pid))
         tt = os.path.join(base, '{}.task_time.txt'.format(pid))
