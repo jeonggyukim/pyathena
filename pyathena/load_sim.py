@@ -20,7 +20,7 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
-from .io.read_partab import read_partab
+from .io.read_particles import read_partab, read_parhst
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -350,6 +350,28 @@ class LoadSim(object):
         self.pds = read_partab(self.fpartab, **kwargs)
 
         return self.pds
+
+    def load_parhst(self, pid, **kwargs):
+        """Function to read Athena++ partab file using pythena and
+        return DataFrame object.
+
+        Parameters
+        ----------
+        pid : int
+           Particle id, e.g., /basedir/partab/problem_id.pid.csv
+
+        Returns
+        -------
+        phst : Pandas DataFrame object
+        """
+
+        self.fparhst = self._get_fparhst(pid)
+        if self.fparhst is None or not osp.exists(self.fparhst):
+            self.logger.info('[load_parhst]: parhst file does not exist. ')
+
+        self.phst = read_parhst(self.fparhst, **kwargs)
+
+        return self.phst
 
     def load_starpar_vtk(self, num=None, ivtk=None, force_override=False,
                          verbose=False):
@@ -1060,6 +1082,19 @@ class LoadSim(object):
                 self.problem_id, outid, num, partag))
 
         return fpartab
+
+    def _get_fparhst(self, pid):
+        """Get parhst file path
+        """
+
+        try:
+            dirname = osp.dirname(self.files['parhst'][0])
+        except IndexError:
+            return None
+        fpattern = '{0:s}.par{1:d}.csv'
+        fparhst = osp.join(dirname, fpattern.format(self.problem_id, pid))
+
+        return fparhst
 
     def _get_logger(self, verbose=False):
         """Function to set logger and default verbosity.
