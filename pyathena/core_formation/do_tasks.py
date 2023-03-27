@@ -7,26 +7,74 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyathena.util import uniform
 from pyathena.io.athena_read import partab
 import subprocess
+from fiso.fiso_tree import find, calc_leaf
+from fiso.tree_bound import compute
+import pickle
 
-models = dict(N256 = '/scratch/gpfs/sm69/cores/M10.P0.N256',
-              N256_niter0 = '/scratch/gpfs/sm69/cores/M10.P0.N256.niter0',
-              N256_roe_fofc = '/scratch/gpfs/sm69/cores/M10.P0.N256.roe.fofc',
-              N256_amr = '/scratch/gpfs/sm69/cores/M10.P0.N256.amr',
-              N256_amr_lmax2 = '/scratch/gpfs/sm69/cores/M10.P0.N256.amr.lmax2',
-              N256_amr_TL = '/scratch/gpfs/sm69/cores/M10.P0.N256.amr.TL',
-              N1024 = '/scratch/gpfs/sm69/cores/M10.P0.N1024',
-              largebox = '/scratch/gpfs/sm69/cores/M10.P0.N512.samesonic',
-              smallbox = '/scratch/gpfs/sm69/cores/M10.P0.N256.samesonic.L2',
-              M5 = '/scratch/gpfs/sm69/cores/M5.P0.N256',
-              sink256 = '/scratch/gpfs/sm69/cores/M10.P0.N256.sink.merge',
-              sink512 = '/scratch/gpfs/sm69/cores/M10.P0.N512.sink.merge',
+models = dict(N256='/scratch/gpfs/sm69/cores/M10.P0.N256',
+              N256_niter0='/scratch/gpfs/sm69/cores/M10.P0.N256.niter0',
+              N256_roe_fofc='/scratch/gpfs/sm69/cores/M10.P0.N256.roe.fofc',
+              N256_amr='/scratch/gpfs/sm69/cores/M10.P0.N256.amr',
+              N256_amr_lmax2='/scratch/gpfs/sm69/cores/M10.P0.N256.amr.lmax2',
+              N256_amr_TL='/scratch/gpfs/sm69/cores/M10.P0.N256.amr.TL',
+              N1024='/scratch/gpfs/sm69/cores/M10.P0.N1024',
+              largebox='/scratch/gpfs/sm69/cores/M10.P0.N512.samesonic',
+              smallbox='/scratch/gpfs/sm69/cores/M10.P0.N256.samesonic.L2',
+              M5='/scratch/gpfs/sm69/cores/M5.P0.N256',
+              M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
+              M10J4P0N256_multiple_mblock_per_rank='/scratch/gpfs/sm69/cores/M10.J4.P0.N256.multiple_mblock_per_rank',
+              M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
               )
 sa = pa.LoadSimCoreFormationAll(models)
 
-def combine_partab(mdl, outid="out3", parid="par0"):
+
+def construct_fiso_tree(mdl):
     s = sa.set_model(mdl)
+    cs = s.par['hydro']['iso_sound_speed']
+
+    # Assume uniform grid
+    dx = (s.par['mesh']['x1max'] - s.par['mesh']['x1min'])/s.par['mesh']['nx1']
+    dy = (s.par['mesh']['x2max'] - s.par['mesh']['x2min'])/s.par['mesh']['nx2']
+    dz = (s.par['mesh']['x3max'] - s.par['mesh']['x3min'])/s.par['mesh']['nx3']
+    dV = dx*dy*dz
+
+    # Load data
+    for num in s.nums[60:180]:
+        print('processing model {} num {}'.format(s.basename, num))
+        ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
+
+        # pack data for fiso input
+        rho = ds.dens
+        phi = ds.phi
+        prs = cs**2*rho
+        vx = ds.mom1/rho
+        vy = ds.mom2/rho
+        vz = ds.mom3/rho
+        bpressure = 0.0*rho
+        data = [rho.data, phi.data, prs.data, bpressure.data, vx.data, vy.data, vz.data]
+
+        # Construct isocontours using fiso
+        iso_dict, iso_label, iso_list, eic_list = find(phi.data)
+        leaf_dict = calc_leaf(iso_dict, iso_list, eic_list)
+        hpr_dict, hbr_dict = compute(data, iso_dict, iso_list, eic_list)
+        # remove empty HBRs
+        hbr_dict = {key: value for key, value in hbr_dict.items() if len(value)>0}
+
+        fiso_dicts = dict(iso_dict=iso_dict, iso_label=iso_label,
+                          iso_list=iso_list, eic_list=eic_list,
+                          leaf_dict=leaf_dict, hpr_dict=hpr_dict, hbr_dict=hbr_dict)
+        ofname = Path(s.basedir, 'fiso.{:05d}.p'.format(num))
+        with open(ofname, 'wb') as handle:
+            pickle.dump(fiso_dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def combine_partab(mdl, ns, ne, outid="out3", parid="par0"):
     script = "/home/sm69/tigris/vis/tab/combine_partab.sh"
-    subprocess.run([script, s.problem_id, outid, parid], cwd=s.basedir)
+    s = sa.set_model(mdl)
+    nblocks = 1
+    for axis in [1,2,3]:
+        nblocks *= (s.par['mesh'][f'nx{axis}'] // s.par['meshblock'][f'nx{axis}'])
+    subprocess.run([script, s.problem_id, outid, parid, str(nblocks), str(ns), str(ne)], cwd=s.basedir)
     subprocess.run(["find", ".", "-name",
                     '{}.block*.{}.*.{}.tab'.format(s.problem_id, outid, parid),
                     "-delete"], cwd=s.basedir)
@@ -145,23 +193,23 @@ def create_PDF_Pspec(mdl):
             ax.cla()
 
 if __name__ == "__main__":
-
-    models = ['sink256']
+    models = ['M10J4P0N512']
     for mdl in models:
-        combine_partab(mdl)
-        create_sinkhistory(mdl)
+        construct_fiso_tree(mdl)
+#        combine_partab(mdl, 0, 334)
+#        create_sinkhistory(mdl)
 
     # make movie and move mp4 to public
 #    plot_prefix = ["Projection_z_dens", "PDF_Pspecs", "sink_history"]
-    plot_prefix = ["sink_history"]
-    for mdl in models:
-        s = sa.set_model(mdl)
-        srcdir = Path(s.basedir, "figures")
-        for prefix in plot_prefix:
-            subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
-            subprocess.run(["mv", "{}/{}.mp4".format(srcdir, prefix),
-                "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
-
+#    plot_prefix = ["sink_history"]
+#    for mdl in models:
+#        s = sa.set_model(mdl)
+#        srcdir = Path(s.basedir, "figures")
+#        for prefix in plot_prefix:
+#            subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
+#            subprocess.run(["mv", "{}/{}.mp4".format(srcdir, prefix),
+#                "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
+#
 #    compare_projection("N256", "largebox")
 #    compare_projection("N256", "smallbox")
 
