@@ -840,12 +840,12 @@ class LoadSim(object):
             fparhst = self._find_match(parhst_patterns)
             if fparhst:
                 self.files['parhst'] = fparhst
-                self.particle_id = [int(f.split('/')[-1].split('.')[1].strip('par'))
+                self.pids = [int(f.split('/')[-1].split('.')[1].strip('par'))
                             for f in self.files['parhst']]
-                self.particle_id.sort()
+                self.pids.sort()
                 self.logger.info('parhst: {0:s} pids: {1:d}-{2:d}'.format(
                     osp.dirname(self.files['parhst'][0]),
-                    self.particle_id[0], self.particle_id[-1]))
+                    self.pids[0], self.pids[-1]))
             else:
                 self.logger.warning(
                     'parhst files not found in {0:s}.'.format(self.basedir))
