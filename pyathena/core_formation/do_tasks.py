@@ -11,16 +11,16 @@ from fiso.fiso_tree import find, calc_leaf
 from fiso.tree_bound import compute
 import pickle
 
-models = dict(N256='/scratch/gpfs/sm69/cores/M10.P0.N256',
-              N256_niter0='/scratch/gpfs/sm69/cores/M10.P0.N256.niter0',
-              N256_roe_fofc='/scratch/gpfs/sm69/cores/M10.P0.N256.roe.fofc',
-              N256_amr='/scratch/gpfs/sm69/cores/M10.P0.N256.amr',
-              N256_amr_lmax2='/scratch/gpfs/sm69/cores/M10.P0.N256.amr.lmax2',
-              N256_amr_TL='/scratch/gpfs/sm69/cores/M10.P0.N256.amr.TL',
-              N1024='/scratch/gpfs/sm69/cores/M10.P0.N1024',
-              largebox='/scratch/gpfs/sm69/cores/M10.P0.N512.samesonic',
-              smallbox='/scratch/gpfs/sm69/cores/M10.P0.N256.samesonic.L2',
-              M5='/scratch/gpfs/sm69/cores/M5.P0.N256',
+models = dict(N256='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256',
+              N256_niter0='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.niter0',
+              N256_roe_fofc='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.roe.fofc',
+              N256_amr='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.amr',
+              N256_amr_lmax2='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.amr.lmax2',
+              N256_amr_TL='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.amr.TL',
+              N1024='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N1024',
+              largebox='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N512.samesonic',
+              smallbox='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.samesonic.L2',
+              M5='/scratch/gpfs/sm69/cores/without_sinkpar/M5.P0.N256',
               M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
               M10J4P0N256_multiple_mblock_per_rank='/scratch/gpfs/sm69/cores/M10.J4.P0.N256.multiple_mblock_per_rank',
               M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
@@ -68,16 +68,20 @@ def construct_fiso_tree(mdl):
             pickle.dump(fiso_dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def combine_partab(mdl, ns, ne, outid="out3", parid="par0"):
+def combine_partab(mdl, ns, ne, partag="par0", remove=False):
     script = "/home/sm69/tigris/vis/tab/combine_partab.sh"
     s = sa.set_model(mdl)
     nblocks = 1
     for axis in [1,2,3]:
         nblocks *= (s.par['mesh'][f'nx{axis}'] // s.par['meshblock'][f'nx{axis}'])
-    subprocess.run([script, s.problem_id, outid, parid, str(nblocks), str(ns), str(ne)], cwd=s.basedir)
-    subprocess.run(["find", ".", "-name",
-                    '{}.block*.{}.*.{}.tab'.format(s.problem_id, outid, parid),
-                    "-delete"], cwd=s.basedir)
+    outid = "out{}".format(s.partab_outid)
+    if not partag in s.partags:
+        raise ValueError("Particle {} does not exist".format(partag))
+    subprocess.run([script, s.problem_id, outid, partag, str(nblocks), str(ns), str(ne)], cwd=s.basedir)
+    if remove:
+        subprocess.run(["find", ".", "-name",
+                        '{}.block*.{}.*.{}.tab'.format(s.problem_id, outid, partag),
+                        "-delete"], cwd=s.basedir)
 
 def resample_hdf5(mdl, level=0):
     """Resamples AMR output into uniform resolution.
@@ -195,8 +199,8 @@ def create_PDF_Pspec(mdl):
 if __name__ == "__main__":
     models = ['M10J4P0N512']
     for mdl in models:
-        construct_fiso_tree(mdl)
-#        combine_partab(mdl, 0, 334)
+#        construct_fiso_tree(mdl)
+        combine_partab(mdl, 0, 180)
 #        create_sinkhistory(mdl)
 
     # make movie and move mp4 to public
