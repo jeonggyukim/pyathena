@@ -30,14 +30,10 @@ def plot_sinkhistory(s, ds, pds):
 
     # plot particle history
     plt.sca(ax3)
-    for ip in np.arange(1, 100):
-        fparhst = Path(s.basedir, "{}.par{}.csv".format(s.problem_id, ip))
-        try:
-            phst = read_csv(fparhst)
-        except FileNotFoundError:
-            break
-        time = phst.iloc[:,0]
-        mass = phst.iloc[:,3]
+    for pid in s.pids:
+        phst = s.load_parhst(pid)
+        time = phst.time
+        mass = phst.mass
         tslc = time < ds.current_time
         plt.plot(time[tslc], mass[tslc])
     plt.axvline(ds.current_time, linestyle=':', color='k', linewidth=0.5)
