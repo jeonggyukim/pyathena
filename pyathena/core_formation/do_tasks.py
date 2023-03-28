@@ -7,7 +7,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 from pyathena.util import uniform
 from pyathena.io.athena_read import partab
 import subprocess
-from fiso.fiso_tree import find, calc_leaf
+from fiso.fiso_tree import construct_tree, calc_leaf
 from fiso.tree_bound import compute
 import pickle
 
@@ -54,7 +54,7 @@ def construct_fiso_tree(mdl):
         data = [rho.data, phi.data, prs.data, bpressure.data, vx.data, vy.data, vz.data]
 
         # Construct isocontours using fiso
-        iso_dict, iso_label, iso_list, eic_list = find(phi.data)
+        iso_dict, iso_label, iso_list, eic_list = construct_tree(phi.data)
         leaf_dict = calc_leaf(iso_dict, iso_list, eic_list)
         hpr_dict, hbr_dict = compute(data, iso_dict, iso_list, eic_list)
         # remove empty HBRs
