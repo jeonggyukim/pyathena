@@ -11,19 +11,11 @@ from fiso.fiso_tree import construct_tree, calc_leaf
 from fiso.tree_bound import compute
 import pickle
 
-models = dict(N256='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256',
-              N256_niter0='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.niter0',
-              N256_roe_fofc='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.roe.fofc',
-              N256_amr='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.amr',
-              N256_amr_lmax2='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.amr.lmax2',
-              N256_amr_TL='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.amr.TL',
-              N1024='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N1024',
-              largebox='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N512.samesonic',
-              smallbox='/scratch/gpfs/sm69/cores/without_sinkpar/M10.P0.N256.samesonic.L2',
-              M5='/scratch/gpfs/sm69/cores/without_sinkpar/M5.P0.N256',
-              M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
+models = dict(M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
               M10J4P0N256_multiple_mblock_per_rank='/scratch/gpfs/sm69/cores/M10.J4.P0.N256.multiple_mblock_per_rank',
               M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
+              sb='/scratch/gpfs/sm69/cores/debug/sb',
+              mb='/scratch/gpfs/sm69/cores/debug/mb'
               )
 sa = pa.LoadSimCoreFormationAll(models)
 
@@ -68,9 +60,13 @@ def construct_fiso_tree(mdl):
             pickle.dump(fiso_dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def combine_partab(mdl, ns, ne, partag="par0", remove=False):
+def combine_partab(mdl, ns=None, ne=None, partag="par0", remove=False):
     script = "/home/sm69/tigris/vis/tab/combine_partab.sh"
     s = sa.set_model(mdl)
+    if ns is None:
+        ns = s.nums_partab[partag][0]
+    if ne is None:
+        ne = s.nums_partab[partag][-1]
     nblocks = 1
     for axis in [1,2,3]:
         nblocks *= (s.par['mesh'][f'nx{axis}'] // s.par['meshblock'][f'nx{axis}'])
@@ -200,19 +196,19 @@ if __name__ == "__main__":
     models = ['M10J4P0N512']
     for mdl in models:
 #        construct_fiso_tree(mdl)
-        combine_partab(mdl, 0, 180)
-#        create_sinkhistory(mdl)
+#        combine_partab(mdl, remove=True)
+        create_sinkhistory(mdl)
 
     # make movie and move mp4 to public
 #    plot_prefix = ["Projection_z_dens", "PDF_Pspecs", "sink_history"]
-#    plot_prefix = ["sink_history"]
-#    for mdl in models:
-#        s = sa.set_model(mdl)
-#        srcdir = Path(s.basedir, "figures")
-#        for prefix in plot_prefix:
-#            subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
-#            subprocess.run(["mv", "{}/{}.mp4".format(srcdir, prefix),
-#                "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
+    plot_prefix = ["sink_history"]
+    for mdl in models:
+        s = sa.set_model(mdl)
+        srcdir = Path(s.basedir, "figures")
+        for prefix in plot_prefix:
+            subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
+            subprocess.run(["mv", "{}/{}.mp4".format(srcdir, prefix),
+                "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
 #
 #    compare_projection("N256", "largebox")
 #    compare_projection("N256", "smallbox")
