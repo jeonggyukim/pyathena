@@ -5,6 +5,7 @@ import xarray as xr
 from matplotlib.colors import LogNorm
 from pandas import read_csv
 from pathlib import Path
+import yt
 
 def plot_sinkhistory(s, ds, pds):
     # find end time
@@ -44,13 +45,9 @@ def plot_sinkhistory(s, ds, pds):
     plt.ylabel(r'$M_*/M_\mathrm{J,0}$')
     return fig
 
-def plot_projection(s, ds, field=('athena_pp','dens'), axis='z',
+def plot_projection(s, ds, field='dens', axis='z',
                     vmin=1e-1, vmax=2e2, cmap='pink_r', ax=None, cax=None,
                     add_colorbar=True, transpose=False):
-    """Requires load_method='yt'"""
-    # create projection using yt
-    prj = ds.proj(field, axis)
-
     # some domain informations
     xmin, ymin, zmin = s.domain['le']
     xmax, ymax, zmax = s.domain['re']
@@ -59,8 +56,22 @@ def plot_projection(s, ds, field=('athena_pp','dens'), axis='z',
     extent = dict(zip(('x','y','z'), ((ymin,ymax,zmin,zmax),
                                       (zmin,zmax,xmin,xmax),
                                       (xmin,xmax,ymin,ymax))))
-    prj = prj.to_frb(width=wh[axis][0], height=wh[axis][1], resolution=800)
-    prj = np.array(prj[field])
+    permutations = dict(z=('y','x'), y=('x','z'), x=('z','y'))
+    field_dict_yt = dict(dens=('athena_pp', 'dens'))
+    field_dict_pyathena = dict(dens='dens')
+
+    if isinstance(ds, yt.frontends.athena_pp.AthenaPPDataset):
+        # create projection using yt
+        fld = field_dict_yt[field]
+        prj = ds.proj(fld, axis)
+        prj = prj.to_frb(width=wh[axis][0], height=wh[axis][1], resolution=800)
+        prj = np.array(prj[fld])
+    elif isinstance(ds, xr.Dataset):
+        fld = field_dict_pyathena[field]
+        prj = ds[fld].integrate(axis).transpose(*permutations[axis]).to_numpy()
+    else:
+        TypeError("ds must be either yt or xarray dataset")
+
     if ax is not None:
         plt.sca(ax)
     if transpose:
