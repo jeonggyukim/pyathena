@@ -22,8 +22,8 @@ def radial_profile(ds, origin, rmax):
         vel_ = ds['mom{}'.format(axis)]/ds.dens
         vel[dim] = vel_ - vel_.sel(x=origin[0], y=origin[1], z=origin[2])
     ds_sph = {}
-    ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3'] = to_spherical(vel.values(), origin)
-    ds_sph['rho'] = ds.dens.assign_coords(dict(r=ds_sph['vel1'].r))
+    r, (ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3']) = to_spherical(vel.values(), origin)
+    ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
 
     # Radial binning
     edges = np.insert(np.arange(ds.dx/2, rmax, ds.dx), 0, 0)

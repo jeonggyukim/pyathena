@@ -5,17 +5,14 @@ import xarray as xr
 def to_spherical(vec, origin):
     """Transform vector components from Cartesian to spherical coordinates
 
-    Parameters
-    ----------
-    vec : tuple
-        Cartesian vector components (vx, vy, vz)
-    origin : tuple
-        Origin of the spherical coordinates (x0, y0, z0)
+    Args:
+        vec: tuple-like (vx, vy, vz) representing Cartesian vector components
+        origin: tuple-like (x0, y0, z0) representing the origin of the spherical coords.
 
-    Returns
-    -------
-    vec_sph : tuple
-        Spherical vector components (v_r, v_th, v_ph)
+    Returns:
+        r: binned radius
+        vec_sph: tuple-like (v_r, v_th, v_ph) representing the three components of
+                 velocities in spherical coords.
     """
     vx, vy, vz = vec
     x0, y0, z0 = origin
@@ -47,7 +44,7 @@ def to_spherical(vec, origin):
     v_th.coords['ph'] = ph
     v_ph.coords['ph'] = ph
     vec_sph = (v_r, v_th, v_ph)
-    return vec_sph
+    return r, vec_sph
 
 
 def groupby_bins(dat, coord, edges, cumulative=False):
