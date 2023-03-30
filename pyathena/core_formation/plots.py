@@ -1,3 +1,9 @@
+"""Collection of plotting scripts
+
+Recommended function signature:
+    def plot_something(s, ds, ax=None)
+"""
+
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
@@ -6,6 +12,7 @@ from matplotlib.colors import LogNorm
 from pandas import read_csv
 from pathlib import Path
 import yt
+
 
 def plot_sinkhistory(s, ds, pds):
     # find end time
