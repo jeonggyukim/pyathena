@@ -33,3 +33,20 @@ def radial_profile(ds, origin, rmax):
         rprf[key+'_std'] = np.sqrt(groupby_bins(ds_sph[key]**2, 'r', edges))
     rprf = xr.Dataset(rprf)
     return rprf
+
+
+def get_coords_iso(ds, iso):
+    """Get coordinates at the generating point (parent) of the iso
+
+    Args:
+        ds: xarray.Dataset instance containing conserved variables.
+        iso: FISO flattened index of an iso
+
+    Returns:
+        x, y, z
+    """
+    k, j, i = np.unravel_index(iso, ds.phi.shape)
+    x = ds.x.isel(x=i).values[()]
+    y = ds.y.isel(y=j).values[()]
+    z = ds.z.isel(z=k).values[()]
+    return x, y, z
