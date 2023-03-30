@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 import subprocess
 import pickle
+import glob
 
 # pyathena modules
 import pyathena as pa
@@ -74,11 +75,16 @@ def combine_partab(mdl, ns=None, ne=None, partag="par0", remove=False):
     outid = "out{}".format(s.partab_outid)
     if not partag in s.partags:
         raise ValueError("Particle {} does not exist".format(partag))
-    subprocess.run([script, s.problem_id, outid, partag, str(nblocks), str(ns), str(ne)], cwd=s.basedir)
+    subprocess.run([script, s.problem_id, outid, partag, str(ns), str(ne)], cwd=s.basedir)
+
     if remove:
-        subprocess.run(["find", ".", "-name",
-                        '{}.block*.{}.*.{}.tab'.format(s.problem_id, outid, partag),
-                        "-delete"], cwd=s.basedir)
+        file_pattern = '{}.{}.?????.{}.tab'.format(s.problem_id, outid, partag)
+        file_list = glob.glob(file_pattern)
+        num_files = len(file_list)
+        if (num_files == (ne - ns + 1)):
+            subprocess.run(["find", ".", "-name",
+                            '{}.block*.{}.?????.{}.tab'.format(s.problem_id, outid, partag),
+                            "-delete"], cwd=s.basedir)
 
 def resample_hdf5(mdl, level=0):
     """Resamples AMR output into uniform resolution.
@@ -197,17 +203,17 @@ if __name__ == "__main__":
     models = ['M5J2P0N256']
     for mdl in models:
         # combine output files
-#        combine_partab(mdl, remove=True)
+        combine_partab(mdl, remove=True)
 
         # make plots
         create_sinkhistory(mdl)
-#        create_projections(mdl)
-#        create_PDF_Pspec(mdl)
+        create_projections(mdl)
+        create_PDF_Pspec(mdl)
 
         # make movie
         s = sa.set_model(mdl)
         srcdir = Path(s.basedir, "figures")
-        plot_prefix = ["sink_history"]
+        plot_prefix = ["sink_history", "PDF_Pspecs"]
         for prefix in plot_prefix:
             subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
             subprocess.run(["mv", "{}/{}.mp4".format(srcdir, prefix),
@@ -215,4 +221,4 @@ if __name__ == "__main__":
 
         # other works
         construct_fiso_tree(mdl)
-#        resample_hdf5(mdl)
+        resample_hdf5(mdl)
