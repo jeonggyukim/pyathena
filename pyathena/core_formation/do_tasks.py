@@ -1,21 +1,22 @@
-import yt
+# python modules
 from pathlib import Path
-import pyathena as pa
 import matplotlib.pyplot as plt
-from pyathena.core_formation.plots import *
 from mpl_toolkits.axes_grid1 import make_axes_locatable
-from pyathena.util import uniform
-from pyathena.io.athena_read import partab
 import subprocess
-from fiso.fiso_tree import construct_tree, calc_leaf
-from fiso.tree_bound import compute
 import pickle
 
+# pyathena modules
+import pyathena as pa
+from pyathena.core_formation.plots import *
+from pyathena.util import uniform
+from fiso.fiso_tree import construct_tree, calc_leaf
+from fiso.tree_bound import compute
+
+
 models = dict(M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
-              M10J4P0N256_multiple_mblock_per_rank='/scratch/gpfs/sm69/cores/M10.J4.P0.N256.multiple_mblock_per_rank',
               M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
-              sb='/scratch/gpfs/sm69/cores/debug/sb',
-              mb='/scratch/gpfs/sm69/cores/debug/mb'
+              M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256',
+              M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512',
               )
 sa = pa.LoadSimCoreFormationAll(models)
 
@@ -46,7 +47,7 @@ def construct_fiso_tree(mdl):
         data = [rho.data, phi.data, prs.data, bpressure.data, vx.data, vy.data, vz.data]
 
         # Construct isocontours using fiso
-        iso_dict, iso_label, iso_list, eic_list = construct_tree(phi.data)
+        iso_dict, iso_label, iso_list, eic_list = construct_tree(phi.data, 'periodic')
         leaf_dict = calc_leaf(iso_dict, iso_list, eic_list)
         hpr_dict, hbr_dict = compute(data, iso_dict, iso_list, eic_list)
         # remove empty HBRs
@@ -138,8 +139,7 @@ def create_sinkhistory(mdl):
     s = sa.set_model(mdl)
     for num in s.nums:
         ds = s.load_hdf5(num, load_method='yt')
-        fpartab = Path(s.basedir, "{}.out3.{:05d}.par0.tab".format(s.problem_id, num))
-        pds = partab(fpartab)
+        pds = s.load_partab(num)
         fig = plot_sinkhistory(s, ds, pds)
         odir = Path(s.basedir, 'figures')
         odir.mkdir(exist_ok=True)
@@ -192,30 +192,27 @@ def create_PDF_Pspec(mdl):
         for ax in axs:
             ax.cla()
 
-if __name__ == "__main__":
-    models = ['M10J4P0N512']
-    for mdl in models:
-#        construct_fiso_tree(mdl)
-#        combine_partab(mdl, remove=True)
-        create_sinkhistory(mdl)
 
-    # make movie and move mp4 to public
-#    plot_prefix = ["Projection_z_dens", "PDF_Pspecs", "sink_history"]
-    plot_prefix = ["sink_history"]
+if __name__ == "__main__":
+    models = ['M5J2P0N256']
     for mdl in models:
+        # combine output files
+#        combine_partab(mdl, remove=True)
+
+        # make plots
+        create_sinkhistory(mdl)
+#        create_projections(mdl)
+#        create_PDF_Pspec(mdl)
+
+        # make movie
         s = sa.set_model(mdl)
         srcdir = Path(s.basedir, "figures")
+        plot_prefix = ["sink_history"]
         for prefix in plot_prefix:
             subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
             subprocess.run(["mv", "{}/{}.mp4".format(srcdir, prefix),
                 "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
-#
-#    compare_projection("N256", "largebox")
-#    compare_projection("N256", "smallbox")
 
-###        resample_hdf5(mdl)
-#        create_projections(mdl)
-#        try:
-#            create_PDF_Pspec(mdl)
-#        except:
-#            pass
+        # other works
+        construct_fiso_tree(mdl)
+#        resample_hdf5(mdl)
