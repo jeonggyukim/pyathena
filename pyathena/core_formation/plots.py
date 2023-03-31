@@ -4,14 +4,150 @@ Recommended function signature:
     def plot_something(s, ds, ax=None)
 """
 
+# python modules
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
+from matplotlib.colors import LogNorm
 import numpy as np
 import xarray as xr
-from matplotlib.colors import LogNorm
 from pandas import read_csv
 from pathlib import Path
 import yt
+import pickle
+
+# pythena modules
+from .tools import get_coords_iso, calculate_radial_profiles
+from fiso.tools import filter_var
+
+
+def plot_tcoll_cores(s, pid, hw=0.25):
+    # Load the progenitor iso of the particle pid
+    fname = Path(s.basedir, 'tcoll_cores.p')
+    with open(fname, 'rb') as handle:
+        tcoll_cores = pickle.load(handle)
+    iso = tcoll_cores[pid]
+
+    # Load hdf5 snapshot at t = t_coll
+    num = s.nums_tcoll[pid]
+    ds = s.load_hdf5(num, load_method='pyathena')
+
+    # load leaf dict at t = t_coll
+    fname = Path(s.basedir, 'fiso.{:05d}.p'.format(num))
+    with open(fname, 'rb') as handle:
+        leaf_dict = pickle.load(handle)['leaf_dict']
+
+    # Find the location of the core
+    xc, yc, zc = get_coords_iso(ds, iso)
+
+    # Calculate radial profile
+    rprf = calculate_radial_profiles(ds, (xc, yc, zc), 2*hw)
+
+    # create figure
+    fig = plt.figure(figsize=(28, 21))
+    gs = gridspec.GridSpec(3, 4, wspace=0.2, hspace=0.15)
+
+    xaxis = dict(z='x', x='y', y='z')
+    yaxis = dict(z='y', x='z', y='x')
+    zaxis = dict(z='z', x='x', y='y')
+    xlim = dict(z=(xc-hw, xc+hw),
+                x=(yc-hw, yc+hw),
+                y=(zc-hw, zc+hw))
+    ylim = dict(z=(yc-hw, yc+hw),
+                x=(zc-hw, zc+hw),
+                y=(xc-hw, xc+hw))
+    zlim = dict(z=(zc-hw, zc+hw),
+                x=(xc-hw, xc+hw),
+                y=(yc-hw, yc+hw))
+    xlabel = dict(z=r'$x$', x=r'$y$', y=r'$z$')
+    ylabel = dict(z=r'$y$', x=r'$z$', y=r'$x$')
+
+    for i, prj_axis in enumerate(['z','x','y']):
+        # 1. projections
+        plt.sca(fig.add_subplot(gs[i,0]))
+        img = plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
+        rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]), 2*hw, 2*hw, fill=False, ec='r')
+        plt.gca().add_artist(rec)
+        plt.xlabel(xlabel[prj_axis])
+        plt.ylabel(ylabel[prj_axis])
+
+        # 2. zoom-in projections
+        d = ds.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
+                    yaxis[prj_axis]:slice(*ylim[prj_axis]),
+                    zaxis[prj_axis]:slice(*zlim[prj_axis])})
+        plt.sca(fig.add_subplot(gs[i,1]))
+        plot_projection(s, d, axis=prj_axis, add_colorbar=False)
+        plt.xlim(xlim[prj_axis])
+        plt.ylim(ylim[prj_axis])
+        plt.xlabel(xlabel[prj_axis])
+        plt.ylabel(ylabel[prj_axis])
+
+        # 3. zoom-in projections for individual iso
+        # load selected iso
+        rho_ = filter_var(ds.dens, cells=leaf_dict[iso], fill_value=0)
+        Mcore = (rho_*s.domain['dx'].prod()).sum().data[()]
+        Vcore = ((rho_>0).sum()*s.domain['dx'].prod())
+        Rcore = (3*Vcore/(4*np.pi))**(1./3.)
+        ds_iso = xr.Dataset(dict(dens=rho_))
+        ds_iso = ds_iso.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
+                             yaxis[prj_axis]:slice(*ylim[prj_axis]),
+                             zaxis[prj_axis]:slice(*zlim[prj_axis])})
+        # load other isos
+        leaf_dict_without_iso = {k: v for k, v in leaf_dict.items() if k != iso}
+        rho_ = filter_var(ds.dens, leaf_dict_without_iso, fill_value=0)
+        ds_bkgr = xr.Dataset(dict(dens=rho_))
+        ds_bkgr = ds_bkgr.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
+                               yaxis[prj_axis]:slice(*ylim[prj_axis]),
+                               zaxis[prj_axis]:slice(*zlim[prj_axis])})
+        # plot
+        plt.sca(fig.add_subplot(gs[i,2]))
+        plot_projection(s, ds_bkgr, axis=prj_axis, add_colorbar=False, alpha=0.5, cmap='Greys')
+        plot_projection(s, ds_iso, axis=prj_axis, add_colorbar=False)
+        plt.xlim(xlim[prj_axis])
+        plt.ylim(ylim[prj_axis])
+        plt.xlabel(xlabel[prj_axis])
+        plt.ylabel(ylabel[prj_axis])
+
+    # 4. radial profiles
+    # density
+    plt.sca(fig.add_subplot(gs[0,3]))
+    plt.loglog(rprf.r, rprf.rho, 'k-+')
+    rhoLP = s.get_rhoLP(rprf.r)
+    plt.loglog(rprf.r, rhoLP, 'k--')
+    plt.axvline(Rcore, ls=':', c='k')
+    plt.ylim(1e0, rhoLP[0])
+    plt.xlabel(r'$r/L_{J,0}$')
+    plt.ylabel(r'$\rho/\rho_0$')
+    # annotations
+    plt.text(0.5, 0.9, r'$t = {:.2f}$'.format(ds.Time)+r'$\,t_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.5, 0.8, r'$M = {:.2f}$'.format(Mcore)+r'$\,M_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(Rcore)+r'$\,L_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    # velocity
+    plt.sca(fig.add_subplot(gs[1,3]))
+    plt.semilogx(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
+    plt.semilogx(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
+    plt.semilogx(rprf.r, rprf.vel3, marker='+', label=r'$v_\phi$')
+    plt.ylim(-3, 3)
+    plt.xlabel(r'$r/L_{J,0}$')
+    plt.ylabel(r'$v/c_s$')
+    plt.legend()
+    # velocity dispersion
+    plt.sca(fig.add_subplot(gs[2,3]))
+    plt.loglog(rprf.r, rprf.vel1_std, marker='+', label=r'$\sigma_r$')
+    plt.loglog(rprf.r, rprf.vel2_std, marker='+', label=r'$\sigma_\theta$')
+    plt.loglog(rprf.r, rprf.vel3_std, marker='+', label=r'$\sigma_\phi$')
+    x0 = rprf.r[1]
+    y0 = (rprf.vel1_std[1] + rprf.vel2_std[1] + rprf.vel3_std[1])/3
+    plt.plot(rprf.r, y0*(rprf.r/x0)**0.5, 'k--')
+    plt.plot(rprf.r, y0*(rprf.r/x0)**1, 'k--')
+    plt.ylim(2e-1, 2e1)
+    plt.xlabel(r'$r/L_{J,0}$')
+    plt.ylabel(r'$\sigma/c_s$')
+    plt.legend()
+
+    return fig
 
 
 def plot_sinkhistory(s, ds, pds):
@@ -52,13 +188,18 @@ def plot_sinkhistory(s, ds, pds):
     plt.ylabel(r'$M_*/M_\mathrm{J,0}$')
     return fig
 
+
 def plot_projection(s, ds, field='dens', axis='z',
-                    vmin=1e-1, vmax=2e2, cmap='pink_r', ax=None, cax=None,
+                    vmin=1e-1, vmax=2e2, cmap='pink_r', alpha=1,
+                    ax=None, cax=None,
                     add_colorbar=True, transpose=False):
     # some domain informations
-    xmin, ymin, zmin = s.domain['le']
-    xmax, ymax, zmax = s.domain['re']
-    Lx, Ly, Lz = s.domain['Lx']
+    dx, dy, dz = ds.x[1]-ds.x[0], ds.y[1]-ds.y[0], ds.z[1]-ds.z[0]
+    xmin, xmax = ds.x[0] - 0.5*dx, ds.x[-1] + 0.5*dx
+    ymin, ymax = ds.y[0] - 0.5*dy, ds.y[-1] + 0.5*dy
+    zmin, zmax = ds.z[0] - 0.5*dz, ds.z[-1] + 0.5*dz
+    Lx, Ly, Lz = xmax-xmin, ymax-ymin, zmax-zmin
+
     wh = dict(zip(('x','y','z'), ((Ly, Lz), (Lz, Lx), (Lx, Ly))))
     extent = dict(zip(('x','y','z'), ((ymin,ymax,zmin,zmax),
                                       (zmin,zmax,xmin,xmax),
@@ -84,7 +225,7 @@ def plot_projection(s, ds, field='dens', axis='z',
     if transpose:
         prj = prj.T
     img = plt.imshow(prj, norm=LogNorm(vmin, vmax), origin='lower',
-                     extent=extent[axis], cmap=cmap)
+                     extent=extent[axis], cmap=cmap, alpha=alpha)
     if add_colorbar:
         plt.colorbar(cax=cax)
     return img
