@@ -3,7 +3,7 @@ import xarray as xr
 from ..util.transform import to_spherical, groupby_bins
 
 
-def radial_profile(ds, origin, rmax):
+def calculate_radial_profiles(ds, origin, rmax):
     """Calculates radial density velocity profiles at the selected position
 
     Args:
