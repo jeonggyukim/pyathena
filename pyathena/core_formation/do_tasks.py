@@ -22,7 +22,42 @@ models = dict(M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
 sa = pa.LoadSimCoreFormationAll(models)
 
 
-def construct_fiso_tree(mdl):
+def find_tcoll_cores(mdl):
+    """Loop over all sink particles and find their associated t_coll cores
+    """
+    s = sa.set_model(mdl)
+    tcoll_cores = dict()
+    for pid in s.pids[:30]:
+        num = s.nums_tcoll[pid]
+
+        # load fiso dict at t = t_coll
+        fname = Path(s.basedir, 'fiso.{:05d}.p'.format(num))
+        with open(fname, 'rb') as handle:
+            fiso_dicts = pickle.load(handle)
+            leaf_dict = fiso_dicts['leaf_dict']
+
+        # find t_coll core associated with this pid
+        rsq_max = 3
+        while pid not in tcoll_cores:
+            for iso in leaf_dict:
+                k, j, i = np.unravel_index(iso, s.domain['Nx'], order='C')
+                i0, j0, k0 = (np.array((s.xp0[pid], s.yp0[pid], s.zp0[pid]))
+                              - s.domain['le']) // s.domain['dx']
+                rsq = (k-k0)**2 + (j-j0)**2 + (k-k0)**2
+                if rsq <= rsq_max:
+                    if pid in tcoll_cores:
+                        raise ValueError("More than one potential t_coll cores are found near this sink particle. Reduce the threshold")
+                    tcoll_cores[pid] = iso
+            rsq_max += 1
+            if rsq_max > 25:
+                print(pid)
+                raise ValueError("Cannot find a t_coll core within 5*dx from the sink particle")
+    ofname = Path(s.basedir, 'tcoll_cores.p')
+    with open(ofname, 'wb') as handle:
+        pickle.dump(fiso_dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def run_fiso(mdl, overwrite=False):
     s = sa.set_model(mdl)
     cs = s.par['hydro']['iso_sound_speed']
 
@@ -33,7 +68,7 @@ def construct_fiso_tree(mdl):
     dV = dx*dy*dz
 
     # Load data
-    for num in s.nums[60:180]:
+    for num in s.nums[50:]:
         print('processing model {} num {}'.format(s.basename, num))
         ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
 
@@ -58,6 +93,8 @@ def construct_fiso_tree(mdl):
                           iso_list=iso_list, eic_list=eic_list,
                           leaf_dict=leaf_dict, hpr_dict=hpr_dict, hbr_dict=hbr_dict)
         ofname = Path(s.basedir, 'fiso.{:05d}.p'.format(num))
+        if ofname.exists() and not overwrite:
+            continue
         with open(ofname, 'wb') as handle:
             pickle.dump(fiso_dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
@@ -220,5 +257,6 @@ if __name__ == "__main__":
                 "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
 
         # other works
-        construct_fiso_tree(mdl)
+        run_fiso(mdl, overwrite=True)
+        find_tcoll_cores(mdl)
         resample_hdf5(mdl)

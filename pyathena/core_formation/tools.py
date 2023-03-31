@@ -45,7 +45,7 @@ def get_coords_iso(ds, iso):
     Returns:
         x, y, z
     """
-    k, j, i = np.unravel_index(iso, ds.phi.shape)
+    k, j, i = np.unravel_index(iso, ds.phi.shape, order='C')
     x = ds.x.isel(x=i).values[()]
     y = ds.y.isel(y=j).values[()]
     z = ds.z.isel(z=k).values[()]

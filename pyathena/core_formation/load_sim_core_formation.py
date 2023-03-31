@@ -2,6 +2,8 @@ import os
 import os.path as osp
 import pandas as pd
 import numpy as np
+from pathlib import Path
+import pickle
 
 from ..load_sim import LoadSim
 from ..io.timing_reader import TimingReader
@@ -9,6 +11,7 @@ from .hst import Hst
 from .slc_prj import SliceProj
 from .pdf import LognormalPDF
 from .tes import TES
+from .tools import get_coords_iso
 
 class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
     """LoadSim class for analyzing core collapse simulations."""
@@ -49,6 +52,25 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
 
             # Set domain
             self.domain = self._get_domain_from_par(self.par)
+
+            # find collapse time and the snapshot numbers at the time of collapse
+            for k, v in self.par.items():
+                if k.startswith('output') and v['file_type'] == 'hdf5':
+                    dt_hdf5 = v['dt']
+            self.tcolls, self.nums_tcoll = {}, {}
+            # mass and position of sink particle at the time of creation
+            self.mp0, self.xp0, self.yp0, self.zp0 = {}, {}, {}, {}
+            for pid in self.pids:
+                phst = self.load_parhst(pid)
+                phst0 = phst.iloc[0]
+                tcoll = phst0.time
+                self.mp0[pid] = phst0.mass
+                self.xp0[pid] = phst0.x1
+                self.yp0[pid] = phst0.x2
+                self.zp0[pid] = phst0.x3
+                self.tcolls[pid] = tcoll
+                self.nums_tcoll[pid] = np.floor(tcoll / dt_hdf5).astype('int')
+
 
     def get_tJeans(self, lmb, rho=None):
         """e-folding time of the fastest growing mode of the Jeans instability
