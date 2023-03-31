@@ -72,6 +72,20 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
                 self.nums_tcoll[pid] = np.floor(tcoll / dt_hdf5).astype('int')
 
 
+    def load_fiso_dicts(self, num):
+        fname = Path(self.basedir, 'fiso.{:05d}.p'.format(num))
+        with open(fname, 'rb') as handle:
+            self.fiso_dicts = pickle.load(handle)
+        return self.fiso_dicts
+
+
+    def load_tcoll_cores(self):
+        fname = Path(self.basedir, 'tcoll_cores.p')
+        with open(fname, 'rb') as handle:
+            self.tcoll_cores = pickle.load(handle)
+        return self.tcoll_cores
+
+
     def get_tJeans(self, lmb, rho=None):
         """e-folding time of the fastest growing mode of the Jeans instability
         lmb = wavelength of the mode
