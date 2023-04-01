@@ -15,18 +15,10 @@ from pyathena.util import uniform
 from fiso import fiso_tree
 from fiso import tree_bound
 
-models = dict(M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
-              M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
-              M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256',
-              M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512',
-              )
-sa = pa.LoadSimCoreFormationAll(models)
 
-
-def find_tcoll_cores(mdl, overwrite=False):
+def find_tcoll_cores(s, overwrite=False):
     """Loop over all sink particles and find their associated t_coll cores
     """
-    s = sa.set_model(mdl)
     tcoll_cores = dict()
     for pid in s.pids:
         num = s.nums_tcoll[pid]
@@ -64,8 +56,7 @@ def find_tcoll_cores(mdl, overwrite=False):
             pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def save_radial_profiles_tcoll_cores(mdl, overwrite=False):
-    s = sa.set_model(mdl)
+def save_radial_profiles_tcoll_cores(s, overwrite=False):
     rmax = 0.5*s.domain['Lx'][0]
     rprf = []
     for pid in s.pids:
@@ -96,8 +87,7 @@ def save_radial_profiles_tcoll_cores(mdl, overwrite=False):
             pickle.dump(rprf, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def run_fiso(mdl, overwrite=False):
-    s = sa.set_model(mdl)
+def run_fiso(s, overwrite=False):
     cs = s.par['hydro']['iso_sound_speed']
 
     # Assume uniform grid
@@ -141,9 +131,8 @@ def run_fiso(mdl, overwrite=False):
             pickle.dump(fiso_dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def combine_partab(mdl, ns=None, ne=None, partag="par0", remove=False):
+def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
     script = "/home/sm69/tigris/vis/tab/combine_partab.sh"
-    s = sa.set_model(mdl)
     if ns is None:
         ns = s.nums_partab[partag][0]
     if ne is None:
@@ -165,7 +154,7 @@ def combine_partab(mdl, ns=None, ne=None, partag="par0", remove=False):
                             '{}.block*.{}.?????.{}.tab'.format(s.problem_id, outid, partag),
                             "-delete"], cwd=s.basedir)
 
-def resample_hdf5(mdl, level=0):
+def resample_hdf5(s, level=0):
     """Resamples AMR output into uniform resolution.
 
     Reads a HDF5 file with a mesh refinement and resample it to uniform
@@ -175,10 +164,9 @@ def resample_hdf5(mdl, level=0):
         {basedir}/uniform/{problem_id}.level{level}.?????.athdf
 
     Args:
-        mdl: Model name.
+        s: pyathena.LoadSim instance
         level: Refinement level to resample. root level=0.
     """
-    s = sa.set_model(mdl)
     ifname = Path(s.basedir, '{}.out2'.format(s.problem_id))
     odir = Path(s.basedir, 'uniform')
     odir.mkdir(exist_ok=True)
@@ -194,24 +182,21 @@ def resample_hdf5(mdl, level=0):
                   quantities=None)
     uniform.main(**kwargs)
 
-def compare_projection(mdl1, mdl2, odir=Path("/tigress/sm69/public_html/files")):
+def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
     """Creates two panel plot comparing density projections
 
     Save projections in {basedir}/figures for all snapshots.
 
     Args:
-        mdl1: Model name
-        mdl2: Model name
+        s1: pyathena.LoadSim instance
+        s2: pyathena.LoadSim instance
     """
     fig, axs = plt.subplots(1,2,figsize=(14,7))
-    s1 = sa.set_model(mdl1)
-    s2 = sa.set_model(mdl2)
     nums = list(set(s1.nums) & set(s2.nums))
-    odir = odir / "{}_{}".format(mdl1, mdl2)
+    odir = odir / "{}_{}".format(s1.basename, s2.basename)
     odir.mkdir(exist_ok=True)
     for num in nums:
-        for ax, mdl in zip(axs, [mdl1, mdl2]):
-            s = sa.set_model(mdl)
+        for ax, s in zip(axs, [s1, s2]):
             ds = s.load_hdf5(num, load_method='yt')
             plot_projection(s, ds, ax=ax, add_colorbar=False)
             ax.set_title(r'$t={:.3f}$'.format(ds.current_time.value), fontsize=16)
@@ -220,8 +205,12 @@ def compare_projection(mdl1, mdl2, odir=Path("/tigress/sm69/public_html/files"))
         for ax in axs:
             ax.cla()
 
-def create_sinkhistory(mdl):
-    s = sa.set_model(mdl)
+def create_sinkhistory(s):
+    """Creates multi-panel plot for sink particle history
+
+    Args:
+        s: pyathena.LoadSim instance
+    """
     for num in s.nums:
         ds = s.load_hdf5(num, load_method='yt')
         pds = s.load_partab(num)
@@ -232,18 +221,17 @@ def create_sinkhistory(mdl):
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         plt.close(fig)
 
-def create_projections(mdl):
+def create_projections(s):
     """Creates density projections for a given model
 
     Save projections in {basedir}/figures for all snapshots.
 
     Args:
-        mdl: Model name
+        s: pyathena.LoadSim instance
     """
     fig, ax = plt.subplots(figsize=(8,8))
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='4%', pad=0.05)
-    s = sa.set_model(mdl)
     for num in s.nums:
         ds = s.load_hdf5(num, load_method='yt')
         plot_projection(s, ds, ax=ax, cax=cax)
@@ -255,15 +243,14 @@ def create_projections(mdl):
         ax.cla()
         cax.cla()
 
-def create_PDF_Pspec(mdl):
+def create_PDF_Pspec(s):
     """Creates density PDF and velocity power spectrum for a given model
 
     Save figures in {basedir}/figures for all snapshots.
 
     Args:
-        mdl: Model name
+        s: pyathena.LoadSim instance
     """
-    s = sa.set_model(mdl)
     fig, axs = plt.subplots(1,2,figsize=(12,6))
     for num in s.nums:
         ds = s.load_hdf5(num, load_method='pyathena')
@@ -279,18 +266,28 @@ def create_PDF_Pspec(mdl):
 
 
 if __name__ == "__main__":
+    # load all models
+    models = dict(M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
+                  M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
+                  M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256',
+                  M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512',
+                  )
+    sa = pa.LoadSimCoreFormationAll(models)
+
+    # select some models
     models = ['M5J2P0N256']
     for mdl in models:
+        s = sa.set_model(mdl)
+
         # combine output files
-        combine_partab(mdl, remove=True)
+        combine_partab(s, remove=True)
 
         # make plots
-        create_sinkhistory(mdl)
-        create_projections(mdl)
-        create_PDF_Pspec(mdl)
+        create_sinkhistory(s)
+        create_projections(s)
+        create_PDF_Pspec(s)
 
         # make movie
-        s = sa.set_model(mdl)
         srcdir = Path(s.basedir, "figures")
         plot_prefix = ["sink_history", "PDF_Pspecs"]
         for prefix in plot_prefix:
@@ -299,7 +296,7 @@ if __name__ == "__main__":
                 "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
 
         # other works
-        run_fiso(mdl, overwrite=True)
-        find_tcoll_cores(mdl, overwrite=True)
-        save_radial_profiles_tcoll_cores(mdl, overwrite=True)
-        resample_hdf5(mdl)
+        run_fiso(s, overwrite=True)
+        find_tcoll_cores(s, overwrite=True)
+        save_radial_profiles_tcoll_cores(s, overwrite=True)
+        resample_hdf5(s)
