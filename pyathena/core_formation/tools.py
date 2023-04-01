@@ -36,6 +36,56 @@ def calculate_radial_profiles(ds, origin, rmax):
     return rprf
 
 
+def apply_fiso_mask(dat, iso_dict=None, isos=None, indices=None, fill_value=np.nan):
+    """Mask DataArray using FISO dictionary or the flattened indexes.
+
+    Args:
+        dat: xarray.DataArray instance to be filtered (rho, phi, etc.)
+        iso_dict: FISO object dictionary, optional.
+        isos: int or sequence of ints representing the selected isos, optional.
+        indices: FISO flattend indices, optional. If given, overrides iso_dict and isos.
+        fill_value: value to fill outside of the filtered region, optional.
+                    Default value is np.nan.
+
+    Returns:
+        out: Filtered DataArray
+    """
+    if iso_dict is None and isos is None and indices is None:
+        # nothing to do
+        return dat
+    elif iso_dict is not None and indices is None:
+        indices = []
+        if isos is None:
+            # select all cells
+            for v in iso_dict.values():
+                indices += list(v)
+        elif isinstance(isos, int):
+            indices += iso_dict[isos]
+        else:
+            for iso in isos:
+                indices += iso_dict[iso]
+    dat1d = dat.data.flatten()
+    out = np.full(len(dat1d), fill_value)
+    out[indices] = dat1d[indices]
+    out = out.reshape(dat.shape)
+    out = xr.DataArray(data=out, coords=dat.coords, dims=dat.dims)
+    return out
+
+
+def get_coords_minimum(dat):
+    """returns coordinates at the minimum of dat
+
+    Args:
+        dat : xarray.DataArray instance (usually potential)
+    Returns:
+        x0, y0, z0
+    """
+    center = dat.argmin(...)
+    x0, y0, z0 = [dat.isel(center).coords[dim].data[()]
+                  for dim in ['x', 'y', 'z']]
+    return x0, y0, z0
+
+
 def calculate_cum_energies(ds, iso_dict, iso, mode='HBR', boundary_flag='periodic'):
     """Calculate cumulative energies for all levels
 
@@ -87,7 +137,7 @@ def calculate_cum_energies(ds, iso_dict, iso, mode='HBR', boundary_flag='periodi
     vy0 = (dat1d['rho']*dat1d['vy']).cumsum() / M
     vz0 = (dat1d['rho']*dat1d['vz']).cumsum() / M
     # Potential minimum
-    phi_hpr = filter_var(ds.phi, indices=indices)
+    phi_hpr = apply_fiso_mask(ds.phi, indices=indices)
     x0, y0, z0 = get_coords_minimum(phi_hpr)
 
     # Kinetic energy
