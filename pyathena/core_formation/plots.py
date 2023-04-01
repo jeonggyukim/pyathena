@@ -193,11 +193,22 @@ def plot_projection(s, ds, field='dens', axis='z',
                     ax=None, cax=None,
                     add_colorbar=True, transpose=False):
     # some domain informations
-    dx, dy, dz = ds.x[1]-ds.x[0], ds.y[1]-ds.y[0], ds.z[1]-ds.z[0]
-    xmin, xmax = ds.x[0] - 0.5*dx, ds.x[-1] + 0.5*dx
-    ymin, ymax = ds.y[0] - 0.5*dy, ds.y[-1] + 0.5*dy
-    zmin, zmax = ds.z[0] - 0.5*dz, ds.z[-1] + 0.5*dz
-    Lx, Ly, Lz = xmax-xmin, ymax-ymin, zmax-zmin
+    xmin, ymin, zmin = s.domain['le']
+    xmax, ymax, zmax = s.domain['re']
+    Lx, Ly, Lz = s.domain['Lx']
+
+    if isinstance(ds, xr.Dataset):
+        # Reset the domain information, for the case when
+        # ds is a part of the whole domain.
+        xmin = ds.x[0] - 0.5*ds.dx
+        ymin = ds.y[0] - 0.5*ds.dy
+        zmin = ds.z[0] - 0.5*ds.dz
+        xmax = ds.x[-1] + 0.5*ds.dx
+        ymax = ds.y[-1] + 0.5*ds.dy
+        zmax = ds.z[-1] + 0.5*ds.dz
+        Lx = xmax - xmin
+        Ly = ymax - ymin
+        Lz = zmax - zmin
 
     wh = dict(zip(('x','y','z'), ((Ly, Lz), (Lz, Lx), (Lx, Ly))))
     extent = dict(zip(('x','y','z'), ((ymin,ymax,zmin,zmax),
