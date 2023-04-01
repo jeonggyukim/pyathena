@@ -59,7 +59,7 @@ def apply_fiso_mask(dat, iso_dict=None, isos=None, indices=None, fill_value=np.n
             # select all cells
             for v in iso_dict.values():
                 indices += list(v)
-        elif isinstance(isos, int):
+        elif isinstance(isos, (int, np.int64, np.int32)):
             indices += iso_dict[isos]
         else:
             for iso in isos:

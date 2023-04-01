@@ -86,14 +86,14 @@ def plot_tcoll_cores(s, pid, hw=0.25):
         Mcore = (rho_*s.domain['dx'].prod()).sum().data[()]
         Vcore = ((rho_>0).sum()*s.domain['dx'].prod())
         Rcore = (3*Vcore/(4*np.pi))**(1./3.)
-        ds_iso = xr.Dataset(dict(dens=rho_))
+        ds_iso = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_iso = ds_iso.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
                              yaxis[prj_axis]:slice(*ylim[prj_axis]),
                              zaxis[prj_axis]:slice(*zlim[prj_axis])})
         # load other isos
         leaf_dict_without_iso = {k: v for k, v in leaf_dict.items() if k != iso}
         rho_ = tools.apply_fiso_mask(ds.dens, leaf_dict_without_iso, fill_value=0)
-        ds_bkgr = xr.Dataset(dict(dens=rho_))
+        ds_bkgr = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_bkgr = ds_bkgr.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
                                yaxis[prj_axis]:slice(*ylim[prj_axis]),
                                zaxis[prj_axis]:slice(*zlim[prj_axis])})
