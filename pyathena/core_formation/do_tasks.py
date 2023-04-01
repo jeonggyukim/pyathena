@@ -5,6 +5,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import subprocess
 import pickle
 import glob
+import xarray as xr
+import pandas as pd
 
 # pyathena modules
 import pyathena as pa
@@ -15,22 +17,22 @@ from fiso import tree_bound
 
 models = dict(M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
               M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
-              M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256.tmp',
-              M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512.tmp',
+              M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256',
+              M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512',
               )
 sa = pa.LoadSimCoreFormationAll(models)
 
 
-def find_tcoll_cores(mdl):
+def find_tcoll_cores(mdl, overwrite=False):
     """Loop over all sink particles and find their associated t_coll cores
     """
     s = sa.set_model(mdl)
     tcoll_cores = dict()
-    for pid in s.pids[:30]:
+    for pid in s.pids:
         num = s.nums_tcoll[pid]
 
         # load fiso dict at t = t_coll
-        fname = Path(s.basedir, 'fiso.{:05d}.p'.format(num))
+        fname = Path(s.basedir, 'fiso', 'fiso.{:05d}.p'.format(num))
         with open(fname, 'rb') as handle:
             fiso_dicts = pickle.load(handle)
             leaf_dict = fiso_dicts['leaf_dict']
@@ -51,9 +53,47 @@ def find_tcoll_cores(mdl):
             if rsq_max > 25:
                 print(pid)
                 raise ValueError("Cannot find a t_coll core within 5*dx from the sink particle")
-    ofname = Path(s.basedir, 'tcoll_cores.p')
-    with open(ofname, 'wb') as handle:
-        pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+    # write to file
+    ofname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        return
+    else:
+        with open(ofname, 'wb') as handle:
+            pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def save_radial_profiles_tcoll_cores(mdl, overwrite=False):
+    s = sa.set_model(mdl)
+    rmax = 0.5*s.domain['Lx'][0]
+    rprf = []
+    for pid in s.pids:
+        # Load the progenitor iso of the particle pid
+        fname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
+        with open(fname, 'rb') as handle:
+            tcoll_cores = pickle.load(handle)
+        iso = tcoll_cores[pid]
+
+        # Load hdf5 snapshot at t = t_coll
+        num = s.nums_tcoll[pid]
+        ds = s.load_hdf5(num, load_method='pyathena')
+
+        # Find the location of the core
+        xc, yc, zc = tools.get_coords_iso(ds, iso)
+
+        # Calculate radial profile
+        rprf.append(tools.calculate_radial_profiles(ds, (xc, yc, zc), rmax))
+    rprf = xr.concat(rprf, dim=pd.Index(s.pids, name='pid'), combine_attrs='drop_conflicts')
+
+    # write to file
+    ofname = Path(s.basedir, 'tcoll_cores', 'radial_profile.p')
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        return
+    else:
+        with open(ofname, 'wb') as handle:
+            pickle.dump(rprf, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def run_fiso(mdl, overwrite=False):
@@ -91,6 +131,8 @@ def run_fiso(mdl, overwrite=False):
         fiso_dicts = dict(iso_dict=iso_dict, iso_label=iso_label,
                           iso_list=iso_list, eic_list=eic_list,
                           leaf_dict=leaf_dict, hpr_dict=hpr_dict, hbr_dict=hbr_dict)
+
+        # write to file
         ofname = Path(s.basedir, 'fiso', 'fiso.{:05d}.p'.format(num))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
@@ -237,7 +279,7 @@ def create_PDF_Pspec(mdl):
 
 
 if __name__ == "__main__":
-    models = ['M5J2P0N256', 'M5J2P0N512']
+    models = ['M5J2P0N256']
     for mdl in models:
         # combine output files
         combine_partab(mdl, remove=True)
@@ -258,5 +300,6 @@ if __name__ == "__main__":
 
         # other works
         run_fiso(mdl, overwrite=True)
-        find_tcoll_cores(mdl)
+        find_tcoll_cores(mdl, overwrite=True)
+        save_radial_profiles_tcoll_cores(mdl, overwrite=True)
         resample_hdf5(mdl)

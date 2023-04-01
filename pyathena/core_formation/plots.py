@@ -21,7 +21,7 @@ from pyathena.core_formation import tools
 
 def plot_tcoll_cores(s, pid, hw=0.25):
     # Load the progenitor iso of the particle pid
-    fname = Path(s.basedir, 'tcoll_cores.p')
+    fname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
     with open(fname, 'rb') as handle:
         tcoll_cores = pickle.load(handle)
     iso = tcoll_cores[pid]
@@ -31,7 +31,7 @@ def plot_tcoll_cores(s, pid, hw=0.25):
     ds = s.load_hdf5(num, load_method='pyathena')
 
     # load leaf dict at t = t_coll
-    fname = Path(s.basedir, 'fiso.{:05d}.p'.format(num))
+    fname = Path(s.basedir, 'fiso', 'fiso.{:05d}.p'.format(num))
     with open(fname, 'rb') as handle:
         leaf_dict = pickle.load(handle)['leaf_dict']
 
@@ -39,7 +39,12 @@ def plot_tcoll_cores(s, pid, hw=0.25):
     xc, yc, zc = tools.get_coords_iso(ds, iso)
 
     # Calculate radial profile
-    rprf = tools.calculate_radial_profiles(ds, (xc, yc, zc), 2*hw)
+    fname = Path(s.basedir, 'tcoll_cores', 'radial_profile.p')
+    if fname.exists():
+        with open(fname, 'rb') as handle:
+            rprf = pickle.load(handle).sel(pid=pid)
+    else:
+        rprf = tools.calculate_radial_profiles(ds, (xc, yc, zc), 2*hw)
 
     # create figure
     fig = plt.figure(figsize=(28, 21))
@@ -113,6 +118,7 @@ def plot_tcoll_cores(s, pid, hw=0.25):
     rhoLP = s.get_rhoLP(rprf.r)
     plt.loglog(rprf.r, rhoLP, 'k--')
     plt.axvline(Rcore, ls=':', c='k')
+    plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(1e0, rhoLP[0])
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\rho/\rho_0$')
@@ -128,6 +134,7 @@ def plot_tcoll_cores(s, pid, hw=0.25):
     plt.semilogx(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
     plt.semilogx(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
     plt.semilogx(rprf.r, rprf.vel3, marker='+', label=r'$v_\phi$')
+    plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(-3, 3)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$v/c_s$')
@@ -141,6 +148,7 @@ def plot_tcoll_cores(s, pid, hw=0.25):
     y0 = (rprf.vel1_std[1] + rprf.vel2_std[1] + rprf.vel3_std[1])/3
     plt.plot(rprf.r, y0*(rprf.r/x0)**0.5, 'k--')
     plt.plot(rprf.r, y0*(rprf.r/x0)**1, 'k--')
+    plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(2e-1, 2e1)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\sigma/c_s$')
