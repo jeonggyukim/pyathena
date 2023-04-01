@@ -251,10 +251,11 @@ def create_PDF_Pspec(s):
         s: pyathena.LoadSim instance
     """
     fig, axs = plt.subplots(1,2,figsize=(12,6))
+    ax1_twiny = axs[1].twiny()
     for num in s.nums:
         ds = s.load_hdf5(num, load_method='pyathena')
         plot_PDF(s, ds, axs[0])
-        plot_Pspec(s, ds, axs[1])
+        plot_Pspec(s, ds, axs[1], ax1_twiny)
         fig.tight_layout()
         odir = Path(s.basedir, 'figures')
         odir.mkdir(exist_ok=True)
@@ -262,3 +263,4 @@ def create_PDF_Pspec(s):
         fig.savefig(fname, bbox_inches='tight')
         for ax in axs:
             ax.cla()
+        ax1_twiny.cla()

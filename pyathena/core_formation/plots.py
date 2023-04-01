@@ -249,7 +249,7 @@ def plot_projection(s, ds, field='dens', axis='z',
     return img
 
 
-def plot_Pspec(s, ds, ax=None):
+def plot_Pspec(s, ds, ax=None, ax_twin=None):
     """Requires load_method='pyathena'"""
     # prepare frequencies
     from scipy.fft import fftn, fftfreq, fftshift, ifftn
@@ -293,8 +293,10 @@ def plot_Pspec(s, ds, ax=None):
     plt.ylim(1e-7, 1e3)
     plt.ylabel(r'$P(k)=|\mathbf{v}(k)|^2$')
     plt.legend(loc='upper right')
-
-    plt.twiny()
+    if ax_twin is not None:
+        plt.sca(ax_twin)
+    else:
+        plt.twiny()
     plt.xscale('log')
     xticks = np.array([1e-1, 1e0, 1e1, 1e2])
     plt.gca().set_xticks(1/xticks)
