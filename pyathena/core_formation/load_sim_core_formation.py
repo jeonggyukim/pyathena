@@ -1,17 +1,16 @@
-import os
 import os.path as osp
 import pandas as pd
 import numpy as np
 from pathlib import Path
 import pickle
 
-from ..load_sim import LoadSim
-from ..io.timing_reader import TimingReader
-from .hst import Hst
-from .slc_prj import SliceProj
-from .pdf import LognormalPDF
-from .tes import TES
-from .tools import get_coords_iso
+from pyathena.load_sim import LoadSim
+from pyathena.io.timing_reader import TimingReader
+from pyathena.core_formation.hst import Hst
+from pyathena.core_formation.slc_prj import SliceProj
+from pyathena.core_formation.pdf import LognormalPDF
+from pyathena.core_formation.tes import TES
+from pyathena.core_formation.tools import get_coords_iso
 
 class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
     """LoadSim class for analyzing core collapse simulations."""

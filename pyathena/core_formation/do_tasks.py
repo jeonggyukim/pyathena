@@ -10,14 +10,13 @@ import glob
 import pyathena as pa
 from pyathena.core_formation.plots import *
 from pyathena.util import uniform
-from fiso.fiso_tree import construct_tree, calc_leaf
-from fiso.tree_bound import compute
-
+from fiso import fiso_tree
+from fiso import tree_bound
 
 models = dict(M10J4P0N256='/scratch/gpfs/sm69/cores/M10.J4.P0.N256',
               M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
-              M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256',
-              M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512',
+              M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256.tmp',
+              M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512.tmp',
               )
 sa = pa.LoadSimCoreFormationAll(models)
 
@@ -54,7 +53,7 @@ def find_tcoll_cores(mdl):
                 raise ValueError("Cannot find a t_coll core within 5*dx from the sink particle")
     ofname = Path(s.basedir, 'tcoll_cores.p')
     with open(ofname, 'wb') as handle:
-        pickle.dump(fiso_dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def run_fiso(mdl, overwrite=False):
@@ -83,16 +82,17 @@ def run_fiso(mdl, overwrite=False):
         data = [rho.data, phi.data, prs.data, bpressure.data, vx.data, vy.data, vz.data]
 
         # Construct isocontours using fiso
-        iso_dict, iso_label, iso_list, eic_list = construct_tree(phi.data, 'periodic')
-        leaf_dict = calc_leaf(iso_dict, iso_list, eic_list)
-        hpr_dict, hbr_dict = compute(data, iso_dict, iso_list, eic_list)
+        iso_dict, iso_label, iso_list, eic_list = fiso_tree.construct_tree(phi.data, 'periodic')
+        leaf_dict = fiso_tree.calc_leaf(iso_dict, iso_list, eic_list)
+        hpr_dict, hbr_dict = tree_bound.compute(data, iso_dict, iso_list, eic_list)
         # remove empty HBRs
         hbr_dict = {key: value for key, value in hbr_dict.items() if len(value)>0}
 
         fiso_dicts = dict(iso_dict=iso_dict, iso_label=iso_label,
                           iso_list=iso_list, eic_list=eic_list,
                           leaf_dict=leaf_dict, hpr_dict=hpr_dict, hbr_dict=hbr_dict)
-        ofname = Path(s.basedir, 'fiso.{:05d}.p'.format(num))
+        ofname = Path(s.basedir, 'fiso', 'fiso.{:05d}.p'.format(num))
+        ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
             continue
         with open(ofname, 'wb') as handle:
@@ -237,7 +237,7 @@ def create_PDF_Pspec(mdl):
 
 
 if __name__ == "__main__":
-    models = ['M5J2P0N256']
+    models = ['M5J2P0N256', 'M5J2P0N512']
     for mdl in models:
         # combine output files
         combine_partab(mdl, remove=True)
