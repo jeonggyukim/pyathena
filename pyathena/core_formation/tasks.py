@@ -204,7 +204,7 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
         for ax in axs:
             ax.cla()
 
-def create_sinkhistory(s):
+def make_plots_sinkhistory(s):
     """Creates multi-panel plot for sink particle history
 
     Args:
@@ -220,7 +220,7 @@ def create_sinkhistory(s):
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         plt.close(fig)
 
-def create_projections(s):
+def make_plots_projections(s):
     """Creates density projections for a given model
 
     Save projections in {basedir}/figures for all snapshots.
@@ -242,7 +242,7 @@ def create_projections(s):
         ax.cla()
         cax.cla()
 
-def create_PDF_Pspec(s):
+def make_plots_PDF_Pspec(s):
     """Creates density PDF and velocity power spectrum for a given model
 
     Save figures in {basedir}/figures for all snapshots.
