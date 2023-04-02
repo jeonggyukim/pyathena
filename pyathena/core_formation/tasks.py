@@ -153,6 +153,7 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
                             '{}.block*.{}.?????.{}.tab'.format(s.problem_id, outid, partag),
                             "-delete"], cwd=s.basedir)
 
+
 def resample_hdf5(s, level=0):
     """Resamples AMR output into uniform resolution.
 
@@ -181,6 +182,7 @@ def resample_hdf5(s, level=0):
                   quantities=None)
     uniform.main(**kwargs)
 
+
 def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
     """Creates two panel plot comparing density projections
 
@@ -204,6 +206,22 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
         for ax in axs:
             ax.cla()
 
+
+def make_plots_tcoll_cores(s):
+    """Creates multi-panel plot for t_coll core properties
+
+    Args:
+        s: pyathena.LoadSim instance
+    """
+    for pid in s.pids:
+        fig = plot_tcoll_cores(s, pid)
+        odir = Path(s.basedir, 'figures')
+        odir.mkdir(exist_ok=True)
+        fname = odir / "tcoll_cores.par{}.png".format(pid)
+        fig.savefig(fname, bbox_inches='tight', dpi=200)
+        plt.close(fig)
+
+
 def make_plots_sinkhistory(s):
     """Creates multi-panel plot for sink particle history
 
@@ -219,6 +237,7 @@ def make_plots_sinkhistory(s):
         fname = odir / "sink_history.{:05d}.png".format(num)
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         plt.close(fig)
+
 
 def make_plots_projections(s):
     """Creates density projections for a given model
@@ -241,6 +260,7 @@ def make_plots_projections(s):
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         ax.cla()
         cax.cla()
+
 
 def make_plots_PDF_Pspec(s):
     """Creates density PDF and velocity power spectrum for a given model
