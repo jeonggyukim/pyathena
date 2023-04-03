@@ -31,13 +31,14 @@ def save_tcoll_cores(s):
 
 
 def save_radial_profiles_tcoll_cores(s, overwrite=False):
+    # Load the progenitor iso of the particle pid
+    fname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
+    with open(fname, 'rb') as handle:
+        tcoll_cores = pickle.load(handle)
+
     rmax = 0.5*s.domain['Lx'][0]
     rprf = []
     for pid in s.pids:
-        # Load the progenitor iso of the particle pid
-        fname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
-        with open(fname, 'rb') as handle:
-            tcoll_cores = pickle.load(handle)
         iso = tcoll_cores[pid]
 
         # Load hdf5 snapshot at t = t_coll
