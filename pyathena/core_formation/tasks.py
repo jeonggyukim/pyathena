@@ -9,14 +9,14 @@ import xarray as xr
 import pandas as pd
 
 # pyathena modules
-from pyathena.core_formation.plots import *
+from pyathena.core_formation import plots
 from pyathena.core_formation import tools
 from pyathena.util import uniform
 from fiso import fiso_tree
 from fiso import tree_bound
 
 
-def find_and_save_tcoll_cores(s):
+def save_tcoll_cores(s):
     """Loop over all sink particles and find their associated t_coll cores
     """
     tcoll_cores = dict()
@@ -174,7 +174,7 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
     for num in nums:
         for ax, s in zip(axs, [s1, s2]):
             ds = s.load_hdf5(num, load_method='yt')
-            plot_projection(s, ds, ax=ax, add_colorbar=False)
+            plots.plot_projection(s, ds, ax=ax, add_colorbar=False)
             ax.set_title(r'$t={:.3f}$'.format(ds.current_time.value), fontsize=16)
         fname = odir / "Projection_z_dens.{:05d}.png".format(num)
         fig.savefig(fname, bbox_inches='tight', dpi=200)
@@ -189,7 +189,7 @@ def make_plots_tcoll_cores(s):
         s: pyathena.LoadSim instance
     """
     for pid in s.pids:
-        fig = plot_tcoll_cores(s, pid)
+        fig = plots.plot_tcoll_cores(s, pid)
         odir = Path(s.basedir, 'figures')
         odir.mkdir(exist_ok=True)
         fname = odir / "tcoll_cores.par{}.png".format(pid)
@@ -206,7 +206,7 @@ def make_plots_sinkhistory(s):
     for num in s.nums:
         ds = s.load_hdf5(num, load_method='yt')
         pds = s.load_partab(num)
-        fig = plot_sinkhistory(s, ds, pds)
+        fig = plots.plot_sinkhistory(s, ds, pds)
         odir = Path(s.basedir, 'figures')
         odir.mkdir(exist_ok=True)
         fname = odir / "sink_history.{:05d}.png".format(num)
@@ -227,7 +227,7 @@ def make_plots_projections(s):
     cax = divider.append_axes('right', size='4%', pad=0.05)
     for num in s.nums:
         ds = s.load_hdf5(num, load_method='yt')
-        plot_projection(s, ds, ax=ax, cax=cax)
+        plots.plot_projection(s, ds, ax=ax, cax=cax)
         odir = Path(s.basedir, 'figures')
         odir.mkdir(exist_ok=True)
         fname = odir / "Projection_z_dens.{:05d}.png".format(num)
@@ -249,8 +249,8 @@ def make_plots_PDF_Pspec(s):
     ax1_twiny = axs[1].twiny()
     for num in s.nums:
         ds = s.load_hdf5(num, load_method='pyathena')
-        plot_PDF(s, ds, axs[0])
-        plot_Pspec(s, ds, axs[1], ax1_twiny)
+        plots.plot_PDF(s, ds, axs[0])
+        plots.plot_Pspec(s, ds, axs[1], ax1_twiny)
         fig.tight_layout()
         odir = Path(s.basedir, 'figures')
         odir.mkdir(exist_ok=True)
