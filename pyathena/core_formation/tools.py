@@ -47,19 +47,23 @@ def find_tcoll_core(s, pid):
         leaf_dict = fiso_dicts['leaf_dict']
 
     # find closeast leaf node to this particle
-    rsq_max = 3
+    dx, dy, dz = s.domain['dx']
+    dist_inc = min(dx, dy, dz)
+    search_dist = dist_inc
+    particle_speed = np.sqrt(s.vpx0[pid]**2 + s.vpy0[pid]**2 + s.vpz0[pid]**2)
+    search_dist_max = max(5*max(dx, dy, dz), 1.5*s.dt_output['hdf5']*particle_speed)
     tcoll_core = set()
     while len(tcoll_core) == 0:
         for iso in leaf_dict:
             k, j, i = np.unravel_index(iso, s.domain['Nx'], order='C')
             i0, j0, k0 = ((np.array((s.xp0[pid], s.yp0[pid], s.zp0[pid]))
                            - s.domain['le']) // s.domain['dx'])
-            rsq = (k-k0)**2 + (j-j0)**2 + (k-k0)**2
-            if rsq <= rsq_max:
+            dist = np.sqrt(((k-k0)*dz)**2 + ((j-j0)*dy)**2 + ((i-i0)*dx)**2)
+            if dist <= search_dist:
                 tcoll_core.add(iso)
-        rsq_max += 1
-        if rsq_max > 100:
-            msg = "Cannot find a t_coll core within 10 dx from this particle"
+        search_dist += dist_inc
+        if search_dist > search_dist_max:
+            msg = f"pid = {pid}: Cannot find a t_coll core within distance {search_dist_max}"
             raise ValueError(msg)
     return tcoll_core.pop()
 
