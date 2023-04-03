@@ -53,12 +53,14 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             self.domain = self._get_domain_from_par(self.par)
 
             # find collapse time and the snapshot numbers at the time of collapse
+            self.dt_output = {}
             for k, v in self.par.items():
-                if k.startswith('output') and v['file_type'] == 'hdf5':
-                    dt_hdf5 = v['dt']
+                if k.startswith('output'):
+                    self.dt_output[v['file_type']] = v['dt']
             self.tcolls, self.nums_tcoll = {}, {}
             # mass and position of sink particle at the time of creation
             self.mp0, self.xp0, self.yp0, self.zp0 = {}, {}, {}, {}
+            self.vpx0, self.vpy0, self.vpz0 = {}, {}, {}
             for pid in self.pids:
                 phst = self.load_parhst(pid)
                 phst0 = phst.iloc[0]
@@ -67,8 +69,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
                 self.xp0[pid] = phst0.x1
                 self.yp0[pid] = phst0.x2
                 self.zp0[pid] = phst0.x3
+                self.vpx0[pid] = phst0.v1
+                self.vpy0[pid] = phst0.v2
+                self.vpz0[pid] = phst0.v3
                 self.tcolls[pid] = tcoll
-                self.nums_tcoll[pid] = np.floor(tcoll / dt_hdf5).astype('int')
+                self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']).astype('int')
 
 
     def load_fiso_dicts(self, num):
