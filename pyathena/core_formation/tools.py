@@ -1,5 +1,7 @@
 import numpy as np
 import xarray as xr
+from pathlib import Path
+import pickle
 from pyathena.util import transform
 from fiso import boundary
 
@@ -35,6 +37,31 @@ def calculate_radial_profiles(ds, origin, rmax):
     rprf = xr.Dataset(rprf)
     return rprf
 
+
+def find_tcoll_core(s, pid):
+    # load fiso dict at t = t_coll
+    num = s.nums_tcoll[pid]
+    fname = Path(s.basedir, 'fiso', 'fiso.{:05d}.p'.format(num))
+    with open(fname, 'rb') as handle:
+        fiso_dicts = pickle.load(handle)
+        leaf_dict = fiso_dicts['leaf_dict']
+
+    # find closeast leaf node to this particle
+    rsq_max = 3
+    tcoll_core = set()
+    while len(tcoll_core) == 0:
+        for iso in leaf_dict:
+            k, j, i = np.unravel_index(iso, s.domain['Nx'], order='C')
+            i0, j0, k0 = ((np.array((s.xp0[pid], s.yp0[pid], s.zp0[pid]))
+                           - s.domain['le']) // s.domain['dx'])
+            rsq = (k-k0)**2 + (j-j0)**2 + (k-k0)**2
+            if rsq <= rsq_max:
+                tcoll_core.add(iso)
+        rsq_max += 1
+        if rsq_max > 100:
+            msg = "Cannot find a t_coll core within 10 dx from this particle"
+            raise ValueError(msg)
+    return tcoll_core.pop()
 
 def apply_fiso_mask(dat, iso_dict=None, isos=None, indices=None, fill_value=np.nan):
     """Mask DataArray using FISO dictionary or the flattened indexes.

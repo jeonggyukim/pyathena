@@ -10,49 +10,24 @@ import pandas as pd
 
 # pyathena modules
 from pyathena.core_formation.plots import *
+from pyathena.core_formation import tools
 from pyathena.util import uniform
 from fiso import fiso_tree
 from fiso import tree_bound
 
 
-def find_tcoll_cores(s, overwrite=False):
+def find_and_save_tcoll_cores(s):
     """Loop over all sink particles and find their associated t_coll cores
     """
     tcoll_cores = dict()
     for pid in s.pids:
-        num = s.nums_tcoll[pid]
-
-        # load fiso dict at t = t_coll
-        fname = Path(s.basedir, 'fiso', 'fiso.{:05d}.p'.format(num))
-        with open(fname, 'rb') as handle:
-            fiso_dicts = pickle.load(handle)
-            leaf_dict = fiso_dicts['leaf_dict']
-
-        # find t_coll core associated with this pid
-        rsq_max = 3
-        while pid not in tcoll_cores:
-            for iso in leaf_dict:
-                k, j, i = np.unravel_index(iso, s.domain['Nx'], order='C')
-                i0, j0, k0 = (np.array((s.xp0[pid], s.yp0[pid], s.zp0[pid]))
-                              - s.domain['le']) // s.domain['dx']
-                rsq = (k-k0)**2 + (j-j0)**2 + (k-k0)**2
-                if rsq <= rsq_max:
-                    if pid in tcoll_cores:
-                        raise ValueError("More than one potential t_coll cores are found near this sink particle. Reduce the threshold")
-                    tcoll_cores[pid] = iso
-            rsq_max += 1
-            if rsq_max > 25:
-                print(pid)
-                raise ValueError("Cannot find a t_coll core within 5*dx from the sink particle")
+        tcoll_cores[pid] = tools.find_tcoll_core(s, pid)
 
     # write to file
     ofname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
     ofname.parent.mkdir(exist_ok=True)
-    if ofname.exists() and not overwrite:
-        return
-    else:
-        with open(ofname, 'wb') as handle:
-            pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    with open(ofname, 'wb') as handle:
+        pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def save_radial_profiles_tcoll_cores(s, overwrite=False):
