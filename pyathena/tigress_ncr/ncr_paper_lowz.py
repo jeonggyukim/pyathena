@@ -31,27 +31,43 @@ class LowZData(PaperData):
         self._set_torb()
         os.makedirs(self.outdir,exist_ok=True)
 
+    def reset_model_list(self):
+        models, mlist_early = self._get_models('/scratch/gpfs/changgoo/TIGRESS-NCR/')
+        self.mlist_all = list(models)
+        self.mlist = list(mlist_early)
+        self.mlist_early = mlist_early
+        self._set_model_params()
+        self._set_model_list()
+        self._set_colors()
+        self._set_torb()
+
     def _set_model_list(self):
         mgroup = dict()
         for m in self.mlist:
-            if 'R8' in m:
-                head = 'R8'
+            if 'LGR2' in m:
+                head = 'LGR2'
             elif 'LGR4' in m:
                 head = 'LGR4'
             elif 'LGR8' in m:
                 head = 'LGR8'
-
-            if '.b1.' in m:
-                head += '-b1'
-            elif '.b10.' in m:
-                head += '-b10'
+            elif 'R8' in m:
+                head = 'R8'
 
             if 'S30' in m:
                 head += '-S30'
-            if 'S100' in m:
+            elif 'S150' in m:
+                head += '-S150'
+            elif 'S100' in m:
                 head += '-S100'
-            if 'S05' in m:
+            elif 'S05' in m:
                 head += '-S05'
+            else:
+                # additional distinction only for R8 and LGR4
+                if '.b1.' in m:
+                    head += '-b1'
+                elif '.b10.' in m:
+                    head += '-b10'
+
             print(head, m)
             if head in mgroup:
                 mgroup[head].append(m)
@@ -72,10 +88,22 @@ class LowZData(PaperData):
             s.torb_code = torb
             s.torb_Myr = torb*s.u.Myr
             self.torb[m] = torb
-            if 'R8' in m:
+            if 'S30' in m:
+                self.torb_code['S30'] = torb
+                self.torb_Myr['S30'] = torb*s.u.Myr
+            elif 'S05' in m:
+                self.torb_code['S05'] = torb
+                self.torb_Myr['S05'] = torb*s.u.Myr
+            elif 'S100' in m:
+                self.torb_code['S100'] = torb
+                self.torb_Myr['S100'] = torb*s.u.Myr
+            elif 'S150' in m:
+                self.torb_code['S150'] = torb
+                self.torb_Myr['S150'] = torb*s.u.Myr
+            elif m.startswith('R8'):
                 self.torb_code['R8'] = torb
                 self.torb_Myr['R8'] = torb*s.u.Myr
-            elif 'LGR4' in m:
+            elif m.startswith('LGR4'):
                 self.torb_code['LGR4'] = torb
                 self.torb_Myr['LGR4'] = torb*s.u.Myr
 
@@ -93,8 +121,17 @@ class LowZData(PaperData):
     @staticmethod
     def get_model_name(s,beta=True,zonly=False):
         p = s.par['problem']
-        head = s.basename.split('_')[0]
-        if beta: head += f"-b{int(p['beta'])}"
+        if 'S30' in s.basename:
+            head = 'S30'
+        elif 'S150' in s.basename:
+            head = 'S150'
+        elif 'S100' in s.basename:
+            head = 'S100'
+        elif 'S05' in s.basename:
+            head = 'S05'
+        else:
+            head = s.basename.split('_')[0]
+            if beta: head += f"-b{int(p['beta'])}"
         if p['Z_gas'] == p['Z_dust']:
             ztail = f"Z{p['Z_gas']:3.1f}"
         else:
@@ -121,19 +158,34 @@ class LowZData(PaperData):
         dirs = sorted(os.listdir(basedir))[::-1]
         models = dict()
         for d in dirs:
-            if 'v3.iCR4' in d:
+            # if not os.path.isdir(d): continue
+            if ('v3.iCR4' in d) or ('v3.iCR5' in d):
                 print(d)
                 models[d] = os.path.join(basedir,d)
         models['R8_8pc_NCR.full.b10.v3']=os.path.join(basedir,'R8_8pc_NCR.full.b10.v3')
 
+        mskip = ['LGR4_4pc_NCR_S100.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy1024.eps1.e-8',
+                #  'LGR4_4pc_NCR_S100.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8',
+                 'LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8',
+                 'LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR4.Zg0.1.Zd0.1.xy1024.eps1.e-8',
+                 'LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR4.Zg0.1.Zd0.1.xy2048.eps1.e-8',
+                 'LGR8_8pc_NCR_S05.full.b10.v3.iCR5.Zg1.Zd1.xy8192.eps0.0',
+                 'LGR8_8pc_NCR_S05.full.b10.v3.iCR4.Zg0.1.Zd0.1.xy4096.eps0.0',
+                 'LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR5.Zg0.1.Zd0.1.xy2048.eps1.e-8'
+        ]
         mlist = list(models)
         mlist_early = dict()
         for m in mlist:
+            if m in mskip: continue
             if 'xy' in m:
                 mearly = m[:m.rfind('xy')-1]
                 for m1 in mlist:
                     if m1 == mearly:
                         mlist_early[m]=m1
+                    elif m1.replace('iCR4','iCR5') == mearly:
+                        mlist_early[m]=m1
+        mlist_early['LGR4_4pc_NCR_S100.full.b1.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01'] = 'LGR4_4pc_NCR_S100.full.b1.v3.iCR4.Zg0.1.Zd0.1'
+        mlist_early['LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01'] = 'LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR4.Zg0.1.Zd0.1'
         mlist_early['R8_8pc_NCR.full.b10.v3.iCR4.Zg1.Zd1.xy2048.eps0.0'] = 'R8_8pc_NCR.full.b10.v3'
         return models, mlist_early
 
@@ -143,7 +195,15 @@ class LowZData(PaperData):
         self.plt_kwargs = dict()
         for gr in self.mgroup:
             self.plt_kwargs[gr]=dict()
-            if 'R8' in gr:
+            if 'S05' in gr:
+                colors = colors1
+            elif 'S30' in gr:
+                colors = colors1
+            elif 'S100' in gr:
+                colors = colors2
+            elif 'S150' in gr:
+                colors = colors2
+            elif 'R8' in gr:
                 colors = colors1
             elif 'LGR4' in gr:
                 colors = colors2
@@ -167,13 +227,25 @@ class LowZData(PaperData):
                     s.color = colors[3]
                 else:
                     print("{} cannot find matching color".format(m))
+                if 'rstZ01' in m:
+                    s.ls = ':'
+                else:
+                    s.ls = ls
 
-                s.ls = ls
-
-    def read_hst(self):
-        for m in self.mlist:
+    def read_hst(self, mgroup=None):
+        if mgroup is None:
+            mlist = self.mlist
+        elif mgroup in self.mgroup:
+            mlist = self.mgroup[mgroup]
+        else:
+            print('list of mgroup:',list(self.mgroup.keys()))
+        for m in mlist:
             mearly = self.mlist_early[m]
-            h = self.stitch_hsts(self.sa,mearly,m)
+            try:
+                print("reading history:", m)
+                h = self.stitch_hsts(self.sa,mearly,m)
+            except:
+                print("history reading error: ",mearly,m)
             s = self.sa.set_model(m)
             s.h = h
             s.h['tdep40'] = s.h['Sigma_gas']/s.h['sfr40']*1.e-3
@@ -207,16 +279,22 @@ class LowZData(PaperData):
     def collect_zpdata(self,m,trange=None,reduce=True,recal=False,
                        func=np.mean,**func_kwargs):
         zpmid,zpwmid = self.get_PW_time_series(m,recal=recal)
-        if m in self.mlist_early:
-            zpmid_early,zpwmid_early = self.get_PW_time_series(self.mlist_early[m],recal=recal)
-            tmax = zpmid.time.min().data*0.999
-            tmin = zpmid_early.time.min().data
-            zpmid=xr.concat([zpmid_early.sel(time=slice(tmin,tmax)),zpmid],dim='time')
-            zpwmid=xr.concat([zpwmid_early.sel(time=slice(tmin,tmax)),zpwmid],dim='time')
+        # if m in self.mlist_early:
+        #     zpmid_early,zpwmid_early = self.get_PW_time_series(self.mlist_early[m],recal=recal)
+        #     tmax = zpmid.time.min().data*0.999
+        #     tmin = zpmid_early.time.min().data
+        #     zpmid=xr.concat([zpmid_early.sel(time=slice(tmin,tmax)),zpmid],dim='time')
+        #     zpwmid=xr.concat([zpwmid_early.sel(time=slice(tmin,tmax)),zpwmid],dim='time')
         s = self.sa.set_model(m)
-
+        sfr_field='sfr40'
+        if 'LGR8' in m: sfr_field = 'sfr100'
         if trange is None:
-            trange = slice(s.torb_Myr*2,s.torb_Myr*5)
+            if s.torb_Myr <50:
+                trange = slice(s.torb_Myr*5,s.torb_Myr*15)
+            elif s.torb_Myr >300:
+                trange = slice(s.torb_Myr*1.5,s.torb_Myr*5)
+            else:
+                trange = slice(s.torb_Myr*2,s.torb_Myr*5)
 
         zpmid = zpmid.sel(time=trange)
         zpwmid = zpwmid.sel(time=trange)
@@ -228,7 +306,7 @@ class LowZData(PaperData):
         for yf in ['Ptot','Pturb','Pth','Pimag','oPimag','dPimag','Prad']:
             y = zpmid[yf].sel(phase='2p')/A*s.u.pok
             ydata[yf] = y
-            y = zpmid[yf].sel(phase='2p')/A*s.u.pok/zpmid['sfr40']*yield_conv
+            y = zpmid[yf].sel(phase='2p')/A*s.u.pok/zpmid[sfr_field]*yield_conv
             ydata[yf.replace('Pi','Y').replace('P','Y')] = y
         for yf in ['nH']:
             y = zpmid[yf].sel(phase='2p')/A
@@ -239,8 +317,15 @@ class LowZData(PaperData):
             ydata[yf] = y
         for yf in ['PDE','sfr10','sfr40','sfr100','Sigma_gas']:
             ydata[yf] = zpmid[yf]
+        ydata['sfr'] = zpmid[sfr_field]
         ydata['W'] = zpwmid['W']*s.u.pok
+        rhos = s.par['problem']['SurfS']/(2*s.par['problem']['zstar'])
+        rhod = s.par['problem']['rhodm']
+        ydata['rhotot'] = ydata['nH']*(1.4*ac.m_p/au.cm**3).to('Msun/pc^3').value+rhos+rhod
+        ydata['tdep'] = zpmid['Sigma_gas']/zpmid[sfr_field]
+        ydata['tdep10'] = zpmid['Sigma_gas']/zpmid['sfr10']
         ydata['tdep40'] = zpmid['Sigma_gas']/zpmid['sfr40']
+        ydata['tdep100'] = zpmid['Sigma_gas']/zpmid['sfr100']
         ydata['Zgas'] = s.Zgas*zpmid['Sigma_gas']/zpmid['Sigma_gas']
         ydata['Zdust'] = s.Zdust*zpmid['Sigma_gas']/zpmid['Sigma_gas']
 
@@ -460,6 +545,7 @@ def get_PW_time_series_from_zprof(s,zprof,sfr=None,dt=0,zrange=slice(-10,10),rec
     if (os.path.isfile(fzpmid) and os.path.isfile(fzpw)) and (not recal):
         zpmid = xr.open_dataset(fzpmid)
         zpmid.close()
+        zpmid.attrs = PaperData.set_zprof_attr()
         # smoothing
         if dt>0:
             window = int(dt/zpmid.time.diff(dim='time').median())
@@ -540,7 +626,8 @@ def get_PW_time_series_from_zprof(s,zprof,sfr=None,dt=0,zrange=slice(-10,10),rec
 
     return zpmid, zpwmid
 
-def plot_DE(pdata,m,tr,xf,yf,label='',ax=None,fit=False,qr=[0.16,0.5,0.84]):
+def plot_DE(pdata,m,tr,xf,yf,sfrfield='sfr',
+  label='',ax=None,fit=False,qr=[0.16,0.5,0.84]):
     Punit_label=r'$/k_B\,[{\rm cm^{-3}\,K}]$'
     sfr_unit_label=r'$\,[M_\odot{\rm \,kpc^{-2}\,yr}]$'
 
@@ -552,19 +639,30 @@ def plot_DE(pdata,m,tr,xf,yf,label='',ax=None,fit=False,qr=[0.16,0.5,0.84]):
     zpmid = zpmid.sel(time=tr)
     zpwmid = zpwmid.sel(time=tr)
 
-    wpdata=dict(sfr = zpmid['sfr'], W=zpwmid['W']*s.u.pok,PDE=zpmid['PDE_2p'],
+    wpdata=dict(sfr = zpmid[sfrfield], W=zpwmid['W']*s.u.pok,PDE=zpmid['PDE_2p'],
                 Ptot=zpmid['Ptot'].sel(phase='2p')/zpmid['A'].sel(phase='2p')*s.u.pok)
 
     x = wpdata[xf]
     y = wpdata[yf]
     plt.plot(x,y,'o',markersize=5,markeredgewidth=0,color=s.color,alpha=0.3)
-    qx = x.quantile(qr).data
-    qy = y.quantile(qr).data
-    plt.errorbar(qx[1],qy[1],
-                 xerr=[[qx[1]-qx[0]],[qx[2]-qx[1]]],
-                 yerr=[[qy[1]-qy[0]],[qy[2]-qy[1]]],
-                 marker='o',markersize=8,ecolor='k',markeredgecolor='k',
-                 color=s.color,zorder=10,label=label)
+    if qr is None:
+        xavg = x.mean().data
+        xstd = x.std().data
+        yavg = y.mean().data
+        ystd = y.std().data
+        plt.errorbar(xavg,yavg,
+                    xerr=[[xstd],[xstd]],
+                    yerr=[[ystd],[ystd]],
+                    marker='*',markersize=8,ecolor='k',markeredgecolor='k',
+                    color=s.color,zorder=10,label=label)
+    else:
+        qx = x.quantile(qr).data
+        qy = y.quantile(qr).data
+        plt.errorbar(qx[1],qy[1],
+                    xerr=[[qx[1]-qx[0]],[qx[2]-qx[1]]],
+                    yerr=[[qy[1]-qy[0]],[qy[2]-qy[1]]],
+                    marker='o',markersize=8,ecolor='k',markeredgecolor='k',
+                    color=s.color,zorder=10,label=label)
     xl = zpmid.attrs['Plabels'][xf]
     if xf != 'W': xl += r'${}_{\rm ,2p}$'
     xl += Punit_label
@@ -623,13 +721,25 @@ def plot_Pcomp(pdata,m,tr,yf,xf='PDE',label='',ax=None,fit=False,qr=[0.16,0.5,0.
     if not yf in zpmid: return
     y = zpmid[yf].sel(phase='2p')/Ptot
     plt.plot(x,y,'o',markersize=5,markeredgewidth=0,color=s.color,alpha=0.3)
-    qx = x.quantile(qr).data
-    qy = y.quantile(qr).data
-    plt.errorbar(qx[1],qy[1],
-                 xerr=[[qx[1]-qx[0]],[qx[2]-qx[1]]],
-                 yerr=[[qy[1]-qy[0]],[qy[2]-qy[1]]],
-                 marker='o',markersize=8,ecolor='k',markeredgecolor='k',
-                 color=s.color,zorder=10,label=label)
+    if qr is None:
+        xavg = x.mean().data
+        xstd = x.std().data
+        yavg = y.mean().data
+        ystd = y.std().data
+        plt.errorbar(xavg,yavg,
+                    xerr=[[xstd],[xstd]],
+                    yerr=[[ystd],[ystd]],
+                    marker='*',markersize=8,ecolor='k',markeredgecolor='k',
+                    color=s.color,zorder=10,label=label)
+    else:
+        qx = x.quantile(qr).data
+        qy = y.quantile(qr).data
+        plt.errorbar(qx[1],qy[1],
+                    xerr=[[qx[1]-qx[0]],[qx[2]-qx[1]]],
+                    yerr=[[qy[1]-qy[0]],[qy[2]-qy[1]]],
+                    marker='o',markersize=8,ecolor='k',markeredgecolor='k',
+                    color=s.color,zorder=10,label=label)
+
     xl = zpmid.attrs['Plabels'][xf]
     if xf != 'W': xl += r'${}_{\rm ,2p}$'
     xl += Punit_label
