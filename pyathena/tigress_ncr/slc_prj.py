@@ -33,8 +33,8 @@ cmap_def = dict(
 )
 
 norm_def = dict(
-    Sigma_gas=LogNorm(1e-2, 1e2),
-    Sigma_H2=LogNorm(1e-2, 1e2),
+    Sigma_gas=LogNorm(1e-2, 1e3),
+    Sigma_H2=LogNorm(1e-2, 1e3),
     EM=LogNorm(1e0, 1e5),
     nH=LogNorm(1e-4, 1e3),
     T=LogNorm(1e1, 1e7),
@@ -60,6 +60,101 @@ class SliceProj:
         r["z"] = (domain["le"][0], domain["re"][0], domain["le"][1], domain["re"][1])
 
         return r
+
+    @LoadSim.Decorators.check_pickle
+    def read_allslc(
+        self,
+        num,
+        axes=["x", "y", "z"],
+        prefix="allslc",
+        savdir=None,
+        force_override=False,
+    ):
+        axes = np.atleast_1d(axes)
+
+        ds = self.load_vtk(num=num)
+        fields = ds.field_list#list(set(ds.field_list) - {'velocity','cell_centered_B'})
+        # fields += ['velocity1','velocity2','velocity3']
+        # if self.par["configure"]["gas"] == "mhd":
+        #     fields += ["cell_centeredB1", "cell_centered_B2", "cell_centered_B3"]
+
+        res = dict()
+        res["time"] = ds.domain["time"]
+        res["extent"] = self._get_extent(ds.domain)
+
+        for ax in axes:
+            dat = ds.get_slice(ax, fields, pos="c", method="nearest")
+            res[ax] = dict()
+            for f in fields:
+                if f in ['velocity', 'cell_centered_B']:
+                    for ivec in ['1','2','3']:
+                        res[ax][f+ivec] = dat[f+ivec].data
+                else:
+                    res[ax][f] = dat[f].data
+
+        for zpos, zlab in zip(
+            [-1000, -500, -200, 200, 500, 1000],
+            ["zn10", "zn05", "zn02", "zp02", "zp05", "zp10"]
+        ):
+            dat = ds.get_slice("z", fields, pos=zpos, method="nearest")
+            res[zlab] = dict()
+            for f in fields:
+                if f in ['velocity', 'cell_centered_B']:
+                    for ivec in ['1','2','3']:
+                        res[zlab][f+ivec] = dat[f+ivec].data
+                else:
+                    res[zlab][f] = dat[f].data
+
+        return res
+
+    def read_slc_from_allslc(self,num,fields=None,savdir=None,force_override=False):
+        fields_def = [
+            "nH",
+            "vz",
+            "T",
+            "cs",
+            "vx",
+            "vy",
+            "vz",
+            "pok",
+            "specific_scalar[0]",
+        ]
+        try:
+            if self.par["configure"]["radps"] == "ON":
+                fields_def += ["nH2", "ne", "nHII"]
+                if self.par["cooling"]["iCR_attenuation"]:
+                    fields_def += ["xi_CR"]
+                if self.par["radps"]["iPhotIon"] == 1:
+                    fields_def += ["Erad_LyC"]
+                if self.par["cooling"]["iPEheating"] == 1:
+                    fields_def += ["chi_FUV"]
+        except KeyError:
+            pass
+        if self.par["configure"]["gas"] == "mhd":
+            fields_def += ["Bx", "By", "Bz", "Bmag"]
+        if fields is None:
+            fields = fields_def
+
+        allslc = self.read_allslc(num,savdir=savdir,force_override=force_override)
+        keylist = list(allslc.keys())
+
+        newslc = dict()
+        for k in keylist:
+            if k in ['time', 'extent']:
+                newslc[k] = allslc[k]
+            else:
+                if not (k in newslc):
+                    newslc[k] = dict()
+                fieldlist = list(allslc[k].keys())
+                data = allslc[k]
+                for f in fields:
+                    if f in self.dfi:
+                        newslc[k][f] = self.dfi[f]['func'](data,self.u)
+                    elif f in fieldlist:
+                        newslc[k][f] = data[f]
+                    else:
+                        print("{} is not available".format(f))
+        return newslc
 
     @LoadSim.Decorators.check_pickle
     def read_slc(
@@ -102,6 +197,7 @@ class SliceProj:
 
         ds = self.load_vtk(num=num)
         res = dict()
+        res["time"] = ds.domain["time"]
         res["extent"] = self._get_extent(ds.domain)
 
         for ax in axes:
@@ -138,6 +234,7 @@ class SliceProj:
         dat = ds.get_field(fields, as_xarray=True)
 
         res = dict()
+        res["time"] = ds.domain["time"]
         res["extent"] = self._get_extent(ds.domain)
 
         for ax in axes:
@@ -159,30 +256,23 @@ class SliceProj:
 
         return res
 
-    def read_slc_xarray(self, num, axis="zall", force_override=False):
-        slc = self.read_slc(num, force_override=force_override)
+    def read_slc_xarray(self, num, fields=None, axis="zall", force_override=False):
+        slc = self.read_slc_from_allslc(num, fields=fields, force_override=force_override)
         if axis == "zall":
             slc_dset = slc_get_all_z(slc)
         else:
             slc_dset = slc_to_xarray(slc, axis)
         return slc_dset
 
-    def read_slc_time_series(self, num1, num2):
+    def read_slc_time_series(self, num1, num2, nskip=1, fields=None, sfr=True):
         slc_list = []
-        for num in range(num1, num2):
-            slc = self.read_slc_xarray(num)
-            sp = self.read_starpar(num)
-            if sp is None:
-                ds = self.load_vtk(num)
-                slc = slc.assign_coords(time=ds.domain["time"])
-            else:
-                slc = slc.assign_coords(time=sp["time"])
+        for num in range(num1, num2, nskip):
+            slc = self.read_slc_xarray(num,fields=fields)
             slc_list.append(slc)
         slc_dset = xr.concat(slc_list, dim="time")
-        t1 = slc_dset.time.data.min()
-        t2 = slc_dset.time.data.max()
-        hst = self.read_hst()
-        slc_dset.attrs["sfr"] = hst[t1:t2]["sfr10"].mean()
+        if sfr:
+            hst = self.read_hst()
+            slc_dset.attrs["sfr"] = hst[t1:t2]["sfr10"].mean()
 
         return slc_dset
 
@@ -261,6 +351,7 @@ class SliceProj:
                 import scipy.ndimage as sciim
 
                 data = sciim.interpolation.shift(data, (-jshift, 0), mode="wrap")
+
             ax.imshow(
                 data+tiny,
                 cmap=cmap,
@@ -428,10 +519,17 @@ class SliceProj:
             aspect=True,
             share_all=True,
         )
-
+        slc_fields = []
+        for f in fields_xy:
+            if kind[f] == 'slc':
+                slc_fields += [f]
+        for f in fields_xz:
+            if kind[f] == 'slc':
+                slc_fields += [f]
+        slc_fields = list(set(slc_fields))
         dat = dict()
-        dat["slc"] = self.read_slc(
-            num, savdir=savdir_pkl, force_override=force_override
+        dat["slc"] = self.read_slc_from_allslc(
+            num, fields=slc_fields, savdir=savdir_pkl, force_override=force_override
         )
         dat["prj"] = self.read_prj(
             num, savdir=savdir_pkl, force_override=force_override
@@ -573,7 +671,7 @@ def slc_to_xarray(slc, axis="z"):
         dims = dict(z=["y", "x"], x=["z", "y"], y=["z", "x"])
 
         dset[f] = xr.DataArray(slc[axis][f], coords=[ycc, xcc], dims=dims[axis[0]])
-    return dset
+    return dset.assign_coords(time=slc['time'])
 
 
 def slc_get_all_z(slc):

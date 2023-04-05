@@ -876,7 +876,7 @@ def set_derived_fields_rad(par, x0, field_list):
         except KeyError:
             iLWrad = False
         if iLWrad:
-            field_list_def.append(['rad_energy_density_LW','rad_energy_density_LW_diss'])
+            field_list_def += ['rad_energy_density_LW','rad_energy_density_LW_diss']
     else:
         field_list_def = field_list
 
