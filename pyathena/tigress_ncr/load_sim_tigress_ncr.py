@@ -277,6 +277,18 @@ class LoadSimTIGRESSNCR(
         dhnu_HI_PH, dhnu_H2_PH = self.get_dhnu_PH()
         pdf_heat["PH_HI"] = pdf_heat["PH_HI"] * dhnu_HI_PH / dhnu_HI_PH_default
         pdf_heat["PH_H2"] = pdf_heat["PH_H2"] * dhnu_H2_PH / dhnu_H2_PH_default
+        if "nH" in pdf_cool.dims:
+            pdf_cool = pdf_cool.rename(nH='nH_bin')
+        if "T" in pdf_cool.dims:
+            pdf_cool = pdf_cool.rename(T='T_bin')
+        if "xHI" in pdf_cool.dims:
+            pdf_cool = pdf_cool.rename(xHI='xHI_bin')
+        if "nH" in pdf_heat.dims:
+            pdf_heat = pdf_heat.rename(nH='nH_bin')
+        if "T" in pdf_heat.dims:
+            pdf_heat = pdf_heat.rename(T='T_bin')
+        if "xHI" in pdf_heat.dims:
+            pdf_heat = pdf_heat.rename(xHI='xHI_bin')
         return pdf_cool, pdf_heat
 
     def create_coolheat_pdf(self, ds, zrange=None):
@@ -325,7 +337,7 @@ class LoadSimTIGRESSNCR(
             os.path.join(savdir, heatfname.replace(".heat.", ".xHI.heat."))
         )
 
-    def get_merge_jointpdfs(self, zrange=None, force_override=False, xHI=False):
+    def get_merge_jointpdfs(self, nums=None, zrange=None, force_override=False, xHI=False):
         savdir = self.get_savdir_pdf(zrange=zrange)
         merged_fname = os.path.join(savdir, "jointpdf_all.nc")
         if xHI:
@@ -334,9 +346,10 @@ class LoadSimTIGRESSNCR(
             with xr.open_dataset(merged_fname) as pdf:
                 pdf.load()
             return pdf
-
+        if nums is None:
+            nums = self.nums
         pdf = []
-        for num in self.nums:
+        for num in nums:
             pdfs = self.get_coolheat_pdf(num, zrange=zrange, xHI=xHI, create=False)
             if pdfs is not None:
                 print(num, end=" ")

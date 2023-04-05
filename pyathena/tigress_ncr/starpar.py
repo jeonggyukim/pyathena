@@ -32,7 +32,7 @@ class StarPar:
     @LoadSim.Decorators.check_pickle
     def read_starpar(self, num, savdir=None, force_override=False):
 
-        sp = self.load_starpar_vtk(num)
+        sp = self.load_starpar_vtk(num,force_override=force_override)
         u = self.u
         domain = self.domain
         par = self.par

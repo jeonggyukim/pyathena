@@ -599,7 +599,7 @@ def get_pdf_xarray(x, y, w, xbin, ybin, xf, yf):
     yc = 0.5 * (ye[1:] + ye[:-1])
     dx = xe[1] - xe[0]
     dy = ye[1] - ye[0]
-    pdf = xr.DataArray(h[0].T / dx / dy, coords=[yc, xc], dims=[yf, xf])
+    pdf = xr.DataArray(h[0].T / dx / dy, coords=[yc, xc], dims=[yf+'_bin', xf+'_bin'])
     return pdf
 
 

@@ -19,8 +19,11 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
     """
     savdir = s.get_savdir_pdf(zrange=zrange)
     pdf_cool, pdf_heat = s.get_coolheat_pdf(num, zrange=zrange, xHI=xHI)
-    coolkey = set(list(pdf_cool.keys())) - {"total", "OIold"}
-    heatkey = set(list(pdf_heat.keys())) - {"total"}
+    dims = list(pdf_cool.dims)
+    xdim = dims[0]
+    ydim = dims[1]
+    coolkey = set(list(pdf_cool.keys())) - {"total", "OIold", "vol"}
+    heatkey = set(list(pdf_heat.keys())) - {"total", "vol"}
     if pdf is not None:
         total_cooling = pdf["cool"].sum().data
         total_heating = pdf["heat"].sum().data
@@ -50,7 +53,7 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
     for c in list(coolkey):
         ax = plt.subplot(gs1[i])
         pdf_cool[c].plot(
-            y="T", norm=LogNorm(1.0e-5, 10), ax=ax, add_colorbar=False, cmap=cmap_cool
+            y=xdim, norm=LogNorm(1.0e-5, 10), ax=ax, add_colorbar=False, cmap=cmap_cool
         )
         plt.title("")
         ax.annotate(
@@ -67,7 +70,7 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
     for h in list(heatkey):
         ax = plt.subplot(gs1[i])
         pdf_heat[h].plot(
-            y="T", norm=LogNorm(1.0e-5, 10), ax=ax, add_colorbar=False, cmap=cmap_heat
+            y=xdim, norm=LogNorm(1.0e-5, 10), ax=ax, add_colorbar=False, cmap=cmap_heat
         )
         plt.title("")
         ax.annotate(
@@ -114,7 +117,7 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
     gs2.update(left=0.55, right=0.98, hspace=0.05)
     ax = plt.subplot(gs2[0])
     pdf_cool["total"].plot(
-        y="T",
+        y=xdim,
         norm=LogNorm(1.0e-5, 10),
         ax=ax,
         cmap=cmap_cool,
@@ -132,7 +135,7 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
 
     ax = plt.subplot(gs2[1])
     pdf_heat["total"].plot(
-        y="T",
+        y=xdim,
         norm=LogNorm(1.0e-5, 10),
         ax=ax,
         cmap=cmap_heat,
@@ -155,7 +158,7 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
     )
     netcool /= pdf_cool.attrs["total_cooling"]
     netcool.plot(
-        y="T",
+        y=xdim,
         norm=LogNorm(1.0e-5, 10),
         ax=ax,
         cmap=cmap_cool,
@@ -216,10 +219,13 @@ def draw_Tpdf(s, num, pdf=None, zrange=None, save=True):
         pdf_heat.attrs["total_heating"] = total_heating
     fig, axes = plt.subplots(3, 2, figsize=(10, 12))
     axes = axes.flatten()
-    dy = pdf_cool.nH[1] - pdf_cool.nH[0]
-    pdf_cool_T = pdf_cool.sum(dim="nH") * dy
-    pdf_heat_T = pdf_heat.sum(dim="nH") * dy
-    x = pdf_cool_T["T"]
+    bins = list(pdf_cool.dims)
+    xbin = bins[0]
+    ybin = bins[1]
+    dy = pdf_cool[ybin][1] - pdf_cool[ybin][0]
+    pdf_cool_T = pdf_cool.sum(dim=ybin) * dy
+    pdf_heat_T = pdf_heat.sum(dim=ybin) * dy
+    x = pdf_cool_T[xbin]
 
     exclude_cool = {"total"}
     if not s.iCoolH2colldiss:
@@ -340,12 +346,11 @@ def draw_sorted_contribution(
     pdf_cool, pdf_heat = s.get_coolheat_pdf(num, zrange=None)
     coolkey = set(list(pdf_cool.keys())) - {"total", "OIold"}
     heatkey = set(list(pdf_heat.keys())) - {"total"}
-    dT = pdf["T"][1] - pdf["T"][0]
-    dnH = pdf.nH[1] - pdf.nH[0]
+    dT = pdf["T_bin"][1] - pdf["T_bin"][0]
+    dnH = pdf.nH_bin[1] - pdf.nH_bin[0]
 
-    warm = (pdf.sel(T=slice(np.log10(T1), np.log10(T2))) * dT).sum(dim="T").sum(
-        dim="nH"
-    ) * dnH
+    warm = (pdf.sel(T_bin=slice(np.log10(T1), np.log10(T2))).sum(dim='T_bin')
+            * dT).sum(dim="nH_bin") * dnH
 
     vset0 = set.union(coolkey, heatkey)
     heatset = []

@@ -641,6 +641,8 @@ def get_phcolor_dict(cmap=None, T1=False, cmin=0, cmax=1):
 
 def draw_phase(ph):
     phlist, phcmap = get_phcmap()
+    if 'phlist' in ph.attrs: phlist = ph.attrs['phlist']
+    if 'phcmap' in ph.attrs: phcmap = ph.attrs['phcmap']
     nph = len(phlist)
     image_style = {
         "axes.grid": False,
