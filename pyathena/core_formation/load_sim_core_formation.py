@@ -10,7 +10,6 @@ from pyathena.core_formation.hst import Hst
 from pyathena.core_formation.slc_prj import SliceProj
 from pyathena.core_formation.pdf import LognormalPDF
 from pyathena.core_formation.tes import TES
-from pyathena.core_formation.tools import get_coords_iso
 
 class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
     """LoadSim class for analyzing core collapse simulations."""

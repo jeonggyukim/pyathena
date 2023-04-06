@@ -17,26 +17,26 @@ import pickle
 
 # pythena modules
 from pyathena.core_formation import tools
-
+from grid_dendro import dendrogram
 
 def plot_tcoll_cores(s, pid, hw=0.25):
-    # Load the progenitor iso of the particle pid
-    fname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
+    # Load the progenitor GRID-core of this particle.
+    fname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
     with open(fname, 'rb') as handle:
         tcoll_cores = pickle.load(handle)
-    iso = tcoll_cores[pid]
+    core = tcoll_cores[pid]
 
     # Load hdf5 snapshot at t = t_coll
     num = s.nums_tcoll[pid]
     ds = s.load_hdf5(num, load_method='pyathena')
 
     # load leaf dict at t = t_coll
-    fname = Path(s.basedir, 'fiso', 'fiso.{:05d}.p'.format(num))
+    fname = Path(s.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
     with open(fname, 'rb') as handle:
-        leaf_dict = pickle.load(handle)['leaf_dict']
+        leaves = pickle.load(handle)
 
     # Find the location of the core
-    xc, yc, zc = tools.get_coords_iso(ds, iso)
+    xc, yc, zc = tools.get_coords_node(ds, core)
 
     # Calculate radial profile
     fname = Path(s.basedir, 'tcoll_cores', 'radial_profile.p')
@@ -85,27 +85,27 @@ def plot_tcoll_cores(s, pid, hw=0.25):
         plt.xlabel(xlabel[prj_axis])
         plt.ylabel(ylabel[prj_axis])
 
-        # 3. zoom-in projections for individual iso
-        # load selected iso
-        rho_ = tools.apply_fiso_mask(ds.dens, leaf_dict, iso, fill_value=0)
+        # 3. zoom-in projections for individual core
+        # load selected core
+        rho_ = dendrogram.filter_by_node(ds.dens, leaves, core, fill_value=0)
         Mcore = (rho_*s.domain['dx'].prod()).sum().data[()]
         Vcore = ((rho_>0).sum()*s.domain['dx'].prod())
         Rcore = (3*Vcore/(4*np.pi))**(1./3.)
-        ds_iso = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
-        ds_iso = ds_iso.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
-                             yaxis[prj_axis]:slice(*ylim[prj_axis]),
-                             zaxis[prj_axis]:slice(*zlim[prj_axis])})
-        # load other isos
-        leaf_dict_without_iso = {k: v for k, v in leaf_dict.items() if k != iso}
-        rho_ = tools.apply_fiso_mask(ds.dens, leaf_dict_without_iso, fill_value=0)
-        ds_bkgr = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
-        ds_bkgr = ds_bkgr.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
+        ds_core = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
+        ds_core = ds_core.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
                                yaxis[prj_axis]:slice(*ylim[prj_axis]),
                                zaxis[prj_axis]:slice(*zlim[prj_axis])})
+        # load other cores
+        other_cores = {k: v for k, v in leaves.items() if k != core}
+        rho_ = dendrogram.filter_by_node(ds.dens, other_cores, fill_value=0)
+        ds_others = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
+        ds_others = ds_others.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
+                                   yaxis[prj_axis]:slice(*ylim[prj_axis]),
+                                   zaxis[prj_axis]:slice(*zlim[prj_axis])})
         # plot
         plt.sca(fig.add_subplot(gs[i,2]))
-        plot_projection(s, ds_bkgr, axis=prj_axis, add_colorbar=False, alpha=0.5, cmap='Greys')
-        plot_projection(s, ds_iso, axis=prj_axis, add_colorbar=False)
+        plot_projection(s, ds_others, axis=prj_axis, add_colorbar=False, alpha=0.5, cmap='Greys')
+        plot_projection(s, ds_core, axis=prj_axis, add_colorbar=False)
         plt.xlim(xlim[prj_axis])
         plt.ylim(ylim[prj_axis])
         plt.xlabel(xlabel[prj_axis])

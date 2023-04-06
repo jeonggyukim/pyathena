@@ -12,8 +12,7 @@ import pandas as pd
 from pyathena.core_formation import plots
 from pyathena.core_formation import tools
 from pyathena.util import uniform
-from fiso import fiso_tree
-from fiso import tree_bound
+from grid_dendro import dendrogram
 
 
 def save_tcoll_cores(s):
@@ -24,29 +23,29 @@ def save_tcoll_cores(s):
         tcoll_cores[pid] = tools.find_tcoll_core(s, pid)
 
     # write to file
-    ofname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
+    ofname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
     ofname.parent.mkdir(exist_ok=True)
     with open(ofname, 'wb') as handle:
         pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def save_radial_profiles_tcoll_cores(s, overwrite=False):
-    # Load the progenitor iso of the particle pid
-    fname = Path(s.basedir, 'tcoll_cores', 'fiso_iso.p')
+    # Load the progenitor GRID-cores of each particles
+    fname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
     with open(fname, 'rb') as handle:
-        tcoll_cores = pickle.load(handle)
+        nodes = pickle.load(handle)
 
     rmax = 0.5*s.domain['Lx'][0]
     rprf = []
     for pid in s.pids:
-        iso = tcoll_cores[pid]
+        node = nodes[pid]
 
         # Load hdf5 snapshot at t = t_coll
         num = s.nums_tcoll[pid]
         ds = s.load_hdf5(num, load_method='pyathena')
 
         # Find the location of the core
-        xc, yc, zc = tools.get_coords_iso(ds, iso)
+        xc, yc, zc = tools.get_coords_node(ds, node)
 
         # Calculate radial profile
         rprf.append(tools.calculate_radial_profiles(ds, (xc, yc, zc), rmax))
@@ -62,7 +61,7 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
             pickle.dump(rprf, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def run_fiso(s, overwrite=False):
+def run_GRID(s, overwrite=False):
     cs = s.par['hydro']['iso_sound_speed']
 
     # Assume uniform grid
@@ -76,34 +75,17 @@ def run_fiso(s, overwrite=False):
         print('processing model {} num {}'.format(s.basename, num))
         ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
 
-        # pack data for fiso input
-        rho = ds.dens
-        phi = ds.phi
-        prs = cs**2*rho
-        vx = ds.mom1/rho
-        vy = ds.mom2/rho
-        vz = ds.mom3/rho
-        bpressure = 0.0*rho
-        data = [rho.data, phi.data, prs.data, bpressure.data, vx.data, vy.data, vz.data]
-
-        # Construct isocontours using fiso
-        iso_dict, iso_label, iso_list, eic_list = fiso_tree.construct_tree(phi.data, 'periodic')
-        leaf_dict = fiso_tree.calc_leaf(iso_dict, iso_list, eic_list)
-        hpr_dict, hbr_dict = tree_bound.compute(data, iso_dict, iso_list, eic_list)
-        # remove empty HBRs
-        hbr_dict = {key: value for key, value in hbr_dict.items() if len(value)>0}
-
-        fiso_dicts = dict(iso_dict=iso_dict, iso_label=iso_label,
-                          iso_list=iso_list, eic_list=eic_list,
-                          leaf_dict=leaf_dict, hpr_dict=hpr_dict, hbr_dict=hbr_dict)
+        grd = dendrogram.Dendrogram(ds.phi.to_numpy())
+        grd.construct()
+        grd.prune()
 
         # write to file
-        ofname = Path(s.basedir, 'fiso', 'fiso.{:05d}.p'.format(num))
+        ofname = Path(s.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
             continue
         with open(ofname, 'wb') as handle:
-            pickle.dump(fiso_dicts, handle, protocol=pickle.HIGHEST_PROTOCOL)
+            pickle.dump(grd.leaves, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
