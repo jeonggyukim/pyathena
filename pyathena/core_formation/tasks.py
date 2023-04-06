@@ -75,7 +75,7 @@ def run_GRID(s, overwrite=False):
         print('processing model {} num {}'.format(s.basename, num))
         ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
 
-        grd = dendrogram.Dendrogram(ds.phi.to_numpy())
+        grd = dendrogram.Dendrogram(ds.phigas.to_numpy())
         grd.construct()
         grd.prune()
 
