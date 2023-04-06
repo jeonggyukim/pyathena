@@ -930,6 +930,7 @@ class LoadSim(object):
                     osp.dirname(self.files['parhst'][0]),
                     self.pids[0], self.pids[-1]))
             else:
+                self.pids = []
                 self.logger.warning(
                     'parhst files not found in {0:s}.'.format(self.basedir))
 
