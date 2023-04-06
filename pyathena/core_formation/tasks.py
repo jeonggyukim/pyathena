@@ -121,7 +121,7 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
     subprocess.run([script, s.problem_id, outid, partag, str(ns), str(ne)], cwd=s.basedir)
 
     if remove:
-        file_pattern = '{}.{}.?????.{}.tab'.format(s.problem_id, outid, partag)
+        file_pattern = '{}/{}.{}.?????.{}.tab'.format(s.basedir, s.problem_id, outid, partag)
         file_list = glob.glob(file_pattern)
         num_files = len(file_list)
         if (num_files == (ne - ns + 1)):
