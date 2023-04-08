@@ -95,6 +95,9 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
                                                          s.problem_id, outid,
                                                          partag)
     file_list0 = sorted(glob.glob(block0_pattern))
+    if len(file_list0) == 0:
+        print("Nothing to combine")
+        return
     if ns is None:
         ns = int(file_list0[0].split('/')[-1].split('.')[3])
     if ne is None:
