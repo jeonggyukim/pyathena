@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize, LogNorm
 import astropy.constants as ac
 import astropy.units as au
 from scipy import integrate
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumtrapz, cumulative_trapezoid
 
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
@@ -134,6 +134,7 @@ class Hst:
                    alpha_vir=par['problem']['alpha_vir'])
             
         iWind = par['feedback']['iWind']
+        iSN = par['feedback']['iSN']
 
         try:
             iPhot = par['radps']['iPhot']
@@ -174,7 +175,11 @@ class Hst:
             except KeyError:
                 self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
                 continue
-            
+
+        hst['M_neu'] = hst['M_H2'] + hst['M_HI']
+        hst['M_ion'] = hst['M'] - hst['M_neu']
+        hst['M_cl_ion'] = hst['M_cl'] - hst['M_cl_neu']
+        
         ######################
         # Star particle mass #
         ######################
@@ -207,9 +212,10 @@ class Hst:
                 self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
                 continue
 
-        hst['M_cl_ion'] = hst['M_cl'] - hst['M_cl_neu']
+        hst['M_neu_of'] = hst['M_H2_of'] + hst['M_HI_of']
+        hst['M_ion_of'] = hst['M_of'] - hst['M_neu_of']
         hst['M_cl_ion_of'] = hst['M_cl_of'] - hst['M_cl_neu_of']
-            
+
         ##########
         # Energy #
         ##########
@@ -238,7 +244,7 @@ class Hst:
             for i in range(1,4):
                 hst[f'rhov{i}_cl_neu'] *= vol*u.Msun*u.kms
                 hst[f'rhov{i}sq_cl_neu'] *= vol*u.Msun*u.kms
-                hst[f'vmean{i}_cl_neu'] = hst['rhov1_cl_neu']/hst['M_cl_neu']
+                hst[f'vmean{i}_cl_neu'] = hst[f'rhov{i}_cl_neu']/hst['M_cl_neu']
 
             hst['vmean_cl_neu'] = np.sqrt(hst['vmean1_cl_neu']**2 +
                                           hst['vmean2_cl_neu']**2 +
@@ -315,6 +321,10 @@ class Hst:
         hst['pr_cl_ion_of'] = hst['pr_cl_of'] - hst['pr_cl_neu_of']
         hst['M_cl_ion_of'] = hst['M_cl_of'] - hst['M_cl_neu_of']
 
+        # Total mass of ionized gas created [Msun]
+        hst['M_cl_ion_tot'] = hst['M_cl_ion'] + hst['M_cl_ion_of']
+        
+        
         ########################
         # Outward radial force #
         ########################
@@ -334,6 +344,9 @@ class Hst:
 
         if rayt:
             hst = self._calc_radiation(hst)
+
+        if iPhot:
+            hst = self._calc_mass_evap(hst, stddev=10.0)
         
     #         hst.rho_out *= vol*u.Msun/u.Myr # Outflow rate in Msun/Myr
     #         hst['Mof_dot'] = hst.rho_out
@@ -365,8 +378,7 @@ class Hst:
             hst['wind_pinj'] *= vol*u.Msun*u.kms
             hst['wind_Mdot'] *= vol*u.Msun/u.Myr
             hst['wind_Edot'] *= vol*u.erg/u.s
-            hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr
-            
+            hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr            
 
         if iSN:
             try:
@@ -378,6 +390,7 @@ class Hst:
             except KeyError:
                 pass
 
+        hst.fillna(0)
         return hst
     
             
@@ -503,8 +516,9 @@ class Hst:
         u = self.u
         domain = self.domain
         # total volume of domain (code unit)
-        vol = domain['Lx'].prod()        
-
+        #vol = domain['Lx'].prod()
+        vol = 1.0
+        
         # Total/escaping luminosity in Lsun
         ifreq = dict()
         for f in ('PH','LW','PE'): #,'PE_unatt'):
@@ -526,6 +540,8 @@ class Hst:
                                            (ac.L_sun.cgs.value)/hnu
                         hst[f'Qesc_{k}'] = hst[f'Lesc_{k}'].values * \
                                            (ac.L_sun.cgs.value)/hnu
+                        hst[f'Qdust_{k}'] = hst[f'Ldust_{k}'].values * \
+                                           (ac.L_sun.cgs.value)/hnu
                         # Cumulative number of escaped photons
                         hst[f'Qtot_cum_{k}'] = \
                         integrate.cumtrapz(hst[f'Qtot_{k}'], hst.time*u.time.cgs.value, initial=0.0)
@@ -545,7 +561,23 @@ class Hst:
                         hst[f'fdust_cum_{k}'].fillna(value=0.0, inplace=True)
                     except KeyError as e:
                         raise e
-                    
+
+        if 'Qtot_PH' in hst.columns and \
+           'Qesc_PH' in hst.columns and \
+           'Qdust_PH' in hst.columns:
+
+            hst['Qieff'] = hst['Qtot_PH'] - hst['Qesc_PH'] - hst['Qdust_PH']            
+            hst['fion'] = hst['Qieff']/hst['Qtot_PH']
+            hst['fion_cum'] = integrate.cumtrapz(hst[f'Qieff'], hst.time, initial=0.0)/\
+                        integrate.cumtrapz(hst[f'Qtot_PH'], hst.time, initial=0.0)
+
+            # Photoevaporative mass loss rate without shielding by recombination rate
+            hst['dM_cl_ion_tot_from_Qieff'] = (hst['Qieff'].values*\
+                                               (u.muH*u.mH).to('g')/au.s).to('Msun Myr-1').value
+            hst['M_cl_ion_tot_from_Qieff'] = cumulative_trapezoid(
+                hst['dM_cl_ion_tot_from_Qieff'].values,
+                hst['time'].values, initial=0.0)
+
         if 'Ltot_LW' in hst.columns and 'Ltot_PE' in hst.columns:
             hst['fesc_FUV'] = (hst['Lesc_PE'] + hst['Lesc_LW'])/(hst['Ltot_PE'] + hst['Ltot_LW'])
             hst['fesc_cum_FUV'] = \
@@ -568,7 +600,40 @@ class Hst:
         
         return hst
 
+    def _calc_mass_evap(self, hst, stddev=10.0):
 
+        par = self.par
+        cl = Cloud(M=par['problem']['M_cloud'],
+                   R=par['problem']['R_cloud'],
+                   alpha_vir=par['problem']['alpha_vir'])
+
+        # Creation rate of ionized gas [Msun/Myr]
+        hst['dM_cl_ion_tot'] = deriv_convolve(hst['M_cl_ion_tot'].values,
+                                              hst['time'].values,
+                                              gauss=True, fft=False, stddev=stddev)
+        
+        # Somehow result from deriv_convolve is not normalized properly.
+        # Make sure that integrating dMdot_cl_ion over time gives M_cl_ion_tot.
+        hst['dM_cl_ion_tot'] *= hst['M_cl_ion_tot'].iloc[-1]/\
+            cumulative_trapezoid(hst['dM_cl_ion_tot'].values,
+                                 x=hst['time'].values, initial=0.0)[-1]
+
+        # Time-averaged evaporation rate weighted by evaporation rate itself
+        hst['dM_cl_ion_tot_cum'] = cumulative_trapezoid(hst['dM_cl_ion_tot'].values**2,
+                                                       x=hst['time'].values, initial=0.0)
+        hst['dM_cl_ion_tot_cum'] /= hst['M_cl_ion_tot']
+
+        # Timescale of evaporation (up to time t)
+        hst['t_evap_cum'] = hst['M_cl_ion_tot']**2/\
+            cumulative_trapezoid(hst['dM_cl_ion_tot'].values**2,
+                                 x=hst['time'].values, initial=0.0)
+        hst['tau_evap_cum'] = hst['t_evap_cum']/cl.tff.to('Myr').value
+        
+        hst['qshld'] = hst['dM_cl_ion_tot_from_Qieff']/hst['dM_cl_ion_tot']
+        hst['qshld_cum'] = hst['M_cl_ion_tot_from_Qieff']/hst['M_cl_ion_tot']
+        
+        return hst
+    
 class PlotHst(object):
     """
     Plot time evolution of various quantities

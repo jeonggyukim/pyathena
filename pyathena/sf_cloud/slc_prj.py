@@ -33,6 +33,7 @@ class SliceProj:
     @LoadSim.Decorators.check_pickle
     def read_slc(self, num, axes=['x', 'y', 'z'],
                  fields=['nH', 'nH2', 'nHI', 'nHII', 'T', 'nHn', 'pok',
+                         'vx', 'vy', 'vz', 'vr',
                          'chi_FUV', 'Erad_FUV', 'Erad_LyC'],
                  prefix='slc', savdir=None, force_override=False):
 

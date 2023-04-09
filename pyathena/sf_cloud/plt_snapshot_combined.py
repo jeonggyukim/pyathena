@@ -64,9 +64,9 @@ class PltSnapshotCombined:
         if noUV:
             fields = ['nH', 'T', 'pok', 'xH2', 'xHII']
         elif noPhotIon:
-            fields = ['nH', 'T', 'pok', 'Erad_FUV', 'xH2']
+            fields = ['nH', 'T', 'pok', 'chi_FUV', 'xH2']
         else:
-            fields = ['nH', 'T', 'pok', 'Erad_FUV', 'Erad_LyC']
+            fields = ['nH', 'T', 'pok', 'chi_FUV', 'Erad_LyC']
             
         ds = self.load_vtk(num)
         sp = self.load_starpar_vtk(num)
@@ -129,7 +129,7 @@ class PltSnapshotCombined:
             (2.0*dd[f]).plot.imshow(ax=axes[3], norm=Normalize(0,1),
                                     cmap='viridis', add_labels=False, extend='neither',
                                     cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
-            f = 'Erad_FUV'
+            f = 'chi_FUV'
             if dd[f].max() != 0.0:
                 dd[f].plot.imshow(ax=axes[4],
                                   #norm=LogNorm(1e-12,1e-7),
@@ -145,22 +145,23 @@ class PltSnapshotCombined:
                                   # norm=LogNorm(),
                                   cmap='viridis', add_labels=False, extend='neither',
               cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm LyC}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
-            f = 'Erad_FUV'
+            f = 'chi_FUV'
             if dd[f].max() != 0.0:
                 dd[f].plot.imshow(ax=axes[4],
                                   #norm=LogNorm(1e-12,1e-7),
-                                  norm=LogNorm(),
+                                  norm=LogNorm(1e-2,1e3),
                                   cmap='viridis', add_labels=False, extend='neither',
-              cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm FUV}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
+                                  cbar_kwargs=dict(label=r'$\chi_{\rm FUV}$'))
 
         # MASS HISTORY
         h = self.read_hst()
         axes[5].plot(h['tau'],h['M_sp'], label=r'$M_{\ast}$')
-        axes[5].plot(h['tau'],h['M_H2_cl'], label=r'$M_{\rm H_2}$')
-        axes[5].plot(h['tau'],h['M_cl_neu'], label=r'$M_{\rm cl,neu}$')
-        l,=axes[5].plot(h['tau'],h['M_cl_of'], label=r'$M_{\rm cl,of}$')
+        # axes[5].plot(h['tau'],h['M_H2_cl'], label=r'$M_{\rm H_2}$')
+        axes[5].plot(h['tau'],h['M_cl_neu'], label=r'$M_{\rm neu}$')
+        axes[5].plot(h['tau'],h['M_cl_ion'], label=r'$M_{\rm ion}$')
+        l,=axes[5].plot(h['tau'],h['M_cl_of'], label=r'$M_{\rm of}$')
         axes[5].plot(h['tau'],h['M_cl_ion_of'], ls='--', c=l.get_color(),
-                     label=r'$M_{\rm cl,of}$')
+                     label=r'$M_{\rm ion,of}$')
         axes[5].axvline(ds.domain['time']*self.u.Myr/self.cl.tff.value, c='grey', lw=0.5)
         axes[5].legend()
         plt.setp(axes[5], xlabel=r'$t/t_{\rm ff,0}$',

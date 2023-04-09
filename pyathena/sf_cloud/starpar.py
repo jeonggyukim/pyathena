@@ -35,6 +35,8 @@ class StarPar():
     @LoadSim.Decorators.check_pickle
     def read_starpar(self, num, savdir=None, force_override=False):
 
+        mtl = mass_to_lum(model='SB99')
+        
         sp = self.load_starpar_vtk(num)
         if sp.empty:
             return None
@@ -59,12 +61,21 @@ class StarPar():
 
         if np.sum(isrc) == 0:
             return None
-
+        else:
+            if np.sum(isrc) != sp.nstars:
+                print('Check: nsrc {0:d} != nstars {1:d}'.format(np.sum(isrc),
+                                                                 sp.nstars))
+            
+            sp['Qi'] = mtl.calc_Qi_SB99(sp['mass'], sp['mage'])
+            sp['L_LW'] = mtl.calc_LLW_SB99(sp['mass'], sp['mage'])
+            sp['L_PE'] = mtl.calc_LPE_SB99(sp['mass'], sp['mage'])
+            sp['L_FUV'] = sp['L_PE'] + sp['L_LW']
+            
         # Center of mass, luminosity, standard deviation of z-position
         # Summary
         r = dict()
         r['sp'] = sp
-        r['time'] = sp.time
+        r['time'] = sp.time*u.Myr
         r['nstars'] = sp.nstars
         r['mtot'] = sp['mass'].sum()
         r['p1tot'] = (sp['mass']*sp['v1']).sum()
@@ -76,5 +87,18 @@ class StarPar():
                       np.sqrt(sp['x1']**2 + sp['x2']**2 + sp['x3']**2)).sum()
         r['isrc'] = isrc
         r['nsrc'] = np.sum(isrc)
-                
+        
+        r['Qitot'] = np.sum(sp['Qi'])
+        r['L_LW'] = np.sum(sp['L_LW'])
+        r['L_PE'] = np.sum(sp['L_PE'])
+        r['L_FUV'] = np.sum(sp['L_FUV'])
+
+        r['idx_mm'] = np.where(sp['mass'] == sp['mass'].max())[0][0]
+        for i in range(1,4):
+            r[f'x{i}cm'] = np.sum(sp[f'x{i}']*sp['mass'])/np.sum(sp['mass'])
+            r[f'x{i}cl_PH'] = np.sum(sp[f'x{i}']*sp['Qi'])/np.sum(sp['Qi'])
+            r[f'x{i}cl_FUV'] = np.sum(sp[f'x{i}']*sp['L_FUV'])/np.sum(sp['L_FUV'])
+            r[f'x{i}mm'] = sp.iloc[r['idx_mm']][f'x{i}']
+            
+                    
         return r

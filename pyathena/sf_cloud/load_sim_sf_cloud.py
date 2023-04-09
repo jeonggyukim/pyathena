@@ -91,7 +91,6 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         Return key simulation results such as SFE, t_SF, t_dest,H2, etc.
         """
         
-
         par = self.par
         cl = self.cl
 
@@ -347,6 +346,8 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
         try:
             df['fesc_cum_PH'] = h['fesc_cum_PH'].iloc[-1] # Lyman Continuum
             df['fesc_cum_FUV'] = h['fesc_cum_FUV'].iloc[-1]
+            df['fdust_cum_PH'] = h['fdust_cum_PH'].iloc[-1]
+            df['fdust_cum_FUV'] = h['fdust_cum_FUV'].iloc[-1]
             df['fesc_cum_3Myr_PH'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_PH'].iloc[-1]
             df['fesc_cum_3Myr_FUV'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_FUV'].iloc[-1]
         except KeyError:
@@ -354,7 +355,19 @@ class LoadSimSFCloud(LoadSim, Hst, StarPar, SliceProj, PDF,
             df['fesc_cum_FUV'] = np.nan
             df['fesc_cum_3Myr_PH'] = np.nan
             df['fesc_cum_3Myr_FUV'] = np.nan
+            df['fdust_cum_FUV'] = np.nan
 
+        if df['iPhot']:
+            df['t_evap'] = h['t_evap_cum'].iloc[-1]
+            df['tau_evap'] = h['tau_evap_cum'].iloc[-1]
+            df['fion'] = h['fion_cum'].iloc[-1]
+            df['qshld'] = h['qshld_cum'].iloc[-1]
+        else:
+            df['t_evap'] = np.nan
+            df['tau_evap'] = np.nan
+            df['fion'] = np.nan
+            df['qshld'] = np.nan
+            
         # try:
         #     hv = df['hst_vir']
         #     f = interpolate.interp1d(hv['time'].values, hv['avir_cl_alt'])
@@ -613,6 +626,7 @@ def load_all_sf_cloud(models=None,
         models = dict(
     
             # M5 Sigma series
+            M1E5S0025_PHRP='/scratch/gpfs/jk11/SF-CLOUD/M1E5S0025-PHRP-A4-B2-S4-N256/',
             M1E5S0050_PHRP='/tigress/jk11/SF-CLOUD/M1E5S0050-PHRP-A4-B2-S4-N256/',
             M1E5S0080_PHRP='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A4-B2-S4-N256',
             M1E5S0100_PHRP='/tigress/jk11/SF-CLOUD/M1E5S0100-PHRP-A4-B2-S4-N256',
@@ -629,7 +643,8 @@ def load_all_sf_cloud(models=None,
             M1E6S0600_PHRP='/tigress/jk11/SF-CLOUD/M1E6S0600-PHRP-A4-B2-S4-N256/',
             M1E6S0800_PHRP='/tigress/jk11/SF-CLOUD/M1E6S0800-PHRP-A4-B2-S4-N256/',
             
-            # M6 PHRPSN
+            # PHRPSN
+            M1E5S0050_PHRPSN='/scratch/gpfs/jk11/SF-CLOUD/M1E5S0050-PHRPSN-A4-B2-S4-N256/',
             M1E6S0100_PHRPSN='/scratch/gpfs/jk11/SF-CLOUD/M1E6S0100-PHRPSN-A4-B2-S4-N256/',
     
             # Control models at M5 and Sigma=100
