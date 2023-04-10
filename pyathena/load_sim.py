@@ -12,7 +12,7 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import pickle
-import yt
+#import yt
 import tarfile
 import shutil
 
@@ -204,7 +204,7 @@ class LoadSim(object):
                     units_override = self.u.units_override
                 else:
                     units_override = None
-                self.ds = yt.load(self.fvtk, units_override=units_override)
+                #self.ds = yt.load(self.fvtk, units_override=units_override)
             else:
                 self.logger.error('load_method "{0:s}" not recognized.'.format(
                     self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
@@ -276,16 +276,17 @@ class LoadSim(object):
         return self.rh
 
     def create_tar_all(self,move=False,remove_original=False,overwrite=False,kind='vtk'):
-        try:
-            if kind=='vtk':
-                nums='nums_id0'
-            elif kind=='rst':
-                nums='nums_rst'
-            if hasattr(self,nums):
-                for num in getattr(self,nums):
-                    self.move_to_tardir(num=num, kind=kind)
-        except TypeError:
-            pass
+        if move:
+            try:
+                if kind=='vtk':
+                    nums='nums_id0'
+                elif kind=='rst':
+                    nums='nums_rst'
+                if hasattr(self,nums):
+                    for num in getattr(self,nums):
+                        self.move_to_tardir(num=num, kind=kind)
+            except TypeError:
+                pass
 
         raw_tardirs = self._find_match([(kind,"????")])
         for num in [int(f[-4:]) for f in raw_tardirs]:
