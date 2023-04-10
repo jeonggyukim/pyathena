@@ -107,7 +107,13 @@ class SliceProj:
 
         return res
 
-    def read_slc_from_allslc(self,num,fields=None,savdir=None,force_override=False):
+    def read_slc_from_allslc(self,num,fields='default',savdir=None,force_override=False):
+        allslc = self.read_allslc(num,savdir=savdir,force_override=force_override)
+        keylist = list(allslc.keys())
+
+        if fields is None:
+            return allslc
+
         fields_def = [
             "nH",
             "vz",
@@ -132,11 +138,8 @@ class SliceProj:
             pass
         if self.par["configure"]["gas"] == "mhd":
             fields_def += ["Bx", "By", "Bz", "Bmag"]
-        if fields is None:
+        if fields is 'default':
             fields = fields_def
-
-        allslc = self.read_allslc(num,savdir=savdir,force_override=force_override)
-        keylist = list(allslc.keys())
 
         newslc = dict()
         for k in keylist:
@@ -256,7 +259,7 @@ class SliceProj:
 
         return res
 
-    def read_slc_xarray(self, num, fields=None, axis="zall", force_override=False):
+    def read_slc_xarray(self, num, fields='default', axis="zall", force_override=False):
         slc = self.read_slc_from_allslc(num, fields=fields, force_override=force_override)
         if axis == "zall":
             slc_dset = slc_get_all_z(slc)
@@ -264,7 +267,7 @@ class SliceProj:
             slc_dset = slc_to_xarray(slc, axis)
         return slc_dset
 
-    def read_slc_time_series(self, num1, num2, nskip=1, fields=None, sfr=True):
+    def read_slc_time_series(self, num1, num2, nskip=1, fields='default', sfr=True):
         slc_list = []
         for num in range(num1, num2, nskip):
             slc = self.read_slc_xarray(num,fields=fields)
@@ -272,7 +275,8 @@ class SliceProj:
         slc_dset = xr.concat(slc_list, dim="time")
         if sfr:
             hst = self.read_hst()
-            slc_dset.attrs["sfr"] = hst[t1:t2]["sfr10"].mean()
+            for fsfr in ['sfr10','sfr40','sfr100']:
+                slc_dset[fsfr] = hst[fsfr].to_xarray().rename(time_code='time').interp(time=slc_dset.time)
 
         return slc_dset
 

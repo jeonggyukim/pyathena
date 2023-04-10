@@ -1033,3 +1033,35 @@ def plot_PWYbox(pdata,m,tr,i,nmodels,legend=True,Upsilon=False,
         plt.annotate(label,(x0+dx,y0-dy*i),xycoords='axes fraction',
                      size='xx-small',ha='left',va='top')
     ax.tick_params(axis='x', which='minor', bottom=False, top=False)
+
+class athena_data(object):
+    def __init__(self,s,data):
+        self.sim = s
+        self.data = data
+    def __repr__(self):
+        return self.data.__repr__()
+    def keys(self):
+        return list(self.data.keys())
+    def derived_keys(self):
+        return list(self.sim.dfi.keys())
+    def __getitem__(self,field):
+        if field in self.data:
+            return self.data[field]
+        elif field in self.sim.dfi:
+            return self.sim.dfi[field]['func'](self.data,self.sim.u)
+        elif field == 'charging':
+            return 1.7 * self['chi_FUV'] * np.sqrt(self['T']) / (self['ne']) + 50.0
+        elif field == 'eps_PE':
+            CPE_ = np.array([5.22, 2.25, 0.04996, 0.00430, 0.147, 0.431, 0.692])
+            T = self['T']
+            x = self['charging']
+            eps = (CPE_[0] + CPE_[1] * np.power(T, CPE_[4])) / (
+                1.0 + CPE_[2] * np.power(x, CPE_[5]) * (1.0 + CPE_[3] * np.power(x, CPE_[6]))
+            )
+            return eps
+        elif field == 'heat_PE':
+            return 1.7e-26 * self['chi_PE'] * self.sim.Zdust * self['eps_PE']
+        else:
+            raise KeyError("{} is not available".format(field))
+    def __setitem__(self,field,value):
+        self.data[field]=value
