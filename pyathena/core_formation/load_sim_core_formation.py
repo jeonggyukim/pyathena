@@ -63,20 +63,21 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             else:
                 raise ValueError("Box must be cubic")
 
+            self.tcr = 0.5*self.Lbox/self.Mach
             self.sonic_length = tools.get_sonic(self.Mach, self.Lbox)
 
-            # Load t_coll cores
-            self._load_tcoll_cores()
+            # Find the collapse time and corresponding snapshot numbers
+            self._find_tcoll()
 
             try:
                 # Load grid-dendro nodes
-                self.load_grid_dendro()
+                self._load_tcoll_cores()
             except FileNotFoundError:
                 pass
 
             try:
                 # Load radial profiles
-                self.load_radial_profiles()
+                self._load_radial_profiles()
             except FileNotFoundError:
                 pass
 
@@ -93,18 +94,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         with open(fname, 'rb') as handle:
             self.leaves = pickle.load(handle)
         return self.leaves
-
-    def load_grid_dendro(self):
-        fname = pathlib.Path(self.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
-        with open(fname, 'rb') as handle:
-            self.tcoll_cores = pickle.load(handle)
-
-    def load_radial_profiles(self):
-        self.rprofs = {}
-        for pid in self.pids:
-            fname = pathlib.Path(self.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
-            with open(fname, 'rb') as handle:
-                self.rprofs[pid] = pickle.load(handle)
 
     def get_tJeans(self, lmb, rho=None):
         """e-folding time of the fastest growing mode of the Jeans instability
@@ -166,7 +155,12 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         M = MJ_e*m
         return rhoc, R, M
 
-    def _load_tcoll_cores(self):
+    def _find_tcoll(self):
+        """Read .csv output and find their collapse time and snapshot number.
+
+        Additionally store their mass, position, velocity at the time of
+        collapse.
+        """
         # find collapse time and the snapshot numbers at the time of collapse
         self.dt_output = {}
         for k, v in self.par.items():
@@ -189,6 +183,19 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             self.vpz0[pid] = phst0.v3
             self.tcolls[pid] = tcoll
             self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']).astype('int')
+
+    def _load_tcoll_cores(self):
+        fname = pathlib.Path(self.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
+        with open(fname, 'rb') as handle:
+            self.tcoll_cores = pickle.load(handle)
+
+    def _load_radial_profiles(self):
+        self.rprofs = {}
+        for pid in self.pids:
+            fname = pathlib.Path(self.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
+            with open(fname, 'rb') as handle:
+                self.rprofs[pid] = pickle.load(handle)
+
 
 class LoadSimCoreFormationAll(object):
     """Class to load multiple simulations"""
