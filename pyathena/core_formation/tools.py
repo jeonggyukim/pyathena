@@ -2,7 +2,6 @@ import numpy as np
 import xarray as xr
 from scipy.special import erfinv
 from pathlib import Path
-import pickle
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from grid_dendro import boundary
@@ -79,9 +78,7 @@ def calculate_radial_profiles(ds, origin, rmax):
 def find_tcoll_core(s, pid):
     # load GRID-dendro leaves at t = t_coll
     num = s.nums_tcoll[pid]
-    fname = Path(s.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
-    with open(fname, 'rb') as handle:
-        leaves = pickle.load(handle)
+    leaves = s.load_leaves(num)
 
     # find closeast leaf node to this particle
     dx, dy, dz = s.domain['dx']

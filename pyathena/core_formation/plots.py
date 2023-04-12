@@ -21,28 +21,24 @@ from grid_dendro import dendrogram
 
 def plot_tcoll_cores(s, pid, hw=0.25):
     # Load the progenitor GRID-core of this particle.
-    fname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
-    with open(fname, 'rb') as handle:
-        tcoll_cores = pickle.load(handle)
-    core = tcoll_cores[pid]
+    tcoll_cores = s.load_tcoll_cores()
+    num = s.nums_tcoll[pid]
+    core = tcoll_cores[pid][num]
 
     # Load hdf5 snapshot at t = t_coll
-    num = s.nums_tcoll[pid]
     ds = s.load_hdf5(num, load_method='pyathena')
 
     # load leaf dict at t = t_coll
-    fname = Path(s.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
-    with open(fname, 'rb') as handle:
-        leaves = pickle.load(handle)
+    leaves = s.load_leaves(num)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(ds, core)
 
     # Calculate radial profile
-    fname = Path(s.basedir, 'tcoll_cores', 'radial_profile.p')
+    fname = Path(s.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
     if fname.exists():
         with open(fname, 'rb') as handle:
-            rprf = pickle.load(handle).sel(pid=pid)
+            rprf = pickle.load(handle).isel(t=-1)
     else:
         rprf = tools.calculate_radial_profiles(ds, (xc, yc, zc), 2*hw)
 
