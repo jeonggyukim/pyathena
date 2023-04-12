@@ -19,14 +19,19 @@ from pyathena.util import uniform
 from grid_dendro import dendrogram
 
 
-def save_tcoll_cores(s):
-    """Loop over all sink particles and find their associated t_coll cores
-    """
+def save_tcoll_cores(s, overwrite=False):
+    """Loop over all sink particles and find their associated t_coll cores"""
     def _get_distance(ds, nd1, nd2):
         x, y, z = tools.get_coords_node(ds, nd1)
         x0, y0, z0 = tools.get_coords_node(ds, nd2)
         rds = np.sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)
         return rds
+
+    # Check if file exists
+    ofname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        return
 
     tcoll_cores = dict()
     for pid in s.pids:
@@ -48,22 +53,24 @@ def save_tcoll_cores(s):
             core_old = core
 
     # write to file
-    ofname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
-    ofname.parent.mkdir(exist_ok=True)
     with open(ofname, 'wb') as handle:
         pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def save_radial_profiles_tcoll_cores(s, overwrite=False):
-    # Load the progenitor GRID-cores of each particles
-    tcoll_cores = s.load_tcoll_cores()
-    rmax = 0.5*s.domain['Lx'][0]
+    rmax = 0.5*s.Lbox
     for pid in s.pids:
+        # Check if file exists
+        ofname = Path(s.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            continue
+
         time, rprf = [], []
         for num in np.arange(config.GRID_NUM_START, s.nums_tcoll[pid]+1):
             # Load the snapshot and the core id
             ds = s.load_hdf5(num, load_method='pyathena')
-            core = tcoll_cores[pid][num]
+            core = s.tcoll_cores[pid][num]
 
             # Find the location of the core
             xc, yc, zc = tools.get_coords_node(ds, core)
@@ -75,13 +82,8 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
                          combine_attrs='drop_conflicts')
 
         # write to file
-        ofname = Path(s.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
-        ofname.parent.mkdir(exist_ok=True)
-        if ofname.exists() and not overwrite:
-            return
-        else:
-            with open(ofname, 'wb') as handle:
-                pickle.dump(rprf, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        with open(ofname, 'wb') as handle:
+            pickle.dump(rprf, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def run_GRID(s, overwrite=False):
@@ -93,20 +95,21 @@ def run_GRID(s, overwrite=False):
     dz = (s.par['mesh']['x3max'] - s.par['mesh']['x3min'])/s.par['mesh']['nx3']
     dV = dx*dy*dz
 
-    # Load data
     for num in s.nums[config.GRID_NUM_START:]:
+        # Check if file exists
         print('processing model {} num {}'.format(s.basename, num))
-        ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
-
-        grd = dendrogram.Dendrogram(ds.phigas.to_numpy())
-        grd.construct()
-        grd.prune()
-
-        # write to file
         ofname = Path(s.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
             continue
+
+        # Load data and construct dendrogram
+        ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
+        grd = dendrogram.Dendrogram(ds.phigas.to_numpy())
+        grd.construct()
+        grd.prune()
+
+        # Write to file
         with open(ofname, 'wb') as handle:
             pickle.dump(grd.leaves, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
