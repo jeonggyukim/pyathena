@@ -305,7 +305,7 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, N_LP=10):
     if mfrac is None and rho_amb is None:
         raise ValueError("Specify either mfrac or rho_amb")
     s = load_sim_core_formation.LoadSimCoreFormation(Mach)
-    lmb_sonic = s.get_sonic(Mach)
+    lmb_sonic = get_sonic(Mach, Lbox)
     if rho_amb is None:
         rho_amb = s.get_contrast(mfrac)
     rhoc_BE, R_BE, M_BE = s.get_critical_TES(rho_amb, np.inf, p=0.5)
@@ -328,3 +328,11 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, N_LP=10):
     print("Equivalent LP radius for TES = {:.3f}".format(R_LP_TES))
     print("Required resolution dx to resolve BE sphere = {}".format(dx_req))
     print("Required resolution Ncells to resolve BE sphere= {}".format(Ncells_req))
+
+def get_sonic(Mach_outer, l_outer, p=0.5):
+    """returns sonic scale assuming linewidth-size relation v ~ R^p
+    """
+    if Mach_outer==0:
+        return np.inf
+    lambda_s = l_outer*Mach_outer**(-1/p)
+    return lambda_s

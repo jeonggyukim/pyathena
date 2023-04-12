@@ -10,6 +10,7 @@ from pyathena.core_formation.hst import Hst
 from pyathena.core_formation.slc_prj import SliceProj
 from pyathena.core_formation.tools import LognormalPDF
 from pyathena.core_formation.tes import TES
+from pyathena.core_formation import tools
 
 class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
     """LoadSim class for analyzing core collapse simulations."""
@@ -48,11 +49,19 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             super().__init__(basedir, savdir=savdir, load_method=load_method,
                              units=None, verbose=verbose)
             self.Mach = self.par['problem']['Mach']
+
             LognormalPDF.__init__(self, self.Mach)
             TimingReader.__init__(self, self.basedir, self.problem_id)
 
             # Set domain
             self.domain = self._get_domain_from_par(self.par)
+            Lbox = set(self.domain['Lx'])
+            if len(Lbox) == 1:
+                self.Lbox = Lbox.pop()
+            else:
+                raise ValueError("Box must be cubic")
+
+            self.sonic_length = tools.get_sonic(self.Mach, self.Lbox)
 
             # Load t_coll cores
             self._load_tcoll_cores()
@@ -109,23 +118,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         tcr = lscale/dv
         return tcr
 
-    def get_Lbox(self, Mach):
-        """Return box size at which t_cr = t_Jeans,
-        where t_cr = (Lbox/2)/Mach
-        """
-        dv = Mach*self.cs
-        Lbox = np.sqrt(1 + dv**2/(np.pi*self.G*self.rho0))
-        return Lbox
-
-    def get_sonic(self, Mach, p=0.5):
-        """returns sonic scale for periodic box with Mach number Mach
-        assume linewidth-size relation v ~ R^p
-        """
-        if Mach==0:
-            return np.inf
-        Lbox = self.get_Lbox(Mach)
-        lambda_s = Lbox*Mach**(-1/p)
-        return lambda_s
 
     def get_RLP(self, M):
         """Returns the LP radius enclosing  mass M"""
