@@ -47,7 +47,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             basedir = basedir_or_Mach
             super().__init__(basedir, savdir=savdir, load_method=load_method,
                              units=None, verbose=verbose)
-            LognormalPDF.__init__(self, self.par['problem']['Mach'])
+            self.Mach = self.par['problem']['Mach']
+            LognormalPDF.__init__(self, self.Mach)
             TimingReader.__init__(self, self.basedir, self.problem_id)
 
             # Set domain
@@ -69,8 +70,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
                 pass
 
         elif isinstance(basedir_or_Mach, float):
-            Mach = basedir_or_Mach
-            LognormalPDF.__init__(self, Mach)
+            self.Mach = basedir_or_Mach
+            LognormalPDF.__init__(self, self.Mach)
         elif basedir_or_Mach is None:
             pass
         else:
