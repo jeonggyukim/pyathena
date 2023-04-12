@@ -210,12 +210,13 @@ def make_plots_tcoll_cores(s):
         s: pyathena.LoadSim instance
     """
     for pid in s.pids:
-        fig = plots.plot_tcoll_cores(s, pid)
-        odir = Path(s.basedir, 'figures')
-        odir.mkdir(exist_ok=True)
-        fname = odir / "tcoll_cores.par{}.png".format(pid)
-        fig.savefig(fname, bbox_inches='tight', dpi=200)
-        plt.close(fig)
+        for num in np.arange(50, s.nums_tcoll[pid]+1):
+            fig = plots.plot_tcoll_cores(s, pid, num)
+            odir = Path(s.basedir, 'figures')
+            odir.mkdir(exist_ok=True)
+            fname = odir / "tcoll_cores.par{}.{:05d}.png".format(pid, num)
+            fig.savefig(fname, bbox_inches='tight', dpi=200)
+            plt.close(fig)
 
 
 def make_plots_sinkhistory(s):

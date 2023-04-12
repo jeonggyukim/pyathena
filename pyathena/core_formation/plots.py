@@ -19,11 +19,11 @@ import pickle
 from pyathena.core_formation import tools
 from grid_dendro import dendrogram
 
-def plot_tcoll_cores(s, pid, hw=0.25):
+def plot_tcoll_cores(s, pid, num, hw=0.25):
     # Load the progenitor GRID-core of this particle.
-    tcoll_cores = s.load_tcoll_cores()
-    num = s.nums_tcoll[pid]
-    core = tcoll_cores[pid][num]
+    if num > s.nums_tcoll[pid]:
+        raise ValueError("num must be smaller than num_tcoll")
+    core = s.tcoll_cores[pid][num]
 
     # Load hdf5 snapshot at t = t_coll
     ds = s.load_hdf5(num, load_method='pyathena')
@@ -38,7 +38,7 @@ def plot_tcoll_cores(s, pid, hw=0.25):
     fname = Path(s.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
     if fname.exists():
         with open(fname, 'rb') as handle:
-            rprf = pickle.load(handle).isel(t=-1)
+            rprf = pickle.load(handle).sel(t=ds.Time)
     else:
         rprf = tools.calculate_radial_profiles(ds, (xc, yc, zc), 2*hw)
 
