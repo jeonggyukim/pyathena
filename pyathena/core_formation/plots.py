@@ -130,6 +130,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25):
     plt.semilogx(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
     plt.semilogx(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
     plt.semilogx(rprf.r, rprf.vel3, marker='+', label=r'$v_\phi$')
+    plt.axvline(Rcore, ls=':', c='k')
     plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(-3, 3)
     plt.xlabel(r'$r/L_{J,0}$')
@@ -140,10 +141,9 @@ def plot_tcoll_cores(s, pid, num, hw=0.25):
     plt.loglog(rprf.r, rprf.vel1_std, marker='+', label=r'$\sigma_r$')
     plt.loglog(rprf.r, rprf.vel2_std, marker='+', label=r'$\sigma_\theta$')
     plt.loglog(rprf.r, rprf.vel3_std, marker='+', label=r'$\sigma_\phi$')
-    x0 = rprf.r[1]
-    y0 = (rprf.vel1_std[1] + rprf.vel2_std[1] + rprf.vel3_std[1])/3
-    plt.plot(rprf.r, y0*(rprf.r/x0)**0.5, 'k--')
-    plt.plot(rprf.r, y0*(rprf.r/x0)**1, 'k--')
+    plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**0.5, 'k--')
+    plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
+    plt.axvline(Rcore, ls=':', c='k')
     plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(2e-1, 2e1)
     plt.xlabel(r'$r/L_{J,0}$')
