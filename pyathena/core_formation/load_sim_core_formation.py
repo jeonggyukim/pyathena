@@ -81,7 +81,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             except FileNotFoundError:
                 pass
 
-        elif isinstance(basedir_or_Mach, float):
+        elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
             LognormalPDF.__init__(self, self.Mach)
         elif basedir_or_Mach is None:
