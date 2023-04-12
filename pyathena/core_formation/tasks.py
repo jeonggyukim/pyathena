@@ -1,3 +1,5 @@
+"""Module containing functions that are not generally reusable"""
+
 # python modules
 from pathlib import Path
 import matplotlib.pyplot as plt
@@ -5,6 +7,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import subprocess
 import pickle
 import glob
+import numpy as np
 import xarray as xr
 import pandas as pd
 
@@ -18,9 +21,30 @@ from grid_dendro import dendrogram
 def save_tcoll_cores(s):
     """Loop over all sink particles and find their associated t_coll cores
     """
+    def _get_distance(ds, nd1, nd2):
+        x, y, z = tools.get_coords_node(ds, nd1)
+        x0, y0, z0 = tools.get_coords_node(ds, nd2)
+        rds = np.sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)
+        return rds
+
     tcoll_cores = dict()
     for pid in s.pids:
-        tcoll_cores[pid] = tools.find_tcoll_core(s, pid)
+        core_old = tools.find_tcoll_core(s, pid)
+        num = s.nums_tcoll[pid]
+        tcoll_cores[pid] = {num: core_old}
+        for num in np.arange(num-1, 49, -1):
+            # loop backward in time to find all preimages of the t_coll cores
+            ds = s.load_hdf5(num, load_method='pyathena')
+            leaves = s.load_leaves(num)
+
+            # find closeast leaf to the previous preimage
+            dst = {leaf: _get_distance(ds, leaf, core_old) for leaf in leaves}
+            dst_min = np.min(list(dst.values()))
+            for k, v in dst.items():
+                if v == dst_min:
+                    core = k
+            tcoll_cores[pid][num] = core
+            core_old = core
 
     # write to file
     ofname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
