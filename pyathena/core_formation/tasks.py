@@ -243,7 +243,7 @@ def make_plots_tcoll_cores(s):
         s: pyathena.LoadSim instance
     """
     for pid in s.pids:
-        for num in np.arange(config.GRID_NUM_START, s.nums_tcoll[pid]+1):
+        for num in s.tcoll_cores[pid]:
             fig = plots.plot_tcoll_cores(s, pid, num)
             odir = Path(s.basedir, 'figures')
             odir.mkdir(exist_ok=True)
