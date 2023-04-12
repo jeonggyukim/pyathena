@@ -84,8 +84,8 @@ def plot_tcoll_cores(s, pid, num, hw=0.25):
         # 3. zoom-in projections for individual core
         # load selected core
         rho_ = dendrogram.filter_by_node(ds.dens, leaves, core, fill_value=0)
-        Mcore = (rho_*s.domain['dx'].prod()).sum().data[()]
-        Vcore = ((rho_>0).sum()*s.domain['dx'].prod())
+        Mcore = (rho_*s.dV).sum().data[()]
+        Vcore = ((rho_>0).sum()*s.dV).data[()]
         Rcore = (3*Vcore/(4*np.pi))**(1./3.)
         ds_core = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_core = ds_core.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),

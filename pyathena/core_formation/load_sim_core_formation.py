@@ -56,6 +56,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             # Set domain
             self.domain = self._get_domain_from_par(self.par)
             Lbox = set(self.domain['Lx'])
+            self.dx, self.dy, self.dz = self.domain['dx']
+            self.dV = self.dx*self.dy*self.dz
             if len(Lbox) == 1:
                 self.Lbox = Lbox.pop()
             else:
@@ -166,10 +168,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
 
     def _load_tcoll_cores(self):
         # find collapse time and the snapshot numbers at the time of collapse
-        dt_output = {}
+        self.dt_output = {}
         for k, v in self.par.items():
             if k.startswith('output'):
-                dt_output[v['file_type']] = v['dt']
+                self.dt_output[v['file_type']] = v['dt']
         self.tcolls, self.nums_tcoll = {}, {}
         # mass and position of sink particle at the time of creation
         self.mp0, self.xp0, self.yp0, self.zp0 = {}, {}, {}, {}
@@ -186,7 +188,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             self.vpy0[pid] = phst0.v2
             self.vpz0[pid] = phst0.v3
             self.tcolls[pid] = tcoll
-            self.nums_tcoll[pid] = np.floor(tcoll / dt_output['hdf5']).astype('int')
+            self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']).astype('int')
 
 class LoadSimCoreFormationAll(object):
     """Class to load multiple simulations"""

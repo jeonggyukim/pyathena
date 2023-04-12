@@ -35,9 +35,18 @@ def save_tcoll_cores(s, overwrite=False):
 
     tcoll_cores = dict()
     for pid in s.pids:
+        # start from t = t_coll
         core_old = tools.find_tcoll_core(s, pid)
         num = s.nums_tcoll[pid]
         tcoll_cores[pid] = {num: core_old}
+        ds = s.load_hdf5(num, load_method='pyathena')
+        leaves = s.load_leaves(num)
+        x_old, y_old, z_old = tools.get_coords_node(ds, core_old)
+        rho = dendrogram.filter_by_node(ds.dens, leaves, core_old)
+        Mcore_old = (rho*s.dV).sum().data[()]
+        Vcore = ((rho>0).sum()*s.dV).data[()]
+        Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
+
         for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
             # loop backward in time to find all preimages of the t_coll cores
             ds = s.load_hdf5(num, load_method='pyathena')
@@ -49,8 +58,29 @@ def save_tcoll_cores(s, overwrite=False):
             for k, v in dst.items():
                 if v == dst_min:
                     core = k
+
+            # Check if this core is really the same core in different time
+            x, y, z = tools.get_coords_node(ds, core)
+            rho = dendrogram.filter_by_node(ds.dens, leaves, core)
+            Mcore = (rho*s.dV).sum().data[()]
+            Vcore = ((rho>0).sum()*s.dV).data[()]
+            Rcore = (3*Vcore/(4*np.pi))**(1./3.)
+            # Relative error in position, normalized to the previous core radius
+            fdst = np.sqrt((x - x_old)**2 + (y - y_old)**2 + (z - z_old)**2) / Rcore_old
+            # Relative errors in mass and radius.
+            fmass = np.abs(Mcore - Mcore_old) / Mcore_old
+            frds = np.abs(Rcore - Rcore_old) / Rcore_old
+            # If relative errors are more than 100%, this core is unlikely the
+            # same core at previous timestep. Stop backtracing.
+            if fdst > 1 or fmass > 1 or frds > 1:
+                break
+
             tcoll_cores[pid][num] = core
             core_old = core
+            x_old, y_old, z_old = x, y, z
+            Mcore_old = Mcore
+            Rcore_old = Rcore
+
 
     # write to file
     with open(ofname, 'wb') as handle:
@@ -67,10 +97,9 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
             continue
 
         time, rprf = [], []
-        for num in np.arange(config.GRID_NUM_START, s.nums_tcoll[pid]+1):
+        for num, core in s.tcoll_cores[pid].items():
             # Load the snapshot and the core id
             ds = s.load_hdf5(num, load_method='pyathena')
-            core = s.tcoll_cores[pid][num]
 
             # Find the location of the core
             xc, yc, zc = tools.get_coords_node(ds, core)
