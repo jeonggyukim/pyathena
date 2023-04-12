@@ -1,7 +1,7 @@
 import os.path as osp
 import pandas as pd
 import numpy as np
-from pathlib import Path
+import pathlib
 import pickle
 
 from pyathena.load_sim import LoadSim
@@ -14,7 +14,7 @@ from pyathena.core_formation.tes import TES
 class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
     """LoadSim class for analyzing core collapse simulations."""
 
-    def __init__(self, basedir=None, savdir=None, load_method='yt', verbose=False):
+    def __init__(self, basedir_or_Mach=None, savdir=None, load_method='yt', verbose=False):
         """The constructor for LoadSimCoreFormation class
 
         Parameters
@@ -42,7 +42,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         self.G = np.pi
         self.tff = np.sqrt(3/32)
 
-        if basedir is not None:
+        if isinstance(basedir_or_Mach, (pathlib.PosixPath, str)):
+            basedir = basedir_or_Mach
             super().__init__(basedir, savdir=savdir, load_method=load_method,
                              units=None, verbose=verbose)
             LognormalPDF.__init__(self, self.par['problem']['Mach'])
@@ -73,17 +74,24 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
                 self.vpz0[pid] = phst0.v3
                 self.tcolls[pid] = tcoll
                 self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']).astype('int')
+        elif isinstance(basedir_or_Mach, float):
+            Mach = basedir_or_Mach
+            LognormalPDF.__init__(self, Mach)
+        elif basedir_or_Mach is None:
+            pass
+        else:
+            raise ValueError("Unknown parameter type for basedir_or_Mach")
 
 
     def load_fiso_dicts(self, num):
-        fname = Path(self.basedir, 'fiso.{:05d}.p'.format(num))
+        fname = pathlib.Path(self.basedir, 'fiso.{:05d}.p'.format(num))
         with open(fname, 'rb') as handle:
             self.fiso_dicts = pickle.load(handle)
         return self.fiso_dicts
 
 
     def load_tcoll_cores(self):
-        fname = Path(self.basedir, 'tcoll_cores.p')
+        fname = pathlib.Path(self.basedir, 'tcoll_cores.p')
         with open(fname, 'rb') as handle:
             self.tcoll_cores = pickle.load(handle)
         return self.tcoll_cores
