@@ -19,8 +19,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
 
         Parameters
         ----------
-        basedir : str
-            Name of the directory where all data is stored
+        basedir_or_Mach : str or float
+            Path to the directory where all data is stored;
+            Alternatively, Mach number
         savdir : str
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
@@ -52,28 +53,21 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             # Set domain
             self.domain = self._get_domain_from_par(self.par)
 
-            # find collapse time and the snapshot numbers at the time of collapse
-            self.dt_output = {}
-            for k, v in self.par.items():
-                if k.startswith('output'):
-                    self.dt_output[v['file_type']] = v['dt']
-            self.tcolls, self.nums_tcoll = {}, {}
-            # mass and position of sink particle at the time of creation
-            self.mp0, self.xp0, self.yp0, self.zp0 = {}, {}, {}, {}
-            self.vpx0, self.vpy0, self.vpz0 = {}, {}, {}
-            for pid in self.pids:
-                phst = self.load_parhst(pid)
-                phst0 = phst.iloc[0]
-                tcoll = phst0.time
-                self.mp0[pid] = phst0.mass
-                self.xp0[pid] = phst0.x1
-                self.yp0[pid] = phst0.x2
-                self.zp0[pid] = phst0.x3
-                self.vpx0[pid] = phst0.v1
-                self.vpy0[pid] = phst0.v2
-                self.vpz0[pid] = phst0.v3
-                self.tcolls[pid] = tcoll
-                self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']).astype('int')
+            # Load t_coll cores
+            self._load_tcoll_cores()
+
+            try:
+                # Load grid-dendro nodes
+                self.load_grid_dendro()
+            except FileNotFoundError:
+                pass
+
+            try:
+                # Load radial profiles
+                self.load_radial_profiles()
+            except FileNotFoundError:
+                pass
+
         elif isinstance(basedir_or_Mach, float):
             Mach = basedir_or_Mach
             LognormalPDF.__init__(self, Mach)
@@ -82,20 +76,23 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         else:
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
-
     def load_leaves(self, num):
         fname = pathlib.Path(self.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
         with open(fname, 'rb') as handle:
             self.leaves = pickle.load(handle)
         return self.leaves
 
-
-    def load_tcoll_cores(self):
+    def load_grid_dendro(self):
         fname = pathlib.Path(self.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
         with open(fname, 'rb') as handle:
             self.tcoll_cores = pickle.load(handle)
-        return self.tcoll_cores
 
+    def load_radial_profiles(self):
+        self.rprofs = {}
+        for pid in self.pids:
+            fname = pathlib.Path(self.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
+            with open(fname, 'rb') as handle:
+                self.rprofs[pid] = pickle.load(handle)
 
     def get_tJeans(self, lmb, rho=None):
         """e-folding time of the fastest growing mode of the Jeans instability
@@ -173,6 +170,30 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         R = LJ_e*xi0
         M = MJ_e*m
         return rhoc, R, M
+
+    def _load_tcoll_cores(self):
+        # find collapse time and the snapshot numbers at the time of collapse
+        dt_output = {}
+        for k, v in self.par.items():
+            if k.startswith('output'):
+                dt_output[v['file_type']] = v['dt']
+        self.tcolls, self.nums_tcoll = {}, {}
+        # mass and position of sink particle at the time of creation
+        self.mp0, self.xp0, self.yp0, self.zp0 = {}, {}, {}, {}
+        self.vpx0, self.vpy0, self.vpz0 = {}, {}, {}
+        for pid in self.pids:
+            phst = self.load_parhst(pid)
+            phst0 = phst.iloc[0]
+            tcoll = phst0.time
+            self.mp0[pid] = phst0.mass
+            self.xp0[pid] = phst0.x1
+            self.yp0[pid] = phst0.x2
+            self.zp0[pid] = phst0.x3
+            self.vpx0[pid] = phst0.v1
+            self.vpy0[pid] = phst0.v2
+            self.vpz0[pid] = phst0.v3
+            self.tcolls[pid] = tcoll
+            self.nums_tcoll[pid] = np.floor(tcoll / dt_output['hdf5']).astype('int')
 
 class LoadSimCoreFormationAll(object):
     """Class to load multiple simulations"""
