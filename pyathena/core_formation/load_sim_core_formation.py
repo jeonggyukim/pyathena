@@ -83,15 +83,15 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
 
-    def load_fiso_dicts(self, num):
-        fname = pathlib.Path(self.basedir, 'fiso.{:05d}.p'.format(num))
+    def load_leaves(self, num):
+        fname = pathlib.Path(self.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
         with open(fname, 'rb') as handle:
-            self.fiso_dicts = pickle.load(handle)
-        return self.fiso_dicts
+            self.leaves = pickle.load(handle)
+        return self.leaves
 
 
     def load_tcoll_cores(self):
-        fname = pathlib.Path(self.basedir, 'tcoll_cores.p')
+        fname = pathlib.Path(self.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
         with open(fname, 'rb') as handle:
             self.tcoll_cores = pickle.load(handle)
         return self.tcoll_cores
