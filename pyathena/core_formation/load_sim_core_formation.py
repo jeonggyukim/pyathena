@@ -104,12 +104,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         tJeans = 1/np.sqrt(4*np.pi*self.G*rho)*lmb/np.sqrt(lmb**2 - 1)
         return tJeans
 
-    def get_tcr(self, lscale, dv):
-        """crossing time for a length scale lscale and velocity dv"""
-        tcr = lscale/dv
-        return tcr
-
-
     def get_RLP(self, M):
         """Returns the LP radius enclosing  mass M"""
         RLP = self.G*M/8.86/self.cs**2
