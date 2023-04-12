@@ -1,10 +1,47 @@
 import numpy as np
 import xarray as xr
+from scipy.special import erfinv
 from pathlib import Path
 import pickle
 from pyathena.util import transform
+from pyathena.core_formation import lognormal_pdf
 from grid_dendro import boundary
 from grid_dendro import dendrogram
+
+
+class LognormalPDF:
+    """
+    Lognormal probability distribution function
+
+    b is the order unity coefficient that depends on the ratio of the
+    compressive and solenoidal modes in the turbulence
+    (see Federrath 2010, fig. 8; zeta=0.5 corresponds to the natural
+    mixture, at which b~0.4)
+
+    """
+    def __init__(self, Mach, b=0.4, weight='mass'):
+        self.mu = 0.5*np.log(1 + b**2*Mach**2)
+        self.var = 2*self.mu
+        self.sigma = np.sqrt(self.var)
+        if weight=='mass':
+            pass
+        elif weight=='volume':
+            self.mu *= -1
+        else:
+            ValueError("weight must be either mass or volume")
+
+    def fx(self,x):
+        """The mass fraction between x and x+dx, where x = ln(rho/rho_0)"""
+        f = (1/np.sqrt(2*np.pi*self.var))*np.exp(-(x - self.mu)**2/(2*self.var))
+        return f
+
+    def get_contrast(self, frac):
+        """
+        Returns rho/rho_0 below which frac (0 to 1) of the total mass
+        is contained.
+        """
+        x = self.mu + np.sqrt(2)*self.sigma*erfinv(2*frac - 1)
+        return np.exp(x)
 
 
 def calculate_radial_profiles(ds, origin, rmax):
@@ -265,6 +302,3 @@ def calculate_cum_energies(ds, nodes, node, mode='HBR', boundary_flag='periodic'
     energies = dict(Reff=Reff, Ekin=Ekin, Eth=Eth, Ekin0=Ekin0, Eth0=Eth0,
                     Egrav=Egrav, Etot=Etot)
     return energies
-
-
-

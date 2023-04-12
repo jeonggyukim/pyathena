@@ -8,7 +8,7 @@ from pyathena.load_sim import LoadSim
 from pyathena.io.timing_reader import TimingReader
 from pyathena.core_formation.hst import Hst
 from pyathena.core_formation.slc_prj import SliceProj
-from pyathena.core_formation.pdf import LognormalPDF
+from pyathena.core_formation.tools import LognormalPDF
 from pyathena.core_formation.tes import TES
 
 class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
