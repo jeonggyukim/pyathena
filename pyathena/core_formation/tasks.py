@@ -55,34 +55,32 @@ def save_tcoll_cores(s):
 
 def save_radial_profiles_tcoll_cores(s, overwrite=False):
     # Load the progenitor GRID-cores of each particles
-    fname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
-    with open(fname, 'rb') as handle:
-        nodes = pickle.load(handle)
-
+    tcoll_cores = s.load_tcoll_cores()
     rmax = 0.5*s.domain['Lx'][0]
-    rprf = []
     for pid in s.pids:
-        node = nodes[pid]
+        time, rprf = [], []
+        for num in np.arange(50, s.nums_tcoll[pid]+1):
+            # Load the snapshot and the core id
+            ds = s.load_hdf5(num, load_method='pyathena')
+            core = tcoll_cores[pid][num]
 
-        # Load hdf5 snapshot at t = t_coll
-        num = s.nums_tcoll[pid]
-        ds = s.load_hdf5(num, load_method='pyathena')
+            # Find the location of the core
+            xc, yc, zc = tools.get_coords_node(ds, core)
 
-        # Find the location of the core
-        xc, yc, zc = tools.get_coords_node(ds, node)
+            # Calculate radial profile
+            time.append(ds.Time)
+            rprf.append(tools.calculate_radial_profiles(ds, (xc, yc, zc), rmax))
+        rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
+                         combine_attrs='drop_conflicts')
 
-        # Calculate radial profile
-        rprf.append(tools.calculate_radial_profiles(ds, (xc, yc, zc), rmax))
-    rprf = xr.concat(rprf, dim=pd.Index(s.pids, name='pid'), combine_attrs='drop_conflicts')
-
-    # write to file
-    ofname = Path(s.basedir, 'tcoll_cores', 'radial_profile.p')
-    ofname.parent.mkdir(exist_ok=True)
-    if ofname.exists() and not overwrite:
-        return
-    else:
-        with open(ofname, 'wb') as handle:
-            pickle.dump(rprf, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # write to file
+        ofname = Path(s.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            return
+        else:
+            with open(ofname, 'wb') as handle:
+                pickle.dump(rprf, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def run_GRID(s, overwrite=False):
