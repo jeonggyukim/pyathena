@@ -4,7 +4,7 @@ from scipy.special import erfinv
 from pathlib import Path
 import pickle
 from pyathena.util import transform
-from pyathena.core_formation import lognormal_pdf
+from pyathena.core_formation import load_sim_core_formation
 from grid_dendro import boundary
 from grid_dendro import dendrogram
 
@@ -302,3 +302,32 @@ def calculate_cum_energies(ds, nodes, node, mode='HBR', boundary_flag='periodic'
     energies = dict(Reff=Reff, Ekin=Ekin, Eth=Eth, Ekin0=Ekin0, Eth0=Eth0,
                     Egrav=Egrav, Etot=Etot)
     return energies
+
+
+def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, N_LP=10):
+    if mfrac is None and rho_amb is None:
+        raise ValueError("Specify either mfrac or rho_amb")
+    s = load_sim_core_formation.LoadSimCoreFormation(Mach)
+    lmb_sonic = s.get_sonic(Mach)
+    if rho_amb is None:
+        rho_amb = s.get_contrast(mfrac)
+    rhoc_BE, R_BE, M_BE = s.get_critical_TES(rho_amb, np.inf, p=0.5)
+    rhoc_TES, R_TES, M_TES = s.get_critical_TES(rho_amb, lmb_sonic, p=0.5)
+    R_LP_BE = s.get_RLP(M_BE)
+    R_LP_TES = s.get_RLP(M_TES)
+    dx_req = R_LP_BE/N_LP
+    Ncells_req = np.ceil(Lbox/dx_req).astype(int)
+
+    print(f"Mach number = {Mach}")
+    print("sonic length = {}".format(lmb_sonic))
+    print("Ambient density={:.3f}".format(rho_amb))
+    print("Bonner-Ebert mass = {:.3f}".format(M_BE))
+    print("Bonner-Ebert radius = {:.3f}".format(R_BE))
+    print("Bonner-Ebert central density = {:.3f}".format(rhoc_BE))
+    print("Critical TES mass = {:.3f}".format(M_TES))
+    print("Critical TES radius = {:.3f}".format(R_TES))
+    print("Critical TES central density = {:.3f}".format(rhoc_TES))
+    print("Equivalent LP radius for Bonner-Ebert sphere = {:.3f}".format(R_LP_BE))
+    print("Equivalent LP radius for TES = {:.3f}".format(R_LP_TES))
+    print("Required resolution dx to resolve BE sphere = {}".format(dx_req))
+    print("Required resolution Ncells to resolve BE sphere= {}".format(Ncells_req))
