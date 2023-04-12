@@ -1,0 +1,1 @@
+GRID_NUM_START = 10

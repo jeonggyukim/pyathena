@@ -14,6 +14,7 @@ import pandas as pd
 # pyathena modules
 from pyathena.core_formation import plots
 from pyathena.core_formation import tools
+from pyathena.core_formation import config
 from pyathena.util import uniform
 from grid_dendro import dendrogram
 
@@ -32,7 +33,7 @@ def save_tcoll_cores(s):
         core_old = tools.find_tcoll_core(s, pid)
         num = s.nums_tcoll[pid]
         tcoll_cores[pid] = {num: core_old}
-        for num in np.arange(num-1, 49, -1):
+        for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
             # loop backward in time to find all preimages of the t_coll cores
             ds = s.load_hdf5(num, load_method='pyathena')
             leaves = s.load_leaves(num)
@@ -59,7 +60,7 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
     rmax = 0.5*s.domain['Lx'][0]
     for pid in s.pids:
         time, rprf = [], []
-        for num in np.arange(50, s.nums_tcoll[pid]+1):
+        for num in np.arange(config.GRID_NUM_START, s.nums_tcoll[pid]+1):
             # Load the snapshot and the core id
             ds = s.load_hdf5(num, load_method='pyathena')
             core = tcoll_cores[pid][num]
@@ -93,7 +94,7 @@ def run_GRID(s, overwrite=False):
     dV = dx*dy*dz
 
     # Load data
-    for num in s.nums[50:]:
+    for num in s.nums[config.GRID_NUM_START:]:
         print('processing model {} num {}'.format(s.basename, num))
         ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
 
@@ -210,7 +211,7 @@ def make_plots_tcoll_cores(s):
         s: pyathena.LoadSim instance
     """
     for pid in s.pids:
-        for num in np.arange(50, s.nums_tcoll[pid]+1):
+        for num in np.arange(config.GRID_NUM_START, s.nums_tcoll[pid]+1):
             fig = plots.plot_tcoll_cores(s, pid, num)
             odir = Path(s.basedir, 'figures')
             odir.mkdir(exist_ok=True)
