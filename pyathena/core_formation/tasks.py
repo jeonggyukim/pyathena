@@ -247,7 +247,8 @@ def make_plots_tcoll_cores(s):
             fig = plots.plot_tcoll_cores(s, pid, num)
             odir = Path(s.basedir, 'figures')
             odir.mkdir(exist_ok=True)
-            fname = odir / "tcoll_cores.par{}.{:05d}.png".format(pid, num)
+            fname = odir / "{}.par{}.{:05d}.png".format(
+                    config.PLOT_PREFIX_TCOLL_CORES, pid, num)
             fig.savefig(fname, bbox_inches='tight', dpi=200)
             plt.close(fig)
 
@@ -264,7 +265,7 @@ def make_plots_sinkhistory(s):
         fig = plots.plot_sinkhistory(s, ds, pds)
         odir = Path(s.basedir, 'figures')
         odir.mkdir(exist_ok=True)
-        fname = odir / "sink_history.{:05d}.png".format(num)
+        fname = odir / "{}.{:05d}.png".format(config.PLOT_PREFIX_SINK_HISTORY, num)
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         plt.close(fig)
 
@@ -309,7 +310,7 @@ def make_plots_PDF_Pspec(s):
         fig.tight_layout()
         odir = Path(s.basedir, 'figures')
         odir.mkdir(exist_ok=True)
-        fname = odir / "PDF_Pspecs.{:05d}.png".format(num)
+        fname = odir / "{}.{:05d}.png".format(config.PLOT_PREFIX_PDF_PSPEC, num)
         fig.savefig(fname, bbox_inches='tight')
         for ax in axs:
             ax.cla()
