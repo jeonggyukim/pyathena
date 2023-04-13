@@ -336,3 +336,15 @@ def get_sonic(Mach_outer, l_outer, p=0.5):
         return np.inf
     lambda_s = l_outer*Mach_outer**(-1/p)
     return lambda_s
+
+def recenter_dataset(ds, center):
+    shape = np.array(list(ds.dims.values()), dtype=int)
+    hNz, hNy, hNx = shape >> 1
+    xc, yc, zc = center
+    ishift = hNx - np.where(ds.x.data==xc)[0][0]
+    jshift = hNy - np.where(ds.y.data==yc)[0][0]
+    kshift = hNz - np.where(ds.z.data==zc)[0][0]
+    xc_new = ds.x.isel(x=hNx).data[()]
+    yc_new = ds.y.isel(y=hNy).data[()]
+    zc_new = ds.z.isel(z=hNz).data[()]
+    return ds.roll(x=ishift, y=jshift, z=kshift), (xc_new, yc_new, zc_new)

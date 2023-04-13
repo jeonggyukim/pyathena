@@ -102,22 +102,14 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
             ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
 
             # Find the location of the core
-            xc, yc, zc = tools.get_coords_node(ds, core)
+            center = tools.get_coords_node(ds, core)
 
             # Roll the data such that the core is at the center of the domain
-            shape = np.array(list(ds.dims.values()), dtype=int)
-            hNz, hNy, hNx = shape >> 1
-            ishift = hNx - np.where(ds.x.data==xc)[0][0]
-            jshift = hNy - np.where(ds.y.data==yc)[0][0]
-            kshift = hNz - np.where(ds.z.data==zc)[0][0]
-            ds = ds.roll(x=ishift, y=jshift, z=kshift)
-            xc = ds.x.isel(x=hNx).data[()]
-            yc = ds.y.isel(y=hNy).data[()]
-            zc = ds.z.isel(z=hNz).data[()]
+            ds, center = tools.recenter_dataset(ds, center)
 
             # Calculate radial profile
             time.append(ds.Time)
-            rprf.append(tools.calculate_radial_profiles(ds, (xc, yc, zc), rmax))
+            rprf.append(tools.calculate_radial_profiles(ds, center, rmax))
         rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
                          combine_attrs='drop_conflicts')
 
@@ -247,7 +239,7 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
             ax.cla()
 
 
-def make_plots_tcoll_cores(s):
+def make_plots_tcoll_cores(s, overwrite=False):
     """Creates multi-panel plot for t_coll core properties
 
     Args:
@@ -255,33 +247,36 @@ def make_plots_tcoll_cores(s):
     """
     for pid in s.pids:
         for num in s.tcoll_cores[pid]:
+            fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
+                config.PLOT_PREFIX_TCOLL_CORES, pid, num))
+            fname.parent.mkdir(exist_ok=True)
+            if fname.exists() and not overwrite:
+                continue
             fig = plots.plot_tcoll_cores(s, pid, num)
-            odir = Path(s.basedir, 'figures')
-            odir.mkdir(exist_ok=True)
-            fname = odir / "{}.par{}.{:05d}.png".format(
-                    config.PLOT_PREFIX_TCOLL_CORES, pid, num)
             fig.savefig(fname, bbox_inches='tight', dpi=200)
             plt.close(fig)
 
 
-def make_plots_sinkhistory(s):
+def make_plots_sinkhistory(s, overwrite=False):
     """Creates multi-panel plot for sink particle history
 
     Args:
         s: pyathena.LoadSim instance
     """
     for num in s.nums:
+        fname = Path(s.basedir, 'figures', "{}.{:05d}.png".format(
+            config.PLOT_PREFIX_SINK_HISTORY, num))
+        fname.parent.mkdir(exist_ok=True)
+        if fname.exists() and not overwrite:
+            continue
         ds = s.load_hdf5(num, load_method='yt')
         pds = s.load_partab(num)
         fig = plots.plot_sinkhistory(s, ds, pds)
-        odir = Path(s.basedir, 'figures')
-        odir.mkdir(exist_ok=True)
-        fname = odir / "{}.{:05d}.png".format(config.PLOT_PREFIX_SINK_HISTORY, num)
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         plt.close(fig)
 
 
-def make_plots_projections(s):
+def make_plots_projections(s, overwrite=False):
     """Creates density projections for a given model
 
     Save projections in {basedir}/figures for all snapshots.
@@ -293,18 +288,19 @@ def make_plots_projections(s):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='4%', pad=0.05)
     for num in s.nums:
+        fname = Path(s.basedir, 'figures',
+                     "Projection_z_dens.{:05d}.png".format(num))
+        if fname.exists() and not overwrite:
+            continue
         ds = s.load_hdf5(num, load_method='yt')
         plots.plot_projection(s, ds, ax=ax, cax=cax)
-        odir = Path(s.basedir, 'figures')
-        odir.mkdir(exist_ok=True)
-        fname = odir / "Projection_z_dens.{:05d}.png".format(num)
         ax.set_title(r'$t={:.3f}$'.format(ds.current_time.value), fontsize=16)
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         ax.cla()
         cax.cla()
 
 
-def make_plots_PDF_Pspec(s):
+def make_plots_PDF_Pspec(s, overwrite=False):
     """Creates density PDF and velocity power spectrum for a given model
 
     Save figures in {basedir}/figures for all snapshots.
@@ -315,13 +311,15 @@ def make_plots_PDF_Pspec(s):
     fig, axs = plt.subplots(1,2,figsize=(12,6))
     ax1_twiny = axs[1].twiny()
     for num in s.nums:
+        fname = Path(s.basedir, 'figures', "{}.{:05d}.png".format(
+            config.PLOT_PREFIX_PDF_PSPEC, num))
+        fname.parent.mkdir(exist_ok=True)
+        if fname.exists() and not overwrite:
+            continue
         ds = s.load_hdf5(num, load_method='pyathena')
         plots.plot_PDF(s, ds, axs[0])
         plots.plot_Pspec(s, ds, axs[1], ax1_twiny)
         fig.tight_layout()
-        odir = Path(s.basedir, 'figures')
-        odir.mkdir(exist_ok=True)
-        fname = odir / "{}.{:05d}.png".format(config.PLOT_PREFIX_PDF_PSPEC, num)
         fig.savefig(fname, bbox_inches='tight')
         for ax in axs:
             ax.cla()

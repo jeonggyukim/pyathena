@@ -71,13 +71,12 @@ def plot_tcoll_cores(s, pid, num, hw=0.25):
         plt.ylabel(ylabel[prj_axis])
 
         # 2. zoom-in projections
-        d = ds.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
-                    yaxis[prj_axis]:slice(*ylim[prj_axis]),
-                    zaxis[prj_axis]:slice(*zlim[prj_axis])})
+        d, _ = tools.recenter_dataset(ds, (xc, yc, zc))
+        d = d.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
         plt.sca(fig.add_subplot(gs[i,1]))
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
-        plt.xlim(xlim[prj_axis])
-        plt.ylim(ylim[prj_axis])
+        plt.xlim(-hw, hw)
+        plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
         plt.ylabel(ylabel[prj_axis])
 
@@ -88,22 +87,22 @@ def plot_tcoll_cores(s, pid, num, hw=0.25):
         Vcore = ((rho_>0).sum()*s.dV).data[()]
         Rcore = (3*Vcore/(4*np.pi))**(1./3.)
         ds_core = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
-        ds_core = ds_core.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
-                               yaxis[prj_axis]:slice(*ylim[prj_axis]),
-                               zaxis[prj_axis]:slice(*zlim[prj_axis])})
+        ds_core, _ = tools.recenter_dataset(ds_core, (xc, yc, zc))
+        ds_core = ds_core.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
+
         # load other cores
         other_cores = {k: v for k, v in leaves.items() if k != core}
         rho_ = dendrogram.filter_by_node(ds.dens, other_cores, fill_value=0)
         ds_others = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
-        ds_others = ds_others.sel({xaxis[prj_axis]:slice(*xlim[prj_axis]),
-                                   yaxis[prj_axis]:slice(*ylim[prj_axis]),
-                                   zaxis[prj_axis]:slice(*zlim[prj_axis])})
+        ds_others, _ = tools.recenter_dataset(ds_others, (xc, yc, zc))
+        ds_others = ds_others.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
+
         # plot
         plt.sca(fig.add_subplot(gs[i,2]))
         plot_projection(s, ds_others, axis=prj_axis, add_colorbar=False, alpha=0.5, cmap='Greys')
         plot_projection(s, ds_core, axis=prj_axis, add_colorbar=False)
-        plt.xlim(xlim[prj_axis])
-        plt.ylim(ylim[prj_axis])
+        plt.xlim(-hw, hw)
+        plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
         plt.ylabel(ylabel[prj_axis])
 
