@@ -99,10 +99,21 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
         time, rprf = [], []
         for num, core in s.tcoll_cores[pid].items():
             # Load the snapshot and the core id
-            ds = s.load_hdf5(num, load_method='pyathena')
+            ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
 
             # Find the location of the core
             xc, yc, zc = tools.get_coords_node(ds, core)
+
+            # Roll the data such that the core is at the center of the domain
+            shape = np.array(list(ds.dims.values()), dtype=int)
+            hNz, hNy, hNx = shape >> 1
+            ishift = hNx - np.where(ds.x.data==xc)[0][0]
+            jshift = hNy - np.where(ds.y.data==yc)[0][0]
+            kshift = hNz - np.where(ds.z.data==zc)[0][0]
+            ds = ds.roll(x=ishift, y=jshift, z=kshift)
+            xc = ds.x.isel(x=hNx).data[()]
+            yc = ds.y.isel(y=hNy).data[()]
+            zc = ds.z.isel(z=hNz).data[()]
 
             # Calculate radial profile
             time.append(ds.Time)

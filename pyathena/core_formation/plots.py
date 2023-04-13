@@ -38,7 +38,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25):
     fname = Path(s.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
     if fname.exists():
         with open(fname, 'rb') as handle:
-            rprf = pickle.load(handle).sel(t=ds.Time)
+            rprf = pickle.load(handle).sel(t=ds.Time, method='nearest')
     else:
         rprf = tools.calculate_radial_profiles(ds, (xc, yc, zc), 2*hw)
 
