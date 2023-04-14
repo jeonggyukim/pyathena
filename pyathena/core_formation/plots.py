@@ -19,6 +19,27 @@ import pickle
 from pyathena.core_formation import tools
 from grid_dendro import dendrogram
 
+def plot_central_density_evolution(s, ax=None):
+    rho_crit_KM05 = tools.get_rhocrit_KM05(s.sonic_length)
+    if ax is not None:
+        plt.sca(ax)
+
+    for pid in s.pids:
+        rprf = s.rprofs[pid]
+        rprf.rho.isel(r=0).plot(label=f'par{pid}')
+        plt.yscale('log')
+        plt.ylim(1e1, s.get_rhoLP(0.5*s.dx))
+    plt.axhline(rho_crit_KM05, linestyle='--')
+    plt.text(s.rprofs[1].t.min(), rho_crit_KM05, r"$\rho_\mathrm{crit, KM05}$", fontsize=18,
+             ha='left', va='bottom')
+    plt.text(s.rprofs[1].t.min(), 14.1*rho_crit_KM05, r"$14.1\rho_\mathrm{crit, KM05}$", fontsize=18,
+             ha='left', va='bottom')
+    plt.axhline(14.1*rho_crit_KM05, linestyle='--', lw=1)
+    plt.legend(loc=(1.01, 0))
+    plt.ylabel(r'$\rho_c/\rho_0$')
+    plt.xlabel(r'$t/t_J$')
+    plt.title(s.basename)
+
 def plot_tcoll_cores(s, pid, num, hw=0.25):
     # Load the progenitor GRID-core of this particle.
     if num > s.nums_tcoll[pid]:
