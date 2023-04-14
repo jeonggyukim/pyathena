@@ -348,3 +348,15 @@ def recenter_dataset(ds, center):
     yc_new = ds.y.isel(y=hNy).data[()]
     zc_new = ds.z.isel(z=hNz).data[()]
     return ds.roll(x=ishift, y=jshift, z=kshift), (xc_new, yc_new, zc_new)
+
+def get_rhocrit_KM05(lmb_sonic):
+    """Equation (17) of Krumholz & McKee (2005)
+
+    Args:
+        lmb_sonic: sonic length devided by Jeans length at mean density.
+    Returns:
+        rho_crit: critical density devided by mean density.
+    """
+    phi_x = 1.12
+    rho_crit = (phi_x/lmb_sonic)**2
+    return rho_crit
