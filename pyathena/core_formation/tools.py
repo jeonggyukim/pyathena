@@ -85,7 +85,7 @@ def find_tcoll_core(s, pid):
     dist_inc = min(dx, dy, dz)
     search_dist = dist_inc
     particle_speed = np.sqrt(s.vpx0[pid]**2 + s.vpy0[pid]**2 + s.vpz0[pid]**2)
-    search_dist_max = max(5*max(dx, dy, dz), 1.5*s.dt_output['hdf5']*particle_speed)
+    search_dist_max = max(10*max(dx, dy, dz), 2*s.dt_output['hdf5']*particle_speed)
     tcoll_core = set()
     while len(tcoll_core) == 0:
         for leaf in leaves:
