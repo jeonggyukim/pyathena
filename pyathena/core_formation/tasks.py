@@ -324,3 +324,18 @@ def make_plots_PDF_Pspec(s, overwrite=False):
         for ax in axs:
             ax.cla()
         ax1_twiny.cla()
+
+def make_plots_central_density_evolution(s, overwrite=False):
+    """Creates plot showing central density evolution for each cores
+
+    Save figures in {basedir}/figures for all snapshots.
+
+    Args:
+        s: pyathena.LoadSim instance
+    """
+    fname = Path(s.basedir, 'figures', "{}.png".format(config.PLOT_PREFIX_RHOC_EVOLUTION))
+    fname.parent.mkdir(exist_ok=True)
+    if fname.exists() and not overwrite:
+        continue
+    plots.plot_central_density_evolution(s)
+    plt.savefig(fname, bbox_inches='tight')
