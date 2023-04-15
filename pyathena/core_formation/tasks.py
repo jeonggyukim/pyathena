@@ -22,15 +22,10 @@ from grid_dendro import energy
 
 def save_tcoll_cores(s, overwrite=False):
     """Loop over all sink particles and find their associated t_coll cores"""
-    def _get_distance(ds, nd1, nd2):
-        x, y, z = tools.get_coords_node(ds, nd1)
-        x0, y0, z0 = tools.get_coords_node(ds, nd2)
-        xdst, ydst, zdst = np.abs(x-x0), np.abs(y-y0), np.abs(z-z0)
-        # Wrap distance by applying periodic BC
-        xdst = s.Lbox - xdst if xdst > 0.5*s.Lbox else xdst
-        ydst = s.Lbox - ydst if ydst > 0.5*s.Lbox else ydst
-        zdst = s.Lbox - zdst if zdst > 0.5*s.Lbox else zdst
-        dst = np.sqrt(xdst**2 + ydst**2 + zdst**2)
+    def _get_node_distance(ds, nd1, nd2):
+        pos1 = tools.get_coords_node(ds, nd1)
+        pos2 = tools.get_coords_node(ds, nd2)
+        dst = tools.get_periodic_distance(pos1, pos2, s.Lbox)
         return dst
 
     # Check if file exists
@@ -42,16 +37,22 @@ def save_tcoll_cores(s, overwrite=False):
     tcoll_cores = dict()
     for pid in s.pids:
         # start from t = t_coll
-        core_old = tools.find_tcoll_core(s, pid)
+
+        # Load data
         num = s.nums_tcoll[pid]
-        tcoll_cores[pid] = {num: core_old}
         ds = s.load_hdf5(num, load_method='pyathena')
         leaves = s.load_leaves(num)
-        x_old, y_old, z_old = tools.get_coords_node(ds, core_old)
+
+        # Calculate position, mass, and radius of the core
+        core_old = tools.find_tcoll_core(s, pid)
+        pos_old = tools.get_coords_node(ds, core_old)
         rho = dendrogram.filter_by_node(ds.dens, leaves, core_old)
         Mcore_old = (rho*s.dV).sum().data[()]
         Vcore = ((rho>0).sum()*s.dV).data[()]
         Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
+
+        # Add this core to a list of t_coll cores
+        tcoll_cores[pid] = {num: core_old}
 
         for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
             # loop backward in time to find all preimages of the t_coll cores
@@ -59,34 +60,42 @@ def save_tcoll_cores(s, overwrite=False):
             leaves = s.load_leaves(num)
 
             # find closeast leaf to the previous preimage
-            dst = {leaf: _get_distance(ds, leaf, core_old) for leaf in leaves}
+            dst = {leaf: _get_node_distance(ds, leaf, core_old) for leaf in leaves}
             dst_min = np.min(list(dst.values()))
             for k, v in dst.items():
                 if v == dst_min:
                     core = k
 
-            # Check if this core is really the same core in different time
-            x, y, z = tools.get_coords_node(ds, core)
+            # Calculate position, mass, and radius of the core and
+            # check if this core is really the same core in different time
+            pos = tools.get_coords_node(ds, core)
             rho = dendrogram.filter_by_node(ds.dens, leaves, core)
             Mcore = (rho*s.dV).sum().data[()]
             Vcore = ((rho>0).sum()*s.dV).data[()]
             Rcore = (3*Vcore/(4*np.pi))**(1./3.)
-            # Relative error in position, normalized to the previous core radius
-            fdst = np.sqrt((x - x_old)**2 + (y - y_old)**2 + (z - z_old)**2) / Rcore_old
-            # Relative errors in mass and radius.
+
+            # Relative error in position, normalized to previous core.
+            # Note that "previous" means later time, because we are
+            # tracing backward in time from the t=t_coll.
+            fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox) / Rcore_old
+
+            # Relative errors in mass and radius, normalized to previous core.
             fmass = np.abs(Mcore - Mcore_old) / Mcore_old
             frds = np.abs(Rcore - Rcore_old) / Rcore_old
+
             # If relative errors are more than 100%, this core is unlikely the
             # same core at previous timestep. Stop backtracing.
             if fdst > 1 or fmass > 1 or frds > 1:
                 break
-
+            
+            # Add this core to list of t_coll cores
             tcoll_cores[pid][num] = core
+
+            # Save core properties
             core_old = core
-            x_old, y_old, z_old = x, y, z
+            pos_old = pos
             Mcore_old = Mcore
             Rcore_old = Rcore
-
 
     # write to file
     with open(ofname, 'wb') as handle:
@@ -116,6 +125,8 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
             # Calculate radial profile
             time.append(ds.Time)
             rprf.append(tools.calculate_radial_profiles(ds, center, rmax))
+
+        # Concatenate in time.
         rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
                          combine_attrs='drop_conflicts')
 

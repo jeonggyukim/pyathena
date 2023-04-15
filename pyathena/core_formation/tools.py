@@ -82,22 +82,23 @@ def find_tcoll_core(s, pid):
 
     # find closeast leaf node to this particle
     dx, dy, dz = s.domain['dx']
-    dist_inc = min(dx, dy, dz)
-    search_dist = dist_inc
+    dst_inc = min(dx, dy, dz)
+    search_dst = dst_inc
     particle_speed = np.sqrt(s.vpx0[pid]**2 + s.vpy0[pid]**2 + s.vpz0[pid]**2)
-    search_dist_max = max(10*max(dx, dy, dz), 2*s.dt_output['hdf5']*particle_speed)
+    search_dst_max = max(10*max(dx, dy, dz), 2*s.dt_output['hdf5']*particle_speed)
     tcoll_core = set()
     while len(tcoll_core) == 0:
         for leaf in leaves:
-            k, j, i = np.unravel_index(leaf, s.domain['Nx'], order='C')
-            i0, j0, k0 = ((np.array((s.xp0[pid], s.yp0[pid], s.zp0[pid]))
-                           - s.domain['le']) // s.domain['dx'])
-            dist = np.sqrt(((k-k0)*dz)**2 + ((j-j0)*dy)**2 + ((i-i0)*dx)**2)
-            if dist <= search_dist:
+            kji = np.unravel_index(leaf, s.domain['Nx'][::-1], order='C')
+            ijk = np.array(kji)[::-1]
+            pos_node = s.domain['le'] + ijk*s.domain['dx']
+            pos_particle = np.array((s.xp0[pid], s.yp0[pid], s.zp0[pid]))
+            dst = get_periodic_distance(pos_node, pos_particle, s.Lbox)
+            if dst <= search_dst:
                 tcoll_core.add(leaf)
-        search_dist += dist_inc
-        if search_dist > search_dist_max:
-            msg = f"pid = {pid}: Cannot find a t_coll core within distance {search_dist_max}"
+        search_dst += dst_inc
+        if search_dst > search_dst_max:
+            msg = f"pid = {pid}: Cannot find a t_coll core within distance {search_dst_max}"
             raise ValueError(msg)
     return tcoll_core.pop()
 
@@ -366,3 +367,13 @@ def roundup(a, decimal):
 
 def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
+
+def get_periodic_distance(pos1, pos2, Lbox):
+    hLbox = 0.5*Lbox
+    rds2 = 0
+    for x1, x2 in zip(pos1, pos2):
+        dst = np.abs(x1-x2)
+        dst = Lbox - dst if dst > hLbox else dst
+        rds2 += dst**2
+    dst = np.sqrt(rds2)
+    return dst
