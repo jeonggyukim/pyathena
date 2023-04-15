@@ -24,8 +24,13 @@ def save_tcoll_cores(s, overwrite=False):
     def _get_distance(ds, nd1, nd2):
         x, y, z = tools.get_coords_node(ds, nd1)
         x0, y0, z0 = tools.get_coords_node(ds, nd2)
-        rds = np.sqrt((x-x0)**2 + (y-y0)**2 + (z-z0)**2)
-        return rds
+        xdst, ydst, zdst = np.abs(x-x0), np.abs(y-y0), np.abs(z-z0)
+        # Wrap distance by applying periodic BC
+        xdst = s.Lbox - xdst if xdst > 0.5*s.Lbox else xdst
+        ydst = s.Lbox - ydst if ydst > 0.5*s.Lbox else ydst
+        zdst = s.Lbox - zdst if zdst > 0.5*s.Lbox else zdst
+        dst = np.sqrt(xdst**2 + ydst**2 + zdst**2)
+        return dst
 
     # Check if file exists
     ofname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
