@@ -18,6 +18,26 @@ import pickle
 # pythena modules
 from pyathena.core_formation import tools
 from grid_dendro import dendrogram
+from grid_dendro import energy
+
+def plot_energies(s, ds, leaves, core, ax=None, ylim=None):
+    if ax is not None:
+        plt.sca(ax)
+    prims = dict(rho=ds.dens.to_numpy(),
+                 vel1=(ds.mom1/ds.dens).to_numpy(),
+                 vel2=(ds.mom2/ds.dens).to_numpy(),
+                 vel3=(ds.mom3/ds.dens).to_numpy(),
+                 prs=s.cs**2*ds.dens.to_numpy(),
+                 phi=ds.phigas.to_numpy())
+    reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, core)
+    plt.plot(reff, engs['ethm'], label='thermal')
+    plt.plot(reff, engs['ekin'], label='kinetic')
+    plt.plot(reff, engs['egrv'], label='gravitational')
+    plt.plot(reff, engs['etot'], label='total')
+    plt.axhline(0, linestyle=':')
+    if ylim is not None:
+        plt.ylim(ylim)
+    plt.legend(loc='lower left')
 
 def plot_central_density_evolution(s, ax=None):
     rho_crit_KM05 = tools.get_rhocrit_KM05(s.sonic_length)
@@ -40,7 +60,7 @@ def plot_central_density_evolution(s, ax=None):
     plt.xlabel(r'$t/t_J$')
     plt.title(s.basename)
 
-def plot_tcoll_cores(s, pid, num, hw=0.25):
+def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
     # Load the progenitor GRID-core of this particle.
     if num > s.nums_tcoll[pid]:
         raise ValueError("num must be smaller than num_tcoll")
@@ -64,8 +84,8 @@ def plot_tcoll_cores(s, pid, num, hw=0.25):
         rprf = tools.calculate_radial_profiles(ds, (xc, yc, zc), 2*hw)
 
     # create figure
-    fig = plt.figure(figsize=(28, 21))
-    gs = gridspec.GridSpec(3, 4, wspace=0.2, hspace=0.15)
+    fig = plt.figure(figsize=(35, 21))
+    gs = gridspec.GridSpec(3, 5, wspace=0.2, hspace=0.15)
 
     xaxis = dict(z='x', x='y', y='z')
     yaxis = dict(z='y', x='z', y='x')
@@ -169,6 +189,10 @@ def plot_tcoll_cores(s, pid, num, hw=0.25):
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\sigma/c_s$')
     plt.legend()
+
+    # 5. energies
+    plt.sca(fig.add_subplot(gs[0,4]))
+    plot_energies(s, ds, leaves, core, ylim=(kwargs['emin'], kwargs['emax']))
 
     return fig
 

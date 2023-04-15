@@ -17,6 +17,7 @@ from pyathena.core_formation import tools
 from pyathena.core_formation import config
 from pyathena.util import uniform
 from grid_dendro import dendrogram
+from grid_dendro import energy
 
 
 def save_tcoll_cores(s, overwrite=False):
@@ -251,13 +252,26 @@ def make_plots_tcoll_cores(s, overwrite=False):
         s: pyathena.LoadSim instance
     """
     for pid in s.pids:
+        num = s.nums_tcoll[pid]
+        ds = s.load_hdf5(num, load_method='pyathena')
+        leaves = s.load_leaves(num)
+        core = s.tcoll_cores[pid][num]
+        prims = dict(rho=ds.dens.to_numpy(),
+             vel1=(ds.mom1/ds.dens).to_numpy(),
+             vel2=(ds.mom2/ds.dens).to_numpy(),
+             vel3=(ds.mom3/ds.dens).to_numpy(),
+             prs=s.cs**2*ds.dens.to_numpy(),
+             phi=ds.phigas.to_numpy())
+        _, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, core)
+        emax = np.ceil(max(engs['ekin'].max(), engs['ethm'].max()) * 10) / 10
+        emin = np.floor(engs['egrv'].min() * 10) / 10
         for num in s.tcoll_cores[pid]:
             fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
                 config.PLOT_PREFIX_TCOLL_CORES, pid, num))
             fname.parent.mkdir(exist_ok=True)
             if fname.exists() and not overwrite:
                 continue
-            fig = plots.plot_tcoll_cores(s, pid, num)
+            fig = plots.plot_tcoll_cores(s, pid, num, emin=emin, emax=emax)
             fig.savefig(fname, bbox_inches='tight', dpi=200)
             plt.close(fig)
 
@@ -341,6 +355,6 @@ def make_plots_central_density_evolution(s, overwrite=False):
     fname = Path(s.basedir, 'figures', "{}.png".format(config.PLOT_PREFIX_RHOC_EVOLUTION))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
-        continue
+        return
     plots.plot_central_density_evolution(s)
     plt.savefig(fname, bbox_inches='tight')
