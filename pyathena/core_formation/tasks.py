@@ -262,16 +262,17 @@ def make_plots_tcoll_cores(s, overwrite=False):
              vel3=(ds.mom3/ds.dens).to_numpy(),
              prs=s.cs**2*ds.dens.to_numpy(),
              phi=ds.phigas.to_numpy())
-        _, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, core)
-        emax = np.ceil(max(engs['ekin'].max(), engs['ethm'].max()) * 10) / 10
-        emin = np.floor(engs['egrv'].min() * 10) / 10
+        reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, core)
+        emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
+        emin = tools.rounddown(engs['egrv'].min(), 1)
+        rmax = tools.roundup(reff.max(), 2)
         for num in s.tcoll_cores[pid]:
             fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
                 config.PLOT_PREFIX_TCOLL_CORES, pid, num))
             fname.parent.mkdir(exist_ok=True)
             if fname.exists() and not overwrite:
                 continue
-            fig = plots.plot_tcoll_cores(s, pid, num, emin=emin, emax=emax)
+            fig = plots.plot_tcoll_cores(s, pid, num, emin=emin, emax=emax, rmax=rmax)
             fig.savefig(fname, bbox_inches='tight', dpi=200)
             plt.close(fig)
 

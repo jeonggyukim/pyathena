@@ -360,3 +360,9 @@ def get_rhocrit_KM05(lmb_sonic):
     phi_x = 1.12
     rho_crit = (phi_x/lmb_sonic)**2
     return rho_crit
+
+def roundup(a, decimal):
+    return np.ceil(a*10**decimal) / 10**decimal
+
+def rounddown(a, decimal):
+    return np.floor(a*10**decimal) / 10**decimal

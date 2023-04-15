@@ -20,7 +20,7 @@ from pyathena.core_formation import tools
 from grid_dendro import dendrogram
 from grid_dendro import energy
 
-def plot_energies(s, ds, leaves, core, ax=None, ylim=None):
+def plot_energies(s, ds, leaves, core, ax=None):
     if ax is not None:
         plt.sca(ax)
     prims = dict(rho=ds.dens.to_numpy(),
@@ -35,8 +35,6 @@ def plot_energies(s, ds, leaves, core, ax=None, ylim=None):
     plt.plot(reff, engs['egrv'], label='gravitational')
     plt.plot(reff, engs['etot'], label='total')
     plt.axhline(0, linestyle=':')
-    if ylim is not None:
-        plt.ylim(ylim)
     plt.legend(loc='lower left')
 
 def plot_central_density_evolution(s, ax=None):
@@ -192,7 +190,11 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
 
     # 5. energies
     plt.sca(fig.add_subplot(gs[0,4]))
-    plot_energies(s, ds, leaves, core, ylim=(kwargs['emin'], kwargs['emax']))
+    plot_energies(s, ds, leaves, core)
+    if kwargs['emin'] is not None and kwargs['emax'] is not None:
+        plt.ylim(kwargs['emin'], kwargs['emax'])
+    if kwargs['rmax'] is not None:
+        plt.xlim(0, rmax)
 
     return fig
 
