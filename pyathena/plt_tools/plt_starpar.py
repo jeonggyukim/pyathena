@@ -110,8 +110,10 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
                 spy = spy/1.e3
             if kind == 'slc':
                 xbool = abs(spz) < dist_max
-
-            spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
+            if norm_factor < 0:
+                spm = sp_cl['mass']/sp_cl['mass']*(-norm_factor)
+            else:
+                spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
             spa = sp_cl['age']*Myr
             if plt_old:
                 iyoung = np.where(spa < 1e10)
@@ -128,6 +130,9 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
                            s=spm.iloc[islab], c=spa.iloc[islab],
                            marker=marker, edgecolors=edgecolors, linewidths=linewidths,
                            vmin=0, vmax=agemax, cmap=cmap, alpha=alpha)
+                if norm_factor<0:
+                    logm = np.log10(sp_cl['mass'].iloc[islab]*Msun)
+                    print(logm.mean(),logm.std())
             else:
                 ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung],
                         s=spm.iloc[iyoung], c=spa.iloc[iyoung],
