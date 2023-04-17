@@ -74,14 +74,13 @@ def save_tcoll_cores(s, overwrite=False):
             Vcore = ((rho>0).sum()*s.dV).data[()]
             Rcore = (3*Vcore/(4*np.pi))**(1./3.)
 
-            # Relative error in position, normalized to previous core.
-            # Note that "previous" means later time, because we are
-            # tracing backward in time from the t=t_coll.
-            fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox) / Rcore_old
-
-            # Relative errors in mass and radius, normalized to previous core.
-            fmass = np.abs(Mcore - Mcore_old) / Mcore_old
-            frds = np.abs(Rcore - Rcore_old) / Rcore_old
+            # Relative errors in position, mass, and radius.
+            # Note that the normalization is the maximum of current or previous core;
+            # This is to account for situation where a bud is suddenly merged leading to
+            # sudden change in the core radius and mass.
+            fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox) / max(Rcore, Rcore_old)
+            fmass = np.abs(Mcore - Mcore_old) / max(Mcore, Mcore_old)
+            frds = np.abs(Rcore - Rcore_old) / max(Rcore, Rcore_old)
 
             # If relative errors are more than 100%, this core is unlikely the
             # same core at previous timestep. Stop backtracing.

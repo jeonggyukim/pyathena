@@ -194,7 +194,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
     if kwargs['emin'] is not None and kwargs['emax'] is not None:
         plt.ylim(kwargs['emin'], kwargs['emax'])
     if kwargs['rmax'] is not None:
-        plt.xlim(0, rmax)
+        plt.xlim(0, kwargs['rmax'])
 
     return fig
 

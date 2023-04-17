@@ -76,6 +76,7 @@ def calculate_radial_profiles(ds, origin, rmax):
 
 
 def find_tcoll_core(s, pid):
+    """Find the GRID-dendro ID of the t_coll core of particle pid"""
     # load GRID-dendro leaves at t = t_coll
     num = s.nums_tcoll[pid]
     leaves = s.load_leaves(num)
