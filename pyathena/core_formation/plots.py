@@ -58,7 +58,7 @@ def plot_central_density_evolution(s, ax=None):
     plt.xlabel(r'$t/t_J$')
     plt.title(s.basename)
 
-def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
+def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Load the progenitor GRID-core of this particle.
     if num > s.nums_tcoll[pid]:
         raise ValueError("num must be smaller than num_tcoll")
@@ -67,21 +67,16 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
     # Load hdf5 snapshot at t = t_coll
     ds = s.load_hdf5(num, load_method='pyathena')
 
-    # load leaf dict at t = t_coll
+    # Load leaf dict at t = t_coll
     leaves = s.load_leaves(num)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(ds, core)
 
     # Calculate radial profile
-    fname = Path(s.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
-    if fname.exists():
-        with open(fname, 'rb') as handle:
-            rprf = pickle.load(handle).sel(t=ds.Time, method='nearest')
-    else:
-        rprf = tools.calculate_radial_profiles(ds, (xc, yc, zc), 2*hw)
+    rprf = s.rprofs[pid].sel(t=ds.Time, method='nearest')
 
-    # create figure
+    # Create figure
     fig = plt.figure(figsize=(35, 21))
     gs = gridspec.GridSpec(3, 5, wspace=0.2, hspace=0.15)
 
@@ -101,7 +96,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
     ylabel = dict(z=r'$y$', x=r'$z$', y=r'$x$')
 
     for i, prj_axis in enumerate(['z','x','y']):
-        # 1. projections
+        # 1. Projections
         plt.sca(fig.add_subplot(gs[i,0]))
         img = plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
         rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]), 2*hw, 2*hw, fill=False, ec='r')
@@ -109,7 +104,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
         plt.xlabel(xlabel[prj_axis])
         plt.ylabel(ylabel[prj_axis])
 
-        # 2. zoom-in projections
+        # 2. Zoom-in projections
         d, _ = tools.recenter_dataset(ds, (xc, yc, zc))
         d = d.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
         plt.sca(fig.add_subplot(gs[i,1]))
@@ -119,8 +114,8 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
         plt.xlabel(xlabel[prj_axis])
         plt.ylabel(ylabel[prj_axis])
 
-        # 3. zoom-in projections for individual core
-        # load selected core
+        # 3. Zoom-in projections for individual core
+        # Load selected core
         rho_ = dendrogram.filter_by_node(ds.dens, leaves, core, fill_value=0)
         Mcore = (rho_*s.dV).sum().data[()]
         Vcore = ((rho_>0).sum()*s.dV).data[()]
@@ -129,14 +124,14 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
         ds_core, _ = tools.recenter_dataset(ds_core, (xc, yc, zc))
         ds_core = ds_core.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
 
-        # load other cores
+        # Load other cores
         other_cores = {k: v for k, v in leaves.items() if k != core}
         rho_ = dendrogram.filter_by_node(ds.dens, other_cores, fill_value=0)
         ds_others = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_others, _ = tools.recenter_dataset(ds_others, (xc, yc, zc))
         ds_others = ds_others.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
 
-        # plot
+        # Plot
         plt.sca(fig.add_subplot(gs[i,2]))
         plot_projection(s, ds_others, axis=prj_axis, add_colorbar=False, alpha=0.5, cmap='Greys')
         plot_projection(s, ds_core, axis=prj_axis, add_colorbar=False)
@@ -145,8 +140,8 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
         plt.xlabel(xlabel[prj_axis])
         plt.ylabel(ylabel[prj_axis])
 
-    # 4. radial profiles
-    # density
+    # 4. Radial profiles
+    # Density
     plt.sca(fig.add_subplot(gs[0,3]))
     plt.loglog(rprf.r, rprf.rho, 'k-+')
     rhoLP = s.get_rhoLP(rprf.r)
@@ -156,14 +151,14 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
     plt.ylim(1e0, rhoLP[0])
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\rho/\rho_0$')
-    # annotations
+    # Annotations
     plt.text(0.5, 0.9, r'$t = {:.2f}$'.format(ds.Time)+r'$\,t_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.8, r'$M = {:.2f}$'.format(Mcore)+r'$\,M_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(Rcore)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    # velocity
+    # Velocities
     plt.sca(fig.add_subplot(gs[1,3]))
     plt.semilogx(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
     plt.semilogx(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
@@ -174,11 +169,11 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$v/c_s$')
     plt.legend()
-    # velocity dispersion
+    # Velocity dispersions
     plt.sca(fig.add_subplot(gs[2,3]))
-    plt.loglog(rprf.r, rprf.vel1_std, marker='+', label=r'$\sigma_r$')
-    plt.loglog(rprf.r, rprf.vel2_std, marker='+', label=r'$\sigma_\theta$')
-    plt.loglog(rprf.r, rprf.vel3_std, marker='+', label=r'$\sigma_\phi$')
+    plt.loglog(rprf.r, np.sqrt(rprf.vel1_sq), marker='+', label=r'$\sigma_r$')
+    plt.loglog(rprf.r, np.sqrt(rprf.vel2_sq), marker='+', label=r'$\sigma_\theta$')
+    plt.loglog(rprf.r, np.sqrt(rprf.vel3_sq), marker='+', label=r'$\sigma_\phi$')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**0.5, 'k--')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
     plt.axvline(Rcore, ls=':', c='k')
@@ -188,13 +183,13 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, **kwargs):
     plt.ylabel(r'$\sigma/c_s$')
     plt.legend()
 
-    # 5. energies
+    # 5. Energies
     plt.sca(fig.add_subplot(gs[0,4]))
     plot_energies(s, ds, leaves, core)
-    if kwargs['emin'] is not None and kwargs['emax'] is not None:
-        plt.ylim(kwargs['emin'], kwargs['emax'])
-    if kwargs['rmax'] is not None:
-        plt.xlim(0, kwargs['rmax'])
+    if emin is not None and emax is not None:
+        plt.ylim(emin, emax)
+    if rmax is not None:
+        plt.xlim(0, rmax)
 
     return fig
 
