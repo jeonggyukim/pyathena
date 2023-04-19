@@ -15,7 +15,7 @@ from pyathena.core_formation import tools
 class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
     """LoadSim class for analyzing core collapse simulations."""
 
-    def __init__(self, basedir_or_Mach=None, savdir=None, load_method='yt', verbose=False):
+    def __init__(self, basedir_or_Mach=None, savdir=None, load_method='pyathena', verbose=False):
         """The constructor for LoadSimCoreFormation class
 
         Parameters
@@ -27,7 +27,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
         load_method : str
-            Load hdf5 using 'pyathena' or 'yt'. Default value is 'yt'.
+            Load hdf5 using 'pyathena' or 'yt'. Default value is 'pyathena'.
         verbose : bool or str or int
             Print verbose messages using logger. If True/False, set logger
             level to 'DEBUG'/'WARNING'. If string, it should be one of the string
