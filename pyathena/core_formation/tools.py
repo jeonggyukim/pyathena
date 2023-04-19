@@ -44,7 +44,7 @@ class LognormalPDF:
 
 
 def calculate_radial_profiles(ds, origin, rmax):
-    """Calculates radial density velocity profiles at the selected position
+    """Calculates radial profiles of various properties at the selected position
 
     Args:
         ds: xarray.Dataset instance containing conserved variables.
@@ -52,25 +52,39 @@ def calculate_radial_profiles(ds, origin, rmax):
         rmax: maximum radius to bin.
 
     Returns:
-        rprof: xarray.Dataset instance containing angular-averaged radial profiles of
-               density, velocities, and velocity dispersions.
+        rprof: xarray.Dataset instance containing angle-averaged radial profiles
+          vel1, vel2, vel3: density-weighted mean velocities (v_r, v_theta, v_phi).
+          vel1_sq, vel2_sq, vel3_sq: density-weighted mean squared velocities.
+          ggas1, ggas2, ggas3: density-weighted mean gravity due to gas.
+          gstar1, gstar2, gstar3: density-weighted mean gravity due to stars.
     """
     # Convert density and velocities to spherical coord.
-    vel = {}
+    ds['phistar'] = ds['phi'] - ds['phigas']
+    vel, ggas, gstar = {}, {}, {}
     for dim, axis in zip(['x','y','z'], [1,2,3]):
         vel_ = ds['mom{}'.format(axis)]/ds.dens
         vel[dim] = vel_ - vel_.sel(x=origin[0], y=origin[1], z=origin[2])
+        ggas[dim] = -ds['phigas'].differentiate(dim)
+        gstar[dim] = -ds['phistar'].differentiate(dim)
+
     ds_sph = {}
     r, (ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3']) = transform.to_spherical(vel.values(), origin)
+    _, (ds_sph['ggas1'], ds_sph['ggas2'], ds_sph['ggas3']) = transform.to_spherical(ggas.values(), origin)
+    _, (ds_sph['gstar1'], ds_sph['gstar2'], ds_sph['gstar3']) = transform.to_spherical(gstar.values(), origin)
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
 
     # Radial binning
     edges = np.insert(np.arange(ds.dx1/2, rmax, ds.dx1), 0, 0)
     rprf = {}
-    for key, value in ds_sph.items():
-        rprf[key] = transform.groupby_bins(value, 'r', edges)
-    for key in ('vel1', 'vel2', 'vel3'):
-        rprf[key+'_std'] = np.sqrt(transform.groupby_bins(ds_sph[key]**2, 'r', edges))
+    rprf['rho'] = transform.groupby_bins(ds_sph['rho'], 'r', edges)
+    for axis in [1,2,3]:
+        k = f'vel{axis}'
+        rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
+        rprf[k+'_sq'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k]**2, 'r', edges) / rprf['rho']
+        k = f'ggas{axis}'
+        rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
+        k = f'gstar{axis}'
+        rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
     rprf = xr.Dataset(rprf)
     return rprf
 
