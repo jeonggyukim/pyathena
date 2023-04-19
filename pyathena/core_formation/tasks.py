@@ -328,6 +328,7 @@ def make_plots_projections(s, overwrite=False):
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         ax.cla()
         cax.cla()
+    plt.close(fig)
 
 
 def make_plots_PDF_Pspec(s, overwrite=False):
@@ -354,6 +355,7 @@ def make_plots_PDF_Pspec(s, overwrite=False):
         for ax in axs:
             ax.cla()
         ax1_twiny.cla()
+    plt.close(fig)
 
 def make_plots_central_density_evolution(s, overwrite=False):
     """Creates plot showing central density evolution for each cores
@@ -369,3 +371,4 @@ def make_plots_central_density_evolution(s, overwrite=False):
         return
     plots.plot_central_density_evolution(s)
     plt.savefig(fname, bbox_inches='tight')
+    plt.close()
