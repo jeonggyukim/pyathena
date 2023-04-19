@@ -65,7 +65,7 @@ def calculate_radial_profiles(ds, origin, rmax):
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
 
     # Radial binning
-    edges = np.insert(np.arange(ds.dx/2, rmax, ds.dx), 0, 0)
+    edges = np.insert(np.arange(ds.dx1/2, rmax, ds.dx1), 0, 0)
     rprf = {}
     for key, value in ds_sph.items():
         rprf[key] = transform.groupby_bins(value, 'r', edges)
@@ -168,7 +168,7 @@ def calculate_cum_energies(ds, nodes, node, mode='HBR', boundary_flag='periodic'
                  prs=ds.prs.data.flatten()[cells],
                  phi=ds.phi.data.flatten()[cells])
     # Assume uniform grid
-    dV = ds.dx*ds.dy*ds.dz
+    dV = ds.dx1*ds.dx2*ds.dx3
     gm1 = (5./3. - 1)
     Ncells = len(cells)
 

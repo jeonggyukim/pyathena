@@ -250,12 +250,12 @@ def plot_projection(s, ds, field='dens', axis='z',
     if isinstance(ds, xr.Dataset):
         # Reset the domain information, for the case when
         # ds is a part of the whole domain.
-        xmin = ds.x[0] - 0.5*ds.dx
-        ymin = ds.y[0] - 0.5*ds.dy
-        zmin = ds.z[0] - 0.5*ds.dz
-        xmax = ds.x[-1] + 0.5*ds.dx
-        ymax = ds.y[-1] + 0.5*ds.dy
-        zmax = ds.z[-1] + 0.5*ds.dz
+        xmin = ds.x[0] - 0.5*s.dx
+        ymin = ds.y[0] - 0.5*s.dy
+        zmin = ds.z[0] - 0.5*s.dz
+        xmax = ds.x[-1] + 0.5*s.dx
+        ymax = ds.y[-1] + 0.5*s.dy
+        zmax = ds.z[-1] + 0.5*s.dz
         Lx = xmax - xmin
         Ly = ymax - ymin
         Lz = zmax - zmin
