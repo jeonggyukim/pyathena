@@ -152,7 +152,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\rho/\rho_0$')
     # Annotations
-    plt.text(0.5, 0.9, r'$t = {:.2f}$'.format(ds.Time)+r'$\,t_{J,0}$',
+    plt.text(0.5, 0.9, r'$t = {:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.8, r'$M = {:.2f}$'.format(Mcore)+r'$\,M_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
@@ -160,27 +160,28 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
     # Velocities
     plt.sca(fig.add_subplot(gs[1,3]))
-    plt.semilogx(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
-    plt.semilogx(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
-    plt.semilogx(rprf.r, rprf.vel3, marker='+', label=r'$v_\phi$')
+    plt.plot(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
+    plt.plot(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
+    plt.plot(rprf.r, rprf.vel3, marker='+', label=r'$v_\phi$')
     plt.axvline(Rcore, ls=':', c='k')
-    plt.xlim(rprf.r[0]/2, 2*hw)
-    plt.ylim(-3, 3)
+    plt.axhline(0, ls=':')
+    plt.xlim(0, hw)
+    plt.ylim(-2.5, 1.5)
     plt.xlabel(r'$r/L_{J,0}$')
-    plt.ylabel(r'$v/c_s$')
+    plt.ylabel(r'$\left<v\right>/c_s$')
     plt.legend()
     # Velocity dispersions
     plt.sca(fig.add_subplot(gs[2,3]))
-    plt.loglog(rprf.r, np.sqrt(rprf.vel1_sq), marker='+', label=r'$\sigma_r$')
-    plt.loglog(rprf.r, np.sqrt(rprf.vel2_sq), marker='+', label=r'$\sigma_\theta$')
-    plt.loglog(rprf.r, np.sqrt(rprf.vel3_sq), marker='+', label=r'$\sigma_\phi$')
+    plt.loglog(rprf.r, np.sqrt(rprf.vel1_sq), marker='+', label=r'$v_r$')
+    plt.loglog(rprf.r, np.sqrt(rprf.vel2_sq), marker='+', label=r'$v_\theta$')
+    plt.loglog(rprf.r, np.sqrt(rprf.vel3_sq), marker='+', label=r'$v_\phi$')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**0.5, 'k--')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
     plt.axvline(Rcore, ls=':', c='k')
-    plt.xlim(rprf.r[0]/2, 2*hw)
-    plt.ylim(2e-1, 2e1)
+    plt.xlim(rprf.r[0], 2*hw)
+    plt.ylim(1e-1, 1e1)
     plt.xlabel(r'$r/L_{J,0}$')
-    plt.ylabel(r'$\sigma/c_s$')
+    plt.ylabel(r'$\left<v^2\right>^{1/2}/c_s$')
     plt.legend()
 
     # 5. Energies
@@ -191,8 +192,61 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     if rmax is not None:
         plt.xlim(0, rmax)
 
+    # 6. Accelerations
+    plt.sca(fig.add_subplot(gs[1,4]))
+    plot_forces(s, rprf)
+    plt.title('')
+    plt.axvline(Rcore, ls=':', c='k')
+    plt.xlim(0, hw)
+    plt.legend(fontsize=15)
+
     return fig
 
+
+def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50), ylabel='acceleration'):
+    peff = rprf.rho*(rprf.vel1_sq + s.cs**2)
+    stress = rprf.rho*(-2*rprf.vel1_sq + rprf.vel2_sq + rprf.vel3_sq)
+
+    if ax is not None:
+        plt.sca(ax)
+
+    if cumulative:
+        istart = 2
+        slicer = slice(istart, rprf.dims['r'])
+
+        column_density = rprf.rho.isel(r=slicer).cumulative_integrate('r')
+        f_p = (peff - peff.isel(r=istart)) / column_density
+        f_geo = (stress/rprf.r).isel(r=slicer).cumulative_integrate('r') / column_density
+        f_g = (rprf.rho*rprf.ggas1).isel(r=slicer).cumulative_integrate('r') / column_density
+        fnet = f_g - f_p - f_geo
+
+        f_p.plot(marker='+', label='pressure')
+        (f_p + f_geo).plot(marker='o', label='pressure + geometric')
+        f_g.plot(marker='x', label='gravity')
+        fnet.plot(marker='+', label='net radial force')
+
+        plt.axhline(0, linestyle=':')
+        plt.ylabel(ylabel)
+        plt.xlim(xlim)
+        plt.ylim(ylim)
+    else:
+        f_pthm = -rprf.grad_pthm1 / rprf.rho
+        f_ptrb = -rprf.grad_ptrb1 / rprf.rho
+        f_geo = stress / rprf.r / rprf.rho
+        f_grav = rprf.ggas1
+        f_net = f_grav + f_pthm + f_ptrb + f_geo
+
+        f_pthm.plot(lw=1, color='orange', label=r'$-\partial_r P_\mathrm{thm}$')
+        f_ptrb.plot(lw=1, color='deepskyblue', label=r'$-\partial_r P_\mathrm{trb}$')
+        f_geo.plot(lw=1, color='limegreen', label=r'$f_\mathrm{geo}$')
+        (f_pthm + f_ptrb + f_geo).plot(marker='+', color='blue', lw=1, label='total')
+        (-f_grav).plot(marker='x', ls='--', color='red', lw=1, label='gravity')
+        (-f_net).plot(marker='*', color='k', lw=1, label='net inward force')
+
+        plt.axhline(0, linestyle=':')
+        plt.ylabel(ylabel)
+        plt.xlim(xlim)
+        plt.ylim(ylim)
 
 def plot_sinkhistory(s, ds, pds):
     # find end time
