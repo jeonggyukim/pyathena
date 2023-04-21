@@ -43,10 +43,11 @@ class LognormalPDF:
         return np.exp(x)
 
 
-def calculate_radial_profiles(ds, origin, rmax):
+def calculate_radial_profiles(s, ds, origin, rmax):
     """Calculates radial profiles of various properties at the selected position
 
     Args:
+        s: LoadSimCoreFormation instance containing simulation metadata.
         ds: xarray.Dataset instance containing conserved variables.
         origin: tuple-like (x0, y0, z0) representing the origin of the spherical coords.
         rmax: maximum radius to bin.
@@ -60,18 +61,27 @@ def calculate_radial_profiles(ds, origin, rmax):
     """
     # Convert density and velocities to spherical coord.
     ds['phistar'] = ds['phi'] - ds['phigas']
-    vel, ggas, gstar = {}, {}, {}
+    vel, ggas, gstar, grad_pthm, grad_ptrb = {}, {}, {}, {}, {}
     for dim, axis in zip(['x','y','z'], [1,2,3]):
+        # Recenter velocity and calculate gravitational acceleration
         vel_ = ds['mom{}'.format(axis)]/ds.dens
         vel[dim] = vel_ - vel_.sel(x=origin[0], y=origin[1], z=origin[2])
         ggas[dim] = -ds['phigas'].differentiate(dim)
         gstar[dim] = -ds['phistar'].differentiate(dim)
-
     ds_sph = {}
     r, (ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3']) = transform.to_spherical(vel.values(), origin)
     _, (ds_sph['ggas1'], ds_sph['ggas2'], ds_sph['ggas3']) = transform.to_spherical(ggas.values(), origin)
     _, (ds_sph['gstar1'], ds_sph['gstar2'], ds_sph['gstar3']) = transform.to_spherical(gstar.values(), origin)
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
+
+    # Calculate pressure gradient forces and transform to spherical coord.
+    pthm = ds.dens*s.cs**2
+    ptrb = ds.dens*ds_sph['vel1']**2
+    for dim in ['x','y','z']:
+        grad_pthm[dim] = -pthm.differentiate(dim)
+        grad_ptrb[dim] = -ptrb.differentiate(dim)
+    _, (ds_sph['grad_pthm1'], ds_sph['grad_pthm2'], ds_sph['grad_pthm3']) = transform.to_spherical(grad_pthm.values(), origin)
+    _, (ds_sph['grad_ptrb1'], ds_sph['grad_ptrb2'], ds_sph['grad_ptrb3']) = transform.to_spherical(grad_ptrb.values(), origin)
 
     # Radial binning
     edges = np.insert(np.arange(ds.dx1/2, rmax, ds.dx1), 0, 0)
@@ -85,6 +95,10 @@ def calculate_radial_profiles(ds, origin, rmax):
         rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
         k = f'gstar{axis}'
         rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
+        k = f'grad_pthm{axis}'
+        rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
+        k = f'grad_ptrb{axis}'
+        rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
     rprf = xr.Dataset(rprf)
     return rprf
 

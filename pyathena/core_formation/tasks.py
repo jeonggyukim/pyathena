@@ -123,7 +123,7 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
 
             # Calculate radial profile
             time.append(ds.Time)
-            rprf.append(tools.calculate_radial_profiles(ds, center, rmax))
+            rprf.append(tools.calculate_radial_profiles(s, ds, center, rmax))
 
         # Concatenate in time.
         rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
