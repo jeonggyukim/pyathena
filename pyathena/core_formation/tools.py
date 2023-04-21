@@ -73,32 +73,31 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     _, (ds_sph['ggas1'], ds_sph['ggas2'], ds_sph['ggas3']) = transform.to_spherical(ggas.values(), origin)
     _, (ds_sph['gstar1'], ds_sph['gstar2'], ds_sph['gstar3']) = transform.to_spherical(gstar.values(), origin)
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
+    div_v = vel['x'].differentiate('x') + vel['y'].differentiate('y') + vel['z'].differentiate('z')
+    ds_sph['div_v'] = div_v.assign_coords(dict(r=r))
 
     # Calculate pressure gradient forces and transform to spherical coord.
     pthm = ds.dens*s.cs**2
     ptrb = ds.dens*ds_sph['vel1']**2
     for dim in ['x','y','z']:
-        grad_pthm[dim] = -pthm.differentiate(dim)
-        grad_ptrb[dim] = -ptrb.differentiate(dim)
+        grad_pthm[dim] = pthm.differentiate(dim)
+        grad_ptrb[dim] = ptrb.differentiate(dim)
     _, (ds_sph['grad_pthm1'], ds_sph['grad_pthm2'], ds_sph['grad_pthm3']) = transform.to_spherical(grad_pthm.values(), origin)
     _, (ds_sph['grad_ptrb1'], ds_sph['grad_ptrb2'], ds_sph['grad_ptrb3']) = transform.to_spherical(grad_ptrb.values(), origin)
 
     # Radial binning
     edges = np.insert(np.arange(ds.dx1/2, rmax, ds.dx1), 0, 0)
     rprf = {}
-    rprf['rho'] = transform.groupby_bins(ds_sph['rho'], 'r', edges)
-    for axis in [1,2,3]:
-        k = f'vel{axis}'
+
+    for k in ['grad_pthm1', 'grad_ptrb1', 'rho', 'div_v']:
+        rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
+    # We can use weighted groupby_bins, but let's do it like this to reuse
+    # rprf['rho'] for performance
+    for k in ['ggas1', 'gstar1', 'vel1', 'vel2', 'vel3']:
         rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
+    for k in ['vel1', 'vel2', 'vel3']:
         rprf[k+'_sq'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k]**2, 'r', edges) / rprf['rho']
-        k = f'ggas{axis}'
-        rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
-        k = f'gstar{axis}'
-        rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
-        k = f'grad_pthm{axis}'
-        rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
-        k = f'grad_ptrb{axis}'
-        rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
+
     rprf = xr.Dataset(rprf)
     return rprf
 
