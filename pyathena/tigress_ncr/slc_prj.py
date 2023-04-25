@@ -267,10 +267,11 @@ class SliceProj:
             slc_dset = slc_to_xarray(slc, axis)
         return slc_dset
 
-    def read_slc_time_series(self, num1, num2, nskip=1, fields='default', sfr=True):
+    def read_slc_time_series(self, num1, num2, nskip=1,
+      fields='default', axis="zall", sfr=True):
         slc_list = []
         for num in range(num1, num2, nskip):
-            slc = self.read_slc_xarray(num,fields=fields)
+            slc = self.read_slc_xarray(num,fields=fields,axis=axis)
             slc_list.append(slc)
         slc_dset = xr.concat(slc_list, dim="time")
         if sfr:
