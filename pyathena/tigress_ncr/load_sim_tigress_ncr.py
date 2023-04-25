@@ -418,6 +418,53 @@ class LoadSimTIGRESSNCR(
     def get_phase_T1list():
         return [500, 6000, 13000, 24000, 1.0e6]
 
+    def ytload(self,num):
+        import yt
+        self.yt = yt
+        self.u.units_override.update(dict(magnetic_unit=(self.u.muG*1.e-6,"gauss")))
+
+        # define fields from TIGRESS-NCR output
+        from yt.utilities.physical_constants import mh, me
+
+        muH = self.muH
+        Zsolar = 0.02
+
+        def _ndensity(field, data):
+            return data[("gas","density")]/(muH*mh)
+
+        def _nelectron(field, data):
+            return data[("gas","density")]*data[("athena","xe")]/(muH*mh)
+
+        def _temperature(field, data):
+            return data[("athena","temperature")]*yt.units.K
+
+        def _EM(field, data):
+            return data[("gas","H_nuclei_density")]*data[("gas","El_number_density")]*data[("gas","cell_volume")]
+
+        def _metallicity(field, data):
+            return data[("athena","specific_scalar[0]")]
+
+        def _metallicity_solar(field, data):
+            return data[("athena","specific_scalar[0]")]/Zsolar
+
+        fname = self._get_fvtk('vtk_tar',num=num)
+        ds = yt.load(fname,units_override=self.u.units_override,unit_system='cgs')
+
+        # add/override fields
+        ds.add_field(("gas","H_nuclei_density"),function=_ndensity, force_override=True,
+                     units='cm**(-3)',display_name=r'$n_{\rm H}$', sampling_type="cell")
+        ds.add_field(("gas","El_number_density"), function=_nelectron, force_override=True,
+                     units='cm**(-3)',display_name=r'$n_{\rm e}$', sampling_type="cell")
+        ds.add_field(("gas","temperature"), function=_temperature, force_override=True,
+                     units='K',display_name=r'$T$', sampling_type="cell")
+        ds.add_field(("gas","emission_measure"), function=_EM, force_override=True,
+                     units='cm**(-3)',display_name=r'EM', sampling_type="cell")
+        ds.add_field(("gas","metallicity"), function=_metallicity, force_override=True,
+                     units='dimensionless',display_name=r'Z', sampling_type="cell")
+        ds.add_field(("gas","metallicity_solar"), function=_metallicity_solar, force_override=True,
+                     units='dimensionless',display_name=r'$Z/Z_\odot$', sampling_type="cell")
+
+        return ds
 
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
