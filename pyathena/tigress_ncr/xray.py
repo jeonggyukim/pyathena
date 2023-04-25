@@ -318,7 +318,7 @@ class Xray(object):
         plt.ylim(1e-30,1.e-20)
 
     def do_all(self):
-        with plt.style.context({'figure.dpi':150,'font.size':10,'figure.figsize':(4,5)}):
+        with plt.style.context({'figure.dpi':150,'font.size':10,'figure.figsize':(4,3)}):
             fig = plt.figure()
             self.show_profile()
             fig.savefig(os.path.join(self.profdir,
