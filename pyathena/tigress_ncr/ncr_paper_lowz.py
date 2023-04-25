@@ -10,7 +10,7 @@ import os
 import cmasher as cmr
 import matplotlib.pyplot as plt
 
-from .phase import get_phcolor_dict
+from .phase import get_phcolor_dict,assign_phase
 from .ncr_papers import PaperData
 from ..plt_tools.utils import texteffect
 
@@ -57,6 +57,10 @@ class LowZData(PaperData):
                 head += '-S30'
             elif 'S150' in m:
                 head += '-S150'
+                if 'Om01' in m:
+                    head += '-Om01'
+                elif 'Om02' in m:
+                    head += '-Om02'
             elif 'S100' in m:
                 head += '-S100'
             elif 'S05' in m:
@@ -75,6 +79,7 @@ class LowZData(PaperData):
                 mgroup[head] = [m]
         mgroup['R8']=mgroup['R8-b1']
         mgroup['LGR4']=mgroup['LGR4-b1']
+        mgroup['LGR2-S150']=mgroup['LGR2-S150-Om01'] + mgroup['LGR2-S150-Om02']
 
         self.mgroup = mgroup
 
@@ -89,23 +94,23 @@ class LowZData(PaperData):
             s.torb_Myr = torb*s.u.Myr
             self.torb[m] = torb
             if 'S30' in m:
-                self.torb_code['S30'] = torb
-                self.torb_Myr['S30'] = torb*s.u.Myr
+                gkey = 'S30'
             elif 'S05' in m:
-                self.torb_code['S05'] = torb
-                self.torb_Myr['S05'] = torb*s.u.Myr
+                gkey = 'S05'
             elif 'S100' in m:
-                self.torb_code['S100'] = torb
-                self.torb_Myr['S100'] = torb*s.u.Myr
+                gkey = 'S100'
             elif 'S150' in m:
-                self.torb_code['S150'] = torb
-                self.torb_Myr['S150'] = torb*s.u.Myr
+                gkey = 'S150'
+                if 'Om01' in m:
+                    gkey += '-Om01'
+                elif 'Om02' in m:
+                    gkey += '-Om02'
             elif m.startswith('R8'):
-                self.torb_code['R8'] = torb
-                self.torb_Myr['R8'] = torb*s.u.Myr
+                gkey = 'R8'
             elif m.startswith('LGR4'):
-                self.torb_code['LGR4'] = torb
-                self.torb_Myr['LGR4'] = torb*s.u.Myr
+                gkey = 'LGR4'
+            self.torb_code[gkey] = torb
+            self.torb_Myr[gkey] = torb*s.u.Myr
 
 
     @staticmethod
@@ -125,6 +130,10 @@ class LowZData(PaperData):
             head = 'S30'
         elif 'S150' in s.basename:
             head = 'S150'
+            if 'Om01' in s.basename:
+                head += '-Om01'
+            elif 'Om02' in s.basename:
+                head += '-Om02'
         elif 'S100' in s.basename:
             head = 'S100'
         elif 'S05' in s.basename:
@@ -171,7 +180,7 @@ class LowZData(PaperData):
                  'LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR4.Zg0.1.Zd0.1.xy2048.eps1.e-8',
                  'LGR8_8pc_NCR_S05.full.b10.v3.iCR5.Zg1.Zd1.xy8192.eps0.0',
                  'LGR8_8pc_NCR_S05.full.b10.v3.iCR4.Zg0.1.Zd0.1.xy4096.eps0.0',
-                 'LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR5.Zg0.1.Zd0.1.xy2048.eps1.e-8'
+                #  'LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR5.Zg0.1.Zd0.1.xy2048.eps1.e-8'
         ]
         mlist = list(models)
         mlist_early = dict()
@@ -184,9 +193,15 @@ class LowZData(PaperData):
                         mlist_early[m]=m1
                     elif m1.replace('iCR4','iCR5') == mearly:
                         mlist_early[m]=m1
-        mlist_early['LGR4_4pc_NCR_S100.full.b1.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01'] = 'LGR4_4pc_NCR_S100.full.b1.v3.iCR4.Zg0.1.Zd0.1'
-        mlist_early['LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01'] = 'LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR4.Zg0.1.Zd0.1'
+        mlist_early['LGR4_4pc_NCR_S100.full.b1.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01'] = None
+        #'LGR4_4pc_NCR_S100.full.b1.v3.iCR4.Zg0.1.Zd0.1'
+        # mlist_early['LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01'] = None
+        #'LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR4.Zg0.1.Zd0.1'
         mlist_early['R8_8pc_NCR.full.b10.v3.iCR4.Zg1.Zd1.xy2048.eps0.0'] = 'R8_8pc_NCR.full.b10.v3'
+        mlist_early['LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8'] = None
+        mlist_early['LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01'] = None
+        # 'LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR4.Zg0.1.Zd0.1'
+        # mlist_early['LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8'] = 'LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR4.Zg0.1.Zd0.1'
         return models, mlist_early
 
     def _set_colors(self):
@@ -229,6 +244,8 @@ class LowZData(PaperData):
                     print("{} cannot find matching color".format(m))
                 if 'rstZ01' in m:
                     s.ls = ':'
+                elif 'Om01' in m:
+                    s.ls = '--'
                 else:
                     s.ls = ls
 
@@ -240,13 +257,16 @@ class LowZData(PaperData):
         else:
             print('list of mgroup:',list(self.mgroup.keys()))
         for m in mlist:
+            s = self.sa.set_model(m)
             mearly = self.mlist_early[m]
             try:
                 print("reading history:", m)
-                h = self.stitch_hsts(self.sa,mearly,m)
+                if mearly is None:
+                    h = s.read_hst()
+                else:
+                    h = self.stitch_hsts(self.sa,mearly,m)
             except:
                 print("history reading error: ",mearly,m)
-            s = self.sa.set_model(m)
             s.h = h
             s.h['tdep40'] = s.h['Sigma_gas']/s.h['sfr40']*1.e-3
 
@@ -258,7 +278,7 @@ class LowZData(PaperData):
             h = s.hst
         name = self.get_model_name(s)
         torb = 2*np.pi/s.par['problem']['Omega']*s.u.Myr
-        plt.plot(h['time']/torb,get_smoothed(h[y],h['time'],5),
+        plt.plot(h['time'],get_smoothed(h[y],h['time'],5),
                  label=name,lw=1,color=s.color,ls=s.ls)
 
     def collect_hst_list(self,y,tslice=None,group='R8-b10'):
@@ -276,9 +296,9 @@ class LowZData(PaperData):
             Zlist.append(s.Zdust)
         return namelist,hlist,Zlist
 
-    def collect_zpdata(self,m,trange=None,reduce=True,recal=False,
+    def collect_zpdata(self,m,trange=None,reduce=True,recal=False,silent=False,
                        func=np.mean,**func_kwargs):
-        zpmid,zpwmid = self.get_PW_time_series(m,recal=recal)
+        zpmid,zpwmid = self.get_PW_time_series(m,recal=recal,silent=silent)
         # if m in self.mlist_early:
         #     zpmid_early,zpwmid_early = self.get_PW_time_series(self.mlist_early[m],recal=recal)
         #     tmax = zpmid.time.min().data*0.999
@@ -295,6 +315,7 @@ class LowZData(PaperData):
                 trange = slice(s.torb_Myr*1.5,s.torb_Myr*5)
             else:
                 trange = slice(s.torb_Myr*2,s.torb_Myr*5)
+            print(m,s.torb_Myr,trange,zpmid.time.data.min(),zpmid.time.data.max())
 
         zpmid = zpmid.sel(time=trange)
         zpwmid = zpwmid.sel(time=trange)
@@ -356,14 +377,14 @@ class LowZData(PaperData):
             leg2 = plt.legend(custom_lines2,labels,loc=beta_loc,**kwargs)
             if main: plt.gca().add_artist(leg1)
 
-    def get_PW_time_series(self,m,dt=0,zrange=slice(-10,10),recal=False):
+    def get_PW_time_series(self,m,dt=0,zrange=slice(-10,10),recal=False,silent=False):
         s = self.sa.set_model(m)
 
         # test needs for recalculation
         zpfiles = [os.path.join(s.basedir,'zprof','{}.PWzprof.nc'.format(s.problem_id)),
                    os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id)),
                    os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))]
-        print("Getting P, W time series for {}".format(m))
+        if not silent: print("Getting P, W time series for {}".format(m))
 
         for f in zpfiles:
             isexist = os.path.isfile(f)
@@ -371,17 +392,17 @@ class LowZData(PaperData):
                 isold = os.path.getmtime(f) < os.path.getmtime(s.files['zprof'][-1])
                 recal = recal | isold
                 if isold:
-                    print("  -- {} is old".format(f))
+                    if not silent: print("  -- {} is old".format(f))
                     break
             else:
-                print("  -- {} is not available".format(f))
+                if not silent: print("  -- {} is not available".format(f))
                 recal = recal | (~isexist)
                 break
 
         if not recal:
-            print("  -- read from files")
+            if not silent: print("  -- read from files")
         else:
-            print("  -- recalculate from zprof")
+            if not silent: print("  -- recalculate from zprof")
 
         zprof = get_PW_zprof(s, recal=recal)
         zpmid, zpwmid = get_PW_time_series_from_zprof(s,zprof,dt=dt,zrange=zrange,recal=recal)
@@ -1038,6 +1059,13 @@ class athena_data(object):
     def __init__(self,s,data):
         self.sim = s
         self.data = data
+        self.time = data.time
+        if s.par['configure']['ShearingBox'] == 'yes':
+            self.shear = True
+            self.qshear = s.par['problem']['qshear']
+            self.Omega = s.par['problem']['Omega']
+            self.Lx = (s.par['domain1']['x1max']-s.par['domain1']['x1min'])
+            self.qOmL = self.qshear*self.Omega*self.Lx
     def __repr__(self):
         return self.data.__repr__()
     def keys(self):
@@ -1061,7 +1089,85 @@ class athena_data(object):
             return eps
         elif field == 'heat_PE':
             return 1.7e-26 * self['chi_PE'] * self.sim.Zdust * self['eps_PE']
+        elif field == 'phase':
+            self.data[field] = assign_phase(self.sim,self,kind='six')
+            return self.data[field]
         else:
             raise KeyError("{} is not available".format(field))
     def __setitem__(self,field,value):
         self.data[field]=value
+
+    def recenter(self,fields=None,x0=0,y0=0,z0=0):
+        self.recentered = True
+        self.x0 = x0
+        self.y0 = y0
+        self.z0 = z0
+
+        if fields is None:
+            fields = self.keys()
+        for k in fields:
+            d = self.data[k]
+            if self.shear:
+                d = shear_periodic_roll(d,xshift=-x0,yshift=-y0,zshift=-z0,
+                                        qOmL=self.qOmL,time=self.time,
+                                        vy=k in ['velocity2','vy'])
+            else:
+                d = periodic_roll(d,xshift=-x0,yshift=-y0,zshift=-z0)
+            self.data[k]=d
+
+    def roll(self,xshift=0,yshift=0,zshift=0):
+        self.recenter(x0=-xshift,y0=-yshift,z0=-zshift)
+
+from scipy.ndimage import shift
+def periodic_roll(data,xshift=0,yshift=0,zshift=0):
+    ndim = len(data.dims)
+    dx = float(data.x[1]-data.x[0])
+    dy = float(data.y[1]-data.y[0])
+    if ndim == 2:
+        newdata=shift(data,(yshift/dy,xshift/dx),mode='grid-wrap',order=1)
+    elif ndim == 3:
+        dz = float(data.z[1]-data.z[0])
+        newdata=shift(data,(0,yshift/dy,xshift/dx),mode='grid-wrap',order=1)
+        newdata = shift(newdata,(zshift/dz,0,0),mode='constant',cval=0)
+    return xr.DataArray(newdata,data.coords,data.dims,name=data.name)
+
+def shear_periodic_roll(data,xshift=0,yshift=0,zshift=0,
+                        qOmL=0,time=0,vy=False):
+    ndim = len(data.dims)
+    dx = float(data.x[1]-data.x[0])
+    dy = float(data.y[1]-data.y[0])
+    if ndim == 3:
+        dz = float(data.z[1]-data.z[0])
+
+    ishift = int(xshift/dx)
+    iresidual = xshift/dx - ishift
+
+    data_shifted=np.zeros_like(data.data)
+    shape=data.shape
+    Nx = data.shape[-1]
+    Ny = data.shape[-2]
+
+    isign = ishift/abs(ishift) if ishift != 0 else 1
+    qOmLt = qOmL*time
+    vyshear = qOmL*isign if vy else 0
+
+    if ndim == 2:
+        yshear = (qOmLt/dy*isign,0)
+    elif ndim == 3:
+        yshear = (0,qOmLt/dy*isign,0)
+    imin = max(0,abs(ishift))
+    imax = min(Nx,Nx-abs(ishift))
+    if ishift > 0:
+        data_shifted[...,imin:] = data[...,:imax]
+        data_shifted[...,:imin] = shift(data[...,imax:] + vyshear,yshear,
+                                        mode='grid-wrap',order=1)
+    else:
+        data_shifted[...,:imax] = data[...,imin:]
+        data_shifted[...,imax:] = shift(data[...,:imin] + vyshear,yshear,
+                                        mode='grid-wrap',order=1)
+    if ndim == 2:
+        data_shifted = shift(data_shifted,(yshift/dy,0),mode='grid-wrap',order=1)
+    elif ndim == 3:
+        data_shifted = shift(data_shifted,(zshift/dz,yshift/dy,0),mode='grid-wrap',order=1)
+
+    return xr.DataArray(data_shifted,data.coords,data.dims,name=data.name)
