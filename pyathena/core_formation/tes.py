@@ -13,10 +13,18 @@ class TES:
       xi_s: the sonic radius
     Given these two parameters, the equilibrium profile is obtained by solving
     a hydrostatic equation in the following dimensionless variables:
+
+    case 1:
         xi = r / L_{J,e}, where L_{J,e} the Jeans length at the edge density rho_e.
         u = ln(rho/rho_e)
-    Turbulent pressure is taken into account:
-        \delta v = c_s (r / lambda)^p = c_s (xi / xi_s)^p
+
+    case 2:
+        xi = 2 \pi r / L_{J,c}, where L_{J,c} the Jeans length at rho_c
+        u = -ln(rho/rho_c)
+
+    Assume the density-weighted, angle-averaged radial velocity square has a
+    power-law dependence on the radius:
+        <v_r^2> = c_s^2 (r / r_s)^{2p} = c_s^2 (xi / xi_s)^{2p}
     where xi_s = np.inf corresponds to the usual Bonner-Ebert sphere.
     """
     def __init__(self, p=0.5, xi_s=np.inf):
@@ -24,23 +32,6 @@ class TES:
         self.xi_s = xi_s
         self.xi_min = 1e-5
         self.xi_max = 10
-
-    def dydx(self, y, x):
-        """Hydrostatic equilibrium equation
-
-        Parameters
-        ----------
-        y : array_like
-            vector of dependent variables
-        x : independent variable
-        """
-        y1, y2 = y
-        dy1 = y2
-        f = 1 + (x/self.xi_s)**(2*self.p)
-        dy2 = -(2*self.p*(1 - 1/f) + 2)/x*y2\
-              - 2*self.p*(2*self.p + 1)*(1 - 1/f)/x**2\
-              - 4*np.pi**2*np.exp(y1)/f
-        return np.array([dy1, dy2])
 
     def solve(self, xi, rat):
         """Solve equilibrium equation
@@ -62,7 +53,32 @@ class TES:
             u = y0[0]*np.ones(xi.size)
             du = y0[1]*np.ones(xi.size)
         else:
-            y = odeint(self.dydx, y0, xi)
+            y = odeint(self._dydx_case1, y0, xi)
+            u = y[istart:,0]
+            du = y[istart:,1]
+        return u, du
+
+    def solve_case2(self, xi):
+        """Solve equilibrium equation
+
+        Returns
+        -------
+        u : array_like
+            log density u = -log(rho/rho_c)
+        du : derivative of u: d(u)/d(xi)
+        """
+        xi = np.array(xi, dtype='float64')
+        y0 = np.array([0,0])
+        if xi.min() > self.xi_min:
+            xi = np.insert(xi, 0, self.xi_min)
+            istart = 1
+        else:
+            istart = 0
+        if np.all(xi<=self.xi_min):
+            u = y0[0]*np.ones(xi.size)
+            du = y0[1]*np.ones(xi.size)
+        else:
+            y = odeint(self._dydx_case2, y0, xi)
             u = y[istart:,0]
             du = y[istart:,1]
         return u, du
@@ -96,3 +112,37 @@ class TES:
         if rat_c >= 999:
             raise Exception("critical density contrast is out-of-bound")
         return rat_c, r_c, m_c
+
+    def _dydx_case1(self, y, x):
+        """Hydrostatic equilibrium equation
+
+        Parameters
+        ----------
+        y : array_like
+            vector of dependent variables
+        x : independent variable
+        """
+        y1, y2 = y
+        dy1 = y2
+        f = 1 + (x/self.xi_s)**(2*self.p)
+        dy2 = -2/x*(1 + self.p*(1 - 1/f))*y2\
+              - 2*self.p*(2*self.p + 1)*(1 - 1/f)/x**2\
+              - 4*np.pi**2*np.exp(y1)/f
+        return np.array([dy1, dy2])
+
+    def _dydx_case2(self, y, x):
+        """Hydrostatic equilibrium equation
+
+        Parameters
+        ----------
+        y : array_like
+            vector of dependent variables
+        x : independent variable
+        """
+        y1, y2 = y
+        dy1 = y2
+        f = 1 + (x/self.xi_s)**(2*self.p)
+        dy2 = -2/x*(1 + self.p*(1 - 1/f))*y2\
+              + 2*self.p*(2*self.p + 1)*(1 - 1/f)/x**2\
+              + np.exp(-y1)/f
+        return np.array([dy1, dy2])
