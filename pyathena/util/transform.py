@@ -54,6 +54,54 @@ def to_spherical(vec, origin):
     return r, vec_sph
 
 
+def to_cylindrical(vec, origin):
+    """Transform vector components from Cartesian to cylindrical coordinates
+
+    Assumes vec is a tuple of xarray.DataArray.
+
+    Args:
+        vec: tuple-like (vx, vy, vz) representing Cartesian vector components
+        origin: tuple-like (x0, y0, z0) representing the origin of the cylindrical coords.
+
+    Returns:
+        R: binned radius
+        vec_cyl: tuple-like (v_R, v_ph, v_z) representing the three components of
+                 velocities in cylindrical coords.
+    """
+    vx, vy, vz = vec
+    x0, y0, z0 = origin
+    x, y, z = vx.x, vx.y, vx.z
+
+    # Calculate cylindrical coordinates
+    R = np.sqrt((x-x0)**2 + (y-y0)**2)
+    ph = np.arctan2(y-y0, x-x0)
+    # Move branch cut [-pi, pi] -> [0, 2pi]
+    ph = ph.where(ph >= 0, other=ph + 2*np.pi)
+    sin_ph, cos_ph = (y-y0)/R, (x-x0)/R
+    # Avoid singularity
+    if x0 in x and y0 in y:
+        sin_ph.loc[dict(x=x0, y=y0)] = 0
+        cos_ph.loc[dict(x=x0, y=y0)] = 0
+
+    # Transform Cartesian (vx, vy, vz) ->  cylindrical (v_R, v_phi, v_z)
+    v_R = (vx*cos_ph + vy*sin_ph).rename('v_R')
+    v_ph = (-vx*sin_ph + vy*cos_ph).rename('v_phi')
+    v_z = vz
+
+    # assign spherical coordinates
+    v_R.coords['R'] = R
+    v_ph.coords['R'] = R
+    v_z.coords['R'] = R
+    v_R.coords['ph'] = ph
+    v_ph.coords['ph'] = ph
+    v_z.coords['ph'] = ph
+    v_R.coords['z'] = z - z0
+    v_ph.coords['z'] = z - z0
+    v_z.coords['z'] = z - z0
+    vec_cyl = (v_R, v_ph, v_z)
+    return R, vec_cyl
+
+
 def groupby_bins(dat, coord, edges, cumulative=False):
     """Alternative to xr.groupby_bins, which is very slow
 
