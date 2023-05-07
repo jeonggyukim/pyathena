@@ -8,13 +8,13 @@ from ..load_sim import LoadSim
 from ..util.units import Units
 from .hst import Hst
 from .slc_prj import SliceProj
+from pyathena.tigress_gc import config
 
 class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
     """LoadSim class for analyzing TIGRESS-GC simulations.
     """
 
-    def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 muH = 1.4271, verbose=False):
+    def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=False):
         """The constructor for LoadSimTIGRESSGC class
 
         Parameters
@@ -44,8 +44,8 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
             muH = self.par['problem']['muH']
         except KeyError:
             pass
-        self.muH = muH
-        u = Units(muH=muH)
+        self.muH = config.muH
+        u = Units(muH=self.muH)
         self.u = u
         self.domain = self._get_domain_from_par(self.par)
         try:
@@ -80,18 +80,13 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
 
 class LoadSimTIGRESSGCAll(object):
     """Class to load multiple simulations"""
-    def __init__(self, models=None, muH=None):
+    def __init__(self, models=None):
 
         # Default models
         if models is None:
             models = dict()
-        if muH is None:
-            muH = dict()
-            for mdl in models:
-                muH[mdl] = 1.4271
         self.models = []
         self.basedirs = dict()
-        self.muH = dict()
         self.simdict = dict()
 
         for mdl, basedir in models.items():
@@ -101,11 +96,6 @@ class LoadSimTIGRESSGCAll(object):
             else:
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
-                if mdl in muH:
-                    self.muH[mdl] = muH[mdl]
-                else:
-                    print('[LoadSimTIGRESSGCAll]: muH for {0:s} has to be set'.format(
-                          mdl))
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         self.model = model
@@ -113,8 +103,7 @@ class LoadSimTIGRESSGCAll(object):
             self.sim = self.simdict[model]
         except KeyError:
             self.sim = LoadSimTIGRESSGC(self.basedirs[model], savdir=savdir,
-                                         muH=self.muH[model],
-                                         load_method=load_method, verbose=verbose)
+                                        load_method=load_method, verbose=verbose)
             self.simdict[model] = self.sim
 
         return self.sim
