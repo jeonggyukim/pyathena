@@ -3,6 +3,7 @@ from pygc.util import add_derived_fields
 from pygc.pot import MHubble, Plummer
 import numpy as np
 import xarray as xr
+from scipy import optimize
 from pyathena.tigress_gc import config
 from pyathena.util import transform
 
@@ -148,3 +149,41 @@ def get_circular_velocity(s, x, y=0, z=0):
     R = np.sqrt(x**2 + y**2)
     vcirc = np.sqrt(vbul**2 + vbh**2) - R*Omega_p
     return vcirc
+
+
+def mask_ring_by_mass(s, dat, Rmax, mf_crit=0.9):
+    """
+    Create ring mask by applying density threshold and radius cut
+
+    Parameters
+    ----------
+    s : pa.LoadSim object
+    dat : xarray dataset
+    Rmax : maximum radius to exclude dust lanes
+    mf_crit : mass fraction threshold
+    
+    Description
+    -----------
+    This function generates ring mask by selecting cells whose surface density
+    is larger than critical surface density. The critical surface density is determined
+    such that the total mass in the ring mask is a certain fraction of the total mass
+    inside Rmax. This is intended to be applied to the time-averaged snapshot.
+    """
+
+    def _Mabove(surf_th):
+        """Return total gas mass above threshold density surf_th."""
+        surf = dat.surf
+        M = surf.where(surf>surf_th).sum()*s.domain['dx'][0]*s.domain['dx'][1]
+        return M.values[()]
+
+    if not 'R' in dat.coords:
+        dat = add_derived_fields(dat, 'R')
+    R_mask = dat.R < Rmax
+
+    dat = dat.where(R_mask, other=0)
+    Mtot = _Mabove(0)
+    surf_th = optimize.bisect(lambda x: mf_crit*Mtot-_Mabove(x), 1e1, 1e4)
+    mask = dat.surf > surf_th
+
+    mask = mask & R_mask
+    return surf_th, mask
