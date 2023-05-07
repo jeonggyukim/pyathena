@@ -6,10 +6,13 @@ import xarray as xr
 from scipy import optimize
 from pyathena.tigress_gc import config
 from pyathena.util import transform
+from pyathena.util import units
+from pyathena.classic import cooling
+
+u = units.Units(muH=config.muH)
 
 def calculate_azimuthal_averages(s, num, warmcold=False):
-    """
-    Calculate azimuthal averages and write to file
+    """Calculate azimuthal averages and write to file
 
     Parameters
     ----------
@@ -152,8 +155,7 @@ def get_circular_velocity(s, x, y=0, z=0):
 
 
 def mask_ring_by_mass(s, dat, Rmax, mf_crit=0.9):
-    """
-    Create ring mask by applying density threshold and radius cut
+    """Create ring mask by applying density threshold and radius cut
 
     Parameters
     ----------
@@ -187,3 +189,111 @@ def mask_ring_by_mass(s, dat, Rmax, mf_crit=0.9):
 
     mask = mask & R_mask
     return surf_th, mask
+
+
+def find_snapshot_number(s, t0):
+    """Return snapshot number that is closest to t0
+
+    Parameters
+    ----------
+    s : pa.LoadSim object
+    t0 : desired time in Myr
+    """
+    nl, nu = _bracket_snapshot_number(s, t0)
+    tl = s.load_vtk(nl).domain['time']*u.Myr
+    tu = s.load_vtk(nu).domain['time']*u.Myr
+    offl = abs(tl-t0)
+    offu = abs(tu-t0)
+    num = nl if offl < offu else nu
+    if min(offl, offu) > 0.01:
+        print("WARNING: time offset is greater than 0.01 Myr")
+    return num
+
+def _bracket_snapshot_number(s, t0):
+    """Return snapshot numbers [ns, ns+1] such that t(ns) <= t0 < t(ns+1)
+
+    Parameters
+    ----------
+    s : pa.LoadSim object
+    t0 : desired time in Myr
+    """
+    a = s.nums[0]
+    b = s.nums[-1]
+    # initial check
+    ta = s.load_vtk(a).domain['time']*u.Myr
+    tb = s.load_vtk(b).domain['time']*u.Myr
+    if ta==t0:
+        return (0,1)
+    if (ta-t0)*(tb-t0) > 0:
+        raise ValueError("No snapshot with t={} Myr.".format(t0) +
+                         "Time at first and last snapshot: {:.2f} Myr, {:.2f} Myr".format(ta,tb))
+    # bisection
+    while (b - a > 1):
+        c = round((a+b)/2)
+        ta = s.load_vtk(a).domain['time']*u.Myr
+        tb = s.load_vtk(b).domain['time']*u.Myr
+        tc = s.load_vtk(c).domain['time']*u.Myr
+        if (ta-t0)*(tc-t0) < 0:
+            b = c
+        else:
+            a = c
+    return (a, b)
+
+def add_derived_fields(dat, fields=[]):
+    """Add derived fields in a Dataset
+
+    Parameters
+    ----------
+    dat    : xarray Dataset of variables
+    fields : list containing derived fields to be added.
+               ex) ['H', 'surf', 'T']
+    """
+
+    try:
+        dx = (dat.x[1]-dat.x[0]).values[()]
+        dy = (dat.y[1]-dat.y[0]).values[()]
+        dz = (dat.z[1]-dat.z[0]).values[()]
+    except IndexError:
+        pass
+
+    d = dat.copy()
+
+    if 'sz' in fields:
+        sz2 = (dat.density*dat.velocity3**2).interp(z=0).sum()/dat.density.interp(z=0).sum()
+        d['sz'] = np.sqrt(sz2)
+
+    if 'cs' in fields:
+        cs2 = dat.pressure.interp(z=0).sum()/dat.density.interp(z=0).sum()
+        d['cs'] = np.sqrt(cs2)
+
+    if 'H' in fields:
+        H2 = (dat.density*dat.z**2).sum()/dat.density.sum()
+        d['H'] = np.sqrt(H2)
+
+    if 'surf' in fields:
+        d['surf'] = (dat.density*dz).sum(dim='z')
+
+    if 'R' in fields:
+        d.coords['R'] = np.sqrt(dat.y**2 + dat.x**2)
+
+    if 'phi' in fields:
+        d.coords['phi'] = np.arctan2(dat.y, dat.x)
+
+    if 'Pturb' in fields:
+        d['Pturb'] = dat.density*dat.velocity3**2
+
+    if 'T' in fields:
+        cf = cooling.coolftn()
+        pok = dat.pressure*u.pok
+        T1 = pok/(dat.density*u.muH) # muH = Dcode/mH
+        d['T'] = xr.DataArray(cf.get_temp(T1.values), coords=T1.coords,
+                dims=T1.dims)
+
+    if 'gz_sg' in fields:
+        phir = dat.gravitational_potential.shift(z=-1)
+        phil = dat.gravitational_potential.shift(z=1)
+        phir.loc[{'z':phir.z[-1]}] = 3*phir.isel(z=-2) - 3*phir.isel(z=-3) + phir.isel(z=-4)
+        phil.loc[{'z':phir.z[0]}] = 3*phil.isel(z=1) - 3*phil.isel(z=2) + phil.isel(z=3)
+        d['gz_sg'] = (phil-phir)/(2*dz)
+
+    return d
