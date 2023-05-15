@@ -204,8 +204,8 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
 
 def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50), ylabel='acceleration'):
-    peff = rprf.rho*(rprf.vel1_sq + s.cs**2)
-    stress = rprf.rho*(-2*rprf.vel1_sq + rprf.vel2_sq + rprf.vel3_sq)
+    peff = rprf.rho*(rprf.vel1_sq_mw + s.cs**2)
+    stress = rprf.rho*(-2*rprf.vel1_sq_mw + rprf.vel2_sq_mw + rprf.vel3_sq_mw)
 
     if ax is not None:
         plt.sca(ax)
@@ -217,7 +217,7 @@ def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50
         column_density = rprf.rho.isel(r=slicer).cumulative_integrate('r')
         f_p = (peff - peff.isel(r=istart)) / column_density
         f_geo = (stress/rprf.r).isel(r=slicer).cumulative_integrate('r') / column_density
-        f_g = (rprf.rho*rprf.ggas1).isel(r=slicer).cumulative_integrate('r') / column_density
+        f_g = (rprf.rho*(rprf.ggas1_mw+rprf.gstar1_mw).isel(r=slicer).cumulative_integrate('r') / column_density
         fnet = f_g - f_p - f_geo
 
         f_p.plot(marker='+', label='pressure')
@@ -233,7 +233,7 @@ def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50
         f_pthm = -rprf.grad_pthm1 / rprf.rho
         f_ptrb = -rprf.grad_ptrb1 / rprf.rho
         f_geo = stress / rprf.r / rprf.rho
-        f_grav = rprf.ggas1
+        f_grav = rprf.ggas1_mw + rprf.gstar1_mw
         f_net = f_grav + f_pthm + f_ptrb + f_geo
 
         f_pthm.plot(lw=1, color='orange', label=r'$-\partial_r P_\mathrm{thm}$')
