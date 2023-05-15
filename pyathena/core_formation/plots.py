@@ -243,6 +243,11 @@ def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50
         (-f_grav).plot(marker='x', ls='--', color='red', lw=1, label='gravity')
         (-f_net).plot(marker='*', color='k', lw=1, label='net inward force')
 
+        # Overplot -GM/r^2
+        Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
+        gr = s.G*Mr/rprf.r**2
+        gr.plot(color='r', lw=1, ls='--')
+
         plt.axhline(0, linestyle=':')
         plt.ylabel(ylabel)
         plt.xlim(xlim)
