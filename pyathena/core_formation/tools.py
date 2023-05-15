@@ -94,9 +94,11 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     # We can use weighted groupby_bins, but let's do it like this to reuse
     # rprf['rho'] for performance
     for k in ['ggas1', 'gstar1', 'vel1', 'vel2', 'vel3']:
-        rprf[k] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
+        rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
+        rprf[k+'_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
     for k in ['vel1', 'vel2', 'vel3']:
-        rprf[k+'_sq'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k]**2, 'r', edges) / rprf['rho']
+        rprf[k+'_sq'] = transform.groupby_bins(ds_sph[k]**2, 'r', edges)
+        rprf[k+'_sq_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k]**2, 'r', edges) / rprf['rho']
 
     rprf = xr.Dataset(rprf)
     return rprf
