@@ -11,6 +11,78 @@ from pyathena.classic import cooling
 
 u = units.Units(muH=config.muH)
 
+
+def calculate_ring_averages(s, num, Rmax, mf_crit=0.9, warmcold=False):
+    """Calculate ring masked averages
+
+    Parameters
+    ----------
+    s : pa.LoadSim object
+    num : integer index of simulation output
+    warmcold : if True, calculate quantities only for T < 2e4 gas
+    """
+    # Step 1. Load data
+    ds = s.load_vtk(num, id0=False)
+    field_list = [f for f in ds.field_list if 'scalar' not in f]
+    dat = ds.get_field(field_list)
+    dat = add_derived_fields(dat, ['R', 'gz_sg'])
+    dat = dat.drop_vars(['velocity1', 'velocity2', 'gravitational_potential'])
+    dx, dy, dz = s.domain['dx']
+    if warmcold:
+        dat = add_derived_fields(dat, 'T')
+        # Set switch for warm-cold medium (Theta = 1 for T<2e4; 0 for T>2e4)
+        is_wc = xr.where(dat.T.sel(z=0, method='nearest') < config.Twarm, 1, 0)
+        # Apply switch
+        dat = dat.where(dat.T < config.Twarm, other=0)
+        # Save switch
+        dat['is_wc'] = is_wc
+        dat = dat.drop_vars('T')
+
+    # midplane thermal pressure
+    dat['pressure'] = dat.pressure.sel(z=0, method='nearest')
+
+    # midplane turbulent pressure
+    rho = dat.density.sel(z=0, method='nearest')
+    vz = dat.velocity3.sel(z=0, method='nearest')
+    dat['turbulent_pressure'] = rho*vz**2
+    dat = dat.drop_vars('velocity3')
+
+    # midplane magnetic stress
+    if 'cell_centered_B1' in dat:
+        bx = dat.cell_centered_B1.sel(z=0, method='nearest')
+        by = dat.cell_centered_B2.sel(z=0, method='nearest')
+        bz = dat.cell_centered_B3.sel(z=0, method='nearest')
+        dat['magnetic_stress'] = 0.5*(bx**2 + by**2 - bz**2)
+        dat = dat.drop_vars(['cell_centered_B1', 'cell_centered_B2', 'cell_centered_B3'])
+
+    # weights
+    bul = MHubble(rb=s.par['problem']['R_b'], rhob=s.par['problem']['rho_b'])
+    bh = Plummer(Mc=s.par['problem']['M_c'], Rc=s.par['problem']['R_c'])
+    dat['gz_ext'] = bul.gz(dat.x, dat.y, dat.z) + bh.gz(dat.x, dat.y, dat.z)
+    dat['gz_ext'] = dat.gz_ext.transpose('z','y','x')
+    dat['Wself'] = -(dat.density*dat.gz_sg*dz).sel(z=slice(0, s.domain['re'][2])).sum(dim='z')
+    dat['Wext'] = -(dat.density*dat.gz_ext*dz).sel(z=slice(0, s.domain['re'][2])).sum(dim='z')
+    dat = dat.drop_vars(['density', 'gz_sg', 'gz_ext'])
+
+
+    fname = Path(s.basedir, "time_averages", "prims.nc")
+    dat_tavg = xr.open_dataset(fname)
+    dat_tavg = add_derived_fields(dat_tavg, 'surf')
+    surf_th, mask = mask_ring_by_mass(s, dat_tavg, Rmax, mf_crit)
+    dat = dat.where(mask).mean()
+    for f in ['pressure', 'turbulent_pressure']:
+        dat[f] /= dat.is_wc
+    if 'magnetic_stress' in dat:
+        dat['magnetic_stress'] /= dat.is_wc
+
+    area = mask.sum().data[()]*dx*dy
+    area_warmcold = area*dat.is_wc.data[()]
+    dat = dat.drop_vars('is_wc')
+    dat = dat.assign_attrs(dict(time=ds.domain['time'], area=area, area_warmcold=area_warmcold))
+
+    return dat
+
+
 def calculate_azimuthal_averages(s, num, warmcold=False):
     """Calculate azimuthal averages and write to file
 
@@ -47,7 +119,9 @@ def calculate_azimuthal_averages(s, num, warmcold=False):
 
     # Step 1. Load data
     ds = s.load_vtk(num, id0=False)
-    field_list = [f for f in ds.field_list if 'scalar' not in f]
+    field_list = [f for f in ds.field_list if f not in
+                  ['heat_rate', 'cool_rate', 'specific_scalar[0]',
+                   'specific_scalar[1]', 'specific_scalar[2]']]
     dat = ds.get_field(field_list)
     dat = add_derived_fields(dat, ['R', 'gz_sg'])
     dx, dy, dz = s.domain['dx']
@@ -131,6 +205,12 @@ def calculate_azimuthal_averages(s, num, warmcold=False):
     dat = dat.transpose('z','R')
 
     if warmcold:
+        fmid = {'pressure', 'turbulent_pressure', 'magnetic_stress'}
+        excl = {'is_wc', 'Wself', 'Wext'}
+        for f in set(dat.data_vars) - fmid - excl:
+            dat[f] /= dat.is_wc
+        for f in fmid:
+            dat[f] /= dat.is_wc.sel(z=0, method='nearest')
         area = (is_wc.sel(z=0, method='nearest')*dx*dy).groupby_bins('R', edges).sum()
         area = area.rename({'R_bins':'R'})
         area.coords['R'] = list(map(lambda x: x.mid, area.R.data))
