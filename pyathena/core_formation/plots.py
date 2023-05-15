@@ -217,7 +217,7 @@ def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50
         column_density = rprf.rho.isel(r=slicer).cumulative_integrate('r')
         f_p = (peff - peff.isel(r=istart)) / column_density
         f_geo = (stress/rprf.r).isel(r=slicer).cumulative_integrate('r') / column_density
-        f_g = (rprf.rho*(rprf.ggas1_mw+rprf.gstar1_mw).isel(r=slicer).cumulative_integrate('r') / column_density
+        f_g = (rprf.rho*(rprf.ggas1_mw+rprf.gstar1_mw)).isel(r=slicer).cumulative_integrate('r') / column_density
         fnet = f_g - f_p - f_geo
 
         f_p.plot(marker='+', label='pressure')
