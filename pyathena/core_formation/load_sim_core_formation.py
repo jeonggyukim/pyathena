@@ -179,7 +179,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']).astype('int')
 
     def _load_tcoll_cores(self):
-        fname = pathlib.Path(self.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
+        fname = pathlib.Path(self.basedir, 'tcoll_cores', 'tcoll_cores.p')
         with open(fname, 'rb') as handle:
             self.tcoll_cores = pickle.load(handle)
 

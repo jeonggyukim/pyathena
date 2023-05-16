@@ -29,7 +29,7 @@ def save_tcoll_cores(s, overwrite=False):
         return dst
 
     # Check if file exists
-    ofname = Path(s.basedir, 'tcoll_cores', 'grid_dendro_nodes.p')
+    ofname = Path(s.basedir, 'tcoll_cores', 'tcoll_cores.p')
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         return
@@ -52,7 +52,10 @@ def save_tcoll_cores(s, overwrite=False):
         Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
 
         # Add this core to a list of t_coll cores
-        tcoll_cores[pid] = {num: core_old}
+        tcoll_cores[pid] = pd.DataFrame(dict(num=[num,],
+                                             nid=[core_old,],
+                                             radius=[Rcore_old,],
+                                             mass=[Mcore_old,])).set_index("num")
 
         for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
             # loop backward in time to find all preimages of the t_coll cores
@@ -86,9 +89,9 @@ def save_tcoll_cores(s, overwrite=False):
             # same core at previous timestep. Stop backtracing.
             if fdst > 1 or fmass > 1 or frds > 1:
                 break
-            
+
             # Add this core to list of t_coll cores
-            tcoll_cores[pid][num] = core
+            tcoll_cores[pid].loc[num] = dict(nid=core, radius=Rcore, mass=Mcore)
 
             # Save core properties
             core_old = core
