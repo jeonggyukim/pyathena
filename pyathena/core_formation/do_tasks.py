@@ -40,45 +40,45 @@ if __name__ == "__main__":
         s = sa.set_model(mdl)
 
         # Combine output files.
-        print(f"Combine partab files for model {mdl}")
+        print(f"Combine partab files for model {mdl}", flush=True)
         combine_partab(s, remove=True)
 
         # Run GRID-dendro.
-        print(f"run GRID-dendro for model {mdl}")
+        print(f"run GRID-dendro for model {mdl}", flush=True)
         run_GRID(s, overwrite=args.overwrite_grid)
 
         # Find t_coll cores and save their GRID-dendro node ID's.
-        print(f"find t_coll cores for model {mdl}")
+        print(f"find t_coll cores for model {mdl}", flush=True)
         save_tcoll_cores(s, overwrite=args.overwrite_tcoll_cores)
         s._load_tcoll_cores()
 
         # Calculate radial profiles of t_coll cores and pickle them.
-        print(f"calculate and save radial profiles of t_coll cores for model {mdl}")
+        print(f"calculate and save radial profiles of t_coll cores for model {mdl}", flush=True)
         save_radial_profiles_tcoll_cores(s, overwrite=args.overwrite_radial_profiles)
         s._load_radial_profiles()
 
         # Resample AMR data into uniform grid
-#        print(f"resample AMR to uniform for model {mdl}")
+#        print(f"resample AMR to uniform for model {mdl}", flush=True)
 #        resample_hdf5(s)
 
         # make plots
-        print(f"draw t_coll cores plots for model {mdl}")
+        print(f"draw t_coll cores plots for model {mdl}", flush=True)
         make_plots_tcoll_cores(s, overwrite=args.overwrite_plots_tcoll)
 
-        print(f"draw sink history plots for model {mdl}")
+        print(f"draw sink history plots for model {mdl}", flush=True)
         make_plots_sinkhistory(s, overwrite=args.overwrite_sink_history)
 
-        print(f"draw PDF-power spectrum plots for model {mdl}")
+        print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
         make_plots_PDF_Pspec(s, overwrite=args.overwrite_PDF_Pspecs)
 
-        print(f"draw central density evolution plot for model {mdl}")
+        print(f"draw central density evolution plot for model {mdl}", flush=True)
         make_plots_central_density_evolution(s, overwrite=args.overwrite_rhoc_evolution)
 
-#        print(f"draw projection plots for model {mdl}")
+#        print(f"draw projection plots for model {mdl}", flush=True)
 #        make_plots_projections(s)
 
         # make movie
-        print(f"create movies for model {mdl}")
+        print(f"create movies for model {mdl}", flush=True)
         srcdir = Path(s.basedir, "figures")
         plot_prefix = [PLOT_PREFIX_SINK_HISTORY, PLOT_PREFIX_PDF_PSPEC]
         for prefix in plot_prefix:

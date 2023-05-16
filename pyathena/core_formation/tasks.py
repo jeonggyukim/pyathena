@@ -148,7 +148,7 @@ def run_GRID(s, overwrite=False):
 
     for num in s.nums[config.GRID_NUM_START:]:
         # Check if file exists
-        print('processing model {} num {}'.format(s.basename, num))
+        print('processing model {} num {}'.format(s.basename, num), flush=True)
         ofname = Path(s.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
@@ -173,7 +173,7 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
                                                          partag)
     file_list0 = sorted(glob.glob(block0_pattern))
     if len(file_list0) == 0:
-        print("Nothing to combine")
+        print("Nothing to combine", flush=True)
         return
     if ns is None:
         ns = int(file_list0[0].split('/')[-1].split('.')[3])
@@ -194,7 +194,7 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
                                                       partag)
         joined_files = set(glob.glob(joined_pattern))
         if {f.replace('block0.', '') for f in file_list0}.issubset(joined_files):
-            print("All files are joined. Remove block* files")
+            print("All files are joined. Remove block* files", flush=True)
             file_pattern = '{}/{}.block*.{}.?????.{}.tab'.format(s.basedir,
                                                                  s.problem_id, outid,
                                                                  partag)
@@ -202,7 +202,7 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
             for f in file_list:
                 Path(f).unlink()
         else:
-            print("Not all files are joined")
+            print("Not all files are joined", flush=True)
 
 
 def resample_hdf5(s, level=0):
