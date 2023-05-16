@@ -27,6 +27,7 @@ class TES:
     a hydrostatic equation in the following dimensionless variables:
 
     xi = r / L_{J,e}, where L_{J,e} the Jeans length at the edge density rho_e.
+    m = M / M_{J,e}
     u = ln(rho/rho_e)
 
     Assume the density-weighted, angle-averaged radial velocity square has a
@@ -88,11 +89,21 @@ class TES:
         return m.squeeze()[()]
 
     def get_crit(self):
-        res = minimize_scalar(lambda x: -self.computeMass(x),
+        """
+        Find density contrast at which pressure become maximum at the P-V curve
+        Note that the pressure at the given mass = P = pi^3 c_s^8 / (G^3 M^2) m^2
+
+        Returns
+        -------
+        rat_c: critical density contrast
+        r_c: critical radius
+        m_c: critical mass
+        """
+        res = minimize_scalar(lambda x: -self.computeMass(x)**2,
                               bounds=(1e0, 1e3), method='Bounded')
-        m_c = -res.fun
         rat_c = res.x
         r_c = self.computeRadius(rat_c)
+        m_c = self.computeMass(rat_c)
         if rat_c >= 999:
             raise Exception("critical density contrast is out-of-bound")
         return rat_c, r_c, m_c
