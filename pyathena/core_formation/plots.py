@@ -20,7 +20,7 @@ from pyathena.core_formation import tools
 from grid_dendro import dendrogram
 from grid_dendro import energy
 
-def plot_energies(s, ds, leaves, core, ax=None):
+def plot_energies(s, ds, leaves, nid, ax=None):
     if ax is not None:
         plt.sca(ax)
     prims = dict(rho=ds.dens.to_numpy(),
@@ -29,7 +29,7 @@ def plot_energies(s, ds, leaves, core, ax=None):
                  vel3=(ds.mom3/ds.dens).to_numpy(),
                  prs=s.cs**2*ds.dens.to_numpy(),
                  phi=ds.phigas.to_numpy())
-    reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, core)
+    reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, nid)
     plt.plot(reff, engs['ethm'], label='thermal')
     plt.plot(reff, engs['ekin'], label='kinetic')
     plt.plot(reff, engs['egrv'], label='gravitational')
@@ -62,7 +62,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Load the progenitor GRID-core of this particle.
     if num > s.nums_tcoll[pid]:
         raise ValueError("num must be smaller than num_tcoll")
-    core = s.tcoll_cores[pid][num]
+    core = s.tcoll_cores[pid].loc[num]
 
     # Load hdf5 snapshot at t = t_coll
     ds = s.load_hdf5(num, load_method='pyathena')
@@ -71,7 +71,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     leaves = s.load_leaves(num)
 
     # Find the location of the core
-    xc, yc, zc = tools.get_coords_node(ds, core)
+    xc, yc, zc = tools.get_coords_node(ds, core.nid)
 
     # Calculate radial profile
     rprf = s.rprofs[pid].sel(t=ds.Time, method='nearest')
@@ -116,7 +116,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
         # 3. Zoom-in projections for individual core
         # Load selected core
-        rho_ = dendrogram.filter_by_node(ds.dens, leaves, core, fill_value=0)
+        rho_ = dendrogram.filter_by_node(ds.dens, leaves, core.nid, fill_value=0)
         Mcore = (rho_*s.dV).sum().data[()]
         Vcore = ((rho_>0).sum()*s.dV).data[()]
         Rcore = (3*Vcore/(4*np.pi))**(1./3.)
@@ -125,7 +125,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         ds_core = ds_core.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
 
         # Load other cores
-        other_cores = {k: v for k, v in leaves.items() if k != core}
+        other_cores = {k: v for k, v in leaves.items() if k != core.nid}
         rho_ = dendrogram.filter_by_node(ds.dens, other_cores, fill_value=0)
         ds_others = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_others, _ = tools.recenter_dataset(ds_others, (xc, yc, zc))
@@ -186,7 +186,7 @@ def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # 5. Energies
     plt.sca(fig.add_subplot(gs[0,4]))
-    plot_energies(s, ds, leaves, core)
+    plot_energies(s, ds, leaves, core.nid)
     if emin is not None and emax is not None:
         plt.ylim(emin, emax)
     if rmax is not None:

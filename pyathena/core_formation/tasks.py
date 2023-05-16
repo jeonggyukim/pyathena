@@ -55,7 +55,8 @@ def save_tcoll_cores(s, overwrite=False):
         tcoll_cores[pid] = pd.DataFrame(dict(num=[num,],
                                              nid=[core_old,],
                                              radius=[Rcore_old,],
-                                             mass=[Mcore_old,])).set_index("num")
+                                             mass=[Mcore_old,]),
+                                        dtype=object).set_index("num")
 
         for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
             # loop backward in time to find all preimages of the t_coll cores
@@ -114,12 +115,12 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
             continue
 
         time, rprf = [], []
-        for num, core in s.tcoll_cores[pid].items():
+        for num, core in s.tcoll_cores[pid].iterrows():
             # Load the snapshot and the core id
             ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
 
             # Find the location of the core
-            center = tools.get_coords_node(ds, core)
+            center = tools.get_coords_node(ds, core.nid)
 
             # Roll the data such that the core is at the center of the domain
             ds, center = tools.recenter_dataset(ds, center)
@@ -131,6 +132,7 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
         # Concatenate in time.
         rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
                          combine_attrs='drop_conflicts')
+        rprf = rprf.assign_coords(dict(num=('t', s.tcoll_cores[pid].index))).set_xindex('num')
 
         # write to file
         with open(ofname, 'wb') as handle:
@@ -268,18 +270,18 @@ def make_plots_tcoll_cores(s, overwrite=False):
         num = s.nums_tcoll[pid]
         ds = s.load_hdf5(num, load_method='pyathena')
         leaves = s.load_leaves(num)
-        core = s.tcoll_cores[pid][num]
+        core = s.tcoll_cores[pid].loc[num]
         prims = dict(rho=ds.dens.to_numpy(),
              vel1=(ds.mom1/ds.dens).to_numpy(),
              vel2=(ds.mom2/ds.dens).to_numpy(),
              vel3=(ds.mom3/ds.dens).to_numpy(),
              prs=s.cs**2*ds.dens.to_numpy(),
              phi=ds.phigas.to_numpy())
-        reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, core)
+        reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, core.nid)
         emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
         emin = tools.rounddown(engs['egrv'].min(), 1)
         rmax = tools.roundup(reff.max(), 2)
-        for num in s.tcoll_cores[pid]:
+        for num, core in s.tcoll_cores[pid].iterrows():
             fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
                 config.PLOT_PREFIX_TCOLL_CORES, pid, num))
             fname.parent.mkdir(exist_ok=True)
