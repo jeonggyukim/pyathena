@@ -11,4 +11,3 @@ docs/_build
 docs/_static
 .DS_Store
 tags
-do_tasks.py
