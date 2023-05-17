@@ -16,48 +16,85 @@ def vectorize(otypes=None, signature=None):
 
 
 class TES:
-    """Turbulent Equilibrium Sphere
+    """Turbulent equilibrium sphere
 
-    Description
-    -----------
-    Turbulent equilibrium spheres are characterized by two parameters:
-      p: power-law index for the linewidth-size relation
-      xi_s: the sonic radius
-    Given these two parameters, the equilibrium profile is obtained by solving
-    a hydrostatic equation in the following dimensionless variables:
+    A family of turbulent equilibrium spheres at a fixed external pressure.
+    Default parameters correspond to Bonner-Ebert spheres.
 
-    xi = r / L_{J,e}, where L_{J,e} the Jeans length at the edge density rho_e.
-    m = M / M_{J,e}
-    u = ln(rho/rho_e)
+    Parameters
+    ----------
+    p : float, optional
+        power-law index of the velocity dispersion.
+    xi_s : float, optional
+        dimensionless sonic radius.
 
-    Assume the density-weighted, angle-averaged radial velocity square has a
-    power-law dependence on the radius:
-        <v_r^2> = c_s^2 (r / r_s)^{2p} = c_s^2 (xi / xi_s)^{2p}
-    where xi_s = np.inf corresponds to the usual Bonner-Ebert sphere.
+    Attributes
+    ----------
+    p : float
+        power-law index of the velocity dispersion.
+    xi_s : float
+        dimensionless sonic radius.
+
+    Notes
+    -----
+    A family of turbulent equilibrium spheres parametrized by the center-
+    to-edge density contrast, at a fixed edge density (or equivalently,
+    external pressure).
+
+    The angle-averaged hydrostatic equation is solved using the following
+    dimensionless variables,
+        xi = r / L_{J,e},
+        u = ln(rho/rho_e),
+    where L_{J,e} is the Jeans length at the edge density rho_e.
+
+    Density-weighted, angle-averaged radial velocity dispersion is assumed
+    to be a power-law in radius, such that
+        <v_r^2> = c_s^2 (r / r_s)^{2p} = c_s^2 (xi / xi_s)^{2p}.
+
+    m = M / M_{J,e},
+
+    Examples
+    --------
+    >>> import tes
+    >>> ts = tes.TES()
+    >>> # Find critical parameters
+    >>> rat_crit, r_crit, m_crit = ts.get_crit()
+    >>> xi = np.logspace(-2, np.log10(r_crit))
+    >>> u, du = ts.solve(xi, rat_crit)
+    >>> # plot density profile
+    >>> plt.loglog(xi, np.exp(u))
     """
     def __init__(self, p=0.5, xi_s=np.inf):
         self.p = p
         self.xi_s = xi_s
-        self.xi_min = 1e-5
-        self.xi_max = 1e5
+        self._xi_min = 1e-5
+        self._xi_max = 1e5
 
     def solve(self, xi, rat):
         """Solve equilibrium equation
 
+        Parameters
+        ----------
+        xi : array
+            Dimensionless radii
+        rat : float
+            Center-to-edge density contrast.
+
         Returns
         -------
-        u : array_like
-            log density u = log(rho/rho_e)
-        du : derivative of u: d(u)/d(xi)
+        u : array
+            Log density u = log(rho/rho_e)
+        du : array
+            Derivative of u: d(u)/d(xi)
         """
         xi = np.array(xi, dtype='float64')
         y0 = np.array([np.log(rat),0])
-        if xi.min() > self.xi_min:
-            xi = np.insert(xi, 0, self.xi_min)
+        if xi.min() > self._xi_min:
+            xi = np.insert(xi, 0, self._xi_min)
             istart = 1
         else:
             istart = 0
-        if np.all(xi<=self.xi_min):
+        if np.all(xi<=self._xi_min):
             u = y0[0]*np.ones(xi.size)
             du = y0[1]*np.ones(xi.size)
         else:
@@ -67,40 +104,74 @@ class TES:
         return u, du
 
     @vectorize(signature="(),()->()")
-    def computeRadius(self, rat):
-        """Calculate the dimensionless radius where rho = rho_e"""
+    def get_radius(self, rat):
+        """Calculates the dimensionless radius of a TES.
+
+        The maximum radius of a TES is the radius at which rho = rho_e.
+
+        Parameters
+        ----------
+        rat : float
+            Center-to-edge density contrast.
+
+        Returns
+        -------
+        float
+            Dimensionless maximum radius.
+        """
         logxi0 = brentq(lambda x: self.solve(10**x, rat)[0],
-                        np.log10(self.xi_min), np.log10(self.xi_max))
+                        np.log10(self._xi_min), np.log10(self._xi_max))
         return 10**logxi0
 
     @vectorize(signature="(),()->()")
-    def computeMass(self, rat):
-        """Calculate dimensionless mass
+    def get_mass(self, rat, xi0=None):
+        """Calculates dimensionless enclosed mass.
 
-        Description
-        -----------
-        The dimensionless mass is defined as
+        The dimensionless mass enclosed within the dimensionless radius xi
+        is defined by
             M(xi) = m(xi)M_{J,e}
         where M_{J,e} is the Jeans mass at the edge density rho_e
+
+        Parameters
+        ----------
+        rat : float
+            Center-to-edge density contrast.
+        xi0 : float, optional
+            Radius within which the enclosed mass is computed. If None, use
+            the maximum radius of a sphere.
+
+        Returns
+        -------
+        float
+            Dimensionless enclosed mass.
         """
-        xi0 = self.computeRadius(rat)
+        if xi0 is None:
+            xi0 = self.computeRadius(rat)
         u, du = self.solve(xi0, rat)
         f = 1 + (xi0/self.xi_s)**(2*self.p)
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
         return m.squeeze()[()]
 
     def get_crit(self):
-        """
-        Find density contrast at which pressure become maximum at the P-V curve
-        Note that the pressure at the given mass = P = pi^3 c_s^8 / (G^3 M^2) m^2
+        """Finds critical TES parameters.
+
+        Critical point is defined as a maximum point in the P-V curve.
 
         Returns
         -------
-        rat_c: critical density contrast
-        r_c: critical radius
-        m_c: critical mass
+        rat_c : float
+            Critical density contrast
+        r_c : float
+            Critical radius
+        m_c : float
+            Critical mass
+
+        Notes
+        -----
+        The pressure at a given mass is P = pi^3 c_s^8 / (G^3 M^2) m^2, so
+        the minimization is done with respect to m^2.
         """
-        # do minimization in terms of log10(rat) for performance
+        # do minimization in log space for robustness and performance
         upper_bound = 6
         res = minimize_scalar(lambda x: -self.computeMass(10**x)**2,
                               bounds=(0, upper_bound), method='Bounded')
@@ -112,13 +183,19 @@ class TES:
         return rat_c, r_c, m_c
 
     def _dydx(self, y, x):
-        """Hydrostatic equilibrium equation
+        """Differential equation for hydrostatic equilibrium.
 
         Parameters
         ----------
-        y : array_like
-            vector of dependent variables
-        x : independent variable
+        y : array
+            Vector of dependent variables
+        x : array
+            Independent variable
+
+        Returns
+        -------
+        array
+            Vector of (dy/dx)
         """
         y1, y2 = y
         dy1 = y2
