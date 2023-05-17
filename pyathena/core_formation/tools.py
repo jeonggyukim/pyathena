@@ -71,7 +71,7 @@ def calculate_critical_tes(s, rprf):
     if len(r) < 1:
         # Sonic radius is zero. Cannot find critical tes.
         p = np.nan
-        sonic_radius = np.nan
+        rs = np.nan
         rhoe = np.nan
         rcrit = np.nan
     else:
