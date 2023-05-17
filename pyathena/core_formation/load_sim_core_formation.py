@@ -81,6 +81,12 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             except FileNotFoundError:
                 pass
 
+            try:
+                # Load critical tes
+                self._load_critical_tes()
+            except FileNotFoundError:
+                pass
+
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
             LognormalPDF.__init__(self, self.Mach)
@@ -189,6 +195,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             fname = pathlib.Path(self.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
             with open(fname, 'rb') as handle:
                 self.rprofs[pid] = pickle.load(handle)
+
+    def _load_critical_tes(self):
+        fname = pathlib.Path(self.basedir, 'tcoll_cores', 'critical_tes.p')
+        with open(fname, 'rb') as handle:
+            self.tes_crit = pickle.load(handle)
 
 
 class LoadSimCoreFormationAll(object):
