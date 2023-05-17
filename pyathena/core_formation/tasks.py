@@ -20,6 +20,30 @@ from grid_dendro import dendrogram
 from grid_dendro import energy
 
 
+def save_critical_tes_for_tcoll_cores(s, overwrite=False):
+    # Check if file exists
+    ofname = Path(s.basedir, 'tcoll_cores', 'critical_tes.p')
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        return
+
+    critical_tes = dict()
+    for pid in s.pids:
+        critical_tes[pid] = pd.DataFrame(columns=('num',
+                                                  'edge_density',
+                                                  'critical_radius',
+                                                  'pindex',
+                                                  'sonic_radius'),
+                                         dtype=object).set_index('num')
+        for num, _ in s.tcoll_cores[pid].iterrows():
+            print('processing model {} num {}'.format(s.basename, num), flush=True)
+            critical_tes[pid].loc[num] = tools.calculate_critical_tes(s, num, pid)
+
+    # write to file
+    with open(ofname, 'wb') as handle:
+        pickle.dump(critical_tes, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
 def save_tcoll_cores(s, overwrite=False):
     """Loop over all sink particles and find their associated t_coll cores"""
     def _get_node_distance(ds, nd1, nd2):

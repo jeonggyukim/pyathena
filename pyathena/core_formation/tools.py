@@ -1,9 +1,12 @@
 import numpy as np
 import xarray as xr
 from scipy.special import erfinv
+from scipy.stats import linregress
+from scipy.optimize import brentq
 from pathlib import Path
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
+from pyathena.core_formation import tes
 from grid_dendro import boundary
 from grid_dendro import dendrogram
 
@@ -41,6 +44,47 @@ class LognormalPDF:
         """
         x = self.mu + np.sqrt(2)*self.sigma*erfinv(2*frac - 1)
         return np.exp(x)
+
+
+def calculate_critical_tes(s, num, pid):
+    core = s.tcoll_cores[pid].loc[num]
+    rprf = s.rprofs[pid]
+    if 'num' not in rprf:
+        rprf = rprf.assign_coords(dict(num=('t', s.tcoll_cores[pid].index))).set_xindex('num')
+    rprf = rprf.sel(num=num)
+
+    # select the subsonic portion for fitting
+    idx = np.where(rprf.vel1_sq_mw.data<1)[0][-1]
+    if idx < 4:
+        idx = 4
+    Rmax = rprf.r.isel(r=idx).data[()]
+    r = rprf.r.sel(r=slice(0, Rmax)).data[1:]
+    vr2 = rprf.vel1_sq_mw.sel(r=slice(0, Rmax)).data[1:]
+
+    # fit the velocity dispersion to get power law index and sonic radius
+    res = linregress(np.log(r), np.log(vr2))
+    p = res.slope/2
+    rs = np.exp(-res.intercept/(2*p))
+
+    # Find critical TES at the central density
+    rhoc = rprf.rho.isel(r=0).data[()]
+
+    def get_central_density_of_critical_tes(rhoe):
+        xi_s = np.sqrt(rhoe)*rs
+        ts = tes.TES(p=p, xi_s=xi_s)
+        rat_crit, _, _ = ts.get_crit()
+        return rhoe*rat_crit
+    rhoe_min = 0.1
+    if get_central_density_of_critical_tes(rhoe_min) > rhoc:
+        rhoe = np.nan
+        rcrit = np.nan
+    else:
+        rhoe = brentq(lambda x: get_central_density_of_critical_tes(x) - rhoc, rhoe_min, rhoc)
+        xi_s = np.sqrt(rhoe)*rs
+        ts = tes.TES(p=p, xi_s=xi_s)
+        rat_crit, rcrit, mcrit = ts.get_crit()
+    res = dict(edge_density=rhoe, critical_radius=rcrit/np.sqrt(rhoe), pindex=p, sonic_radius=rs)
+    return res
 
 
 def calculate_radial_profiles(s, ds, origin, rmax):
