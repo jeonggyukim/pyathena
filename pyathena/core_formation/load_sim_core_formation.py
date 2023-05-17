@@ -195,7 +195,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         self.rprofs = {}
         for pid in self.pids:
             fname = pathlib.Path(self.basedir, 'cores', 'radial_profile.par{}.nc'.format(pid))
-            self.rprofs[pid] = xr.open_dataset(fname)
+            self.rprofs[pid] = xr.open_dataset(fname).set_xindex('num')
 
     def _load_critical_tes(self):
         for pid in self.pids:
