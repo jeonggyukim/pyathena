@@ -25,6 +25,9 @@ if __name__ == "__main__":
                         help="Overwrite t_coll cores")
     parser.add_argument("-r", "--overwrite_radial_profiles", action="store_true",
                         help="Overwrite radial profiles of t_coll cores")
+    parser.add_argument("-c", "--overwrite_critical_tes", action="store_true",
+                        help="Overwrite critical turbulent equilibrium spheres for "
+                             "t_coll cores")
     parser.add_argument("-pt", "--overwrite_plots_tcoll", action="store_true",
                         help="Overwrite t_coll core plots")
     parser.add_argument("-ps", "--overwrite_sink_history", action="store_true",
@@ -56,6 +59,11 @@ if __name__ == "__main__":
         print(f"calculate and save radial profiles of t_coll cores for model {mdl}", flush=True)
         save_radial_profiles_tcoll_cores(s, overwrite=args.overwrite_radial_profiles)
         s._load_radial_profiles()
+
+        # Find critical tes
+        print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
+        save_critical_tes_for_tcoll_cores(s, overwrite=True)
+        s._load_critical_tes()
 
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}", flush=True)
