@@ -21,15 +21,15 @@ if __name__ == "__main__":
                         help="List of models to process")
     parser.add_argument("-g", "--overwrite_grid", action="store_true",
                         help="Overwrite GRID-dendro output")
-    parser.add_argument("-t", "--overwrite_tcoll_cores", action="store_true",
-                        help="Overwrite t_coll cores")
+    parser.add_argument("-t", "--overwrite_cores", action="store_true",
+                        help="Overwrite prestellar cores")
     parser.add_argument("-r", "--overwrite_radial_profiles", action="store_true",
-                        help="Overwrite radial profiles of t_coll cores")
+                        help="Overwrite radial profiles of prestellar cores")
     parser.add_argument("-c", "--overwrite_critical_tes", action="store_true",
                         help="Overwrite critical turbulent equilibrium spheres for "
-                             "t_coll cores")
-    parser.add_argument("-pt", "--overwrite_plots_tcoll", action="store_true",
-                        help="Overwrite t_coll core plots")
+                             "prestellar cores")
+    parser.add_argument("-pt", "--overwrite_plots_core_evolution", action="store_true",
+                        help="Overwrite core evolution plots")
     parser.add_argument("-ps", "--overwrite_sink_history", action="store_true",
                         help="Overwrite sink history plots")
     parser.add_argument("-pp", "--overwrite_PDF_Pspecs", action="store_true",
@@ -52,17 +52,17 @@ if __name__ == "__main__":
 
         # Find t_coll cores and save their GRID-dendro node ID's.
         print(f"find t_coll cores for model {mdl}", flush=True)
-        save_tcoll_cores(s, overwrite=args.overwrite_tcoll_cores)
-        s._load_tcoll_cores()
+        find_and_save_cores(s, overwrite=args.overwrite_cores)
+        s._load_cores()
 
         # Calculate radial profiles of t_coll cores and pickle them.
         print(f"calculate and save radial profiles of t_coll cores for model {mdl}", flush=True)
-        save_radial_profiles_tcoll_cores(s, overwrite=args.overwrite_radial_profiles)
+        save_radial_profiles(s, overwrite=args.overwrite_radial_profiles)
         s._load_radial_profiles()
 
         # Find critical tes
         print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
-        save_critical_tes_for_tcoll_cores(s, overwrite=True)
+        save_critical_tes(s, overwrite=True)
         s._load_critical_tes()
 
         # Resample AMR data into uniform grid
@@ -71,7 +71,7 @@ if __name__ == "__main__":
 
         # make plots
         print(f"draw t_coll cores plots for model {mdl}", flush=True)
-        make_plots_tcoll_cores(s, overwrite=args.overwrite_plots_tcoll)
+        make_plots_core_evolution(s, overwrite=args.overwrite_plots_core_evolution)
 
         print(f"draw sink history plots for model {mdl}", flush=True)
         make_plots_sinkhistory(s, overwrite=args.overwrite_sink_history)

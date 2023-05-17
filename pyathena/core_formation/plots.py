@@ -58,11 +58,11 @@ def plot_central_density_evolution(s, ax=None):
     plt.xlabel(r'$t/t_J$')
     plt.title(s.basename)
 
-def plot_tcoll_cores(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
+def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Load the progenitor GRID-core of this particle.
     if num > s.nums_tcoll[pid]:
         raise ValueError("num must be smaller than num_tcoll")
-    core = s.tcoll_cores[pid].loc[num]
+    core = s.cores[pid].loc[num]
 
     # Load hdf5 snapshot at t = t_coll
     ds = s.load_hdf5(num, load_method='pyathena')

@@ -1,5 +1,6 @@
 import os.path as osp
 import pandas as pd
+import xarray as xr
 import numpy as np
 import pathlib
 import pickle
@@ -71,7 +72,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
 
             try:
                 # Load grid-dendro nodes
-                self._load_tcoll_cores()
+                self._load_cores()
             except FileNotFoundError:
                 pass
 
@@ -184,22 +185,23 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
             self.tcolls[pid] = tcoll
             self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']).astype('int')
 
-    def _load_tcoll_cores(self):
-        fname = pathlib.Path(self.basedir, 'tcoll_cores', 'tcoll_cores.p')
-        with open(fname, 'rb') as handle:
-            self.tcoll_cores = pickle.load(handle)
+    def _load_cores(self):
+        self.cores = {}
+        for pid in self.pids:
+            fname = pathlib.Path(self.basedir, 'cores', 'cores.par{}.p'.format(pid))
+            self.cores[pid] = pd.read_pickle(fname)
 
     def _load_radial_profiles(self):
         self.rprofs = {}
         for pid in self.pids:
-            fname = pathlib.Path(self.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
-            with open(fname, 'rb') as handle:
-                self.rprofs[pid] = pickle.load(handle)
+            fname = pathlib.Path(self.basedir, 'cores', 'radial_profile.par{}.nc'.format(pid))
+            self.rprofs[pid] = xr.open_dataset(fname)
 
     def _load_critical_tes(self):
-        fname = pathlib.Path(self.basedir, 'tcoll_cores', 'critical_tes.p')
-        with open(fname, 'rb') as handle:
-            self.tes_crit = pickle.load(handle)
+        for pid in self.pids:
+            fname = pathlib.Path(self.basedir, 'cores', 'critical_tes.par{}.p'.format(pid))
+            tes_crit = pd.read_pickle(fname)
+            self.cores[pid] = pd.concat([self.cores, tes_crit], axis=1)
 
 
 class LoadSimCoreFormationAll(object):

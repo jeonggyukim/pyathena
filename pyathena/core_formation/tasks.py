@@ -20,46 +20,50 @@ from grid_dendro import dendrogram
 from grid_dendro import energy
 
 
-def save_critical_tes_for_tcoll_cores(s, overwrite=False):
-    # Check if file exists
-    ofname = Path(s.basedir, 'tcoll_cores', 'critical_tes.p')
-    ofname.parent.mkdir(exist_ok=True)
-    if ofname.exists() and not overwrite:
-        return
-
-    critical_tes = dict()
+def save_critical_tes(s, overwrite=False):
+    """Calculates and saves critical tes associated with each core"""
     for pid in s.pids:
-        critical_tes[pid] = pd.DataFrame(columns=('num',
-                                                  'edge_density',
-                                                  'critical_radius',
-                                                  'pindex',
-                                                  'sonic_radius'),
-                                         dtype=object).set_index('num')
-        for num, _ in s.tcoll_cores[pid].iterrows():
-            print('processing model {} num {}'.format(s.basename, num), flush=True)
-            critical_tes[pid].loc[num] = tools.calculate_critical_tes(s, num, pid)
+        # Check if file exists
+        ofname = Path(s.basedir, 'cores', 'critical_tes.par{}.p'.format(pid))
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            continue
 
-    # write to file
-    with open(ofname, 'wb') as handle:
-        pickle.dump(critical_tes, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        critical_tes = pd.DataFrame(columns=('num',
+                                             'edge_density',
+                                             'critical_radius',
+                                             'pindex',
+                                             'sonic_radius'),
+                                    dtype=object).set_index('num')
+        for num, _ in s.cores[pid].iterrows():
+            print('[save_critical_tes] processing model {} pid {} num {}'.format(s.basename, pid, num))
+            rprf = s.rprofs[pid].sel(num=num)
+            critical_tes.loc[num] = tools.calculate_critical_tes(s, rprf)
+
+        # write to file
+        critical_tes.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def save_tcoll_cores(s, overwrite=False):
-    """Loop over all sink particles and find their associated t_coll cores"""
+def find_and_save_cores(s, overwrite=False):
+    """Loops over all sink particles and find their progenitor cores
+
+    Finds a unique grid-dendro leaf at each snapshot that is going to collapse.
+    For each sink particle, back-traces the evolution of its progenitor cores.
+    Writes the resulting data to a file.
+    """
     def _get_node_distance(ds, nd1, nd2):
         pos1 = tools.get_coords_node(ds, nd1)
         pos2 = tools.get_coords_node(ds, nd2)
         dst = tools.get_periodic_distance(pos1, pos2, s.Lbox)
         return dst
 
-    # Check if file exists
-    ofname = Path(s.basedir, 'tcoll_cores', 'tcoll_cores.p')
-    ofname.parent.mkdir(exist_ok=True)
-    if ofname.exists() and not overwrite:
-        return
-
-    tcoll_cores = dict()
     for pid in s.pids:
+        # Check if file exists
+        ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            continue
+
         # start from t = t_coll
 
         # Load data
@@ -68,36 +72,38 @@ def save_tcoll_cores(s, overwrite=False):
         leaves = s.load_leaves(num)
 
         # Calculate position, mass, and radius of the core
-        core_old = tools.find_tcoll_core(s, pid)
-        pos_old = tools.get_coords_node(ds, core_old)
-        rho = dendrogram.filter_by_node(ds.dens, leaves, core_old)
+        nid_old = tools.find_tcoll_core(s, pid)
+        pos_old = tools.get_coords_node(ds, nid_old)
+        rho = dendrogram.filter_by_node(ds.dens, leaves, nid_old)
         Mcore_old = (rho*s.dV).sum().data[()]
         Vcore = ((rho>0).sum()*s.dV).data[()]
         Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
 
-        # Add this core to a list of t_coll cores
-        tcoll_cores[pid] = pd.DataFrame(dict(num=[num,],
-                                             nid=[core_old,],
-                                             radius=[Rcore_old,],
-                                             mass=[Mcore_old,]),
-                                        dtype=object).set_index("num")
+        # Add t_coll core to a list of progenitor cores
+        cores = pd.DataFrame(dict(num=[num,],
+                                  time=[ds.Time,],
+                                  nid=[nid_old,],
+                                  radius=[Rcore_old,],
+                                  mass=[Mcore_old,]),
+                             dtype=object).set_index("num")
 
         for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
-            # loop backward in time to find all preimages of the t_coll cores
+            print('[find_and_save_cores] processing model {} pid {} num {}'.format(s.basename, pid, num))
+            # loop backward in time to find all preimages of the t_coll core
             ds = s.load_hdf5(num, load_method='pyathena')
             leaves = s.load_leaves(num)
 
             # find closeast leaf to the previous preimage
-            dst = {leaf: _get_node_distance(ds, leaf, core_old) for leaf in leaves}
+            dst = {leaf: _get_node_distance(ds, leaf, nid_old) for leaf in leaves}
             dst_min = np.min(list(dst.values()))
             for k, v in dst.items():
                 if v == dst_min:
-                    core = k
+                    nid = k
 
             # Calculate position, mass, and radius of the core and
             # check if this core is really the same core in different time
-            pos = tools.get_coords_node(ds, core)
-            rho = dendrogram.filter_by_node(ds.dens, leaves, core)
+            pos = tools.get_coords_node(ds, nid)
+            rho = dendrogram.filter_by_node(ds.dens, leaves, nid)
             Mcore = (rho*s.dV).sum().data[()]
             Vcore = ((rho>0).sum()*s.dV).data[()]
             Rcore = (3*Vcore/(4*np.pi))**(1./3.)
@@ -115,31 +121,33 @@ def save_tcoll_cores(s, overwrite=False):
             if fdst > 1 or fmass > 1 or frds > 1:
                 break
 
-            # Add this core to list of t_coll cores
-            tcoll_cores[pid].loc[num] = dict(nid=core, radius=Rcore, mass=Mcore)
+            # Add this core to list of progenitor cores
+            cores.loc[num] = dict(nid=nid, time=ds.Time, radius=Rcore, mass=Mcore)
 
             # Save core properties
-            core_old = core
+            nid_old = nid
             pos_old = pos
             Mcore_old = Mcore
             Rcore_old = Rcore
 
-    # write to file
-    with open(ofname, 'wb') as handle:
-        pickle.dump(tcoll_cores, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        # write to file
+        cores = cores.sort_values('num')
+        cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def save_radial_profiles_tcoll_cores(s, overwrite=False):
+def save_radial_profiles(s, overwrite=False):
+    """Calculates and saves radial profiles of all cores"""
     rmax = 0.5*s.Lbox
     for pid in s.pids:
         # Check if file exists
-        ofname = Path(s.basedir, 'tcoll_cores', 'radial_profile.par{}.p'.format(pid))
+        ofname = Path(s.basedir, 'cores', 'radial_profile.par{}.nc'.format(pid))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
             continue
 
         time, rprf = [], []
-        for num, core in s.tcoll_cores[pid].iterrows():
+        for num, core in s.cores[pid].iterrows():
+            print('[save_radial_profiles] processing model {} pid {} num {}'.format(s.basename, pid, num))
             # Load the snapshot and the core id
             ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
 
@@ -156,11 +164,10 @@ def save_radial_profiles_tcoll_cores(s, overwrite=False):
         # Concatenate in time.
         rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
                          combine_attrs='drop_conflicts')
-        rprf = rprf.assign_coords(dict(num=('t', s.tcoll_cores[pid].index))).set_xindex('num')
+        rprf = rprf.assign_coords(dict(num=('t', s.cores[pid].index))).set_xindex('num')
 
         # write to file
-        with open(ofname, 'wb') as handle:
-            pickle.dump(rprf, handle, protocol=pickle.HIGHEST_PROTOCOL)
+        rprf.to_netcdf(ofname)
 
 
 def run_GRID(s, overwrite=False):
@@ -174,7 +181,7 @@ def run_GRID(s, overwrite=False):
 
     for num in s.nums[config.GRID_NUM_START:]:
         # Check if file exists
-        print('processing model {} num {}'.format(s.basename, num), flush=True)
+        print('[run_GRID] processing model {} num {}'.format(s.basename, num))
         ofname = Path(s.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
@@ -284,7 +291,7 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
             ax.cla()
 
 
-def make_plots_tcoll_cores(s, overwrite=False):
+def make_plots_core_evolution(s, overwrite=False):
     """Creates multi-panel plot for t_coll core properties
 
     Args:
@@ -294,7 +301,7 @@ def make_plots_tcoll_cores(s, overwrite=False):
         num = s.nums_tcoll[pid]
         ds = s.load_hdf5(num, load_method='pyathena')
         leaves = s.load_leaves(num)
-        core = s.tcoll_cores[pid].loc[num]
+        core = s.cores[pid].loc[num]
         prims = dict(rho=ds.dens.to_numpy(),
              vel1=(ds.mom1/ds.dens).to_numpy(),
              vel2=(ds.mom2/ds.dens).to_numpy(),
@@ -305,13 +312,13 @@ def make_plots_tcoll_cores(s, overwrite=False):
         emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
         emin = tools.rounddown(engs['egrv'].min(), 1)
         rmax = tools.roundup(reff.max(), 2)
-        for num, core in s.tcoll_cores[pid].iterrows():
+        for num, core in s.cores[pid].iterrows():
             fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
                 config.PLOT_PREFIX_TCOLL_CORES, pid, num))
             fname.parent.mkdir(exist_ok=True)
             if fname.exists() and not overwrite:
                 continue
-            fig = plots.plot_tcoll_cores(s, pid, num, emin=emin, emax=emax, rmax=rmax)
+            fig = plots.plot_core_evolution(s, pid, num, emin=emin, emax=emax, rmax=rmax)
             fig.savefig(fname, bbox_inches='tight', dpi=200)
             plt.close(fig)
 
