@@ -39,7 +39,7 @@ class TES:
         self.p = p
         self.xi_s = xi_s
         self.xi_min = 1e-5
-        self.xi_max = 10
+        self.xi_max = 1e5
 
     def solve(self, xi, rat):
         """Solve equilibrium equation
@@ -69,8 +69,9 @@ class TES:
     @vectorize(signature="(),()->()")
     def computeRadius(self, rat):
         """Calculate the dimensionless radius where rho = rho_e"""
-        xi0 = brentq(lambda x: self.solve(x, rat)[0], self.xi_min, self.xi_max)
-        return xi0
+        logxi0 = brentq(lambda x: self.solve(10**x, rat)[0],
+                        np.log10(self.xi_min), np.log10(self.xi_max))
+        return 10**logxi0
 
     @vectorize(signature="(),()->()")
     def computeMass(self, rat):
