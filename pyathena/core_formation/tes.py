@@ -68,7 +68,7 @@ class TES:
         self.p = p
         self.xi_s = xi_s
         self._xi_min = 1e-5
-        self._xi_max = 1e5
+        self._xi_max = 1e3
 
     def solve(self, xi, rat):
         """Solve equilibrium equation
@@ -200,7 +200,8 @@ class TES:
         y1, y2 = y
         dy1 = y2
         f = 1 + (x/self.xi_s)**(2*self.p)
-        dy2 = -2/x*(1 + self.p*(1 - 1/f))*y2\
-              - 2*self.p*(2*self.p + 1)*(1 - 1/f)/x**2\
-              - 4*np.pi**2*np.exp(y1)/f
+        a = x**2*f
+        b = 2*x*((1+self.p)*f - self.p)
+        c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*x**2*np.exp(y1)
+        dy2 = -(b/a)*y2 - (c/a)
         return np.array([dy1, dy2])
