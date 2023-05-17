@@ -99,12 +99,14 @@ class TES:
         r_c: critical radius
         m_c: critical mass
         """
-        res = minimize_scalar(lambda x: -self.computeMass(x)**2,
-                              bounds=(1e0, 1e3), method='Bounded')
-        rat_c = res.x
+        # do minimization in terms of log10(rat) for performance
+        upper_bound = 6
+        res = minimize_scalar(lambda x: -self.computeMass(10**x)**2,
+                              bounds=(0, upper_bound), method='Bounded')
+        rat_c = 10**res.x
         r_c = self.computeRadius(rat_c)
         m_c = self.computeMass(rat_c)
-        if rat_c >= 999:
+        if rat_c >= 0.999*10**upper_bound:
             raise Exception("critical density contrast is out-of-bound")
         return rat_c, r_c, m_c
 
