@@ -146,7 +146,7 @@ class TES:
             Dimensionless enclosed mass.
         """
         if xi0 is None:
-            xi0 = self.computeRadius(rat)
+            xi0 = self.get_radius(rat)
         u, du = self.solve(xi0, rat)
         f = 1 + (xi0/self.xi_s)**(2*self.p)
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
@@ -173,11 +173,11 @@ class TES:
         """
         # do minimization in log space for robustness and performance
         upper_bound = 6
-        res = minimize_scalar(lambda x: -self.computeMass(10**x)**2,
+        res = minimize_scalar(lambda x: -self.get_mass(10**x)**2,
                               bounds=(0, upper_bound), method='Bounded')
         rat_c = 10**res.x
-        r_c = self.computeRadius(rat_c)
-        m_c = self.computeMass(rat_c)
+        r_c = self.get_radius(rat_c)
+        m_c = self.get_mass(rat_c)
         if rat_c >= 0.999*10**upper_bound:
             raise Exception("critical density contrast is out-of-bound")
         return rat_c, r_c, m_c
