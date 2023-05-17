@@ -20,9 +20,13 @@ from grid_dendro import dendrogram
 from grid_dendro import energy
 
 
-def save_critical_tes(s, overwrite=False):
+def save_critical_tes(s, pids=None, overwrite=False):
     """Calculates and saves critical tes associated with each core"""
-    for pid in s.pids:
+    if pids is None:
+        pids = s.pids
+    elif isinstance(pids, int):
+        pids = [pids,]
+    for pid in pids:
         # Check if file exists
         ofname = Path(s.basedir, 'cores', 'critical_tes.par{}.p'.format(pid))
         ofname.parent.mkdir(exist_ok=True)
@@ -44,7 +48,7 @@ def save_critical_tes(s, overwrite=False):
         critical_tes.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def find_and_save_cores(s, overwrite=False):
+def find_and_save_cores(s, pids=None, overwrite=False):
     """Loops over all sink particles and find their progenitor cores
 
     Finds a unique grid-dendro leaf at each snapshot that is going to collapse.
@@ -57,7 +61,11 @@ def find_and_save_cores(s, overwrite=False):
         dst = tools.get_periodic_distance(pos1, pos2, s.Lbox)
         return dst
 
-    for pid in s.pids:
+    if pids is None:
+        pids = s.pids
+    elif isinstance(pids, int):
+        pids = [pids,]
+    for pid in pids:
         # Check if file exists
         ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
         ofname.parent.mkdir(exist_ok=True)
@@ -135,10 +143,14 @@ def find_and_save_cores(s, overwrite=False):
         cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def save_radial_profiles(s, overwrite=False):
+def save_radial_profiles(s, pids=None, overwrite=False):
     """Calculates and saves radial profiles of all cores"""
     rmax = 0.5*s.Lbox
-    for pid in s.pids:
+    if pids is None:
+        pids = s.pids
+    elif isinstance(pids, int):
+        pids = [pids,]
+    for pid in pids:
         # Check if file exists
         ofname = Path(s.basedir, 'cores', 'radial_profile.par{}.nc'.format(pid))
         ofname.parent.mkdir(exist_ok=True)
@@ -164,7 +176,8 @@ def save_radial_profiles(s, overwrite=False):
         # Concatenate in time.
         rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
                          combine_attrs='drop_conflicts')
-        rprf = rprf.assign_coords(dict(num=('t', s.cores[pid].index))).set_xindex('num')
+        rprf = rprf.assign_coords(dict(num=('t', s.cores[pid].index)))
+        rprf = rprf.set_xindex('num') # When writing to netcdf and read, num is dropped from index list.
 
         # write to file
         rprf.to_netcdf(ofname)
@@ -291,13 +304,17 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
             ax.cla()
 
 
-def make_plots_core_evolution(s, overwrite=False):
+def make_plots_core_evolution(s, pids=None, overwrite=False):
     """Creates multi-panel plot for t_coll core properties
 
     Args:
         s: pyathena.LoadSim instance
     """
-    for pid in s.pids:
+    if pids is None:
+        pids = s.pids
+    elif isinstance(pids, int):
+        pids = [pids,]
+    for pid in pids:
         num = s.nums_tcoll[pid]
         ds = s.load_hdf5(num, load_method='pyathena')
         leaves = s.load_leaves(num)

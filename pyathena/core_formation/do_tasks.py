@@ -36,6 +36,8 @@ if __name__ == "__main__":
                         help="Overwrite PDF_Pspecs plots")
     parser.add_argument("-pr", "--overwrite_rhoc_evolution", action="store_true",
                         help="Overwrite central density evolution plots")
+    parser.add_argument("--pids", nargs='+', type=int,
+                        help="List of particle ids to process")
     args = parser.parse_args()
 
     # Select models
@@ -52,18 +54,27 @@ if __name__ == "__main__":
 
         # Find t_coll cores and save their GRID-dendro node ID's.
         print(f"find t_coll cores for model {mdl}", flush=True)
-        find_and_save_cores(s, overwrite=args.overwrite_cores)
-        s._load_cores()
+        find_and_save_cores(s, pids=args.pids, overwrite=args.overwrite_cores)
+        try:
+            s._load_cores()
+        except FileNotFoundError:
+            pass
 
         # Calculate radial profiles of t_coll cores and pickle them.
         print(f"calculate and save radial profiles of t_coll cores for model {mdl}", flush=True)
-        save_radial_profiles(s, overwrite=args.overwrite_radial_profiles)
-        s._load_radial_profiles()
+        save_radial_profiles(s, pids=args.pids, overwrite=args.overwrite_radial_profiles)
+        try:
+            s._load_radial_profiles()
+        except FileNotFoundError:
+            pass
 
         # Find critical tes
         print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
-        save_critical_tes(s, overwrite=True)
-        s._load_critical_tes()
+        save_critical_tes(s, pids=args.pids, overwrite=True)
+        try:
+            s._load_critical_tes()
+        except FileNotFoundError:
+            pass
 
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}", flush=True)
@@ -71,7 +82,7 @@ if __name__ == "__main__":
 
         # make plots
         print(f"draw t_coll cores plots for model {mdl}", flush=True)
-        make_plots_core_evolution(s, overwrite=args.overwrite_plots_core_evolution)
+        make_plots_core_evolution(s, pids=args.pids, overwrite=args.overwrite_plots_core_evolution)
 
         print(f"draw sink history plots for model {mdl}", flush=True)
         make_plots_sinkhistory(s, overwrite=args.overwrite_sink_history)
