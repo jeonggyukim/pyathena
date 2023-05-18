@@ -201,7 +201,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         for pid in self.pids:
             fname = pathlib.Path(self.basedir, 'cores', 'critical_tes.par{}.p'.format(pid))
             tes_crit = pd.read_pickle(fname)
-            self.cores[pid] = pd.concat([self.cores, tes_crit], axis=1)
+            self.cores[pid] = pd.concat([self.cores[pid], tes_crit], axis=1)
 
 
 class LoadSimCoreFormationAll(object):

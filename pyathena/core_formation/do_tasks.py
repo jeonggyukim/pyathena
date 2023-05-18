@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
         # Find critical tes
         print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
-        save_critical_tes(s, pids=args.pids, overwrite=True)
+        save_critical_tes(s, pids=args.pids, overwrite=args.overwrite_critical_tes)
         try:
             s._load_critical_tes()
         except FileNotFoundError:
