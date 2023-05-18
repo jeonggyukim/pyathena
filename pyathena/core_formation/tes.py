@@ -58,11 +58,11 @@ class TES:
     >>> import tes
     >>> ts = tes.TES()
     >>> # Find critical parameters
-    >>> rat_crit, r_crit, m_crit = ts.get_crit()
-    >>> xi = np.logspace(-2, np.log10(r_crit))
-    >>> u, du = ts.solve(xi, rat_crit)
+    >>> u_crit, r_crit, m_crit = ts.get_crit()
+    >>> r = np.logspace(-2, np.log10(r_crit))
+    >>> u, du = ts.solve(r, u_crit)
     >>> # plot density profile
-    >>> plt.loglog(xi, np.exp(u))
+    >>> plt.loglog(r, np.exp(u))
     """
     def __init__(self, p=0.5, xi_s=np.inf):
         self.p = p
@@ -70,15 +70,15 @@ class TES:
         self._xi_min = 1e-5
         self._xi_max = 1e3
 
-    def solve(self, xi, rat):
+    def solve(self, xi, u0):
         """Solve equilibrium equation
 
         Parameters
         ----------
         xi : array
             Dimensionless radii
-        rat : float
-            Center-to-edge density contrast.
+        u0 : float
+            Dimensionless logarithmic central density
 
         Returns
         -------
@@ -88,7 +88,7 @@ class TES:
             Derivative of u: d(u)/d(xi)
         """
         xi = np.array(xi, dtype='float64')
-        y0 = np.array([np.log(rat),0])
+        y0 = np.array([u0, 0])
         if xi.min() > self._xi_min:
             xi = np.insert(xi, 0, self._xi_min)
             istart = 1
@@ -104,27 +104,27 @@ class TES:
         return u, du
 
     @vectorize(signature="(),()->()")
-    def get_radius(self, rat):
+    def get_radius(self, u0):
         """Calculates the dimensionless radius of a TES.
 
         The maximum radius of a TES is the radius at which rho = rho_e.
 
         Parameters
         ----------
-        rat : float
-            Center-to-edge density contrast.
+        u0 : float
+            Dimensionless logarithmic central density
 
         Returns
         -------
         float
             Dimensionless maximum radius.
         """
-        logxi0 = brentq(lambda x: self.solve(10**x, rat)[0],
+        logxi0 = brentq(lambda x: self.solve(10**x, u0)[0],
                         np.log10(self._xi_min), np.log10(self._xi_max))
         return 10**logxi0
 
     @vectorize(signature="(),()->()")
-    def get_mass(self, rat, xi0=None):
+    def get_mass(self, u0, xi0=None):
         """Calculates dimensionless enclosed mass.
 
         The dimensionless mass enclosed within the dimensionless radius xi
@@ -134,8 +134,8 @@ class TES:
 
         Parameters
         ----------
-        rat : float
-            Center-to-edge density contrast.
+        u0 : float
+            Dimensionless logarithmic central density
         xi0 : float, optional
             Radius within which the enclosed mass is computed. If None, use
             the maximum radius of a sphere.
@@ -146,8 +146,8 @@ class TES:
             Dimensionless enclosed mass.
         """
         if xi0 is None:
-            xi0 = self.get_radius(rat)
-        u, du = self.solve(xi0, rat)
+            xi0 = self.get_radius(u0)
+        u, du = self.solve(xi0, u0)
         f = 1 + (xi0/self.xi_s)**(2*self.p)
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
         return m.squeeze()[()]
@@ -159,8 +159,8 @@ class TES:
 
         Returns
         -------
-        rat_c : float
-            Critical density contrast
+        u_c : float
+            Critical logarithmic central density
         r_c : float
             Critical radius
         m_c : float
@@ -173,14 +173,14 @@ class TES:
         """
         # do minimization in log space for robustness and performance
         upper_bound = 6
-        res = minimize_scalar(lambda x: -self.get_mass(10**x)**2,
+        res = minimize_scalar(lambda x: -self.get_mass(x)**2,
                               bounds=(0, upper_bound), method='Bounded')
-        rat_c = 10**res.x
-        r_c = self.get_radius(rat_c)
-        m_c = self.get_mass(rat_c)
-        if rat_c >= 0.999*10**upper_bound:
+        u_c = res.x
+        r_c = self.get_radius(u_c)
+        m_c = self.get_mass(u_c)
+        if u_c >= 0.999*upper_bound:
             raise Exception("critical density contrast is out-of-bound")
-        return rat_c, r_c, m_c
+        return u_c, r_c, m_c
 
     def _dydx(self, y, x):
         """Differential equation for hydrostatic equilibrium.
