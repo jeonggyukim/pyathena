@@ -148,13 +148,14 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # overplot critical tes
     rhoc = rprf.rho.isel(r=0).data[()]
     rhoe = core.edge_density
-    ts = tes.TES(p=core.pindex, xi_s=np.sqrt(rhoe)*core.sonic_radius)
-    u0 = np.log(rhoc/rhoe)
-    xi_max = ts.get_radius(u0)
-    xi_min = np.sqrt(rhoe)*rprf.r[0]
-    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-    u, du = ts.solve(xi, u0)
-    plt.plot(xi/np.sqrt(rhoe), rhoe*np.exp(u), 'r--', lw=1)
+    if not np.isnan(rhoe):
+        ts = tes.TES(p=core.pindex, xi_s=np.sqrt(rhoe)*core.sonic_radius)
+        u0 = np.log(rhoc/rhoe)
+        xi_max = ts.get_radius(u0)
+        xi_min = np.sqrt(rhoe)*rprf.r[0]
+        xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+        u, du = ts.solve(xi, u0)
+        plt.plot(xi/np.sqrt(rhoe), rhoe*np.exp(u), 'r--', lw=1)
 
     # overplot critical BE
     ts = tes.TES()
@@ -201,7 +202,8 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
 
     # overplot linear fit
-    plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--', lw=1)
+    if not np.isnan(core.sonic_radius):
+        plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--', lw=1)
 
     plt.axvline(core.radius, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
