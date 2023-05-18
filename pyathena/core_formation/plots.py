@@ -17,6 +17,7 @@ import pickle
 
 # pythena modules
 from pyathena.core_formation import tools
+from pyathena.core_formation import tes
 from grid_dendro import dendrogram
 from grid_dendro import energy
 
@@ -117,9 +118,6 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         # 3. Zoom-in projections for individual core
         # Load selected core
         rho_ = dendrogram.filter_by_node(ds.dens, leaves, core.nid, fill_value=0)
-        Mcore = (rho_*s.dV).sum().data[()]
-        Vcore = ((rho_>0).sum()*s.dV).data[()]
-        Rcore = (3*Vcore/(4*np.pi))**(1./3.)
         ds_core = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_core, _ = tools.recenter_dataset(ds_core, (xc, yc, zc))
         ds_core = ds_core.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
@@ -146,7 +144,29 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.loglog(rprf.r, rprf.rho, 'k-+')
     rhoLP = s.get_rhoLP(rprf.r)
     plt.loglog(rprf.r, rhoLP, 'k--')
-    plt.axvline(Rcore, ls=':', c='k')
+
+    # overplot critical tes
+    rhoc = rprf.rho.isel(r=0).data[()]
+    rhoe = core.edge_density
+    ts = tes.TES(p=core.pindex, xi_s=np.sqrt(rhoe)*core.sonic_radius)
+    u0 = np.log(rhoc/rhoe)
+    xi_max = ts.get_radius(u0)
+    xi_min = np.sqrt(rhoe)*rprf.r[0]
+    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+    u, du = ts.solve(xi, u0)
+    plt.plot(xi/np.sqrt(rhoe), rhoe*np.exp(u), 'r--', lw=1)
+
+    # overplot critical BE
+    ts = tes.TES()
+    u_c, r_c, m_c = ts.get_crit()
+    rhoe = rhoc*np.exp(-u_c)
+    xi_min = np.sqrt(rhoe)*rprf.r[0]
+    xi = np.logspace(np.log10(xi_min), np.log10(r_c))
+    u, du = ts.solve(xi, u_c)
+    plt.plot(xi/np.sqrt(rhoe), rhoe*np.exp(u), 'b:', lw=1)
+
+    plt.axvline(core.radius, ls=':', c='k')
+    plt.axvline(core.critical_radius, ls='--', c='k')
     plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(1e0, rhoLP[0])
     plt.xlabel(r'$r/L_{J,0}$')
@@ -154,22 +174,24 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Annotations
     plt.text(0.5, 0.9, r'$t = {:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.5, 0.8, r'$M = {:.2f}$'.format(Mcore)+r'$\,M_{J,0}$',
+    plt.text(0.5, 0.8, r'$M = {:.2f}$'.format(core.mass)+r'$\,M_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(Rcore)+r'$\,L_{J,0}$',
+    plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
     # Velocities
     plt.sca(fig.add_subplot(gs[1,3]))
     plt.plot(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
     plt.plot(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
     plt.plot(rprf.r, rprf.vel3, marker='+', label=r'$v_\phi$')
-    plt.axvline(Rcore, ls=':', c='k')
+    plt.axvline(core.radius, ls=':', c='k')
+    plt.axvline(core.critical_radius, ls='--', c='k')
     plt.axhline(0, ls=':')
     plt.xlim(0, hw)
     plt.ylim(-2.5, 1.5)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v\right>/c_s$')
     plt.legend()
+
     # Velocity dispersions
     plt.sca(fig.add_subplot(gs[2,3]))
     plt.loglog(rprf.r, np.sqrt(rprf.vel1_sq), marker='+', label=r'$v_r$')
@@ -177,7 +199,12 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.loglog(rprf.r, np.sqrt(rprf.vel3_sq), marker='+', label=r'$v_\phi$')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**0.5, 'k--')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
-    plt.axvline(Rcore, ls=':', c='k')
+
+    # overplot linear fit
+    plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--', lw=1)
+
+    plt.axvline(core.radius, ls=':', c='k')
+    plt.axvline(core.critical_radius, ls='--', c='k')
     plt.xlim(rprf.r[0], 2*hw)
     plt.ylim(1e-1, 1e1)
     plt.xlabel(r'$r/L_{J,0}$')
@@ -196,7 +223,8 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.sca(fig.add_subplot(gs[1,4]))
     plot_forces(s, rprf)
     plt.title('')
-    plt.axvline(Rcore, ls=':', c='k')
+    plt.axvline(core.radius, ls=':', c='k')
+    plt.axvline(core.critical_radius, ls='--', c='k')
     plt.xlim(0, hw)
     plt.legend(fontsize=15)
 
