@@ -432,6 +432,30 @@ class TESc:
 
 
 def get_pv_diagram(rsonic, umin=-2, umax=18):
+    """Construct p-v diagram of a TES
+
+    Parameters
+    ----------
+    rsonic : float
+        Dimensionless sonic radius with the TESm normalization.
+    umin : float, optional
+        Minimum dimensionless central density.
+    umax : float, optional
+        Maximum dimensionless central density.
+
+    Returns
+    -------
+    vol : float
+        Dimensionless volume of a TES.
+    prs : float
+        Dimensionless boundary pressure of a TES.
+
+    Notes
+    -----
+    dimensionless length = length / (GM / c_s^2)
+    dimensionless density = density / (c_s^6 / G^3 / M^2)
+    dimensionless pressure = pressure / (c_s^8 / G^3 / M^2)
+    """
     tsm = TESm(xi_s=rsonic)
     vol, prs = [], []
     for u0 in np.linspace(umin, umax):
