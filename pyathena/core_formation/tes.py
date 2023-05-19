@@ -1,4 +1,4 @@
-from scipy.integrate import odeint, quad
+from scipy.integrate import odeint
 from scipy.optimize import minimize_scalar, brentq
 import matplotlib.pyplot as plt
 import numpy as np
@@ -9,6 +9,7 @@ def vectorize(otypes=None, signature=None):
     """Numpy vectorization wrapper that works with instance methods."""
     def decorator(fn):
         vectorized = np.vectorize(fn, otypes=otypes, signature=signature)
+
         @functools.wraps(fn)
         def wrapper(*args):
             return vectorized(*args)
@@ -95,13 +96,13 @@ class TES:
             istart = 1
         else:
             istart = 0
-        if np.all(xi<=self._xi_min):
+        if np.all(xi <= self._xi_min):
             u = y0[0]*np.ones(xi.size)
             du = y0[1]*np.ones(xi.size)
         else:
             y = odeint(self._dydx, y0, xi)
-            u = y[istart:,0]
-            du = y[istart:,1]
+            u = y[istart:, 0]
+            du = y[istart:, 1]
         return u, du
 
     @vectorize(signature="(),()->()")
@@ -257,13 +258,13 @@ class TESm:
             istart = 1
         else:
             istart = 0
-        if np.all(xi<=self._xi_min):
+        if np.all(xi <= self._xi_min):
             u = y0[0]*np.ones(xi.size)
             du = y0[1]*np.ones(xi.size)
         else:
             y = odeint(self._dydx, y0, xi)
-            u = y[istart:,0]
-            du = y[istart:,1]
+            u = y[istart:, 0]
+            du = y[istart:, 1]
         return u, du
 
     def get_radius(self, u0):
@@ -380,13 +381,13 @@ class TESc:
             istart = 1
         else:
             istart = 0
-        if np.all(xi<=self._xi_min):
+        if np.all(xi <= self._xi_min):
             u = y0[0]*np.ones(xi.size)
             du = y0[1]*np.ones(xi.size)
         else:
             y = odeint(self._dydx, y0, xi)
-            u = y[istart:,0]
-            du = y[istart:,1]
+            u = y[istart:, 0]
+            du = y[istart:, 1]
         return u, du
 
     def get_mass(self, xi0):
@@ -491,13 +492,13 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     rsonic0 : float
         r_s / L_{J,c}
     """
-    fig, axs = plt.subplots(2,2,figsize=(14,10))
+    fig, axs = plt.subplots(2, 2, figsize=(14, 10))
 
     ts = TESc(xi_s=rsonic0)
     menc0 = ts.get_mass(rmax0)
 
     # Plot the density profile
-    plt.sca(axs[0,0])
+    plt.sca(axs[0, 0])
     rds = np.logspace(-2, 2)
     u, du = ts.solve(rds)
     plt.loglog(rds, np.exp(u))
@@ -508,7 +509,7 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     plt.legend()
 
     # Plot the r-M diagram
-    plt.sca(axs[0,1])
+    plt.sca(axs[0, 1])
     rmax_arr = np.logspace(-1, 2)
     M = []
     for R in rmax_arr:
@@ -524,21 +525,22 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     tsm = TESm(xi_s=rsonic)
 
     # visualization
-    plt.sca(axs[1,0])
+    plt.sca(axs[1, 0])
     # density profiles for a selected u0
-    u00 = np.log(np.pi**3*menc0**2) # initial condition corresponding to the unvaried sphere
+    # initial condition corresponding to the unvaried sphere
+    u00 = np.log(np.pi**3*menc0**2)
     for u0 in [u00-10, u00-5, u00, u00+5, u00+10]:
         rmax = tsm.get_radius(u0)
         r = np.logspace(-6, np.log10(rmax))
         u, du = tsm.solve(r, u0)
-        color = 'r' if u0==u00 else 'k'
+        color = 'r' if u0 == u00 else 'k'
         plt.loglog(r, np.exp(u), color=color)
     plt.xlabel(r'$r/(GMc_s^{-2})$')
     plt.ylabel(r'$\rho/(c^6G^{-3}M^{-2})$')
 
     # P-V diagram
     vol, prs = get_pv_diagram(rsonic, u00-10, u00+10)
-    plt.sca(axs[1,1])
+    plt.sca(axs[1, 1])
     plt.loglog(vol, prs)
     rmax = tsm.get_radius(u00)
     vol = 4*np.pi/3*rmax**3
@@ -563,13 +565,13 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
     rsonic0 : float
         r_s / L_{J,e}
     """
-    fig, axs = plt.subplots(2,2,figsize=(14,10))
+    fig, axs = plt.subplots(2, 2, figsize=(14, 10))
 
     ts = TES(xi_s=rsonic0)
     menc0 = ts.get_mass(logrhoc)
 
     # Plot the density profile
-    plt.sca(axs[0,0])
+    plt.sca(axs[0, 0])
     rds = np.logspace(-2, np.log10(ts.get_radius(logrhoc)))
     u, du = ts.solve(rds, logrhoc)
     plt.loglog(rds, np.exp(u))
@@ -583,7 +585,7 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
     plt.legend()
 
     # Plot the r-M diagram
-    plt.sca(axs[0,1])
+    plt.sca(axs[0, 1])
     u0_arr = np.linspace(0.1, 15, 100)
     R = ts.get_radius(u0_arr)
     M = ts.get_mass(u0_arr)
@@ -598,21 +600,22 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
     tsm = TESm(xi_s=rsonic)
 
     # visualization
-    plt.sca(axs[1,0])
+    plt.sca(axs[1, 0])
     # density profiles for a selected u0
-    u00 = logrhoc + np.log(np.pi**3*menc0**2) # initial condition corresponding to the unvaried sphere
+    # initial condition corresponding to the unvaried sphere
+    u00 = logrhoc + np.log(np.pi**3*menc0**2)
     for u0 in [u00-10, u00-5, u00, u00+5, u00+10]:
         rmax = tsm.get_radius(u0)
         r = np.logspace(-6, np.log10(rmax))
         u, du = tsm.solve(r, u0)
-        color = 'r' if u0==u00 else 'k'
+        color = 'r' if u0 == u00 else 'k'
         plt.loglog(r, np.exp(u), color=color)
     plt.xlabel(r'$r/(GMc_s^{-2})$')
     plt.ylabel(r'$\rho/(c^6G^{-3}M^{-2})$')
 
     # P-V diagram
     vol, prs = get_pv_diagram(rsonic, u00-10, u00+10)
-    plt.sca(axs[1,1])
+    plt.sca(axs[1, 1])
     plt.loglog(vol, prs)
     rmax = tsm.get_radius(u00)
     vol = 4*np.pi/3*rmax**3

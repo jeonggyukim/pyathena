@@ -1,18 +1,11 @@
 # read_hst.py
 
-import os
-import os.path as osp
-import glob
-import xarray as xr
 import numpy as np
 import pandas as pd
-from scipy import integrate
-import matplotlib.pyplot as plt
-import astropy.units as au
-import astropy.constants as ac
 
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
+
 
 class Hst:
 
@@ -40,7 +33,7 @@ class Hst:
         h['gravE'] = hst['gravE']
 
         # Mass weighted velocity dispersions
-        for name, ax in zip(('x','y','z'),('1','2','3')):
+        for name, ax in zip(('x', 'y', 'z'), ('1', '2', '3')):
             KE = hst['{}KE'.format(ax)]
             h['v{}'.format(name)] = np.sqrt(2*KE/hst['mass'])
 

@@ -3,7 +3,6 @@ import xarray as xr
 from scipy.special import erfinv
 from scipy.stats import linregress
 from scipy.optimize import brentq
-from pathlib import Path
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import tes
@@ -25,14 +24,14 @@ class LognormalPDF:
         self.mu = 0.5*np.log(1 + b**2*Mach**2)
         self.var = 2*self.mu
         self.sigma = np.sqrt(self.var)
-        if weight=='mass':
+        if weight == 'mass':
             pass
-        elif weight=='volume':
+        elif weight == 'volume':
             self.mu *= -1
         else:
             ValueError("weight must be either mass or volume")
 
-    def fx(self,x):
+    def fx(self, x):
         """The mass fraction between x and x+dx, where x = ln(rho/rho_0)"""
         f = (1/np.sqrt(2*np.pi*self.var))*np.exp(-(x - self.mu)**2/(2*self.var))
         return f
@@ -63,7 +62,7 @@ def calculate_critical_tes(s, rprf):
         return rhoe*rat_crit
 
     # select the subsonic portion for fitting
-    idx = np.where(rprf.vel1_sq_mw.data<1)[0][-1]
+    idx = np.where(rprf.vel1_sq_mw.data < 1)[0][-1]
     Rmax = rprf.r.isel(r=idx).data[()]
     r = rprf.r.sel(r=slice(0, Rmax)).data[1:]
     vr2 = rprf.vel1_sq_mw.sel(r=slice(0, Rmax)).data[1:]
@@ -116,7 +115,7 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     # Convert density and velocities to spherical coord.
     ds['phistar'] = ds['phi'] - ds['phigas']
     vel, ggas, gstar, grad_pthm, grad_ptrb = {}, {}, {}, {}, {}
-    for dim, axis in zip(['x','y','z'], [1,2,3]):
+    for dim, axis in zip(['x', 'y', 'z'], [1, 2, 3]):
         # Recenter velocity and calculate gravitational acceleration
         vel_ = ds['mom{}'.format(axis)]/ds.dens
         vel[dim] = vel_ - vel_.sel(x=origin[0], y=origin[1], z=origin[2])
@@ -133,7 +132,7 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     # Calculate pressure gradient forces and transform to spherical coord.
     pthm = ds.dens*s.cs**2
     ptrb = ds.dens*ds_sph['vel1']**2
-    for dim in ['x','y','z']:
+    for dim in ['x', 'y', 'z']:
         grad_pthm[dim] = pthm.differentiate(dim)
         grad_ptrb[dim] = ptrb.differentiate(dim)
     _, (ds_sph['grad_pthm1'], ds_sph['grad_pthm2'], ds_sph['grad_pthm3']) = transform.to_spherical(grad_pthm.values(), origin)
@@ -303,7 +302,7 @@ def calculate_cum_energies(ds, nodes, node, mode='HBR', boundary_flag='periodic'
         Ekin0 = Eth0 = np.zeros(Ncells)
     elif mode == 'HBR+1' or mode == 'HBR-1':
         pcn = boundary.precompute_neighbor(ds.phi.shape, boundary_flag)
-        edge = get_edge_cells(cells, pcn)
+        edge = boundary.get_edge_cells(cells, pcn)
         edg1d = dict(rho=ds.dens.data.flatten()[edge],
                      vx=ds.vel1.data.flatten()[edge],
                      vy=ds.vel2.data.flatten()[edge],
@@ -333,8 +332,8 @@ def calculate_cum_energies(ds, nodes, node, mode='HBR', boundary_flag='periodic'
         v0 = np.array([vx0, vy0, vz0])
         # A1
         rho_rdotv = ds.dens*((ds.x - x0)*ds.vel1
-                              + (ds.y - y0)*ds.vel2
-                              + (ds.z - z0)*ds.vel3)
+                             + (ds.y - y0)*ds.vel2
+                             + (ds.z - z0)*ds.vel3)
         A1 = ((rho_rdotv*ds.vel1).differentiate('x')
               + (rho_rdotv*ds.vel2).differentiate('y')
               + (rho_rdotv*ds.vel3).differentiate('z'))
@@ -343,8 +342,8 @@ def calculate_cum_energies(ds, nodes, node, mode='HBR', boundary_flag='periodic'
         grad_rho_r = np.empty((3, 3), dtype=xr.DataArray)
         for i, crd_i in enumerate(['x', 'y', 'z']):
             for j, (crd_j, pos0_j) in enumerate(zip(['x', 'y', 'z'], [x0, y0, z0])):
-                grad_rho_r[i,j] = (ds.dens*(ds[crd_j] - pos0_j)
-                                   ).differentiate(crd_i)
+                grad_rho_r[i, j] = (ds.dens*(ds[crd_j] - pos0_j)
+                                    ).differentiate(crd_i)
         A2 = np.empty((3, 3, Ncells))
         for i, crd_i in enumerate(['x', 'y', 'z']):
             for j, (crd_j, pos0_j) in enumerate(zip(['x', 'y', 'z'], [x0, y0, z0])):
@@ -363,8 +362,8 @@ def calculate_cum_energies(ds, nodes, node, mode='HBR', boundary_flag='periodic'
         for i, (crd_i, pos0_i) in enumerate(zip(['x', 'y', 'z'],
                                                 [x0, y0, z0])):
             div_rhorv[i] = ((ds.dens*(ds[crd_i] - pos0_i)*ds.vel1).differentiate('x')
-                          + (ds.dens*(ds[crd_i] - pos0_i)*ds.vel2).differentiate('y')
-                          + (ds.dens*(ds[crd_i] - pos0_i)*ds.vel3).differentiate('z'))
+                            + (ds.dens*(ds[crd_i] - pos0_i)*ds.vel2).differentiate('y')
+                            + (ds.dens*(ds[crd_i] - pos0_i)*ds.vel3).differentiate('z'))
         A4 = np.empty((3, Ncells))
         for i, crd_i in enumerate(['x', 'y', 'z']):
             A4[i, :] = (div_rhorv[i].data.flatten()[cells]*dV).cumsum()
@@ -409,30 +408,35 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, N_LP=10):
     print("Critical TES mass = {:.3f}".format(M_TES))
     print("Critical TES radius = {:.3f}".format(R_TES))
     print("Critical TES central density = {:.3f}".format(rhoc_TES))
-    print("Equivalent LP radius for Bonner-Ebert sphere = {:.3f}".format(R_LP_BE))
+    print("Equivalent LP radius for Bonner-Ebert sphere = "
+          "{:.3f}".format(R_LP_BE))
     print("Equivalent LP radius for TES = {:.3f}".format(R_LP_TES))
     print("Required resolution dx to resolve BE sphere = {}".format(dx_req))
-    print("Required resolution Ncells to resolve BE sphere= {}".format(Ncells_req))
+    print("Required resolution Ncells to resolve BE sphere = "
+          "{}".format(Ncells_req))
+
 
 def get_sonic(Mach_outer, l_outer, p=0.5):
     """returns sonic scale assuming linewidth-size relation v ~ R^p
     """
-    if Mach_outer==0:
+    if Mach_outer == 0:
         return np.inf
     lambda_s = l_outer*Mach_outer**(-1/p)
     return lambda_s
+
 
 def recenter_dataset(ds, center):
     shape = np.array(list(ds.dims.values()), dtype=int)
     hNz, hNy, hNx = shape >> 1
     xc, yc, zc = center
-    ishift = hNx - np.where(ds.x.data==xc)[0][0]
-    jshift = hNy - np.where(ds.y.data==yc)[0][0]
-    kshift = hNz - np.where(ds.z.data==zc)[0][0]
+    ishift = hNx - np.where(ds.x.data == xc)[0][0]
+    jshift = hNy - np.where(ds.y.data == yc)[0][0]
+    kshift = hNz - np.where(ds.z.data == zc)[0][0]
     xc_new = ds.x.isel(x=hNx).data[()]
     yc_new = ds.y.isel(y=hNy).data[()]
     zc_new = ds.z.isel(z=hNz).data[()]
     return ds.roll(x=ishift, y=jshift, z=kshift), (xc_new, yc_new, zc_new)
+
 
 def get_rhocrit_KM05(lmb_sonic):
     """Equation (17) of Krumholz & McKee (2005)
@@ -446,11 +450,14 @@ def get_rhocrit_KM05(lmb_sonic):
     rho_crit = (phi_x/lmb_sonic)**2
     return rho_crit
 
+
 def roundup(a, decimal):
     return np.ceil(a*10**decimal) / 10**decimal
 
+
 def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
+
 
 def get_periodic_distance(pos1, pos2, Lbox):
     hLbox = 0.5*Lbox

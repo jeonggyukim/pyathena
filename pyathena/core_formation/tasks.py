@@ -40,7 +40,9 @@ def save_critical_tes(s, pids=None, overwrite=False):
                                              'sonic_radius'),
                                     dtype=object).set_index('num')
         for num, _ in s.cores[pid].iterrows():
-            print('[save_critical_tes] processing model {} pid {} num {}'.format(s.basename, pid, num))
+            msg = '[save_critical_tes] processing model {} pid {} num {}'
+            msg = msg.format(s.basename, pid, num)
+            print(msg)
             rprf = s.rprofs[pid].sel(num=num)
             critical_tes.loc[num] = tools.calculate_critical_tes(s, rprf)
 
@@ -84,7 +86,7 @@ def find_and_save_cores(s, pids=None, overwrite=False):
         pos_old = tools.get_coords_node(ds, nid_old)
         rho = dendrogram.filter_by_node(ds.dens, leaves, nid_old)
         Mcore_old = (rho*s.dV).sum().data[()]
-        Vcore = ((rho>0).sum()*s.dV).data[()]
+        Vcore = ((rho > 0).sum()*s.dV).data[()]
         Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
 
         # Add t_coll core to a list of progenitor cores
@@ -96,7 +98,9 @@ def find_and_save_cores(s, pids=None, overwrite=False):
                              dtype=object).set_index("num")
 
         for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
-            print('[find_and_save_cores] processing model {} pid {} num {}'.format(s.basename, pid, num))
+            msg = '[find_and_save_cores] processing model {} pid {} num {}'
+            msg = msg.format(s.basename, pid, num)
+            print(msg)
             # loop backward in time to find all preimages of the t_coll core
             ds = s.load_hdf5(num, load_method='pyathena')
             leaves = s.load_leaves(num)
@@ -113,7 +117,7 @@ def find_and_save_cores(s, pids=None, overwrite=False):
             pos = tools.get_coords_node(ds, nid)
             rho = dendrogram.filter_by_node(ds.dens, leaves, nid)
             Mcore = (rho*s.dV).sum().data[()]
-            Vcore = ((rho>0).sum()*s.dV).data[()]
+            Vcore = ((rho > 0).sum()*s.dV).data[()]
             Rcore = (3*Vcore/(4*np.pi))**(1./3.)
 
             # Relative errors in position, mass, and radius.
@@ -159,9 +163,12 @@ def save_radial_profiles(s, pids=None, overwrite=False):
 
         time, rprf = [], []
         for num, core in s.cores[pid].iterrows():
-            print('[save_radial_profiles] processing model {} pid {} num {}'.format(s.basename, pid, num))
+            msg = '[save_radial_profiles] processing model {} pid {} num {}'
+            msg = msg.format(s.basename, pid, num)
+            print(msg)
             # Load the snapshot and the core id
-            ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
+            ds = s.load_hdf5(num, load_method='pyathena')
+            ds = ds.transpose('z', 'y', 'x')
 
             # Find the location of the core
             center = tools.get_coords_node(ds, core.nid)
@@ -177,21 +184,14 @@ def save_radial_profiles(s, pids=None, overwrite=False):
         rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
                          combine_attrs='drop_conflicts')
         rprf = rprf.assign_coords(dict(num=('t', s.cores[pid].index)))
-        rprf = rprf.set_xindex('num') # When writing to netcdf and read, num is dropped from index list.
+        # When writing to netcdf and read, num is dropped from index list.
+        rprf = rprf.set_xindex('num')
 
         # write to file
         rprf.to_netcdf(ofname)
 
 
 def run_GRID(s, overwrite=False):
-    cs = s.par['hydro']['iso_sound_speed']
-
-    # Assume uniform grid
-    dx = (s.par['mesh']['x1max'] - s.par['mesh']['x1min'])/s.par['mesh']['nx1']
-    dy = (s.par['mesh']['x2max'] - s.par['mesh']['x2min'])/s.par['mesh']['nx2']
-    dz = (s.par['mesh']['x3max'] - s.par['mesh']['x3min'])/s.par['mesh']['nx3']
-    dV = dx*dy*dz
-
     for num in s.nums[config.GRID_NUM_START:]:
         # Check if file exists
         print('[run_GRID] processing model {} num {}'.format(s.basename, num))
@@ -201,7 +201,7 @@ def run_GRID(s, overwrite=False):
             continue
 
         # Load data and construct dendrogram
-        ds = s.load_hdf5(num, load_method='pyathena').transpose('z','y','x')
+        ds = s.load_hdf5(num, load_method='pyathena').transpose('z', 'y', 'x')
         grd = dendrogram.Dendrogram(ds.phigas.to_numpy())
         grd.construct()
         grd.prune()
@@ -215,8 +215,8 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
     script = "/home/sm69/tigris/vis/tab/combine_partab.sh"
     outid = "out{}".format(s.partab_outid)
     block0_pattern = '{}/{}.block0.{}.?????.{}.tab'.format(s.basedir,
-                                                         s.problem_id, outid,
-                                                         partag)
+                                                           s.problem_id, outid,
+                                                           partag)
     file_list0 = sorted(glob.glob(block0_pattern))
     if len(file_list0) == 0:
         print("Nothing to combine", flush=True)
@@ -226,24 +226,25 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
     if ne is None:
         ne = int(file_list0[-1].split('/')[-1].split('.')[3])
     nblocks = 1
-    for axis in [1,2,3]:
+    for axis in [1, 2, 3]:
         nblocks *= ((s.par['mesh'][f'nx{axis}']
                     // s.par['meshblock'][f'nx{axis}']))
-    if not partag in s.partags:
+    if partag not in s.partags:
         raise ValueError("Particle {} does not exist".format(partag))
     subprocess.run([script, s.problem_id, outid, partag, str(ns), str(ne)],
                    cwd=s.basedir)
 
     if remove:
         joined_pattern = '{}/{}.{}.?????.{}.tab'.format(s.basedir,
-                                                      s.problem_id, outid,
-                                                      partag)
+                                                        s.problem_id, outid,
+                                                        partag)
         joined_files = set(glob.glob(joined_pattern))
-        if {f.replace('block0.', '') for f in file_list0}.issubset(joined_files):
+        block0_files = {f.replace('block0.', '') for f in file_list0}
+        if block0_files.issubset(joined_files):
             print("All files are joined. Remove block* files", flush=True)
-            file_pattern = '{}/{}.block*.{}.?????.{}.tab'.format(s.basedir,
-                                                                 s.problem_id, outid,
-                                                                 partag)
+            file_pattern = '{}/{}.block*.{}.?????.{}.tab'
+            file_pattern = file_pattern.format(s.basedir, s.problem_id, outid,
+                                               partag)
             file_list = sorted(glob.glob(file_pattern))
             for f in file_list:
                 Path(f).unlink()
@@ -289,7 +290,7 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
         s1: pyathena.LoadSim instance
         s2: pyathena.LoadSim instance
     """
-    fig, axs = plt.subplots(1,2,figsize=(14,7))
+    fig, axs = plt.subplots(1, 2, figsize=(14, 7))
     nums = list(set(s1.nums) & set(s2.nums))
     odir = odir / "{}_{}".format(s1.basename, s2.basename)
     odir.mkdir(exist_ok=True)
@@ -297,7 +298,8 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
         for ax, s in zip(axs, [s1, s2]):
             ds = s.load_hdf5(num, load_method='yt')
             plots.plot_projection(s, ds, ax=ax, add_colorbar=False)
-            ax.set_title(r'$t={:.3f}$'.format(ds.current_time.value), fontsize=16)
+            ax.set_title(r'$t={:.3f}$'.format(ds.current_time.value),
+                         fontsize=16)
         fname = odir / "Projection_z_dens.{:05d}.png".format(num)
         fig.savefig(fname, bbox_inches='tight', dpi=200)
         for ax in axs:
@@ -320,12 +322,13 @@ def make_plots_core_evolution(s, pids=None, overwrite=False):
         leaves = s.load_leaves(num)
         core = s.cores[pid].loc[num]
         prims = dict(rho=ds.dens.to_numpy(),
-             vel1=(ds.mom1/ds.dens).to_numpy(),
-             vel2=(ds.mom2/ds.dens).to_numpy(),
-             vel3=(ds.mom3/ds.dens).to_numpy(),
-             prs=s.cs**2*ds.dens.to_numpy(),
-             phi=ds.phigas.to_numpy())
-        reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, core.nid)
+                     vel1=(ds.mom1/ds.dens).to_numpy(),
+                     vel2=(ds.mom2/ds.dens).to_numpy(),
+                     vel3=(ds.mom3/ds.dens).to_numpy(),
+                     prs=s.cs**2*ds.dens.to_numpy(),
+                     phi=ds.phigas.to_numpy())
+        reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves,
+                                                          core.nid)
         emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
         emin = tools.rounddown(engs['egrv'].min(), 1)
         rmax = tools.roundup(reff.max(), 2)
@@ -335,7 +338,8 @@ def make_plots_core_evolution(s, pids=None, overwrite=False):
             fname.parent.mkdir(exist_ok=True)
             if fname.exists() and not overwrite:
                 continue
-            fig = plots.plot_core_evolution(s, pid, num, emin=emin, emax=emax, rmax=rmax)
+            fig = plots.plot_core_evolution(s, pid, num, emin=emin, emax=emax,
+                                            rmax=rmax)
             fig.savefig(fname, bbox_inches='tight', dpi=200)
             plt.close(fig)
 
@@ -367,7 +371,7 @@ def make_plots_projections(s, overwrite=False):
     Args:
         s: pyathena.LoadSim instance
     """
-    fig, ax = plt.subplots(figsize=(8,8))
+    fig, ax = plt.subplots(figsize=(8, 8))
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='4%', pad=0.05)
     for num in s.nums:
@@ -392,7 +396,7 @@ def make_plots_PDF_Pspec(s, overwrite=False):
     Args:
         s: pyathena.LoadSim instance
     """
-    fig, axs = plt.subplots(1,2,figsize=(12,6))
+    fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     ax1_twiny = axs[1].twiny()
     for num in s.nums:
         fname = Path(s.basedir, 'figures', "{}.{:05d}.png".format(
@@ -410,6 +414,7 @@ def make_plots_PDF_Pspec(s, overwrite=False):
         ax1_twiny.cla()
     plt.close(fig)
 
+
 def make_plots_central_density_evolution(s, overwrite=False):
     """Creates plot showing central density evolution for each cores
 
@@ -418,7 +423,8 @@ def make_plots_central_density_evolution(s, overwrite=False):
     Args:
         s: pyathena.LoadSim instance
     """
-    fname = Path(s.basedir, 'figures', "{}.png".format(config.PLOT_PREFIX_RHOC_EVOLUTION))
+    fname = Path(s.basedir, 'figures',
+                 "{}.png".format(config.PLOT_PREFIX_RHOC_EVOLUTION))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
         return
