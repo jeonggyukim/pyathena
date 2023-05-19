@@ -17,11 +17,8 @@ def vectorize(otypes=None, signature=None):
     return decorator
 
 
-class TES:
-    """Turbulent equilibrium sphere
-
-    A family of turbulent equilibrium spheres at a fixed external pressure.
-    Default parameters correspond to Bonner-Ebert spheres.
+class TESe:
+    """Turbulent equilibrium sphere of a fixed external pressure.
 
     Parameters
     ----------
@@ -58,7 +55,7 @@ class TES:
     Examples
     --------
     >>> import tes
-    >>> ts = tes.TES()
+    >>> ts = tes.TESe()
     >>> # Find critical parameters
     >>> u_crit, r_crit, m_crit = ts.get_crit()
     >>> r = np.logspace(-2, np.log10(r_crit))
@@ -210,9 +207,7 @@ class TES:
 
 
 class TESm:
-    """Turbulent equilibrium sphere
-
-    A family of turbulent equilibrium spheres at a fixed mass.
+    """Turbulent equilibrium sphere of a fixed mass.
 
     Parameters
     ----------
@@ -334,10 +329,7 @@ class TESm:
 
 
 class TESc:
-    """Turbulent equilibrium sphere
-
-    A family of turbulent equilibrium spheres at a fixed central density.
-    Default parameters correspond to Bonner-Ebert spheres.
+    """Turbulent equilibrium sphere of a fixed central density.
 
     Parameters
     ----------

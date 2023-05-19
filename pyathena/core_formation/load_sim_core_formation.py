@@ -10,7 +10,7 @@ from pyathena.io.timing_reader import TimingReader
 from pyathena.core_formation.hst import Hst
 from pyathena.core_formation.slc_prj import SliceProj
 from pyathena.core_formation.tools import LognormalPDF
-from pyathena.core_formation.tes import TES
+from pyathena.core_formation.tes import TESe
 from pyathena.core_formation import tools
 
 class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
@@ -149,7 +149,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
         LJ_e = 1.0*(rhoe/self.rho0)**-0.5
         MJ_e = 1.0*(rhoe/self.rho0)**-0.5
         xi_s = lmb_sonic / LJ_e
-        tes = TES(p, xi_s)
+        tes = TESe(p, xi_s)
         rat, xi0, m = tes.get_crit()
         rhoc = rat*rhoe
         R = LJ_e*xi0

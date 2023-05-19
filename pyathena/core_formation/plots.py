@@ -149,7 +149,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     rhoc = rprf.rho.isel(r=0).data[()]
     rhoe = core.edge_density
     if not np.isnan(rhoe):
-        ts = tes.TES(p=core.pindex, xi_s=np.sqrt(rhoe)*core.sonic_radius)
+        ts = tes.TESe(p=core.pindex, xi_s=np.sqrt(rhoe)*core.sonic_radius)
         u0 = np.log(rhoc/rhoe)
         xi_max = ts.get_radius(u0)
         xi_min = np.sqrt(rhoe)*rprf.r[0]
@@ -158,7 +158,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.plot(xi/np.sqrt(rhoe), rhoe*np.exp(u), 'r--', lw=1)
 
     # overplot critical BE
-    ts = tes.TES()
+    ts = tes.TESe()
     u_c, r_c, m_c = ts.get_crit()
     rhoe = rhoc*np.exp(-u_c)
     xi_min = np.sqrt(rhoe)*rprf.r[0]

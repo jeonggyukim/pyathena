@@ -57,7 +57,7 @@ def calculate_critical_tes(s, rprf):
     """
     def get_central_density_of_critical_tes(rhoe):
         xi_s = np.sqrt(rhoe)*rs
-        ts = tes.TES(p=p, xi_s=xi_s)
+        ts = tes.TESe(p=p, xi_s=xi_s)
         rat_crit, _, _ = ts.get_crit()
         return rhoe*rat_crit
 
@@ -90,7 +90,7 @@ def calculate_critical_tes(s, rprf):
             rhoe = 10**brentq(lambda x: get_central_density_of_critical_tes(10**x) - rhoc,
                               np.log10(rhoe_min), np.log10(rhoc))
             xi_s = np.sqrt(rhoe)*rs
-            ts = tes.TES(p=p, xi_s=xi_s)
+            ts = tes.TESe(p=p, xi_s=xi_s)
             rat_crit, rcrit, mcrit = ts.get_crit()
     res = dict(edge_density=rhoe, critical_radius=rcrit/np.sqrt(rhoe), pindex=p, sonic_radius=rs)
     return res
