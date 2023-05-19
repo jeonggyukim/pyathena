@@ -1,5 +1,6 @@
 from scipy.integrate import odeint, quad
 from scipy.optimize import minimize_scalar, brentq
+import matplotlib.pyplot as plt
 import numpy as np
 import functools
 
@@ -105,9 +106,9 @@ class TES:
 
     @vectorize(signature="(),()->()")
     def get_radius(self, u0):
-        """Calculates the dimensionless radius of a TES.
+        """Calculates the dimensionless radial extent of a TES.
 
-        The maximum radius of a TES is the radius at which rho = rho_e.
+        The radial extent of a TES is the radius at which rho = rho_e.
 
         Parameters
         ----------
@@ -117,7 +118,7 @@ class TES:
         Returns
         -------
         float
-            Dimensionless maximum radius.
+            Dimensionless radial extent
         """
         logxi0 = brentq(lambda x: self.solve(10**x, u0)[0],
                         np.log10(self._xi_min), np.log10(self._xi_max))
@@ -210,8 +211,7 @@ class TES:
 class TESm:
     """Turbulent equilibrium sphere
 
-    A family of turbulent equilibrium spheres at a fixed external pressure.
-    Default parameters correspond to Bonner-Ebert spheres.
+    A family of turbulent equilibrium spheres at a fixed mass.
 
     Parameters
     ----------
@@ -226,40 +226,11 @@ class TESm:
         power-law index of the velocity dispersion.
     xi_s : float
         dimensionless sonic radius.
-
-    Notes
-    -----
-    A family of turbulent equilibrium spheres parametrized by the center-
-    to-edge density contrast, at a fixed edge density (or equivalently,
-    external pressure).
-
-    The angle-averaged hydrostatic equation is solved using the following
-    dimensionless variables,
-        xi = r / L_{J,e},
-        u = ln(rho/rho_e),
-    where L_{J,e} is the Jeans length at the edge density rho_e.
-
-    Density-weighted, angle-averaged radial velocity dispersion is assumed
-    to be a power-law in radius, such that
-        <v_r^2> = c_s^2 (r / r_s)^{2p} = c_s^2 (xi / xi_s)^{2p}.
-
-    m = M / M_{J,e},
-
-    Examples
-    --------
-    >>> import tes
-    >>> ts = tes.TES()
-    >>> # Find critical parameters
-    >>> u_crit, r_crit, m_crit = ts.get_crit()
-    >>> r = np.logspace(-2, np.log10(r_crit))
-    >>> u, du = ts.solve(r, u_crit)
-    >>> # plot density profile
-    >>> plt.loglog(r, np.exp(u))
     """
     def __init__(self, p=0.5, xi_s=np.inf):
         self.p = p
         self.xi_s = xi_s
-        self._xi_min = 1e-5
+        self._xi_min = 1e-7
         self._xi_max = 1e3
 
     def solve(self, xi, u0):
@@ -296,9 +267,7 @@ class TESm:
         return u, du
 
     def get_radius(self, u0):
-        """Calculates the dimensionless radius of a TES.
-
-        The maximum radius of a TES is the radius at which rho = rho_e.
+        """Calculates the dimensionless radial extent of a TES.
 
         Parameters
         ----------
@@ -308,27 +277,25 @@ class TESm:
         Returns
         -------
         float
-            Dimensionless maximum radius.
+            Dimensionless radial extent.
         """
-        logxi0 = brentq(lambda x: self.get_mass(10**x, u0) - 1,
+        logxi0 = brentq(lambda x: self._get_mass(10**x, u0) - 1,
                         np.log10(self._xi_min), np.log10(self._xi_max))
         return 10**logxi0
 
-    def get_mass(self, xi0, u0):
+    def _get_mass(self, xi0, u0):
         """Calculates dimensionless enclosed mass.
 
-        The dimensionless mass enclosed within the dimensionless radius xi
-        is defined by
-            M(xi) = m(xi)M_{J,e}
-        where M_{J,e} is the Jeans mass at the edge density rho_e
+        For fixed mass TES family, the dimensionless enclosed mass
+        must be unity by definition. This imposes boundary condition
+        for the radial extent of the cloud.
 
         Parameters
         ----------
+        xi0 : float
+            Radius within which the enclosed mass is computed.
         u0 : float
             Dimensionless logarithmic central density
-        xi0 : float, optional
-            Radius within which the enclosed mass is computed. If None, use
-            the maximum radius of a sphere.
 
         Returns
         -------
@@ -338,6 +305,112 @@ class TESm:
         u, du = self.solve(xi0, u0)
         f = 1 + (xi0/self.xi_s)**(2*self.p)
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)
+        return m.squeeze()[()]
+
+    def _dydx(self, y, x):
+        """Differential equation for hydrostatic equilibrium.
+
+        Parameters
+        ----------
+        y : array
+            Vector of dependent variables
+        x : array
+            Independent variable
+
+        Returns
+        -------
+        array
+            Vector of (dy/dx)
+        """
+        y1, y2 = y
+        dy1 = y2
+        f = 1 + (x/self.xi_s)**(2*self.p)
+        a = x**2*f
+        b = 2*x*((1+self.p)*f - self.p)
+        c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi*x**2*np.exp(y1)
+        dy2 = -(b/a)*y2 - (c/a)
+        return np.array([dy1, dy2])
+
+
+class TESc:
+    """Turbulent equilibrium sphere
+
+    A family of turbulent equilibrium spheres at a fixed central density.
+    Default parameters correspond to Bonner-Ebert spheres.
+
+    Parameters
+    ----------
+    p : float, optional
+        power-law index of the velocity dispersion.
+    xi_s : float, optional
+        dimensionless sonic radius.
+
+    Attributes
+    ----------
+    p : float
+        power-law index of the velocity dispersion.
+    xi_s : float
+        dimensionless sonic radius.
+    """
+    def __init__(self, p=0.5, xi_s=np.inf):
+        self.p = p
+        self.xi_s = xi_s
+        self._xi_min = 1e-5
+        self._xi_max = 1e3
+
+    def solve(self, xi):
+        """Solve equilibrium equation
+
+        Parameters
+        ----------
+        xi : array
+            Dimensionless radii
+
+        Returns
+        -------
+        u : array
+            Log density u = log(rho/rho_c)
+        du : array
+            Derivative of u: d(u)/d(xi)
+        """
+        xi = np.array(xi, dtype='float64')
+        y0 = np.array([0, 0])
+        if xi.min() > self._xi_min:
+            xi = np.insert(xi, 0, self._xi_min)
+            istart = 1
+        else:
+            istart = 0
+        if np.all(xi<=self._xi_min):
+            u = y0[0]*np.ones(xi.size)
+            du = y0[1]*np.ones(xi.size)
+        else:
+            y = odeint(self._dydx, y0, xi)
+            u = y[istart:,0]
+            du = y[istart:,1]
+        return u, du
+
+    def get_mass(self, xi0):
+        """Calculates dimensionless enclosed mass.
+
+        The dimensionless mass enclosed within the dimensionless radius xi
+        is defined by
+            M(xi) = m(xi)M_{J,c}
+        where M_{J,c} is the Jeans mass at the central density rho_c
+
+        Parameters
+        ----------
+        xi0 : float
+            Radius within which the enclosed mass is computed. If None, use
+            the maximum radius of a sphere.
+
+        Returns
+        -------
+        float
+            Dimensionless enclosed mass.
+        """
+        u, du = self.solve(xi0)
+        f = 1 + (xi0/self.xi_s)**(2*self.p)
+        m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
         return m.squeeze()[()]
 
     def get_crit(self):
@@ -390,6 +463,79 @@ class TESm:
         f = 1 + (x/self.xi_s)**(2*self.p)
         a = x**2*f
         b = 2*x*((1+self.p)*f - self.p)
-        c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi*x**2*np.exp(y1)
+        c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*x**2*np.exp(y1)
         dy2 = -(b/a)*y2 - (c/a)
         return np.array([dy1, dy2])
+
+
+def get_pv_diagram(rsonic, umin=-2, umax=18):
+    tsm = TESm(xi_s=rsonic)
+    vol, prs = [], []
+    for u0 in np.linspace(umin, umax):
+        rmax = tsm.get_radius(u0)
+        vol.append(4*np.pi/3*rmax**3)
+        u, du = tsm.solve(rmax, u0)
+        prs.append(np.exp(u[-1]))
+    vol = np.array(vol)
+    prs = np.array(prs)
+    return vol, prs
+
+def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
+    """Plot p-v diagram of a TES
+
+    Parameters
+    ----------
+    rmax0 : float
+        r_max / L_{J,c}
+    rsonic0 : float
+        r_s / L_{J,c}
+    """
+    fig, axs = plt.subplots(2,2,figsize=(14,10))
+    axs[0,1].axis('off')
+
+    ts = TESc(xi_s=rsonic0)
+    menc0 = ts.get_mass(rmax0)
+
+    # Plot the density profile
+    plt.sca(axs[0,0])
+    rds = np.logspace(-2, 2)
+    u, du = ts.solve(rds)
+    plt.loglog(rds, np.exp(u))
+    plt.axvline(rsonic0, ls=':', label=r'$r_\mathrm{sonic}/L_{J,c}$')
+    plt.axvline(rmax0, ls='--', label=r'$r_\mathrm{max}/L_{J,c}$')
+    plt.xlabel(r'$r/L_{J,c}$')
+    plt.ylabel(r'$\rho/\rho_c$')
+    plt.legend()
+
+    # Construct a fixed-mass TES family corresponding to menc0
+    rsonic = rsonic0 / np.pi / menc0
+    tsm = TESm(xi_s=rsonic)
+
+    # visualization
+    plt.sca(axs[1,0])
+    # density profiles for a selected u0
+    u00 = np.log(np.pi**3*menc0**2) # initial condition corresponding to the unvaried sphere
+    for u0 in [u00-10, u00-5, u00, u00+5, u00+10]:
+        rmax = tsm.get_radius(u0)
+        r = np.logspace(-6, np.log10(rmax))
+        u, du = tsm.solve(r, u0)
+        color = 'r' if u0==u00 else 'k'
+        plt.loglog(r, np.exp(u), color=color)
+    plt.xlabel(r'$r/(GMc_s^{-2})$')
+    plt.ylabel(r'$\rho/(c^6G^{-3}M^{-2})$')
+
+    # P-V diagram
+    vol, prs = get_pv_diagram(rsonic, u00-10, u00+10)
+    plt.sca(axs[1,1])
+    plt.loglog(vol, prs)
+    rmax = tsm.get_radius(u00)
+    vol = 4*np.pi/3*rmax**3
+    u, du = tsm.solve(rmax, u00)
+    prs = np.exp(u[-1])
+    plt.plot(vol, prs, 'r+', mew=2, ms=10)
+    plt.xlabel(r'$R/(GMc_s^{-2})$')
+    plt.ylabel(r'$P/(c_s^8G^{-3}M^{-2})$')
+    plt.tight_layout()
+    plt.xlim(vol/10, vol*10)
+    plt.ylim(prs/10, prs*10)
+    return fig
