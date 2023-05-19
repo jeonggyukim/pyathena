@@ -2,7 +2,6 @@ from scipy.integrate import odeint
 from scipy.optimize import minimize_scalar, brentq
 import matplotlib.pyplot as plt
 import numpy as np
-import functools
 
 
 class TESe:
@@ -260,6 +259,12 @@ class TESm:
         res = minimize_scalar(lambda x: -self.get_rhoe(x),
                               bounds=(umin, umax), method='Bounded')
         u0_crit = res.x
+        if np.isclose(u0_crit, umax):
+            # Try expanding umax once.
+            umax = 16
+            res = minimize_scalar(lambda x: -self.get_rhoe(x),
+                                  bounds=(umin, umax), method='Bounded')
+            u0_crit = res.x
         if np.any(np.isclose(u0_crit, (umin, umax))):
             raise ValueError("There is no local maximum within "
                              "(umin, umax) = ({}, {})".format(umin, umax))
@@ -403,7 +408,22 @@ class TESc:
         return u, du
 
     def get_crit(self):
-        pass
+        """Find critical TES
+
+        Returns
+        -------
+        float
+            Critical radius
+        """
+        def func(xi0):
+            menc = self.get_mass(xi0)
+            u0_TESm = np.log(np.pi**3*menc**2)
+            xi_s_TESm = self.xi_s / np.pi / menc
+            tsm = TESm(xi_s=xi_s_TESm)
+            u0_crit = tsm.get_crit()
+            return u0_TESm - u0_crit
+        logrmax = brentq(lambda x: func(10**x), 0, np.log10(32))
+        return 10**logrmax
 
     def get_mass(self, xi0):
         """Calculates dimensionless enclosed mass.
@@ -577,7 +597,7 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
     """
     fig, axs = plt.subplots(2, 2, figsize=(14, 10))
 
-    ts = TES(xi_s=rsonic0)
+    ts = TESe(xi_s=rsonic0)
     menc0 = ts.get_mass(logrhoc)
 
     # Plot the density profile
