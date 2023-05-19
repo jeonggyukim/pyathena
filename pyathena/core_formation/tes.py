@@ -402,6 +402,9 @@ class TESc:
             du = y[istart:, 1]
         return u, du
 
+    def get_crit(self):
+        pass
+
     def get_mass(self, xi0):
         """Calculates dimensionless enclosed mass.
 
@@ -535,17 +538,18 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     # density profiles for a selected u0
     # initial condition corresponding to the unvaried sphere
     u00 = np.log(np.pi**3*menc0**2)
-    for u0 in [u00-10, u00-5, u00, u00+5, u00+10]:
+    for u0 in np.linspace(u00-2, u00+2, 5):
         rmax = tsm.get_radius(u0)
         r = np.logspace(-6, np.log10(rmax))
         u, du = tsm.solve(r, u0)
-        color = 'r' if u0 == u00 else 'k'
-        plt.loglog(r, np.exp(u), color=color)
+        color = 'r' if np.isclose(u0, u00) else 'k'
+        lw = 2 if np.isclose(u0, u00) else 1
+        plt.loglog(r, np.exp(u), color=color, lw=lw)
     plt.xlabel(r'$r/(GMc_s^{-2})$')
     plt.ylabel(r'$\rho/(c^6G^{-3}M^{-2})$')
 
     # P-V diagram
-    vol, prs = get_pv_diagram(rsonic, u00-10, u00+10)
+    vol, prs = get_pv_diagram(rsonic, np.linspace(u00-10, u00+10))
     plt.sca(axs[1, 1])
     plt.loglog(vol, prs)
     rmax = tsm.get_radius(u00)
@@ -610,17 +614,18 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
     # density profiles for a selected u0
     # initial condition corresponding to the unvaried sphere
     u00 = logrhoc + np.log(np.pi**3*menc0**2)
-    for u0 in [u00-10, u00-5, u00, u00+5, u00+10]:
+    for u0 in np.linspace(u00-2, u00+2, 5):
         rmax = tsm.get_radius(u0)
         r = np.logspace(-6, np.log10(rmax))
         u, du = tsm.solve(r, u0)
-        color = 'r' if u0 == u00 else 'k'
-        plt.loglog(r, np.exp(u), color=color)
+        color = 'r' if np.isclose(u0, u00) else 'k'
+        lw = 2 if np.isclose(u0, u00) else 1
+        plt.loglog(r, np.exp(u), color=color, lw=lw)
     plt.xlabel(r'$r/(GMc_s^{-2})$')
     plt.ylabel(r'$\rho/(c^6G^{-3}M^{-2})$')
 
     # P-V diagram
-    vol, prs = get_pv_diagram(rsonic, u00-10, u00+10)
+    vol, prs = get_pv_diagram(rsonic, np.linspace(u00-10, u00+10))
     plt.sca(axs[1, 1])
     plt.loglog(vol, prs)
     rmax = tsm.get_radius(u00)
