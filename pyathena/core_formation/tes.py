@@ -139,7 +139,7 @@ class TESe:
     def get_crit(self):
         """Finds critical TES parameters.
 
-        Critical point is defined as a maximum point in the P-V curve.
+        Critical point is defined as a maximum point in the R-M curve.
 
         Returns
         -------
@@ -156,8 +156,8 @@ class TESe:
         the minimization is done with respect to m^2.
         """
         # do minimization in log space for robustness and performance
-        upper_bound = 6
-        res = minimize_scalar(lambda x: -self.get_mass(x)**2,
+        upper_bound = 8
+        res = minimize_scalar(lambda x: -self.get_mass(x),
                               bounds=(0, upper_bound), method='Bounded')
         u_c = res.x
         r_c = self.get_radius(u_c)

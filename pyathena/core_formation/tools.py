@@ -33,7 +33,8 @@ class LognormalPDF:
 
     def fx(self, x):
         """The mass fraction between x and x+dx, where x = ln(rho/rho_0)"""
-        f = (1/np.sqrt(2*np.pi*self.var))*np.exp(-(x - self.mu)**2/(2*self.var))
+        f = (1 / np.sqrt(2*np.pi*self.var))*np.exp(-(x - self.mu)**2
+                                                   / (2*self.var))
         return f
 
     def get_contrast(self, frac):
@@ -58,8 +59,8 @@ def calculate_critical_tes(s, rprf):
     def get_central_density_of_critical_tes(rhoe):
         xi_s = np.sqrt(rhoe)*rs
         ts = tes.TESe(p=p, xi_s=xi_s)
-        rat_crit, _, _ = ts.get_crit()
-        return rhoe*rat_crit
+        uc, _, _ = ts.get_crit()
+        return rhoe*np.exp(uc)
 
     # select the subsonic portion for fitting
     idx = np.where(rprf.vel1_sq_mw.data < 1)[0][-1]
@@ -87,30 +88,42 @@ def calculate_critical_tes(s, rprf):
             rhoe = np.nan
             rcrit = np.nan
         else:
-            rhoe = 10**brentq(lambda x: get_central_density_of_critical_tes(10**x) - rhoc,
-                              np.log10(rhoe_min), np.log10(rhoc))
+            def func(x):
+                return get_central_density_of_critical_tes(10**x) - rhoc
+            rhoe = 10**brentq(func, np.log10(rhoe_min), np.log10(rhoc))
             xi_s = np.sqrt(rhoe)*rs
             ts = tes.TESe(p=p, xi_s=xi_s)
-            rat_crit, rcrit, mcrit = ts.get_crit()
-    res = dict(edge_density=rhoe, critical_radius=rcrit/np.sqrt(rhoe), pindex=p, sonic_radius=rs)
+            _, rcrit, mcrit = ts.get_crit()
+    res = dict(edge_density=rhoe, critical_radius=rcrit/np.sqrt(rhoe),
+               pindex=p, sonic_radius=rs)
     return res
 
 
 def calculate_radial_profiles(s, ds, origin, rmax):
-    """Calculates radial profiles of various properties at the selected position
+    """Calculates radial profiles of various properties at selected position
 
-    Args:
-        s: LoadSimCoreFormation instance containing simulation metadata.
-        ds: xarray.Dataset instance containing conserved variables.
-        origin: tuple-like (x0, y0, z0) representing the origin of the spherical coords.
-        rmax: maximum radius to bin.
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata
+    ds : xarray.Dataset
+        Object containing simulation data
+    origin : tuple-like
+        Coordinate origin (x0, y0, z0)
+    rmax : float
+        Maximum radius of radial bins.
 
-    Returns:
-        rprof: xarray.Dataset instance containing angle-averaged radial profiles
-          vel1, vel2, vel3: density-weighted mean velocities (v_r, v_theta, v_phi).
-          vel1_sq, vel2_sq, vel3_sq: density-weighted mean squared velocities.
-          ggas1, ggas2, ggas3: density-weighted mean gravity due to gas.
-          gstar1, gstar2, gstar3: density-weighted mean gravity due to stars.
+    Returns
+    -------
+    rprof : xarray.Dataset
+        Angle-averaged radial profiles
+
+    Notes
+    -----
+    vel1, vel2, vel3: density-weighted mean velocities (v_r, v_theta, v_phi).
+    vel1_sq, vel2_sq, vel3_sq: density-weighted mean squared velocities.
+    ggas1, ggas2, ggas3: density-weighted mean gravity due to gas.
+    gstar1, gstar2, gstar3: density-weighted mean gravity due to stars.
     """
     # Convert density and velocities to spherical coord.
     ds['phistar'] = ds['phi'] - ds['phigas']
@@ -122,11 +135,15 @@ def calculate_radial_profiles(s, ds, origin, rmax):
         ggas[dim] = -ds['phigas'].differentiate(dim)
         gstar[dim] = -ds['phistar'].differentiate(dim)
     ds_sph = {}
-    r, (ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3']) = transform.to_spherical(vel.values(), origin)
-    _, (ds_sph['ggas1'], ds_sph['ggas2'], ds_sph['ggas3']) = transform.to_spherical(ggas.values(), origin)
-    _, (ds_sph['gstar1'], ds_sph['gstar2'], ds_sph['gstar3']) = transform.to_spherical(gstar.values(), origin)
+    r, (ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3'])\
+        = transform.to_spherical(vel.values(), origin)
+    _, (ds_sph['ggas1'], ds_sph['ggas2'], ds_sph['ggas3'])\
+        = transform.to_spherical(ggas.values(), origin)
+    _, (ds_sph['gstar1'], ds_sph['gstar2'], ds_sph['gstar3'])\
+        = transform.to_spherical(gstar.values(), origin)
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
-    div_v = vel['x'].differentiate('x') + vel['y'].differentiate('y') + vel['z'].differentiate('z')
+    div_v = vel['x'].differentiate('x') + vel['y'].differentiate('y')\
+        + vel['z'].differentiate('z')
     ds_sph['div_v'] = div_v.assign_coords(dict(r=r))
 
     # Calculate pressure gradient forces and transform to spherical coord.
@@ -135,8 +152,10 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     for dim in ['x', 'y', 'z']:
         grad_pthm[dim] = pthm.differentiate(dim)
         grad_ptrb[dim] = ptrb.differentiate(dim)
-    _, (ds_sph['grad_pthm1'], ds_sph['grad_pthm2'], ds_sph['grad_pthm3']) = transform.to_spherical(grad_pthm.values(), origin)
-    _, (ds_sph['grad_ptrb1'], ds_sph['grad_ptrb2'], ds_sph['grad_ptrb3']) = transform.to_spherical(grad_ptrb.values(), origin)
+    _, (ds_sph['grad_pthm1'], ds_sph['grad_pthm2'], ds_sph['grad_pthm3'])\
+        = transform.to_spherical(grad_pthm.values(), origin)
+    _, (ds_sph['grad_ptrb1'], ds_sph['grad_ptrb2'], ds_sph['grad_ptrb3'])\
+        = transform.to_spherical(grad_ptrb.values(), origin)
 
     # Radial binning
     edges = np.insert(np.arange(ds.dx1/2, rmax, ds.dx1), 0, 0)
@@ -148,10 +167,12 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     # rprf['rho'] for performance
     for k in ['ggas1', 'gstar1', 'vel1', 'vel2', 'vel3']:
         rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
-        rprf[k+'_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k], 'r', edges) / rprf['rho']
+        rprf[k+'_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k],
+                                               'r', edges) / rprf['rho']
     for k in ['vel1', 'vel2', 'vel3']:
         rprf[k+'_sq'] = transform.groupby_bins(ds_sph[k]**2, 'r', edges)
-        rprf[k+'_sq_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k]**2, 'r', edges) / rprf['rho']
+        rprf[k+'_sq_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k]**2,
+                                                  'r', edges) / rprf['rho']
 
     rprf = xr.Dataset(rprf)
     return rprf
@@ -168,7 +189,8 @@ def find_tcoll_core(s, pid):
     dst_inc = min(dx, dy, dz)
     search_dst = dst_inc
     particle_speed = np.sqrt(s.vpx0[pid]**2 + s.vpy0[pid]**2 + s.vpz0[pid]**2)
-    search_dst_max = max(10*max(dx, dy, dz), 2*s.dt_output['hdf5']*particle_speed)
+    search_dst_max = max(10*max(dx, dy, dz),
+                         2*s.dt_output['hdf5']*particle_speed)
     tcoll_core = set()
     while len(tcoll_core) == 0:
         for leaf in leaves:
@@ -181,7 +203,8 @@ def find_tcoll_core(s, pid):
                 tcoll_core.add(leaf)
         search_dst += dst_inc
         if search_dst > search_dst_max:
-            msg = f"pid = {pid}: Cannot find a t_coll core within distance {search_dst_max}"
+            msg = "pid = {}: Cannot find a t_coll core within distance {}"
+            msg = msg.format(pid, search_dst_max)
             raise ValueError(msg)
     return tcoll_core.pop()
 
@@ -218,20 +241,29 @@ def get_coords_node(ds, node):
     return coordinates
 
 
-def calculate_cum_energies(ds, nodes, node, mode='HBR', boundary_flag='periodic'):
+def calculate_cum_energies(ds, nodes, node, mode='HBR',
+                           boundary_flag='periodic'):
     """Calculate cumulative energies for all levels
 
-    Args:
-        ds: xarray.Dataset instance containing primitive variables
-        nodes: grid_dendro nodes dictionary, optional.
-        node: int representing the selected node
-        mode: Definition of the boundness, optional
-              Available options: ( 'HBR' | 'HBR+1' | 'HBR-1' | 'virial' )
-              Default value is 'HBR'.
-        boundary_flag: ( periodic | outflow ), optional
+    Parameters
+    ----------
+    ds : xarray.Dataset
+        Object containing simulation data
+    nodes : dict
+        GRID_dendro nodes
+    node : int
+        GRID_dendro node ID
+    mode : str, optional
+        Definition of the boundness
+        Available options: ( 'HBR' | 'HBR+1' | 'HBR-1' | 'virial' )
+        Default value is 'HBR'.
+    boundary_flag : str, optional
+        ( periodic | outflow )
 
-    Returns:
-        energies : dict containing integrated energies and effective radius at each level
+    Returns
+    -------
+    energies : dict
+        Integrated energies and effective radius at each level
     """
     # Create 1-D flattened primitive variables of this node
     cells = np.array(nodes[node])
