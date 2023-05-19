@@ -2,7 +2,6 @@ import numpy as np
 import xarray as xr
 from scipy.special import erfinv
 from scipy.stats import linregress
-from scipy.optimize import brentq
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import tes
@@ -76,25 +75,19 @@ def calculate_critical_tes(s, rprf):
         rcrit = np.nan
     else:
         # fit the velocity dispersion to get power law index and sonic radius
-        res = linregress(np.log(r), np.log(vr2))
-        p = res.slope/2
-        rs = np.exp(-res.intercept/(2*p))
+        res = linregress(np.log(r), np.log(np.sqrt(vr2)))
+        p = res.slope
+        rs = np.exp(-res.intercept/(p))
 
         # Find critical TES at the central density
         rhoc = rprf.rho.isel(r=0).data[()]
-        rhoe_min = 1e-2
-        if get_central_density_of_critical_tes(rhoe_min) > rhoc:
-            # critical radius is too large.
-            rhoe = np.nan
-            rcrit = np.nan
-        else:
-            def func(x):
-                return get_central_density_of_critical_tes(10**x) - rhoc
-            rhoe = 10**brentq(func, np.log10(rhoe_min), np.log10(rhoc))
-            xi_s = np.sqrt(rhoe)*rs
-            ts = tes.TESe(p=p, xi_s=xi_s)
-            _, rcrit, mcrit = ts.get_crit()
-    res = dict(edge_density=rhoe, critical_radius=rcrit/np.sqrt(rhoe),
+        xi_s = np.sqrt(rhoc)*rs
+        ts = tes.TESc(p=p, xi_s=xi_s)
+        rcrit = ts.get_crit()
+        u, du = ts.solve(rcrit)
+        rhoe = rhoc*np.exp(u[-1])
+        rcrit /= np.sqrt(rhoc)
+    res = dict(center_density=rhoc, edge_density=rhoe, critical_radius=rcrit,
                pindex=p, sonic_radius=rs)
     return res
 
