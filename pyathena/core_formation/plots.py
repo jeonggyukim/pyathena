@@ -10,16 +10,14 @@ from matplotlib import gridspec
 from matplotlib.colors import LogNorm
 import numpy as np
 import xarray as xr
-from pandas import read_csv
-from pathlib import Path
 import yt
-import pickle
 
 # pythena modules
 from pyathena.core_formation import tools
 from pyathena.core_formation import tes
 from grid_dendro import dendrogram
 from grid_dendro import energy
+
 
 def plot_energies(s, ds, leaves, nid, ax=None):
     if ax is not None:
@@ -38,6 +36,7 @@ def plot_energies(s, ds, leaves, nid, ax=None):
     plt.axhline(0, linestyle=':')
     plt.legend(loc='lower left')
 
+
 def plot_central_density_evolution(s, ax=None):
     rho_crit_KM05 = tools.get_rhocrit_KM05(s.sonic_length)
     if ax is not None:
@@ -49,15 +48,17 @@ def plot_central_density_evolution(s, ax=None):
         plt.yscale('log')
         plt.ylim(1e1, s.get_rhoLP(0.5*s.dx))
     plt.axhline(rho_crit_KM05, linestyle='--')
-    plt.text(s.rprofs[1].t.min(), rho_crit_KM05, r"$\rho_\mathrm{crit, KM05}$", fontsize=18,
-             ha='left', va='bottom')
-    plt.text(s.rprofs[1].t.min(), 14.1*rho_crit_KM05, r"$14.1\rho_\mathrm{crit, KM05}$", fontsize=18,
+    plt.text(s.rprofs[1].t.min(), rho_crit_KM05, r"$\rho_\mathrm{crit, KM05}$",
+             fontsize=18, ha='left', va='bottom')
+    plt.text(s.rprofs[1].t.min(), 14.1*rho_crit_KM05,
+             r"$14.1\rho_\mathrm{crit, KM05}$", fontsize=18,
              ha='left', va='bottom')
     plt.axhline(14.1*rho_crit_KM05, linestyle='--', lw=1)
     plt.legend(loc=(1.01, 0))
     plt.ylabel(r'$\rho_c/\rho_0$')
     plt.xlabel(r'$t/t_J$')
     plt.title(s.basename)
+
 
 def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Load the progenitor GRID-core of this particle.
@@ -81,26 +82,21 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     fig = plt.figure(figsize=(35, 21))
     gs = gridspec.GridSpec(3, 5, wspace=0.2, hspace=0.15)
 
-    xaxis = dict(z='x', x='y', y='z')
-    yaxis = dict(z='y', x='z', y='x')
-    zaxis = dict(z='z', x='x', y='y')
     xlim = dict(z=(xc-hw, xc+hw),
                 x=(yc-hw, yc+hw),
                 y=(zc-hw, zc+hw))
     ylim = dict(z=(yc-hw, yc+hw),
                 x=(zc-hw, zc+hw),
                 y=(xc-hw, xc+hw))
-    zlim = dict(z=(zc-hw, zc+hw),
-                x=(xc-hw, xc+hw),
-                y=(yc-hw, yc+hw))
     xlabel = dict(z=r'$x$', x=r'$y$', y=r'$z$')
     ylabel = dict(z=r'$y$', x=r'$z$', y=r'$x$')
 
-    for i, prj_axis in enumerate(['z','x','y']):
+    for i, prj_axis in enumerate(['z', 'x', 'y']):
         # 1. Projections
-        plt.sca(fig.add_subplot(gs[i,0]))
-        img = plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
-        rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]), 2*hw, 2*hw, fill=False, ec='r')
+        plt.sca(fig.add_subplot(gs[i, 0]))
+        plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
+        rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]),
+                            2*hw, 2*hw, fill=False, ec='r')
         plt.gca().add_artist(rec)
         plt.xlabel(xlabel[prj_axis])
         plt.ylabel(ylabel[prj_axis])
@@ -108,7 +104,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         # 2. Zoom-in projections
         d, _ = tools.recenter_dataset(ds, (xc, yc, zc))
         d = d.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
-        plt.sca(fig.add_subplot(gs[i,1]))
+        plt.sca(fig.add_subplot(gs[i, 1]))
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
@@ -117,21 +113,25 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
         # 3. Zoom-in projections for individual core
         # Load selected core
-        rho_ = dendrogram.filter_by_node(ds.dens, leaves, core.nid, fill_value=0)
+        rho_ = dendrogram.filter_by_node(ds.dens, leaves, core.nid,
+                                         fill_value=0)
         ds_core = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_core, _ = tools.recenter_dataset(ds_core, (xc, yc, zc))
-        ds_core = ds_core.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
+        ds_core = ds_core.sel(x=slice(-hw, hw), y=slice(-hw, hw),
+                              z=slice(-hw, hw))
 
         # Load other cores
         other_cores = {k: v for k, v in leaves.items() if k != core.nid}
         rho_ = dendrogram.filter_by_node(ds.dens, other_cores, fill_value=0)
         ds_others = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_others, _ = tools.recenter_dataset(ds_others, (xc, yc, zc))
-        ds_others = ds_others.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
+        ds_others = ds_others.sel(x=slice(-hw, hw), y=slice(-hw, hw),
+                                  z=slice(-hw, hw))
 
         # Plot
-        plt.sca(fig.add_subplot(gs[i,2]))
-        plot_projection(s, ds_others, axis=prj_axis, add_colorbar=False, alpha=0.5, cmap='Greys')
+        plt.sca(fig.add_subplot(gs[i, 2]))
+        plot_projection(s, ds_others, axis=prj_axis, add_colorbar=False,
+                        alpha=0.5, cmap='Greys')
         plot_projection(s, ds_core, axis=prj_axis, add_colorbar=False)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
@@ -140,7 +140,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # 4. Radial profiles
     # Density
-    plt.sca(fig.add_subplot(gs[0,3]))
+    plt.sca(fig.add_subplot(gs[0, 3]))
     plt.loglog(rprf.r, rprf.rho, 'k-+')
     rhoLP = s.get_rhoLP(rprf.r)
     plt.loglog(rprf.r, rhoLP, 'k--')
@@ -180,7 +180,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
     # Velocities
-    plt.sca(fig.add_subplot(gs[1,3]))
+    plt.sca(fig.add_subplot(gs[1, 3]))
     plt.plot(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
     plt.plot(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
     plt.plot(rprf.r, rprf.vel3, marker='+', label=r'$v_\phi$')
@@ -194,7 +194,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.legend()
 
     # Velocity dispersions
-    plt.sca(fig.add_subplot(gs[2,3]))
+    plt.sca(fig.add_subplot(gs[2, 3]))
     plt.loglog(rprf.r, np.sqrt(rprf.vel1_sq), marker='+', label=r'$v_r$')
     plt.loglog(rprf.r, np.sqrt(rprf.vel2_sq), marker='+', label=r'$v_\theta$')
     plt.loglog(rprf.r, np.sqrt(rprf.vel3_sq), marker='+', label=r'$v_\phi$')
@@ -203,7 +203,8 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # overplot linear fit
     if not np.isnan(core.sonic_radius):
-        plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--', lw=1)
+        plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
+                 lw=1)
 
     plt.axvline(core.radius, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
@@ -214,7 +215,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.legend()
 
     # 5. Energies
-    plt.sca(fig.add_subplot(gs[0,4]))
+    plt.sca(fig.add_subplot(gs[0, 4]))
     plot_energies(s, ds, leaves, core.nid)
     if emin is not None and emax is not None:
         plt.ylim(emin, emax)
@@ -222,7 +223,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.xlim(0, rmax)
 
     # 6. Accelerations
-    plt.sca(fig.add_subplot(gs[1,4]))
+    plt.sca(fig.add_subplot(gs[1, 4]))
     plot_forces(s, rprf)
     plt.title('')
     plt.axvline(core.radius, ls=':', c='k')
@@ -233,7 +234,8 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     return fig
 
 
-def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50), ylabel='acceleration'):
+def plot_forces(s, rprf, ax=None, cumulative=False,
+                xlim=(0, 0.2), ylim=(-20, 50), ylabel='acceleration'):
     peff = rprf.rho*(rprf.vel1_sq_mw + s.cs**2)
     stress = rprf.rho*(-2*rprf.vel1_sq_mw + rprf.vel2_sq_mw + rprf.vel3_sq_mw)
 
@@ -246,8 +248,10 @@ def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50
 
         column_density = rprf.rho.isel(r=slicer).cumulative_integrate('r')
         f_p = (peff - peff.isel(r=istart)) / column_density
-        f_geo = (stress/rprf.r).isel(r=slicer).cumulative_integrate('r') / column_density
-        f_g = (rprf.rho*(rprf.ggas1_mw+rprf.gstar1_mw)).isel(r=slicer).cumulative_integrate('r') / column_density
+        f_geo = (stress/rprf.r
+                 ).isel(r=slicer).cumulative_integrate('r') / column_density
+        f_g = (rprf.rho*(rprf.ggas1_mw+rprf.gstar1_mw)
+               ).isel(r=slicer).cumulative_integrate('r') / column_density
         fnet = f_g - f_p - f_geo
 
         f_p.plot(marker='+', label='pressure')
@@ -266,10 +270,13 @@ def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50
         f_grav = rprf.ggas1_mw + rprf.gstar1_mw
         f_net = f_grav + f_pthm + f_ptrb + f_geo
 
-        f_pthm.plot(lw=1, color='orange', label=r'$-\partial_r P_\mathrm{thm}$')
-        f_ptrb.plot(lw=1, color='deepskyblue', label=r'$-\partial_r P_\mathrm{trb}$')
+        f_pthm.plot(lw=1, color='orange',
+                    label=r'$-\partial_r P_\mathrm{thm}$')
+        f_ptrb.plot(lw=1, color='deepskyblue',
+                    label=r'$-\partial_r P_\mathrm{trb}$')
         f_geo.plot(lw=1, color='limegreen', label=r'$f_\mathrm{geo}$')
-        (f_pthm + f_ptrb + f_geo).plot(marker='+', color='blue', lw=1, label='total')
+        (f_pthm + f_ptrb + f_geo).plot(marker='+', color='blue', lw=1,
+                                       label='total')
         (-f_grav).plot(marker='x', ls='--', color='red', lw=1, label='gravity')
         (-f_net).plot(marker='*', color='k', lw=1, label='net inward force')
 
@@ -283,6 +290,7 @@ def plot_forces(s, rprf, ax=None, cumulative=False, xlim=(0, 0.2), ylim=(-20, 50
         plt.xlim(xlim)
         plt.ylim(ylim)
 
+
 def plot_sinkhistory(s, ds, pds):
     # find end time
     ds_end = s.load_hdf5(s.nums[-1], load_method='yt')
@@ -291,13 +299,13 @@ def plot_sinkhistory(s, ds, pds):
     # create figure
     fig = plt.figure(figsize=(18, 12))
     gs = gridspec.GridSpec(2, 3, wspace=0, hspace=0)
-    ax0 = fig.add_subplot(gs[0,0])
-    ax1 = fig.add_subplot(gs[0,1])
-    ax2 = fig.add_subplot(gs[0,2])
-    ax3 = fig.add_subplot(gs[1,:])
+    ax0 = fig.add_subplot(gs[0, 0])
+    ax1 = fig.add_subplot(gs[0, 1])
+    ax2 = fig.add_subplot(gs[0, 2])
+    ax3 = fig.add_subplot(gs[1, :])
 
     # plot projections
-    for ax, axis in zip((ax0,ax1,ax2),('z','x','y')):
+    for ax, axis in zip((ax0, ax1, ax2), ('z', 'x', 'y')):
         plot_projection(s, ds, ax=ax, axis=axis, add_colorbar=False)
         ax.set_xticks([])
         ax.set_yticks([])
@@ -344,11 +352,11 @@ def plot_projection(s, ds, field='dens', axis='z',
         Ly = ymax - ymin
         Lz = zmax - zmin
 
-    wh = dict(zip(('x','y','z'), ((Ly, Lz), (Lz, Lx), (Lx, Ly))))
-    extent = dict(zip(('x','y','z'), ((ymin,ymax,zmin,zmax),
-                                      (zmin,zmax,xmin,xmax),
-                                      (xmin,xmax,ymin,ymax))))
-    permutations = dict(z=('y','x'), y=('x','z'), x=('z','y'))
+    wh = dict(zip(('x', 'y', 'z'), ((Ly, Lz), (Lz, Lx), (Lx, Ly))))
+    extent = dict(zip(('x', 'y', 'z'), ((ymin, ymax, zmin, zmax),
+                                        (zmin, zmax, xmin, xmax),
+                                        (xmin, xmax, ymin, ymax))))
+    permutations = dict(z=('y', 'x'), y=('x', 'z'), x=('z', 'y'))
     field_dict_yt = dict(dens=('athena_pp', 'dens'))
     field_dict_pyathena = dict(dens='dens')
 
@@ -378,7 +386,7 @@ def plot_projection(s, ds, field='dens', axis='z',
 def plot_Pspec(s, ds, ax=None, ax_twin=None):
     """Requires load_method='pyathena'"""
     # prepare frequencies
-    from scipy.fft import fftn, fftfreq, fftshift, ifftn
+    from scipy.fft import fftn, fftfreq, fftshift
     from pyathena.util.transform import groupby_bins
     Lx, Ly, Lz = s.domain['Lx']
     Nx, Ny, Nz = s.domain['Nx']
@@ -387,21 +395,22 @@ def plot_Pspec(s, ds, ax=None, ax_twin=None):
     ky = fftshift(2*np.pi*fftfreq(Ny, dy))
     kz = fftshift(2*np.pi*fftfreq(Nz, dz))
     # Do FFTs
-    for axis in [1,2,3]:
+    for axis in [1, 2, 3]:
         vel = ds['mom'+str(axis)]/ds.dens
         ds['vel'+str(axis)] = vel
         vhat = fftn(vel.data, vel.shape)*dx*dy*dz
         vhat = fftshift(vhat)
         ds['vhat'+str(axis)] = xr.DataArray(
             vhat,
-            coords=dict(kz=('z',kz), ky=('y',ky), kx=('x',kx)),
-            dims=('z','y','x'))
+            coords=dict(kz=('z', kz), ky=('y', ky), kx=('x', kx)),
+            dims=('z', 'y', 'x'))
     # Calculate 3D power spectrum
     Pk = np.abs(ds.vhat1)**2 + np.abs(ds.vhat2)**2 + np.abs(ds.vhat3)**2
     # Set radial wavenumbers
     Pk.coords['k'] = np.sqrt(Pk.kz**2 + Pk.ky**2 + Pk.kx**2)
     kmin = np.sqrt((2*np.pi/Lx)**2 + (2*np.pi/Ly)**2 + (2*np.pi/Lz)**2)
-    kmax = np.sqrt((2*np.pi/(2*dx))**2 + (2*np.pi/(2*dy))**2 + (2*np.pi/(2*dz))**2)
+    kmax = np.sqrt((2*np.pi/(2*dx))**2 + (2*np.pi/(2*dy))**2
+                   + (2*np.pi/(2*dz))**2)
     lmin, lmax = 2*np.pi/kmax, 2*np.pi/kmin
     # Perform spherical average
     Pk = groupby_bins(Pk, 'k', np.linspace(kmin, kmax, min(Nx, Ny, Nz)//2))
@@ -481,4 +490,4 @@ def plot_PDF(s, ds, ax=None):
     plt.title(r'$t = {:.2f}$'.format(ds.Time))
     plt.xlim(1e-4, 1e4)
     plt.ylim(0, 0.3)
-    plt.xticks([1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4]);
+    plt.xticks([1e-4, 1e-3, 1e-2, 1e-1, 1e0, 1e1, 1e2, 1e3, 1e4])

@@ -106,7 +106,8 @@ def find_and_save_cores(s, pids=None, overwrite=False):
             leaves = s.load_leaves(num)
 
             # find closeast leaf to the previous preimage
-            dst = {leaf: _get_node_distance(ds, leaf, nid_old) for leaf in leaves}
+            dst = {leaf: _get_node_distance(ds, leaf, nid_old)
+                   for leaf in leaves}
             dst_min = np.min(list(dst.values()))
             for k, v in dst.items():
                 if v == dst_min:
@@ -121,10 +122,12 @@ def find_and_save_cores(s, pids=None, overwrite=False):
             Rcore = (3*Vcore/(4*np.pi))**(1./3.)
 
             # Relative errors in position, mass, and radius.
-            # Note that the normalization is the maximum of current or previous core;
-            # This is to account for situation where a bud is suddenly merged leading to
-            # sudden change in the core radius and mass.
-            fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox) / max(Rcore, Rcore_old)
+            # Note that the normalization is the maximum of current or
+            # previous core;
+            # This is to account for situation where a bud is suddenly merged
+            # leading to sudden change in the core radius and mass.
+            fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox)\
+                / max(Rcore, Rcore_old)
             fmass = np.abs(Mcore - Mcore_old) / max(Mcore, Mcore_old)
             frds = np.abs(Rcore - Rcore_old) / max(Rcore, Rcore_old)
 
@@ -134,7 +137,8 @@ def find_and_save_cores(s, pids=None, overwrite=False):
                 break
 
             # Add this core to list of progenitor cores
-            cores.loc[num] = dict(nid=nid, time=ds.Time, radius=Rcore, mass=Mcore)
+            cores.loc[num] = dict(nid=nid, time=ds.Time, radius=Rcore,
+                                  mass=Mcore)
 
             # Save core properties
             nid_old = nid
@@ -156,7 +160,8 @@ def save_radial_profiles(s, pids=None, overwrite=False):
         pids = [pids,]
     for pid in pids:
         # Check if file exists
-        ofname = Path(s.basedir, 'cores', 'radial_profile.par{}.nc'.format(pid))
+        ofname = Path(s.basedir, 'cores',
+                      'radial_profile.par{}.nc'.format(pid))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
             continue

@@ -217,8 +217,8 @@ class LoadSimCoreFormationAll(object):
 
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
-                print('[LoadSimCoreFormationAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
-                    mdl,basedir))
+                msg = '[LoadSimCoreFormationAll]: Model {0:s} doesn\'t exist: {1:s}'.format(mdl, basedir)
+                print(msg)
             else:
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
@@ -228,8 +228,10 @@ class LoadSimCoreFormationAll(object):
         try:
             self.sim = self.simdict[model]
         except KeyError:
-            self.sim = LoadSimCoreFormation(self.basedirs[model], savdir=savdir,
-                                           load_method=load_method, verbose=verbose)
+            self.sim = LoadSimCoreFormation(self.basedirs[model],
+                                            savdir=savdir,
+                                            load_method=load_method,
+                                            verbose=verbose)
             self.simdict[model] = self.sim
 
         return self.sim
