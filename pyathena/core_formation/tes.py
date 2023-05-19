@@ -5,18 +5,6 @@ import numpy as np
 import functools
 
 
-def vectorize(otypes=None, signature=None):
-    """Numpy vectorization wrapper that works with instance methods."""
-    def decorator(fn):
-        vectorized = np.vectorize(fn, otypes=otypes, signature=signature)
-
-        @functools.wraps(fn)
-        def wrapper(*args):
-            return vectorized(*args)
-        return wrapper
-    return decorator
-
-
 class TESe:
     """Turbulent equilibrium sphere of a fixed external pressure.
 
@@ -102,7 +90,6 @@ class TESe:
             du = y[istart:, 1]
         return u, du
 
-    @vectorize(signature="(),()->()")
     def get_radius(self, u0):
         """Calculates the dimensionless radial extent of a TES.
 
@@ -122,7 +109,6 @@ class TESe:
                         np.log10(self._xi_min), np.log10(self._xi_max))
         return 10**logxi0
 
-    @vectorize(signature="(),()->()")
     def get_mass(self, u0, xi0=None):
         """Calculates dimensionless enclosed mass.
 
@@ -261,6 +247,40 @@ class TESm:
             u = y[istart:, 0]
             du = y[istart:, 1]
         return u, du
+
+    def get_crit(self):
+        """Find critical TES
+
+        Returns
+        -------
+        float
+            Critical logarithmic central density
+        """
+        umin, umax = -2, 12
+        res = minimize_scalar(lambda x: -self.get_rhoe(x),
+                              bounds=(umin, umax), method='Bounded')
+        u0_crit = res.x
+        if np.any(np.isclose(u0_crit, (umin, umax))):
+            raise ValueError("There is no local maximum within "
+                             "(umin, umax) = ({}, {})".format(umin, umax))
+        return u0_crit
+
+    def get_rhoe(self, u0):
+        """Find edge density
+
+        Parameters
+        ----------
+        u0 : float
+            Dimensionless logarithmic central density
+
+        Returns
+        -------
+        array
+            Dimensionless edge density
+        """
+        rmax = self.get_radius(u0)
+        u, du = self.solve(rmax, u0)
+        return np.exp(u[-1])
 
     def get_radius(self, u0):
         """Calculates the dimensionless radial extent of a TES.
@@ -431,17 +451,15 @@ class TESc:
         return np.array([dy1, dy2])
 
 
-def get_pv_diagram(rsonic, umin=-2, umax=18):
+def get_pv_diagram(rsonic, u0s=None):
     """Construct p-v diagram of a TES
 
     Parameters
     ----------
     rsonic : float
         Dimensionless sonic radius with the TESm normalization.
-    umin : float, optional
-        Minimum dimensionless central density.
-    umax : float, optional
-        Maximum dimensionless central density.
+    u0s : array, optional
+        Logarithmic central densities
 
     Returns
     -------
@@ -456,9 +474,11 @@ def get_pv_diagram(rsonic, umin=-2, umax=18):
     dimensionless density = density / (c_s^6 / G^3 / M^2)
     dimensionless pressure = pressure / (c_s^8 / G^3 / M^2)
     """
+    if u0s is None:
+        u0s = np.linspace(-2, 18)
     tsm = TESm(xi_s=rsonic)
     vol, prs = [], []
-    for u0 in np.linspace(umin, umax):
+    for u0 in u0s:
         rmax = tsm.get_radius(u0)
         vol.append(4*np.pi/3*rmax**3)
         u, du = tsm.solve(rmax, u0)
