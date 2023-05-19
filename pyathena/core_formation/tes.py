@@ -406,36 +406,6 @@ class TESc:
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
         return m.squeeze()[()]
 
-    def get_crit(self):
-        """Finds critical TES parameters.
-
-        Critical point is defined as a maximum point in the P-V curve.
-
-        Returns
-        -------
-        u_c : float
-            Critical logarithmic central density
-        r_c : float
-            Critical radius
-        m_c : float
-            Critical mass
-
-        Notes
-        -----
-        The pressure at a given mass is P = pi^3 c_s^8 / (G^3 M^2) m^2, so
-        the minimization is done with respect to m^2.
-        """
-        # do minimization in log space for robustness and performance
-        upper_bound = 6
-        res = minimize_scalar(lambda x: -self.get_mass(x)**2,
-                              bounds=(0, upper_bound), method='Bounded')
-        u_c = res.x
-        r_c = self.get_radius(u_c)
-        m_c = self.get_mass(u_c)
-        if u_c >= 0.999*upper_bound:
-            raise Exception("critical density contrast is out-of-bound")
-        return u_c, r_c, m_c
-
     def _dydx(self, y, x):
         """Differential equation for hydrostatic equilibrium.
 
