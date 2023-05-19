@@ -480,6 +480,7 @@ def get_pv_diagram(rsonic, umin=-2, umax=18):
     prs = np.array(prs)
     return vol, prs
 
+
 def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     """Plot p-v diagram of a TES
 
@@ -491,7 +492,6 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
         r_s / L_{J,c}
     """
     fig, axs = plt.subplots(2,2,figsize=(14,10))
-    axs[0,1].axis('off')
 
     ts = TESc(xi_s=rsonic0)
     menc0 = ts.get_mass(rmax0)
@@ -506,6 +506,18 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     plt.xlabel(r'$r/L_{J,c}$')
     plt.ylabel(r'$\rho/\rho_c$')
     plt.legend()
+
+    # Plot the r-M diagram
+    plt.sca(axs[0,1])
+    rmax_arr = np.logspace(-1, 2)
+    M = []
+    for R in rmax_arr:
+        M.append(ts.get_mass(R))
+    plt.loglog(rmax_arr, M)
+    M = ts.get_mass(rmax0)
+    plt.plot(rmax0, M, 'r+', mew=2, ms=10)
+    plt.xlabel(r'$R/L_{J,c}$')
+    plt.ylabel(r'$M/M_{J,c}$')
 
     # Construct a fixed-mass TES family corresponding to menc0
     rsonic = rsonic0 / np.pi / menc0
@@ -533,7 +545,81 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     u, du = tsm.solve(rmax, u00)
     prs = np.exp(u[-1])
     plt.plot(vol, prs, 'r+', mew=2, ms=10)
-    plt.xlabel(r'$R/(GMc_s^{-2})$')
+    plt.xlabel(r'$V/(G^3M^3c_s^{-6})$')
+    plt.ylabel(r'$P/(c_s^8G^{-3}M^{-2})$')
+    plt.tight_layout()
+    plt.xlim(vol/10, vol*10)
+    plt.ylim(prs/10, prs*10)
+    return fig
+
+
+def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
+    """Plot p-v diagram of a TES
+
+    Parameters
+    ----------
+    logrhoc : float
+        log(rho_c / rho_e)
+    rsonic0 : float
+        r_s / L_{J,e}
+    """
+    fig, axs = plt.subplots(2,2,figsize=(14,10))
+
+    ts = TES(xi_s=rsonic0)
+    menc0 = ts.get_mass(logrhoc)
+
+    # Plot the density profile
+    plt.sca(axs[0,0])
+    rds = np.logspace(-2, np.log10(ts.get_radius(logrhoc)))
+    u, du = ts.solve(rds, logrhoc)
+    plt.loglog(rds, np.exp(u))
+    r = np.logspace(-2, 0)
+    plt.loglog(r, 8.86/(4*np.pi**2*r**2), 'k--', label=r'$\rho_\mathrm{LP}$')
+    plt.axvline(rsonic0, ls=':', label=r'$r_\mathrm{sonic}/L_{J,c}$')
+    plt.xlabel(r'$r/L_{J,e}$')
+    plt.ylabel(r'$\rho/\rho_e$')
+    plt.xlim(1e-2, 1e0)
+    plt.ylim(1e0, 2e3)
+    plt.legend()
+
+    # Plot the r-M diagram
+    plt.sca(axs[0,1])
+    u0_arr = np.linspace(0.1, 15, 100)
+    R = ts.get_radius(u0_arr)
+    M = ts.get_mass(u0_arr)
+    plt.plot(R, M)
+    r0 = ts.get_radius(logrhoc)
+    plt.plot(r0, menc0, 'r+', mew=2, ms=10)
+    plt.xlabel(r'$R/L_{J,e}$')
+    plt.ylabel(r'$M/M_{J,e}$')
+
+    # Construct a fixed-mass TES family corresponding to menc0
+    rsonic = rsonic0 / np.pi / menc0
+    tsm = TESm(xi_s=rsonic)
+
+    # visualization
+    plt.sca(axs[1,0])
+    # density profiles for a selected u0
+    u00 = logrhoc + np.log(np.pi**3*menc0**2) # initial condition corresponding to the unvaried sphere
+    for u0 in [u00-10, u00-5, u00, u00+5, u00+10]:
+        rmax = tsm.get_radius(u0)
+        r = np.logspace(-6, np.log10(rmax))
+        u, du = tsm.solve(r, u0)
+        color = 'r' if u0==u00 else 'k'
+        plt.loglog(r, np.exp(u), color=color)
+    plt.xlabel(r'$r/(GMc_s^{-2})$')
+    plt.ylabel(r'$\rho/(c^6G^{-3}M^{-2})$')
+
+    # P-V diagram
+    vol, prs = get_pv_diagram(rsonic, u00-10, u00+10)
+    plt.sca(axs[1,1])
+    plt.loglog(vol, prs)
+    rmax = tsm.get_radius(u00)
+    vol = 4*np.pi/3*rmax**3
+    u, du = tsm.solve(rmax, u00)
+    prs = np.exp(u[-1])
+    plt.plot(vol, prs, 'r+', mew=2, ms=10)
+    plt.xlabel(r'$V/(G^3M^3c_s^{-6})$')
     plt.ylabel(r'$P/(c_s^8G^{-3}M^{-2})$')
     plt.tight_layout()
     plt.xlim(vol/10, vol*10)
