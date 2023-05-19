@@ -1,7 +1,7 @@
 # pyathena
 
-[<img src="https://img.shields.io/badge/DOI-10.34770%2Fackh--7y71-blue">](https://doi.org/)
-[![Jupyter Book Badge](https://jupyterbook.org/badge.svg)](https://changgoo.github.io/pyathena/)
+[<img src="https://img.shields.io/badge/DOI-doinumber-blue">](https://doi.org/)
+[![Jupyter Book Badge](https://jupyterbook.org/badge.svg)](https://changgoo.github.io/pyathena-1/intro.html)
 
 <div id="top"></div>
 <!--
