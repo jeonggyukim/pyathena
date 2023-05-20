@@ -55,12 +55,6 @@ def calculate_critical_tes(s, rprf):
     Args:
     Returns:
     """
-    def get_central_density_of_critical_tes(rhoe):
-        xi_s = np.sqrt(rhoe)*rs
-        ts = tes.TESe(p=p, xi_s=xi_s)
-        uc, _, _ = ts.get_crit()
-        return rhoe*np.exp(uc)
-
     # select the subsonic portion for fitting
     idx = np.where(rprf.vel1_sq_mw.data < 1)[0][-1]
     Rmax = rprf.r.isel(r=idx).data[()]
@@ -91,6 +85,7 @@ def calculate_critical_tes(s, rprf):
         except ValueError:
             rcrit = np.nan
             rhoe = np.nan
+
     res = dict(center_density=rhoc, edge_density=rhoe, critical_radius=rcrit,
                pindex=p, sonic_radius=rs)
     return res
