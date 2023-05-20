@@ -66,6 +66,7 @@ def calculate_critical_tes(s, rprf):
     Rmax = rprf.r.isel(r=idx).data[()]
     r = rprf.r.sel(r=slice(0, Rmax)).data[1:]
     vr2 = rprf.vel1_sq_mw.sel(r=slice(0, Rmax)).data[1:]
+    rhoc = rprf.rho.isel(r=0).data[()]
 
     if len(r) < 1:
         # Sonic radius is zero. Cannot find critical tes.
@@ -80,13 +81,16 @@ def calculate_critical_tes(s, rprf):
         rs = np.exp(-res.intercept/(p))
 
         # Find critical TES at the central density
-        rhoc = rprf.rho.isel(r=0).data[()]
         xi_s = np.sqrt(rhoc)*rs
         ts = tes.TESc(p=p, xi_s=xi_s)
-        rcrit = ts.get_crit()
-        u, du = ts.solve(rcrit)
-        rhoe = rhoc*np.exp(u[-1])
-        rcrit /= np.sqrt(rhoc)
+        try:
+            rcrit = ts.get_crit()
+            u, du = ts.solve(rcrit)
+            rhoe = rhoc*np.exp(u[-1])
+            rcrit /= np.sqrt(rhoc)
+        except ValueError:
+            rcrit = np.nan
+            rhoe = np.nan
     res = dict(center_density=rhoc, edge_density=rhoe, critical_radius=rcrit,
                pindex=p, sonic_radius=rs)
     return res
