@@ -23,18 +23,21 @@ if __name__ == "__main__":
                         help="Overwrite GRID-dendro output")
     parser.add_argument("-t", "--overwrite_cores", action="store_true",
                         help="Overwrite prestellar cores")
-    parser.add_argument("-r", "--overwrite_radial_profiles", action="store_true",
+    parser.add_argument("-r", "--overwrite_radial_profiles",
+                        action="store_true",
                         help="Overwrite radial profiles of prestellar cores")
     parser.add_argument("-c", "--overwrite_critical_tes", action="store_true",
-                        help="Overwrite critical turbulent equilibrium spheres for "
-                             "prestellar cores")
-    parser.add_argument("-pt", "--overwrite_plots_core_evolution", action="store_true",
+                        help="Overwrite critical turbulent equilibrium spheres"
+                             " for prestellar cores")
+    parser.add_argument("-pt", "--overwrite_plots_core_evolution",
+                        action="store_true",
                         help="Overwrite core evolution plots")
     parser.add_argument("-ps", "--overwrite_sink_history", action="store_true",
                         help="Overwrite sink history plots")
     parser.add_argument("-pp", "--overwrite_PDF_Pspecs", action="store_true",
                         help="Overwrite PDF_Pspecs plots")
-    parser.add_argument("-pr", "--overwrite_rhoc_evolution", action="store_true",
+    parser.add_argument("-pr", "--overwrite_rhoc_evolution",
+                        action="store_true",
                         help="Overwrite central density evolution plots")
     parser.add_argument("--pids", nargs='+', type=int,
                         help="List of particle ids to process")
@@ -61,7 +64,8 @@ if __name__ == "__main__":
             pass
 
         # Calculate radial profiles of t_coll cores and pickle them.
-        print(f"calculate and save radial profiles of t_coll cores for model {mdl}", flush=True)
+        msg = "calculate and save radial profiles of t_coll cores for model {}"
+        print(msg.format(mdl), flush=True)
         save_radial_profiles(s, pids=args.pids, overwrite=args.overwrite_radial_profiles)
         try:
             s._load_radial_profiles()

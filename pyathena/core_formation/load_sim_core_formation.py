@@ -12,10 +12,12 @@ from pyathena.core_formation.tools import LognormalPDF
 from pyathena.core_formation.tes import TESe
 from pyathena.core_formation import tools
 
+
 class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
     """LoadSim class for analyzing core collapse simulations."""
 
-    def __init__(self, basedir_or_Mach=None, savdir=None, load_method='pyathena', verbose=False):
+    def __init__(self, basedir_or_Mach=None, savdir=None,
+                 load_method='pyathena', verbose=False):
         """The constructor for LoadSimCoreFormation class
 
         Parameters
@@ -30,8 +32,8 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             Load hdf5 using 'pyathena' or 'yt'. Default value is 'pyathena'.
         verbose : bool or str or int
             Print verbose messages using logger. If True/False, set logger
-            level to 'DEBUG'/'WARNING'. If string, it should be one of the string
-            representation of python logging package:
+            level to 'DEBUG'/'WARNING'. If string, it should be one of the
+            string representation of python logging package:
             ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
             Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
             accepted.
@@ -96,7 +98,8 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
     def load_leaves(self, num):
-        fname = pathlib.Path(self.basedir, 'GRID', 'leaves.{:05d}.p'.format(num))
+        fname = pathlib.Path(self.basedir, 'GRID',
+                             'leaves.{:05d}.p'.format(num))
         with open(fname, 'rb') as handle:
             self.leaves = pickle.load(handle)
         return self.leaves
@@ -182,23 +185,27 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             self.vpy0[pid] = phst0.v2
             self.vpz0[pid] = phst0.v3
             self.tcolls[pid] = tcoll
-            self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']).astype('int')
+            self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']
+                                            ).astype('int')
 
     def _load_cores(self):
         self.cores = {}
         for pid in self.pids:
-            fname = pathlib.Path(self.basedir, 'cores', 'cores.par{}.p'.format(pid))
+            fname = pathlib.Path(self.basedir, 'cores',
+                                 'cores.par{}.p'.format(pid))
             self.cores[pid] = pd.read_pickle(fname)
 
     def _load_radial_profiles(self):
         self.rprofs = {}
         for pid in self.pids:
-            fname = pathlib.Path(self.basedir, 'cores', 'radial_profile.par{}.nc'.format(pid))
+            fname = pathlib.Path(self.basedir, 'cores',
+                                 'radial_profile.par{}.nc'.format(pid))
             self.rprofs[pid] = xr.open_dataset(fname).set_xindex('num')
 
     def _load_critical_tes(self):
         for pid in self.pids:
-            fname = pathlib.Path(self.basedir, 'cores', 'critical_tes.par{}.p'.format(pid))
+            fname = pathlib.Path(self.basedir, 'cores',
+                                 'critical_tes.par{}.p'.format(pid))
             tes_crit = pd.read_pickle(fname)
             self.cores[pid] = pd.concat([self.cores[pid], tes_crit], axis=1)
 
@@ -216,7 +223,8 @@ class LoadSimCoreFormationAll(object):
 
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
-                msg = '[LoadSimCoreFormationAll]: Model {0:s} doesn\'t exist: {1:s}'.format(mdl, basedir)
+                msg = "[LoadSimCoreFormationAll]: "\
+                      "Model {0:s} doesn\'t exist: {1:s}".format(mdl, basedir)
                 print(msg)
             else:
                 self.models.append(mdl)
