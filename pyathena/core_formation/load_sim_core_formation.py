@@ -8,12 +8,11 @@ import pickle
 from pyathena.load_sim import LoadSim
 from pyathena.io.timing_reader import TimingReader
 from pyathena.core_formation.hst import Hst
-from pyathena.core_formation.slc_prj import SliceProj
 from pyathena.core_formation.tools import LognormalPDF
 from pyathena.core_formation.tes import TESe
 from pyathena.core_formation import tools
 
-class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF, TimingReader):
+class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
     """LoadSim class for analyzing core collapse simulations."""
 
     def __init__(self, basedir_or_Mach=None, savdir=None, load_method='pyathena', verbose=False):
