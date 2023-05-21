@@ -86,6 +86,10 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             try:
                 # Load critical tes
                 self._load_critical_tes()
+                for pid in self.pids:
+                    self.cores[pid] = pd.concat([self.cores[pid],
+                                                 self.critical_tes[pid]],
+                                                 axis=1)
             except FileNotFoundError:
                 pass
 
@@ -202,12 +206,16 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                                  'radial_profile.par{}.nc'.format(pid))
             self.rprofs[pid] = xr.open_dataset(fname).set_xindex('num')
 
-    def _load_critical_tes(self):
+    def _load_critical_tes(self, method=None):
+        self.critical_tes = {}
         for pid in self.pids:
-            fname = pathlib.Path(self.basedir, 'cores',
-                                 'critical_tes.par{}.p'.format(pid))
-            tes_crit = pd.read_pickle(fname)
-            self.cores[pid] = pd.concat([self.cores[pid], tes_crit], axis=1)
+            if method is None:
+                fname = pathlib.Path(self.basedir, 'cores',
+                                     'critical_tes.par{}.p'.format(pid))
+            else:
+                fname = pathlib.Path(self.basedir, 'cores',
+                                     'critical_tes_{}.par{}.p'.format(method, pid))
+            self.critical_tes[pid] = pd.read_pickle(fname)
 
 
 class LoadSimCoreFormationAll(object):
