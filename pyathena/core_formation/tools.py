@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from scipy.special import erfinv
-from scipy.stats import linregress
+from scipy import odr
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import tes
@@ -45,22 +45,41 @@ class LognormalPDF:
         return np.exp(x)
 
 
-def calculate_critical_tes(s, rprf):
+def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
     """Calculates critical tes given the radial profile.
 
     Given the radial profile, find the critical tes at the same central
     density. return the ambient density, radius, power law index, and the sonic
     scale.
 
-    Args:
-    Returns:
+    Parameters
+    ----------
+    use_vel : str, optional
+        If 'total', use <v_r^2> to find sonic radius.
+        If 'disp', use <dv_r^2> = <v_r^2> - <v_r>^2 to find sonic radius.
+    fixed_slope : bool, optional
+        If true, fix the slope of velocity-size relation to 0.5.
+
+    Returns
+    -------
+    res : dict
+        center_density, edge_density, critical_radius, pindex, sonic_radius
     """
+    if use_vel == 'disp':
+        # select the subsonic portion for fitting
+        vsq = rprf['vel1_sq_mw'] - rprf['vel1_mw']**2
+    elif use_vel == 'total':
+        vsq = rprf['vel1_sq_mw']
+    else:
+        ValueError("Unknown option for use_vel")
+
     # select the subsonic portion for fitting
-    idx = np.where(rprf.vel1_sq_mw.data < 1)[0][-1]
+    idx = np.where(vsq.data > 1)[0][0]
     Rmax = rprf.r.isel(r=idx).data[()]
     r = rprf.r.sel(r=slice(0, Rmax)).data[1:]
-    vr2 = rprf.vel1_sq_mw.sel(r=slice(0, Rmax)).data[1:]
+    vr = np.sqrt(vsq.sel(r=slice(0, Rmax)).data[1:])
     rhoc = rprf.rho.isel(r=0).data[()]
+    LJ_c = 1.0 / np.sqrt(rhoc)
 
     if len(r) < 1:
         # Sonic radius is zero. Cannot find critical tes.
@@ -70,18 +89,34 @@ def calculate_critical_tes(s, rprf):
         rcrit = np.nan
     else:
         # fit the velocity dispersion to get power law index and sonic radius
-        res = linregress(np.log(r), np.log(np.sqrt(vr2)))
-        p = res.slope
-        rs = np.exp(-res.intercept/(p))
+        if fixed_slope:
+            def f(B, x):
+                return 0.5*x + B
+            beta0 = [1,]
+        else:
+            def f(B, x):
+                return B[0]*x + B[1]
+            beta0 = [0.5, 1]
+
+        linear = odr.Model(f)
+        mydata = odr.Data(np.log(r), np.log(vr))
+        myodr = odr.ODR(mydata, linear, beta0=beta0)
+        myoutput = myodr.run()
+        if fixed_slope:
+            p = 0.5
+            intercept = myoutput.beta[0]
+        else:
+            p, intercept = myoutput.beta
+        rs = np.exp(-intercept/(p))
 
         # Find critical TES at the central density
-        xi_s = np.sqrt(rhoc)*rs
+        xi_s = rs / LJ_c
         ts = tes.TESc(p=p, xi_s=xi_s)
         try:
-            rcrit = ts.get_crit()
-            u, du = ts.solve(rcrit)
+            xi_crit = ts.get_crit()
+            u, du = ts.solve(xi_crit)
             rhoe = rhoc*np.exp(u[-1])
-            rcrit /= np.sqrt(rhoc)
+            rcrit = xi_crit*LJ_c
         except ValueError:
             rcrit = np.nan
             rhoe = np.nan
