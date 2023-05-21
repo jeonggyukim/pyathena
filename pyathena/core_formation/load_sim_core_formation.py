@@ -86,10 +86,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             try:
                 # Load critical tes
                 self._load_critical_tes()
-                for pid in self.pids:
-                    self.cores[pid] = pd.concat([self.cores[pid],
-                                                 self.critical_tes[pid]],
-                                                 axis=1)
             except FileNotFoundError:
                 pass
 
@@ -204,18 +200,24 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         for pid in self.pids:
             fname = pathlib.Path(self.basedir, 'cores',
                                  'radial_profile.par{}.nc'.format(pid))
-            self.rprofs[pid] = xr.open_dataset(fname).set_xindex('num')
+            rprf = xr.open_dataset(fname)
+            for axis in [1,2,3]:
+                rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
+                                             - rprf[f'vel{axis}_mw']**2)
+                rprf[f'dvel{axis}_sq'] = (rprf[f'vel{axis}_sq']
+                                             - rprf[f'vel{axis}']**2)
+            rprf = rprf.set_xindex('num')
+            self.rprofs[pid] = rprf
 
-    def _load_critical_tes(self, method=None):
+    def _load_critical_tes(self, method='veldisp'):
         self.critical_tes = {}
         for pid in self.pids:
-            if method is None:
-                fname = pathlib.Path(self.basedir, 'cores',
-                                     'critical_tes.par{}.p'.format(pid))
-            else:
-                fname = pathlib.Path(self.basedir, 'cores',
-                                     'critical_tes_{}.par{}.p'.format(method, pid))
+            fname = pathlib.Path(self.basedir, 'cores',
+                                 'critical_tes_{}.par{}.p'.format(method, pid))
             self.critical_tes[pid] = pd.read_pickle(fname)
+            self.cores[pid] = pd.concat([self.cores[pid],
+                                         self.critical_tes[pid]],
+                                         axis=1)
 
 
 class LoadSimCoreFormationAll(object):
