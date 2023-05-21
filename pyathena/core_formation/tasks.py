@@ -27,27 +27,33 @@ def save_critical_tes(s, pids=None, overwrite=False):
     elif isinstance(pids, int):
         pids = [pids,]
     for pid in pids:
-        # Check if file exists
-        ofname = Path(s.basedir, 'cores', 'critical_tes.par{}.p'.format(pid))
-        ofname.parent.mkdir(exist_ok=True)
-        if ofname.exists() and not overwrite:
-            continue
+        for use_vel in ['disp', 'total']:
+            for fixed_slope in [False, True]:
+                # Check if file exists
+                suffix = "vel{}".format(use_vel)
+                if fixed_slope:
+                    suffix += "_fixed_slope"
+                ofname = Path(s.basedir, 'cores',
+                              'critical_tes_{}.par{}.p'.format(suffix, pid))
+                ofname.parent.mkdir(exist_ok=True)
+                if ofname.exists() and not overwrite:
+                    continue
 
-        critical_tes = pd.DataFrame(columns=('num',
-                                             'edge_density',
-                                             'critical_radius',
-                                             'pindex',
-                                             'sonic_radius'),
-                                    dtype=object).set_index('num')
-        for num, _ in s.cores[pid].iterrows():
-            msg = '[save_critical_tes] processing model {} pid {} num {}'
-            msg = msg.format(s.basename, pid, num)
-            print(msg)
-            rprf = s.rprofs[pid].sel(num=num)
-            critical_tes.loc[num] = tools.calculate_critical_tes(s, rprf)
+                critical_tes = pd.DataFrame(columns=('num',
+                                                     'edge_density',
+                                                     'critical_radius',
+                                                     'pindex',
+                                                     'sonic_radius'),
+                                            dtype=object).set_index('num')
+                for num, _ in s.cores[pid].iterrows():
+                    msg = '[save_critical_tes] processing model {} pid {} num {}'
+                    msg = msg.format(s.basename, pid, num)
+                    print(msg)
+                    rprf = s.rprofs[pid].sel(num=num)
+                    critical_tes.loc[num] = tools.calculate_critical_tes(s, rprf, use_vel, fixed_slope)
 
-        # write to file
-        critical_tes.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
+                # write to file
+                critical_tes.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def find_and_save_cores(s, pids=None, overwrite=False):
