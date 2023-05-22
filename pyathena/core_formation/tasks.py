@@ -328,6 +328,7 @@ def make_plots_core_evolution(s, pids=None, overwrite=False):
     elif isinstance(pids, int):
         pids = [pids,]
     for pid in pids:
+        # Read snapshot at t=t_coll and set plot limits
         num = s.nums_tcoll[pid]
         ds = s.load_hdf5(num, load_method='pyathena')
         leaves = s.load_leaves(num)
@@ -343,7 +344,12 @@ def make_plots_core_evolution(s, pids=None, overwrite=False):
         emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
         emin = tools.rounddown(engs['egrv'].min(), 1)
         rmax = tools.roundup(reff.max(), 2)
+
+        # Now, loop through cores and make plots
         for num, core in s.cores[pid].iterrows():
+            msg = '[make_plots_core_evolution] processing model {} pid {} num {}'
+            msg = msg.format(s.basename, pid, num)
+            print(msg)
             fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
                 config.PLOT_PREFIX_TCOLL_CORES, pid, num))
             fname.parent.mkdir(exist_ok=True)
