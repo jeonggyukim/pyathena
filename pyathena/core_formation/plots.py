@@ -147,24 +147,21 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # overplot critical tes
     rhoc = rprf.rho.isel(r=0).data[()]
-    rhoe = core.edge_density
-    if not np.isnan(rhoe):
-        ts = tes.TESe(p=core.pindex, xi_s=np.sqrt(rhoe)*core.sonic_radius)
-        u0 = np.log(rhoc/rhoe)
-        xi_max = ts.get_radius(u0)
-        xi_min = np.sqrt(rhoe)*rprf.r[0]
+    LJ_c = 1.0/np.sqrt(rhoc)
+    xi_min = rprf.r.isel(r=0).data[()]/LJ_c
+    if not np.isnan(core.critical_radius):
+        ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
+        xi_max = core.critical_radius/LJ_c
         xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-        u, du = ts.solve(xi, u0)
-        plt.plot(xi/np.sqrt(rhoe), rhoe*np.exp(u), 'r--', lw=1)
+        u, du = ts.solve(xi)
+        plt.plot(xi*LJ_c, rhoc*np.exp(u), 'r--', lw=1)
 
     # overplot critical BE
-    ts = tes.TESe()
-    u_c, r_c, m_c = ts.get_crit()
-    rhoe = rhoc*np.exp(-u_c)
-    xi_min = np.sqrt(rhoe)*rprf.r[0]
-    xi = np.logspace(np.log10(xi_min), np.log10(r_c))
-    u, du = ts.solve(xi, u_c)
-    plt.plot(xi/np.sqrt(rhoe), rhoe*np.exp(u), 'b:', lw=1)
+    ts = tes.TESc()
+    xi_max = ts.get_crit()
+    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+    u, du = ts.solve(xi)
+    plt.plot(xi*LJ_c, rhoc*np.exp(u), 'b:', lw=1)
 
     plt.axvline(core.radius, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
@@ -181,9 +178,9 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
     # Velocities
     plt.sca(fig.add_subplot(gs[1, 3]))
-    plt.plot(rprf.r, rprf.vel1, marker='+', label=r'$v_r$')
-    plt.plot(rprf.r, rprf.vel2, marker='+', label=r'$v_\theta$')
-    plt.plot(rprf.r, rprf.vel3, marker='+', label=r'$v_\phi$')
+    plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
+    plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
+    plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
     plt.axvline(core.radius, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
     plt.axhline(0, ls=':')
@@ -195,9 +192,9 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # Velocity dispersions
     plt.sca(fig.add_subplot(gs[2, 3]))
-    plt.loglog(rprf.r, np.sqrt(rprf.vel1_sq), marker='+', label=r'$v_r$')
-    plt.loglog(rprf.r, np.sqrt(rprf.vel2_sq), marker='+', label=r'$v_\theta$')
-    plt.loglog(rprf.r, np.sqrt(rprf.vel3_sq), marker='+', label=r'$v_\phi$')
+    plt.loglog(rprf.r, np.sqrt(rprf.dvel1_sq_mw), marker='+', label=r'$v_r$')
+    plt.loglog(rprf.r, np.sqrt(rprf.dvel2_sq_mw), marker='+', label=r'$v_\theta$')
+    plt.loglog(rprf.r, np.sqrt(rprf.dvel3_sq_mw), marker='+', label=r'$v_\phi$')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**0.5, 'k--')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
 
@@ -229,66 +226,50 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.axvline(core.radius, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
     plt.xlim(0, hw)
-    plt.legend(fontsize=15)
+    plt.legend(ncol=3, fontsize=15)
 
     return fig
 
 
-def plot_forces(s, rprf, ax=None, cumulative=False,
-                xlim=(0, 0.2), ylim=(-20, 50), ylabel='acceleration'):
-    peff = rprf.rho*(rprf.vel1_sq_mw + s.cs**2)
-    stress = rprf.rho*(-2*rprf.vel1_sq_mw + rprf.vel2_sq_mw + rprf.vel3_sq_mw)
+def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
+    pthm = rprf.rho*s.cs**2
+    ptrb = rprf.rho*rprf.dvel1_sq_mw
+    pram = rprf.rho*rprf.vel1_mw**2
+
+    f_pthm = -pthm.differentiate('r') / rprf.rho
+    f_ptrb = -ptrb.differentiate('r') / rprf.rho
+    f_pram = -(rprf.r**2*pram).differentiate('r') / rprf.r**2 / rprf.rho
+    f_aniso = (rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw) / rprf.r
+    f_cen = (rprf.vel2_mw**2 + rprf.vel3_mw**2) / rprf.r
+    f_grav = rprf.ggas1_mw + rprf.gstar1_mw
 
     if ax is not None:
         plt.sca(ax)
 
-    if cumulative:
-        istart = 2
-        slicer = slice(istart, rprf.dims['r'])
+    f_net = f_grav + f_pthm + f_ptrb
 
-        column_density = rprf.rho.isel(r=slicer).cumulative_integrate('r')
-        f_p = (peff - peff.isel(r=istart)) / column_density
-        f_geo = (stress/rprf.r
-                 ).isel(r=slicer).cumulative_integrate('r') / column_density
-        f_g = (rprf.rho*(rprf.ggas1_mw+rprf.gstar1_mw)
-               ).isel(r=slicer).cumulative_integrate('r') / column_density
-        fnet = f_g - f_p - f_geo
+    f_pthm.plot(lw=1, color='tab:orange', label=r'$f_\mathrm{thm}$')
+    f_ptrb.plot(lw=1, color='tab:blue', label=r'$f_\mathrm{trb}$')
+    f_pram.plot(lw=1, color='tab:gray', label=r'$f_\mathrm{ram}$')
+    f_aniso.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
+    f_cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
+    (-f_grav).plot(marker='x', ls='--', color='tab:red', lw=1, label=r'$f_\mathrm{grav}$')
+    (f_pthm + f_ptrb).plot(marker='+', color='tab:pink', lw=1,
+                           label=r'$f_\mathrm{thm,trb}$')
+    (f_pthm + f_ptrb + f_cen).plot(marker='+', color='tab:cyan', lw=1,
+                                   label=r'$f_\mathrm{thm,trb,cen}$')
+    fin = -(f_pthm + f_ptrb + f_pram + f_cen + f_aniso + f_grav)
+    fin.plot(marker='+', color='k', lw=1, label='net inward')
 
-        f_p.plot(marker='+', label='pressure')
-        (f_p + f_geo).plot(marker='o', label='pressure + geometric')
-        f_g.plot(marker='x', label='gravity')
-        fnet.plot(marker='+', label='net radial force')
+    # Overplot -GM/r^2
+    Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
+    gr = s.G*Mr/rprf.r**2
+    gr.plot(color='tab:red', lw=1, ls='--')
 
-        plt.axhline(0, linestyle=':')
-        plt.ylabel(ylabel)
-        plt.xlim(xlim)
-        plt.ylim(ylim)
-    else:
-        f_pthm = -rprf.grad_pthm1 / rprf.rho
-        f_ptrb = -rprf.grad_ptrb1 / rprf.rho
-        f_geo = stress / rprf.r / rprf.rho
-        f_grav = rprf.ggas1_mw + rprf.gstar1_mw
-        f_net = f_grav + f_pthm + f_ptrb + f_geo
-
-        f_pthm.plot(lw=1, color='orange',
-                    label=r'$-\partial_r P_\mathrm{thm}$')
-        f_ptrb.plot(lw=1, color='deepskyblue',
-                    label=r'$-\partial_r P_\mathrm{trb}$')
-        f_geo.plot(lw=1, color='limegreen', label=r'$f_\mathrm{geo}$')
-        (f_pthm + f_ptrb + f_geo).plot(marker='+', color='blue', lw=1,
-                                       label='total')
-        (-f_grav).plot(marker='x', ls='--', color='red', lw=1, label='gravity')
-        (-f_net).plot(marker='*', color='k', lw=1, label='net inward force')
-
-        # Overplot -GM/r^2
-        Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
-        gr = s.G*Mr/rprf.r**2
-        gr.plot(color='r', lw=1, ls='--')
-
-        plt.axhline(0, linestyle=':')
-        plt.ylabel(ylabel)
-        plt.xlim(xlim)
-        plt.ylim(ylim)
+    plt.axhline(0, linestyle=':')
+    plt.ylabel('acceleration')
+    plt.xlim(xlim)
+    plt.ylim(ylim)
 
 
 def plot_sinkhistory(s, ds, pds):
