@@ -71,8 +71,10 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
     else:
         ValueError("Unknown option for use_vel")
 
-    # select the subsonic portion for fitting
-    idx = np.where(vsq.data > 1)[0][0]
+    # Select the region for fitting the velocity-size relation.
+    Mach = np.sqrt(vsq.data) / s.cs
+    Mach_threshold = 1.5
+    idx = np.where(Mach < Mach_threshold)[0][-1]
     Rmax = rprf.r.isel(r=idx).data[()]
     r = rprf.r.sel(r=slice(0, Rmax)).data[1:]
     vr = np.sqrt(vsq.sel(r=slice(0, Rmax)).data[1:])
@@ -97,7 +99,7 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
             beta0 = [0.5, 1]
 
         linear = odr.Model(f)
-        mydata = odr.Data(np.log(r), np.log(vr))
+        mydata = odr.Data(np.log(r), np.log(vr/s.cs))
         myodr = odr.ODR(mydata, linear, beta0=beta0)
         myoutput = myodr.run()
         if fixed_slope:
