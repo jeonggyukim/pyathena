@@ -240,7 +240,7 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='yt', verbose=False):
+    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         self.model = model
         try:
             self.sim = self.simdict[model]
