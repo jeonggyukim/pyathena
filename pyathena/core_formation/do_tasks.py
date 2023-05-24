@@ -13,7 +13,9 @@ if __name__ == "__main__":
                   M5J2P1N256='/scratch/gpfs/sm69/cores/M5.J2.P1.N256',
                   M5J2P1N512='/scratch/gpfs/sm69/cores/M5.J2.P1.N512',
                   M5J2P2N256='/scratch/gpfs/sm69/cores/M5.J2.P2.N256',
-                  M5J2P2N512='/scratch/gpfs/sm69/cores/M5.J2.P2.N512')
+                  M5J2P2N512='/scratch/gpfs/sm69/cores/M5.J2.P2.N512',
+                  M5J2P3N512='/scratch/gpfs/sm69/cores/M5.J2.P3.N512',
+                  M5J2P4N512='/scratch/gpfs/sm69/cores/M5.J2.P4.N512')
     sa = pa.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
