@@ -86,6 +86,13 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             try:
                 # Load critical tes
                 self._load_critical_tes()
+
+                # If success, concatenate to core props
+                for pid in self.pids:
+                    self.cores[pid] = pd.concat([self.cores[pid],
+                                                 self.critical_tes[pid]],
+                                                axis=1)
+
             except FileNotFoundError:
                 pass
 
@@ -206,11 +213,11 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             fname = pathlib.Path(self.basedir, 'cores',
                                  'radial_profile.par{}.nc'.format(pid))
             rprf = xr.open_dataset(fname)
-            for axis in [1,2,3]:
+            for axis in [1, 2, 3]:
                 rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
                                              - rprf[f'vel{axis}_mw']**2)
                 rprf[f'dvel{axis}_sq'] = (rprf[f'vel{axis}_sq']
-                                             - rprf[f'vel{axis}']**2)
+                                          - rprf[f'vel{axis}']**2)
             rprf = rprf.set_xindex('num')
             self.rprofs[pid] = rprf
 
@@ -220,9 +227,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             fname = pathlib.Path(self.basedir, 'cores',
                                  'critical_tes_{}.par{}.p'.format(method, pid))
             self.critical_tes[pid] = pd.read_pickle(fname)
-            self.cores[pid] = pd.concat([self.cores[pid],
-                                         self.critical_tes[pid]],
-                                         axis=1)
 
 
 class LoadSimCoreFormationAll(object):
@@ -245,7 +249,8 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+    def set_model(self, model, savdir=None, load_method='pyathena',
+                  verbose=False):
         self.model = model
         try:
             self.sim = self.simdict[model]
