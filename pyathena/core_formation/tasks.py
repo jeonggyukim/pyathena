@@ -40,6 +40,7 @@ def save_critical_tes(s, pids=None, overwrite=False):
                     continue
 
                 critical_tes = pd.DataFrame(columns=('num',
+                                                     'center_density',
                                                      'edge_density',
                                                      'critical_radius',
                                                      'pindex',
