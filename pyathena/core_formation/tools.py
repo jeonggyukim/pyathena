@@ -286,7 +286,7 @@ def get_coords_node(ds, node):
     return coordinates
 
 
-def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, N_LP=10):
+def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, ncells_min=10):
     if mfrac is None and rho_amb is None:
         raise ValueError("Specify either mfrac or rho_amb")
     s = load_sim_core_formation.LoadSimCoreFormation(Mach)
@@ -297,8 +297,10 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, N_LP=10):
     rhoc_TES, R_TES, M_TES = s.get_critical_TES(rho_amb, lmb_sonic, p=0.5)
     R_LP_BE = s.get_RLP(M_BE)
     R_LP_TES = s.get_RLP(M_TES)
-    dx_req = R_LP_BE/N_LP
-    Ncells_req = np.ceil(Lbox/dx_req).astype(int)
+    dx_req_LP = R_LP_BE/ncells_min
+    dx_req_BE = R_BE/ncells_min
+    ncells_req_LP = np.ceil(Lbox/dx_req_LP).astype(int)
+    ncells_req_BE = np.ceil(Lbox/dx_req_BE).astype(int)
 
     print(f"Mach number = {Mach}")
     print("sonic length = {}".format(lmb_sonic))
@@ -312,9 +314,10 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, N_LP=10):
     print("Equivalent LP radius for Bonner-Ebert sphere = "
           "{:.3f}".format(R_LP_BE))
     print("Equivalent LP radius for TES = {:.3f}".format(R_LP_TES))
-    print("Required resolution dx to resolve BE sphere = {}".format(dx_req))
-    print("Required resolution Ncells to resolve BE sphere = "
-          "{}".format(Ncells_req))
+    print("Required resolution dx to resolve LP core = {}".format(dx_req_LP))
+    print("Required resolution Ncells to resolve LP core = {}".format(ncells_req_LP))
+    print("Required resolution dx to resolve BE sphere = {}".format(dx_req_BE))
+    print("Required resolution Ncells to resolve BE sphere = {}".format(ncells_req_BE))
 
 
 def get_sonic(Mach_outer, l_outer, p=0.5):
