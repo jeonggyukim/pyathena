@@ -101,8 +101,13 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         fname = pathlib.Path(self.basedir, 'GRID',
                              'leaves.{:05d}.p'.format(num))
         with open(fname, 'rb') as handle:
-            self.leaves = pickle.load(handle)
-        return self.leaves
+            return pickle.load(handle)
+
+    def load_dendrogram(self, num):
+        fname = pathlib.Path(self.basedir, 'GRID',
+                             'dendrogram.{:05d}.p'.format(num))
+        with open(fname, 'rb') as handle:
+            return pickle.load(handle)
 
     def get_tJeans(self, lmb, rho=None):
         """e-folding time of the fastest growing mode of the Jeans instability

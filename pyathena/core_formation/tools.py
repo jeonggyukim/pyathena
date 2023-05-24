@@ -207,9 +207,9 @@ def calculate_radial_profiles(s, ds, origin, rmax):
 
 def find_tcoll_core(s, pid):
     """Find the GRID-dendro ID of the t_coll core of particle pid"""
-    # load GRID-dendro leaves at t = t_coll
+    # load dendrogram at t = t_coll
     num = s.nums_tcoll[pid]
-    leaves = s.load_leaves(num)
+    gd = s.load_dendrogram(num)
 
     # find closeast leaf node to this particle
     dx, dy, dz = s.domain['dx']
@@ -220,7 +220,7 @@ def find_tcoll_core(s, pid):
                          2*s.dt_output['hdf5']*particle_speed)
     tcoll_core = set()
     while len(tcoll_core) == 0:
-        for leaf in leaves:
+        for leaf in gd.leaves:
             kji = np.unravel_index(leaf, s.domain['Nx'][::-1], order='C')
             ijk = np.array(kji)[::-1]
             pos_node = s.domain['le'] + ijk*s.domain['dx']

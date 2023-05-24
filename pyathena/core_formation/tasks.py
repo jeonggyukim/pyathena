@@ -85,12 +85,12 @@ def find_and_save_cores(s, pids=None, overwrite=False):
         # Load data
         num = s.nums_tcoll[pid]
         ds = s.load_hdf5(num, load_method='pyathena')
-        leaves = s.load_leaves(num)
+        gd = s.load_dendrogram(num)
 
         # Calculate position, mass, and radius of the core
         nid_old = tools.find_tcoll_core(s, pid)
         pos_old = tools.get_coords_node(ds, nid_old)
-        rho = dendrogram.filter_by_node(ds.dens, leaves, nid_old)
+        rho = gd.filter_data(ds.dens, nid_old)
         Mcore_old = (rho*s.dV).sum().data[()]
         Vcore = ((rho > 0).sum()*s.dV).data[()]
         Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
@@ -109,11 +109,11 @@ def find_and_save_cores(s, pids=None, overwrite=False):
             print(msg)
             # loop backward in time to find all preimages of the t_coll core
             ds = s.load_hdf5(num, load_method='pyathena')
-            leaves = s.load_leaves(num)
+            gd = s.load_dendrogram(num)
 
             # find closeast leaf to the previous preimage
             dst = {leaf: _get_node_distance(ds, leaf, nid_old)
-                   for leaf in leaves}
+                   for leaf in gd.leaves}
             dst_min = np.min(list(dst.values()))
             for k, v in dst.items():
                 if v == dst_min:
@@ -122,7 +122,7 @@ def find_and_save_cores(s, pids=None, overwrite=False):
             # Calculate position, mass, and radius of the core and
             # check if this core is really the same core in different time
             pos = tools.get_coords_node(ds, nid)
-            rho = dendrogram.filter_by_node(ds.dens, leaves, nid)
+            rho = gd.filter_data(ds.dens, nid)
             Mcore = (rho*s.dV).sum().data[()]
             Vcore = ((rho > 0).sum()*s.dV).data[()]
             Rcore = (3*Vcore/(4*np.pi))**(1./3.)
@@ -331,16 +331,16 @@ def make_plots_core_evolution(s, pids=None, overwrite=False):
         # Read snapshot at t=t_coll and set plot limits
         num = s.nums_tcoll[pid]
         ds = s.load_hdf5(num, load_method='pyathena')
-        leaves = s.load_leaves(num)
+        gd = s.load_dendrogram(num)
         core = s.cores[pid].loc[num]
-        prims = dict(rho=ds.dens.to_numpy(),
+        data = dict(rho=ds.dens.to_numpy(),
                      vel1=(ds.mom1/ds.dens).to_numpy(),
                      vel2=(ds.mom2/ds.dens).to_numpy(),
                      vel3=(ds.mom3/ds.dens).to_numpy(),
                      prs=s.cs**2*ds.dens.to_numpy(),
-                     phi=ds.phigas.to_numpy())
-        reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves,
-                                                          core.nid)
+                     phi=ds.phigas.to_numpy(),
+                     dvol=s.dV)
+        reff, engs = energy.calculate_cumulative_energies(gd, data, core.nid)
         emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
         emin = tools.rounddown(engs['egrv'].min(), 1)
         rmax = tools.roundup(reff.max(), 2)

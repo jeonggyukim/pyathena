@@ -19,16 +19,17 @@ from grid_dendro import dendrogram
 from grid_dendro import energy
 
 
-def plot_energies(s, ds, leaves, nid, ax=None):
+def plot_energies(s, ds, gd, nid, ax=None):
     if ax is not None:
         plt.sca(ax)
-    prims = dict(rho=ds.dens.to_numpy(),
+    data = dict(rho=ds.dens.to_numpy(),
                  vel1=(ds.mom1/ds.dens).to_numpy(),
                  vel2=(ds.mom2/ds.dens).to_numpy(),
                  vel3=(ds.mom3/ds.dens).to_numpy(),
                  prs=s.cs**2*ds.dens.to_numpy(),
-                 phi=ds.phigas.to_numpy())
-    reff, engs = energy.calculate_cumulative_energies(prims, s.dV, leaves, nid)
+                 phi=ds.phigas.to_numpy(),
+                 dvol=s.dV)
+    reff, engs = energy.calculate_cumulative_energies(gd, data, nid)
     plt.plot(reff, engs['ethm'], label='thermal')
     plt.plot(reff, engs['ekin'], label='kinetic')
     plt.plot(reff, engs['egrv'], label='gravitational')
@@ -70,7 +71,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     ds = s.load_hdf5(num, load_method='pyathena')
 
     # Load leaf dict at t = t_coll
-    leaves = s.load_leaves(num)
+    gd = s.load_dendrogram(num)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(ds, core.nid)
@@ -113,16 +114,16 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
         # 3. Zoom-in projections for individual core
         # Load selected core
-        rho_ = dendrogram.filter_by_node(ds.dens, leaves, core.nid,
-                                         fill_value=0)
+        rho_ = gd.filter_data(ds.dens, core.nid, fill_value=0)
         ds_core = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_core, _ = tools.recenter_dataset(ds_core, (xc, yc, zc))
         ds_core = ds_core.sel(x=slice(-hw, hw), y=slice(-hw, hw),
                               z=slice(-hw, hw))
 
         # Load other cores
-        other_cores = {k: v for k, v in leaves.items() if k != core.nid}
-        rho_ = dendrogram.filter_by_node(ds.dens, other_cores, fill_value=0)
+        other_cores = list(gd.leaves.keys())
+        other_cores.remove(core.nid)
+        rho_ = gd.filter_data(ds.dens, other_cores, fill_value=0)
         ds_others = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
         ds_others, _ = tools.recenter_dataset(ds_others, (xc, yc, zc))
         ds_others = ds_others.sel(x=slice(-hw, hw), y=slice(-hw, hw),
@@ -213,7 +214,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # 5. Energies
     plt.sca(fig.add_subplot(gs[0, 4]))
-    plot_energies(s, ds, leaves, core.nid)
+    plot_energies(s, ds, gd, core.nid)
     if emin is not None and emax is not None:
         plt.ylim(emin, emax)
     if rmax is not None:
