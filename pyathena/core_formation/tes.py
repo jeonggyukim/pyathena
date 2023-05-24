@@ -617,8 +617,10 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
     # Plot the r-M diagram
     plt.sca(axs[0, 1])
     u0_arr = np.linspace(0.1, 15, 100)
-    R = ts.get_radius(u0_arr)
-    M = ts.get_mass(u0_arr)
+    R, M = [], []
+    for u0 in u0_arr:
+        R.append(ts.get_radius(u0))
+        M.append(ts.get_mass(u0))
     plt.plot(R, M)
     r0 = ts.get_radius(logrhoc)
     plt.plot(r0, menc0, 'r+', mew=2, ms=10)
