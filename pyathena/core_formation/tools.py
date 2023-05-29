@@ -5,6 +5,7 @@ from scipy import odr
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import tes
+from pyathena.core_formation.exceptions import NoNearbyCoreError
 
 
 class LognormalPDF:
@@ -234,7 +235,7 @@ def find_tcoll_core(s, pid):
     dst_inc = min(dx, dy, dz)
     search_dst = dst_inc
     particle_speed = np.sqrt(s.vpx0[pid]**2 + s.vpy0[pid]**2 + s.vpz0[pid]**2)
-    search_dst_max = max(10*max(dx, dy, dz),
+    search_dst_max = max(20*max(dx, dy, dz),
                          2*s.dt_output['hdf5']*particle_speed)
     tcoll_core = set()
     while len(tcoll_core) == 0:
@@ -250,7 +251,7 @@ def find_tcoll_core(s, pid):
         if search_dst > search_dst_max:
             msg = "pid = {}: Cannot find a t_coll core within distance {}"
             msg = msg.format(pid, search_dst_max)
-            raise ValueError(msg)
+            raise NoNearbyCoreError(msg)
     return tcoll_core.pop()
 
 

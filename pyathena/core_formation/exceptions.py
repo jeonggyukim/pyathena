@@ -1,0 +1,2 @@
+class NoNearbyCoreError(Exception):
+    pass
