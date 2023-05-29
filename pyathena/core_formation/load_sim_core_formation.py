@@ -168,24 +168,26 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         for k, v in self.par.items():
             if k.startswith('output'):
                 self.dt_output[v['file_type']] = v['dt']
-        self.tcolls, self.nums_tcoll = {}, {}
-        # mass and position of sink particle at the time of creation
-        self.mp0, self.xp0, self.yp0, self.zp0 = {}, {}, {}, {}
-        self.vpx0, self.vpy0, self.vpz0 = {}, {}, {}
+
+        x1, x2, x3, v1, v2, v3 = {}, {}, {}, {}, {}, {}
+        time, num = {}, {}
         for pid in self.pids:
             phst = self.load_parhst(pid)
             phst0 = phst.iloc[0]
-            tcoll = phst0.time
-            self.mp0[pid] = phst0.mass
-            self.xp0[pid] = phst0.x1
-            self.yp0[pid] = phst0.x2
-            self.zp0[pid] = phst0.x3
-            self.vpx0[pid] = phst0.v1
-            self.vpy0[pid] = phst0.v2
-            self.vpz0[pid] = phst0.v3
-            self.tcolls[pid] = tcoll
-            self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']
-                                            ).astype('int')
+            x1[pid] = phst0.x1
+            x2[pid] = phst0.x2
+            x3[pid] = phst0.x3
+            v1[pid] = phst0.v1
+            v2[pid] = phst0.v2
+            v3[pid] = phst0.v3
+            time[pid] = phst0.time
+            num[pid] = np.floor(phst0.time / self.dt_output['hdf5']
+                                ).astype('int')
+        self.tcoll_cores = pd.DataFrame(dict(x1=x1, x2=x2, x3=x3,
+                                             v1=v1, v2=v2, v3=v3,
+                                             time=time, num=num),
+                                        dtype=object)
+        self.tcoll_cores.index.name = 'pid'
 
     def _load_cores(self, method='veldisp'):
         self.cores = {}

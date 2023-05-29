@@ -227,14 +227,15 @@ def calculate_radial_profiles(s, ds, origin, rmax):
 def find_tcoll_core(s, pid):
     """Find the GRID-dendro ID of the t_coll core of particle pid"""
     # load dendrogram at t = t_coll
-    num = s.nums_tcoll[pid]
+    num = s.tcoll_cores.loc[pid].num
     gd = s.load_dendrogram(num)
 
     # find closeast leaf node to this particle
     dx, dy, dz = s.domain['dx']
     dst_inc = min(dx, dy, dz)
     search_dst = dst_inc
-    particle_speed = np.sqrt(s.vpx0[pid]**2 + s.vpy0[pid]**2 + s.vpz0[pid]**2)
+    vel = s.tcoll_cores.loc[pid][['v1', 'v2', 'v3']].to_numpy()
+    particle_speed = np.sqrt((vel**2).sum())
     search_dst_max = max(20*max(dx, dy, dz),
                          2*s.dt_output['hdf5']*particle_speed)
     tcoll_core = set()
@@ -243,7 +244,8 @@ def find_tcoll_core(s, pid):
             kji = np.unravel_index(leaf, s.domain['Nx'][::-1], order='C')
             ijk = np.array(kji)[::-1]
             pos_node = s.domain['le'] + ijk*s.domain['dx']
-            pos_particle = np.array((s.xp0[pid], s.yp0[pid], s.zp0[pid]))
+            pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
+            pos_particle = pos_particle.to_numpy()
             dst = get_periodic_distance(pos_node, pos_particle, s.Lbox)
             if dst <= search_dst:
                 tcoll_core.add(leaf)

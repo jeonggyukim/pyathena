@@ -63,7 +63,7 @@ def plot_central_density_evolution(s, ax=None):
 
 def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Load the progenitor GRID-core of this particle.
-    if num > s.nums_tcoll[pid]:
+    if num > s.tcoll_cores.loc[pid].num:
         raise ValueError("num must be smaller than num_tcoll")
     core = s.cores[pid].loc[num]
 

@@ -84,7 +84,7 @@ def find_and_save_cores(s, pids=None, overwrite=False):
         # start from t = t_coll
 
         # Load data
-        num = s.nums_tcoll[pid]
+        num = s.tcoll_cores.loc[pid].num
         ds = s.load_hdf5(num, load_method='pyathena')
         gd = s.load_dendrogram(num)
 
@@ -330,7 +330,7 @@ def make_plots_core_evolution(s, pids=None, overwrite=False):
         pids = [pids,]
     for pid in pids:
         # Read snapshot at t=t_coll and set plot limits
-        num = s.nums_tcoll[pid]
+        num = s.tcoll_cores.loc[pid].num
         ds = s.load_hdf5(num, load_method='pyathena')
         gd = s.load_dendrogram(num)
         core = s.cores[pid].loc[num]
