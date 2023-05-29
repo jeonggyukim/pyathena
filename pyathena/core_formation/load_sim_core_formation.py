@@ -83,19 +83,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             except FileNotFoundError:
                 pass
 
-            try:
-                # Load critical tes
-                self._load_critical_tes()
-
-                # If success, concatenate to core props
-                for pid in self.pids:
-                    self.cores[pid] = pd.concat([self.cores[pid],
-                                                 self.critical_tes[pid]],
-                                                axis=1)
-
-            except FileNotFoundError:
-                pass
-
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
             LognormalPDF.__init__(self, self.Mach)
@@ -200,12 +187,19 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             self.nums_tcoll[pid] = np.floor(tcoll / self.dt_output['hdf5']
                                             ).astype('int')
 
-    def _load_cores(self):
+    def _load_cores(self, method='veldisp'):
         self.cores = {}
         for pid in self.pids:
             fname = pathlib.Path(self.basedir, 'cores',
                                  'cores.par{}.p'.format(pid))
             self.cores[pid] = pd.read_pickle(fname)
+            try:
+                fname = pathlib.Path(self.basedir, 'cores',
+                                     f'critical_tes_{method}.par{pid}.p')
+                tes_crit = pd.read_pickle(fname)
+                self.cores[pid] = pd.concat([self.cores[pid], tes_crit], axis=1)
+            except FileNotFoundError:
+                pass
 
     def _load_radial_profiles(self):
         self.rprofs = {}
@@ -220,13 +214,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                                           - rprf[f'vel{axis}']**2)
             rprf = rprf.set_xindex('num')
             self.rprofs[pid] = rprf
-
-    def _load_critical_tes(self, method='veldisp'):
-        self.critical_tes = {}
-        for pid in self.pids:
-            fname = pathlib.Path(self.basedir, 'cores',
-                                 'critical_tes_{}.par{}.p'.format(method, pid))
-            self.critical_tes[pid] = pd.read_pickle(fname)
 
 
 class LoadSimCoreFormationAll(object):
