@@ -101,7 +101,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             self.sonic_length = tools.get_sonic(self.Mach, self.Lbox)
 
             # Find the collapse time and corresponding snapshot numbers
-            self._find_tcoll()
+            self._load_tcoll_cores()
 
             try:
                 # Load grid-dendro nodes
@@ -189,7 +189,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         M = MJ_e*m
         return rhoc, R, M
 
-    def _find_tcoll(self):
+    def _load_tcoll_cores(self):
         """Read .csv output and find their collapse time and snapshot number.
 
         Additionally store their mass, position, velocity at the time of
@@ -226,7 +226,9 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         for pid in self.pids:
             fname = pathlib.Path(self.basedir, 'cores',
                                  'cores.par{}.p'.format(pid))
-            self.cores[pid] = pd.read_pickle(fname)
+            core = pd.read_pickle(fname)
+            core['mean_density'] = core.mass / (4*np.pi*core.radius**3/3)
+            self.cores[pid] = core
             try:
                 fname = pathlib.Path(self.basedir, 'cores',
                                      f'critical_tes_{method}.par{pid}.p')
