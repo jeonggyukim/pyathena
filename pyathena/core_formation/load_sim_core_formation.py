@@ -14,7 +14,39 @@ from pyathena.core_formation import tools
 
 
 class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
-    """LoadSim class for analyzing core collapse simulations."""
+    """LoadSim class for analyzing core collapse simulations.
+
+    Attributes
+    ----------
+    rho0 : float
+        Mean density of the cloud in the code unit.
+    cs : float
+        Sound speed in the code unit.
+    G : float
+        Gravitational constant in the code unit.
+    tff : float
+        Free fall time in the code unit.
+    tcr : float
+        Half-box flow crossing time in the code unit.
+    Mach : float
+        Mach number.
+    sonic_length : float
+        Sonic length in the code unit.
+    basedir : str
+        Base directory
+    problem_id : str
+        Prefix of the Athena++ problem
+    dx : float
+        Uniform cell spacing in x direction.
+    dy : float
+        Uniform cell spacing in y direction.
+    dz : float
+        Uniform cell spacing in z direction.
+    tcoll_cores : pandas DataFrame
+        t_coll core information container.
+    cores : dict of pandas DataFrame
+        All preimages of t_coll cores.
+    """
 
     def __init__(self, basedir_or_Mach=None, savdir=None,
                  load_method='pyathena', verbose=False):
