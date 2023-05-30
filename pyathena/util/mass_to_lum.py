@@ -18,25 +18,25 @@ class mass_to_lum(object):
         Parameters
         ----------
         model: string
-            Name of stellar evolutionary track.
-            ``Padova`` - Power-law approximation to stellar luminosity, MS lifetime
-            based on Padova evolutionary track (Bruzual & Charlot 2003).
-            Data taken from Table 1 in Parravano et al. (2003).
+           Name of stellar evolutionary track.
+           'Padova': Power-law approximation to stellar luminosity, MS lifetime
+                     based on Padova evolutionary track (Bruzual & Charlot 2003).
+                     Data taken from Table 1 in Parravano et al. (2003).
         """
-
+        
         self.model = model
-
+    
     @property
     def model(self):
         return self._model
-
+    
     @model.setter
     def model(self, model):
         self._model = model
         self.LtoM_FUV_SB99, self.LtoM_PE_SB99, \
             self.LtoM_LW_SB99, self.QtoM_EUV_SB99 = self._get_MtoL_SB99()
         self.SNrate = self._get_SNrate_SB99()
-
+        
         if model == 'Padova':
             self.calc_tMS, self.calc_LFUV, \
                 self.calc_LH2, self.calc_Qi = self._get_MtoL_Padova()
@@ -66,20 +66,20 @@ class mass_to_lum(object):
                     res.append((age_/4.73e3)**(-1.0/2.36))
                 elif idx > 6:
                     res.append((age_/7.65e3)**(-1.0/2.8))
-
+                    
             return np.array(res)
-
+                
         return age_to_mass
-
+    
     def _get_MtoL_Padova(self):
         """
         Initialize power-law functions for model 'Padova'
-
+        
         tMS: main sequence lifetime [Myr],
         LFUV: mean luminosities in the FUV band (912 - 2070A) [Lsun],
         LH2: mean luminosities in the H2 band (912 - 1100A) [Lsun]
         Qi: ionizing photon luminosity in the EUV band (< 912A).
-
+        
         NOTE: Return NaN if mass is outside the valid range
 
         See Table 1 in Parravano et al. (2003).
@@ -100,7 +100,7 @@ class mass_to_lum(object):
                 return y
             return wrapper
         tMS = decorator(pp)
-
+        
         # FUV luminosity
         mass_range = np.array([1.8, 2.0, 2.5, 3.0, 6.0, 9.0, 12.0, 30.0, 120.01])
         powers = np.array([11.8, 9.03, 7.03, 4.76, 3.78, 3.31, 2.32, 1.54])
@@ -122,9 +122,9 @@ class mass_to_lum(object):
         coeff = np.array([2.23e34, 3.69e36, 4.80e37, 3.12e41, 2.80e44, 3.49e45, 2.39e46])
         Qi = PiecewisePowerlaw(mass_range, powers, coeff,
                                norm=False, externalval=None)
-
+        
         return tMS, LFUV, LH2, Qi
-
+        
     def calc_LFUV_SB99(self, mass, age=0.0):
         return mass*self.LtoM_FUV_SB99(age)
 
@@ -136,9 +136,9 @@ class mass_to_lum(object):
 
     def calc_Qi_SB99(self, mass, age=0.0):
         return mass*self.QtoM_EUV_SB99(age)
-
+                
     def _get_SNrate_SB99(self):
-
+        
         _SNrate = [0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                    0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
                    0.00000000e+00,   0.00000000e+00,   0.00000000e+00,
@@ -213,7 +213,7 @@ class mass_to_lum(object):
         age = np.arange(0, agemax + dage, dage)
         SNrate = interp1d(age, _SNrate)
         return SNrate
-
+            
     def _get_MtoL_SB99(self):
 
         _Psi_PE = [
@@ -269,7 +269,7 @@ class mass_to_lum(object):
               8.7156227 ,   8.66156876,   8.60164256,   8.55078745,
               8.48449662
             ]
-
+        
         _Psi_LW = [
             126.31816006, 129.72043083, 132.94334281, 136.51605735,
             140.79567861, 146.31862466, 153.53038347, 158.15372208,
@@ -324,7 +324,7 @@ class mass_to_lum(object):
             1.28902265
         ]
 
-
+        
         # SB99 specific FUV luminosity Psi = L/M_* as a function of age
         _Psi = [453.08679514, 464.53452871, 475.47798641, 485.7073231 ,
                 496.9356504 , 511.96949628, 548.4466934 , 562.63899134,
@@ -377,7 +377,7 @@ class mass_to_lum(object):
                 10.00041292,   9.90877628,   9.81816843,   9.72881811,
                 9.64106077,   9.55428174,   9.46869859,   9.38459354,
                 9.30185274]
-
+            
         # SB99 specific EUV luminosity Xi = Qi/M_* as a function of age
         # _Xi= [4.12097519e+46,   4.09260660e+46,   4.09260660e+46,
         #      4.10204103e+46,   4.11149721e+46,   4.12097519e+46,
@@ -545,7 +545,7 @@ class mass_to_lum(object):
         #       6.18016400e+40,   6.13762005e+40,   6.26613865e+40,
         #       6.01173737e+40,   5.94292159e+40,   5.88843655e+40,
         #       5.74116462e+40,   5.72796031e+40,   5.67544605e+40,
-        #       5.76766463e+40,   5.70164272e+40]
+        #       5.76766463e+40,   5.70164272e+40]            
 
         _Xi= [4.73450983e+46, 4.69166169e+46, 4.69735447e+46, 4.69663822e+46,
               4.68113425e+46, 4.61690473e+46, 4.52697441e+46, 4.56713558e+46,
@@ -575,7 +575,7 @@ class mass_to_lum(object):
               3.39064171e+42, 3.23904223e+42, 3.13011460e+42, 2.99410418e+42,
               2.90610672e+42, 2.81906741e+42, 2.70040982e+42, 2.61627656e+42,
               2.52690342e+42, 2.44205249e+42, 2.37570245e+42, 2.26952208e+42,
-              2.19378919e+42, 2.10413667e+42, 2.04429913e+42, 1.96322703e+42,
+              2.19378919e+42, 2.10413667e+42, 2.04429913e+42, 1.96322703e+42,    
               1.89478119e+42, 1.82754725e+42, 1.75719812e+42, 1.69501939e+42,
               1.64045584e+42, 1.60246027e+42, 1.55732639e+42, 1.50813242e+42,
               1.45768107e+42, 1.41108833e+42, 1.37038916e+42, 1.33542436e+42,
@@ -598,13 +598,13 @@ class mass_to_lum(object):
               1.87211715e+41, 1.81224092e+41, 1.75482500e+41, 1.70754522e+41,
               1.65606167e+41, 1.63926973e+41, 1.59404697e+41, 1.58186530e+41,
               1.53622887e+41]
-
+        
 
         # cluster age in units of Myr
         dage = 0.2
         agemax = 40.0
         age = np.arange(0, agemax + dage, dage)
-
+        
         Psi = interp1d(age, _Psi)
         Psi_PE = interp1d(age, _Psi_PE)
         Psi_LW = interp1d(age, _Psi_LW)
