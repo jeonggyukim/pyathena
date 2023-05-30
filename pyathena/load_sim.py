@@ -65,15 +65,9 @@ class LoadSim(object):
             reads starpar vtk file and returns pandas DataFrame object
         print_all_properties() :
             prints all attributes and callable methods
-    """
 
-    def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 units=Units(kind='LV', muH=1.4271),
-                 verbose=False):
-        """Constructor for LoadSim class.
-
-        Parameters
-        ----------
+    Parameters
+    ----------
         basedir : str
             Name of the directory where all data is stored
         savdir : str
@@ -91,8 +85,8 @@ class LoadSim(object):
             Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
             accepted.
 
-        Examples
-        --------
+    Examples
+    --------
         >>> s = LoadSim('/Users/jgkim/Documents/R4_8pc.RT.nowind', verbose=True)
         LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind
         LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt
@@ -103,6 +97,13 @@ class LoadSim(object):
         LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600
         LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600
         LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt
+    """
+
+    def __init__(self, basedir, savdir=None, load_method='pyathena',
+                 units=Units(kind='LV', muH=1.4271),
+                 verbose=False):
+        """Constructor for LoadSim class.
+
         """
 
         self.basedir = basedir.rstrip('/')
@@ -183,7 +184,7 @@ class LoadSim(object):
 
         if not self.files['vtk_id0']:
             id0 = False
-            
+
         if id0:
             kind = ['vtk_id0', 'vtk', 'vtk_tar']
         else:
@@ -281,7 +282,7 @@ class LoadSim(object):
         # Override load_method
         if load_method is not None:
             self.load_method = load_method
-            
+
         if outid is None and outvar is None:
             outid = self._hdf5_outid_def
             outvar = self._hdf5_outvar_def
@@ -295,7 +296,7 @@ class LoadSim(object):
                 self.logger.error('Invalid hdf5 variable!')
             idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
             outid = self.hdf5_outid[idx]
-            
+
         self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
         if self.fhdf5 is None or not osp.exists(self.fhdf5):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
@@ -516,14 +517,14 @@ class LoadSim(object):
             f = glob_match(p)
             if f:
                 break
-            
+
         return f
 
     def _find_files(self):
         """Function to find all output files under basedir and create "files" dictionary.
 
         hst: problem_id.hst
-        
+
         (athena only)
         vtk: problem_id.num.vtk
         sn: problem_id.sn (file format identical to hst)
@@ -532,7 +533,7 @@ class LoadSim(object):
         zprof: problem_id.num.phase.zprof
         sphst: *.star
         timeit: timtit.txt
-        
+
         (athena_pp only)
         hdf5: problem_id.out?.num.athdf
         loop_time: problem_id.loop_time.txt
@@ -618,7 +619,7 @@ class LoadSim(object):
                 for k in self.par.keys():
                     if 'output' in k:
                         self.out_fmt.append(self.par[k]['file_type'])
-                    
+
                 if self.out_fmt.count('hdf5') > 0:
                     self.hdf5_outid = []
                     self.hdf5_outvar = []
@@ -668,7 +669,7 @@ class LoadSim(object):
                 self.logger.info('loop_time: {0:s}'.format(self.files['loop_time']))
             else:
                 self.logger.info('{}.loop_time.txt not found.'.format(self.problem_id))
-    
+
             # Find problem_id.task_time.txt
             ftasktime = self._find_match(tasktime_patterns)
             if ftasktime:
@@ -803,7 +804,7 @@ class LoadSim(object):
                             self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
             # Set nums array
             self.nums = self.nums_hdf5[self._hdf5_outvar_def]
-        
+
         # Find starpar files
         if 'starpar_vtk' in self.out_fmt:
             fstarpar = self._find_match(starpar_patterns)
