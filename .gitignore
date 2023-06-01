@@ -5,3 +5,4 @@ __pycache__
 *.pyc
 *.swp
 nohup.*
+pyathena_env
