@@ -21,6 +21,8 @@ jobs:
       with:
         python-version: '3.11'
         cache: 'pip' # caching pip dependencies
+        cache-dependency-path: requirements*.txt
+    - run: pip install --upgrade pip
     - run: pip install -r requirements.txt
 
     # Build the book
