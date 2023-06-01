@@ -7,3 +7,6 @@ __pycache__
 nohup.*
 pyathena_env
 pyathena_env/*
+docs/_build
+docs/_static
+.DS_Store
