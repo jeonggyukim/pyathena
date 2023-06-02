@@ -7,11 +7,11 @@ def scp_to_pc(source, target='NEWCOOL',
     from scp import SCPClient
 
     target = '~/Dropbox/Apps/Overleaf/{0:s}/figures'.format(target)
-    
+
     try:
         client = SSHClient()
         client.load_system_host_keys()
-        client.connect(hostname,username=username)
+        client.connect(hostname, username=username)
         with SCPClient(client.get_transport()) as scp:
             scp.put(source, target)
     finally:

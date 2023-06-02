@@ -15,23 +15,23 @@ from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp
 
-bins_def=dict(
-    nH=np.logspace(-5,4,181),
-    nHI=np.logspace(-2,5,141),
-    nH2=np.logspace(-2,5,141),
-    nHII=np.logspace(-5,3,201),
-    xH2=np.linspace(0,0.5,101),
-    xHI=np.linspace(0,1.0,101),
-    xHII=np.linspace(0,1.0,101),
-    xe=np.logspace(-5,np.log10(2),201),
-    T=np.logspace(1,8,281),
-    pok=np.logspace(0,7,141),
-    chi_PE=np.logspace(-3,4,141),
-    chi_H2=np.logspace(-6,4,201),
-    chi_FUV=np.logspace(-3,4,141),
-    Erad_LyC=np.logspace(-18,-10,161),
-    Lambda_cool=np.logspace(-30,-20,201),
-    xi_CR=np.logspace(-17,-14,121)
+bins_def = dict(
+    nH=np.logspace(-5, 4, 181),
+    nHI=np.logspace(-2, 5, 141),
+    nH2=np.logspace(-2, 5, 141),
+    nHII=np.logspace(-5, 3, 201),
+    xH2=np.linspace(0, 0.5, 101),
+    xHI=np.linspace(0, 1.0, 101),
+    xHII=np.linspace(0, 1.0, 101),
+    xe=np.logspace(-5, np.log10(2), 201),
+    T=np.logspace(1, 8, 281),
+    pok=np.logspace(0, 7, 141),
+    chi_PE=np.logspace(-3, 4, 141),
+    chi_H2=np.logspace(-6, 4, 201),
+    chi_FUV=np.logspace(-3, 4, 141),
+    Erad_LyC=np.logspace(-18, -10, 161),
+    Lambda_cool=np.logspace(-30, -20, 201),
+    xi_CR=np.logspace(-17, -14, 121)
 )
 
 class PDF:
@@ -46,7 +46,7 @@ class PDF:
 
         rr = dict()
         print('[read_pdf2d_avg]:', end=' ')
-        for i,num in enumerate(nums):
+        for i, num in enumerate(nums):
             print(num, end=' ')
             r = self.read_pdf2d(num, force_override=False)
             if i == 0:
@@ -67,7 +67,7 @@ class PDF:
                     rr[k]['H'] += r[k]['H']
                     rr[k]['Hw'] += r[k]['Hw']
 
-        return rr    
+        return rr
 
     @LoadSim.Decorators.check_pickle
     def read_pdf2d(self, num,
@@ -75,26 +75,26 @@ class PDF:
                    weight_fields=None,
                    bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
-        
+
         bin_fields_def = [['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'],
                           ['nH', 'T']]
         weight_fields_def = ['nH', '2nH2', 'nHI', 'nHII',
                              'nH']
         if self.par['configure']['radps'] == 'ON':
-            bin_fields_def += [['T','Lambda_cool'], ['nH','xH2'],
-                               ['T','xHII'], ['T', 'xHI']]
+            bin_fields_def += [['T', 'Lambda_cool'], ['nH', 'xH2'],
+                               ['T', 'xHII'], ['T', 'xHI']]
             weight_fields_def += ['cool_rate', 'nH', 'nH', 'nH']
             if (self.par['cooling']['iCR_attenuation']):
-                bin_fields_def += [['nH','xi_CR']]
+                bin_fields_def += [['nH', 'xi_CR']]
                 weight_fields_def += ['nH']
             if (self.par['cooling']['iPEheating'] == 1):
-                bin_fields_def += [['nH','chi_FUV']]
+                bin_fields_def += [['nH', 'chi_FUV']]
                 weight_fields_def += ['nH']
             if (self.par['radps']['iPhotDiss'] == 1):
-                bin_fields_def += [['nH','chi_H2']]
+                bin_fields_def += [['nH', 'chi_H2']]
                 weight_fields_def += ['nH']
             if (self.par['radps']['iPhotIon'] == 1):
-                bin_fields_def += [['nH','Erad_LyC']]
+                bin_fields_def += [['nH', 'Erad_LyC']]
                 weight_fields_def += ['nH']
 
         if bin_fields is None:
@@ -105,10 +105,10 @@ class PDF:
         res = dict()
         fields = np.unique(np.append(np.unique(bin_fields),
                                      np.unique(weight_fields +
-                                               ['xHI','xH2','xHII'])))
+                                               ['xHI', 'xH2', 'xHII'])))
         dd = ds.get_field(fields)
-        dd = dd.stack(xyz=['x','y','z']).dropna(dim='xyz')
-        for bf,wf in zip(bin_fields,weight_fields):
+        dd = dd.stack(xyz=['x', 'y', 'z']).dropna(dim='xyz')
+        for bf, wf in zip(bin_fields, weight_fields):
             k = '-'.join(bf)
             res[k] = dict()
             xdat = dd[bf[0]]
@@ -144,12 +144,12 @@ class PDF:
         # res[k]['MHII'] = Hw
 
         res['time_code'] = ds.domain['time']
-        
+
         return res
 
     def plt_pdf2d(self, ax, dat, bf='nH-pok',
                   cmap='cubehelix_r',
-                  norm=mpl.colors.LogNorm(1e-6,2e-2),
+                  norm=mpl.colors.LogNorm(1e-6, 2e-2),
                   kwargs=dict(alpha=1.0, edgecolor='face', linewidth=0, rasterized=True),
                   weighted=True, wfield=None,
                   xscale='log', yscale='log'):
@@ -161,10 +161,10 @@ class PDF:
 
         if wfield is not None:
             hist = wfield
-            ax.annotate(wfield,(0.05,0.95),xycoords='axes fraction',ha='left',va='top')
+            ax.annotate(wfield, (0.05, 0.95), xycoords='axes fraction', ha='left', va='top')
 
         try:
-            pdf = dat[bf][hist].T/dat[bf][hist].sum()
+            pdf = dat[bf][hist].T / dat[bf][hist].sum()
 
             ax.pcolormesh(dat[bf]['xe'], dat[bf]['ye'], pdf,
                           norm=norm, cmap=cmap, **kwargs)
@@ -190,58 +190,58 @@ class PDF:
         hst = s.read_hst(savdir=savdir, force_override=force_override)
         sp = s.load_starpar_vtk(num)
         if plt_zprof:
-            zpa = s.read_zprof(['whole','2p','h'], savdir=savdir, force_override=force_override)
+            zpa = s.read_zprof(['whole', '2p', 'h'], savdir=savdir, force_override=force_override)
 
-        fig, axes = plt.subplots(3,4,figsize=(20,15), constrained_layout=True)
+        fig, axes = plt.subplots(3, 4, figsize=(20, 15), constrained_layout=True)
 
         # gs = axes[0, -1].get_gridspec()
         # for ax in axes[0:2, -1]:
         #     ax.remove()
         # ax = fig.add_subplot(gs[0:2, -1])
 
-        #s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=False)
-        s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=True)
-        #s.plt_pdf2d(axes[0,1], pdf, 'nH-chi_FUV', weighted=False)
-        s.plt_pdf2d(axes[0,1], pdf, 'nH-chi_FUV', weighted=True)
-        #s.plt_pdf2d(axes[0,2], pdf, 'T-Lambda_cool', weighted=False)
-        s.plt_pdf2d(axes[0,2], pdf, 'T-Lambda_cool', weighted=True)
-        #s.plt_pdf2d(axes[0,3], pdf, 'nH-xi_CR', weighted=False)
-        s.plt_pdf2d(axes[0,3], pdf, 'nH-xi_CR', weighted=True)
-        s.plt_pdf2d(axes[1,0], pdf, 'nH-T', weighted=True)
-        s.plt_pdf2d(axes[1,1], pdf, 'nH-T', wfield = 'MH2')
-        s.plt_pdf2d(axes[1,2], pdf, 'nH-T', wfield = 'MHI')
-        s.plt_pdf2d(axes[1,3], pdf, 'nH-T', wfield = 'MHII')
-        s.plt_pdf2d(axes[2,2], pdf, 'nH-chi_H2', weighted=False)
+        # s.plt_pdf2d(axes[0,0], pdf, 'nH-pok', weighted=False)
+        s.plt_pdf2d(axes[0, 0], pdf, 'nH-pok', weighted=True)
+        # s.plt_pdf2d(axes[0,1], pdf, 'nH-chi_FUV', weighted=False)
+        s.plt_pdf2d(axes[0, 1], pdf, 'nH-chi_FUV', weighted=True)
+        # s.plt_pdf2d(axes[0,2], pdf, 'T-Lambda_cool', weighted=False)
+        s.plt_pdf2d(axes[0, 2], pdf, 'T-Lambda_cool', weighted=True)
+        # s.plt_pdf2d(axes[0,3], pdf, 'nH-xi_CR', weighted=False)
+        s.plt_pdf2d(axes[0, 3], pdf, 'nH-xi_CR', weighted=True)
+        s.plt_pdf2d(axes[1, 0], pdf, 'nH-T', weighted=True)
+        s.plt_pdf2d(axes[1, 1], pdf, 'nH-T', wfield='MH2')
+        s.plt_pdf2d(axes[1, 2], pdf, 'nH-T', wfield='MHI')
+        s.plt_pdf2d(axes[1, 3], pdf, 'nH-T', wfield='MHII')
+        s.plt_pdf2d(axes[2, 2], pdf, 'nH-chi_H2', weighted=False)
 
-        ax = axes[2,0]
+        ax = axes[2, 0]
         # s.plt_proj(ax, prj, 'z', 'Sigma_gas')
         ax.imshow(prj['z']['Sigma_gas'], cmap='pink_r',
                   extent=prj['extent']['z'], norm=mpl.colors.LogNorm(),
                   origin='lower', interpolation='none')
         scatter_sp(sp, ax, 'z', kind='prj', kpc=False, norm_factor=5.0, agemax=20.0)
         ax.axis('off')
-        #ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
+        # ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
         ax.set(xlim=(ds.domain['le'][0], ds.domain['re'][0]),
                ylim=(ds.domain['le'][1], ds.domain['re'][1]))
 
-        ax = axes[2,1]
-        s.plt_slice(ax, slc, 'z', 'chi_FUV', norm=LogNorm(1e-1,1e2))
-        #scatter_sp(sp, ax, 'z', kind='slc', dist_max=50.0, kpc=False, norm_factor=5.0, agemax=20.0)
+        ax = axes[2, 1]
+        s.plt_slice(ax, slc, 'z', 'chi_FUV', norm=LogNorm(1e-1, 1e2))
+        # scatter_sp(sp, ax, 'z', kind='slc', dist_max=50.0, kpc=False, norm_factor=5.0, agemax=20.0)
         ax.axis('off')
-        #ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
+        # ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
         ax.set(xlim=(ds.domain['le'][0], ds.domain['re'][0]),
                ylim=(ds.domain['le'][1], ds.domain['re'][1]))
 
         if plt_zprof:
-            ax = axes[2,2]
-            for ph,color in zip(('whole','2p','h'),('grey','b','r')):
+            ax = axes[2, 2]
+            for ph, color in zip(('whole', '2p', 'h'), ('grey', 'b', 'r')):
                 zp = zpa[ph]
                 if ph == '2p':
-                    ax.semilogy(zp.z, zp['xe'][:,num]*zp['d'][:,num],
-                                ls=':', label=ph+'_e', c=color)
-                ax.semilogy(zp.z, zp['d'][:,num], ls='-', label=ph, c=color)
+                    ax.semilogy(zp.z, zp['xe'][:, num] * zp['d'][:, num],
+                                ls=':', label=ph + '_e', c=color)
+                ax.semilogy(zp.z, zp['d'][:, num], ls='-', label=ph, c=color)
                 ax.set(xlabel='z [kpc]', ylabel=r'$\langle n_{\rm H}\rangle\;[{\rm cm}^{-3}]$',
-                       ylim=(1e-5,5e0))
+                       ylim=(1e-5, 5e0))
                 ax.legend(loc=1)
 
         # axes[2,2].remove()
@@ -252,18 +252,20 @@ class PDF:
         # ax = ax1
         s.plt_proj(ax, prj, 'y', 'Sigma_gas')
         scatter_sp(sp, ax, 'y', kind='prj', kpc=False, norm_factor=20.0, agemax=20.0)
-        ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
+        ax.axes.xaxis.set_visible(False)
+        ax.axes.yaxis.set_visible(False)
 
         # ax = ax2
-        s.plt_slice(ax, slc, 'y', 'chi_FUV', norm=LogNorm(1e-1,1e2))
+        s.plt_slice(ax, slc, 'y', 'chi_FUV', norm=LogNorm(1e-1, 1e2))
         scatter_sp(sp, ax, 'y', kind='slc', kpc=False, norm_factor=20.0, agemax=20.0)
-        ax.axes.xaxis.set_visible(False) ; ax.axes.yaxis.set_visible(False)
+        ax.axes.xaxis.set_visible(False)
+        ax.axes.yaxis.set_visible(False)
 
-        ax = axes[2,3]
-        ax.semilogy(hst['time_code'],hst['sfr10'])
-        ax.semilogy(hst['time_code'],hst['sfr40'])
+        ax = axes[2, 3]
+        ax.semilogy(hst['time_code'], hst['sfr10'])
+        ax.semilogy(hst['time_code'], hst['sfr40'])
         ax.axvline(s.domain['time'], color='grey', lw=0.75)
-        ax.set(xlabel='time [code]', ylabel=r'$\Sigma_{\rm SFR}$', ylim=(1e-3,None))
+        ax.set(xlabel='time [code]', ylabel=r'$\Sigma_{\rm SFR}$', ylim=(1e-3, None))
 
         if suptitle is None:
             suptitle = self.basename

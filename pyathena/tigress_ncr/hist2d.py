@@ -4,16 +4,16 @@ import numpy as np
 import os.path as osp
 import xarray as xr
 
-bins_def={
+bins_def = {
     'nH': np.logspace(-4, 4, 81),
     'xH2': np.logspace(-6, 0, 81),
     'T': np.logspace(0.0, 8.5, 141),
     'pok': np.logspace(1, 7, 71),
-    'fshld_H2': np.logspace(-6,0,61),
+    'fshld_H2': np.logspace(-6, 0, 61),
     'cool_rate': np.logspace(-30, -18, 81),
-    'net_cool_rate': np.append(np.append(-np.logspace(-18,-25,51),
-                                         np.linspace(-1e-25,1e-25,51)[1:-1]),
-                               np.logspace(-25,-18,51)),
+    'net_cool_rate': np.append(np.append(-np.logspace(-18, -25, 51),
+                                         np.linspace(-1e-25, 1e-25, 51)[1:-1]),
+                               np.logspace(-25, -18, 51)),
     'xe': np.linspace(0, 1.3, 51),
 }
 
@@ -46,7 +46,7 @@ class Hist2d:
 
         rr = dict()
         print('[read_hist2d_all]:', end=' ')
-        for i,num in enumerate(nums):
+        for i, num in enumerate(nums):
             print(num, end=' ')
             r = self.read_hist2d(num, **hist2d_kwargs)
             if i == 0:
@@ -65,18 +65,17 @@ class Hist2d:
                 else:
                     rr[k]['H'] += r[k]['H']
 
-
         print('')
 
         return rr
 
     @LoadSim.Decorators.check_pickle
     def read_hist2d(self, num,
-                    bin_fields=[['nH', 'pok'], ['nH','xH2'], ['nH','fshld_H2'],
-                                ['T','xH2'], ['T','fshld_H2']],
-                    weights=[None,None,None,None,None],
+                    bin_fields=[['nH', 'pok'], ['nH', 'xH2'], ['nH', 'fshld_H2'],
+                                ['T', 'xH2'], ['T', 'fshld_H2']],
+                    weights=[None, None, None, None, None],
                     bins=None,
-                    sel=None, # Selection function
+                    sel=None,  # Selection function
                     prefix='hist2d',
                     savdir=None, force_override=False):
         """
@@ -107,14 +106,14 @@ class Hist2d:
         -------
         Dictionary containing bins, histograms, and time_code.
         """
-        
+
         # Check if bin_fields is not nested
         if not any(isinstance(i, tuple) or isinstance(i, list) for i in bin_fields):
             bin_fields = [bin_fields]
         # Check if weights is not a sequence
         if not (isinstance(weights, tuple) or isinstance(weights, list)):
             weights = [weights]
-            
+
         if bins is None:
             bins = bins_def
 
@@ -127,8 +126,8 @@ class Hist2d:
             import re
             sel_str = str(inspect.getsourcelines(sel)[0])
             sel_str = sel_str.split(':')[1].replace("\\", "")
-            sel_set = set(re.findall(r'["\'](.*?)["\']',sel_str))
-            sel_set -= set(['x','y','z'])
+            sel_set = set(re.findall(r'["\'](.*?)["\']', sel_str))
+            sel_set -= set(['x', 'y', 'z'])
             fields = list(set.union(sel_set, set(fields)))
 
         if (bf_set - set(bins.keys())) != set():
@@ -147,7 +146,7 @@ class Hist2d:
             dd = dd.where(sel, drop=True)
 
         r = dict()
-        for bf,w in zip(bin_fields, weights):
+        for bf, w in zip(bin_fields, weights):
             k = '-'.join(bf)
             if w is not None:
                 k += '-{0:s}'.format(w)
@@ -160,8 +159,8 @@ class Hist2d:
                 wdat = dd[w].data.flatten()
             else:
                 wdat = None
-            H,x,y = np.histogram2d(xdat, ydat, bins=(bins[bf[0]], bins[bf[1]]),
-                                   weights=wdat)
+            H, x, y = np.histogram2d(xdat, ydat, bins=(bins[bf[0]], bins[bf[1]]),
+                                     weights=wdat)
             r[k]['H'] = H
             r[k]['x'] = x
             r[k]['y'] = y
@@ -170,17 +169,17 @@ class Hist2d:
 
         return r
 
-    def load_chunk(self,num,scratch_dir='/scratch/gpfs/changgoo/TIGRESS-NCR/'):
+    def load_chunk(self, num, scratch_dir='/scratch/gpfs/changgoo/TIGRESS-NCR/'):
         """Read in temporary outputs in scartch directory
         """
-        scratch_dir += osp.join(self.basename,'midplane_chunk')
-        chunk_file = osp.join(scratch_dir,'{:s}.{:04d}.hLx.nc'.format(self.problem_id,num))
+        scratch_dir += osp.join(self.basename, 'midplane_chunk')
+        chunk_file = osp.join(scratch_dir, '{:s}.{:04d}.hLx.nc'.format(self.problem_id, num))
         if not osp.isfile(chunk_file):
             raise IOError("File does not exist: {}".format(chunk_file))
         with xr.open_dataset(chunk_file) as chunk:
             self.data_chunk = chunk
 
-    def get_field_from_chunk(self,fields):
+    def get_field_from_chunk(self, fields):
         """Get fields using temporary outputs in scartch directory
         """
         dd = xr.Dataset()
@@ -188,7 +187,7 @@ class Hist2d:
             if f in self.data_chunk:
                 dd[f] = self.data_chunk[f]
             elif f in self.dfi:
-                dd[f] = self.dfi[f]['func'](self.data_chunk,self.u)
+                dd[f] = self.dfi[f]['func'](self.data_chunk, self.u)
             else:
                 raise IOError("{} is not available".format(f))
         return dd

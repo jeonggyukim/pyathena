@@ -14,7 +14,7 @@ def _parse_starpar_vtk_line(spl, grid):
         grid['vtk_version'] = spl[-1]
     elif b"time=" in spl:
         time_index = spl.index(b"time=")
-        grid['time'] = float(spl[time_index+1])
+        grid['time'] = float(spl[time_index + 1])
     elif b"POINTS" in spl:
         grid['nstars'] = int(spl[1])
     elif b"SCALARS" in spl:
@@ -73,13 +73,13 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
         Name of the file to open, including extension
     force_override : bool
         Flag to force read of hst file even when pickle exists
-    
+
     Returns
     -------
     df : dict
         Pandas DataFrame object
     """
-    
+
     fpkl = filename + '.p'
     if not force_override and os.path.exists(fpkl) and \
        os.path.getmtime(fpkl) > os.path.getmtime(filename):
@@ -88,8 +88,8 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
             print('[read_starpar_vtk]: reading from existing pickle.')
     else:
         if verbose:
-            print('[read_starpar_vtk]: pickle does not exist or starpar file updated.' + \
-                      ' Reading {0:s}'.format(filename))    
+            print('[read_starpar_vtk]: pickle does not exist or starpar file updated.'
+                  + ' Reading {0:s}'.format(filename))
 
     # Check for existance of file
     if not os.path.isfile(filename):
@@ -131,16 +131,16 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
             if v[0] == 'scalar':
                 nvar = 1
                 shape = [nstars, 1]
-            elif v[0]=='vector':
+            elif v[0] == 'vector':
                 nvar = 3
                 shape = [nstars, 3]
             else:
                 raise ValueError('Unknown variable type')
 
             if v[2] == b'float':
-                fmt = '>{}f'.format(nvar*nstars)
+                fmt = '>{}f'.format(nvar * nstars)
             elif v[2] == b'int':
-                fmt = '>{}i'.format(nvar*nstars)
+                fmt = '>{}i'.format(nvar * nstars)
 
             f.seek(v[1])
             size = struct.calcsize(fmt)
@@ -153,15 +153,15 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
                 if v[0] != 'vector':
                     star[name] = star[name][0]
 
-    star['x1'] = star['x'][:,0]
-    star['x2'] = star['x'][:,1]
-    star['x3'] = star['x'][:,2]
-    star['v1'] = star['v'][:,0]
-    star['v2'] = star['v'][:,1]
-    star['v3'] = star['v'][:,2]
+    star['x1'] = star['x'][:, 0]
+    star['x2'] = star['x'][:, 1]
+    star['x3'] = star['x'][:, 2]
+    star['v1'] = star['v'][:, 0]
+    star['v2'] = star['v'][:, 1]
+    star['v3'] = star['v'][:, 2]
     star.pop('x')
     star.pop('v')
-    
+
     # Sort id in an ascending order (or age in an descending order)
     if nstars > 1:
         idsrt = star['id'].argsort()
@@ -173,12 +173,12 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
         df = pd.DataFrame(star)
     except:
         df = pd.DataFrame(index=star.keys())
-        
+
     df.time = time
     df.nstars = nstars
     try:
         df.to_pickle(fpkl)
     except IOError:
         pass
-    
+
     return df

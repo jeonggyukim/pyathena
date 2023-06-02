@@ -69,8 +69,6 @@ class EnumLineCoolElem(EnumCtypes):
     SIV = 12
 
 
-
-
 class EnumLineCoolTransition(EnumCtypes):
     """
     IntEnum for LineCool 5 level transition

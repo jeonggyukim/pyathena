@@ -14,25 +14,25 @@ class DustPol:
     """
     Methods to calculate dust polarization map projected onto x-y, y-z, x-z planes
     """
-        
+
     @LoadSim.Decorators.check_pickle
-    def read_IQU(self, num, los=('x','y','z'),
+    def read_IQU(self, num, los=('x', 'y', 'z'),
                  prefix='dust_pol', savdir=None, force_override=False):
 
         ds, dd = self.get_field_dust_pol(num)
 
         return self.calc_IQU(ds, dd, los=los)
-    
+
     def get_field_dust_pol(self, num):
         self.logger.info('[DustPol.get_field]: reading vtk data..')
         ds = self.load_vtk(num)
         dd = self.ds.get_field(field=['nH', 'Bx', 'By', 'Bz'])
-        
+
         return ds, dd
-   
+
     def calc_IQU(self, ds, dd, los,
-                 Td=18.0*au.K, p0=0.2,
-                 sigmad=1e-26*au.cm**2, nu=353*au.GHz):
+                 Td=18.0 * au.K, p0=0.2,
+                 sigmad=1e-26 * au.cm**2, nu=353 * au.GHz):
         """
         Td : Dust temperature
         p0 : intrisic polarization fraction
@@ -49,34 +49,34 @@ class DustPol:
         from astropy.modeling import models
         bb = models.BlackBody(temperature=Td)
         Bnu = bb(nu)
-        
+
         I = dict()
         Q = dict()
         U = dict()
         NH = dict()
         B1proj = dict()
         B2proj = dict()
-        
+
         for dim in los:
-            dx_cgs = ds.domain['dx'][axis_idx[dim]]*self.u.length.cgs.value
+            dx_cgs = ds.domain['dx'][axis_idx[dim]] * self.u.length.cgs.value
             B1 = dd[los[dim]['B1']]
             B2 = dd[los[dim]['B2']]
             B3 = dd[los[dim]['B3']]
 
-            # Bperp_sq = B1*B1 + B2*B2 
+            # Bperp_sq = B1*B1 + B2*B2
             # cos(2phi) = (B2*B2 - B1*B1)/Bperp_sq
             # sin(2phi) = -2.0*B1*B2/Bperp_sq
             Bperp_sq = B1**2 + B2**2
-            cos_gamma_sq = Bperp_sq/(Bperp_sq + B3**2)
-            I[dim] = (((Bnu*sigmad*dx_cgs)*(1.0 - p0)*(cos_gamma_sq - 2.0/3.0)*dd['nH']).sum(dim=dim)).data
-            Q[dim] = (((Bnu*sigmad*dx_cgs)*p0*((B2*B2-B1*B1)/Bperp_sq)*cos_gamma_sq*dd['nH']).sum(dim=dim)).data
-            U[dim] = (((Bnu*sigmad*dx_cgs)*p0*(-2.0*B1*B2/Bperp_sq)*cos_gamma_sq*dd['nH']).sum(dim=dim)).data
+            cos_gamma_sq = Bperp_sq / (Bperp_sq + B3**2)
+            I[dim] = (((Bnu * sigmad * dx_cgs) * (1.0 - p0) * (cos_gamma_sq - 2.0 / 3.0) * dd['nH']).sum(dim=dim)).data
+            Q[dim] = (((Bnu * sigmad * dx_cgs) * p0 * ((B2 * B2 - B1 * B1) / Bperp_sq) * cos_gamma_sq * dd['nH']).sum(dim=dim)).data
+            U[dim] = (((Bnu * sigmad * dx_cgs) * p0 * (-2.0 * B1 * B2 / Bperp_sq) * cos_gamma_sq * dd['nH']).sum(dim=dim)).data
 
             # Density weighted projection
             nHsum = dd['nH'].sum(dim=dim)
-            NH[dim] = (nHsum*dx_cgs).data
-            B1proj[dim] = ((B1*dd['nH']).sum(dim=dim)/nHsum).data
-            B2proj[dim] = ((B2*dd['nH']).sum(dim=dim)/nHsum).data
+            NH[dim] = (nHsum * dx_cgs).data
+            B1proj[dim] = ((B1 * dd['nH']).sum(dim=dim) / nHsum).data
+            B2proj[dim] = ((B2 * dd['nH']).sum(dim=dim) / nHsum).data
 
         return dict(I=I, Q=Q, U=U,
                     NH=NH, B1proj=B1proj, B2proj=B2proj,
@@ -98,34 +98,34 @@ class DustPol:
         # Assume that all directions have the same dx, Nx
         Nx = domain['Nx'][0]
         Ny = domain['Nx'][0]
-        x = np.linspace(domain['le'][0] + domain['dx'][0]/2,
-                        domain['re'][0] - domain['dx'][0]/2, Nx)
-        y = np.linspace(domain['le'][1] + domain['dx'][1]/2,
-                        domain['re'][1] - domain['dx'][1]/2, Ny)
+        x = np.linspace(domain['le'][0] + domain['dx'][0] / 2,
+                        domain['re'][0] - domain['dx'][0] / 2, Nx)
+        y = np.linspace(domain['le'][1] + domain['dx'][1] / 2,
+                        domain['re'][1] - domain['dx'][1] / 2, Ny)
 
         Nskip = 32
         xlabel = dict(x='y', y='z', z='x')
         ylabel = dict(x='z', y='x', z='y')
 
-        for ax, dim in zip(axes, ('x','y','z')):
+        for ax, dim in zip(axes, ('x', 'y', 'z')):
             I = r['I'][dim]
             Q = r['Q'][dim]
             U = r['U'][dim]
             NH = r['NH'][dim]
             B1proj = r['B1proj'][dim]
             B2proj = r['B2proj'][dim]
-            ang = np.arctan2(U, Q)/2
+            ang = np.arctan2(U, Q) / 2
 
             plt.sca(ax)
-            plt.imshow(NH, norm=LogNorm(1e19,1e23), extent=(-40,40,-40,40), origin='lower')
-            #plt.imshow(NH, norm=LogNorm(1e19,1e23), extent=(-40,40,-40,40))
+            plt.imshow(NH, norm=LogNorm(1e19, 1e23), extent=(-40, 40, -40, 40), origin='lower')
+            # plt.imshow(NH, norm=LogNorm(1e19,1e23), extent=(-40,40,-40,40))
             if Bproj:
                 plt.streamplot(x.data, y.data, B1proj, B2proj, color='w', density=density,
                                linewidth=0.75, arrowsize=0.5)
             if polvec:
                 plt.quiver(x[::Nskip], y[::Nskip],
-                           np.cos(ang)[::Nskip,::Nskip], np.sin(ang)[::Nskip,::Nskip],
-                           headwidth=0, headlength=0, headaxislength=0, 
+                           np.cos(ang)[::Nskip, ::Nskip], np.sin(ang)[::Nskip, ::Nskip],
+                           headwidth=0, headlength=0, headaxislength=0,
                            pivot='mid', color='r', scale=20, width=0.0075)
 
             plt.xlim(domain['le'][0], domain['re'][0])
@@ -136,7 +136,7 @@ class DustPol:
         plt.tight_layout()
         plt.subplots_adjust(wspace=None, hspace=None)
         plt.suptitle(self.basename + '  t={0:4.1f}'.format(sp.time))
-        
+
         if savefig:
             savdir = osp.join(self.savdir, 'dust_pol')
             if not osp.exists(savdir):
@@ -153,35 +153,35 @@ class DustPol:
             pc = self.u.pc
             hdr = fits.Header()
 
-            hdr['xmin'] = (domain['le'][0]*pc, 'pc')
-            hdr['xmax'] = (domain['re'][0]*pc, 'pc')
-            hdr['ymin'] = (domain['le'][1]*pc, 'pc')
-            hdr['ymax'] = (domain['re'][1]*pc, 'pc')
-            hdr['zmin'] = (domain['le'][2]*pc, 'pc')
-            hdr['zmax'] = (domain['re'][2]*pc, 'pc')
-            hdr['dx'] = (domain['dx'][0]*pc, 'pc')
-            hdr['dy'] = (domain['dx'][1]*pc, 'pc')
-            hdr['dz'] = (domain['dx'][2]*pc, 'pc')
-            
-            hdr['time'] = (r['time']*self.u.Myr, 'Myr')
+            hdr['xmin'] = (domain['le'][0] * pc, 'pc')
+            hdr['xmax'] = (domain['re'][0] * pc, 'pc')
+            hdr['ymin'] = (domain['le'][1] * pc, 'pc')
+            hdr['ymax'] = (domain['re'][1] * pc, 'pc')
+            hdr['zmin'] = (domain['le'][2] * pc, 'pc')
+            hdr['zmax'] = (domain['re'][2] * pc, 'pc')
+            hdr['dx'] = (domain['dx'][0] * pc, 'pc')
+            hdr['dy'] = (domain['dx'][1] * pc, 'pc')
+            hdr['dz'] = (domain['dx'][2] * pc, 'pc')
+
+            hdr['time'] = (r['time'] * self.u.Myr, 'Myr')
             hdr['nu'] = (r['nu'], 'GHz')
             hdr['Td'] = (r['Td'], 'K')
             hdr['sigmad'] = (r['sigmad'], 'cm^2/H')
-            
+
             hdu = fits.PrimaryHDU(header=hdr)
 
             return hdu
 
         r = self.read_IQU(num)
 
-        fitsname = osp.join(self.savdir, 'dust_pol', 
+        fitsname = osp.join(self.savdir, 'dust_pol',
                             self.problem_id + '.{0:04}.fits'.format(num))
         self.logger.info('Save fits file to {0:s}'.format(fitsname))
         hdul = fits.HDUList()
         hdu = _create_fits_header(r, self.domain)
         hdul.append(hdu)
 
-        for axis in ('x','y','z'):
+        for axis in ('x', 'y', 'z'):
             for label in ('I', 'Q', 'U', 'NH', 'B1proj', 'B2proj'):
                 name = label + '_' + axis
                 data = r[label][axis]

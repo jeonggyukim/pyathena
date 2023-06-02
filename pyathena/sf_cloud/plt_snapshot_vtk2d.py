@@ -7,7 +7,7 @@ import getpass
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize,LogNorm
+from matplotlib.colors import Normalize, LogNorm
 from mpl_toolkits.axes_grid1 import ImageGrid
 import cmocean
 import astropy.constants as ac
@@ -28,38 +28,37 @@ class PltSnapshotVTK2D:
             savdir = osp.join(basedir, 'movies')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
-            
+
         fin = osp.join(basedir, 'snapshot_vtk2d/*.png')
         fout = osp.join(savdir, '{0:s}_snapshot_vtk2d.mp4'.format(self.basename))
         if make_movie(fin, fout, fps, fps):
-            savdir2='/tigress/{0:s}/public_html/movies/SF-CLOUD/'.\
+            savdir2 = '/tigress/{0:s}/public_html/movies/SF-CLOUD/'.\
                 format(getpass.getuser())
             fout2 = osp.join(savdir2, osp.basename(fout))
             copyfile(fout, fout2)
             print('Copied movie file to {0:s}'.format(fout2))
 
     def plt_snapshot_vtk2d(self, num, dim='y',
-                           fields = ['Sigma','Sigma_H2','Sigma_HI',
-                                     'EM','d','T',
-                                     'P','vmag','Bmag'],
-                           figsize=(20,16), nrows_ncols=(3,3), axes_pad=(0.5,0.8),
+                           fields=['Sigma', 'Sigma_H2', 'Sigma_HI',
+                                   'EM', 'd', 'T',
+                                   'P', 'vmag', 'Bmag'],
+                           figsize=(20, 16), nrows_ncols=(3, 3), axes_pad=(0.5, 0.8),
                            suptitle=None, savefig=False, savdir=None, make_movie=False):
 
         if self.par['configure']['gas'] == 'hydro':
-            fields = ['Sigma','Sigma_H2','Sigma_HI',
-                      'EM','d','T',
-                      'P','vmag','Erad_LyC']
-       
+            fields = ['Sigma', 'Sigma_H2', 'Sigma_HI',
+                      'EM', 'd', 'T',
+                      'P', 'vmag', 'Erad_LyC']
+
         fig = plt.figure(figsize=figsize)
         axes = ImageGrid(fig, 111, nrows_ncols=nrows_ncols,
                          axes_pad=axes_pad, label_mode='1',
                          share_all=True, cbar_location='top', cbar_mode='each',
                          cbar_size='5%', cbar_pad='1%')
 
-        for ax,field in zip(axes,fields):
+        for ax, field in zip(axes, fields):
             dd = self.plt_snapshot_vtk2d_one_axis(self, num, field, dim, ax)
- 
-        
+
         sp = self.load_starpar_vtk(num)
         agemax_sp = 10.0
         if not sp.empty:
@@ -72,7 +71,7 @@ class PltSnapshotVTK2D:
                 ax.set_ylim(*extent)
 
         # Add starpar age colorbar
-        #cax = fig.add_axes([0.125, 0.9, 0.1, 0.015])
+        # cax = fig.add_axes([0.125, 0.9, 0.1, 0.015])
         # cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm,
         #                                orientation='horizontal', ticks=[0, 4, 8])
 #         bbox0 = axes[0].get_position()
@@ -84,13 +83,12 @@ class PltSnapshotVTK2D:
 #         cb.ax.xaxis.set_ticks_position('top')
 #         cb.ax.xaxis.set_label_position('top')
 
-        
         bbox1 = axes[0].get_position()
-        
+
         if suptitle is None:
             suptitle = self.basename
         plt.suptitle(suptitle + '  time={0:5.2f}'.format(sp.time),
-                     x=0.5, y=bbox1.y1+0.05,
+                     x=0.5, y=bbox1.y1 + 0.05,
                      ha='center', va='bottom')
 
         if savefig:
@@ -99,17 +97,16 @@ class PltSnapshotVTK2D:
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
-            savname = osp.join(savdir, '{0:s}_{1:04d}.png'.\
+            savname = osp.join(savdir, '{0:s}_{1:04d}.png'.
                                format(self.basename, num))
             fig.savefig(savname, dpi=200, bbox_inches='tight')
             plt.close(fig)
-
 
     @staticmethod
     def plt_snapshot_vtk2d_one_axis(s, num, field, dim='y',
                                     ax=None, norm=None, cmap=None):
 
-        dtoi = dict(x=1,y=2,z=3)        
+        dtoi = dict(x=1, y=2, z=3)
 
         cmap_def = dict(
             Sigma=plt.cm.pink_r,
@@ -117,26 +114,26 @@ class PltSnapshotVTK2D:
             Sigma_HI=plt.cm.pink_r,
             EM=plt.cm.plasma,
             d=plt.cm.Spectral_r,
-            T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
+            T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3. / 7.),
             P=plt.cm.magma,
             vmag=cmocean.cm.tempo,
             Bmag=cmocean.cm.amp,
             Erad_LyC=plt.cm.viridis,
         )
-        
+
         norm_def = dict(
-            Sigma=LogNorm(1e0,1e3),
-            Sigma_H2=LogNorm(1e0,1e3),
-            Sigma_HI=LogNorm(1e0,1e3),
-            EM=LogNorm(1e1,1e5),
-            d=LogNorm(1e-3,1e3),
-            P=LogNorm(1e2,1e6),
-            T=LogNorm(1e1,1e7),
-            vmag=LogNorm(1,1000),
-            Bmag=LogNorm(1e-1,1e2),
-            Erad_LyC=LogNorm(1e-16,1e-10),
+            Sigma=LogNorm(1e0, 1e3),
+            Sigma_H2=LogNorm(1e0, 1e3),
+            Sigma_HI=LogNorm(1e0, 1e3),
+            EM=LogNorm(1e1, 1e5),
+            d=LogNorm(1e-3, 1e3),
+            P=LogNorm(1e2, 1e6),
+            T=LogNorm(1e1, 1e7),
+            vmag=LogNorm(1, 1000),
+            Bmag=LogNorm(1e-1, 1e2),
+            Erad_LyC=LogNorm(1e-16, 1e-10),
         )
-        
+
         label = dict(
             Sigma=r'$\Sigma\,[M_{\odot}\,{\rm pc}^{-2}]$',
             Sigma_H2=r'$\Sigma_{\rm H_2}\,[M_{\odot}\,{\rm pc}^{-2}]$',
@@ -149,17 +146,17 @@ class PltSnapshotVTK2D:
             Bmag=r'$|\mathbf{B}|\,[\mu {\rm G}]$',
             Erad_LyC=r'$\mathcal{E}_{\rm LyC}\,[{\rm erg}\,{\rm cm}^{-3}]$',
         )
-        
+
         unit_conv = dict(
-            Sigma=(s.u.density*s.domain['dx'][dtoi[dim]]*s.u.length).to('Msun/pc2').value,
-            Sigma_H2=(s.u.density*s.domain['dx'][dtoi[dim]]*s.u.length).to('Msun/pc2').value,
-            Sigma_HI=(s.u.density*s.domain['dx'][dtoi[dim]]*s.u.length).to('Msun/pc2').value,
+            Sigma=(s.u.density * s.domain['dx'][dtoi[dim]] * s.u.length).to('Msun/pc2').value,
+            Sigma_H2=(s.u.density * s.domain['dx'][dtoi[dim]] * s.u.length).to('Msun/pc2').value,
+            Sigma_HI=(s.u.density * s.domain['dx'][dtoi[dim]] * s.u.length).to('Msun/pc2').value,
             EM=s.u.pc,
             d=1.0,
-            P=s.u.energy_density.cgs.value/ac.k_B.cgs.value,
+            P=s.u.energy_density.cgs.value / ac.k_B.cgs.value,
             T=1.0,
             vmag=1.0,
-            Bmag=np.sqrt(s.u.energy_density.cgs.value)*np.sqrt(4.0*np.pi)*1e6,
+            Bmag=np.sqrt(s.u.energy_density.cgs.value) * np.sqrt(4.0 * np.pi) * 1e6,
             Erad_LyC=s.u.energy_density.cgs.value
         )
 
@@ -171,29 +168,35 @@ class PltSnapshotVTK2D:
             cmap = cmap_def[field]
 
         if dim == 'z':
-            lx = s.domain['Lx'][0]; ly = s.domain['Lx'][1]
-            xlabel = 'x [pc]'; ylabel = 'y [pc]'
+            lx = s.domain['Lx'][0]
+            ly = s.domain['Lx'][1]
+            xlabel = 'x [pc]'
+            ylabel = 'y [pc]'
         elif dim == 'y':
-            lx = s.domain['Lx'][2]; ly = s.domain['Lx'][0]
-            xlabel = 'x [pc]'; ylabel = 'z [pc]'
+            lx = s.domain['Lx'][2]
+            ly = s.domain['Lx'][0]
+            xlabel = 'x [pc]'
+            ylabel = 'z [pc]'
         elif dim == 'x':
-            lx = s.domain['Lx'][1]; ly = s.domain['Lx'][2]
-            xlabel = 'x [pc]'; ylabel = 'z [pc]'
+            lx = s.domain['Lx'][1]
+            ly = s.domain['Lx'][2]
+            xlabel = 'x [pc]'
+            ylabel = 'z [pc]'
 
-        xticks = [-0.5*lx,-0.25*lx,0.0,0.25*lx,0.5*lx]
-        yticks = [-0.5*ly,-0.25*ly,0.0,0.25*ly,0.5*ly]
+        xticks = [-0.5 * lx, -0.25 * lx, 0.0, 0.25 * lx, 0.5 * lx]
+        yticks = [-0.5 * ly, -0.25 * ly, 0.0, 0.25 * ly, 0.5 * ly]
 
-        #if field.startswith('Sigma_'):
-            #f = 'Sigma' + str(dtoi[dim]) + field[5:]
-        #else:
-            #f = field + str(dtoi[dim])
+        # if field.startswith('Sigma_'):
+        # f = 'Sigma' + str(dtoi[dim]) + field[5:]
+        # else:
+        # f = field + str(dtoi[dim])
         f = field + '_' + dim
 
         # read vtk 2d output
         ds = read_vtk(s.files[f][num])
         d = ds.get_field(f)
-        dd = d.sel(**{dim:0.0}, method='nearest')*unit_conv[field]
-        
+        dd = d.sel(**{dim: 0.0}, method='nearest') * unit_conv[field]
+
         # Set arguments
         imshow_args = dict(
             ax=ax, norm=norm, cmap=cmap, xticks=xticks, yticks=yticks,
@@ -208,5 +211,5 @@ class PltSnapshotVTK2D:
         cb.ax.xaxis.set_label_position('top')
         cb.ax.xaxis.set_ticks_position('top')
         cb.ax.tick_params(labelsize=12)
-        
+
         return dd

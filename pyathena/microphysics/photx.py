@@ -24,7 +24,7 @@ class PhotX(object):
             basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
                                '../../data/microphysics')
             fname = os.path.join(basedir, 'verner96_photx.dat')
-            
+
         dat = np.loadtxt(fname, unpack=True)
         self._dat = dat
 
@@ -68,7 +68,7 @@ class PhotX(object):
         if unit == 'eV':
             return Eth
         elif unit == 'Angstrom':
-            return ((ac.h*ac.c)/(Eth*au.eV)).to('Angstrom').value
+            return ((ac.h * ac.c) / (Eth * au.eV)).to('Angstrom').value
 
     def get_sigma(self, Z, N, E):
         """Returns a photo-ionization cross-section for an ion defined by
@@ -107,10 +107,10 @@ class PhotX(object):
         y1 = self.y1[indx]
 
         x = E / E0 - y0
-        y = np.sqrt(x*x + y1*y1)
+        y = np.sqrt(x * x + y1 * y1)
 
-        sigma = sigma0 * ((x-1)*(x-1) + yw*yw) * y**(0.5*P - 5.5) * \
-            (1 + np.sqrt(y/ya))**(-P)
+        sigma = sigma0 * ((x - 1) * (x - 1) + yw * yw) * y**(0.5 * P - 5.5) * \
+            (1 + np.sqrt(y / ya))**(-P)
 
         # zero cross-section below threshold
         indx = np.where(E < Eth)
@@ -118,7 +118,7 @@ class PhotX(object):
             sigma[indx] = 0.0
 
         return sigma
-    
+
 def get_sigma_pi_H2(E):
     """H2 photoionization cross-section [cm^-2]
     Table 1 in Baczynski et al. (2015)
@@ -128,18 +128,18 @@ def get_sigma_pi_H2(E):
     E : array of floats
         Photon energy in eV
     """
-    return 1e-18*np.piecewise(E, [E < 15.2, 
-                            ((E >= 15.2) & (E < 15.45)),
-                            ((E >= 15.45) & (E < 15.70)),
-                            ((E >= 15.7) & (E < 15.95)), 
-                            ((E >= 15.95) & (E < 16.20)), 
-                            ((E >= 16.2) & (E < 16.40)), 
-                            ((E >= 16.4) & (E < 16.65)), 
-                            ((E >= 16.65) & (E < 16.85)), 
-                            ((E >= 16.85) & (E < 17.0)), 
-                            ((E >= 17.0) & (E < 17.2)), 
-                            ((E >= 17.2) & (E < 17.65)), 
-                            ((E >= 17.65) & (E < 18.1)), 
-                            E >= 18.1],
-                            [0.0,0.09,1.15,3.0,5.0,6.75,8.0,9.0,9.5,9.8,10.1,9.85,
-                             lambda E: 9.85/(E/18.1)**3])
+    return 1e-18 * np.piecewise(E, [E < 15.2,
+                                    ((E >= 15.2) & (E < 15.45)),
+                                    ((E >= 15.45) & (E < 15.70)),
+                                    ((E >= 15.7) & (E < 15.95)),
+                                    ((E >= 15.95) & (E < 16.20)),
+                                    ((E >= 16.2) & (E < 16.40)),
+                                    ((E >= 16.4) & (E < 16.65)),
+                                    ((E >= 16.65) & (E < 16.85)),
+                                    ((E >= 16.85) & (E < 17.0)),
+                                    ((E >= 17.0) & (E < 17.2)),
+                                    ((E >= 17.2) & (E < 17.65)),
+                                    ((E >= 17.65) & (E < 18.1)),
+                                    E >= 18.1],
+                                [0.0, 0.09, 1.15, 3.0, 5.0, 6.75, 8.0, 9.0, 9.5, 9.8, 10.1, 9.85,
+                                 lambda E: 9.85 / (E / 18.1)**3])

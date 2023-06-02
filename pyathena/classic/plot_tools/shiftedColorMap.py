@@ -35,7 +35,7 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
 
     # shifted index to match the data
     shift_index = np.hstack([
-        np.linspace(0.0, midpoint, 128, endpoint=False), 
+        np.linspace(0.0, midpoint, 128, endpoint=False),
         np.linspace(midpoint, 1.0, 129, endpoint=True)
     ])
 
@@ -51,4 +51,3 @@ def shiftedColorMap(cmap, start=0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
     plt.register_cmap(cmap=newcmap)
 
     return newcmap
-

@@ -21,7 +21,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 muH = 1.4271, verbose=False):
+                 muH=1.4271, verbose=False):
         """The constructor for LoadSimTIGRESSNCR class
 
         Parameters
@@ -43,8 +43,8 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
             accepted.
         """
 
-        super(LoadSimTIGRESSNCR,self).__init__(basedir, savdir=savdir,
-                                               load_method=load_method, verbose=verbose)
+        super(LoadSimTIGRESSNCR, self).__init__(basedir, savdir=savdir,
+                                                load_method=load_method, verbose=verbose)
 
         # Set unit and domain
         try:
@@ -68,7 +68,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
     def calc_deltay(self, time):
         """
         Function to calculate the y-offset at radial edges of the domain
-        
+
         Parameters
         ----------
         time : float
@@ -78,21 +78,22 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
         -------
         Delta y = (q*Omega0*Lx*t) mod (Ly)
         """
-        
+
         par = self.par
         domain = self.domain
         u = self.u
 
         # Compute Delta y = (q*Omega0*Lx*t) mod (Ly)
         qshear = par['problem']['qshear']
-        Omega0 = par['problem']['Omega']*(u.kms*u.pc)
-        deltay = np.fmod(qshear*Omega0*domain['Lx'][0]*time, domain['Lx'][1])
+        Omega0 = par['problem']['Omega'] * (u.kms * u.pc)
+        deltay = np.fmod(qshear * Omega0 * domain['Lx'][0] * time, domain['Lx'][1])
 
         return deltay
 
 
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
+
     def __init__(self, models=None, muH=None):
 
         # Default models
@@ -110,7 +111,7 @@ class LoadSimTIGRESSNCRAll(object):
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
                 print('[LoadSimTIGRESSNCRAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
-                    mdl,basedir))
+                    mdl, basedir))
             else:
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir

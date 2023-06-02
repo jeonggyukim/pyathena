@@ -22,7 +22,7 @@ from .fields import Fields
 from .compare import Compare
 from .pdf import PDF
 from .virial import Virial
-from .virial2 import Virial2 # simpler version
+from .virial2 import Virial2  # simpler version
 from .plt_snapshot_2panel import PltSnapshot2Panel
 
 from .outflow import Outflow
@@ -31,8 +31,8 @@ from .starpar import StarPar
 from .xray import Xray
 
 class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
-                     DustPol, Virial, Virial2, Outflow, Fields, Xray,
-                     PltSnapshot2Panel):
+                        DustPol, Virial, Virial2, Outflow, Fields, Xray,
+                        PltSnapshot2Panel):
     """LoadSim class for analyzing sf_cloud simulations.
     """
 
@@ -60,17 +60,17 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
             accepted.
         """
 
-        super(LoadSimSFCloudRad,self).__init__(basedir, savdir=savdir,
-                                        load_method=load_method,
-                                        units=units,
-                                        verbose=verbose)
+        super(LoadSimSFCloudRad, self).__init__(basedir, savdir=savdir,
+                                                load_method=load_method,
+                                                units=units,
+                                                verbose=verbose)
 
     def get_summary(self, as_dict=False):
         """
         Return key simulation results such as SFE, t_SF, t_dest,H2, etc.
         """
 
-        markers = ['o','v','^','s','*']
+        markers = ['o', 'v', '^', 's', '*']
 
         par = self.par
         cl = Cloud(M=par['problem']['M_cloud'],
@@ -84,7 +84,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
         h = self.read_hst(force_override=False)
         df['hst'] = h
 
-        if not (int(par['domain1']['Nx1']) == 512): # and (par['configure']['gas'] == 'mhd'):
+        if not (int(par['domain1']['Nx1']) == 512):  # and (par['configure']['gas'] == 'mhd'):
             # Skip N512 model (takes too long time to post-process)
             try:
                 hv = self.read_virial_all(force_override=False)
@@ -115,7 +115,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
 
         df['M'] = float(par['problem']['M_cloud'])
         df['R'] = float(par['problem']['R_cloud'])
-        df['Sigma'] = df['M']/(np.pi*df['R']**2)
+        df['Sigma'] = df['M'] / (np.pi * df['R']**2)
         df['seed'] = int(np.abs(par['problem']['rseed']))
         df['alpha_vir'] = float(par['problem']['alpha_vir'])
         df['marker'] = markers[df['seed'] - 1]
@@ -127,58 +127,58 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
 
         if df['mhd']:
             df['muB'] = float(par['problem']['muB'])
-            df['B0'] = (2.0*np.pi*(cl.Sigma*ac.G**0.5/df['muB']).cgs.value*au.microGauss*1e6).value
-            df['vA'] = (df['B0']*1e-6)/np.sqrt(4.0*np.pi*df['rho'])/1e5
+            df['B0'] = (2.0 * np.pi * (cl.Sigma * ac.G**0.5 / df['muB']).cgs.value * au.microGauss * 1e6).value
+            df['vA'] = (df['B0'] * 1e-6) / np.sqrt(4.0 * np.pi * df['rho']) / 1e5
             df['label'] = r'B{0:d}.A{1:d}.S{2:d}'.\
-                          format(int(df['muB']),int(df['alpha_vir']),int(df['seed']))
+                          format(int(df['muB']), int(df['alpha_vir']), int(df['seed']))
         else:
             df['muB'] = np.inf
             df['B0'] = 0.0
             df['label'] = r'Binf.A{0:d}.S{1:d}'.\
-                          format(int(df['alpha_vir']),int(df['seed']))
+                          format(int(df['alpha_vir']), int(df['seed']))
 
         # Simulation results
         # Mstar_final = h['Mstar'].iloc[-1]
         Mstar_final = max(h['Mstar'].values)
         df['Mstar_final'] = Mstar_final
-        df['SFE'] = Mstar_final/df['M']
+        df['SFE'] = Mstar_final / df['M']
         df['t_final'] = h['time'].iloc[-1]
-        df['tau_final'] = df['t_final']/df['tff']
+        df['tau_final'] = df['t_final'] / df['tff']
 
         # Outflow efficiency
-        df['eps_of'] = max(h['Mof'].values)/df['M']
-        df['eps_of_HI'] = max(h['Mof_HI'].values)/df['M']
-        df['eps_of_H2'] = max(h['Mof_H2'].values)/df['M']
-        df['eps_of_HII'] = max(h['Mof_HII'].values)/df['M']
+        df['eps_of'] = max(h['Mof'].values) / df['M']
+        df['eps_of_HI'] = max(h['Mof_HI'].values) / df['M']
+        df['eps_of_H2'] = max(h['Mof_H2'].values) / df['M']
+        df['eps_of_HII'] = max(h['Mof_HII'].values) / df['M']
 
         idx_SF0, = h['Mstar'].to_numpy().nonzero()
         if len(idx_SF0):
-            df['t_*'] = h['time'][idx_SF0[0]-1]
-            df['tau_*'] = df['t_*']/df['tff']
-            df['t_95%'] = h['time'][h.Mstar > 0.95*Mstar_final].values[0] # Time at which
-            df['tau_95%'] = df['t_95%']/df['tff']
-            df['t_90%'] = h['time'][h.Mstar > 0.90*Mstar_final].values[0]
-            df['tau_90%'] = df['t_90%']/df['tff']
-            df['t_80%'] = h['time'][h.Mstar > 0.80*Mstar_final].values[0]
-            df['tau_80%'] = df['t_80%']/df['tff']
-            df['t_50%'] = h['time'][h.Mstar > 0.50*Mstar_final].values[0]
-            df['tau_50%'] = df['t_50%']/df['tff']
-            df['t_SF'] = df['t_90%'] - df['t_*'] # SF duration
-            df['tau_SF'] = df['t_SF']/df['tff']
-            df['t_SF95'] = df['t_95%'] - df['t_*'] # SF duration
-            df['tau_SF95'] = df['t_SF']/df['tff']
+            df['t_*'] = h['time'][idx_SF0[0] - 1]
+            df['tau_*'] = df['t_*'] / df['tff']
+            df['t_95%'] = h['time'][h.Mstar > 0.95 * Mstar_final].values[0]  # Time at which
+            df['tau_95%'] = df['t_95%'] / df['tff']
+            df['t_90%'] = h['time'][h.Mstar > 0.90 * Mstar_final].values[0]
+            df['tau_90%'] = df['t_90%'] / df['tff']
+            df['t_80%'] = h['time'][h.Mstar > 0.80 * Mstar_final].values[0]
+            df['tau_80%'] = df['t_80%'] / df['tff']
+            df['t_50%'] = h['time'][h.Mstar > 0.50 * Mstar_final].values[0]
+            df['tau_50%'] = df['t_50%'] / df['tff']
+            df['t_SF'] = df['t_90%'] - df['t_*']  # SF duration
+            df['tau_SF'] = df['t_SF'] / df['tff']
+            df['t_SF95'] = df['t_95%'] - df['t_*']  # SF duration
+            df['tau_SF95'] = df['t_SF'] / df['tff']
             df['t_SF2'] = Mstar_final**2 / \
-                        integrate.trapz(h['SFR']**2, h.time)
-            df['tau_SF2'] = df['t_SF2']/df['tff']
+                integrate.trapz(h['SFR']**2, h.time)
+            df['tau_SF2'] = df['t_SF2'] / df['tff']
             df['SFR_mean'] = get_SFR_mean(h, 0.0, 90.0)['SFR_mean']
-            df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'Mstar'].iloc[0]/df['M']
-            df['t_dep'] = df['M']/df['SFR_mean'] # depletion time t_dep = M0/SFR_mean
-            df['eps_ff'] = df['tff']/df['t_dep'] # SFE per free-fall time eps_ff = tff0/tdep
+            df['SFE_3Myr'] = h.loc[h['time'] > df['t_*'] + 3.0, 'Mstar'].iloc[0] / df['M']
+            df['t_dep'] = df['M'] / df['SFR_mean']  # depletion time t_dep = M0/SFR_mean
+            df['eps_ff'] = df['tff'] / df['t_dep']  # SFE per free-fall time eps_ff = tff0/tdep
             # Time at which neutral gas mass < 5% of the initial cloud mass
-            df['t_mol_5%'] = h.loc[h['MH2_cl'] < 0.05*df['M'], 'time'].iloc[0]
+            df['t_mol_5%'] = h.loc[h['MH2_cl'] < 0.05 * df['M'], 'time'].iloc[0]
             df['t_dest_mol'] = df['t_mol_5%'] - df['t_*']
             try:
-                df['t_neu_5%'] = h.loc[h['MH2_cl'] + h['MHI_cl'] < 0.05*df['M'], 'time'].iloc[0]
+                df['t_neu_5%'] = h.loc[h['MH2_cl'] + h['MHI_cl'] < 0.05 * df['M'], 'time'].iloc[0]
                 df['t_dest_neu'] = df['t_neu_5%'] - df['t_*']
             except IndexError:
                 df['t_neu_5%'] = np.nan
@@ -212,10 +212,10 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
             df['t_dest_neu'] = np.nan
 
         try:
-            df['fesc_cum_PH'] = h['fesc_cum_PH'].iloc[-1] # Lyman Continuum
+            df['fesc_cum_PH'] = h['fesc_cum_PH'].iloc[-1]  # Lyman Continuum
             df['fesc_cum_FUV'] = h['fesc_cum_FUV'].iloc[-1]
-            df['fesc_cum_3Myr_PH'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_PH'].iloc[-1]
-            df['fesc_cum_3Myr_FUV'] = h.loc[h['time'] < df['t_*'] + 3.0,'fesc_cum_FUV'].iloc[-1]
+            df['fesc_cum_3Myr_PH'] = h.loc[h['time'] < df['t_*'] + 3.0, 'fesc_cum_PH'].iloc[-1]
+            df['fesc_cum_3Myr_FUV'] = h.loc[h['time'] < df['t_*'] + 3.0, 'fesc_cum_FUV'].iloc[-1]
         except KeyError:
             print('Error in calculating fesc_cum')
             df['fesc_cum_PH'] = np.nan
@@ -228,8 +228,8 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
             f = interpolate.interp1d(hv['time'].values, hv['avir_cl_alt'])
             df['avir_t_*'] = f(df['t_*'])
             f2 = interpolate.interp1d(hv2['time'].values,
-                                      ((2.0*(hv2['T_thm_cl_all']+hv2['T_kin_cl_all']) + hv2['B_cl_all'])/\
-                                                           hv2['W_cl_all']).values)
+                                      ((2.0 * (hv2['T_thm_cl_all'] + hv2['T_kin_cl_all']) + hv2['B_cl_all']) /
+                                       hv2['W_cl_all']).values)
             df['avir_t_*2'] = f2(df['t_*'])
         except (KeyError, TypeError):
             df['avir_t_*'] = np.nan
@@ -238,14 +238,14 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
 
         try:
             ho = df['hst_of']
-            df['eps_ion_cl'] = (ho['totcl_HII_int'].iloc[-1] + h['MHII_cl'].iloc[-1])/df['M']
-            df['eps_of_H2_cl'] = ho['totcl_H2_int'].iloc[-1]/df['M']
-            df['eps_of_HI_cl'] = ho['totcl_HI_int'].iloc[-1]/df['M']
+            df['eps_ion_cl'] = (ho['totcl_HII_int'].iloc[-1] + h['MHII_cl'].iloc[-1]) / df['M']
+            df['eps_of_H2_cl'] = ho['totcl_H2_int'].iloc[-1] / df['M']
+            df['eps_of_HI_cl'] = ho['totcl_HI_int'].iloc[-1] / df['M']
             df['eps_of_neu_cl'] = df['eps_of_H2_cl'] + df['eps_of_HI_cl']
-            df['eps_of_HII_cl'] = ho['totcl_HII_int'].iloc[-1]/df['M']
-            df['eps_of_H2_cl_z'] = ho['zcl_H2_int'].iloc[-1]/df['M']
-            df['eps_of_HI_cl_z'] = ho['zcl_HI_int'].iloc[-1]/df['M']
-            df['eps_of_HII_cl_z'] = ho['zcl_HII_int'].iloc[-1]/df['M']
+            df['eps_of_HII_cl'] = ho['totcl_HII_int'].iloc[-1] / df['M']
+            df['eps_of_H2_cl_z'] = ho['zcl_H2_int'].iloc[-1] / df['M']
+            df['eps_of_HI_cl_z'] = ho['zcl_HI_int'].iloc[-1] / df['M']
+            df['eps_of_HII_cl_z'] = ho['zcl_HII_int'].iloc[-1] / df['M']
         except (KeyError, TypeError):
             df['eps_ion_cl'] = np.nan
             df['eps_of_H2_cl'] = np.nan
@@ -283,7 +283,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
             elif self.par[b]['out_fmt'] == 'rst':
                 r['rst'] = self.par[b]['dt']
             elif self.par[b]['out_fmt'] == 'vtk' and \
-               ('Sigma' in self.par[b]['out']) or ('EM' in self.par[b]['out']):
+                    ('Sigma' in self.par[b]['out']) or ('EM' in self.par[b]['out']):
                 r['vtk_2d'] = self.par[b]['dt']
 
         self.dt_output = r
@@ -312,20 +312,20 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
         # Find time at which xx percent of SF has occurred
         if t_Myr is not None:
             t_Myr = np.atleast_1d(t_Myr)
-            t_code = [t_Myr_/u.Myr for t_Myr_ in t_Myr]
+            t_code = [t_Myr_ / u.Myr for t_Myr_ in t_Myr]
         elif dt_Myr is not None:
             dt_Myr = np.atleast_1d(dt_Myr)
             h = self.read_hst()
             idx_SF0, = h['Mstar'].to_numpy().nonzero()
             t0 = h['time_code'][idx_SF0[0] - 1]
-            t_code = [t0 + dt_Myr_/u.Myr for dt_Myr_ in dt_Myr]
+            t_code = [t0 + dt_Myr_ / u.Myr for dt_Myr_ in dt_Myr]
             # print('time of first SF [Myr]', t0*self.u.Myr)
             # print('time of first SF [code]', t0)
         elif sp_frac is not None:
             sp_frac = np.atleast_1d(sp_frac)
             h = self.read_hst()
             Mstar_final = h['Mstar'].iloc[-1]
-            idx = [np.where(h['Mstar'] > sp_frac_*Mstar_final)[0][0] \
+            idx = [np.where(h['Mstar'] > sp_frac_ * Mstar_final)[0][0]
                    for sp_frac_ in sp_frac]
             t_code = [h['time_code'].iloc[idx_] for idx_ in idx]
 
@@ -333,9 +333,9 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
         dt_output = self.get_dt_output()[output]
         for t in t_code:
             if rounding:
-                num = int(round(t/dt_output))
+                num = int(round(t / dt_output))
             else:
-                num = int(t/dt_output)
+                num = int(t / dt_output)
 
             nums.append(num)
 
@@ -347,6 +347,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
 
 class LoadSimSFCloudRadAll(Compare):
     """Class to load multiple simulations"""
+
     def __init__(self, models=None):
 
         # Default models
@@ -359,7 +360,7 @@ class LoadSimSFCloudRadAll(Compare):
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
                 print('[LoadSimSFCloudRadAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
-                    mdl,basedir))
+                    mdl, basedir))
             else:
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
@@ -368,12 +369,12 @@ class LoadSimSFCloudRadAll(Compare):
 
         self.model = model
         self.sim = LoadSimSFCloudRad(self.basedirs[model], savdir=savdir,
-                                  load_method=load_method, verbose=verbose)
+                                     load_method=load_method, verbose=verbose)
         return self.sim
 
 
 def load_all_sf_cloud_rad(force_override=False):
-    
+
     models = dict(
         # A series (B=2)
         # A1
@@ -396,7 +397,7 @@ def load_all_sf_cloud_rad(force_override=False):
         A3S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S3.N256',
         A3S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S4.N256',
         A3S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S5.N256',
-        
+
         # A4
         A4S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S1.N256',
         A4S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S2.N256',
@@ -469,14 +470,14 @@ def load_all_sf_cloud_rad(force_override=False):
 
         # High resolution
         B2S4_N512='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S4.N512',
-        
+
         # B16
         # B16S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B16.A2.S1.N256.old',
-        )
-    
+    )
+
     sa = LoadSimSFCloudRadAll(models)
 
-    markers = ['o','v','^','s','*']
+    markers = ['o', 'v', '^', 's', '*']
 
     # Check if pickle exists
     fpkl = osp.join('/tigress/jk11/SF-CLOUD-RAD/pickles/alphabeta.p')

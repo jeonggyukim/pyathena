@@ -17,7 +17,7 @@ def projection(sp, axis):
         spx = sp['x2']
         spy = sp['x3']
         spz = sp['x1']
-    return spx,spy,spz
+    return spx, spy, spz
 
 def projection_v(sp, axis):
     if axis == 0 or axis == 'z':
@@ -39,7 +39,7 @@ def scatter_sp(sp, ax, axis=0, thickness=10.0, norm_factor=4.,
     """
     Function to scatter plot star particles
     """
-    
+
     unit = set_units(muH=1.4271)
     Msun = unit['mass'].to('Msun').value
     Myr = unit['time'].to('Myr').value
@@ -59,39 +59,38 @@ def scatter_sp(sp, ax, axis=0, thickness=10.0, norm_factor=4.,
             spx, spy, spz = projection(sp_ru_nonsrc, axis)
             spvx, spvy, spvz = projection_v(sp_ru_nonsrc, axis)
             if kpc:
-                spx = spx/1.e3
-                spy = spy/1.e3
+                spx = spx / 1.e3
+                spy = spy / 1.e3
             if type == 'slice':
-                islab=np.where(abs(spz) < thickness)
+                islab = np.where(abs(spz) < thickness)
 
-            ax.scatter(spx, spy, marker='o', color='k', alpha=1.0, s=10.0/norm_factor)
+            ax.scatter(spx, spy, marker='o', color='k', alpha=1.0, s=10.0 / norm_factor)
 
         if len(sp_ru_src) > 0 and runaway:
             spx, spy, spz = projection(sp_ru_src, axis)
             spvx, spvy, spvz = projection_v(sp_ru_src, axis)
             if kpc:
-                spx = spx/1.e3
-                spy = spy/1.e3
+                spx = spx / 1.e3
+                spy = spy / 1.e3
             if type == 'slice':
-                islab=np.where(abs(spz) < thickness)
+                islab = np.where(abs(spz) < thickness)
 
-            ax.scatter(spx, spy, marker='*', color='r', alpha=1.0, s=10.0/norm_factor)
-        
+            ax.scatter(spx, spy, marker='*', color='r', alpha=1.0, s=10.0 / norm_factor)
 
         if len(sp_cl) > 0:
             spx, spy, spz = projection(sp_cl, axis)
             if kpc:
-                spx = spx/1.e3
-                spy = spy/1.e3
+                spx = spx / 1.e3
+                spy = spy / 1.e3
             if type == 'slice':
                 xbool = abs(spz) < thickness
 
-            spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
-            spa = sp_cl['age']*Myr
+            spm = np.sqrt(sp_cl['mass'] * Msun) / norm_factor
+            spa = sp_cl['age'] * Myr
             iyoung = np.where(spa < agemax)
 
             if type == 'slice':
-                islab = np.where(xbool*(spa < agemax))
+                islab = np.where(xbool * (spa < agemax))
                 ax.scatter(spx.iloc[islab], spy.iloc[islab], marker='o',
                            s=spm.iloc[islab], c=spa.iloc[islab],
                            vmin=0, vmax=agemax, cmap=plt.cm.cool_r, alpha=1.0)
@@ -99,5 +98,3 @@ def scatter_sp(sp, ax, axis=0, thickness=10.0, norm_factor=4.,
             ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung], marker='o',
                        s=spm.iloc[iyoung], c=spa.iloc[iyoung],
                        vmin=0, vmax=agemax, cmap=plt.cm.cool_r, alpha=0.7)
-
-            

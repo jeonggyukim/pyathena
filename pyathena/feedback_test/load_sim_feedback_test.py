@@ -41,9 +41,9 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
             accepted.
         """
 
-        super(LoadSimFeedbackTest,self).__init__(basedir, savdir=savdir,
-                                                 load_method=load_method,
-                                                 verbose=verbose)
+        super(LoadSimFeedbackTest, self).__init__(basedir, savdir=savdir,
+                                                  load_method=load_method,
+                                                  verbose=verbose)
         # Set unit and domain
         try:
             muH = self.par['problem']['muH']
@@ -95,26 +95,24 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         # else:
         #     s.iCoolHIcollion = 1
 
-
     def show_timeit(self):
         import matplotlib.pyplot as plt
         try:
-            time = pd.read_csv(self.files['timeit'],delim_whitespace=True)
+            time = pd.read_csv(self.files['timeit'], delim_whitespace=True)
 
             tfields = [k.split('_')[0] for k in time.keys() if k.endswith('tot')]
 
             for tf in tfields:
-                if tf == 'rayt': continue
-                plt.plot(time['time'],time[tf].cumsum()/time['all'].cumsum(),label=tf)
+                if tf == 'rayt':
+                    continue
+                plt.plot(time['time'], time[tf].cumsum() / time['all'].cumsum(), label=tf)
             plt.legend()
         except KeyError:
             print("No timeit plot is available")
 
-
-
     def get_timeit_mean(self):
         try:
-            time = pd.read_csv(self.files['timeit'],delim_whitespace=True)
+            time = pd.read_csv(self.files['timeit'], delim_whitespace=True)
 
             tfields = [k.split('_')[0] for k in time.keys() if k.endswith('tot')]
 
@@ -139,15 +137,15 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         # Find time at which xx percent of SF has occurred
         if t_Myr is not None:
             t_Myr = np.atleast_1d(t_Myr)
-            t_code = [t_Myr_/u.Myr for t_Myr_ in t_Myr]
+            t_code = [t_Myr_ / u.Myr for t_Myr_ in t_Myr]
 
         nums = []
         dt_output = self.get_dt_output()[output]
         for t in t_code:
             if rounding:
-                num = int(round(t/dt_output))
+                num = int(round(t / dt_output))
             else:
-                num = int(t/dt_output)
+                num = int(t / dt_output)
 
             nums.append(num)
 
@@ -216,14 +214,14 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
 
         # Initial feedback radius (rinit in Kim & Ostriker 2015)
         df['dx'] = df['domain']['dx'][0]
-        df['r_init'] = par['problem']['rblast_over_hdx']*(0.5*df['dx'])
+        df['r_init'] = par['problem']['rblast_over_hdx'] * (0.5 * df['dx'])
 
         # Quantities at the time of shell formation
         # Shell formation time
-        df['t_sf_M'] = float(h.loc[(h['Mi']+h['Mh']).max() ==
-                                (h['Mi']+h['Mh']), 'time'])
-        df['t_sf_E'] = h.where(h['Ethm']+h['Ekin']-h['Ethm_u']-h['Ekin_u'] > 0.7e51).time.max()
-        df['t_sf']=df['t_sf_E']
+        df['t_sf_M'] = float(h.loc[(h['Mi'] + h['Mh']).max()
+                                   == (h['Mi'] + h['Mh']), 'time'])
+        df['t_sf_E'] = h.where(h['Ethm'] + h['Ekin'] - h['Ethm_u'] - h['Ekin_u'] > 0.7e51).time.max()
+        df['t_sf'] = df['t_sf_E']
         # Radius at the time of shell formation
         df['r_sf'] = float(h.loc[h['time'] == df['t_sf'], 'Rsh'])
         # Mass of ionized and hot gas (T > 2e4K)
@@ -231,7 +229,7 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         # Shell mass
         df['Msh_sf'] = float(h.loc[h['time'] == df['t_sf'], 'Msh'])
         # SNR mass
-        df['Msnr_sf'] = df['Mhi_sf']+df['Msh_sf']
+        df['Msnr_sf'] = df['Mhi_sf'] + df['Msh_sf']
         # Momentum
         df['pr_sf'] = float(h.loc[h['time'] == df['t_sf'], 'pr'])
         df['pok_bub_sf'] = float(h.loc[h['time'] == df['t_sf'], 'pok_bub'])
@@ -240,21 +238,20 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
         df['vrsh_sf'] = float(h.loc[h['time'] == df['t_sf'], 'vrsh'])
         df['vrbub_sf'] = float(h.loc[h['time'] == df['t_sf'], 'vrbub'])
 
-        df['dx_over_r_sf'] = df['dx']/df['r_sf']
+        df['dx_over_r_sf'] = df['dx'] / df['r_sf']
 
         # Momentum at 10*t_sf
-        idx = (h['time'] - 10.0*df['t_sf']).abs().argsort()[0]
+        idx = (h['time'] - 10.0 * df['t_sf']).abs().argsort()[0]
         df['pr_10t_sf'] = h['pr'].iloc[idx]
 
         # Plot styles
         df['cmapZ'] = mpl.cm.plasma_r
-        df['normZ'] = mpl.colors.LogNorm(0.003,3.0)
+        df['normZ'] = mpl.colors.LogNorm(0.003, 3.0)
         df['linecolorZ'] = df['cmapZ'](df['normZ'](df['Z_gas']))
 
         df['cmapn'] = cmr.cosmic_r
-        df['normn'] = mpl.colors.LogNorm(1e-2,1e2)
+        df['normn'] = mpl.colors.LogNorm(1e-2, 1e2)
         df['linecolorn'] = df['cmapn'](df['normn'](df['n0']))
-
 
         if as_dict:
             return df
@@ -262,9 +259,9 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
             return pd.Series(df, name=self.basename)
 
 
-
 class LoadSimFeedbackTestAll(object):
     """Class to load multiple simulations"""
+
     def __init__(self, models=None):
         # self.models = list(models.keys())
         self.models = []
@@ -273,7 +270,7 @@ class LoadSimFeedbackTestAll(object):
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
                 print('[LoadSimFeedbackTestAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
-                    mdl,basedir))
+                    mdl, basedir))
             else:
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
@@ -292,29 +289,29 @@ def load_all_feedback_test_sn(force_override=False):
     # basedir = '/scratch/gpfs/jk11/FEEDBACK-TEST/'
     models = dict(
 
-        SN_n001_Z0001_N128=osp.join(basedir,'SN-n0.01-Z0.001-N128'),
-        SN_n01_Z0001_N128=osp.join(basedir,'SN-n0.1-Z0.001-N128'),
-        SN_n1_Z0001_N128=osp.join(basedir,'SN-n1-Z0.001-N128'),
-        SN_n10_Z0001_N128=osp.join(basedir,'SN-n10-Z0.001-N128'),
-        SN_n100_Z0001_N128=osp.join(basedir,'SN-n100-Z0.001-N128'),
+        SN_n001_Z0001_N128=osp.join(basedir, 'SN-n0.01-Z0.001-N128'),
+        SN_n01_Z0001_N128=osp.join(basedir, 'SN-n0.1-Z0.001-N128'),
+        SN_n1_Z0001_N128=osp.join(basedir, 'SN-n1-Z0.001-N128'),
+        SN_n10_Z0001_N128=osp.join(basedir, 'SN-n10-Z0.001-N128'),
+        SN_n100_Z0001_N128=osp.join(basedir, 'SN-n100-Z0.001-N128'),
 
-        SN_n001_Z001_N128=osp.join(basedir,'SN-n0.01-Z0.01-N128'),
-        SN_n01_Z001_N128=osp.join(basedir,'SN-n0.1-Z0.01-N128'),
-        SN_n1_Z001_N128=osp.join(basedir,'SN-n1-Z0.01-N128'),
-        SN_n10_Z001_N128=osp.join(basedir,'SN-n10-Z0.01-N128'),
-        SN_n100_Z001_N128=osp.join(basedir,'SN-n100-Z0.01-N128'),
+        SN_n001_Z001_N128=osp.join(basedir, 'SN-n0.01-Z0.01-N128'),
+        SN_n01_Z001_N128=osp.join(basedir, 'SN-n0.1-Z0.01-N128'),
+        SN_n1_Z001_N128=osp.join(basedir, 'SN-n1-Z0.01-N128'),
+        SN_n10_Z001_N128=osp.join(basedir, 'SN-n10-Z0.01-N128'),
+        SN_n100_Z001_N128=osp.join(basedir, 'SN-n100-Z0.01-N128'),
 
-        SN_n001_Z01_N128=osp.join(basedir,'SN-n0.01-Z0.1-N128'),
-        SN_n01_Z01_N128=osp.join(basedir,'SN-n0.1-Z0.1-N128'),
-        SN_n1_Z01_N128=osp.join(basedir,'SN-n1-Z0.1-N128'),
-        SN_n10_Z01_N128=osp.join(basedir,'SN-n10-Z0.1-N128'),
-        SN_n100_Z01_N128=osp.join(basedir,'SN-n100-Z0.1-N128'),
+        SN_n001_Z01_N128=osp.join(basedir, 'SN-n0.01-Z0.1-N128'),
+        SN_n01_Z01_N128=osp.join(basedir, 'SN-n0.1-Z0.1-N128'),
+        SN_n1_Z01_N128=osp.join(basedir, 'SN-n1-Z0.1-N128'),
+        SN_n10_Z01_N128=osp.join(basedir, 'SN-n10-Z0.1-N128'),
+        SN_n100_Z01_N128=osp.join(basedir, 'SN-n100-Z0.1-N128'),
 
-        SN_n001_Z1_N128=osp.join(basedir,'SN-n0.01-Z1-N128'),
-        SN_n01_Z1_N128=osp.join(basedir,'SN-n0.1-Z1-N128'),
-        SN_n1_Z1_N128=osp.join(basedir,'SN-n1-Z1-N128'),
-        SN_n10_Z1_N128=osp.join(basedir,'SN-n10-Z1-N128'),
-        SN_n100_Z1_N128=osp.join(basedir,'SN-n100-Z1-N128'),
+        SN_n001_Z1_N128=osp.join(basedir, 'SN-n0.01-Z1-N128'),
+        SN_n01_Z1_N128=osp.join(basedir, 'SN-n0.1-Z1-N128'),
+        SN_n1_Z1_N128=osp.join(basedir, 'SN-n1-Z1-N128'),
+        SN_n10_Z1_N128=osp.join(basedir, 'SN-n10-Z1-N128'),
+        SN_n100_Z1_N128=osp.join(basedir, 'SN-n100-Z1-N128'),
 
         # SN_n001_Z1_N256=osp.join(basedir,'SN-n0.01-Z1-N256'),
         # SN_n01_Z1_N256=osp.join(basedir,'SN-n0.1-Z1-N256'),
@@ -322,11 +319,11 @@ def load_all_feedback_test_sn(force_override=False):
         # SN_n10_Z1_N256=osp.join(basedir,'SN-n10-Z1-N256'),
         # SN_n100_Z1_N256=osp.join(basedir,'SN-n100-Z1-N256'),
 
-        SN_n001_Z3_N128=osp.join(basedir,'SN-n0.01-Z3-N128'),
-        SN_n01_Z3_N128=osp.join(basedir,'SN-n0.1-Z3-N128'),
-        SN_n1_Z3_N128=osp.join(basedir,'SN-n1-Z3-N128'),
-        SN_n10_Z3_N128=osp.join(basedir,'SN-n10-Z3-N128'),
-        SN_n100_Z3_N128=osp.join(basedir,'SN-n100-Z3-N128'),
+        SN_n001_Z3_N128=osp.join(basedir, 'SN-n0.01-Z3-N128'),
+        SN_n01_Z3_N128=osp.join(basedir, 'SN-n0.1-Z3-N128'),
+        SN_n1_Z3_N128=osp.join(basedir, 'SN-n1-Z3-N128'),
+        SN_n10_Z3_N128=osp.join(basedir, 'SN-n10-Z3-N128'),
+        SN_n100_Z3_N128=osp.join(basedir, 'SN-n100-Z3-N128'),
 
     )
 
@@ -359,7 +356,6 @@ def load_all_feedback_test_sn(force_override=False):
     return sa, df
 
 
-
 def plt_hst_sn_diff_Z(n0=1.0):
     """Plot history
 
@@ -370,7 +366,7 @@ def plt_hst_sn_diff_Z(n0=1.0):
     """
 
     sa, df = load_all_feedback_test_sn(force_override=False)
-    fig, axes = plt.subplots(2,3,figsize=(16,8), sharex=True, constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(16, 8), sharex=True, constrained_layout=True)
     axes = axes.flatten()
     for mdl in sa.models:
         d = df.loc[mdl]
@@ -385,22 +381,22 @@ def plt_hst_sn_diff_Z(n0=1.0):
         axes[1].loglog(x, h['Mhi'], c=c, ls='-')
         axes[1].loglog(x, h['Msh'], c=c, ls='--')
         axes[2].loglog(x, h['pr'], c=c, ls='-', label=r'$Z=$' + '{0:g}'.format(d['Z_gas']))
-        axes[3].loglog(x, h['Ethm']+h['Ekin'], c=c, ls='-')
+        axes[3].loglog(x, h['Ethm'] + h['Ekin'], c=c, ls='-')
         axes[3].loglog(x, h['Ethm'], c=c, ls='--')
         axes[3].loglog(x, h['Ekin'], c=c, ls=':')
         axes[4].loglog(x, h['pok_bub'], c=c, ls='-')
-        #axes[5].loglog(x, h['dt'], c=c, ls='-')
-        axes[5].semilogx(x,h['etash'], c=c, ls='-')
+        # axes[5].loglog(x, h['dt'], c=c, ls='-')
+        axes[5].semilogx(x, h['etash'], c=c, ls='-')
 
-    plt.setp(axes[3:], xlabel=r'time [Myr]')#, xlim=(1e-3,1e0))
-    plt.setp(axes[0], ylabel=r'$R_{\rm snr}\,[{\rm pc}]$')#, ylim=(10,50))
-    plt.setp(axes[1], ylabel=r'${\rm mass}\;[M_{\odot}]$')#, ylim=(1e1,2e4))
-    plt.setp(axes[2], ylabel=r'$p_{\rm snr}\;[M_{\odot}\,{\rm km}\,{\rm s}^{-1}]$')#, ylim=(1e4,5e5))
+    plt.setp(axes[3:], xlabel=r'time [Myr]')  # , xlim=(1e-3,1e0))
+    plt.setp(axes[0], ylabel=r'$R_{\rm snr}\,[{\rm pc}]$')  # , ylim=(10,50))
+    plt.setp(axes[1], ylabel=r'${\rm mass}\;[M_{\odot}]$')  # , ylim=(1e1,2e4))
+    plt.setp(axes[2], ylabel=r'$p_{\rm snr}\;[M_{\odot}\,{\rm km}\,{\rm s}^{-1}]$')  # , ylim=(1e4,5e5))
     plt.setp(axes[3], ylabel=r'$energy\;[{\rm erg}]$')
-    plt.setp(axes[4], ylabel=r'$P_{\rm bub}/k_{\rm B}\;[{\rm K}\,{\rm cm}^{-3}]$') #, ylim=(1e3,1e10))
+    plt.setp(axes[4], ylabel=r'$P_{\rm bub}/k_{\rm B}\;[{\rm K}\,{\rm cm}^{-3}]$')  # , ylim=(1e3,1e10))
     plt.setp(axes[5], ylabel=r'$\eta = v_{\rm s,sh}t/R_{\rm sh}$', ylim=(0, 0.5))
-    plt.suptitle('N={0:d}, '.format(d['Nx']) + r'$n_0=$' + '{0:g}'.format(n0) +\
-                 r'$\;{\rm cm}^{-3}$')
+    plt.suptitle('N={0:d}, '.format(d['Nx']) + r'$n_0=$' + '{0:g}'.format(n0)
+                 + r'$\;{\rm cm}^{-3}$')
 
     axes[2].legend(loc=4)
     plt.savefig('/tigress/jk11/figures/NEWCOOL/FEEDBACK-TEST-SN/SN-hst-n{0:g}.png'.format(n0))
@@ -418,7 +414,7 @@ def plt_hst_sn_diff_n(Z=1.0):
 
     sa, df = load_all_feedback_test_sn(force_override=False)
 
-    fig, axes = plt.subplots(2,3,figsize=(16,8), sharex=True, constrained_layout=True)
+    fig, axes = plt.subplots(2, 3, figsize=(16, 8), sharex=True, constrained_layout=True)
     axes = axes.flatten()
 
     for mdl in sa.models:
@@ -429,28 +425,28 @@ def plt_hst_sn_diff_n(Z=1.0):
         # print(mdl,d['Z_gas'],d['r_sf'])
 
         h = d['hst']
-        x = h['time']/d['t_sf']
+        x = h['time'] / d['t_sf']
         c = d['linecolorn']
-        axes[0].loglog(x, h['Rsh']/d['r_sf'], c=c, ls='-')
-        axes[1].loglog(x, h['Mhi']/d['Mhi_sf'], c=c, ls='-')
-        axes[1].loglog(x, h['Msh']/d['Mhi_sf'], c=c, ls='--')
-        axes[2].loglog(x, h['pr']/d['pr_sf'], c=c, ls='-',label=r'$n=$'+'{0:g}'.format(d['n0']))
-        axes[3].loglog(x, (h['Ethm']+h['Ekin'])/(d['Ethm_sf'] + d['Ekin_sf']), c=c, ls='-')
-        axes[3].loglog(x, h['Ethm']/(d['Ethm_sf'] + d['Ekin_sf']), c=c, ls=':')
-        axes[3].loglog(x, h['Ekin']/(d['Ethm_sf'] + d['Ekin_sf']), c=c, ls='--')
+        axes[0].loglog(x, h['Rsh'] / d['r_sf'], c=c, ls='-')
+        axes[1].loglog(x, h['Mhi'] / d['Mhi_sf'], c=c, ls='-')
+        axes[1].loglog(x, h['Msh'] / d['Mhi_sf'], c=c, ls='--')
+        axes[2].loglog(x, h['pr'] / d['pr_sf'], c=c, ls='-', label=r'$n=$' + '{0:g}'.format(d['n0']))
+        axes[3].loglog(x, (h['Ethm'] + h['Ekin']) / (d['Ethm_sf'] + d['Ekin_sf']), c=c, ls='-')
+        axes[3].loglog(x, h['Ethm'] / (d['Ethm_sf'] + d['Ekin_sf']), c=c, ls=':')
+        axes[3].loglog(x, h['Ekin'] / (d['Ethm_sf'] + d['Ekin_sf']), c=c, ls='--')
         # axes[3].loglog(x, h['Ethm'], c=c, ls='--')
         # axes[3].loglog(x, h['Ekin'], c=c, ls=':')
-        axes[4].loglog(x, h['pok_bub']/d['pok_bub_sf'], c=c, ls='-')
-        #axes[5].loglog(x, h['dt'], c=c, ls='-')
-        axes[5].semilogx(x,h['etash'], c=c, ls='-')
+        axes[4].loglog(x, h['pok_bub'] / d['pok_bub_sf'], c=c, ls='-')
+        # axes[5].loglog(x, h['dt'], c=c, ls='-')
+        axes[5].semilogx(x, h['etash'], c=c, ls='-')
 
-    plt.setp(axes[3:], xlabel=r'time [Myr]', xlim=(5e-2,2e1))
-    plt.setp(axes[0], ylabel=r'$R_{\rm snr}/r_{\rm sf}$')#, ylim=(10,50))
-    plt.setp(axes[1], ylabel=r'$mass/M_{\rm h,sf}$')#, ylim=(1e1,2e4))
-    plt.setp(axes[2], ylabel=r'$p_{\rm r}/p_{\rm r,sf}$')#, ylim=(1e4,5e5))
-    plt.setp(axes[3], ylabel=r'$E/(E_{\rm kin,sf}+E_{\rm thm,sf})$')#, ylim=(1e4,5e5))
-    plt.setp(axes[4], ylabel=r'$P_{\rm bub}/k_{\rm B}\;[{\rm K}\,{\rm cm}^{-3}]$') #, ylim=(1e3,1e10))
-    #plt.setp(axes[5], ylabel=r'$dt$')
+    plt.setp(axes[3:], xlabel=r'time [Myr]', xlim=(5e-2, 2e1))
+    plt.setp(axes[0], ylabel=r'$R_{\rm snr}/r_{\rm sf}$')  # , ylim=(10,50))
+    plt.setp(axes[1], ylabel=r'$mass/M_{\rm h,sf}$')  # , ylim=(1e1,2e4))
+    plt.setp(axes[2], ylabel=r'$p_{\rm r}/p_{\rm r,sf}$')  # , ylim=(1e4,5e5))
+    plt.setp(axes[3], ylabel=r'$E/(E_{\rm kin,sf}+E_{\rm thm,sf})$')  # , ylim=(1e4,5e5))
+    plt.setp(axes[4], ylabel=r'$P_{\rm bub}/k_{\rm B}\;[{\rm K}\,{\rm cm}^{-3}]$')  # , ylim=(1e3,1e10))
+    # plt.setp(axes[5], ylabel=r'$dt$')
     plt.setp(axes[5], ylabel=r'$\eta$', ylim=(0, 0.5))
     plt.suptitle('N={0:d}, '.format(d['Nx']) + r'$Z=$' + '{0:g}'.format(Z))
 
@@ -464,6 +460,7 @@ def plt_hst_sn_diff_n(Z=1.0):
 
 class LoadSimFeedbackTestAll(object):
     """Class to load multiple simulations"""
+
     def __init__(self, models=None, muH=None):
 
         # Default models
@@ -481,7 +478,7 @@ class LoadSimFeedbackTestAll(object):
         for mdl, basedir in models.items():
             if not osp.exists(basedir):
                 print('[LoadSimFeedbackTestAll]: Model {0:s} doesn\'t exist: {1:s}'.format(
-                    mdl,basedir))
+                    mdl, basedir))
             else:
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
@@ -510,7 +507,8 @@ class LoadSimFeedbackTestAll(object):
                 self.models += [mdl]
                 self.basedirs[mdl] = o.basedirs[mdl]
                 self.muH[mdl] = o.muH[mdl]
-                if mdl in o.simdict: self.simdict[mdl] = o.simdict[mdl]
+                if mdl in o.simdict:
+                    self.simdict[mdl] = o.simdict[mdl]
 
         return self
 

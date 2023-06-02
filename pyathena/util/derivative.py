@@ -39,14 +39,14 @@ def gaussian_deriv_kernel(axis=0, stddev=3.0, oned=False):
         gauss = Gaussian1DKernel(stddev)
     else:
         gauss = Gaussian2DKernel(stddev)
-    x = np.linspace(0, gauss.shape[axis]-1, gauss.shape[axis])
+    x = np.linspace(0, gauss.shape[axis] - 1, gauss.shape[axis])
     dkernel = deriv_central(gauss.array, x, axis=axis)
     if not oned:
         if axis == 0:
             dkernel = dkernel[:, 1:-1]
         elif axis == 1:
             dkernel = dkernel[1:-1, :]
-        return dkernel/abs(dkernel).sum()
+        return dkernel / abs(dkernel).sum()
     else:
         return dkernel
 
@@ -55,13 +55,13 @@ def deriv_direct(yarr, xarr, axis=0):
     dyarr = np.diff(yarr, axis=axis)
     dxarr = np.diff(xarr)
     if yarr.ndim == 1:
-        return dyarr/dxarr
+        return dyarr / dxarr
     if yarr.ndim == 2:
         if axis == 0:
             dxarr = dxarr[:, np.newaxis]
         if axis == 1:
             dxarr = dxarr[np.newaxis, :]
-        return dyarr/dxarr
+        return dyarr / dxarr
     if yarr.ndim == 3:
         if axis == 0:
             dxarr = dxarr[:, np.newaxis, np.newaxis]
@@ -69,24 +69,24 @@ def deriv_direct(yarr, xarr, axis=0):
             dxarr = dxarr[np.newaxis, :, np.newaxis]
         if axis == 2:
             dxarr = dxarr[np.newaxis, np.newaxis, :]
-        return dyarr/dxarr
+        return dyarr / dxarr
 
 
 def deriv_central(yarr, xarr, axis=0):
-    dx = xarr[2:]-xarr[:-2]
+    dx = xarr[2:] - xarr[:-2]
     if yarr.ndim == 1:
-        dy = yarr[2:]-yarr[:-2]
-        return dy/dx
+        dy = yarr[2:] - yarr[:-2]
+        return dy / dx
     elif yarr.ndim == 2:
         yswap = yarr.swapaxes(axis, -1)
-        dy = yswap[:, 2:]-yswap[:, :-2]
+        dy = yswap[:, 2:] - yswap[:, :-2]
         dx = dx[np.newaxis, :]
     elif yarr.ndim == 3:
         yswap = yarr.swapaxes(axis, -1)
-        dy = yswap[:, :, 2:]-yswap[:, :, :-2]
+        dy = yswap[:, :, 2:] - yswap[:, :, :-2]
         dx = dx[np.newaxis, np.newaxis, :]
 
-    dydx = dy/dx
+    dydx = dy / dx
     return dydx.swapaxes(axis, -1)
 
 
@@ -97,13 +97,13 @@ def deriv_convolve(yarr, xarr, axis=0, fft=False, gauss=True, stddev=3.0):
 
     # print norm,kernel.shape
     if fft:
-        dy = convolve_fft(yarr, kernel/float(norm), boundary='wrap')
+        dy = convolve_fft(yarr, kernel / float(norm), boundary='wrap')
     else:
-        dy = convolve(yarr, kernel/float(norm), normalize_kernel=False,
+        dy = convolve(yarr, kernel / float(norm), normalize_kernel=False,
                       boundary='extend')
-    dx = xarr[1]-xarr[0]
-    #print (dy/dx).max()
-    return dy/dx
+    dx = xarr[1] - xarr[0]
+    # print (dy/dx).max()
+    return dy / dx
 
 
 def gradient(scal, x, y, z, deriv=deriv_convolve):
@@ -142,7 +142,7 @@ def curl(vx, vy, vz, x, y, z, deriv=deriv_convolve):
 def helicity(vx, vy, vz, x, y, z):
 
     curlx, curly, curlz = curl(vx, vy, vz, x, y, z, deriv=deriv_convolve)
-    helicity = vx*curlx + vy*curly + vz*curlz
+    helicity = vx * curlx + vy * curly + vz * curlz
     print((helicity.mean()))
 
     return helicity

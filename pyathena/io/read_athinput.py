@@ -34,7 +34,7 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
             DUMP = True
             break
 
-    if DUMP: # from simulation log
+    if DUMP:  # from simulation log
         flag = True
         for i, line in enumerate(lines):
             if 'PAR_DUMP' in line:
@@ -43,7 +43,7 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
                     flag = False
                 else:
                     iend = i
-    else: # from restart
+    else:  # from restart
         for i, line in enumerate(lines):
             if '<comment>' in line:
                 istart = i
@@ -79,31 +79,33 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
         if b is not None:
             bstr = b.group().strip()[1:-1]
             if bstr in o:
-                bname = bstr # bname is valid block
+                bname = bstr  # bname is valid block
             else:
                 bname = None
         elif p is not None and bname is not None:
             lsplit = l.split()
-            i1_found=False
+            i1_found = False
             for i, lsplit_ in enumerate(lsplit):
                 if lsplit_ == '=':
                     i0 = i
                 if lsplit_ == '#':
                     i1 = i
-                    i1_found=True
+                    i1_found = True
                     break
 
             pname = '_'.join(lsplit[:i0])
-            if i1_found: value = ' '.join(lsplit[i0+1:i1])
-            else: value = lsplit[i0+1]
+            if i1_found:
+                value = ' '.join(lsplit[i0 + 1:i1])
+            else:
+                value = lsplit[i0 + 1]
 
             # Evaluate if value is floating point number (or real number) or integer or string
             # Too complicated...there must be a better way...
-            if re.match(r'^[+-]?\d*\.\d*[eE][+-]?\d+$',value) or \
-               re.match(r'^[+-]?\d+[eE][+-]?\d+$',value) or \
-               re.match(r'^[+-]?\d+\.\d*$',value):
+            if re.match(r'^[+-]?\d*\.\d*[eE][+-]?\d+$', value) or \
+               re.match(r'^[+-]?\d+[eE][+-]?\d+$', value) or \
+               re.match(r'^[+-]?\d+\.\d*$', value):
                 o[bname][pname] = float(value)
-            elif re.match(r'^-?[0-9]+$',value):
+            elif re.match(r'^-?[0-9]+$', value):
                 o[bname][pname] = int(value)
 #                o[bname][l.split()[0]]=float(value)
             else:
@@ -115,4 +117,3 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
         return par
     else:
         return o
-

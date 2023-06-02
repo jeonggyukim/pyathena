@@ -29,7 +29,7 @@ def _get_data_file(table_type, data_dir=None):
     data_path = os.path.join(data_dir, data_file)
     if not os.path.exists(data_path):
         msg = "Failed to find emissivity data file %s in %s! " % (data_file, data_path) \
-        + "Please download from http://yt-project.org/data!"
+            + "Please download from http://yt-project.org/data!"
         mylog.error(msg)
         raise IOError(msg)
     return data_path
@@ -41,7 +41,7 @@ class EnergyBoundsException(YTException):
 
     def __str__(self):
         return "Energy bounds are %e to %e keV." % \
-          (self.lower, self.upper)
+            (self.lower, self.upper)
 
 class ObsoleteDataException(YTException):
     def __init__(self, table_type):
@@ -77,6 +77,7 @@ class XrayEmissivityIntegrator(object):
         If set to True, the emissivity will include contributions from metals.
         Default: True
     """
+
     def __init__(self, table_type, redshift=0.0, data_dir=None, use_metals=True):
 
         mylog.setLevel(50)
@@ -88,7 +89,7 @@ class XrayEmissivityIntegrator(object):
         if parse_h5_attr(in_file, "version") != data_version[table_type]:
             raise ObsoleteDataException(table_type)
         else:
-            only_on_root(mylog.info, "X-ray '%s' emissivity data version: %s." % \
+            only_on_root(mylog.info, "X-ray '%s' emissivity data version: %s." %
                          (table_type, parse_h5_attr(in_file, "version")))
 
         self.log_T = in_file["log_T"][:]
@@ -100,17 +101,17 @@ class XrayEmissivityIntegrator(object):
         self.ebin = YTArray(in_file["E"], "keV")
         in_file.close()
         self.dE = np.diff(self.ebin)
-        self.emid = 0.5*(self.ebin[1:]+self.ebin[:-1]).to("erg")
+        self.emid = 0.5 * (self.ebin[1:] + self.ebin[:-1]).to("erg")
         self.redshift = redshift
 
     def get_interpolator(self, data_type, e_min, e_max, energy=True):
         data = getattr(self, "emissivity_%s" % data_type)
         if not energy:
             data = data[..., :] / self.emid.v
-        e_min = YTQuantity(e_min, "keV")*(1.0+self.redshift)
-        e_max = YTQuantity(e_max, "keV")*(1.0+self.redshift)
+        e_min = YTQuantity(e_min, "keV") * (1.0 + self.redshift)
+        e_max = YTQuantity(e_max, "keV") * (1.0 + self.redshift)
         if (e_min - self.ebin[0]) / e_min < -1e-3 or \
-          (e_max - self.ebin[-1]) / e_max > 1e-3:
+                (e_max - self.ebin[-1]) / e_max > 1e-3:
             raise EnergyBoundsException(self.ebin[0], self.ebin[-1])
         e_is, e_ie = np.digitize([e_min, e_max], self.ebin)
         e_is = np.clip(e_is - 1, 0, self.ebin.size - 1)
@@ -121,15 +122,15 @@ class XrayEmissivityIntegrator(object):
         my_dE[0] -= e_min - self.ebin[e_is]
         my_dE[-1] -= self.ebin[e_ie] - e_max
 
-        interp_data = (data[..., e_is:e_ie]*my_dE).sum(axis=-1)
+        interp_data = (data[..., e_is:e_ie] * my_dE).sum(axis=-1)
         if data.ndim == 2:
             emiss = UnilinearFieldInterpolator(np.log10(interp_data),
-                                               [self.log_T[0],  self.log_T[-1]],
+                                               [self.log_T[0], self.log_T[-1]],
                                                "log_T", truncate=True)
         else:
             emiss = BilinearFieldInterpolator(np.log10(interp_data),
                                               [self.log_nH[0], self.log_nH[-1],
-                                               self.log_T[0],  self.log_T[-1]],
+                                               self.log_T[0], self.log_T[-1]],
                                               ["log_nH", "log_T"], truncate=True)
 
         return emiss
@@ -140,7 +141,7 @@ def get_xray_emissivity(T, Z=1.0, emin=0.5, emax=7.0, table_type='apec', energy=
     x = XrayEmissivityIntegrator(table_type, data_dir=data_dir)
     log_em_0 = x.get_interpolator('primordial', emin, emax, energy=energy)
     log_em_z = x.get_interpolator('metals', emin, emax, energy=energy)
-    
+
     dd = dict(log_nH=0.0, log_T=np.log10(T))
-    em_tot = 10.0**log_em_0(dd) + Z*10.0**log_em_z(dd)
+    em_tot = 10.0**log_em_0(dd) + Z * 10.0**log_em_z(dd)
     return em_tot

@@ -11,7 +11,7 @@ import pandas as pd
 
 def read_timeit(filename, force_override=False, verbose=False):
     """ Function to read timeit log file and pickle
-    
+
     Parameters
     ----------
     filename : string
@@ -37,8 +37,8 @@ def read_timeit(filename, force_override=False, verbose=False):
             print('[read_timeit]: reading from existing pickle.')
     else:
         if verbose:
-            print('[read_timeit]: pickle does not exist or timeit file updated.' + \
-                      ' Reading {0:s}'.format(filename))
+            print('[read_timeit]: pickle does not exist or timeit file updated.'
+                  + ' Reading {0:s}'.format(filename))
         vlist = _get_timeit_var(filename)
 
         # c engine does not support regex separators
@@ -51,7 +51,7 @@ def read_timeit(filename, force_override=False, verbose=False):
 
     return tmit
 
-      
+
 def _get_timeit_var(filename):
     """Read variable names from timeit log file
 

@@ -22,7 +22,7 @@ cmap_def = dict(
     Sigma_H2=plt.cm.pink_r,
     EM=plt.cm.plasma,
     nH=plt.cm.Spectral_r,
-    T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
+    T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3. / 7.),
     vz=plt.cm.bwr,
     chi_FUV=plt.cm.viridis,
     Erad_LyC=plt.cm.viridis,
@@ -31,16 +31,16 @@ cmap_def = dict(
 )
 
 norm_def = dict(
-    Sigma_gas=LogNorm(1e-2,1e2),
-    Sigma_H2=LogNorm(1e-2,1e2),
-    EM=LogNorm(1e0,1e5),
-    nH=LogNorm(1e-4,1e3),
-    T=LogNorm(1e1,1e7),
-    vz=Normalize(-200,200),
-    chi_FUV=LogNorm(1e-2,1e2),
-    Erad_LyC=LogNorm(1e-16,5e-13),
-    xi_CR=LogNorm(5e-17,1e-15),
-    Bmag=LogNorm(1.e-2,1.e2)
+    Sigma_gas=LogNorm(1e-2, 1e2),
+    Sigma_H2=LogNorm(1e-2, 1e2),
+    EM=LogNorm(1e0, 1e5),
+    nH=LogNorm(1e-4, 1e3),
+    T=LogNorm(1e1, 1e7),
+    vz=Normalize(-200, 200),
+    chi_FUV=LogNorm(1e-2, 1e2),
+    Erad_LyC=LogNorm(1e-16, 5e-13),
+    xi_CR=LogNorm(5e-17, 1e-15),
+    Bmag=LogNorm(1.e-2, 1.e2)
 )
 
 class SliceProj:
@@ -71,7 +71,7 @@ class SliceProj:
             if self.par['cooling']['iPEheating'] == 1:
                 fields_def += ['chi_FUV']
         if self.par['configure']['gas'] == 'mhd':
-            fields_def += ['Bx','By','Bz','Bmag']
+            fields_def += ['Bx', 'By', 'Bz', 'Bmag']
 
         fields = fields_def
         axes = np.atleast_1d(axes)
@@ -86,7 +86,7 @@ class SliceProj:
             for f in fields:
                 res[ax][f] = dat[f].data
 
-        for zpos,zlab in zip([-1000,-500,500,1000],['zn10','zn05','zp05','zp10']):
+        for zpos, zlab in zip([-1000, -500, 500, 1000], ['zn10', 'zn05', 'zp05', 'zp10']):
             dat = ds.get_slice('z', fields, pos=zpos, method='nearest')
             res[zlab] = dict()
             for f in fields:
@@ -110,15 +110,15 @@ class SliceProj:
 
         for ax in axes:
             i = axtoi[ax]
-            dx = ds.domain['dx'][i]*self.u.length
-            conv_Sigma = (dx*self.u.muH*ac.u.cgs/au.cm**3).to('Msun/pc**2')
-            conv_EM = (dx*au.cm**-6).to('pc cm-6')
+            dx = ds.domain['dx'][i] * self.u.length
+            conv_Sigma = (dx * self.u.muH * ac.u.cgs / au.cm**3).to('Msun/pc**2')
+            conv_EM = (dx * au.cm**-6).to('pc cm-6')
 
             res[ax] = dict()
-            res[ax]['Sigma_gas'] = (np.sum(dat['nH'], axis=2-i)*conv_Sigma).data
-            res[ax]['Sigma_H2'] = (2.0*np.sum(dat['nH2'], axis=2-i)*conv_Sigma).data
+            res[ax]['Sigma_gas'] = (np.sum(dat['nH'], axis=2 - i) * conv_Sigma).data
+            res[ax]['Sigma_H2'] = (2.0 * np.sum(dat['nH2'], axis=2 - i) * conv_Sigma).data
             res[ax]['Sigma_HI'] = res[ax]['Sigma_gas'] - res[ax]['Sigma_H2']
-            res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
+            res[ax]['EM'] = (np.sum(dat['nesq'], axis=2 - i) * conv_EM).data
 
         return res
 
@@ -150,7 +150,7 @@ class SliceProj:
     def plt_proj(ax, prj, axis='z', field='Sigma_gas',
                  cmap=None, norm=None, vmin=None, vmax=None):
         try:
-            vminmax = dict(Sigma_gas=(1e-2,1e2))
+            vminmax = dict(Sigma_gas=(1e-2, 1e2))
             cmap_def = dict(Sigma_gas='pink_r')
 
             if cmap is None:
@@ -175,11 +175,11 @@ class SliceProj:
     def plt_snapshot(self, num,
                      fields_xy=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'chi_FUV'),
                      fields_xz=('Sigma_gas', 'Sigma_H2', 'EM', 'nH', 'T', 'vz', 'Bmag'),
-                     #fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
-                     #fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
+                     # fields_xy=('Sigma_gas', 'EM', 'xi_CR', 'nH', 'chi_FUV', 'Erad_LyC'),
+                     # fields_xz=('Sigma_gas', 'EM', 'nH', 'chi_FUV', 'Erad_LyC', 'xi_CR'),
                      norm_factor=5.0, agemax=20.0, agemax_sn=40.0, runaway=False,
                      suptitle=None, savdir_pkl=None, savdir=None, force_override=False,
-                     figsize=(26,12),
+                     figsize=(26, 12),
                      savefig=True):
         """Plot 12-panel projection, slice plots in the z and y directions
 
@@ -217,7 +217,7 @@ class SliceProj:
                      Erad_LyC=r'$\mathcal{E}_{\rm LyC}$',
                      xi_CR=r'$\xi_{\rm CR}$',
                      Bmag=r'$|B|$'
-        )
+                     )
 
         kind = dict(Sigma_gas='prj', Sigma_H2='prj', EM='prj',
                     nH='slc', T='slc', vz='slc', chi_FUV='slc',
@@ -225,17 +225,17 @@ class SliceProj:
         nxy = len(fields_xy)
         nxz = len(fields_xz)
         ds = self.load_vtk(num=num)
-        LzoLx = ds.domain['Lx'][2]/ds.domain['Lx'][0]
+        LzoLx = ds.domain['Lx'][2] / ds.domain['Lx'][0]
         xwidth = 3
-        ysize = LzoLx*xwidth
-        xsize = ysize/nxy*4 + nxz*xwidth
-        x1 = 0.90*(ysize*4/nxy/xsize)
-        x2 = 0.90*(nxz*xwidth/xsize)
+        ysize = LzoLx * xwidth
+        xsize = ysize / nxy * 4 + nxz * xwidth
+        x1 = 0.90 * (ysize * 4 / nxy / xsize)
+        x2 = 0.90 * (nxz * xwidth / xsize)
 
-        fig = plt.figure(figsize=(xsize, ysize))#, constrained_layout=True)
-        g1 = ImageGrid(fig, [0.02, 0.05, x1, 0.94], (nxy//2, 2), axes_pad=0.1,
+        fig = plt.figure(figsize=(xsize, ysize))  # , constrained_layout=True)
+        g1 = ImageGrid(fig, [0.02, 0.05, x1, 0.94], (nxy // 2, 2), axes_pad=0.1,
                        aspect=True, share_all=True, direction='column')
-        g2 = ImageGrid(fig, [x1+0.07, 0.05, x2, 0.94], (1, nxz), axes_pad=0.1,
+        g2 = ImageGrid(fig, [x1 + 0.07, 0.05, x2, 0.94], (1, nxz), axes_pad=0.1,
                        aspect=True, share_all=True)
 
         dat = dict()
@@ -245,7 +245,7 @@ class SliceProj:
 
         extent = dat['prj']['extent']['z']
         for i, (ax, f) in enumerate(zip(g1, fields_xy)):
-            ax.set_aspect(ds.domain['Lx'][1]/ds.domain['Lx'][0])
+            ax.set_aspect(ds.domain['Lx'][1] / ds.domain['Lx'][0])
             self.plt_slice(ax, dat[kind[f]], 'z', f, cmap=cmap_def[f], norm=norm_def[f])
 
             if i == 0:
@@ -263,7 +263,7 @@ class SliceProj:
 
         extent = dat['prj']['extent']['y']
         for i, (ax, f) in enumerate(zip(g2, fields_xz)):
-            ax.set_aspect(ds.domain['Lx'][2]/ds.domain['Lx'][0])
+            ax.set_aspect(ds.domain['Lx'][2] / ds.domain['Lx'][0])
             self.plt_slice(ax, dat[kind[f]], 'y', f, cmap=cmap_def[f], norm=norm_def[f])
             if i == 0:
                 scatter_sp(sp, ax, 'y', kind='prj', kpc=False,
@@ -298,39 +298,38 @@ class SliceProj:
         return fig
 
 
-def slc_to_xarray(slc,axis='z'):
+def slc_to_xarray(slc, axis='z'):
     dset = xr.Dataset()
     for f in slc[axis].keys():
-        x0,x1,y0,y1=slc['extent'][axis[0]]
+        x0, x1, y0, y1 = slc['extent'][axis[0]]
 
-        Ny,Nx=slc[axis][f].shape
+        Ny, Nx = slc[axis][f].shape
 
-        xfc = np.linspace(x0,x1,Nx+1)
-        yfc = np.linspace(y0,y1,Ny+1)
-        xcc = 0.5*(xfc[1:] + xfc[:-1])
-        ycc = 0.5*(yfc[1:] + yfc[:-1])
+        xfc = np.linspace(x0, x1, Nx + 1)
+        yfc = np.linspace(y0, y1, Ny + 1)
+        xcc = 0.5 * (xfc[1:] + xfc[:-1])
+        ycc = 0.5 * (yfc[1:] + yfc[:-1])
 
-        dims = dict(z=['y','x'],x=['z','y'],y=['z','x'])
+        dims = dict(z=['y', 'x'], x=['z', 'y'], y=['z', 'x'])
 
-        dset[f] = xr.DataArray(slc[axis][f],coords=[ycc,xcc],dims=dims[axis[0]])
+        dset[f] = xr.DataArray(slc[axis][f], coords=[ycc, xcc], dims=dims[axis[0]])
     return dset
 
 def slc_get_all_z(slc):
     dlist = []
     for k in slc.keys():
         if k.startswith('z'):
-            slc_dset = slc_to_xarray(slc,k)
+            slc_dset = slc_to_xarray(slc, k)
             if len(k) == 1:
-                z0=0.
+                z0 = 0.
             elif k[1] == 'n':
-                z0 = float(k[2:])*(-100)
+                z0 = float(k[2:]) * (-100)
             elif k[1] == 'p':
-                z0 = float(k[2:])*(100)
+                z0 = float(k[2:]) * (100)
             else:
                 raise KeyError
             slc_dset = slc_dset.assign_coords(z=z0)
             dlist.append(slc_dset)
         else:
             pass
-    return xr.concat(dlist,dim='z').sortby('z')
-
+    return xr.concat(dlist, dim='z').sortby('z')

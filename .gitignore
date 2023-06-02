@@ -5,3 +5,5 @@ __pycache__
 *.pyc
 *.swp
 nohup.*
+pyathena_env
+data/R8_32pc

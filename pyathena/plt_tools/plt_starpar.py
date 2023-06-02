@@ -17,7 +17,7 @@ def projection(sp, dim):
         spx = sp['x2']
         spy = sp['x3']
         spz = sp['x1']
-    return spx,spy,spz
+    return spx, spy, spz
 
 def projection_v(sp, dim):
     if dim == 0 or dim == 'z':
@@ -40,7 +40,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
                kpc=False, runaway=False, agemax=20.0, agemax_sn=40.0,
                plt_old=False, u=None):
     """Function to scatter plot star particles. (From pyathena classic)
-    
+
     Parameters
     ----------
     sp : DataFrame
@@ -59,13 +59,13 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
     """
     if sp.empty:
         return None
-    
+
     if u is None:
         u = Units(kind='LV', muH=1.4271)
 
     Msun = u.Msun
     Myr = u.Myr
-    
+
     if len(sp) > 0:
         runaways = (sp['mass'] == 0.0)
         # Clusters
@@ -81,38 +81,38 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
             spx, spy, spz = projection(sp_ru_nonsrc, dim)
             spvx, spvy, spvz = projection_v(sp_ru_nonsrc, dim)
             if kpc:
-                spx = spx/1.e3
-                spy = spy/1.e3
+                spx = spx / 1.e3
+                spy = spy / 1.e3
             if kind == 'slc':
-                islab=np.where(abs(spz) < dist_max)
+                islab = np.where(abs(spz) < dist_max)
 
             ax.scatter(spx, spy, color='k',
                        marker=marker, edgecolors=edgecolors, linewidths=linewidths,
-                       alpha=alpha, s=10.0/norm_factor)
+                       alpha=alpha, s=10.0 / norm_factor)
 
         if len(sp_ru_src) > 0 and runaway:
             spx, spy, spz = projection(sp_ru_src, dim)
             spvx, spvy, spvz = projection_v(sp_ru_src, dim)
             if kpc:
-                spx = spx/1.e3
-                spy = spy/1.e3
+                spx = spx / 1.e3
+                spy = spy / 1.e3
             if kind == 'slc':
-                islab=np.where(abs(spz) < dist_max)
+                islab = np.where(abs(spz) < dist_max)
 
             ax.scatter(spx, spy, marker='*', color='r',
                        edgecolors=edgecolors, linewidths=linewidths,
-                       alpha=alpha, s=10.0/norm_factor)
-        
+                       alpha=alpha, s=10.0 / norm_factor)
+
         if len(sp_cl) > 0:
             spx, spy, spz = projection(sp_cl, dim)
             if kpc:
-                spx = spx/1.e3
-                spy = spy/1.e3
+                spx = spx / 1.e3
+                spy = spy / 1.e3
             if kind == 'slc':
                 xbool = abs(spz) < dist_max
 
-            spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
-            spa = sp_cl['age']*Myr
+            spm = np.sqrt(sp_cl['mass'] * Msun) / norm_factor
+            spa = sp_cl['age'] * Myr
             if plt_old:
                 iyoung = np.where(spa < 1e10)
             else:
@@ -121,9 +121,9 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
 
             if kind == 'slc':
                 if plt_old:
-                    islab = np.where(xbool*(spa < 1e10))
+                    islab = np.where(xbool * (spa < 1e10))
                 else:
-                    islab = np.where(xbool*(spa < agemax))
+                    islab = np.where(xbool * (spa < agemax))
                 ax.scatter(spx.iloc[islab], spy.iloc[islab],
                            s=spm.iloc[islab], c=spa.iloc[islab],
                            marker=marker, edgecolors=edgecolors, linewidths=linewidths,
@@ -143,7 +143,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
 def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
               facecolors='k', linewidths=1.0, bbox_to_anchor=None):
     """Add legend for sink particle mass.
-    
+
     Parameters
     ----------
     ax : matplotlib axes
@@ -154,13 +154,13 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
     location: str
         "top" or "right"
     """
-    
+
     if bbox_to_anchor is None:
         bbox_to_anchor = dict(top=(0.1, 0.95),
                               right=(0.88, 0.83))
     else:
         if location not in bbox_to_anchor:
-            raise(
+            raise (
                 "bbox_to_anchor[top/right] must be a tuple specifying legend location")
 
     ext = ax.images[0].get_extent()
@@ -169,8 +169,8 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
     labels = []
     for m in mass:
         label = r"$10^{0:g}\;M_\odot$".format(np.log10(m))
-        s = ax.scatter(ext[1]*2, ext[3]*2,
-                       s=np.sqrt(m)/norm_factor,
+        s = ax.scatter(ext[1] * 2, ext[3] * 2,
+                       s=np.sqrt(m) / norm_factor,
                        color='k', alpha=1.0, label=label,
                        linewidths=linewidths, facecolors=facecolors)
         ss.append(s)
@@ -201,7 +201,7 @@ def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r, bbox=[0.125, 0.9, 0.1, 0.015]):
     norm = mpl.colors.Normalize(vmin=0., vmax=agemax)
     cax = fig.add_axes(bbox)
     cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal',
-                                   ticks=[0, agemax/2.0, agemax], extend='max')
+                                   ticks=[0, agemax / 2.0, agemax], extend='max')
 
     # cbar_sp.ax.tick_params(labelsize=14)
     cb.set_label(r'${\rm age}\;[{\rm Myr}]$', fontsize=14)
@@ -213,4 +213,3 @@ def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r, bbox=[0.125, 0.9, 0.1, 0.015]):
     # # Add legends for starpar mass
     # legend_sp(axes[0], norm_factor=1.0, mass=[1e2, 1e3], location='top', fontsize='medium',
     #           bbox_to_anchor=dict(top=(0.22, 0.97), right=(0.48, 0.91)))
-    

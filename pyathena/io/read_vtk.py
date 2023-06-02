@@ -6,7 +6,8 @@ from __future__ import print_function
 
 import os
 import os.path as osp
-import glob, struct
+import glob
+import struct
 import numpy as np
 import xarray as xr
 import astropy.constants as ac
@@ -77,10 +78,10 @@ class AthenaDataSet(object):
         # Find all vtk file names and add to flist
         if mpi_mode:
             if self.suffix is None:
-                fname_pattern = osp.join(dirname, 'id*/{0:s}-id*.{1:s}.{2:s}'.\
+                fname_pattern = osp.join(dirname, 'id*/{0:s}-id*.{1:s}.{2:s}'.
                                          format(problem_id, num, ext))
             else:
-                fname_pattern = osp.join(dirname, 'id*/{0:s}-id*.{1:s}.{2:s}.{3:s}'.\
+                fname_pattern = osp.join(dirname, 'id*/{0:s}-id*.{1:s}.{2:s}.{3:s}'.
                                          format(problem_id, num, suffix, ext))
             fnames = glob.glob(fname_pattern)
             self.fnames += fnames
@@ -105,7 +106,6 @@ class AthenaDataSet(object):
 
         self.field_list = list(self._field_map.keys())
 
-
     def get_cc_pos(self):
         """Compute cell center positions
 
@@ -116,9 +116,9 @@ class AthenaDataSet(object):
         """
 
         xc = dict()
-        for axis, le, re, dx in zip(('x', 'y', 'z'), \
-            self.region['gle'], self.region['gre'], self.domain['dx']):
-                xc[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
+        for axis, le, re, dx in zip(('x', 'y', 'z'),
+                                    self.region['gle'], self.region['gre'], self.domain['dx']):
+            xc[axis] = np.arange(le + 0.5 * dx, re + 0.5 * dx, dx)
 
         return xc
 
@@ -131,12 +131,12 @@ class AthenaDataSet(object):
             Particle position
         """
         domain = s.domain
-        le1,le2,le3 = domain['le']
-        dx1,dx2,dx3 = domain['dx']
+        le1, le2, le3 = domain['le']
+        dx1, dx2, dx3 = domain['dx']
 
-        return (np.floor((x1 - le1)/dx1).astype(int),
-                np.floor((x2 - le2)/dx2).astype(int),
-                np.floor((x3 - le3)/dx3).astype(int))
+        return (np.floor((x1 - le1) / dx1).astype(int),
+                np.floor((x2 - le2) / dx2).astype(int),
+                np.floor((x3 - le3) / dx3).astype(int))
 
     def set_region(self, le=None, re=None):
         """Set region and find overlapping grids.
@@ -157,7 +157,7 @@ class AthenaDataSet(object):
         gle_all = []  # grid left edge
         gre_all = []  # grid right edge
         gidx = []     # grid indices that belongs to this region
-        #print(self.grid,len(self.grid))
+        # print(self.grid,len(self.grid))
         for i, g in enumerate(self.grid):
             if (g['re'] >= le).all() and (g['le'] <= re).all():
                 gidx.append(i)
@@ -166,8 +166,8 @@ class AthenaDataSet(object):
 
         gidx = np.array(gidx)
         if len(gidx) == 0:
-            raise ValueError('Check left/right edges:', le, re, \
-                             ' Domain left/right edges are ', \
+            raise ValueError('Check left/right edges:', le, re,
+                             ' Domain left/right edges are ',
                              self.domain['le'], self.domain['re'])
 
         gle_all = np.array(gle_all)
@@ -185,7 +185,7 @@ class AthenaDataSet(object):
         NGrid = np.array([len(gleu_) for gleu_ in gleu])
 
         # Number of cells per grid
-        Nxg = np.concatenate([(greu_ - gleu_)/dx for greu_, gleu_, dx in \
+        Nxg = np.concatenate([(greu_ - gleu_) / dx for greu_, gleu_, dx in
                               zip(greu, gleu, self.domain['dx'])])
         Nxg = np.array(np.array_split(Nxg, NGrid.cumsum()[:-1]),
                        dtype=object).tolist()
@@ -200,13 +200,13 @@ class AthenaDataSet(object):
         for i, Nxg_ in enumerate(Nxg):
             Nxr[i] = np.sum(Nxg_)
 
-        #print(gidx,NGrid)
+        # print(gidx,NGrid)
         assert len(gidx) == NGrid.prod(),\
-            print('Unexpected error: Number of grids {0:d} != '.format(len(gidx)) +
-                  'number of unique edges {0:d}.'.format(NGrid.prod()))
+            print('Unexpected error: Number of grids {0:d} != '.format(len(gidx))
+                  + 'number of unique edges {0:d}.'.format(NGrid.prod()))
 
         self.region = dict(le=le, re=re, gidx=gidx,
-                           gleu=gleu, greu=greu,\
+                           gleu=gleu, greu=greu,
                            gle=gle, gre=gre,
                            NGrid=NGrid, Nxg=Nxg, Nxr=Nxr)
 
@@ -247,11 +247,11 @@ class AthenaDataSet(object):
 
             # Let's make sure le < re always and truncation error does not cause
             # problem, although performance can be slowed down a bit.
-            le[axis_idx[ax]] = pos - 0.5*self.domain['dx'][axis_idx[ax]]
-            re[axis_idx[ax]] = pos + 0.5*self.domain['dx'][axis_idx[ax]]
+            le[axis_idx[ax]] = pos - 0.5 * self.domain['dx'][axis_idx[ax]]
+            re[axis_idx[ax]] = pos + 0.5 * self.domain['dx'][axis_idx[ax]]
             dat = self.get_field(field, le, re, as_xarray=True)
 
-            slc = dat.sel(method='nearest', **{ax:pos})
+            slc = dat.sel(method='nearest', **{ax: pos})
 
         return slc
 
@@ -313,7 +313,7 @@ class AthenaDataSet(object):
         for f in list(fdrop_list):
             if self._field_map[f]['nvar'] > 1:
                 for i in range(self._field_map[f]['nvar']):
-                    fdrop_list.add(f+str(i+1))
+                    fdrop_list.add(f + str(i + 1))
                 fdrop_list.remove(f)
 
         field = list(flist_dep | flist)
@@ -345,19 +345,19 @@ class AthenaDataSet(object):
         if as_xarray:
             # Cell center positions
             x = dict()
-            for axis, le, re, dx in zip(('x', 'y', 'z'), \
-                    self.region['gle'], self.region['gre'], self.domain['dx']):
+            for axis, le, re, dx in zip(('x', 'y', 'z'),
+                                        self.region['gle'], self.region['gre'], self.domain['dx']):
                 # May not result in correct number of elements due to truncation error
                 # x[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
-                x[axis] = np.arange(le + 0.5*dx, re + 0.25*dx, dx)
+                x[axis] = np.arange(le + 0.5 * dx, re + 0.25 * dx, dx)
 
             dat = dict()
             for k, v in arr.items():
                 if len(v.shape) > self.domain['ndim']:
                     for i in range(v.shape[-1]):
-                        dat[k + str(i+1)] = (('z','y','x'), v[..., i])
+                        dat[k + str(i + 1)] = (('z', 'y', 'x'), v[..., i])
                 else:
-                    dat[k] = (('z','y','x'), v)
+                    dat[k] = (('z', 'y', 'x'), v)
 
             attrs = dict()
             for k, v in self.domain.items():
@@ -381,7 +381,7 @@ class AthenaDataSet(object):
         dx = self.domain['dx']
         for i in self.region['gidx']:
             g = self.grid[i]
-            il = (np.rint((g['le'] - le)/dx)).astype(int)
+            il = (np.rint((g['le'] - le) / dx)).astype(int)
             iu = il + g['Nx']
             slc = tuple([slice(l, u) for l, u in zip(il[::-1], iu[::-1])])
 
@@ -401,10 +401,10 @@ class AthenaDataSet(object):
             else:
                 fp = open(grid['filename'], 'rb')
             fp.seek(fm['offset'])
-            fp.readline() # skip header
+            fp.readline()  # skip header
             if fm['read_table']:
                 fp.readline()
-            grid['data'][field]= (np.frombuffer(buffer=fp.read(fm['dsize']),dtype=fm['dtype'])).newbyteorder() # New method for converting the binary data
+            grid['data'][field] = (np.frombuffer(buffer=fp.read(fm['dsize']), dtype=fm['dtype'])).newbyteorder()  # New method for converting the binary data
             fp.close()
 
             if fm['nvar'] == 1:
@@ -416,21 +416,19 @@ class AthenaDataSet(object):
 
             return grid['data'][field]
 
-
     def _set_array(self, field):
 
         dtype = self._field_map[field]['dtype']
         nvar = self._field_map[field]['nvar']
         Nxr = self.region['Nxr']
         if 'face_centered_B' in field:
-            Nxr[int(field[-1])-1] += 1
+            Nxr[int(field[-1]) - 1] += 1
         if nvar == 1:
             shape = np.flipud(Nxr)
         else:
             shape = (*np.flipud(Nxr), nvar)
 
         return np.empty(shape, dtype=dtype)
-
 
     def _set_domain(self):
 
@@ -464,9 +462,9 @@ class AthenaDataSet(object):
         domain['re'] = re
         domain['dx'] = dx[0, :]
         domain['Lx'] = re - le
-        domain['center'] = 0.5*(le + re)
-        domain['Nx'] = np.round(domain['Lx']/domain['dx']).astype('int')
-        domain['ndim'] = 3 # always 3d
+        domain['center'] = 0.5 * (le + re)
+        domain['Nx'] = np.round(domain['Lx'] / domain['dx']).astype('int')
+        domain['ndim'] = 3  # always 3d
 
         # file = open(self.fnames[0], 'rb')
         # tmpgrid = dict()
@@ -503,11 +501,10 @@ class AthenaDataSet(object):
             g['dx'][g['Nx'] == 1] = 1.0
 
             # Right edge
-            g['re'] = g['le'] + g['Nx']*g['dx']
+            g['re'] = g['le'] + g['Nx'] * g['dx']
             grid.append(g)
 
         return grid
-
 
 
 def _parse_filename(filename):
@@ -567,7 +564,7 @@ def _parse_filename(filename):
 
         if mpi_mode and int(dirname_last[2:]) != 0:
             problem_id = '.'.join(base_split[:inum])
-            problem_id = problem_id.replace('-' + dirname_last,'')
+            problem_id = problem_id.replace('-' + dirname_last, '')
             nonzero_id = True
         else:
             problem_id = '.'.join(base_split[:inum])
@@ -576,7 +573,6 @@ def _parse_filename(filename):
         ext = base_split[-1]
 
     return dirname, problem_id, num, suffix, ext, mpi_mode, nonzero_id
-
 
 
 def _set_field_map(grid):
@@ -608,13 +604,13 @@ def _set_field_map(grid):
             raise TypeError(sp[0] + ' is unknown type.')
 
         field_map[field]['offset'] = offset
-        field_map[field]['ndata'] = field_map[field]['nvar']*grid['ncells']
+        field_map[field]['ndata'] = field_map[field]['nvar'] * grid['ncells']
         if field == 'face_centered_B1':
-            field_map[field]['ndata'] = (Nx[0]+1)*Nx[1]*Nx[2]
+            field_map[field]['ndata'] = (Nx[0] + 1) * Nx[1] * Nx[2]
         elif field == 'face_centered_B2':
-            field_map[field]['ndata'] = Nx[0]*(Nx[1]+1)*Nx[2]
+            field_map[field]['ndata'] = Nx[0] * (Nx[1] + 1) * Nx[2]
         elif field == 'face_centered_B3':
-            field_map[field]['ndata'] = Nx[0]*Nx[1]*(Nx[2]+1)
+            field_map[field]['ndata'] = Nx[0] * Nx[1] * (Nx[2] + 1)
 
         if sp[2] == b'int':
             dtype = 'i'
@@ -624,7 +620,7 @@ def _set_field_map(grid):
             dtype = 'd'
 
         field_map[field]['dtype'] = dtype
-        field_map[field]['dsize'] = field_map[field]['ndata']*struct.calcsize(dtype)
+        field_map[field]['dsize'] = field_map[field]['ndata'] * struct.calcsize(dtype)
         fp.seek(field_map[field]['dsize'], 1)
         offset = fp.tell()
         tmp = fp.readline()
@@ -652,7 +648,7 @@ def _vtk_parse_line(line, grid):
             grid['prim_var_type'] = True
     elif b"DIMENSIONS" in sp:
         grid['Nx'] = np.array(sp[-3:]).astype('int')
-    elif b"ORIGIN" in sp: # left_edge
+    elif b"ORIGIN" in sp:  # left_edge
         grid['le'] = np.array(sp[-3:]).astype('float64')
     elif b"SPACING" in sp:
         grid['dx'] = np.array(sp[-3:]).astype('float64')

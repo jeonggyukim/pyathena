@@ -6,13 +6,14 @@ from __future__ import print_function
 
 import os
 import os.path as osp
-import glob, struct
+import glob
+import struct
 import numpy as np
 import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
 import tarfile
-from .read_vtk import AthenaDataSet,_parse_filename,_vtk_parse_line
+from .read_vtk import AthenaDataSet, _parse_filename, _vtk_parse_line
 
 from ..util.units import Units
 
@@ -80,7 +81,7 @@ class AthenaDataSetTar(AthenaDataSet):
         if ext == 'tar':
             self.tarfile = tarfile.open(filename)
             self.fnames = self.tarfile.getnames()[1:]
-            self.mpi_mode = len(self.fnames)>1
+            self.mpi_mode = len(self.fnames) > 1
         else:
             raise IOError(('[read_vtk_tar] Expected tarred file but provided:'
                            ' {0:s}'.format(filename)))
@@ -90,12 +91,12 @@ class AthenaDataSetTar(AthenaDataSet):
 
         # Need separte field_map for different grids
         if self.domain['all_grid_equal']:
-            self._field_map = _set_field_map(self.grid[0],self.tarfile)
+            self._field_map = _set_field_map(self.grid[0], self.tarfile)
             for g in self.grid:
                 g['field_map'] = self._field_map
         else:
             for g in self.grid:
-                g['field_map'] = _set_field_map(g,self.tarfile)
+                g['field_map'] = _set_field_map(g, self.tarfile)
             self._field_map = self.grid[0]['field_map']
 
         self.field_list = list(self._field_map.keys())
@@ -105,7 +106,8 @@ class AthenaDataSetTar(AthenaDataSet):
         members = self.tarfile.getmembers()
         # Record filename and data_offset
         for i, tarinfo in enumerate(members):
-            if tarinfo.isdir(): continue
+            if tarinfo.isdir():
+                continue
             file = self.tarfile.extractfile(tarinfo)
             g = dict()
             g['data'] = dict()
@@ -124,18 +126,20 @@ class AthenaDataSetTar(AthenaDataSet):
             g['dx'][g['Nx'] == 1] = 1.0
 
             # Right edge
-            g['re'] = g['le'] + g['Nx']*g['dx']
+            g['re'] = g['le'] + g['Nx'] * g['dx']
             grid.append(g)
-        ranklist=[]
+        ranklist = []
         for g in grid:
             fname = g['filename']
-            if '-id' in fname: rank = int(fname.split('-id')[1].split('.')[0])
-            else: rank = 0
+            if '-id' in fname:
+                rank = int(fname.split('-id')[1].split('.')[0])
+            else:
+                rank = 0
             ranklist.append(rank)
         return list(np.array(grid)[np.argsort(ranklist)])
 
 
-def _set_field_map(grid,tf):
+def _set_field_map(grid, tf):
     fp = tf.extractfile(grid['tarinfo'])
 
     fp.seek(0, 2)
@@ -163,13 +167,13 @@ def _set_field_map(grid,tf):
             raise TypeError(sp[0] + ' is unknown type.')
 
         field_map[field]['offset'] = offset
-        field_map[field]['ndata'] = field_map[field]['nvar']*grid['ncells']
+        field_map[field]['ndata'] = field_map[field]['nvar'] * grid['ncells']
         if field == 'face_centered_B1':
-            field_map[field]['ndata'] = (Nx[0]+1)*Nx[1]*Nx[2]
+            field_map[field]['ndata'] = (Nx[0] + 1) * Nx[1] * Nx[2]
         elif field == 'face_centered_B2':
-            field_map[field]['ndata'] = Nx[0]*(Nx[1]+1)*Nx[2]
+            field_map[field]['ndata'] = Nx[0] * (Nx[1] + 1) * Nx[2]
         elif field == 'face_centered_B3':
-            field_map[field]['ndata'] = Nx[0]*Nx[1]*(Nx[2]+1)
+            field_map[field]['ndata'] = Nx[0] * Nx[1] * (Nx[2] + 1)
 
         if sp[2] == b'int':
             dtype = 'i'
@@ -179,7 +183,7 @@ def _set_field_map(grid,tf):
             dtype = 'd'
 
         field_map[field]['dtype'] = dtype
-        field_map[field]['dsize'] = field_map[field]['ndata']*struct.calcsize(dtype)
+        field_map[field]['dsize'] = field_map[field]['ndata'] * struct.calcsize(dtype)
         fp.seek(field_map[field]['dsize'], 1)
         offset = fp.tell()
         tmp = fp.readline()

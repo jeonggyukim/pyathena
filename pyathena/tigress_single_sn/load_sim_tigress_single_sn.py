@@ -9,7 +9,7 @@ from .hst import Hst
 class LoadSimTIGRESSSingleSN(LoadSim, Hst):
     """LoadSim class for analyzing TIGRESS-SINGLE-SN simulations.
     """
-    
+
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  verbose=False):
         """The constructor for LoadSimTIGRESSSingleSN class
@@ -33,13 +33,13 @@ class LoadSimTIGRESSSingleSN(LoadSim, Hst):
             accepted.
         """
 
-        super(LoadSimTIGRESSSingleSN,self).__init__(basedir, savdir=savdir,
-                                                    load_method=load_method,
-                                                    verbose=verbose)
-        
+        super(LoadSimTIGRESSSingleSN, self).__init__(basedir, savdir=savdir,
+                                                     load_method=load_method,
+                                                     verbose=verbose)
+
         # Set unit
         self.u = Units(muH=1.4271)
-        
+
         # Get domain info
         if not self.files['vtk']:
             self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
@@ -50,6 +50,7 @@ class LoadSimTIGRESSSingleSN(LoadSim, Hst):
 
 class LoadSimTIGRESSSingleSNAll(object):
     """Class to load multiple simulations"""
+
     def __init__(self, models=None):
 
         # Default models
@@ -67,12 +68,12 @@ class LoadSimTIGRESSSingleSNAll(object):
 
         self.models = list(models.keys())
         self.basedirs = dict()
-        
+
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
-        
+
         self.model = model
         self.sim = LoadSimTIGRESSSingleSN(self.basedirs[model], savdir=savdir,
                                           load_method=load_method, verbose=verbose)

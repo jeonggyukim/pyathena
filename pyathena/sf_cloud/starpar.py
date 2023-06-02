@@ -17,8 +17,8 @@ class StarPar():
             r = self.read_starpar(num=num, force_override=force_override)
             if r is None:
                 continue
-            
-            if not rr: # Create keys
+
+            if not rr:  # Create keys
                 for k in r.keys():
                     rr[k] = []
 
@@ -27,22 +27,22 @@ class StarPar():
                     rr[k].append(r[k].value.item())
                 except:
                     rr[k].append(r[k])
-                    
+
         rr = pd.DataFrame(rr)
-        
+
         return rr
-    
+
     @LoadSim.Decorators.check_pickle
     def read_starpar(self, num, savdir=None, force_override=False):
 
         sp = self.load_starpar_vtk(num)
         if sp.empty:
             return None
-        
+
         u = self.u
         domain = self.domain
         par = self.par
-        
+
         try:
             agemax = par['radps']['agemax_rad']
         except KeyError:
@@ -52,7 +52,7 @@ class StarPar():
         sp['age'] *= u.Myr
         sp['mage'] *= u.Myr
         sp['mass'] *= u.Msun
-        
+
         # Select non-runaway starpar particles with mass-weighted age < agemax_rad
         isrc = np.logical_and(sp['mage'] < agemax,
                               sp['mass'] != 0.0)
@@ -67,14 +67,14 @@ class StarPar():
         r['time'] = sp.time
         r['nstars'] = sp.nstars
         r['mtot'] = sp['mass'].sum()
-        r['p1tot'] = (sp['mass']*sp['v1']).sum()
-        r['p2tot'] = (sp['mass']*sp['v2']).sum()
-        r['p3tot'] = (sp['mass']*sp['v3']).sum()
-        r['prtot'] = (sp['mass']*(sp['v1']*sp['x1'] +
-                                  sp['v2']*sp['x2'] +
-                                  sp['v1']*sp['x3']) /
+        r['p1tot'] = (sp['mass'] * sp['v1']).sum()
+        r['p2tot'] = (sp['mass'] * sp['v2']).sum()
+        r['p3tot'] = (sp['mass'] * sp['v3']).sum()
+        r['prtot'] = (sp['mass'] * (sp['v1'] * sp['x1']
+                                    + sp['v2'] * sp['x2']
+                                    + sp['v1 '] * sp['x3']) /
                       np.sqrt(sp['x1']**2 + sp['x2']**2 + sp['x3']**2)).sum()
         r['isrc'] = isrc
         r['nsrc'] = np.sum(isrc)
-                
+
         return r

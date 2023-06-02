@@ -32,7 +32,7 @@ if __name__ == '__main__':
     # nums = s.nums[150:300]
     # nums = s.nums[301:450]
     nums = s.nums[450:571]
-    
+
     # nums = s.nums[208:209]
     # nums = s.nums[300:350]
     # nums = s.nums[350:400]
@@ -54,13 +54,13 @@ if __name__ == '__main__':
     for num in mynums:
         print(num, end=' ')
         # res = s.read_EM_pdf(num, force_override=True)
-        #res = s.read_phot_dust_U_pdf(num, force_override=True)
+        # res = s.read_phot_dust_U_pdf(num, force_override=True)
         res = s.read_VFF_Peters17(num, force_override=True)
         n = gc.collect()
         print('Unreachable objects:', n)
         print('Remaining Garbage:', end=' ')
         pprint.pprint(gc.garbage)
-        
+
     # if COMM.rank == 0:
     #     fin = osp.join(s.basedir, 'snapshots2/*.png')
     #     fout = osp.join(s.basedir, 'movies/{0:s}_snapshots2.mp4'.format(s.basename))
@@ -69,12 +69,11 @@ if __name__ == '__main__':
     #     copyfile(fout, osp.join('/tigress/jk11/public_html/movies',
     #                             osp.basename(fout)))
 
-        
     COMM.barrier()
     if COMM.rank == 0:
         print('')
         print('################################################')
         print('# Do tasks')
-        print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
+        print('# Execution time [sec]: {:.1f}'.format(time.time() - time0))
         print('################################################')
         print('')

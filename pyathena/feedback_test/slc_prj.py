@@ -27,9 +27,9 @@ class SliceProj:
                   domain['le'][2], domain['re'][2])
         r['z'] = (domain['le'][0], domain['re'][0],
                   domain['le'][1], domain['re'][1])
-        
+
         return r
-    
+
     @LoadSim.Decorators.check_pickle
     def read_slc(self, num, axes=['x', 'y', 'z'],
                  fields=['nH', 'nH2', 'nHI', 'nHII', 'T', 'nHn', 'pok',
@@ -43,7 +43,7 @@ class SliceProj:
                 fields.remove('chi_FUV')
             except ValueError:
                 pass
-        
+
         axes = np.atleast_1d(axes)
         ds = self.load_vtk(num=num)
         res = dict()
@@ -76,34 +76,33 @@ class SliceProj:
         res = dict()
         res['extent'] = self.get_extent(ds.domain)
         res['time'] = ds.domain['time']
-        
+
         for ax in axes:
             i = axtoi[ax]
-            dx = ds.domain['dx'][i]*self.u.length
-            conv_Sigma = (dx*self.u.muH*ac.u.cgs/au.cm**3).to('Msun/pc**2')
-            conv_EM = (dx*au.cm**-6).to('pc cm-6')
-            
+            dx = ds.domain['dx'][i] * self.u.length
+            conv_Sigma = (dx * self.u.muH * ac.u.cgs / au.cm**3).to('Msun/pc**2')
+            conv_EM = (dx * au.cm**-6).to('pc cm-6')
+
             res[ax] = dict()
-            res[ax]['Sigma'] = (np.sum(dat['density'], axis=2-i)*conv_Sigma).data
+            res[ax]['Sigma'] = (np.sum(dat['density'], axis=2 - i) * conv_Sigma).data
             if 'xH2' in fields:
-                res[ax]['Sigma_H2'] = (np.sum(2.0*dat['density']*dat['xH2'],
-                                              axis=2-i)*conv_Sigma).data
+                res[ax]['Sigma_H2'] = (np.sum(2.0 * dat['density'] * dat['xH2'],
+                                              axis=2 - i) * conv_Sigma).data
             if 'xHI' in fields:
-                res[ax]['Sigma_HI'] = (np.sum(dat['density']*dat['xHI'],
-                                              axis=2-i)*conv_Sigma).data
+                res[ax]['Sigma_HI'] = (np.sum(dat['density'] * dat['xHI'],
+                                              axis=2 - i) * conv_Sigma).data
             if 'xHII' in fields:
-                res[ax]['Sigma_HII'] = (np.sum(dat['density']*dat['xHII'],
-                                               axis=2-i)*conv_Sigma).data
+                res[ax]['Sigma_HII'] = (np.sum(dat['density'] * dat['xHII'],
+                                               axis=2 - i) * conv_Sigma).data
             if 'nesq' in fields:
-                res[ax]['EM'] = (np.sum(dat['nesq'], axis=2-i)*conv_EM).data
+                res[ax]['EM'] = (np.sum(dat['nesq'], axis=2 - i) * conv_EM).data
 
             if 'specific_scalar[1]' in fields:
-                res[ax]['Sigma_scalar1'] = (np.sum(dat['density']*dat['specific_scalar[1]'],
-                                                   axis=2-i)*conv_Sigma).data
+                res[ax]['Sigma_scalar1'] = (np.sum(dat['density'] * dat['specific_scalar[1]'],
+                                                   axis=2 - i) * conv_Sigma).data
             if 'specific_scalar[2]' in fields:
-                res[ax]['Sigma_scalar2'] = (np.sum(dat['density']*dat['specific_scalar[2]'],
-                                                   axis=2-i)*conv_Sigma).data
-                
+                res[ax]['Sigma_scalar2'] = (np.sum(dat['density'] * dat['specific_scalar[2]'],
+                                                   axis=2 - i) * conv_Sigma).data
 
         return res
 
@@ -113,26 +112,26 @@ class SliceProj:
         im = ax.imshow(dat[dim][field], cmap=cmap, extent=dat['extent'][dim],
                        norm=norm, origin='lower', interpolation='none')
         return im
-    
+
     def plt_snapshot(self, num, savefig=True):
-        
+
         d = self.read_prj(num, force_override=False)
         sp = self.load_starpar_vtk(num)
         nr = 3
         nc = 4
-        fig, axes = plt.subplots(nr, nc, figsize=(16, 12.5), # constrained_layout=True,
+        fig, axes = plt.subplots(nr, nc, figsize=(16, 12.5),  # constrained_layout=True,
                                  gridspec_kw=dict(hspace=0.0, wspace=0.0))
 
         M0 = self.par['problem']['M_cloud']
         R0 = self.par['problem']['R_cloud']
-        S0 = M0/(np.pi*R0**2)
-        norm = LogNorm(1e-1,1e3*(S0/1e2))
-        norm_EM = LogNorm(3e1,3e5*(S0/1e2))
+        S0 = M0 / (np.pi * R0**2)
+        norm = LogNorm(1e-1, 1e3 * (S0 / 1e2))
+        norm_EM = LogNorm(3e1, 3e5 * (S0 / 1e2))
         im1 = []
         im2 = []
         im3 = []
         im4 = []
-        for i, axis in enumerate(('x','y','z')):
+        for i, axis in enumerate(('x', 'y', 'z')):
             extent = d['extent'][axis]
             im1.append(axes[i, 0].imshow(d[axis]['Sigma'], norm=norm,
                                          extent=extent, origin='lower'))
@@ -162,22 +161,22 @@ class SliceProj:
                   r'$\Sigma_{\rm H_2}\;[{M_{\odot}\,{\rm pc}^{-2}}]$',
                   r'$\Sigma_{\rm H\,I}\;[{M_{\odot}\,{\rm pc}^{-2}}]$',
                   r'${\rm EM}\;[{\rm pc}\,{\rm cm}^{-6}]$']
-        
-        for j,im,label in zip(range(nc),(im1,im2,im3,im4),labels):
-            bbox_ax_top = axes[0,j].get_position()
-            cax = fig.add_axes([bbox_ax_top.x0+0.01, bbox_ax_top.y1+0.01,
-                                bbox_ax_top.x1-bbox_ax_top.x0-0.02, 0.015])
+
+        for j, im, label in zip(range(nc), (im1, im2, im3, im4), labels):
+            bbox_ax_top = axes[0, j].get_position()
+            cax = fig.add_axes([bbox_ax_top.x0 + 0.01, bbox_ax_top.y1 + 0.01,
+                                bbox_ax_top.x1 - bbox_ax_top.x0 - 0.02, 0.015])
             cbar = plt.colorbar(im[0], cax=cax, orientation='horizontal')
             cbar.set_label(label=label, fontsize='small')
             cbar.ax.xaxis.set_ticks_position('top')
             cbar.ax.xaxis.set_label_position('top')
             cbar_yticks = plt.getp(cbar.ax.axes, 'xticklabels')
             plt.setp(cbar_yticks, color='k', fontsize='x-small')
-            #cbar.ax.set_yticks(arange(vmin, vmax, 2), size='small')
+            # cbar.ax.set_yticks(arange(vmin, vmax, 2), size='small')
 
         plt.subplots_adjust(wspace=None, hspace=None)
         plt.suptitle(self.basename + '  t={0:4.1f}'.format(sp.time))
-        
+
         if savefig:
             savdir = osp.join(self.savdir, 'snapshots')
             # savdir = osp.join('/tigress/jk11/figures/GMC', self.basename, 'snapshots')
@@ -186,5 +185,5 @@ class SliceProj:
 
             savname = osp.join(savdir, '{0:s}_{1:04d}.png'.format(self.basename, num))
             plt.savefig(savname, dpi=200, bbox_inches='tight')
-            
-        return fig            
+
+        return fig

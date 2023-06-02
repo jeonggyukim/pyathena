@@ -6,10 +6,10 @@ import astropy.constants as ac
 
 def Sigma_E(SFE, Psi):
     """Eddington surface density"""
-    return SFE/(1.0 + SFE)*Psi/(2.0*np.pi*ac.c.cgs.value*ac.G.cgs.value)
+    return SFE / (1.0 + SFE) * Psi / (2.0 * np.pi * ac.c.cgs.value * ac.G.cgs.value)
 
 def mu_M(Sigma_cl, SFE, x, sigma):
-    return np.log(Sigma_cl*(1.0 - SFE)/(4.0*x**2)) + 0.5*sigma**2
+    return np.log(Sigma_cl * (1.0 - SFE) / (4.0 * x**2)) + 0.5 * sigma**2
 
 def y_E(Sigma_cl, SFE, x, sigma, Psi):
     """
@@ -17,15 +17,15 @@ def y_E(Sigma_cl, SFE, x, sigma, Psi):
     for mass-weighted surface density distribution corresponding to Sigma_E
     y_E = (ln(Sigma_E) - mu_M)/(sqrt(2)*sigma_lnSigma)
     """
-    Sigma_E_ = Sigma_E(SFE,Psi)
+    Sigma_E_ = Sigma_E(SFE, Psi)
     muM_ = mu_M(Sigma_cl, SFE, x, sigma)
-    
-    return (np.log(Sigma_E_) - muM_)/(np.sqrt(2.0)*sigma)
+
+    return (np.log(Sigma_E_) - muM_) / (np.sqrt(2.0) * sigma)
 
 def argmax_eps_of(Sigmacl, Psi=2000.0, sigma=1.0, x=1.0):
-    SFE=np.linspace(0.0001, 0.9999, num=1000)
+    SFE = np.linspace(0.0001, 0.9999, num=1000)
     yE = y_E(Sigmacl, SFE, x, sigma, Psi)
-    eps_of = 0.5*(1.0 - SFE)*(1.0 + sp.erf(yE))
+    eps_of = 0.5 * (1.0 - SFE) * (1.0 + sp.erf(yE))
     return SFE, yE, eps_of, SFE[np.argmax(eps_of)]
 
 def eps_min_max(Sigmacl, Psi=2000.0, sigma=1.0, x=1.0):
@@ -37,7 +37,7 @@ def eps_min_max(Sigmacl, Psi=2000.0, sigma=1.0, x=1.0):
             Sigmacl = np.asarray([Sigmacl])
         else:
             Sigmacl = np.asarray(Sigmacl)
-    
+
     eps_min = np.zeros_like(Sigmacl)
     eps_max = np.zeros_like(Sigmacl)
     for i, Sigmacl_ in enumerate(Sigmacl):

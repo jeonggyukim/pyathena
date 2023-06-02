@@ -15,7 +15,7 @@ def read_sphst(filename,
                       'metal2', 'metal3', 'metal4', 'metal5', 'metal6'],
                force_override=False, verbose=False):
     """ Function to read athena history file and pickle
-    
+
     Parameters
     ----------
     filename : string
@@ -41,8 +41,8 @@ def read_sphst(filename,
             print('[read_hst]: reading from existing pickle.')
     else:
         if verbose:
-            print('[read_hst]: pickle does not exist or hst file updated.' + \
-                      ' Reading {0:s}'.format(filename))
+            print('[read_hst]: pickle does not exist or hst file updated.'
+                  + ' Reading {0:s}'.format(filename))
         # vlist = _get_hst_var(filename)
         # Ad hoc
 
@@ -56,7 +56,7 @@ def read_sphst(filename,
 
     return hst
 
-      
+
 def _get_hst_var(filename):
     """Read variable names from history file
 

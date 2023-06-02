@@ -11,7 +11,7 @@ import pandas as pd
 
 def read_hst(filename, force_override=False, verbose=False):
     """ Function to read athena history file and pickle
-    
+
     Parameters
     ----------
     filename : string
@@ -37,14 +37,14 @@ def read_hst(filename, force_override=False, verbose=False):
             print('[read_hst]: reading from existing pickle.')
     else:
         if verbose:
-            print('[read_hst]: pickle does not exist or hst file updated.' + \
-                      ' Reading {0:s}'.format(filename))
+            print('[read_hst]: pickle does not exist or hst file updated.'
+                  + ' Reading {0:s}'.format(filename))
         vlist = _get_hst_var(filename)
 
         # c engine does not support regex separators
         hst = pd.read_csv(filename, names=vlist, skiprows=skiprows,
                           comment='#', delim_whitespace=True, engine='python')
-        #hst = pd.read_table(filename, names=vlist, skiprows=skiprows,
+        # hst = pd.read_table(filename, names=vlist, skiprows=skiprows,
         #                    comment='#', delim_whitespace=True, engine='python')
         try:
             hst.to_pickle(fpkl)
@@ -53,7 +53,7 @@ def read_hst(filename, force_override=False, verbose=False):
 
     return hst
 
-      
+
 def _get_hst_var(filename):
     """Read variable names from history file
 

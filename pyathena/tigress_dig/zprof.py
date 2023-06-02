@@ -32,7 +32,7 @@ class Zprof(ReadZprofBase):
                 if v == 'z' or v == 'time':
                     continue
                 else:
-                    #print(dat[i,...].shape)
+                    # print(dat[i,...].shape)
                     data_vars[v] = (('z', 'time'), dat[i, ...])
                     i += 1
 
@@ -40,10 +40,10 @@ class Zprof(ReadZprofBase):
 
         # Divide all variables by total area Lx*Ly
         domain = self.domain
-        dxdy = domain['dx'][0]*domain['dx'][1]
-        Atot = domain['Lx'][0]*domain['Lx'][1]
+        dxdy = domain['dx'][0] * domain['dx'][1]
+        Atot = domain['Lx'][0] * domain['Lx'][1]
 
-        ds = ds/Atot
+        ds = ds / Atot
 
         if self.par['configure']['species_HI'] == 'ON':
             # For the moment s1 is assumed to be nH0
@@ -56,16 +56,16 @@ class Zprof(ReadZprofBase):
             # Electron number density averaged over Atot
             ds['ne'] = ds.d - ds.s1
             # Electron number density averaged over Atot
-            ds['nebar'] = ds.ne/ds.xi
+            ds['nebar'] = ds.ne / ds.xi
 
         # Rename time to time_code and use physical time in Myr as dimension
         ds = ds.rename(dict(time='time_code'))
-        ds = ds.assign_coords(time=ds.time_code*self.u.Myr)
-        ds = ds.assign_coords(z_kpc=ds.z*self.u.kpc)
+        ds = ds.assign_coords(time=ds.time_code * self.u.Myr)
+        ds = ds.assign_coords(z_kpc=ds.z * self.u.kpc)
         ds = ds.swap_dims(dict(time_code='time'))
-        
+
         # self._set_attrs(ds.domain)
-        
+
         return ds
 
     # def _set_attrs(self, zp):
@@ -78,14 +78,14 @@ class Zprof(ReadZprofBase):
     #     d2['A'] = '\int \Theta_{\rm ph} dxdy'
     #     d1['xn'] = 'Neutral fraction'
     #     d2['xn'] = '\int n_{\mathrm H^0}/n_{\mathrm H} dxdy'
-        
+
     #     for v in zp.variables:
     #         if v in d1.keys() and v in d2.keys():
-    #         #zp.attrs[v] = r'\texttt{{{0:s}}}:'.format(v) 
+    #         #zp.attrs[v] = r'\texttt{{{0:s}}}:'.format(v)
     #             zp.attrs[v] = r'\text{{{0:s}}}:'.format(d1[v]) + d2[v]
 
     # def print_zprof_attrs(self, zp):
-        
+
     #     # This function should also be defined in somewhere else # JGKIM
     #     from IPython.display import display, Math #, Latex
 

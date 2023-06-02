@@ -7,14 +7,14 @@ from inspect import getsource
 from ..load_sim import LoadSim
 
 class Profile1D:
-    
+
     @LoadSim.Decorators.check_pickle
     def get_profile1d(self, num, fields_y, field_x='r', bins=None, statistic='mean',
                       prefix='profile1d', savdir=None, force_override=False):
         """
         Function to calculate 1D profile(s) and pickle using
         scipy.stats.binned_statistics
-        
+
         Parameters
         ----------
         num : int
@@ -64,20 +64,20 @@ class Profile1D:
 
         fields_y = np.atleast_1d(fields_y)
         statistic = np.atleast_1d(statistic)
-        
+
         ds = self.load_vtk(num)
         ddy = ds.get_field(fields_y)
         ddx = ds.get_field(field_x)
         x1d = ddx[field_x].data.flatten()
         if bins is None:
             bins = np.linspace(x1d.min(), x1d.max(), 50)
-            
+
         res = dict()
         res[field_x] = dict()
         for y in fields_y:
             res[y] = dict()
 
-        get_lambda_name = lambda l: getsource(l).split('=')[0].strip()
+        def get_lambda_name(l): return getsource(l).split('=')[0].strip()
 
         # Compute statistics
         for y in fields_y:
@@ -91,48 +91,48 @@ class Profile1D:
                         name = st.__name__
                 else:
                     name = st
-                    
+
                 st, bine, _ = stats.binned_statistic(x1d, y1d, st, bins=bins)
                 # Store result
                 res[y][name] = st
-    
+
         # bin edges
         res[field_x]['bine'] = bine
         # bin centers
-        res[field_x]['binc'] = 0.5*(bine[1:] + bine[:-1])
+        res[field_x]['binc'] = 0.5 * (bine[1:] + bine[:-1])
 
         # Time of the snapshot
         res['time_code'] = ds.domain['time']
-        res['time'] = ds.domain['time']*self.u.Myr
-        
+        res['time'] = ds.domain['time'] * self.u.Myr
+
         return res
-    
+
     @LoadSim.Decorators.check_pickle
     def get_Rsh(self, num, prefix='Rsh', savdir=None, force_override=False):
         r = self.get_profile1d(num, fields_y=['nH'], field_x='r',
-                               bins=200, statistic=['mean','median'],
+                               bins=200, statistic=['mean', 'median'],
                                force_override=False)
 
         from scipy.interpolate import interp1d
-        
+
         x = r['r']['binc']
         y1 = r['nH']['median']
         y2 = r['nH']['mean']
-        f1 = interp1d(x, y1, kind='quadratic')#, bounds_error=False, fill_value='extrapolate')
+        f1 = interp1d(x, y1, kind='quadratic')  # , bounds_error=False, fill_value='extrapolate')
         f2 = interp1d(x, y2, kind='quadratic')
         x = np.linspace(x.min(), x.max(), 1000)
         idx1 = np.where(f1(x) == f1(x).max())[0][0]
         idx2 = np.where(f2(x) == f2(x).max())[0][0]
         Rsh1 = x[idx1]
         Rsh2 = x[idx2]
-        time = r['time'] # time in Myr
+        time = r['time']  # time in Myr
 
         return Rsh1, Rsh2, time
-    
+
     def get_Rsh_all(self, nums=None):
         if nums is None:
             nums = self.nums[1::5]
-            
+
         res = dict()
         res['Rsh1'] = []
         res['Rsh2'] = []
@@ -146,5 +146,3 @@ class Profile1D:
             res['time'].append(time)
 
         return res
-
-    

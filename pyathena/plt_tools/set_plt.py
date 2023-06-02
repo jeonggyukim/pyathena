@@ -17,7 +17,7 @@ def set_plt_default():
     plt.rcParams['figure.constrained_layout.use'] = True
 
     plt.rcParams['font.size'] = 15
-    #plt.rcParams['font.weight'] = 300
+    # plt.rcParams['font.weight'] = 300
 
     plt.rcParams['axes.linewidth'] = 2
     plt.rcParams['xtick.major.width'] = 2
@@ -30,7 +30,7 @@ def set_plt_default():
 
     # plt.rcParams['xtick.top'] = True
     # plt.rcParams['ytick.right'] = True
-    
+
 def set_plt_fancy():
     # Chang-Goo's fancystyle
     plt.rcParams['lines.linewidth'] = 2.0
@@ -44,12 +44,12 @@ def set_plt_fancy():
                                                      '#6d904f',
                                                      '#fe01b1',
                                                      '#06c2ac',
-                                                     '#fe019a', # neon pink
+                                                     '#fe019a',  # neon pink
                                                      '#810f7c',
-                                                     '#8b8b8b', # gray
-                                                     'black']) +
-                                       cycler(linestyle=['-','-','-','-','-',
-                                                         '-','-','-','-','-']))
+                                                     '#8b8b8b',  # gray
+                                                     'black'])
+                                       + cycler(linestyle=['-', '-', '-', '-', '-',
+                                                           '-', '-', '-', '-', '-']))
 
     plt.rcParams['axes.facecolor'] = 'white'
     plt.rcParams['axes.labelsize'] = 'large'

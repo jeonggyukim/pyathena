@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+from .load_sim_sf_cloud import load_all_alphabeta
+from ..util.split_container import split_container
+import pyathena as pa
+import pprint
+import matplotlib.pyplot as plt
 import os
 import os.path as osp
 import time
@@ -8,13 +13,7 @@ from mpi4py import MPI
 
 import matplotlib as mpl
 mpl.use('Agg')
-import matplotlib.pyplot as plt
-import pprint
 
-import pyathena as pa
-from ..util.split_container import split_container
-
-from .load_sim_sf_cloud import load_all_alphabeta
 
 if __name__ == '__main__':
 
@@ -26,7 +25,7 @@ if __name__ == '__main__':
     #     S2='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N256',
     #     S3='/tigress/jk11/GMC/M1E5R20.R.B2.A3.S4.N256',
     #     S4='/tigress/jk11/GMC/M1E5R20.R.B2.A4.S4.N256',
-    #     S5='/tigress/jk11/GMC/M1E5R20.R.B2.A5.S4.N256')    
+    #     S5='/tigress/jk11/GMC/M1E5R20.R.B2.A5.S4.N256')
 
     # Alternative way
     # prefix = 'B2A2'
@@ -56,7 +55,7 @@ if __name__ == '__main__':
     #     'B2S4': ['A1S4','A2S4','A3S4','A4S4','A5S4'],
     #     'A5B2': ['A5S1','A5S2','A5S3','A5S4','A5S5'],
     # }
-    
+
     # models = models_dict[prefix]
 
     # _, r = load_all_alphabeta()
@@ -65,7 +64,7 @@ if __name__ == '__main__':
     # sa = pa.LoadSimSFCloudRadAll(models)
 
     models = dict(
-        #M1E5R20_R='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N256',
+        # M1E5R20_R='/tigress/jk11/GMC/M1E5R20.R.B2.A2.S4.N256',
         M1E6R60_R='/scratch/gpfs/jk11/GMC/M1E6R60.R.B2.A2.S4.N256.test/',
         M1E6R60_Rfftp='/scratch/gpfs/jk11/GMC/M1E6R60.R.B2.A2.S4.N256.test_fft',
         M1E6R60_RS='/scratch/gpfs/jk11/GMC/M1E6R60.RS.B2.A2.S4.N256.test.again',
@@ -73,11 +72,11 @@ if __name__ == '__main__':
     )
 
     sa = pa.LoadSimSFCloudRadAll(models)
-    
-    models = ['M1E6R60_R','M1E6R60_Rfftp', 'M1E6R60_RS', 'M1E6R60_RW']
+
+    models = ['M1E6R60_R', 'M1E6R60_Rfftp', 'M1E6R60_RS', 'M1E6R60_RW']
     labels = ['R', 'Rfftp', 'RS', 'RW']
     prefix = 'M1E6R60'
-    
+
     print(models)
 
     # num_max = 0
@@ -87,8 +86,8 @@ if __name__ == '__main__':
 
     # nums = range(0,num_max*10,10)
 
-    nums = range(0,2001,2)
-    
+    nums = range(0, 2001, 2)
+
     if COMM.rank == 0:
         print('nums', nums)
         nums = split_container(nums, COMM.size)
@@ -103,12 +102,12 @@ if __name__ == '__main__':
         print(num, end=' ')
         fig = sa.comp_snapshot(models, num, labels=labels, prefix=prefix, savefig=True)
         plt.close(fig)
-        
+
     COMM.barrier()
     if COMM.rank == 0:
         print('')
         print('################################################')
         print('# Do tasks')
-        print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
+        print('# Execution time [sec]: {:.1f}'.format(time.time() - time0))
         print('################################################')
         print('')

@@ -1,4 +1,5 @@
-import io, sys
+import io
+import sys
 import subprocess
 import base64
 from IPython.display import HTML
@@ -7,7 +8,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
     # To force the frame rate of the input file (valid for raw formats only) to 1 fps and the frame rate of the output file to 24 fps:
 
     cmd = ['ffmpeg',
-           '-y', # override existing file
+           '-y',  # override existing file
            '-r', str(fps_in),
            '-f', 'image2',
            '-pattern_type', 'glob',
@@ -36,8 +37,8 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
 
     # if ret == 0:
     # else:
-        
-    #return subprocess.call(cmd)
+
+    # return subprocess.call(cmd)
 
 def display_movie(filename):
 

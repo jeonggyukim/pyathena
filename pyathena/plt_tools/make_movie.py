@@ -1,4 +1,5 @@
-import io, sys
+import io
+import sys
 import subprocess
 import base64
 from IPython.display import HTML
@@ -6,7 +7,7 @@ from IPython.display import HTML
 def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
     """(wrapper) function to create an mp4 movie from files matching a glob
     pattern.
-    
+
     Parameters
     ----------
     fname_glob : string (glob)
@@ -28,7 +29,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
     """
 
     cmd = ['ffmpeg',
-           '-y', # override existing file
+           '-y',  # override existing file
            '-r', str(fps_in),
            '-f', 'image2',
            '-pattern_type', 'glob',
@@ -56,7 +57,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
         print("\x1b[31m[make_movie]: subprocess.check_output returned:\x1b[0m")
         print(str(e.output, "utf-8"))
         return False
-    
+
 
 def display_movie(filename):
 

@@ -2,7 +2,8 @@ from __future__ import print_function
 
 import os
 import sys
-import glob, re
+import glob
+import re
 import getpass
 import warnings
 import logging
@@ -134,7 +135,7 @@ class LoadSim(object):
                 self.config_time = self.config_time.tz_localize('US/Pacific')
         except:
             # set it using hst file creation time
-            self.config_time = pd.to_datetime(osp.getctime(self.files['hst']),unit='s')
+            self.config_time = pd.to_datetime(osp.getctime(self.files['hst']), unit='s')
 
         try:
             muH = self.par['problem']['muH']
@@ -144,9 +145,9 @@ class LoadSim(object):
                 # Some old simulations run with new cooling may not have muH
                 # parameter printed out
                 if self.par['problem']['Z_gas'] != 1.0:
-                    self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
-                                        format(self.par['problem']['Z_gas']) +
-                                        'Caution with muH={0:s}'.format(muH))
+                    self.logger.warning('Z_gas={0:g} but muH is not found in par. '.
+                                        format(self.par['problem']['Z_gas'])
+                                        + 'Caution with muH={0:s}'.format(muH))
                 self.u = units
             except:
                 self.u = units
@@ -196,11 +197,11 @@ class LoadSim(object):
         self.fvtk = self._get_fvtk(kind[0], num, ivtk)
         if self.fvtk is None or not osp.exists(self.fvtk):
             if id0:
-                self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
-                                 'Try joined/tarred vtk')
+                self.logger.info('[load_vtk]: Vtk file does not exist. '
+                                 + 'Try joined/tarred vtk')
             else:
-                self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
-                                 'Try vtk in id0')
+                self.logger.info('[load_vtk]: Vtk file does not exist. '
+                                 + 'Try vtk in id0')
 
             for kind_ in (kind[1], kind[2]):
                 # Check if joined vtk (or vtk in id0) exists
@@ -216,13 +217,13 @@ class LoadSim(object):
             if self.load_method == 'pyathena':
                 self.ds = AthenaDataSet(self.fvtk, units=self.u, dfi=self.dfi)
                 self.domain = self.ds.domain
-                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
+                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(
                     osp.basename(self.fvtk), self.ds.domain['time']))
 
             elif self.load_method == 'pyathena_classic':
                 self.ds = AthenaDataSetClassic(self.fvtk)
                 self.domain = self.ds.domain
-                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
+                self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(
                     osp.basename(self.fvtk), self.ds.domain['time']))
 
             elif self.load_method == 'yt':
@@ -238,7 +239,7 @@ class LoadSim(object):
             if self.load_method == 'pyathena':
                 self.ds = AthenaDataSetTar(self.fvtk, units=self.u, dfi=self.dfi)
                 self.domain = self.ds.domain
-                self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
+                self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(
                     osp.basename(self.fvtk), self.ds.domain['time']))
             elif self.load_method == 'yt':
                 if hasattr(self, 'u'):
@@ -289,12 +290,12 @@ class LoadSim(object):
         elif outid is not None:
             if not outid in self.hdf5_outid:
                 self.logger.error('Invalid hdf5 output id!')
-            idx = [i for i,v in enumerate(self.hdf5_outid) if v == outid][0]
+            idx = [i for i, v in enumerate(self.hdf5_outid) if v == outid][0]
             outvar = self.hdf5_outvar[idx]
         elif outvar is not None:
             if not outvar in self.hdf5_outvar:
                 self.logger.error('Invalid hdf5 variable!')
-            idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
+            idx = [i for i, v in enumerate(self.hdf5_outvar) if v == outvar][0]
             outid = self.hdf5_outid[idx]
 
         self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
@@ -349,9 +350,9 @@ class LoadSim(object):
             self.logger.error('[load_starpar_vtk]: Starpar vtk file does not exist.')
 
         self.sp = read_starpar_vtk(self.fstarvtk,
-                force_override=force_override, verbose=verbose)
-        self.logger.info('[load_starpar_vtk]: {0:s}. Time: {1:f}'.format(\
-                 osp.basename(self.fstarvtk), self.sp.time))
+                                   force_override=force_override, verbose=verbose)
+        self.logger.info('[load_starpar_vtk]: {0:s}. Time: {1:f}'.format(
+            osp.basename(self.fstarvtk), self.sp.time))
 
         return self.sp
 
@@ -365,15 +366,15 @@ class LoadSim(object):
             self.logger.error('[load_rst]: rst file does not exist.')
 
         self.rh = read_rst(self.frst, verbose=verbose)
-        self.logger.info('[load_rst]: {0:s}. Time: {1:f}'.format(\
-                 osp.basename(self.frst), self.rh.time))
+        self.logger.info('[load_rst]: {0:s}. Time: {1:f}'.format(
+            osp.basename(self.frst), self.rh.time))
 
         return self.rh
 
-    def create_tar_all(self,remove_original=False,kind='vtk'):
+    def create_tar_all(self, remove_original=False, kind='vtk'):
         for num in self.nums_id0:
             self.move_to_tardir(num=num, kind=kind)
-        raw_tardirs = self._find_match([(kind,"????")])
+        raw_tardirs = self._find_match([(kind, "????")])
         for num in [int(f[-4:]) for f in raw_tardirs]:
             self.create_tar(num=num, remove_original=remove_original, kind=kind)
 
@@ -387,10 +388,10 @@ class LoadSim(object):
 
         """
         # set tar file name
-        dirname = osp.join(self.basedir,kind)
+        dirname = osp.join(self.basedir, kind)
         fpattern = '{0:s}.{1:04d}.tar'
         tarname = osp.join(dirname, fpattern.format(self.problem_id, num))
-        tardir = os.path.join(dirname,'{0:04d}'.format(num))
+        tardir = os.path.join(dirname, '{0:04d}'.format(num))
 
         # move files to vtk/num/*.num.tar
         if osp.isdir(tardir):
@@ -403,15 +404,16 @@ class LoadSim(object):
         os.makedirs(tardir)
         # find files
         if kind == 'vtk':
-            id_files = [self._get_fvtk('vtk_id0',num=num)]
+            id_files = [self._get_fvtk('vtk_id0', num=num)]
         elif kind == 'rst':
-            id_files = [self._get_fvtk('rst',num=num)]
-        id_files += self._find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
+            id_files = [self._get_fvtk('rst', num=num)]
+        id_files += self._find_match([('id*', '{0:s}-id*.{1:04d}.{2:s}'.
                                      format(self.problem_id, num, kind))])
         # move each file
-        self.logger.info('[move_to_tardir] moving {:d} files to {:s}'.\
-                         format(len(id_files),tardir))
-        for f in id_files: shutil.move(f,tardir)
+        self.logger.info('[move_to_tardir] moving {:d} files to {:s}'.
+                         format(len(id_files), tardir))
+        for f in id_files:
+            shutil.move(f, tardir)
 
     def create_tar(self, num=None, remove_original=False, kind='vtk'):
         """Creating tarred vtk/rst from rearranged output
@@ -426,10 +428,10 @@ class LoadSim(object):
            vtk or rst
         """
         # set tar file name
-        dirname = osp.join(self.basedir,kind)
+        dirname = osp.join(self.basedir, kind)
         fpattern = '{0:s}.{1:04d}.tar'
         tarname = osp.join(dirname, fpattern.format(self.problem_id, num))
-        tardir = os.path.join(dirname,'{0:04d}'.format(num))
+        tardir = os.path.join(dirname, '{0:04d}'.format(num))
 
         # remove originals
         def remove_tardir():
@@ -439,7 +441,7 @@ class LoadSim(object):
                 try:
                     shutil.rmtree(tardir)
                 except OSError as e:
-                    print ("Error: %s - %s." % (e.filename, e.strerror))
+                    print("Error: %s - %s." % (e.filename, e.strerror))
 
         # check file existence
         if osp.isfile(tarname):
@@ -451,7 +453,7 @@ class LoadSim(object):
         # tar to vtk/problem_id.num.tar
         self.logger.info('[create_tar] tarring {:s}'.format(tardir))
 
-        tf = tarfile.open(tarname,'x')
+        tf = tarfile.open(tarname, 'x')
         tf.add(tardir)
         tf.close()
 
@@ -504,15 +506,15 @@ class LoadSim(object):
         domain['le'] = np.array([d['x1min'], d['x2min'], d['x3min']])
         domain['re'] = np.array([d['x1max'], d['x2max'], d['x3max']])
         domain['Lx'] = domain['re'] - domain['le']
-        domain['dx'] = domain['Lx']/domain['Nx']
-        domain['center'] = 0.5*(domain['le'] + domain['re'])
+        domain['dx'] = domain['Lx'] / domain['Nx']
+        domain['center'] = 0.5 * (domain['le'] + domain['re'])
         domain['time'] = None
         self.domain = domain
 
         return domain
 
     def _find_match(self, patterns):
-        glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
+        def glob_match(p): return sorted(glob.glob(osp.join(self.basedir, *p)))
         for p in patterns:
             f = glob_match(p)
             if f:
@@ -572,9 +574,9 @@ class LoadSim(object):
         vtk_patterns = [('vtk', '*.????.vtk'),
                         ('*.????.vtk',)]
 
-        vtk_id0_patterns = [('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
+        vtk_id0_patterns = [('vtk', 'id0', '*.' + '[0-9]' * 4 + '.vtk'),
                             # ('vtk', '[0-9]'*4, '*.' + '[0-9]'*4 + '.vtk'),
-                            ('id0', '*.' + '[0-9]'*4 + '.vtk')]
+                            ('id0', '*.' + '[0-9]' * 4 + '.vtk')]
 
         vtk_tar_patterns = [('vtk', '*.????.tar')]
 
@@ -625,9 +627,9 @@ class LoadSim(object):
                     self.hdf5_outvar = []
                     for k in self.par.keys():
                         if 'output' in k and self.par[k]['file_type'] == 'hdf5':
-                            self.hdf5_outid.append(int(re.split('(\d+)',k)[1]))
+                            self.hdf5_outid.append(int(re.split('(\d+)', k)[1]))
                             self.hdf5_outvar.append(self.par[k]['variable'])
-                    for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+                    for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
                         if 'prim' in v or 'cons' in v:
                             self._hdf5_outid_def = i
                             self._hdf5_outvar_def = v
@@ -635,12 +637,12 @@ class LoadSim(object):
                 for k in self.par.keys():
                     if 'output' in k:
                         # Skip if the block number XX (<outputXX>) is greater than maxout
-                        if int(k.replace('output','')) > self.par['job']['maxout']:
+                        if int(k.replace('output', '')) > self.par['job']['maxout']:
                             continue
                         if self.par[k]['out_fmt'] == 'vtk' and \
                            not (self.par[k]['out'] == 'prim' or self.par[k]['out'] == 'cons'):
-                            self.out_fmt.append(self.par[k]['id'] + '.' + \
-                                                self.par[k]['out_fmt'])
+                            self.out_fmt.append(self.par[k]['id'] + '.'
+                                                + self.par[k]['out_fmt'])
                         else:
                             self.out_fmt.append(self.par[k]['out_fmt'])
 
@@ -648,7 +650,7 @@ class LoadSim(object):
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
             self.par = None
-            self.logger.warning('Could not find athinput file in {0:s}'.\
+            self.logger.warning('Could not find athinput file in {0:s}'.
                                 format(self.basedir))
             self.out_fmt = self._out_fmt_def
 
@@ -689,7 +691,7 @@ class LoadSim(object):
                     self.problem_id = osp.basename(self.files['hst']).split('.')[:-1]
                 self.logger.info('hst: {0:s}'.format(self.files['hst']))
             else:
-                self.logger.warning('Could not find hst file in {0:s}'.\
+                self.logger.warning('Could not find hst file in {0:s}'.
                                     format(self.basedir))
 
         # Find sn dump
@@ -703,9 +705,9 @@ class LoadSim(object):
                     # Issue warning only if iSN is nonzero
                     try:
                         if self.par['feedback']['iSN'] != 0:
-                            self.logger.warning('Could not find sn file in {0:s},' +
-                            ' but <feedback>/iSN={1:d}'.\
-                            format(self.basedir, self.par['feedback']['iSN']))
+                            self.logger.warning('Could not find sn file in {0:s},'
+                                                + ' but <feedback>/iSN={1:d}'.
+                                                format(self.basedir, self.par['feedback']['iSN']))
                     except KeyError:
                         pass
 
@@ -755,7 +757,7 @@ class LoadSim(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(self.files['vtk_tar'][0]).split('.')[-2:]
                     self.nums = self.nums_tar
-            self.nums_vtk_all = list(set(self.nums)|set(self.nums_id0)|set(self.nums_tar))
+            self.nums_vtk_all = list(set(self.nums) | set(self.nums_id0) | set(self.nums_tar))
             self.nums_vtk_all.sort()
 
             # Check (joined) vtk file size
@@ -765,7 +767,7 @@ class LoadSim(object):
                 flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
                 self.logger.warning('Vtk file size is not unique.')
                 for f in flist:
-                   self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
+                    self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
 
             # Check (tarred) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk_tar']]
@@ -774,14 +776,14 @@ class LoadSim(object):
                 flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
                 self.logger.warning('Vtk file size is not unique.')
                 for f in flist:
-                   self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
+                    self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
 
         # Find hdf5 files
         # hdf5 files in basedir
         if 'hdf5' in self.out_fmt:
             self.files['hdf5'] = dict()
             self.nums_hdf5 = dict()
-            for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+            for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
                 hdf5_patterns_ = []
                 for p in hdf5_patterns:
                     p = list(p)
@@ -790,12 +792,12 @@ class LoadSim(object):
                 self.files['hdf5'][v] = self._find_match(hdf5_patterns_)
                 if not self.files['hdf5'][v]:
                     self.logger.warning(
-                        'hdf5 ({0:s}) files not found in {1:s}'.\
-                        format(v,self.basedir))
+                        'hdf5 ({0:s}) files not found in {1:s}'.
+                        format(v, self.basedir))
                     self.nums_hdf5[v] = None
                 else:
-                    self.nums_hdf5[v] = [int(f[-11:-6]) \
-                                              for f in self.files['hdf5'][v]]
+                    self.nums_hdf5[v] = [int(f[-11:-6])
+                                         for f in self.files['hdf5'][v]]
                     self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
                         v, osp.dirname(self.files['hdf5'][v][0]),
                         self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
@@ -839,13 +841,13 @@ class LoadSim(object):
                 num = [len(self.nums_zprof[ph]) for ph in self.nums_zprof.keys()]
                 if not all(num):
                     self.logger.warning('Number of zprof files doesn\'t match.')
-                    self.logger.warning(', '.join(['{0:s}: {1:d}'.format(ph, \
-                        len(self.nums_zprof[ph])) for ph in self.phase][:-1]))
+                    self.logger.warning(', '.join(['{0:s}: {1:d}'.format(ph,
+                                                                         len(self.nums_zprof[ph])) for ph in self.phase][:-1]))
                 else:
                     self.logger.info('zprof: {0:s} nums: {1:d}-{2:d}'.format(
-                    osp.dirname(self.files['zprof'][0]),
-                    self.nums_zprof[self.phase[0]][0],
-                    self.nums_zprof[self.phase[0]][-1]))
+                        osp.dirname(self.files['zprof'][0]),
+                        self.nums_zprof[self.phase[0]][0],
+                        self.nums_zprof[self.phase[0]][-1]))
 
             else:
                 self.logger.warning(
@@ -857,26 +859,26 @@ class LoadSim(object):
             if '.vtk' in fmt:
                 fmt = fmt.split('.')[0]
                 patterns = [('id0', '*.????.{0:s}.vtk'.format(fmt)),
-                    ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
+                            ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
                 files = self._find_match(patterns)
                 if files:
                     self.files[f'{fmt}'] = files
-                    setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
+                    setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1])
                                                   for f in self.files[f'{fmt}']])
                 else:
                     # Some 2d vtk files may not be found in id0 folder (e.g., slices)
                     self._fmt_vtk2d_not_found.append(fmt)
 
         if self._fmt_vtk2d_not_found:
-            self.logger.info('These vtk files need to be found ' + \
-                             'using find_files_vtk2d() method: ' + \
-                             ', '.join(self._fmt_vtk2d_not_found))
+            self.logger.info('These vtk files need to be found '
+                             + 'using find_files_vtk2d() method: '
+                             + ', '.join(self._fmt_vtk2d_not_found))
         # Find rst files
         if 'rst' in self.out_fmt:
-            if hasattr(self,'problem_id'):
-                rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
-                                ('rst','{}.*.tar'.format(self.problem_id)),
-                                ('id0','{}.*.rst'.format(self.problem_id)),
+            if hasattr(self, 'problem_id'):
+                rst_patterns = [('rst', '{}.*.rst'.format(self.problem_id)),
+                                ('rst', '{}.*.tar'.format(self.problem_id)),
+                                ('id0', '{}.*.rst'.format(self.problem_id)),
                                 ('{}.*.rst'.format(self.problem_id),)]
                 frst = self._find_match(rst_patterns)
                 if frst:
@@ -899,15 +901,14 @@ class LoadSim(object):
         for fmt in self._fmt_vtk2d_not_found:
             fmt = fmt.split('.')[0]
             patterns = [('id*', '*.????.{0:s}.vtk'.format(fmt)),
-                ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
+                        ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
             files = self._find_match(patterns)
             if files:
                 self.files[f'{fmt}'] = files
-                setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
+                setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1])
                                               for f in self.files[f'{fmt}']])
             else:
                 self.logger.info('{0:s} files not found '.format(fmt))
-
 
     def _get_fvtk(self, kind, num=None, ivtk=None):
         """Get vtk file path
@@ -985,7 +986,7 @@ class LoadSim(object):
                 l.setLevel(self.loglevel)
             else:
                 l.setLevel(self.loglevel)
-        except AttributeError: # for python 2 compatibility
+        except AttributeError:  # for python 2 compatibility
             if not len(l.handlers):
                 h = logging.StreamHandler()
                 f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
@@ -1081,15 +1082,15 @@ class LoadSim(object):
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not make directory')
 
-                fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
-                                 '.{0:s}.mod.p'.format(cls.basename))
-                #fpkl = osp.join(savdir, osp.basename(cls.files['hst']) + '.mod.p')
+                fpkl = osp.join(savdir, osp.basename(cls.files['hst'])
+                                + '.{0:s}.mod.p'.format(cls.basename))
+                # fpkl = osp.join(savdir, osp.basename(cls.files['hst']) + '.mod.p')
 
                 # Check if the original history file is updated
                 if not force_override and osp.exists(fpkl) and \
                    osp.getmtime(fpkl) > osp.getmtime(cls.files['hst']):
                     cls.logger.info('[read_hst]: Reading pickle.')
-                    #print('[read_hst]: Reading pickle.')
+                    # print('[read_hst]: Reading pickle.')
                     hst = pd.read_pickle(fpkl)
                     cls.hst = hst
                     return hst
@@ -1141,13 +1142,13 @@ class LoadSim(object):
 
                 if not force_override and osp.exists(fnetcdf) and \
                    osp.getmtime(fnetcdf) > mtime:
-                    cls.logger.info('[read_zprof]: Read {0:s}'.format(phase) + \
-                                    ' zprof from existing NetCDF dump.')
+                    cls.logger.info('[read_zprof]: Read {0:s}'.format(phase)
+                                    + ' zprof from existing NetCDF dump.')
                     ds = xr.open_dataset(fnetcdf)
                     return ds
                 else:
-                    cls.logger.info('[read_zprof]: Read from original {0:s}'.\
-                        format(phase) + ' zprof dump and renormalize.'.format(phase))
+                    cls.logger.info('[read_zprof]: Read from original {0:s}'.
+                                    format(phase) + ' zprof dump and renormalize.'.format(phase))
                     # If we are here, force_override is True or zprof files are updated.
                     # Read original zprof dumps.
                     ds = _read_zprof(cls, phase, savdir, force_override)
@@ -1160,7 +1161,7 @@ class LoadSim(object):
                     try:
                         ds.to_netcdf(fnetcdf, mode='w')
                     except (IOError, PermissionError) as e:
-                        cls.logger.warning('[read_zprof]: Could not netcdf to {0:s}.'\
+                        cls.logger.warning('[read_zprof]: Could not netcdf to {0:s}.'
                                            .format(fnetcdf))
                     return ds
 
@@ -1172,6 +1173,7 @@ class LoadSimAll(object):
     """Class to load multiple simulations
 
     """
+
     def __init__(self, models):
 
         self.models = list(models.keys())
@@ -1188,4 +1190,3 @@ class LoadSimAll(object):
                            load_method=load_method,
                            units=units, verbose=verbose)
         return self.sim
-
