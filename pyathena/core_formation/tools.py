@@ -71,6 +71,10 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
 
     Parameters
     ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    rprf : xarray Dataset
+        Object containing radial profiles.
     use_vel : str, optional
         If 'total', use <v_r^2> to find sonic radius.
         If 'disp', use <dv_r^2> = <v_r^2> - <v_r>^2 to find sonic radius.
@@ -364,6 +368,48 @@ def roundup(a, decimal):
 
 def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
+
+
+def test_isolated_core(s, pid):
+    """Test if the given core is isolated.
+
+    Criterion for an isolated core:
+    1. The core must not contain any particle
+    2. If it has a neighboring core, the neighbor must not contain any
+       particle, too. The neighboring core is defined as a leaf node having
+       the same parent.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata
+
+    Returns
+    -------
+    bool
+        True if a core is isolated, false otherwise.
+    """
+    num = s.tcoll_cores.loc[pid].num
+    pds = s.load_partab(num)
+    gd = s.load_dendrogram(num)
+
+    nid = s.cores[pid].iloc[-1].nid
+    sibling = gd.children[gd.parent[nid]]
+    sibling.remove(nid)
+    sibling = sibling[0]
+
+    # Get all cells in myself and sibling node
+    cells = set(gd.nodes[nid])
+    if len(gd.children[sibling]) == 0:
+        cells = cells.union(gd.nodes[sibling])
+
+    # Test whether there are any particle in the siblings
+    position_indices = np.floor((pds[['x1', 'x2', 'x3']] - s.domain['le'])
+                                / s.domain['dx']).astype('int')
+    flatidx = (position_indices['x3']*s.domain['Nx'][2]*s.domain['Nx'][1]
+               + position_indices['x2']*s.domain['Nx'][1]
+               + position_indices['x1'])
+    return not np.any([i in cells for i in flatidx])
 
 
 def get_periodic_distance(pos1, pos2, Lbox):
