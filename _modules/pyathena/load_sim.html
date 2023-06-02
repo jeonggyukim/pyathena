@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 
 
-<html >
+<html lang="en" >
 
   <head>
     <meta charset="utf-8" />
@@ -43,6 +43,7 @@
     <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
     <script src="../../_static/jquery.js"></script>
     <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../_static/doctools.js"></script>
     <script src="../../_static/clipboard.min.js"></script>
     <script src="../../_static/copybutton.js"></script>
@@ -63,7 +64,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="index" title="Index" href="../../genindex.html" />
     <link rel="search" title="Search" href="../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="docsearch:language" content="None"/>
+  <meta name="docsearch:language" content="en"/>
   </head>
   
   
@@ -158,6 +159,10 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l1"><a class="reference internal" href="../../readers.html">Readers</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="../../utils.html">Utilities</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../examples/tigress-classic-cooling.html">Cooling in TIGRESS-classic</a></li>
 </ul>
 
     </div>
@@ -337,7 +342,7 @@ document.write(`
 <span class="kn">from</span> <span class="nn">.plt_tools.make_movie</span> <span class="kn">import</span> <span class="n">make_movie</span>
 
 <div class="viewcode-block" id="LoadSim"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim">[docs]</a><span class="k">class</span> <span class="nc">LoadSim</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class to prepare Athena simulation data analysis. Read input parameters,</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to prepare Athena simulation data analysis. Read input parameters,</span>
 <span class="sd">    find simulation output (vtk, starpar_vtk, hst, sn, zprof) files.</span>
 
 <span class="sd">    Properties</span>
@@ -359,7 +364,7 @@ document.write(`
 <span class="sd">        load_method : str</span>
 <span class="sd">            &#39;pyathena&#39; or &#39;yt&#39; or &#39;pyathenaclassic&#39;</span>
 <span class="sd">        num : list of int</span>
-<span class="sd">            vtk or hdf5 output numbers</span>
+<span class="sd">            vtk output numbers</span>
 <span class="sd">        u : Units object</span>
 <span class="sd">            simulation unit</span>
 <span class="sd">        dfi : dict</span>
@@ -373,15 +378,9 @@ document.write(`
 <span class="sd">            reads starpar vtk file and returns pandas DataFrame object</span>
 <span class="sd">        print_all_properties() :</span>
 <span class="sd">            prints all attributes and callable methods</span>
-<span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basedir</span><span class="p">,</span> <span class="n">savdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_method</span><span class="o">=</span><span class="s1">&#39;pyathena&#39;</span><span class="p">,</span>
-                 <span class="n">units</span><span class="o">=</span><span class="n">Units</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;LV&#39;</span><span class="p">,</span> <span class="n">muH</span><span class="o">=</span><span class="mf">1.4271</span><span class="p">),</span>
-                 <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Constructor for LoadSim class.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
 <span class="sd">        basedir : str</span>
 <span class="sd">            Name of the directory where all data is stored</span>
 <span class="sd">        savdir : str</span>
@@ -399,8 +398,8 @@ document.write(`
 <span class="sd">            Numerical values from 0 (&#39;NOTSET&#39;) to 50 (&#39;CRITICAL&#39;) are also</span>
 <span class="sd">            accepted.</span>
 
-<span class="sd">        Examples</span>
-<span class="sd">        --------</span>
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
 <span class="sd">        &gt;&gt;&gt; s = LoadSim(&#39;/Users/jgkim/Documents/R4_8pc.RT.nowind&#39;, verbose=True)</span>
 <span class="sd">        LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind</span>
 <span class="sd">        LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt</span>
@@ -411,6 +410,13 @@ document.write(`
 <span class="sd">        LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600</span>
 <span class="sd">        LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600</span>
 <span class="sd">        LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basedir</span><span class="p">,</span> <span class="n">savdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_method</span><span class="o">=</span><span class="s1">&#39;pyathena&#39;</span><span class="p">,</span>
+                 <span class="n">units</span><span class="o">=</span><span class="n">Units</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;LV&#39;</span><span class="p">,</span> <span class="n">muH</span><span class="o">=</span><span class="mf">1.4271</span><span class="p">),</span>
+                 <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Constructor for LoadSim class.</span>
+
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">basedir</span> <span class="o">=</span> <span class="n">basedir</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)</span>
@@ -463,7 +469,7 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">dfi</span> <span class="o">=</span> <span class="n">DerivedFields</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">)</span><span class="o">.</span><span class="n">dfi</span>
 
 <div class="viewcode-block" id="LoadSim.load_vtk"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.load_vtk">[docs]</a>    <span class="k">def</span> <span class="nf">load_vtk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ivtk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">id0</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">load_method</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Function to read Athena vtk file using pythena or yt and</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read Athena vtk file using pythena or yt and</span>
 <span class="sd">        return DataSet object.</span>
 
 <span class="sd">        Parameters</span>
@@ -491,7 +497,7 @@ document.write(`
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;vtk_id0&#39;</span><span class="p">]:</span>
             <span class="n">id0</span> <span class="o">=</span> <span class="kc">False</span>
-            
+
         <span class="k">if</span> <span class="n">id0</span><span class="p">:</span>
             <span class="n">kind</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;vtk_id0&#39;</span><span class="p">,</span> <span class="s1">&#39;vtk&#39;</span><span class="p">,</span> <span class="s1">&#39;vtk_tar&#39;</span><span class="p">]</span>
         <span class="k">else</span><span class="p">:</span>
@@ -561,7 +567,7 @@ document.write(`
 
 <div class="viewcode-block" id="LoadSim.load_hdf5"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.load_hdf5">[docs]</a>    <span class="k">def</span> <span class="nf">load_hdf5</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ihdf5</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                   <span class="n">outvar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_method</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Function to read Athena hdf5 file using pythena or yt and</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read Athena hdf5 file using pythena or yt and</span>
 <span class="sd">        return DataSet object.</span>
 
 <span class="sd">        Parameters</span>
@@ -589,7 +595,7 @@ document.write(`
         <span class="c1"># Override load_method</span>
         <span class="k">if</span> <span class="n">load_method</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">load_method</span> <span class="o">=</span> <span class="n">load_method</span>
-            
+
         <span class="k">if</span> <span class="n">outid</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">outvar</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">outid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5_outid_def</span>
             <span class="n">outvar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5_outvar_def</span>
@@ -603,7 +609,7 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">error</span><span class="p">(</span><span class="s1">&#39;Invalid hdf5 variable!&#39;</span><span class="p">)</span>
             <span class="n">idx</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outvar</span><span class="p">)</span> <span class="k">if</span> <span class="n">v</span> <span class="o">==</span> <span class="n">outvar</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
             <span class="n">outid</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outid</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span>
-            
+
         <span class="bp">self</span><span class="o">.</span><span class="n">fhdf5</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fhdf5</span><span class="p">(</span><span class="n">outid</span><span class="p">,</span> <span class="n">outvar</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">ihdf5</span><span class="p">)</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fhdf5</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">osp</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fhdf5</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;[load_hdf5]: hdf5 file does not exist. &#39;</span><span class="p">)</span>
@@ -630,7 +636,7 @@ document.write(`
 
 <div class="viewcode-block" id="LoadSim.load_starpar_vtk"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.load_starpar_vtk">[docs]</a>    <span class="k">def</span> <span class="nf">load_starpar_vtk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ivtk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_override</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                          <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Function to read Athena starpar_vtk file using pythena and</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read Athena starpar_vtk file using pythena and</span>
 <span class="sd">        return DataFrame object.</span>
 
 <span class="sd">        Parameters</span>
@@ -685,7 +691,7 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">create_tar</span><span class="p">(</span><span class="n">num</span><span class="o">=</span><span class="n">num</span><span class="p">,</span> <span class="n">remove_original</span><span class="o">=</span><span class="n">remove_original</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">)</span>
 
 <div class="viewcode-block" id="LoadSim.move_to_tardir"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.move_to_tardir">[docs]</a>    <span class="k">def</span> <span class="nf">move_to_tardir</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;vtk&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Move vtk files from id* to vtk/XXXX</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Move vtk files from id* to vtk/XXXX</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -721,7 +727,7 @@ document.write(`
         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">id_files</span><span class="p">:</span> <span class="n">shutil</span><span class="o">.</span><span class="n">move</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="n">tardir</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="LoadSim.create_tar"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.create_tar">[docs]</a>    <span class="k">def</span> <span class="nf">create_tar</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">remove_original</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;vtk&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Creating tarred vtk/rst from rearranged output</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Creating tarred vtk/rst from rearranged output</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -766,7 +772,7 @@ document.write(`
         <span class="n">remove_tardir</span><span class="p">()</span></div>
 
 <div class="viewcode-block" id="LoadSim.print_all_properties"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.print_all_properties">[docs]</a>    <span class="k">def</span> <span class="nf">print_all_properties</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Print all attributes and callable methods</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Print all attributes and callable methods</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">attr_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__dict__</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
@@ -775,7 +781,7 @@ document.write(`
         <span class="n">method_list</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">)):</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="n">func</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s2">&quot;__&quot;</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">)):</span>
                     <span class="n">method_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">func</span><span class="p">)</span>
                     <span class="nb">print</span><span class="p">(</span><span class="n">func</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39;: &#39;</span><span class="p">)</span>
                     <span class="nb">print</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span><span class="o">.</span><span class="vm">__doc__</span><span class="p">)</span>
@@ -798,7 +804,7 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;File already exists: </span><span class="si">{0:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fname_out</span><span class="p">))</span>
 
     <span class="k">def</span> <span class="nf">_get_domain_from_par</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">par</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get domain info from par[&#39;domain1&#39;]. Time is set to None.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get domain info from par[&#39;domain1&#39;]. Time is set to None.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">domain</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">athena_pp</span><span class="p">:</span>
@@ -824,14 +830,14 @@ document.write(`
             <span class="n">f</span> <span class="o">=</span> <span class="n">glob_match</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">f</span><span class="p">:</span>
                 <span class="k">break</span>
-            
+
         <span class="k">return</span> <span class="n">f</span>
 
     <span class="k">def</span> <span class="nf">_find_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Function to find all output files under basedir and create &quot;files&quot; dictionary.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to find all output files under basedir and create &quot;files&quot; dictionary.</span>
 
 <span class="sd">        hst: problem_id.hst</span>
-<span class="sd">        </span>
+
 <span class="sd">        (athena only)</span>
 <span class="sd">        vtk: problem_id.num.vtk</span>
 <span class="sd">        sn: problem_id.sn (file format identical to hst)</span>
@@ -840,7 +846,7 @@ document.write(`
 <span class="sd">        zprof: problem_id.num.phase.zprof</span>
 <span class="sd">        sphst: *.star</span>
 <span class="sd">        timeit: timtit.txt</span>
-<span class="sd">        </span>
+
 <span class="sd">        (athena_pp only)</span>
 <span class="sd">        hdf5: problem_id.out?.num.athdf</span>
 <span class="sd">        loop_time: problem_id.loop_time.txt</span>
@@ -926,7 +932,7 @@ document.write(`
                 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                     <span class="k">if</span> <span class="s1">&#39;output&#39;</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;file_type&#39;</span><span class="p">])</span>
-                    
+
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;hdf5&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outid</span> <span class="o">=</span> <span class="p">[]</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outvar</span> <span class="o">=</span> <span class="p">[]</span>
@@ -976,7 +982,7 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;loop_time: </span><span class="si">{0:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;loop_time&#39;</span><span class="p">]))</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.loop_time.txt not found.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem_id</span><span class="p">))</span>
-    
+
             <span class="c1"># Find problem_id.task_time.txt</span>
             <span class="n">ftasktime</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_match</span><span class="p">(</span><span class="n">tasktime_patterns</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">ftasktime</span><span class="p">:</span>
@@ -1000,7 +1006,7 @@ document.write(`
                                     <span class="nb">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">))</span>
 
         <span class="c1"># Find sn dump</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">athena_pp</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">athena_pp</span><span class="p">:</span>
             <span class="n">fsn</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_match</span><span class="p">(</span><span class="n">sn_patterns</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">fsn</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;sn&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fsn</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
@@ -1062,11 +1068,8 @@ document.write(`
                     <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;problem_id&#39;</span><span class="p">):</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">problem_id</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;vtk_tar&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">nums</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nums_tar</span>
-            <span class="k">try</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">nums_vtk_all</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nums</span><span class="p">)</span><span class="o">|</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nums_id0</span><span class="p">)</span><span class="o">|</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nums_tar</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">nums_vtk_all</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
-            <span class="k">except</span> <span class="ne">TypeError</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">nums_vtk_all</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nums_vtk_all</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nums</span><span class="p">)</span><span class="o">|</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nums_id0</span><span class="p">)</span><span class="o">|</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nums_tar</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">nums_vtk_all</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
 
             <span class="c1"># Check (joined) vtk file size</span>
             <span class="n">sizes</span> <span class="o">=</span> <span class="p">[</span><span class="n">os</span><span class="o">.</span><span class="n">stat</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="o">.</span><span class="n">st_size</span> <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;vtk&#39;</span><span class="p">]]</span>
@@ -1114,7 +1117,7 @@ document.write(`
                             <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;hdf5&#39;</span><span class="p">][</span><span class="bp">self</span><span class="o">.</span><span class="n">_hdf5_outvar_def</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">2</span><span class="p">:]</span>
             <span class="c1"># Set nums array</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">nums</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nums_hdf5</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">_hdf5_outvar_def</span><span class="p">]</span>
-        
+
         <span class="c1"># Find starpar files</span>
         <span class="k">if</span> <span class="s1">&#39;starpar_vtk&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span><span class="p">:</span>
             <span class="n">fstarpar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_match</span><span class="p">(</span><span class="n">starpar_patterns</span><span class="p">)</span>
@@ -1220,7 +1223,7 @@ document.write(`
 
 
     <span class="k">def</span> <span class="nf">_get_fvtk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ivtk</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get vtk file path</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get vtk file path</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -1245,7 +1248,7 @@ document.write(`
         <span class="k">return</span> <span class="n">fvtk</span>
 
     <span class="k">def</span> <span class="nf">_get_fhdf5</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outid</span><span class="p">,</span> <span class="n">outvar</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ihdf5</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Get hdf5 file path</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get hdf5 file path</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">try</span><span class="p">:</span>
@@ -1262,7 +1265,7 @@ document.write(`
         <span class="k">return</span> <span class="n">fhdf5</span>
 
     <span class="k">def</span> <span class="nf">_get_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Function to set logger and default verbosity.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to set logger and default verbosity.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -1309,7 +1312,7 @@ document.write(`
         <span class="k">return</span> <span class="n">l</span>
 
 <div class="viewcode-block" id="LoadSim.Decorators"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.Decorators">[docs]</a>    <span class="k">class</span> <span class="nc">Decorators</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Class containing a collection of decorators for prompt reading of analysis</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class containing a collection of decorators for prompt reading of analysis</span>
 <span class="sd">        output, (reprocessed) hst, and zprof. Used in child classes.</span>
 
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -1373,11 +1376,6 @@ document.write(`
 
             <span class="nd">@functools</span><span class="o">.</span><span class="n">wraps</span><span class="p">(</span><span class="n">read_hst</span><span class="p">)</span>
             <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-                <span class="k">if</span> <span class="s1">&#39;hst_type&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
-                    <span class="n">hst_type</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;hst_type&#39;</span><span class="p">]</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="n">hst_type</span> <span class="o">=</span> <span class="s1">&#39;hst&#39;</span>
-
                 <span class="k">if</span> <span class="s1">&#39;savdir&#39;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
                     <span class="n">savdir</span> <span class="o">=</span> <span class="n">kwargs</span><span class="p">[</span><span class="s1">&#39;savdir&#39;</span><span class="p">]</span>
                 <span class="k">else</span><span class="p">:</span>
@@ -1396,27 +1394,28 @@ document.write(`
                     <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">PermissionError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
                         <span class="bp">cls</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;Could not make directory&#39;</span><span class="p">)</span>
 
-                <span class="n">fpkl</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">savdir</span><span class="p">,</span> <span class="n">osp</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="n">hst_type</span><span class="p">])</span> <span class="o">+</span>
+                <span class="n">fpkl</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">savdir</span><span class="p">,</span> <span class="n">osp</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;hst&#39;</span><span class="p">])</span> <span class="o">+</span>
                                  <span class="s1">&#39;.</span><span class="si">{0:s}</span><span class="s1">.mod.p&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">basename</span><span class="p">))</span>
+                <span class="c1">#fpkl = osp.join(savdir, osp.basename(cls.files[&#39;hst&#39;]) + &#39;.mod.p&#39;)</span>
 
                 <span class="c1"># Check if the original history file is updated</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">force_override</span> <span class="ow">and</span> <span class="n">osp</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="ow">and</span> \
-                   <span class="n">osp</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">osp</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="n">hst_type</span><span class="p">]):</span>
+                   <span class="n">osp</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">osp</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="bp">cls</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;hst&#39;</span><span class="p">]):</span>
                     <span class="bp">cls</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;[read_hst]: Reading pickle.&#39;</span><span class="p">)</span>
-                    <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span>
-                    <span class="k">return</span> <span class="n">df</span>
+                    <span class="c1">#print(&#39;[read_hst]: Reading pickle.&#39;)</span>
+                    <span class="n">hst</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span>
+                    <span class="bp">cls</span><span class="o">.</span><span class="n">hst</span> <span class="o">=</span> <span class="n">hst</span>
+                    <span class="k">return</span> <span class="n">hst</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">cls</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;[read_hst]: Reading original </span><span class="si">{0:s}</span><span class="s1"> file.&#39;</span><span class="o">.</span>\
-                                    <span class="nb">format</span><span class="p">(</span><span class="n">hst_type</span><span class="p">))</span>
-                    <span class="c1"># If we are here, force_override is True or raw data file is updated.</span>
+                    <span class="bp">cls</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;[read_hst]: Reading original hst file.&#39;</span><span class="p">)</span>
+                    <span class="c1"># If we are here, force_override is True or history file is updated.</span>
                     <span class="c1"># Call read_hst function</span>
-                    <span class="n">df</span> <span class="o">=</span> <span class="n">read_hst</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="n">hst</span> <span class="o">=</span> <span class="n">read_hst</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
                     <span class="k">try</span><span class="p">:</span>
-                        <span class="n">df</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span>
+                        <span class="n">hst</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span>
                     <span class="k">except</span> <span class="p">(</span><span class="ne">IOError</span><span class="p">,</span> <span class="ne">PermissionError</span><span class="p">)</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
-                        <span class="bp">cls</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;[read_hst]: Could not pickle </span><span class="si">{0:s}</span><span class="s1"> to </span><span class="si">{1:s}</span><span class="s1">.&#39;</span><span class="o">.</span>\
-                                           <span class="nb">format</span><span class="p">(</span><span class="n">hst_type</span><span class="p">,</span> <span class="n">fpkl</span><span class="p">))</span>
-                    <span class="k">return</span> <span class="n">df</span>
+                        <span class="bp">cls</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s1">&#39;[read_hst]: Could not pickle hst to </span><span class="si">{0:s}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">fpkl</span><span class="p">))</span>
+                    <span class="k">return</span> <span class="n">hst</span>
 
             <span class="k">return</span> <span class="n">wrapper</span>
 
@@ -1483,7 +1482,7 @@ document.write(`
 
 <span class="c1"># Would be useful to have something like this for each problem</span>
 <div class="viewcode-block" id="LoadSimAll"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSimAll">[docs]</a><span class="k">class</span> <span class="nc">LoadSimAll</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Class to load multiple simulations</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to load multiple simulations</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">models</span><span class="p">):</span>

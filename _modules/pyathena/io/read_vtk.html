@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 
 
-<html >
+<html lang="en" >
 
   <head>
     <meta charset="utf-8" />
@@ -43,6 +43,7 @@
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/clipboard.min.js"></script>
     <script src="../../../_static/copybutton.js"></script>
@@ -63,7 +64,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="docsearch:language" content="None"/>
+  <meta name="docsearch:language" content="en"/>
   </head>
   
   
@@ -158,6 +159,10 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l1"><a class="reference internal" href="../../../readers.html">Readers</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/tigress-classic-cooling.html">Cooling in TIGRESS-classic</a></li>
 </ul>
 
     </div>
@@ -323,7 +328,7 @@ document.write(`
 <span class="kn">from</span> <span class="nn">..util.units</span> <span class="kn">import</span> <span class="n">Units</span>
 
 <div class="viewcode-block" id="read_vtk"><a class="viewcode-back" href="../../../readers.html#pyathena.read_vtk">[docs]</a><span class="k">def</span> <span class="nf">read_vtk</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">id0_only</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Convenience wrapper function to read Athena vtk output file</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience wrapper function to read Athena vtk output file</span>
 <span class="sd">    using AthenaDataSet class.</span>
 
 <span class="sd">    Parameters</span>
@@ -344,7 +349,7 @@ document.write(`
 <div class="viewcode-block" id="AthenaDataSet"><a class="viewcode-back" href="../../../athenadataset.html#pyathena.AthenaDataSet">[docs]</a><span class="k">class</span> <span class="nc">AthenaDataSet</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">id0_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">Units</span><span class="p">(),</span> <span class="n">dfi</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Class to read athena vtk file.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class to read athena vtk file.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -415,7 +420,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="AthenaDataSet.get_cc_pos"><a class="viewcode-back" href="../../../athenadataset.html#pyathena.AthenaDataSet.get_cc_pos">[docs]</a>    <span class="k">def</span> <span class="nf">get_cc_pos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compute cell center positions</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute cell center positions</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -431,7 +436,7 @@ document.write(`
         <span class="k">return</span> <span class="n">xc</span></div>
 
 <div class="viewcode-block" id="AthenaDataSet.get_cc_ijk"><a class="viewcode-back" href="../../../athenadataset.html#pyathena.AthenaDataSet.get_cc_ijk">[docs]</a>    <span class="k">def</span> <span class="nf">get_cc_ijk</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">x3</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Compute closest cell-center integer indices in which a particle resides</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute closest cell-center integer indices in which a particle resides</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -447,7 +452,7 @@ document.write(`
                 <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">x3</span> <span class="o">-</span> <span class="n">le3</span><span class="p">)</span><span class="o">/</span><span class="n">dx3</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="AthenaDataSet.set_region"><a class="viewcode-back" href="../../../athenadataset.html#pyathena.AthenaDataSet.set_region">[docs]</a>    <span class="k">def</span> <span class="nf">set_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">re</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Set region and find overlapping grids.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set region and find overlapping grids.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">le</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
@@ -519,7 +524,7 @@ document.write(`
                            <span class="n">NGrid</span><span class="o">=</span><span class="n">NGrid</span><span class="p">,</span> <span class="n">Nxg</span><span class="o">=</span><span class="n">Nxg</span><span class="p">,</span> <span class="n">Nxr</span><span class="o">=</span><span class="n">Nxr</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AthenaDataSet.get_slice"><a class="viewcode-back" href="../../../athenadataset.html#pyathena.AthenaDataSet.get_slice">[docs]</a>    <span class="k">def</span> <span class="nf">get_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">&#39;density&#39;</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read slice of fields.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read slice of fields.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -564,7 +569,7 @@ document.write(`
         <span class="k">return</span> <span class="n">slc</span></div>
 
 <div class="viewcode-block" id="AthenaDataSet.get_field"><a class="viewcode-back" href="../../../athenadataset.html#pyathena.AthenaDataSet.get_field">[docs]</a>    <span class="k">def</span> <span class="nf">get_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">&#39;density&#39;</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">re</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">as_xarray</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Read 3d fields data.</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read 3d fields data.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -819,7 +824,7 @@ document.write(`
 
 
 <span class="k">def</span> <span class="nf">_parse_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Break up a filename into its component</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Break up a filename into its component</span>
 <span class="sd">    to check the extension and extract the output number.</span>
 
 <span class="sd">    Parameters</span>

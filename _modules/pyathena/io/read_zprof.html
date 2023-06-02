@@ -3,7 +3,7 @@
 <!DOCTYPE html>
 
 
-<html >
+<html lang="en" >
 
   <head>
     <meta charset="utf-8" />
@@ -43,6 +43,7 @@
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
     <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
     <script src="../../../_static/doctools.js"></script>
     <script src="../../../_static/clipboard.min.js"></script>
     <script src="../../../_static/copybutton.js"></script>
@@ -63,7 +64,7 @@ const thebe_selector_output = ".output, .cell_output"
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
-  <meta name="docsearch:language" content="None"/>
+  <meta name="docsearch:language" content="en"/>
   </head>
   
   
@@ -158,6 +159,10 @@ const thebe_selector_output = ".output, .cell_output"
 <li class="toctree-l1"><a class="reference internal" href="../../../readers.html">Readers</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/tigress-classic-cooling.html">Cooling in TIGRESS-classic</a></li>
 </ul>
 
     </div>
@@ -321,7 +326,7 @@ document.write(`
 
 <div class="viewcode-block" id="read_zprof_all"><a class="viewcode-back" href="../../../readers.html#pyathena.read_zprof_all">[docs]</a><span class="k">def</span> <span class="nf">read_zprof_all</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">problem_id</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s1">&#39;whole&#39;</span><span class="p">,</span> <span class="n">savdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                    <span class="n">force_override</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;Function to read all zprof files in directory and make a Dataset object</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function to read all zprof files in directory and make a Dataset object</span>
 <span class="sd">    and write to a NetCDF file.</span>
 
 <span class="sd">    Note: An xarray DataArray holds a single multi-dimensional variable and its</span>
@@ -413,7 +418,7 @@ document.write(`
     <span class="k">return</span> <span class="n">ds</span></div>
 
 <div class="viewcode-block" id="read_zprof"><a class="viewcode-back" href="../../../readers.html#pyathena.read_zprof">[docs]</a><span class="k">def</span> <span class="nf">read_zprof</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">force_override</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-    <span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Function to read one zprof file and pickle</span>
 
 <span class="sd">    Parameters</span>
@@ -465,7 +470,7 @@ document.write(`
 <span class="k">class</span> <span class="nc">ReadZprofBase</span><span class="p">:</span>
 
     <span class="k">def</span> <span class="nf">read_zprof</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">phase</span><span class="o">=</span><span class="s1">&#39;all&#39;</span><span class="p">,</span> <span class="n">savdir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_override</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-        <span class="sd">&quot;&quot;&quot;Wrapper function to read all zprof output</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Wrapper function to read all zprof output</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
