@@ -27,6 +27,8 @@ def read_hdf5(filename, **kwargs):
     attr_keys = (set(ds.keys()) - varnames
                  - {'VariableNames','x1f','x2f','x3f','x1v','x2v','x3v'})
     attrs = {attr_key:ds[attr_key] for attr_key in attr_keys}
+
+    # If uniform grid, store cell spacing.
     if ds['MaxLevel'] == 0:
         attrs['dx1'] = np.diff(ds['RootGridX1'])[0] / ds['RootGridSize'][0]
         attrs['dx2'] = np.diff(ds['RootGridX2'])[0] / ds['RootGridSize'][1]
