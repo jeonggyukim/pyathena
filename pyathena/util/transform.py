@@ -7,14 +7,20 @@ def to_spherical(vec, origin):
 
     Assumes vec is a tuple of xarray.DataArray.
 
-    Args:
-        vec: tuple-like (vx, vy, vz) representing Cartesian vector components
-        origin: tuple-like (x0, y0, z0) representing the origin of the spherical coords.
+    Parameters
+    ----------
+    vec : tuple-like
+        (vx, vy, vz) representing Cartesian vector components
+    origin : tuple-like
+        (x0, y0, z0) representing the origin of the spherical coords.
 
-    Returns:
-        r: binned radius
-        vec_sph: tuple-like (v_r, v_th, v_ph) representing the three components of
-                 velocities in spherical coords.
+    Returns
+    -------
+    r : array
+        Binned radius
+    vec_sph : tuple-like
+        (v_r, v_th, v_ph) representing the three components of
+        velocities in spherical coords.
     """
     vx, vy, vz = vec
     x0, y0, z0 = origin
@@ -55,18 +61,24 @@ def to_spherical(vec, origin):
 
 
 def to_cylindrical(vec, origin):
-    """Transform vector components from Cartesian to cylindrical coordinates
+    """Transform vector components from Cartesian to cylindrical coords.
 
     Assumes vec is a tuple of xarray.DataArray.
 
-    Args:
-        vec: tuple-like (vx, vy, vz) representing Cartesian vector components
-        origin: tuple-like (x0, y0, z0) representing the origin of the cylindrical coords.
+    Parameters
+    ----------
+    vec : tuple-like
+        (vx, vy, vz) representing Cartesian vector components
+    origin : tuple-like
+        (x0, y0, z0) representing the origin of the cylindrical coords.
 
-    Returns:
-        R: binned radius
-        vec_cyl: tuple-like (v_R, v_ph, v_z) representing the three components of
-                 velocities in cylindrical coords.
+    Returns
+    -------
+    R : array
+        Binned radius
+    vec_cyl : tuple-like
+        (v_R, v_ph, v_z) representing the three components of
+        velocities in cylindrical coords.
     """
     vx, vy, vz = vec
     x0, y0, z0 = origin
@@ -105,8 +117,8 @@ def to_cylindrical(vec, origin):
 def groupby_bins(dat, coord, edges, cumulative=False):
     """Alternative to xr.groupby_bins, which is very slow
 
-    Arguments
-    ---------
+    Parameters
+    ----------
     dat : xarray.DataArray
         input dataArray
     coord : str
@@ -118,7 +130,7 @@ def groupby_bins(dat, coord, edges, cumulative=False):
           v_r_binned[i] = v_r( edge[0] <= r < edge[i+1] ).mean()
         to calculate average velocity dispersion within radius r
 
-    Return
+    Returns
     ------
     res: xarray.DataArray
         binned array
