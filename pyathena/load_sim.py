@@ -303,7 +303,12 @@ class LoadSim(object):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
 
         if self.load_method == 'pyathena':
-            self.ds = read_hdf5(self.fhdf5, **kwargs)
+            if self.par['mesh']['refinement'] != 'none':
+                self.logger.error('load_method "{0:s}" does not support mesh\
+                        refinement data. Use "yt" instead'.format(self.load_method))
+                self.ds = None
+            else:
+                self.ds = read_hdf5(self.fhdf5, **kwargs)
 
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
