@@ -315,7 +315,6 @@ document.write(`
 <span class="kn">import</span> <span class="nn">astropy.constants</span> <span class="k">as</span> <span class="nn">ac</span>
 <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
 
-
 <div class="viewcode-block" id="Units"><a class="viewcode-back" href="../../../utils.html#pyathena.Units">[docs]</a><span class="k">class</span> <span class="nc">Units</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Simple class for simulation unit.</span>
 
@@ -325,19 +324,12 @@ document.write(`
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        kind : str</span>
-<span class="sd">           &quot;LV&quot; for (pc, km/s) or &quot;LT&quot; for (pc, Myr) or &quot;cgs&quot; for (cm, s),</span>
-<span class="sd">           or &quot;code&quot; for code unit.</span>
-<span class="sd">        muH : float</span>
-<span class="sd">            mean particle mass per H (for neutral gas).</span>
-<span class="sd">            Default value is 1.4271 (assuming solar metallicity).</span>
+<span class="sd">           kind: string</span>
+<span class="sd">              &quot;LV&quot; for (pc, km/s) or &quot;LT&quot; for (pc, Myr)</span>
+<span class="sd">           muH: float</span>
+<span class="sd">              mean particle mass per H (for neutral gas).</span>
+<span class="sd">              Default value is 1.4271 (assuming solar metallicity).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
-        <span class="c1"># If code units, set [L]=[M]=[T]=1 and return.</span>
-        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;code&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="mf">1.0</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="mf">1.0</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="mf">1.0</span>
-            <span class="k">return</span>
 
         <span class="n">mH</span> <span class="o">=</span> <span class="mf">1.008</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">u</span>
         <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;LV&#39;</span><span class="p">:</span>
@@ -351,11 +343,8 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">Myr</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Myr&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;cgs&#39;</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">cm</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">s</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unrecognized unit system: </span><span class="si">{</span><span class="n">kind</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mH</span> <span class="o">=</span> <span class="n">mH</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;g&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">muH</span><span class="o">*</span><span class="n">mH</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Msun&#39;</span><span class="p">)</span>
@@ -366,16 +355,15 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">energy_density</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">pressure</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;erg/cm**3&#39;</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">mass_flux</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">density</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Msun kpc-2 yr-1&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">momentum_flux</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">density</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="o">**</span><span class="mi">2</span>
-                              <span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Msun km s-1 kpc-2 yr-1&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">momentum_flux</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">density</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Msun km s-1 kpc-2 yr-1&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy_flux</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">density</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;erg kpc-2 yr-1&#39;</span><span class="p">)</span>
 
         <span class="c1"># Define (physical constants in code units)^-1</span>
         <span class="c1">#</span>
         <span class="c1"># Opposite to the convention chosen by set_units function in</span>
         <span class="c1"># athena/src/units.c This is because in post-processing we want to</span>
-        <span class="c1"># convert from code units to more convenient ones by &quot;multiplying&quot;</span>
-        <span class="c1"># these constants</span>
+        <span class="c1"># convert from code units to more convenient ones by &quot;multiplying&quot; these</span>
+        <span class="c1"># constants</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">cm</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">pc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;pc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">kpc</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;kpc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
@@ -390,12 +378,9 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">muG</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">4</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">energy_density</span><span class="o">.</span><span class="n">cgs</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="o">/</span><span class="mf">1e-6</span>
 
         <span class="c1"># For yt</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">units_override</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">length_unit</span><span class="o">=</span><span class="p">(</span>
-                                       <span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;pc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;pc&#39;</span><span class="p">),</span>
-                                   <span class="n">time_unit</span><span class="o">=</span><span class="p">(</span>
-                                       <span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Myr&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;Myr&#39;</span><span class="p">),</span>
-                                   <span class="n">mass_unit</span><span class="o">=</span><span class="p">(</span>
-                                       <span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Msun&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;Msun&#39;</span><span class="p">))</span></div>
+        <span class="bp">self</span><span class="o">.</span><span class="n">units_override</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">length_unit</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;pc&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;pc&#39;</span><span class="p">),</span>
+                                   <span class="n">time_unit</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Myr&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;Myr&#39;</span><span class="p">),</span>
+                                   <span class="n">mass_unit</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Msun&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="s1">&#39;Msun&#39;</span><span class="p">))</span></div>
 </pre></div>
 
                 </article>

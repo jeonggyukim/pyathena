@@ -395,10 +395,11 @@ document.write(`
 <ul>
 <li><p>Original form is taken from Koyama &amp; Inutsuka (2004; with typo correction in Kim et al. (2008)) at <span class="math notranslate nohighlight">\(T&lt;10^{4.2}{\rm K}\)</span> and Sutherland &amp; Dopita (1993) for <span class="math notranslate nohighlight">\(T&gt;10^{4.2}{\rm K}\)</span></p></li>
 <li><p>Volumetric cooling/heating rates are: <span class="math notranslate nohighlight">\(n_{\rm H}^2\Lambda(T)\)</span> and <span class="math notranslate nohighlight">\(n_{\rm H}\Gamma\)</span>. <span class="math notranslate nohighlight">\(\Gamma\)</span> is proportional to the <code class="docutils literal notranslate"><span class="pre">heat_ratio</span></code> field in the code (unity for the solar neighborhood condition)</p></li>
-<li><p>Pressure, mean molecular weight, temperature, electron abundance, etc.
-$<span class="math notranslate nohighlight">\(
-P = \dfrac{\rho k_{\rm B}T}{\mu m_{\rm H}} = \dfrac{\rho k_{\rm B}T_{\mu}}{m_{\rm H}}= \dfrac{n_{\rm H}k_{\rm B}T}{\mu_{\rm H}m_{\rm H}} \approx (n_{\rm H^0} + n_{\rm H^+} + n_{\rm H_2} + n_{\rm He} + n_{\rm e}) k_{\rm B}T \approx (1.1 + x_{\rm e} - x_{\rm H_2})n_{\rm H}k_{\rm B}T
-\)</span>$</p>
+<li><p>Pressure, mean molecular weight, temperature, electron abundance, etc.</p>
+<div class="math notranslate nohighlight">
+\[
+  P = \dfrac{\rho k_{\rm B}T}{\mu m_{\rm H}} = \dfrac{\rho k_{\rm B}T_{\mu}}{m_{\rm H}}= \dfrac{n_{\rm H}k_{\rm B}T}{\mu_{\rm H}m_{\rm H}} \approx (n_{\rm H^0} + n_{\rm H^+} + n_{\rm H_2} + n_{\rm He} + n_{\rm e}) k_{\rm B}T \approx (1.1 + x_{\rm e} - x_{\rm H_2})n_{\rm H}k_{\rm B}T
+  \]</div>
 <p>where <span class="math notranslate nohighlight">\(T_{\mu} \equiv T/\mu\)</span>, <span class="math notranslate nohighlight">\(x_{\rm e} = n_{\rm e}/n_{\rm H}\)</span>, and <span class="math notranslate nohighlight">\(x_{\rm H_2} = n_{\rm H_2}/n_{\rm H}\)</span>, and so on.</p>
 </li>
 <li><p>The quantity <span class="math notranslate nohighlight">\(T_{\mu} \propto P/n_{\rm H}\)</span> is easy to evolve in the cooling module.</p></li>

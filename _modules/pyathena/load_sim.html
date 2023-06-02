@@ -333,7 +333,6 @@ document.write(`
 <span class="kn">from</span> <span class="nn">.io.read_vtk</span> <span class="kn">import</span> <span class="n">AthenaDataSet</span>
 <span class="kn">from</span> <span class="nn">.io.read_vtk_tar</span> <span class="kn">import</span> <span class="n">AthenaDataSetTar</span>
 <span class="kn">from</span> <span class="nn">.io.read_hdf5</span> <span class="kn">import</span> <span class="n">read_hdf5</span>
-<span class="kn">from</span> <span class="nn">.io.read_particles</span> <span class="kn">import</span> <span class="n">read_partab</span><span class="p">,</span> <span class="n">read_parhst</span>
 <span class="kn">from</span> <span class="nn">.io.read_rst</span> <span class="kn">import</span> <span class="n">read_rst</span>
 <span class="kn">from</span> <span class="nn">.io.read_starpar_vtk</span> <span class="kn">import</span> <span class="n">read_starpar_vtk</span>
 <span class="kn">from</span> <span class="nn">.io.read_zprof</span> <span class="kn">import</span> <span class="n">read_zprof_all</span>
@@ -567,7 +566,7 @@ document.write(`
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span></div>
 
 <div class="viewcode-block" id="LoadSim.load_hdf5"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.load_hdf5">[docs]</a>    <span class="k">def</span> <span class="nf">load_hdf5</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ihdf5</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                  <span class="n">outvar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_method</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+                  <span class="n">outvar</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">outid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">load_method</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read Athena hdf5 file using pythena or yt and</span>
 <span class="sd">        return DataSet object.</span>
 
@@ -621,7 +620,7 @@ document.write(`
 <span class="s1">                        refinement data. Use &quot;yt&quot; instead&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">load_method</span><span class="p">))</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="o">=</span> <span class="kc">None</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="o">=</span> <span class="n">read_hdf5</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fhdf5</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">ds</span> <span class="o">=</span> <span class="n">read_hdf5</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fhdf5</span><span class="p">)</span>
 
         <span class="k">elif</span> <span class="bp">self</span><span class="o">.</span><span class="n">load_method</span> <span class="o">==</span> <span class="s1">&#39;yt&#39;</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;u&#39;</span><span class="p">):</span>
@@ -634,62 +633,6 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">load_method</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39; Use either &quot;yt&quot; or &quot;pyathena&quot;.&#39;</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">ds</span></div>
-
-<div class="viewcode-block" id="LoadSim.load_partab"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.load_partab">[docs]</a>    <span class="k">def</span> <span class="nf">load_partab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ipartab</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
-                    <span class="n">partag</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read Athena++ partab file.</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        num : int</span>
-<span class="sd">           Snapshot number.</span>
-<span class="sd">           e.g., /basedir/partab/problem_id.out?.num.par?.tab.</span>
-<span class="sd">        ipartab : int</span>
-<span class="sd">           Read i-th file in the partab file list.</span>
-<span class="sd">           Overrides num if both are given.</span>
-<span class="sd">        partag : int</span>
-<span class="sd">           Particle id in the input file. Default value is &#39;par0&#39;</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        pds : pandas.DataFrame</span>
-<span class="sd">            Particle data</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="n">num</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">ipartab</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Specify either num or ipartab&#39;</span><span class="p">)</span>
-
-        <span class="k">if</span> <span class="n">partag</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">partag</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_partab_partag_def</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">fpartab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fpartab</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">partab_outid</span><span class="p">,</span> <span class="n">partag</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">ipartab</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fpartab</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">osp</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fpartab</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;[load_partab]: partab file does not exist. &#39;</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">pds</span> <span class="o">=</span> <span class="n">read_partab</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fpartab</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pds</span></div>
-
-<div class="viewcode-block" id="LoadSim.load_parhst"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.load_parhst">[docs]</a>    <span class="k">def</span> <span class="nf">load_parhst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read Athena++ individual particle history</span>
-
-<span class="sd">        Parameters</span>
-<span class="sd">        ----------</span>
-<span class="sd">        pid : int</span>
-<span class="sd">           Particle id, e.g., /basedir/partab/problem_id.pid.csv</span>
-
-<span class="sd">        Returns</span>
-<span class="sd">        -------</span>
-<span class="sd">        phst : pandas.DataFrame</span>
-<span class="sd">            Individual particle history</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">fparhst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_fparhst</span><span class="p">(</span><span class="n">pid</span><span class="p">)</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">fparhst</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">osp</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fparhst</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;[load_parhst]: parhst file does not exist. &#39;</span><span class="p">)</span>
-
-        <span class="bp">self</span><span class="o">.</span><span class="n">phst</span> <span class="o">=</span> <span class="n">read_parhst</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fparhst</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">phst</span></div>
 
 <div class="viewcode-block" id="LoadSim.load_starpar_vtk"><a class="viewcode-back" href="../../loadsim.html#pyathena.LoadSim.load_starpar_vtk">[docs]</a>    <span class="k">def</span> <span class="nf">load_starpar_vtk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ivtk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">force_override</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
                          <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
@@ -906,8 +849,6 @@ document.write(`
 
 <span class="sd">        (athena_pp only)</span>
 <span class="sd">        hdf5: problem_id.out?.num.athdf</span>
-<span class="sd">        partab: problem_id.out?.num.par?.tab</span>
-<span class="sd">        parhst: problem_id.pid.csv</span>
 <span class="sd">        loop_time: problem_id.loop_time.txt</span>
 <span class="sd">        task_time: problem_id.task_time.txt</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -957,12 +898,6 @@ document.write(`
                             <span class="p">(</span><span class="s1">&#39;id0&#39;</span><span class="p">,</span> <span class="s1">&#39;*.????.starpar.vtk&#39;</span><span class="p">),</span>
                             <span class="p">(</span><span class="s1">&#39;*.????.starpar.vtk&#39;</span><span class="p">,)]</span>
 
-        <span class="n">partab_patterns</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;partab&#39;</span><span class="p">,</span> <span class="s1">&#39;*.out?.?????.par?.tab&#39;</span><span class="p">),</span>
-                         <span class="p">(</span><span class="s1">&#39;*.out?.?????.par?.tab&#39;</span><span class="p">,)]</span>
-
-        <span class="n">parhst_patterns</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;parhst&#39;</span><span class="p">,</span> <span class="s1">&#39;*.par*.csv&#39;</span><span class="p">),</span>
-                         <span class="p">(</span><span class="s1">&#39;*.par*.csv&#39;</span><span class="p">,)]</span>
-
         <span class="n">zprof_patterns</span> <span class="o">=</span> <span class="p">[(</span><span class="s1">&#39;zprof&#39;</span><span class="p">,</span> <span class="s1">&#39;*.zprof&#39;</span><span class="p">),</span>
                           <span class="p">(</span><span class="s1">&#39;id0&#39;</span><span class="p">,</span> <span class="s1">&#39;*.zprof&#39;</span><span class="p">)]</span>
 
@@ -993,42 +928,25 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;athena simulation&#39;</span><span class="p">)</span>
 
             <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span> <span class="o">=</span> <span class="p">[]</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">partags</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">athena_pp</span><span class="p">:</span>
-                <span class="c1"># read output blocks</span>
                 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                    <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="s1">&#39;output&#39;</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
                         <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;file_type&#39;</span><span class="p">])</span>
 
-                    <span class="c1"># Save particle output tags</span>
-                    <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;particle&#39;</span><span class="p">):</span>
-                        <span class="n">par_id</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;particle&#39;</span><span class="p">))</span> <span class="o">-</span> <span class="mi">1</span>
-                        <span class="n">partag</span> <span class="o">=</span> <span class="s1">&#39;par</span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">par_id</span><span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">partags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">partag</span><span class="p">)</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">_partab_partag_def</span> <span class="o">=</span> <span class="n">partag</span>
-
-                <span class="c1"># if there are hdf5 outputs, save some info</span>
                 <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span><span class="o">.</span><span class="n">count</span><span class="p">(</span><span class="s1">&#39;hdf5&#39;</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outid</span> <span class="o">=</span> <span class="p">[]</span>
                     <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outvar</span> <span class="o">=</span> <span class="p">[]</span>
                     <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                        <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;file_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;hdf5&#39;</span><span class="p">:</span>
+                        <span class="k">if</span> <span class="s1">&#39;output&#39;</span> <span class="ow">in</span> <span class="n">k</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;file_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;hdf5&#39;</span><span class="p">:</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outid</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;(\d+)&#39;</span><span class="p">,</span><span class="n">k</span><span class="p">)[</span><span class="mi">1</span><span class="p">]))</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outvar</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;variable&#39;</span><span class="p">])</span>
                     <span class="k">for</span> <span class="n">i</span><span class="p">,</span><span class="n">v</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outid</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">hdf5_outvar</span><span class="p">):</span>
                         <span class="k">if</span> <span class="s1">&#39;prim&#39;</span> <span class="ow">in</span> <span class="n">v</span> <span class="ow">or</span> <span class="s1">&#39;cons&#39;</span> <span class="ow">in</span> <span class="n">v</span><span class="p">:</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5_outid_def</span> <span class="o">=</span> <span class="n">i</span>
                             <span class="bp">self</span><span class="o">.</span><span class="n">_hdf5_outvar_def</span> <span class="o">=</span> <span class="n">v</span>
-
-                <span class="c1"># if there are partab outputs, save some info</span>
-                <span class="k">if</span> <span class="s1">&#39;partab&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span><span class="p">:</span>
-                    <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                        <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">)</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="n">k</span><span class="p">][</span><span class="s1">&#39;file_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;partab&#39;</span><span class="p">:</span>
-                            <span class="bp">self</span><span class="o">.</span><span class="n">partab_outid</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;(\d+)&#39;</span><span class="p">,</span><span class="n">k</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
-
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
-                    <span class="k">if</span> <span class="n">k</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="s1">&#39;output&#39;</span> <span class="ow">in</span> <span class="n">k</span><span class="p">:</span>
                         <span class="c1"># Skip if the block number XX (&lt;outputXX&gt;) is greater than maxout</span>
                         <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">k</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;output&#39;</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">))</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="s1">&#39;job&#39;</span><span class="p">][</span><span class="s1">&#39;maxout&#39;</span><span class="p">]:</span>
                             <span class="k">continue</span>
@@ -1213,45 +1131,6 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
                     <span class="s1">&#39;starpar files not found in </span><span class="si">{0:s}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">))</span>
 
-        <span class="c1"># Find partab files</span>
-        <span class="k">if</span> <span class="s1">&#39;partab&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span><span class="p">:</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;partab&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">nums_partab</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">partag</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">partags</span><span class="p">:</span>
-                <span class="n">partab_patterns_</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="k">for</span> <span class="n">p</span> <span class="ow">in</span> <span class="n">partab_patterns</span><span class="p">:</span>
-                    <span class="n">p</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">p</span><span class="p">)</span>
-                    <span class="n">p</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="n">p</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;par?&#39;</span><span class="p">,</span> <span class="n">partag</span><span class="p">)</span>
-                    <span class="n">partab_patterns_</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">p</span><span class="p">))</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;partab&#39;</span><span class="p">][</span><span class="n">partag</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_match</span><span class="p">(</span><span class="n">partab_patterns_</span><span class="p">)</span>
-                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;partab&#39;</span><span class="p">][</span><span class="n">partag</span><span class="p">]:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                        <span class="s1">&#39;partab (</span><span class="si">{0:s}</span><span class="s1">) files not found in </span><span class="si">{1:s}</span><span class="s1">&#39;</span><span class="o">.</span>\
-                        <span class="nb">format</span><span class="p">(</span><span class="n">partag</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">))</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">nums_partab</span><span class="p">[</span><span class="n">partag</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-                <span class="k">else</span><span class="p">:</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">nums_partab</span><span class="p">[</span><span class="n">partag</span><span class="p">]</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">f</span><span class="p">[</span><span class="o">-</span><span class="mi">14</span><span class="p">:</span><span class="o">-</span><span class="mi">9</span><span class="p">])</span>
-                                                 <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;partab&#39;</span><span class="p">][</span><span class="n">partag</span><span class="p">]]</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;partab (</span><span class="si">{0:s}</span><span class="s1">): </span><span class="si">{1:s}</span><span class="s1"> nums: </span><span class="si">{2:d}</span><span class="s1">-</span><span class="si">{3:d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                        <span class="n">v</span><span class="p">,</span> <span class="n">osp</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;partab&#39;</span><span class="p">][</span><span class="n">partag</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
-                        <span class="bp">self</span><span class="o">.</span><span class="n">nums_partab</span><span class="p">[</span><span class="n">partag</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">nums_partab</span><span class="p">[</span><span class="n">partag</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
-
-        <span class="c1"># Find parhst files</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">athena_pp</span><span class="p">:</span>
-            <span class="n">fparhst</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_find_match</span><span class="p">(</span><span class="n">parhst_patterns</span><span class="p">)</span>
-            <span class="k">if</span> <span class="n">fparhst</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;parhst&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fparhst</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pids</span> <span class="o">=</span> <span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;par&#39;</span><span class="p">))</span>
-                            <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;parhst&#39;</span><span class="p">]]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pids</span><span class="o">.</span><span class="n">sort</span><span class="p">()</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;parhst: </span><span class="si">{0:s}</span><span class="s1"> pids: </span><span class="si">{1:d}</span><span class="s1">-</span><span class="si">{2:d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                    <span class="n">osp</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;parhst&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]),</span>
-                    <span class="bp">self</span><span class="o">.</span><span class="n">pids</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">pids</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]))</span>
-            <span class="k">else</span><span class="p">:</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">pids</span> <span class="o">=</span> <span class="p">[]</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span>
-                    <span class="s1">&#39;parhst files not found in </span><span class="si">{0:s}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">))</span>
-
         <span class="c1"># Find zprof files</span>
         <span class="c1"># Multiple zprof files for each snapshot.</span>
         <span class="k">if</span> <span class="s1">&#39;zprof&#39;</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">out_fmt</span><span class="p">:</span>
@@ -1384,36 +1263,6 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">problem_id</span><span class="p">,</span> <span class="n">outid</span><span class="p">,</span> <span class="n">num</span><span class="p">))</span>
 
         <span class="k">return</span> <span class="n">fhdf5</span>
-
-    <span class="k">def</span> <span class="nf">_get_fpartab</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">outid</span><span class="p">,</span> <span class="n">partag</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ipartab</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get partab file path</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">dirname</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;partab&#39;</span><span class="p">][</span><span class="n">partag</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="k">if</span> <span class="n">ipartab</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">fpartab</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;partab&#39;</span><span class="p">][</span><span class="n">partag</span><span class="p">][</span><span class="n">ipartab</span><span class="p">]</span>
-        <span class="k">else</span><span class="p">:</span>
-            <span class="n">fpattern</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0:s}</span><span class="s1">.out</span><span class="si">{1:d}</span><span class="s1">.</span><span class="si">{2:05d}</span><span class="s1">.</span><span class="si">{3:s}</span><span class="s1">.tab&#39;</span>
-            <span class="n">fpartab</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">fpattern</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
-                <span class="bp">self</span><span class="o">.</span><span class="n">problem_id</span><span class="p">,</span> <span class="n">outid</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">partag</span><span class="p">))</span>
-
-        <span class="k">return</span> <span class="n">fpartab</span>
-
-    <span class="k">def</span> <span class="nf">_get_fparhst</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pid</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Get parhst file path</span>
-<span class="sd">        &quot;&quot;&quot;</span>
-
-        <span class="k">try</span><span class="p">:</span>
-            <span class="n">dirname</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;parhst&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">])</span>
-        <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
-            <span class="k">return</span> <span class="kc">None</span>
-        <span class="n">fpattern</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0:s}</span><span class="s1">.par</span><span class="si">{1:d}</span><span class="s1">.csv&#39;</span>
-        <span class="n">fparhst</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="n">fpattern</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">problem_id</span><span class="p">,</span> <span class="n">pid</span><span class="p">))</span>
-
-        <span class="k">return</span> <span class="n">fparhst</span>
 
     <span class="k">def</span> <span class="nf">_get_logger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to set logger and default verbosity.</span>
