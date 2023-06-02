@@ -121,7 +121,13 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
                               z=slice(-hw, hw))
 
         # Load other cores
-        other_cores = list(gd.leaves.keys())
+        # TODO(SMOON) This is a temporary backward compatibility patch.
+        # After re-running grid-dendro, just do
+        # other_cores = gd.leaves
+        if isinstance(gd.leaves, list):
+            other_cores = gd.leaves
+        elif isinstance(gd.leaves, dict):
+            other_cores = list(gd.leaves.keys())
         other_cores.remove(core.nid)
         rho_ = gd.filter_data(ds.dens, other_cores, fill_value=0)
         ds_others = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
