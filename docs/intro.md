@@ -34,7 +34,8 @@ Below is an example of how you can set up pyathena. It assumes that you have alr
 
 ## Example Usage
 
-See example [notebooks](../notebook).
+Will be added.
+<!-- See example [notebooks](../notebook). -->
 
 ## Contributing
 
@@ -46,3 +47,8 @@ Don't forget to give the project a star! Thanks again!
 3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
 4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
+
+## References
+```{bibliography}
+:style: unsrt
+```

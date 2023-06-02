@@ -140,8 +140,8 @@ class RestartHandler(object):
     def reset_grids(self, ngrid=None):
         """Reset grid list with new grid size
 
-        Parameter
-        =========
+        Parameters
+        ----------
         ngrid : array like
            grid dimension [nx, ny, nz]
         """

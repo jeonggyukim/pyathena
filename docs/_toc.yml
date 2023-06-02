@@ -13,3 +13,6 @@ parts:
     - file: athenadataset
     - file: readers
     - file: utils
+  - caption: Examples
+    chapters:
+    - glob: examples/*
