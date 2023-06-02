@@ -20,7 +20,7 @@ def read_hdf5(filename, **kwargs):
     xarray.Dataset
     """
     ds = athdf(filename, **kwargs)
-    
+
     # Convert to xarray object
     varnames = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
     variables = [(['z', 'y', 'x'], ds[varname]) for varname in varnames]
