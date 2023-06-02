@@ -324,23 +324,24 @@ class LoadSim(object):
 
     def load_partab(self, num=None, ipartab=None,
                     partag=None, **kwargs):
-        """Function to read Athena++ partab file using pythena and
-        return DataFrame object.
+        """Read Athena++ partab file.
 
         Parameters
         ----------
         num : int
-           Snapshot number, e.g., /basedir/partab/problem_id.out?.num.par?.tab
+           Snapshot number.
+           e.g., /basedir/partab/problem_id.out?.num.par?.tab.
         ipartab : int
-           Read i-th file in the partab file list. Overrides num if both are given.
+           Read i-th file in the partab file list.
+           Overrides num if both are given.
         partag : int
-           particle id in the input file. Default value is 'par0'
+           Particle id in the input file. Default value is 'par0'
 
         Returns
         -------
-        pds : Pandas DataFrame object
+        pds : pandas.DataFrame
+            Particle data
         """
-
         if num is None and ipartab is None:
             raise ValueError('Specify either num or ipartab')
 
@@ -356,8 +357,7 @@ class LoadSim(object):
         return self.pds
 
     def load_parhst(self, pid, **kwargs):
-        """Function to read Athena++ partab file using pythena and
-        return DataFrame object.
+        """Read Athena++ individual particle history
 
         Parameters
         ----------
@@ -366,7 +366,8 @@ class LoadSim(object):
 
         Returns
         -------
-        phst : Pandas DataFrame object
+        phst : pandas.DataFrame
+            Individual particle history
         """
 
         self.fparhst = self._get_fparhst(pid)

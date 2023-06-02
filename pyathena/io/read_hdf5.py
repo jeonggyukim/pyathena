@@ -13,11 +13,19 @@ def read_hdf5(filename, **kwargs):
     Parameters
     ----------
     filename : str
-        data filename
+        Data filename
+    **kwargs : dict, optional
+        Extra arguments passed to athdf. Refer to athdf documentation for
+        a list of all possible arguments.
 
     Returns
     -------
-    xarray.Dataset
+    ds : xarray.Dataset
+        Fluid data
+
+    See Also
+    --------
+    io.athena_read.athdf
     """
     ds = athdf(filename, **kwargs)
 

@@ -3,24 +3,20 @@ import pandas as pd
 import os
 
 class TimingReader(object):
-    def __init__(self, base, pid):
+    def __init__(self, basedir, problem_id):
         """ Timing reader class
 
         Parameters
         ----------
-        base : string, base directory name
+        basedir : str
+            base directory name
+        problem_id : str
+            problem id
 
-        pid : string, problem id
-
-        Methods
-        -------
-        load_task_time
-        load_loop_time
-        load_timing
         """
         self.fdict = dict()
-        lt = os.path.join(base, '{}.loop_time.txt'.format(pid))
-        tt = os.path.join(base, '{}.task_time.txt'.format(pid))
+        lt = os.path.join(basedir, '{}.loop_time.txt'.format(problem_id))
+        tt = os.path.join(basedir, '{}.task_time.txt'.format(problem_id))
         if os.path.isfile(lt):
             self.fdict['loop_time'] = lt
         if os.path.isfile(tt):
@@ -31,15 +27,15 @@ class TimingReader(object):
 
         Parameters
         ----------
-        groups : list, e.g., ['Hydro','Primitives','UserWork']
-                 if provided, group tasks that have the same string in the list
-                 everything else will be summed and stored in 'Others'
+        groups : list
+            If provided, group tasks that have the same string in the list
+            everything else will be summed and stored in 'Others'.
+            e.g., ['Hydro','Primitives','UserWork']
 
         Returns
         -------
         pandas.DataFrame
-
-        The breakdown of time taken by each task of the time integrator
+            The breakdown of time taken by each task of the time integrator
         """
         def from_block(block):
             info = dict()
@@ -105,15 +101,11 @@ class TimingReader(object):
     def load_loop_time(self):
         """Read .loop_time.txt file
 
-        Parameters
-        ----------
-
         Returns
         -------
         pandas.DataFrame
-
-        The breakdown of each step of the main loop including
-        Before, TimeIntegratorTaskList, SelfGravity, After
+            The breakdown of each step of the main loop including
+            Before, TimeIntegratorTaskList, SelfGravity, After
         """
         def from_one_line(line):
             info = dict()
