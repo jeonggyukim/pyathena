@@ -203,24 +203,24 @@ def save_radial_profiles(s, pids=None, overwrite=False):
         rprf.to_netcdf(ofname)
 
 
-def run_GRID(s, overwrite=False):
-    for num in s.nums[config.GRID_NUM_START:]:
-        # Check if file exists
-        print('[run_GRID] processing model {} num {}'.format(s.basename, num))
-        ofname = Path(s.basedir, 'GRID', 'dendrogram.{:05d}.p'.format(num))
-        ofname.parent.mkdir(exist_ok=True)
-        if ofname.exists() and not overwrite:
-            continue
+def run_GRID(s, num, overwrite=False):
+    # Check if file exists
+    ofname = Path(s.basedir, 'GRID', 'dendrogram.{:05d}.p'.format(num))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[run_GRID] file already exists. Skipping...')
+        return
 
-        # Load data and construct dendrogram
-        ds = s.load_hdf5(num, load_method='pyathena').transpose('z', 'y', 'x')
-        gd = dendrogram.Dendrogram(ds.phigas.to_numpy())
-        gd.construct()
-        gd.prune()
+    # Load data and construct dendrogram
+    print('[run_GRID] processing model {} num {}'.format(s.basename, num))
+    ds = s.load_hdf5(num, load_method='pyathena').transpose('z', 'y', 'x')
+    gd = dendrogram.Dendrogram(ds.phigas.to_numpy(), verbose=False)
+    gd.construct()
+    gd.prune()
 
-        # Write to file
-        with open(ofname, 'wb') as handle:
-            pickle.dump(gd, handle, protocol=pickle.HIGHEST_PROTOCOL)
+    # Write to file
+    with open(ofname, 'wb') as handle:
+        pickle.dump(gd, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):

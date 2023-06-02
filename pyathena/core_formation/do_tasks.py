@@ -1,6 +1,7 @@
 from pathlib import Path
 import argparse
 import subprocess
+from multiprocessing import Pool
 import pyathena as pa
 from pyathena.core_formation.tasks import *
 from pyathena.core_formation.config import *
@@ -32,6 +33,8 @@ if __name__ == "__main__":
                         help="List of models to process")
     parser.add_argument("--pids", nargs='+', type=int,
                         help="List of particle ids to process")
+
+    parser.add_argument("--np", type=int, help="Number of processors")
 
     parser.add_argument("-j", "--join-partab", action="store_true",
                         help="Join partab files")
@@ -91,8 +94,11 @@ if __name__ == "__main__":
 
         # Run GRID-dendro.
         if args.grid_dendro:
-            print(f"run GRID-dendro for model {mdl}", flush=True)
-            run_GRID(s, overwrite=args.overwrite_grid)
+            print(f"Run GRID-dendro for model {mdl}", flush=True)
+            def run_GRID_wrapper(num):
+                run_GRID(s, num, overwrite=args.overwrite_grid)
+            with Pool(args.np) as p:
+                p.map(run_GRID_wrapper, s.nums[GRID_NUM_START:], 1)
 
         # Find t_coll cores and save their GRID-dendro node ID's.
         if args.core_tracking:
