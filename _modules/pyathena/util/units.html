@@ -325,11 +325,12 @@ document.write(`
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">           kind: string</span>
-<span class="sd">              &quot;LV&quot; for (pc, km/s) or &quot;LT&quot; for (pc, Myr)</span>
-<span class="sd">           muH: float</span>
-<span class="sd">              mean particle mass per H (for neutral gas).</span>
-<span class="sd">              Default value is 1.4271 (assuming solar metallicity).</span>
+<span class="sd">        kind : str</span>
+<span class="sd">           &quot;LV&quot; for (pc, km/s) or &quot;LT&quot; for (pc, Myr) or &quot;cgs&quot; for (cm, s),</span>
+<span class="sd">           or &quot;code&quot; for code unit.</span>
+<span class="sd">        muH : float</span>
+<span class="sd">            mean particle mass per H (for neutral gas).</span>
+<span class="sd">            Default value is 1.4271 (assuming solar metallicity).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1"># If code units, set [L]=[M]=[T]=1 and return.</span>
         <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;code&#39;</span><span class="p">:</span>
@@ -350,6 +351,7 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">Myr</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Myr&#39;</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span>
         <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;cgs&#39;</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">length</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">cm</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">time</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">s</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">velocity</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">time</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km/s&#39;</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
