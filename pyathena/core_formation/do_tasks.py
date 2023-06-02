@@ -30,97 +30,123 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("models", nargs='+', type=str,
                         help="List of models to process")
-    parser.add_argument("-g", "--overwrite_grid", action="store_true",
-                        help="Overwrite GRID-dendro output")
-    parser.add_argument("-t", "--overwrite_cores", action="store_true",
-                        help="Overwrite prestellar cores")
-    parser.add_argument("-r", "--overwrite_radial_profiles",
-                        action="store_true",
-                        help="Overwrite radial profiles of prestellar cores")
-    parser.add_argument("-c", "--overwrite_critical_tes", action="store_true",
-                        help="Overwrite critical turbulent equilibrium spheres"
-                             " for prestellar cores")
-    parser.add_argument("-pt", "--overwrite_plots_core_evolution",
-                        action="store_true",
-                        help="Overwrite core evolution plots")
-    parser.add_argument("-ps", "--overwrite_sink_history", action="store_true",
-                        help="Overwrite sink history plots")
-    parser.add_argument("-pp", "--overwrite_PDF_Pspecs", action="store_true",
-                        help="Overwrite PDF_Pspecs plots")
-    parser.add_argument("-pr", "--overwrite_rhoc_evolution",
-                        action="store_true",
-                        help="Overwrite central density evolution plots")
     parser.add_argument("--pids", nargs='+', type=int,
                         help="List of particle ids to process")
+
+    parser.add_argument("-j", "--join-partab", action="store_true",
+                        help="Join partab files")
+    parser.add_argument("-g", "--grid-dendro", action="store_true",
+                        help="Run GRID-dendro")
+    parser.add_argument("-c", "--core-tracking", action="store_true",
+                        help="Eulerian core tracking")
+    parser.add_argument("-r", "--radial-profile", action="store_true",
+                        help="Calculate radial profiles of each cores")
+    parser.add_argument("-t", "--critical-tes", action="store_true",
+                        help="Calculate critical TES of each cores")
+    parser.add_argument("-p", "--make-plots", action="store_true",
+                        help="Create various plots")
+    parser.add_argument("-o", "--overwrite-all", action="store_true",
+                        help="Overwrite everything")
+    parser.add_argument("-m", "--make-movie", action="store_true",
+                        help="Create movies")
+
+    parser.add_argument("--overwrite-grid", action="store_true",
+                        help="Overwrite GRID-dendro output")
+    parser.add_argument("--overwrite-cores", action="store_true",
+                        help="Overwrite prestellar cores")
+    parser.add_argument("--overwrite-radial-profiles", action="store_true",
+                        help="Overwrite radial profiles of prestellar cores")
+    parser.add_argument("--overwrite-critical-tes", action="store_true",
+                        help="Overwrite critical turbulent equilibrium spheres"
+                             " for prestellar cores")
+    parser.add_argument("--overwrite-plot-core-evolution", action="store_true",
+                        help="Overwrite core evolution plots")
+    parser.add_argument("--overwrite-sink-history", action="store_true",
+                        help="Overwrite sink history plots")
+    parser.add_argument("--overwrite-pdf-pspecs", action="store_true",
+                        help="Overwrite PDF_Pspecs plots")
+    parser.add_argument("--overwrite-rhoc-evolution", action="store_true",
+                        help="Overwrite central density evolution plots")
+
     args = parser.parse_args()
+
+    if args.overwrite_all:
+        args.overwrite_grid = True
+        args.overwrite_cores = True
+        args.overwrite_radial_profiles = True
+        args.overwrite_critical_tes = True
+        args.overwrite_plot_core_evolution = True
+        args.overwrite_sink_history = True
+        args.overwrite_pdf_pspecs = True
+        args.overwrite_rhoc_evolution = True
 
     # Select models
     for mdl in args.models:
         s = sa.set_model(mdl)
 
         # Combine output files.
-        print(f"Combine partab files for model {mdl}", flush=True)
-        combine_partab(s, remove=True)
+        if args.join_partab:
+            print(f"Combine partab files for model {mdl}", flush=True)
+            combine_partab(s, remove=True)
 
         # Run GRID-dendro.
-        print(f"run GRID-dendro for model {mdl}", flush=True)
-        run_GRID(s, overwrite=args.overwrite_grid)
+        if args.grid_dendro:
+            print(f"run GRID-dendro for model {mdl}", flush=True)
+            run_GRID(s, overwrite=args.overwrite_grid)
 
         # Find t_coll cores and save their GRID-dendro node ID's.
-        print(f"find t_coll cores for model {mdl}", flush=True)
-        find_and_save_cores(s, pids=args.pids, overwrite=args.overwrite_cores)
-        try:
-            s._load_cores()
-        except FileNotFoundError:
-            pass
+        if args.core_tracking:
+            print(f"find t_coll cores for model {mdl}", flush=True)
+            find_and_save_cores(s, pids=args.pids, overwrite=args.overwrite_cores)
+            try:
+                s._load_cores()
+            except FileNotFoundError:
+                pass
 
         # Calculate radial profiles of t_coll cores and pickle them.
-        msg = "calculate and save radial profiles of t_coll cores for model {}"
-        print(msg.format(mdl), flush=True)
-        save_radial_profiles(s, pids=args.pids, overwrite=args.overwrite_radial_profiles)
-        try:
-            s._load_radial_profiles()
-        except FileNotFoundError:
-            pass
+        if args.radial_profile:
+            msg = "calculate and save radial profiles of t_coll cores for model {}"
+            print(msg.format(mdl), flush=True)
+            save_radial_profiles(s, pids=args.pids, overwrite=args.overwrite_radial_profiles)
+            try:
+                s._load_radial_profiles()
+            except FileNotFoundError:
+                pass
 
         # Find critical tes
-        print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
-        save_critical_tes(s, pids=args.pids, overwrite=args.overwrite_critical_tes)
-        try:
-            s._load_cores()
-        except FileNotFoundError:
-            pass
+        if args.critical_tes:
+            print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
+            save_critical_tes(s, pids=args.pids, overwrite=args.overwrite_critical_tes)
+            try:
+                s._load_cores()
+            except FileNotFoundError:
+                pass
 
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}", flush=True)
 #        resample_hdf5(s)
 
         # make plots
-        print(f"draw t_coll cores plots for model {mdl}", flush=True)
-        make_plots_core_evolution(s, pids=args.pids, overwrite=args.overwrite_plots_core_evolution)
+        if args.make_plots:
+            print(f"draw t_coll cores plots for model {mdl}", flush=True)
+            make_plots_core_evolution(s, pids=args.pids, overwrite=args.overwrite_plot_core_evolution)
 
-        print(f"draw sink history plots for model {mdl}", flush=True)
-        make_plots_sinkhistory(s, overwrite=args.overwrite_sink_history)
+            print(f"draw sink history plots for model {mdl}", flush=True)
+            make_plots_sinkhistory(s, overwrite=args.overwrite_sink_history)
 
-        print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
-        make_plots_PDF_Pspec(s, overwrite=args.overwrite_PDF_Pspecs)
+            print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
+            make_plots_PDF_Pspec(s, overwrite=args.overwrite_pdf_pspecs)
 
-        print(f"draw central density evolution plot for model {mdl}", flush=True)
-        make_plots_central_density_evolution(s, overwrite=args.overwrite_rhoc_evolution)
-
-#        print(f"draw projection plots for model {mdl}", flush=True)
-#        make_plots_projections(s)
+            print(f"draw central density evolution plot for model {mdl}", flush=True)
+            make_plots_central_density_evolution(s, overwrite=args.overwrite_rhoc_evolution)
 
         # make movie
-        print(f"create movies for model {mdl}", flush=True)
-        srcdir = Path(s.basedir, "figures")
-        plot_prefix = [PLOT_PREFIX_SINK_HISTORY, PLOT_PREFIX_PDF_PSPEC]
-        for prefix in plot_prefix:
-            subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
-#            subprocess.run(["mv", "{}/{}.mp4".format(srcdir, prefix),
-#                "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
-        for pid in s.pids:
-            prefix = "{}.par{}".format(PLOT_PREFIX_TCOLL_CORES, pid)
-            subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
-#            subprocess.run(["mv", "{}/{}.mp4".format(srcdir, prefix),
-#                "/tigress/sm69/public_html/files/{}.{}.mp4".format(mdl, prefix)])
+        if args.make_movie:
+            print(f"create movies for model {mdl}", flush=True)
+            srcdir = Path(s.basedir, "figures")
+            plot_prefix = [PLOT_PREFIX_SINK_HISTORY, PLOT_PREFIX_PDF_PSPEC]
+            for prefix in plot_prefix:
+                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
+            for pid in s.pids:
+                prefix = "{}.par{}".format(PLOT_PREFIX_TCOLL_CORES, pid)
+                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
