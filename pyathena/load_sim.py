@@ -137,22 +137,21 @@ class LoadSim(object):
             # set it using hst file creation time
             self.config_time = pd.to_datetime(osp.getctime(self.files['hst']),unit='s')
 
-        if units is not None:
+        try:
+            muH = self.par['problem']['muH']
+            self.u = Units(kind='LV', muH=muH)
+        except KeyError:
             try:
-                muH = self.par['problem']['muH']
-                self.u = Units(kind='LV', muH=muH)
-            except KeyError:
-                try:
-                    # Some old simulations run with new cooling may not have muH
-                    # parameter printed out
-                    if self.par['problem']['Z_gas'] != 1.0:
-                        self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
-                                            format(self.par['problem']['Z_gas']) +
-                                            'Caution with muH={0:s}'.format(muH))
-                    self.u = units
-                except:
-                    self.u = units
-                    pass
+                # Some old simulations run with new cooling may not have muH
+                # parameter printed out
+                if self.par['problem']['Z_gas'] != 1.0:
+                    self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
+                                        format(self.par['problem']['Z_gas']) +
+                                        'Caution with muH={0:s}'.format(muH))
+                self.u = units
+            except:
+                self.u = units
+                pass
         if not self.athena_pp:
             # TODO(SMOON) Make DerivedFields work with athena++
             self.dfi = DerivedFields(self.par).dfi

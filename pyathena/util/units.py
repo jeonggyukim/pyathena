@@ -18,6 +18,12 @@ class Units(object):
               mean particle mass per H (for neutral gas).
               Default value is 1.4271 (assuming solar metallicity).
         """
+        # If code units, set [L]=[M]=[T]=1 and return.
+        if kind == 'code':
+            self.length = 1.0
+            self.mass = 1.0
+            self.time = 1.0
+            return
 
         mH = 1.008*au.u
         if kind == 'LV':
@@ -33,6 +39,8 @@ class Units(object):
         elif kind == 'cgs':
             self.time = 1.0*au.s
             self.velocity = (self.length/self.time).to('km/s')
+        else:
+            raise ValueError(f"Unrecognized unit system: {kind}")
 
         self.mH = mH.to('g')
         self.mass = (self.muH*mH*(self.length.to('cm').value)**3).to('Msun')

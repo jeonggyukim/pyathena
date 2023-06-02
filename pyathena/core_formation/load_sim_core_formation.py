@@ -6,6 +6,7 @@ import pathlib
 import pickle
 
 from pyathena.load_sim import LoadSim
+from pyathena.util.units import Units
 from pyathena.io.timing_reader import TimingReader
 from pyathena.core_formation.hst import Hst
 from pyathena.core_formation.tools import LognormalPDF
@@ -81,7 +82,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         if isinstance(basedir_or_Mach, (pathlib.PosixPath, str)):
             basedir = basedir_or_Mach
             super().__init__(basedir, savdir=savdir, load_method=load_method,
-                             units=None, verbose=verbose)
+                             units=Units('code'), verbose=verbose)
             self.Mach = self.par['problem']['Mach']
 
             LognormalPDF.__init__(self, self.Mach)
