@@ -12,11 +12,12 @@ class Units(object):
         """
         Parameters
         ----------
-           kind: string
-              "LV" for (pc, km/s) or "LT" for (pc, Myr)
-           muH: float
-              mean particle mass per H (for neutral gas).
-              Default value is 1.4271 (assuming solar metallicity).
+        kind : str
+           "LV" for (pc, km/s) or "LT" for (pc, Myr) or "cgs" for (cm, s),
+           or "code" for code unit.
+        muH : float
+            mean particle mass per H (for neutral gas).
+            Default value is 1.4271 (assuming solar metallicity).
         """
         # If code units, set [L]=[M]=[T]=1 and return.
         if kind == 'code':
@@ -37,6 +38,7 @@ class Units(object):
             self.time = (1.0*au.Myr).to('Myr')
             self.velocity = (self.length/self.time).to('km/s')
         elif kind == 'cgs':
+            self.length = 1.0*au.cm
             self.time = 1.0*au.s
             self.velocity = (self.length/self.time).to('km/s')
         else:
