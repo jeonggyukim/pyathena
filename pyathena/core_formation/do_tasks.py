@@ -34,7 +34,7 @@ if __name__ == "__main__":
     parser.add_argument("--pids", nargs='+', type=int,
                         help="List of particle ids to process")
 
-    parser.add_argument("--np", type=int, help="Number of processors")
+    parser.add_argument("--np", type=int, default=1, help="Number of processors")
 
     parser.add_argument("-j", "--join-partab", action="store_true",
                         help="Join partab files")
