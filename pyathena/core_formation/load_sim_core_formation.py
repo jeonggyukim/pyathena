@@ -155,41 +155,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         rhoLP = 8.86*self.cs**2/(4*np.pi*self.G*r**2)
         return rhoLP
 
-    def get_critical_TES(self, rhoe, lmb_sonic, p=0.5):
-        """
-        Calculate critical turbulent equilibrium sphere
-
-        Description
-        -----------
-        Critical mass of turbulent equilibrium sphere is given by
-            M_crit = M_{J,e}m_crit(xi_s)
-        where m_crit is the dimensionless critical mass and M_{J,e}
-        is the Jeans mass at the edge density rho_e.
-        This function assumes unit system:
-            [L] = L_{J,0}, [M] = M_{J,0}
-
-        Parameters
-        ----------
-        rhoe : edge density
-        lmb_sonic : sonic radius
-        p (optional) : power law index for the linewidth-size relation
-
-        Returns
-        -------
-        rhoc : central density
-        R : radius of the critical TES
-        M : mass of the critical TES
-        """
-        LJ_e = 1.0*(rhoe/self.rho0)**-0.5
-        MJ_e = 1.0*(rhoe/self.rho0)**-0.5
-        xi_s = lmb_sonic / LJ_e
-        tes = TESe(p, xi_s)
-        rat, xi0, m = tes.get_crit()
-        rhoc = rat*rhoe
-        R = LJ_e*xi0
-        M = MJ_e*m
-        return rhoc, R, M
-
     def _load_tcoll_cores(self):
         """Read .csv output and find their collapse time and snapshot number.
 
