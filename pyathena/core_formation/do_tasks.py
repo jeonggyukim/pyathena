@@ -95,15 +95,18 @@ if __name__ == "__main__":
         # Run GRID-dendro.
         if args.grid_dendro:
             print(f"Run GRID-dendro for model {mdl}", flush=True)
-            def run_GRID_wrapper(num):
+            def wrapper(num):
                 run_GRID(s, num, overwrite=args.overwrite_grid)
             with Pool(args.np) as p:
-                p.map(run_GRID_wrapper, s.nums[GRID_NUM_START:], 1)
+                p.map(wrapper, s.nums[GRID_NUM_START:], 1)
 
         # Find t_coll cores and save their GRID-dendro node ID's.
         if args.core_tracking:
             print(f"find t_coll cores for model {mdl}", flush=True)
-            find_and_save_cores(s, pids=args.pids, overwrite=args.overwrite_cores)
+            def wrapper(pid):
+                find_and_save_cores(s, pid, overwrite=args.overwrite_cores)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.pids, 1)
             try:
                 s._load_cores()
             except FileNotFoundError:
