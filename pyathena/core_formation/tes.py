@@ -474,9 +474,8 @@ class TESc:
         return np.array([dy1, dy2])
 
 
-def get_critical_tes(rhoe, lmb_sonic, p=0.5):
-    """
-    Calculate critical turbulent equilibrium sphere
+def get_critical_tes_at_mean_density(rhoe, lmb_sonic, p=0.5):
+    """Calculate critical turbulent equilibrium sphere
 
     Critical mass of turbulent equilibrium sphere is given by
         M_crit = M_{J,e}m_crit(xi_s)
