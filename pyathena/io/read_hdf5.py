@@ -7,19 +7,27 @@ import numpy as np
 
 from .athena_read import athdf
 
-def read_hdf5(filename):
+def read_hdf5(filename, **kwargs):
     """Read Athena hdf5 file and convert it to xarray Dataset
 
     Parameters
     ----------
     filename : str
-        data filename
+        Data filename
+    **kwargs : dict, optional
+        Extra arguments passed to athdf. Refer to athdf documentation for
+        a list of all possible arguments.
 
     Returns
     -------
-    xarray.Dataset
+    ds : xarray.Dataset
+        Fluid data
+
+    See Also
+    --------
+    io.athena_read.athdf
     """
-    ds = athdf(filename)
+    ds = athdf(filename, **kwargs)
 
     # Convert to xarray object
     varnames = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
@@ -27,10 +35,12 @@ def read_hdf5(filename):
     attr_keys = (set(ds.keys()) - varnames
                  - {'VariableNames','x1f','x2f','x3f','x1v','x2v','x3v'})
     attrs = {attr_key:ds[attr_key] for attr_key in attr_keys}
-    for xr_key, ar_key in zip(['dx','dy','dz'], ['x1f','x2f','x3f']):
-        dx = np.unique(np.diff(ds[ar_key])).squeeze()
-        if dx.size == 1: dx = dx[()]
-        attrs[xr_key] = dx
+
+    # If uniform grid, store cell spacing.
+    if ds['MaxLevel'] == 0:
+        attrs['dx1'] = np.diff(ds['RootGridX1'])[0] / ds['RootGridSize'][0]
+        attrs['dx2'] = np.diff(ds['RootGridX2'])[0] / ds['RootGridSize'][1]
+        attrs['dx3'] = np.diff(ds['RootGridX3'])[0] / ds['RootGridSize'][2]
     ds = xr.Dataset(
         data_vars=dict(zip(varnames, variables)),
         coords=dict(x=ds['x1v'], y=ds['x2v'], z=ds['x3v']),

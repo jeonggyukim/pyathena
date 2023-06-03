@@ -2,6 +2,7 @@ import astropy.units as au
 import astropy.constants as ac
 import numpy as np
 
+
 class Units(object):
     """Simple class for simulation unit.
 
@@ -11,12 +12,19 @@ class Units(object):
         """
         Parameters
         ----------
-           kind: string
-              "LV" for (pc, km/s) or "LT" for (pc, Myr)
-           muH: float
-              mean particle mass per H (for neutral gas).
-              Default value is 1.4271 (assuming solar metallicity).
+        kind : str
+           "LV" for (pc, km/s) or "LT" for (pc, Myr) or "cgs" for (cm, s),
+           or "code" for code unit.
+        muH : float
+            mean particle mass per H (for neutral gas).
+            Default value is 1.4271 (assuming solar metallicity).
         """
+        # If code units, set [L]=[M]=[T]=1 and return.
+        if kind == 'code':
+            self.length = 1.0
+            self.mass = 1.0
+            self.time = 1.0
+            return
 
         mH = 1.008*au.u
         if kind == 'LV':
@@ -30,8 +38,11 @@ class Units(object):
             self.time = (1.0*au.Myr).to('Myr')
             self.velocity = (self.length/self.time).to('km/s')
         elif kind == 'cgs':
+            self.length = 1.0*au.cm
             self.time = 1.0*au.s
             self.velocity = (self.length/self.time).to('km/s')
+        else:
+            raise ValueError(f"Unrecognized unit system: {kind}")
 
         self.mH = mH.to('g')
         self.mass = (self.muH*mH*(self.length.to('cm').value)**3).to('Msun')
@@ -42,15 +53,16 @@ class Units(object):
         self.energy_density = self.pressure.to('erg/cm**3')
 
         self.mass_flux = (self.density*self.velocity).to('Msun kpc-2 yr-1')
-        self.momentum_flux = (self.density*self.velocity**2).to('Msun km s-1 kpc-2 yr-1')
+        self.momentum_flux = (self.density*self.velocity**2
+                              ).to('Msun km s-1 kpc-2 yr-1')
         self.energy_flux = (self.density*self.velocity**3).to('erg kpc-2 yr-1')
 
         # Define (physical constants in code units)^-1
         #
         # Opposite to the convention chosen by set_units function in
         # athena/src/units.c This is because in post-processing we want to
-        # convert from code units to more convenient ones by "multiplying" these
-        # constants
+        # convert from code units to more convenient ones by "multiplying"
+        # these constants
         self.cm = self.length.to('cm').value
         self.pc = self.length.to('pc').value
         self.kpc = self.length.to('kpc').value
@@ -65,6 +77,9 @@ class Units(object):
         self.muG = np.sqrt(4*np.pi*self.energy_density.cgs.value)/1e-6
 
         # For yt
-        self.units_override = dict(length_unit=(self.length.to('pc').value, 'pc'),
-                                   time_unit=(self.time.to('Myr').value, 'Myr'),
-                                   mass_unit=(self.mass.to('Msun').value, 'Msun'))
+        self.units_override = dict(length_unit=(
+                                       self.length.to('pc').value, 'pc'),
+                                   time_unit=(
+                                       self.time.to('Myr').value, 'Myr'),
+                                   mass_unit=(
+                                       self.mass.to('Msun').value, 'Msun'))

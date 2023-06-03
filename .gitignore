@@ -10,3 +10,5 @@ pyathena_env/*
 docs/_build
 docs/_static
 .DS_Store
+tags
+job*

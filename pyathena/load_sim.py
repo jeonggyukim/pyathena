@@ -20,6 +20,7 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
+from .io.read_particles import read_partab, read_parhst
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -253,7 +254,7 @@ class LoadSim(object):
         return self.ds
 
     def load_hdf5(self, num=None, ihdf5=None,
-                  outvar=None, outid=None, load_method=None):
+                  outvar=None, outid=None, load_method=None, **kwargs):
         """Function to read Athena hdf5 file using pythena or yt and
         return DataSet object.
 
@@ -307,7 +308,7 @@ class LoadSim(object):
                         refinement data. Use "yt" instead'.format(self.load_method))
                 self.ds = None
             else:
-                self.ds = read_hdf5(self.fhdf5)
+                self.ds = read_hdf5(self.fhdf5, **kwargs)
 
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
@@ -320,6 +321,62 @@ class LoadSim(object):
                 self.load_method) + ' Use either "yt" or "pyathena".')
 
         return self.ds
+
+    def load_partab(self, num=None, ipartab=None,
+                    partag=None, **kwargs):
+        """Read Athena++ partab file.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number.
+           e.g., /basedir/partab/problem_id.out?.num.par?.tab.
+        ipartab : int
+           Read i-th file in the partab file list.
+           Overrides num if both are given.
+        partag : int
+           Particle id in the input file. Default value is 'par0'
+
+        Returns
+        -------
+        pds : pandas.DataFrame
+            Particle data
+        """
+        if num is None and ipartab is None:
+            raise ValueError('Specify either num or ipartab')
+
+        if partag is None:
+            partag = self._partab_partag_def
+
+        self.fpartab = self._get_fpartab(self.partab_outid, partag, num, ipartab)
+        if self.fpartab is None or not osp.exists(self.fpartab):
+            self.logger.info('[load_partab]: partab file does not exist. ')
+
+        self.pds = read_partab(self.fpartab, **kwargs)
+
+        return self.pds
+
+    def load_parhst(self, pid, **kwargs):
+        """Read Athena++ individual particle history
+
+        Parameters
+        ----------
+        pid : int
+           Particle id, e.g., /basedir/partab/problem_id.pid.csv
+
+        Returns
+        -------
+        phst : pandas.DataFrame
+            Individual particle history
+        """
+
+        self.fparhst = self._get_fparhst(pid)
+        if self.fparhst is None or not osp.exists(self.fparhst):
+            self.logger.info('[load_parhst]: parhst file does not exist. ')
+
+        self.phst = read_parhst(self.fparhst, **kwargs)
+
+        return self.phst
 
     def load_starpar_vtk(self, num=None, ivtk=None, force_override=False,
                          verbose=False):
@@ -536,6 +593,8 @@ class LoadSim(object):
 
         (athena_pp only)
         hdf5: problem_id.out?.num.athdf
+        partab: problem_id.out?.num.par?.tab
+        parhst: problem_id.pid.csv
         loop_time: problem_id.loop_time.txt
         task_time: problem_id.task_time.txt
         """
@@ -585,6 +644,12 @@ class LoadSim(object):
                             ('id0', '*.????.starpar.vtk'),
                             ('*.????.starpar.vtk',)]
 
+        partab_patterns = [('partab', '*.out?.?????.par?.tab'),
+                         ('*.out?.?????.par?.tab',)]
+
+        parhst_patterns = [('parhst', '*.par*.csv'),
+                         ('*.par*.csv',)]
+
         zprof_patterns = [('zprof', '*.zprof'),
                           ('id0', '*.zprof')]
 
@@ -615,25 +680,42 @@ class LoadSim(object):
                 self.logger.info('athena simulation')
 
             self.out_fmt = []
+            self.partags = []
             if self.athena_pp:
+                # read output blocks
                 for k in self.par.keys():
-                    if 'output' in k:
+                    if k.startswith('output'):
                         self.out_fmt.append(self.par[k]['file_type'])
 
+                    # Save particle output tags
+                    if k.startswith('particle'):
+                        par_id = int(k.strip('particle')) - 1
+                        partag = 'par{}'.format(par_id)
+                        self.partags.append(partag)
+                        self._partab_partag_def = partag
+
+                # if there are hdf5 outputs, save some info
                 if self.out_fmt.count('hdf5') > 0:
                     self.hdf5_outid = []
                     self.hdf5_outvar = []
                     for k in self.par.keys():
-                        if 'output' in k and self.par[k]['file_type'] == 'hdf5':
+                        if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
                             self.hdf5_outid.append(int(re.split('(\d+)',k)[1]))
                             self.hdf5_outvar.append(self.par[k]['variable'])
                     for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
                         if 'prim' in v or 'cons' in v:
                             self._hdf5_outid_def = i
                             self._hdf5_outvar_def = v
+
+                # if there are partab outputs, save some info
+                if 'partab' in self.out_fmt:
+                    for k in self.par.keys():
+                        if k.startswith('output') and self.par[k]['file_type'] == 'partab':
+                            self.partab_outid = int(re.split('(\d+)',k)[1])
+
             else:
                 for k in self.par.keys():
-                    if 'output' in k:
+                    if k.startswith('output'):
                         # Skip if the block number XX (<outputXX>) is greater than maxout
                         if int(k.replace('output','')) > self.par['job']['maxout']:
                             continue
@@ -818,6 +900,45 @@ class LoadSim(object):
                 self.logger.warning(
                     'starpar files not found in {0:s}.'.format(self.basedir))
 
+        # Find partab files
+        if 'partab' in self.out_fmt:
+            self.files['partab'] = dict()
+            self.nums_partab = dict()
+            for partag in self.partags:
+                partab_patterns_ = []
+                for p in partab_patterns:
+                    p = list(p)
+                    p[-1] = p[-1].replace('par?', partag)
+                    partab_patterns_.append(tuple(p))
+                self.files['partab'][partag] = self._find_match(partab_patterns_)
+                if not self.files['partab'][partag]:
+                    self.logger.warning(
+                        'partab ({0:s}) files not found in {1:s}'.\
+                        format(partag, self.basedir))
+                    self.nums_partab[partag] = None
+                else:
+                    self.nums_partab[partag] = [int(f[-14:-9])
+                                                 for f in self.files['partab'][partag]]
+                    self.logger.info('partab ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        v, osp.dirname(self.files['partab'][partag][0]),
+                        self.nums_partab[partag][0], self.nums_partab[partag][-1]))
+
+        # Find parhst files
+        if self.athena_pp:
+            fparhst = self._find_match(parhst_patterns)
+            if fparhst:
+                self.files['parhst'] = fparhst
+                self.pids = [int(f.split('/')[-1].split('.')[1].strip('par'))
+                            for f in self.files['parhst']]
+                self.pids.sort()
+                self.logger.info('parhst: {0:s} pids: {1:d}-{2:d}'.format(
+                    osp.dirname(self.files['parhst'][0]),
+                    self.pids[0], self.pids[-1]))
+            else:
+                self.pids = []
+                self.logger.warning(
+                    'parhst files not found in {0:s}.'.format(self.basedir))
+
         # Find zprof files
         # Multiple zprof files for each snapshot.
         if 'zprof' in self.out_fmt:
@@ -950,6 +1071,36 @@ class LoadSim(object):
                 self.problem_id, outid, num))
 
         return fhdf5
+
+    def _get_fpartab(self, outid, partag, num=None, ipartab=None):
+        """Get partab file path
+        """
+
+        try:
+            dirname = osp.dirname(self.files['partab'][partag][0])
+        except IndexError:
+            return None
+        if ipartab is not None:
+            fpartab = self.files['partab'][partag][ipartab]
+        else:
+            fpattern = '{0:s}.out{1:d}.{2:05d}.{3:s}.tab'
+            fpartab = osp.join(dirname, fpattern.format(
+                self.problem_id, outid, num, partag))
+
+        return fpartab
+
+    def _get_fparhst(self, pid):
+        """Get parhst file path
+        """
+
+        try:
+            dirname = osp.dirname(self.files['parhst'][0])
+        except IndexError:
+            return None
+        fpattern = '{0:s}.par{1:d}.csv'
+        fparhst = osp.join(dirname, fpattern.format(self.problem_id, pid))
+
+        return fparhst
 
     def _get_logger(self, verbose=False):
         """Function to set logger and default verbosity.
