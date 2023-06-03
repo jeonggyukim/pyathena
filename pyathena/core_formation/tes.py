@@ -530,9 +530,10 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     plt.sca(axs[0, 0])
     rds = np.logspace(-2, 2)
     u, du = ts.solve(rds)
-    plt.loglog(rds, np.exp(u))
-    plt.axvline(rsonic0, ls=':', label=r'$r_\mathrm{sonic}/L_{J,c}$')
-    plt.axvline(rmax0, ls='--', label=r'$r_\mathrm{max}/L_{J,c}$')
+    plt.loglog(rds, np.exp(u), c='k')
+    plt.axvline(rsonic0, ls=':', color='k', label=r'$r_\mathrm{sonic}/L_{J,c}$')
+    u, du = ts.solve(rmax0)
+    plt.plot(rmax0, np.exp(u[0]), 'r+', mew=2, ms=10)
     plt.xlabel(r'$r/L_{J,c}$')
     plt.ylabel(r'$\rho/\rho_c$')
     plt.legend()
@@ -540,14 +541,19 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     # Plot the r-M diagram
     plt.sca(axs[0, 1])
     rmax_arr = np.logspace(-1, 2)
-    M = []
-    for R in rmax_arr:
-        M.append(ts.get_mass(R))
-    plt.loglog(rmax_arr, M)
+    u, du = ts.solve(rmax_arr)
+    rho_e = np.exp(u)
+    M = ts.get_mass(rmax_arr)
+    plt.loglog(rmax_arr, M, label=r'$M/M_{J,c}$')
+    plt.loglog(rmax_arr, M*np.sqrt(rho_e), label=r'$M/M_{J,e}$')
     M = ts.get_mass(rmax0)
+    u, du = ts.solve(rmax0)
+    rho_e = np.exp(u[0])
     plt.plot(rmax0, M, 'r+', mew=2, ms=10)
+    plt.plot(rmax0, M*np.sqrt(rho_e), 'r+', mew=2, ms=10)
     plt.xlabel(r'$R/L_{J,c}$')
-    plt.ylabel(r'$M/M_{J,c}$')
+    plt.ylabel('Mass')
+    plt.legend(loc='upper left')
 
     # Construct a fixed-mass TES family corresponding to menc0
     rsonic = rsonic0 / np.pi / menc0
@@ -571,7 +577,7 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     # P-V diagram
     vol, prs = get_pv_diagram(rsonic, np.linspace(u00-10, u00+10))
     plt.sca(axs[1, 1])
-    plt.loglog(vol, prs)
+    plt.loglog(vol, prs, c='k')
     rmax = tsm.get_radius(u00)
     vol = 4*np.pi/3*rmax**3
     u, du = tsm.solve(rmax, u00)
