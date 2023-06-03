@@ -468,7 +468,7 @@ output, (reprocessed) hst, and zprof. Used in child classes.</p>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.LoadSim.load_hdf5">
-<span class="sig-name descname"><span class="pre">load_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ihdf5</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outvar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_hdf5" title="Permalink to this definition">#</a></dt>
+<span class="sig-name descname"><span class="pre">load_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ihdf5</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outvar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_hdf5" title="Permalink to this definition">#</a></dt>
 <dd><p>Function to read Athena hdf5 file using pythena or yt and
 return DataSet object.</p>
 <dl class="field-list simple">
@@ -487,6 +487,46 @@ Overrides outid.</p></li>
 </dd>
 <dt class="field-odd">Return type</dt>
 <dd class="field-odd"><p>xarray AthenaDataSet or yt datasets</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.LoadSim.load_parhst">
+<span class="sig-name descname"><span class="pre">load_parhst</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pid</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_parhst"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_parhst" title="Permalink to this definition">#</a></dt>
+<dd><p>Read Athena++ individual particle history</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>pid</strong> (<em>int</em>) – Particle id, e.g., /basedir/partab/problem_id.pid.csv</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>phst</strong> – Individual particle history</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.LoadSim.load_partab">
+<span class="sig-name descname"><span class="pre">load_partab</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ipartab</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_partab"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_partab" title="Permalink to this definition">#</a></dt>
+<dd><p>Read Athena++ partab file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>num</strong> (<em>int</em>) – Snapshot number.
+e.g., /basedir/partab/problem_id.out?.num.par?.tab.</p></li>
+<li><p><strong>ipartab</strong> (<em>int</em>) – Read i-th file in the partab file list.
+Overrides num if both are given.</p></li>
+<li><p><strong>partag</strong> (<em>int</em>) – Particle id in the input file. Default value is ‘par0’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>pds</strong> – Particle data</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pandas.DataFrame</p>
 </dd>
 </dl>
 </dd></dl>
