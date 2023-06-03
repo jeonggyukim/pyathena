@@ -294,14 +294,29 @@ def get_coords_node(ds, node):
 
 
 def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, ncells_min=10):
+    """Print resolution requirements
+
+    Parameters
+    ----------
+    Mach : float
+        Mach number
+    Lbox : float
+        Box size
+    mfrac : float, optional
+        Cumulative mass fraction in a mass-weighted density pdf.
+    rho_amb : float, optional
+        Ambient density. If given, override mfrac.
+    ncells_min : int, optional
+        Minimum number of cells to resolve critical TES.
+    """
     if mfrac is None and rho_amb is None:
         raise ValueError("Specify either mfrac or rho_amb")
     s = load_sim_core_formation.LoadSimCoreFormation(Mach)
     lmb_sonic = get_sonic(Mach, Lbox)
     if rho_amb is None:
         rho_amb = s.get_contrast(mfrac)
-    rhoc_BE, R_BE, M_BE = tes.get_critical_tes(rho_amb, np.inf, p=0.5)
-    rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rho_amb, lmb_sonic, p=0.5)
+    rhoc_BE, R_BE, M_BE = tes.get_critical_tes_at_mean_density(rho_amb, np.inf, p=0.5)
+    rhoc_TES, R_TES, M_TES = tes.get_critical_tes_at_mean_density(rho_amb, lmb_sonic, p=0.5)
     R_LP_BE = s.get_RLP(M_BE)
     R_LP_TES = s.get_RLP(M_TES)
     dx_req_LP = R_LP_BE/ncells_min
