@@ -474,6 +474,40 @@ class TESc:
         return np.array([dy1, dy2])
 
 
+def get_critical_tes(rhoe, lmb_sonic, p=0.5):
+    """
+    Calculate critical turbulent equilibrium sphere
+
+    Critical mass of turbulent equilibrium sphere is given by
+        M_crit = M_{J,e}m_crit(xi_s)
+    where m_crit is the dimensionless critical mass and M_{J,e}
+    is the Jeans mass at the edge density rho_e.
+    This function assumes unit system:
+        [L] = L_{J,0}, [M] = M_{J,0}
+
+    Parameters
+    ----------
+    rhoe : edge density
+    lmb_sonic : sonic radius
+    p (optional) : power law index for the linewidth-size relation
+
+    Returns
+    -------
+    rhoc : central density
+    R : radius of the critical TES
+    M : mass of the critical TES
+    """
+    LJ_e = rhoe**-0.5
+    MJ_e = rhoe**-0.5
+    xi_s = lmb_sonic / LJ_e
+    tes = TESe(p, xi_s)
+    rat, xi0, m = tes.get_crit()
+    rhoc = rat*rhoe
+    R = LJ_e*xi0
+    M = MJ_e*m
+    return rhoc, R, M
+
+
 def get_pv_diagram(rsonic, u0s=None):
     """Construct p-v diagram of a TES
 
