@@ -125,7 +125,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         # After re-running grid-dendro, just do
         # other_cores = gd.leaves
         if isinstance(gd.leaves, list):
-            other_cores = gd.leaves
+            other_cores = gd.leaves.copy()
         elif isinstance(gd.leaves, dict):
             other_cores = list(gd.leaves.keys())
         other_cores.remove(core.nid)
