@@ -57,7 +57,7 @@ def save_critical_tes(s, pids=None, overwrite=False):
                 critical_tes.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def find_and_save_cores(s, pids=None, overwrite=False):
+def find_and_save_cores(s, pid, overwrite=False):
     """Loops over all sink particles and find their progenitor cores
 
     Finds a unique grid-dendro leaf at each snapshot that is going to collapse.
@@ -70,92 +70,87 @@ def find_and_save_cores(s, pids=None, overwrite=False):
         dst = tools.get_periodic_distance(pos1, pos2, s.Lbox)
         return dst
 
-    if pids is None:
-        pids = s.pids
-    elif isinstance(pids, int):
-        pids = [pids,]
-    for pid in pids:
-        # Check if file exists
-        ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
-        ofname.parent.mkdir(exist_ok=True)
-        if ofname.exists() and not overwrite:
-            continue
+    # Check if file exists
+    ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        continue
 
-        # start from t = t_coll
+    # start from t = t_coll
 
-        # Load data
-        num = s.tcoll_cores.loc[pid].num
+    # Load data
+    num = s.tcoll_cores.loc[pid].num
+    ds = s.load_hdf5(num, load_method='pyathena')
+    gd = s.load_dendrogram(num)
+
+    # Calculate position, mass, and radius of the core
+    nid_old = tools.find_tcoll_core(s, pid)
+    pos_old = tools.get_coords_node(ds, nid_old)
+    rho = gd.filter_data(ds.dens, nid_old)
+    Mcore_old = (rho*s.dV).sum().data[()]
+    Vcore = ((rho > 0).sum()*s.dV).data[()]
+    Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
+
+    # Add t_coll core to a list of progenitor cores
+    cores = pd.DataFrame(dict(num=[num,],
+                              time=[ds.Time,],
+                              nid=[nid_old,],
+                              radius=[Rcore_old,],
+                              mass=[Mcore_old,]),
+                         dtype=object).set_index("num")
+
+    for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
+        msg = '[find_and_save_cores] processing model {} pid {} num {}'
+        msg = msg.format(s.basename, pid, num)
+        print(msg)
+        # loop backward in time to find all preimages of the t_coll core
         ds = s.load_hdf5(num, load_method='pyathena')
         gd = s.load_dendrogram(num)
 
-        # Calculate position, mass, and radius of the core
-        nid_old = tools.find_tcoll_core(s, pid)
-        pos_old = tools.get_coords_node(ds, nid_old)
-        rho = gd.filter_data(ds.dens, nid_old)
-        Mcore_old = (rho*s.dV).sum().data[()]
+        # find closeast leaf to the previous preimage
+        dst = {leaf: _get_node_distance(ds, leaf, nid_old)
+               for leaf in gd.leaves}
+        dst_min = np.min(list(dst.values()))
+        for k, v in dst.items():
+            if v == dst_min:
+                nid = k
+
+        # Calculate position, mass, and radius of the core and
+        # check if this core is really the same core in different time
+        pos = tools.get_coords_node(ds, nid)
+        rho = gd.filter_data(ds.dens, nid)
+        Mcore = (rho*s.dV).sum().data[()]
         Vcore = ((rho > 0).sum()*s.dV).data[()]
-        Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
+        Rcore = (3*Vcore/(4*np.pi))**(1./3.)
 
-        # Add t_coll core to a list of progenitor cores
-        cores = pd.DataFrame(dict(num=[num,],
-                                  time=[ds.Time,],
-                                  nid=[nid_old,],
-                                  radius=[Rcore_old,],
-                                  mass=[Mcore_old,]),
-                             dtype=object).set_index("num")
+        # Relative errors in position, mass, and radius.
+        # Note that the normalization is the maximum of current or
+        # previous core;
+        # This is to account for situation where a bud is suddenly merged
+        # leading to sudden change in the core radius and mass.
+        fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox)\
+            / max(Rcore, Rcore_old)
+        fmass = np.abs(Mcore - Mcore_old) / max(Mcore, Mcore_old)
+        frds = np.abs(Rcore - Rcore_old) / max(Rcore, Rcore_old)
 
-        for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
-            msg = '[find_and_save_cores] processing model {} pid {} num {}'
-            msg = msg.format(s.basename, pid, num)
-            print(msg)
-            # loop backward in time to find all preimages of the t_coll core
-            ds = s.load_hdf5(num, load_method='pyathena')
-            gd = s.load_dendrogram(num)
+        # If relative errors are more than 100%, this core is unlikely the
+        # same core at previous timestep. Stop backtracing.
+        if fdst > 1 or fmass > 1 or frds > 1:
+            break
 
-            # find closeast leaf to the previous preimage
-            dst = {leaf: _get_node_distance(ds, leaf, nid_old)
-                   for leaf in gd.leaves}
-            dst_min = np.min(list(dst.values()))
-            for k, v in dst.items():
-                if v == dst_min:
-                    nid = k
+        # Add this core to list of progenitor cores
+        cores.loc[num] = dict(nid=nid, time=ds.Time, radius=Rcore,
+                              mass=Mcore)
 
-            # Calculate position, mass, and radius of the core and
-            # check if this core is really the same core in different time
-            pos = tools.get_coords_node(ds, nid)
-            rho = gd.filter_data(ds.dens, nid)
-            Mcore = (rho*s.dV).sum().data[()]
-            Vcore = ((rho > 0).sum()*s.dV).data[()]
-            Rcore = (3*Vcore/(4*np.pi))**(1./3.)
+        # Save core properties
+        nid_old = nid
+        pos_old = pos
+        Mcore_old = Mcore
+        Rcore_old = Rcore
 
-            # Relative errors in position, mass, and radius.
-            # Note that the normalization is the maximum of current or
-            # previous core;
-            # This is to account for situation where a bud is suddenly merged
-            # leading to sudden change in the core radius and mass.
-            fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox)\
-                / max(Rcore, Rcore_old)
-            fmass = np.abs(Mcore - Mcore_old) / max(Mcore, Mcore_old)
-            frds = np.abs(Rcore - Rcore_old) / max(Rcore, Rcore_old)
-
-            # If relative errors are more than 100%, this core is unlikely the
-            # same core at previous timestep. Stop backtracing.
-            if fdst > 1 or fmass > 1 or frds > 1:
-                break
-
-            # Add this core to list of progenitor cores
-            cores.loc[num] = dict(nid=nid, time=ds.Time, radius=Rcore,
-                                  mass=Mcore)
-
-            # Save core properties
-            nid_old = nid
-            pos_old = pos
-            Mcore_old = Mcore
-            Rcore_old = Rcore
-
-        # write to file
-        cores = cores.sort_values('num')
-        cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
+    # write to file
+    cores = cores.sort_values('num')
+    cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def save_radial_profiles(s, pids=None, overwrite=False):
