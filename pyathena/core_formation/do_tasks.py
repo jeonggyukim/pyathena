@@ -116,7 +116,10 @@ if __name__ == "__main__":
         if args.radial_profile:
             msg = "calculate and save radial profiles of t_coll cores for model {}"
             print(msg.format(mdl), flush=True)
-            save_radial_profiles(s, pids=args.pids, overwrite=args.overwrite_radial_profiles)
+            def wrapper(pid):
+                save_radial_profiles(s, pid, overwrite=args.overwrite_radial_profiles)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.pids, 1)
             try:
                 s._load_radial_profiles()
             except FileNotFoundError:

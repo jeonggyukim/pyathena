@@ -162,49 +162,54 @@ def find_and_save_cores(s, pid, overwrite=False):
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def save_radial_profiles(s, pids=None, overwrite=False):
-    """Calculates and saves radial profiles of all cores"""
+def save_radial_profiles(s, pid, overwrite=False):
+    """Calculates and pickles radial profiles of all cores.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        LoadSimCoreFormation instance.
+    pid : int
+        Particle id.
+    overwrite : str, optional
+        If true, overwrites the existing pickle file.
+    """
     rmax = 0.5*s.Lbox
-    if pids is None:
-        pids = s.pids
-    elif isinstance(pids, int):
-        pids = [pids,]
-    for pid in pids:
-        # Check if file exists
-        ofname = Path(s.basedir, 'cores',
-                      'radial_profile.par{}.nc'.format(pid))
-        ofname.parent.mkdir(exist_ok=True)
-        if ofname.exists() and not overwrite:
-            continue
+    # Check if file exists
+    ofname = Path(s.basedir, 'cores',
+                  'radial_profile.par{}.nc'.format(pid))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        continue
 
-        time, rprf = [], []
-        for num, core in s.cores[pid].iterrows():
-            msg = '[save_radial_profiles] processing model {} pid {} num {}'
-            msg = msg.format(s.basename, pid, num)
-            print(msg)
-            # Load the snapshot and the core id
-            ds = s.load_hdf5(num, load_method='pyathena')
-            ds = ds.transpose('z', 'y', 'x')
+    time, rprf = [], []
+    for num, core in s.cores[pid].iterrows():
+        msg = '[save_radial_profiles] processing model {} pid {} num {}'
+        msg = msg.format(s.basename, pid, num)
+        print(msg)
+        # Load the snapshot and the core id
+        ds = s.load_hdf5(num, load_method='pyathena')
+        ds = ds.transpose('z', 'y', 'x')
 
-            # Find the location of the core
-            center = tools.get_coords_node(ds, core.nid)
+        # Find the location of the core
+        center = tools.get_coords_node(ds, core.nid)
 
-            # Roll the data such that the core is at the center of the domain
-            ds, center = tools.recenter_dataset(ds, center)
+        # Roll the data such that the core is at the center of the domain
+        ds, center = tools.recenter_dataset(ds, center)
 
-            # Calculate radial profile
-            time.append(ds.Time)
-            rprf.append(tools.calculate_radial_profiles(s, ds, center, rmax))
+        # Calculate radial profile
+        time.append(ds.Time)
+        rprf.append(tools.calculate_radial_profiles(s, ds, center, rmax))
 
-        # Concatenate in time.
-        rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
-                         combine_attrs='drop_conflicts')
-        rprf = rprf.assign_coords(dict(num=('t', s.cores[pid].index)))
-        # When writing to netcdf and read, num is dropped from index list.
-        rprf = rprf.set_xindex('num')
+    # Concatenate in time.
+    rprf = xr.concat(rprf, dim=pd.Index(time, name='t'),
+                     combine_attrs='drop_conflicts')
+    rprf = rprf.assign_coords(dict(num=('t', s.cores[pid].index)))
+    # When writing to netcdf and read, num is dropped from index list.
+    rprf = rprf.set_xindex('num')
 
-        # write to file
-        rprf.to_netcdf(ofname)
+    # write to file
+    rprf.to_netcdf(ofname)
 
 
 def run_GRID(s, num, overwrite=False):
