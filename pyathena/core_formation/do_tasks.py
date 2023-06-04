@@ -128,7 +128,10 @@ if __name__ == "__main__":
         # Find critical tes
         if args.critical_tes:
             print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
-            save_critical_tes(s, pids=args.pids, overwrite=args.overwrite_critical_tes)
+            def wrapper(pid):
+                save_critical_tes(s, pid, overwrite=args.overwrite_critical_tes)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.pids, 1)
             try:
                 s._load_cores()
             except FileNotFoundError:
