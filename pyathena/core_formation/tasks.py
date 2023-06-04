@@ -42,6 +42,7 @@ def save_critical_tes(s, pid, overwrite=False):
                           'critical_tes_{}.par{}.p'.format(suffix, pid))
             ofname.parent.mkdir(exist_ok=True)
             if ofname.exists() and not overwrite:
+                print('[save_critical_tes] file already exists. Skipping...')
                 continue
 
             critical_tes = pd.DataFrame(columns=('num',
@@ -88,7 +89,8 @@ def find_and_save_cores(s, pid, overwrite=False):
     ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
-        continue
+        print('[find_and_save_cores] file already exists. Skipping...')
+        return
 
     # start from t = t_coll
 
@@ -185,7 +187,8 @@ def save_radial_profiles(s, pid, overwrite=False):
                   'radial_profile.par{}.nc'.format(pid))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
-        continue
+        print('[save_radial_profiles] file already exists. Skipping...')
+        return
 
     time, rprf = [], []
     for num, core in s.cores[pid].iterrows():
