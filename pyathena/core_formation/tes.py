@@ -2,6 +2,7 @@ from scipy.integrate import odeint
 from scipy.optimize import minimize_scalar, brentq
 import matplotlib.pyplot as plt
 import numpy as np
+import pickle
 
 
 class TESe:
@@ -564,7 +565,8 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     rds = np.logspace(-2, 2)
     u, du = ts.solve(rds)
     plt.loglog(rds, np.exp(u), c='k')
-    plt.axvline(rsonic0, ls=':', color='k', label=r'$r_\mathrm{sonic}/L_{J,c}$')
+    plt.axvline(rsonic0, ls=':', color='k',
+                label=r'$r_\mathrm{sonic}/L_{J,c}$')
     u, du = ts.solve(rmax0)
     plt.plot(rmax0, np.exp(u[0]), 'r+', mew=2, ms=10)
     plt.xlabel(r'$r/L_{J,c}$')
@@ -700,3 +702,53 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
     plt.xlim(vol/10, vol*10)
     plt.ylim(prs/10, prs*10)
     return fig
+
+
+def get_critical_tes(xi_s):
+    """Calculate critical TES at fixed central density.
+
+    Density, radius, and mass are normalized by the central density,
+    Jeans length at the central density, and the Jeans mass at the
+    central density, respectively.
+
+    Parameters
+    ----------
+    xi_s : float
+        Sonic radius devided by Jeans length at central density.
+
+    Returns
+    -------
+    dcrit : float
+        Critical edge density.
+    rcrit : float
+        Critical radius.
+    mcrit : float
+        Critical mass.
+    """
+    tsc = TESc(xi_s=xi_s)
+    rcrit = tsc.get_crit()
+    u, du = tsc.solve(rcrit)
+    dcrit = np.exp(u[0])
+    mcrit = tsc.get_mass(rcrit)
+    return dcrit, rcrit, mcrit
+
+
+if __name__ == "__main__":
+    # Dimensionless sonic radius r_s / L_{J,c}
+    rsonic = np.logspace(np.log10(0.4), 2, 1024)
+    critical_mass, critical_radius, critical_density = [], [], []
+    for xi_s in rsonic:
+        dcrit, rcrit, mcrit = get_critical_tes(xi_s)
+        critical_density.append(dcrit)
+        critical_radius.append(rcrit)
+        critical_mass.append(mcrit)
+    critical_density = np.array(critical_density)
+    critical_radius = np.array(critical_radius)
+    critical_mass = np.array(critical_mass)
+    res = dict(rsonic=rsonic,
+               dcrit=critical_density,
+               rcrit=critical_radius,
+               mcrit=critical_mass)
+    fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_rhoc.p"
+    with open(fname, "wb") as handle:
+        pickle.dump(res, handle)
