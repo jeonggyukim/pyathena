@@ -62,7 +62,16 @@ def find_and_save_cores(s, pid, overwrite=False):
 
     Finds a unique grid-dendro leaf at each snapshot that is going to collapse.
     For each sink particle, back-traces the evolution of its progenitor cores.
-    Writes the resulting data to a file.
+    Pickles the resulting data.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        LoadSimCoreFormation instance.
+    pid : int
+        Particle id.
+    overwrite : str, optional
+        If true, overwrites the existing pickle file.
     """
     def _get_node_distance(ds, nd1, nd2):
         pos1 = tools.get_coords_node(ds, nd1)
