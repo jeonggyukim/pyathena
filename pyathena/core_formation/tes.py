@@ -3,6 +3,8 @@ from scipy.optimize import minimize_scalar, brentq
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
+import logging
+from pyathena.core_formation import tools
 
 
 class TESe:
@@ -475,39 +477,6 @@ class TESc:
         return np.array([dy1, dy2])
 
 
-def get_critical_tes_at_mean_density(rhoe, lmb_sonic, p=0.5):
-    """Calculate critical turbulent equilibrium sphere
-
-    Critical mass of turbulent equilibrium sphere is given by
-        M_crit = M_{J,e}m_crit(xi_s)
-    where m_crit is the dimensionless critical mass and M_{J,e}
-    is the Jeans mass at the edge density rho_e.
-    This function assumes unit system:
-        [L] = L_{J,0}, [M] = M_{J,0}
-
-    Parameters
-    ----------
-    rhoe : edge density
-    lmb_sonic : sonic radius
-    p (optional) : power law index for the linewidth-size relation
-
-    Returns
-    -------
-    rhoc : central density
-    R : radius of the critical TES
-    M : mass of the critical TES
-    """
-    LJ_e = rhoe**-0.5
-    MJ_e = rhoe**-0.5
-    xi_s = lmb_sonic / LJ_e
-    tes = TESe(p, xi_s)
-    rat, xi0, m = tes.get_crit()
-    rhoc = rat*rhoe
-    R = LJ_e*xi0
-    M = MJ_e*m
-    return rhoc, R, M
-
-
 def get_pv_diagram(rsonic, u0s=None):
     """Construct p-v diagram of a TES
 
@@ -704,7 +673,34 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
     return fig
 
 
-def get_critical_tes(xi_s):
+def get_critical_tes(xi_s=None, mach=None, alpha_vir=None, mfrac=None,
+                     rhoe=None, lmb_sonic=None):
+    """Top-level wrapper function to calculate critical TES
+
+    Parameters
+    ----------
+
+    Returns
+    -------
+
+    Notes
+    -----
+    """
+    cond = (xi_s is not None and mach is None and alpha_vir is None
+            and mfrac is None and rhoe is None and lmb_sonic is None)
+    if cond:
+        res = _get_critical_tes_at_fixed_rhoc(xi_s)
+    cond = (mach is not None and alpha_vir is not None
+            and (mfrac is not None or rhoe is not None))
+    if cond:
+        res = _get_critical_tes_cloud(mach, alpha_vir, mfrac, rhoe)
+    cond = rhoe is not None and lmb_sonic is not None
+    if cond:
+        res = _get_critical_tes_at_fixed_rhoe(rhoe, lmb_sonic)
+    return res
+
+
+def _get_critical_tes_at_fixed_rhoc(xi_s):
     """Calculate critical TES at fixed central density.
 
     Density, radius, and mass are normalized by the central density,
@@ -733,12 +729,139 @@ def get_critical_tes(xi_s):
     return dcrit, rcrit, mcrit
 
 
+def _get_critical_tes_at_fixed_rhoe(rhoe, lmb_sonic, p=0.5):
+    """Calculate critical turbulent equilibrium sphere
+
+    Critical mass of turbulent equilibrium sphere is given by
+        M_crit = M_{J,e}m_crit(xi_s)
+    where m_crit is the dimensionless critical mass and M_{J,e}
+    is the Jeans mass at the edge density rho_e.
+    This function assumes unit system:
+        [L] = L_{J,0}, [M] = M_{J,0}
+
+    Parameters
+    ----------
+    rhoe : edge density
+    lmb_sonic : sonic radius
+    p (optional) : power law index for the linewidth-size relation
+
+    Returns
+    -------
+    rhoc : central density
+    R : radius of the critical TES
+    M : mass of the critical TES
+    """
+    LJ_e = rhoe**-0.5
+    MJ_e = rhoe**-0.5
+    xi_s = lmb_sonic / LJ_e
+    tes = TESe(p, xi_s)
+    rat, xi0, m = tes.get_crit()
+    rhoc = rat*rhoe
+    R = LJ_e*xi0
+    M = MJ_e*m
+    return rhoc, R, M
+
+
+def _get_critical_tes_cloud(mach, alpha_vir, mfrac=None, rhoe=None):
+    """Calculate critical TES at a given cloud environment.
+
+    Density, radius, and mass are normalized by the mean density of
+    a cloud and the corresponding Jeans scales.
+
+    Parameters
+    ----------
+    mach : float
+        Sonic Mach number of a cloud.
+    alpha_vir : float
+        Virial parameter of a cloud.
+    mfrac : float, optional
+        Mass fraction.
+    rhoe : float, optional
+        Ratio of the edge density to the mean density.
+
+    Returns
+    -------
+    dcrit : float
+        Critical edge-to-center density.
+    rcrit : float
+        Critical radius normalized to the Jeans length at the mean density.
+    mcrit : float
+        Critical mass normalized to the Jeans mass at the mean density.
+
+    Notes
+    -----
+    Virial parameter is defined as usual,
+        alpha_vir = 5 R sigma_1D / (G M).
+    The sonic radius is defined by
+        sigma_3D / c_s = (R / r_s)^0.5
+    where sigma_3D^2 = 3 sigma_1D^2.
+    This yields the relationship of the sonic radius to the Mach number
+    and virial paremter:
+        r_s/L_{J,0} = 1/(2 pi) * (alpha_vir/5)^-0.5 * Mach^-1.
+
+    The sonic radius normalized to the central Jeans length can be found
+    by the equation:
+        r_s/L_{J,c}
+          = r_s/L_{J,0} * (rho_e/rho_0)^0.5 * (rho_c/rho_e)^0.5 -- (1)
+    Also, for critical TES, rho_c/rho_e have to safisfy
+        rho_c/rho_e = (rho_c/rho_e)_crit(xi_s = r_s/L_{J,c})    -- (2)
+    Given r_s/L_{J,0} and rho_e/rho_0, (1) and (2) can be simultaneously
+    solved for r_s/L_{J,c} and rho_c/rho_e.
+    """
+    if mfrac is None and rhoe is None:
+        raise ValueError("Specify either mfrac or rhoe")
+    if mfrac is not None:
+        if rhoe is not None:
+            logging.warning("Both mfrac and rhoe are given. mfrac will be "
+                            "overriden by rhoe")
+        else:
+            pdf = tools.LognormalPDF(mach)
+            rhoe = pdf.get_contrast(mfrac)
+
+    # Initialize interpolation functions for critical TES family
+    from scipy.interpolate import interp1d
+
+    fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_rhoc.p"
+    with open(fname, "rb") as handle:
+        res = pickle.load(handle)
+
+    # interpolation functions to dcrit, rcrit, mcrit
+    itp_log_dcrit = interp1d(np.log(res['rsonic']), np.log(res['dcrit']),
+                             kind='cubic')
+    itp_log_rcrit = interp1d(np.log(res['rsonic']), np.log(res['rcrit']),
+                             kind='cubic')
+    itp_log_mcrit = interp1d(np.log(res['rsonic']), np.log(res['mcrit']),
+                             kind='cubic')
+
+    def get_dcrit(rsonic):
+        return np.exp(itp_log_dcrit(np.log(rsonic)))
+
+    def get_rcrit(rsonic):
+        return np.exp(itp_log_rcrit(np.log(rsonic)))
+
+    def get_mcrit(rsonic):
+        return np.exp(itp_log_mcrit(np.log(rsonic)))
+
+    rsonic0 = np.sqrt(5/alpha_vir)/(2*np.pi*mach)  # See Notes section.
+    rsonic = brentq(lambda x: x*np.sqrt(get_dcrit(x)) - rsonic0*np.sqrt(rhoe),
+                    0.4, 100)
+    dcrit = get_dcrit(rsonic)
+    rcrit = get_rcrit(rsonic)*np.sqrt(dcrit/rhoe)
+    mcrit = get_mcrit(rsonic)*np.sqrt(dcrit/rhoe)
+    return dcrit, rcrit, mcrit
+
+
 if __name__ == "__main__":
+    """Precompute one-parameter family of TESc.
+
+    Calculate critical density, radius, and mass of the TES at a given
+    central density, for different sonic radii.
+    """
     # Dimensionless sonic radius r_s / L_{J,c}
     rsonic = np.logspace(np.log10(0.4), 2, 1024)
     critical_mass, critical_radius, critical_density = [], [], []
     for xi_s in rsonic:
-        dcrit, rcrit, mcrit = get_critical_tes(xi_s)
+        dcrit, rcrit, mcrit = get_critical_tes(xi_s=xi_s)
         critical_density.append(dcrit)
         critical_radius.append(rcrit)
         critical_mass.append(mcrit)
