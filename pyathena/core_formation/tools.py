@@ -315,8 +315,8 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, ncells_min=
     lmb_sonic = get_sonic(Mach, Lbox)
     if rho_amb is None:
         rho_amb = s.get_contrast(mfrac)
-    rhoc_BE, R_BE, M_BE = tes.get_critical_tes_at_mean_density(rho_amb, np.inf, p=0.5)
-    rhoc_TES, R_TES, M_TES = tes.get_critical_tes_at_mean_density(rho_amb, lmb_sonic, p=0.5)
+    rhoc_BE, R_BE, M_BE = tes.get_critical_tes(rhoe=rho_amb, lmb_sonic=np.inf)
+    rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rhoe=rho_amb, lmb_sonic=lmb_sonic)
     R_LP_BE = s.get_RLP(M_BE)
     R_LP_TES = s.get_RLP(M_TES)
     dx_req_LP = R_LP_BE/ncells_min
