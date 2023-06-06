@@ -427,6 +427,55 @@ def test_isolated_core(s, pid, ncells_min=10):
     return not np.any([i in cells for i in flatidx])
 
 
+def get_critical_core_props(s, pid, e1=0.7, e2=0.4):
+    """Calculate core properties at the time when it becomes unstable.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    pid : int
+        Particle id.
+    e1 : float, optional
+        Multiplier to t_ff for left bin edge.
+    e2 : float, optional
+        Multiplier to t_ff for right bin edge.
+
+    Returns
+    -------
+    cprops : pandas.Series
+        Core properties at the time when it becomes unstable.
+
+    Notes
+    -----
+    It is difficult to pinpoint the time when a given core becomes unstable.
+    Instead, it can be approximately inferred by rewinding ~ t_ff from t_coll.
+    Empirically, it is found that the required amount of rewinding is
+    ~ 0.6 t_ff. The optional parameters e1 and e2 defines the bin edge
+    such that the averaging is performed between
+      t_coll - e1*t_ff < t < t_coll - e2*t_ff.
+    """
+    cores = s.cores[pid]
+    tcoll = s.tcoll_cores.loc[pid].time
+    num_tcoll = s.tcoll_cores.loc[pid].num
+    # Mean free-fall time at t = t_coll
+    tff = np.sqrt(3*np.pi/(32*cores.mean_density.loc[num_tcoll]))
+    t1 = tcoll - e1*tff
+    t2 = tcoll - e2*tff
+    mask = (cores.time > t1)&(cores.time < t2)
+    cores = cores[mask]
+    rprf = s.rprofs[pid].sel(num=cores.index)
+    rhoe = []
+    for num, core in cores.iterrows():
+        rhoe.append(rprf.rho.sel(num=num).interp(r=core.radius))
+    rhoe = np.array(rhoe).mean()
+    cprops = cores.mean()
+    cprops['t1'] = t1
+    cprops['t2'] = t2
+    cprops['rhoe'] = rhoe
+    return cprops
+
+
 def get_periodic_distance(pos1, pos2, Lbox):
     hLbox = 0.5*Lbox
     rds2 = 0
