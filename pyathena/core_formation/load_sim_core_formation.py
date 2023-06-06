@@ -199,7 +199,8 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 fname = pathlib.Path(self.basedir, 'cores',
                                      f'critical_tes_{method}.par{pid}.p')
                 tes_crit = pd.read_pickle(fname)
-                self.cores[pid] = pd.concat([self.cores[pid], tes_crit], axis=1)
+                self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
+                                            axis=1).sort_values('num')
             except FileNotFoundError:
                 pass
 
