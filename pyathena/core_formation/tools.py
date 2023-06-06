@@ -293,7 +293,8 @@ def get_coords_node(ds, node):
     return coordinates
 
 
-def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, ncells_min=10):
+def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
+                               ncells_min=10):
     """Print resolution requirements
 
     Parameters
@@ -316,7 +317,8 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, ncells_min=
     if rho_amb is None:
         rho_amb = s.get_contrast(mfrac)
     rhoc_BE, R_BE, M_BE = tes.get_critical_tes(rhoe=rho_amb, lmb_sonic=np.inf)
-    rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rhoe=rho_amb, lmb_sonic=lmb_sonic)
+    rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rhoe=rho_amb,
+                                                  lmb_sonic=lmb_sonic)
     R_LP_BE = s.get_RLP(M_BE)
     R_LP_TES = s.get_RLP(M_TES)
     dx_req_LP = R_LP_BE/ncells_min
@@ -337,9 +339,11 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None, ncells_min=
           "{:.3f}".format(R_LP_BE))
     print("Equivalent LP radius for TES = {:.3f}".format(R_LP_TES))
     print("Required resolution dx to resolve LP core = {}".format(dx_req_LP))
-    print("Required resolution Ncells to resolve LP core = {}".format(ncells_req_LP))
+    print("Required resolution Ncells to resolve LP core = {}".format(
+        ncells_req_LP))
     print("Required resolution dx to resolve BE sphere = {}".format(dx_req_BE))
-    print("Required resolution Ncells to resolve BE sphere = {}".format(ncells_req_BE))
+    print("Required resolution Ncells to resolve BE sphere = {}".format(
+        ncells_req_BE))
 
 
 def get_sonic(Mach_outer, l_outer, p=0.5):
@@ -385,40 +389,36 @@ def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
 
 
-def test_isolated_core(s, pid):
+def test_isolated_core(s, pid, ncells_min=10):
     """Test if the given core is isolated.
 
     Criterion for an isolated core:
-    1. The core must not contain any particle
-    2. If it has a neighboring core, the neighbor must not contain any
-       particle, too. The neighboring core is defined as a leaf node having
-       the same parent.
+    1. The core must not contain any particle at the time of collapse.
+    2. The core must not have another particle within ncells_min at the
+       time of collapse.
 
     Parameters
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata
+    ncells_min : int
+        Minimum grid distance between a core and a particle.
 
     Returns
     -------
     bool
         True if a core is isolated, false otherwise.
     """
-    num = s.tcoll_cores.loc[pid].num
-    pds = s.load_partab(num)
-    gd = s.load_dendrogram(num)
+    num_tcoll = s.tcoll_cores.loc[pid].num
+    pds = s.load_partab(num_tcoll)
+    gd = s.load_dendrogram(num_tcoll)
 
-    nid = s.cores[pid].iloc[-1].nid
-    sibling = gd.children[gd.parent[nid]]
-    sibling.remove(nid)
-    sibling = sibling[0]
+    nid = s.cores[pid].loc[num_tcoll].nid
 
-    # Get all cells in myself and sibling node
-    cells = set(gd.nodes[nid])
-    if len(gd.children[sibling]) == 0:
-        cells = cells.union(gd.nodes[sibling])
+    # Get all cells in this node.
+    cells = set(gd.get_all_descendant_cells(nid))
 
-    # Test whether there are any particle in the siblings
+    # Test whether there are any existing particle.
     position_indices = np.floor((pds[['x1', 'x2', 'x3']] - s.domain['le'])
                                 / s.domain['dx']).astype('int')
     flatidx = (position_indices['x3']*s.domain['Nx'][2]*s.domain['Nx'][1]
