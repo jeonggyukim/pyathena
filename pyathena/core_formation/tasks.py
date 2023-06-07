@@ -20,6 +20,69 @@ from grid_dendro import dendrogram
 from grid_dendro import energy
 
 
+def combine_partab(s, ns=None, ne=None, partag="par0", remove=False,
+                   include_last=False):
+    """Combine particle .tab output files.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        LoadSimCoreFormation instance.
+    ns : int, optional
+        Starting snapshot number.
+    ne : int, optional
+        Ending snapshot number.
+    partag : str, optional
+        Particle tag (<particle?> in the input file).
+    remove : str, optional
+        If True, remove the block? per-core outputs after joining.
+    include_last : bool
+        If false, do not process last .tab file, which might being written
+        by running Athena++ process.
+    """
+    script = "/home/sm69/tigris/vis/tab/combine_partab.sh"
+    outid = "out{}".format(s.partab_outid)
+    block0_pattern = '{}/{}.block0.{}.?????.{}.tab'.format(s.basedir,
+                                                           s.problem_id, outid,
+                                                           partag)
+    file_list0 = sorted(glob.glob(block0_pattern))
+    if not include_last:
+        file_list0 = file_list0[:-1]
+    if len(file_list0) == 0:
+        print("Nothing to combine", flush=True)
+        return
+    if ns is None:
+        ns = int(file_list0[0].split('/')[-1].split('.')[3])
+    if ne is None:
+        ne = int(file_list0[-1].split('/')[-1].split('.')[3])
+    nblocks = 1
+    for axis in [1, 2, 3]:
+        nblocks *= ((s.par['mesh'][f'nx{axis}']
+                    // s.par['meshblock'][f'nx{axis}']))
+    if partag not in s.partags:
+        raise ValueError("Particle {} does not exist".format(partag))
+    subprocess.run([script, s.problem_id, outid, partag, str(ns), str(ne)],
+                   cwd=s.basedir)
+
+    if remove:
+        joined_pattern = '{}/{}.{}.?????.{}.tab'.format(s.basedir,
+                                                        s.problem_id, outid,
+                                                        partag)
+        joined_files = set(glob.glob(joined_pattern))
+        block0_files = {f.replace('block0.', '') for f in file_list0}
+        if block0_files.issubset(joined_files):
+            print("All files are joined. Remove block* files", flush=True)
+            file_list = []
+            for fblock0 in block0_files:
+                for i in range(nblocks):
+                    file_list.append(fblock0.replace(outid, "block{}.{}".format(i, outid)))
+            file_list.sort()
+            for f in file_list:
+                Path(f).unlink()
+        else:
+            print("Not all files are joined", flush=True)
+
+
 def save_critical_tes(s, pid, overwrite=False):
     """Calculates and saves critical tes associated with each core.
     
@@ -238,47 +301,6 @@ def run_GRID(s, num, overwrite=False):
     # Write to file
     with open(ofname, 'wb') as handle:
         pickle.dump(gd, handle, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def combine_partab(s, ns=None, ne=None, partag="par0", remove=False):
-    script = "/home/sm69/tigris/vis/tab/combine_partab.sh"
-    outid = "out{}".format(s.partab_outid)
-    block0_pattern = '{}/{}.block0.{}.?????.{}.tab'.format(s.basedir,
-                                                           s.problem_id, outid,
-                                                           partag)
-    file_list0 = sorted(glob.glob(block0_pattern))
-    if len(file_list0) == 0:
-        print("Nothing to combine", flush=True)
-        return
-    if ns is None:
-        ns = int(file_list0[0].split('/')[-1].split('.')[3])
-    if ne is None:
-        ne = int(file_list0[-1].split('/')[-1].split('.')[3])
-    nblocks = 1
-    for axis in [1, 2, 3]:
-        nblocks *= ((s.par['mesh'][f'nx{axis}']
-                    // s.par['meshblock'][f'nx{axis}']))
-    if partag not in s.partags:
-        raise ValueError("Particle {} does not exist".format(partag))
-    subprocess.run([script, s.problem_id, outid, partag, str(ns), str(ne)],
-                   cwd=s.basedir)
-
-    if remove:
-        joined_pattern = '{}/{}.{}.?????.{}.tab'.format(s.basedir,
-                                                        s.problem_id, outid,
-                                                        partag)
-        joined_files = set(glob.glob(joined_pattern))
-        block0_files = {f.replace('block0.', '') for f in file_list0}
-        if block0_files.issubset(joined_files):
-            print("All files are joined. Remove block* files", flush=True)
-            file_pattern = '{}/{}.block*.{}.?????.{}.tab'
-            file_pattern = file_pattern.format(s.basedir, s.problem_id, outid,
-                                               partag)
-            file_list = sorted(glob.glob(file_pattern))
-            for f in file_list:
-                Path(f).unlink()
-        else:
-            print("Not all files are joined", flush=True)
 
 
 def resample_hdf5(s, level=0):
