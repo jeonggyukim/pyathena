@@ -15,7 +15,6 @@ import yt
 # pythena modules
 from pyathena.core_formation import tools
 from pyathena.core_formation import tes
-from grid_dendro import dendrogram
 from grid_dendro import energy
 
 
@@ -23,12 +22,12 @@ def plot_energies(s, ds, gd, nid, ax=None):
     if ax is not None:
         plt.sca(ax)
     data = dict(rho=ds.dens.to_numpy(),
-                 vel1=(ds.mom1/ds.dens).to_numpy(),
-                 vel2=(ds.mom2/ds.dens).to_numpy(),
-                 vel3=(ds.mom3/ds.dens).to_numpy(),
-                 prs=s.cs**2*ds.dens.to_numpy(),
-                 phi=ds.phigas.to_numpy(),
-                 dvol=s.dV)
+                vel1=(ds.mom1/ds.dens).to_numpy(),
+                vel2=(ds.mom2/ds.dens).to_numpy(),
+                vel3=(ds.mom3/ds.dens).to_numpy(),
+                prs=s.cs**2*ds.dens.to_numpy(),
+                phi=ds.phigas.to_numpy(),
+                dvol=s.dV)
     reff, engs = energy.calculate_cumulative_energies(gd, data, nid)
     plt.plot(reff, engs['ethm'], label='thermal')
     plt.plot(reff, engs['ekin'], label='kinetic')
@@ -200,8 +199,10 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Velocity dispersions
     plt.sca(fig.add_subplot(gs[2, 3]))
     plt.loglog(rprf.r, np.sqrt(rprf.dvel1_sq_mw), marker='+', label=r'$v_r$')
-    plt.loglog(rprf.r, np.sqrt(rprf.dvel2_sq_mw), marker='+', label=r'$v_\theta$')
-    plt.loglog(rprf.r, np.sqrt(rprf.dvel3_sq_mw), marker='+', label=r'$v_\phi$')
+    plt.loglog(rprf.r, np.sqrt(rprf.dvel2_sq_mw), marker='+',
+               label=r'$v_\theta$')
+    plt.loglog(rprf.r, np.sqrt(rprf.dvel3_sq_mw), marker='+',
+               label=r'$v_\phi$')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**0.5, 'k--')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
 
@@ -246,21 +247,21 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     f_pthm = -pthm.differentiate('r') / rprf.rho
     f_ptrb = -ptrb.differentiate('r') / rprf.rho
     f_pram = -(rprf.r**2*pram).differentiate('r') / rprf.r**2 / rprf.rho
-    f_aniso = (rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw) / rprf.r
+    f_aniso = (rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw)\
+        / rprf.r
     f_cen = (rprf.vel2_mw**2 + rprf.vel3_mw**2) / rprf.r
     f_grav = rprf.ggas1_mw + rprf.gstar1_mw
 
     if ax is not None:
         plt.sca(ax)
 
-    f_net = f_grav + f_pthm + f_ptrb
-
     f_pthm.plot(lw=1, color='tab:orange', label=r'$f_\mathrm{thm}$')
     f_ptrb.plot(lw=1, color='tab:blue', label=r'$f_\mathrm{trb}$')
     f_pram.plot(lw=1, color='tab:gray', label=r'$f_\mathrm{ram}$')
     f_aniso.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
     f_cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
-    (-f_grav).plot(marker='x', ls='--', color='tab:red', lw=1, label=r'$f_\mathrm{grav}$')
+    (-f_grav).plot(marker='x', ls='--', color='tab:red', lw=1,
+                   label=r'$f_\mathrm{grav}$')
     (f_pthm + f_ptrb).plot(marker='+', color='tab:pink', lw=1,
                            label=r'$f_\mathrm{thm,trb}$')
     (f_pthm + f_ptrb + f_cen).plot(marker='+', color='tab:cyan', lw=1,
@@ -322,6 +323,35 @@ def plot_projection(s, ds, field='dens', axis='z',
                     vmin=1e-1, vmax=2e2, cmap='pink_r', alpha=1,
                     ax=None, cax=None,
                     add_colorbar=True, transpose=False):
+    """Plot projection of the selected variable along the given axis.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    ds : yt.frontends.athena_pp.AthenaPPDataset or xarray.Dataset
+        Object containing fluid variables.
+    field : str, optional
+        Variable to plot.
+    axis : str, optional
+        Axis to project.
+    vmin : float, optional
+        Minimum color range.
+    vmax : float, optional
+        Maximum color range.
+    cmap : str, optional
+        Color map.
+    alpha : float, optional
+        Transparency.
+    ax : matplotlib.axes, optional
+        Axes to draw contours.
+    cax : matplotlib.axes, optional
+        Axes to draw color bar.
+    add_colorbar : bool, optional
+        If true, add color bar.
+    transpose : bool, optional
+        If true, transpose x and y axis.
+    """
     # some domain informations
     xmin, ymin, zmin = s.domain['le']
     xmax, ymax, zmax = s.domain['re']
@@ -369,6 +399,57 @@ def plot_projection(s, ds, field='dens', axis='z',
     if add_colorbar:
         plt.colorbar(cax=cax)
     return img
+
+
+def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
+                              lw=0.5, ax=None, transpose=False):
+    """Draw contours at the boundary of GRID-dendro objects
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    gd : grid_dendro.dendrogram.Dendrogram
+        GRID-dendro dendrogram instance.
+    nodes : int or array of ints
+        ID of selected GRID-dendro nodes
+    coords : xarray.core.coordinates.DatasetCoordinates
+        xarray coordinate instance.
+    axis : str, optional
+        Axis to project.
+    color : str, optional
+        Contour line color.
+    lw : float, optional
+        Contour line width.
+    ax : matplotlib.axes, optional
+        Axes to draw contours.
+    transpose : bool, optional
+        If true, transpose x and y axis.
+    """
+    # some domain informations
+    xmin, ymin, zmin = s.domain['le']
+    xmax, ymax, zmax = s.domain['re']
+    Lx, Ly, Lz = s.domain['Lx']
+
+    extent = dict(zip(('x', 'y', 'z'), ((ymin, ymax, zmin, zmax),
+                                        (zmin, zmax, xmin, xmax),
+                                        (xmin, xmax, ymin, ymax))))
+    permutations = dict(z=('y', 'x'), y=('x', 'z'), x=('z', 'y'))
+
+    mask = xr.DataArray(np.ones(s.domain['Nx'].T), coords=coords)
+    mask = gd.filter_data(mask, nodes, fill_value=0)
+    mask = mask.max(dim=axis)
+    mask = mask.transpose(*permutations[axis])
+
+    if ax is not None:
+        plt.sca(ax)
+    if transpose:
+        mask = mask.T
+
+    mask.plot.contour(levels=[0], linewidths=lw, colors=color,
+                      add_labels=False)
+    plt.xlim(extent[axis][0], extent[axis][1])
+    plt.ylim(extent[axis][2], extent[axis][3])
 
 
 def plot_Pspec(s, ds, ax=None, ax_twin=None):
