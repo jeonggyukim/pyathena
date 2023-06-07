@@ -356,7 +356,29 @@ def get_sonic(Mach_outer, l_outer, p=0.5):
 
 
 def recenter_dataset(ds, center):
-    shape = np.array(list(ds.dims.values()), dtype=int)
+    """Recenter whole dataset or dataarray.
+
+    Parameters
+    ----------
+    ds : xarray.Dataset or xarray.DataArray
+        Dataset to be recentered.
+    center : tuple
+        New (x, y, z) coordinates of the center.
+
+    Returns
+    -------
+    xarray.Dataset or xarray.DataArray
+        Recentered dataset.
+    tuple
+        Position of the new center. This must be the grid coordinates
+        closest, but not exactly the same, to (0, 0, 0).
+    """
+    if isinstance(ds, xr.Dataset):
+        shape = np.array(list(ds.dims.values()), dtype=int)
+    elif isinstance(ds, xr.DataArray):
+        shape = np.array(ds.shape, dtype=int)
+    else:
+        TypeError("Data type {} is not supported".format(type(ds)))
     hNz, hNy, hNx = shape >> 1
     xc, yc, zc = center
     ishift = hNx - np.where(ds.x.data == xc)[0][0]
