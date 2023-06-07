@@ -76,11 +76,11 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     xc, yc, zc = tools.get_coords_node(ds, core.nid)
 
     # Calculate radial profile
-    rprf = s.rprofs[pid].sel(t=ds.Time, method='nearest')
+    rprf = s.rprofs[pid].sel(num=num)
 
     # Create figure
-    fig = plt.figure(figsize=(35, 21))
-    gs = gridspec.GridSpec(3, 5, wspace=0.2, hspace=0.15)
+    fig = plt.figure(figsize=(28, 21))
+    gs = gridspec.GridSpec(3, 4, wspace=0.23, hspace=0.15)
 
     xlim = dict(z=(xc-hw, xc+hw),
                 x=(yc-hw, yc+hw),
@@ -95,6 +95,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         # 1. Projections
         plt.sca(fig.add_subplot(gs[i, 0]))
         plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
+        plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis)
         rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]),
                             2*hw, 2*hw, fill=False, ec='r')
         plt.gca().add_artist(rec)
@@ -102,43 +103,15 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.ylabel(ylabel[prj_axis])
 
         # 2. Zoom-in projections
+        sel = dict(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
         d, _ = tools.recenter_dataset(ds, (xc, yc, zc))
-        d = d.sel(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
+        d = d.sel(sel)
         plt.sca(fig.add_subplot(gs[i, 1]))
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
-        plt.xlim(-hw, hw)
-        plt.ylim(-hw, hw)
-        plt.xlabel(xlabel[prj_axis])
-        plt.ylabel(ylabel[prj_axis])
-
-        # 3. Zoom-in projections for individual core
-        # Load selected core
-        rho_ = gd.filter_data(ds.dens, core.nid, fill_value=0)
-        ds_core = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
-        ds_core, _ = tools.recenter_dataset(ds_core, (xc, yc, zc))
-        ds_core = ds_core.sel(x=slice(-hw, hw), y=slice(-hw, hw),
-                              z=slice(-hw, hw))
-
-        # Load other cores
-        # TODO(SMOON) This is a temporary backward compatibility patch.
-        # After re-running grid-dendro, just do
-        # other_cores = gd.leaves
-        if isinstance(gd.leaves, list):
-            other_cores = gd.leaves.copy()
-        elif isinstance(gd.leaves, dict):
-            other_cores = list(gd.leaves.keys())
-        other_cores.remove(core.nid)
-        rho_ = gd.filter_data(ds.dens, other_cores, fill_value=0)
-        ds_others = xr.Dataset(data_vars=dict(dens=rho_), attrs=ds.attrs)
-        ds_others, _ = tools.recenter_dataset(ds_others, (xc, yc, zc))
-        ds_others = ds_others.sel(x=slice(-hw, hw), y=slice(-hw, hw),
-                                  z=slice(-hw, hw))
-
-        # Plot
-        plt.sca(fig.add_subplot(gs[i, 2]))
-        plot_projection(s, ds_others, axis=prj_axis, add_colorbar=False,
-                        alpha=0.5, cmap='Greys')
-        plot_projection(s, ds_core, axis=prj_axis, add_colorbar=False)
+        plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
+                                  recenter=(xc, yc, zc), select=sel)
+        plot_grid_dendro_contours(s, gd, gd.parent[core.nid], ds.coords, axis=prj_axis,
+                                  recenter=(xc, yc, zc), select=sel, color='tab:gray')
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
@@ -146,7 +119,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # 4. Radial profiles
     # Density
-    plt.sca(fig.add_subplot(gs[0, 3]))
+    plt.sca(fig.add_subplot(gs[0, 2]))
     plt.loglog(rprf.r, rprf.rho, 'k-+')
     rhoLP = s.get_rhoLP(rprf.r)
     plt.loglog(rprf.r, rhoLP, 'k--')
@@ -183,7 +156,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
     # Velocities
-    plt.sca(fig.add_subplot(gs[1, 3]))
+    plt.sca(fig.add_subplot(gs[1, 2]))
     plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
     plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
     plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
@@ -197,7 +170,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.legend()
 
     # Velocity dispersions
-    plt.sca(fig.add_subplot(gs[2, 3]))
+    plt.sca(fig.add_subplot(gs[2, 2]))
     plt.loglog(rprf.r, np.sqrt(rprf.dvel1_sq_mw), marker='+', label=r'$v_r$')
     plt.loglog(rprf.r, np.sqrt(rprf.dvel2_sq_mw), marker='+',
                label=r'$v_\theta$')
@@ -220,7 +193,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.legend()
 
     # 5. Energies
-    plt.sca(fig.add_subplot(gs[0, 4]))
+    plt.sca(fig.add_subplot(gs[0, 3]))
     plot_energies(s, ds, gd, core.nid)
     if emin is not None and emax is not None:
         plt.ylim(emin, emax)
@@ -228,7 +201,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.xlim(0, rmax)
 
     # 6. Accelerations
-    plt.sca(fig.add_subplot(gs[1, 4]))
+    plt.sca(fig.add_subplot(gs[1, 3]))
     plot_forces(s, rprf)
     plt.title('')
     plt.axvline(core.radius, ls=':', c='k')
@@ -319,9 +292,9 @@ def plot_sinkhistory(s, ds, pds):
     return fig
 
 
-def plot_projection(s, ds, field='dens', axis='z',
+def plot_projection(s, ds, field='dens', axis='z', op='sum',
                     vmin=1e-1, vmax=2e2, cmap='pink_r', alpha=1,
-                    ax=None, cax=None,
+                    ax=None, cax=None, noplot=False,
                     add_colorbar=True, transpose=False):
     """Plot projection of the selected variable along the given axis.
 
@@ -376,7 +349,7 @@ def plot_projection(s, ds, field='dens', axis='z',
                                         (xmin, xmax, ymin, ymax))))
     permutations = dict(z=('y', 'x'), y=('x', 'z'), x=('z', 'y'))
     field_dict_yt = dict(dens=('athena_pp', 'dens'))
-    field_dict_pyathena = dict(dens='dens')
+    field_dict_pyathena = dict(dens='dens', mask='mask')
 
     if isinstance(ds, yt.frontends.athena_pp.AthenaPPDataset):
         # create projection using yt
@@ -386,7 +359,14 @@ def plot_projection(s, ds, field='dens', axis='z',
         prj = np.array(prj[fld])
     elif isinstance(ds, xr.Dataset):
         fld = field_dict_pyathena[field]
-        prj = ds[fld].integrate(axis).transpose(*permutations[axis]).to_numpy()
+        if op == 'sum':
+            prj = ds[fld].integrate(axis).transpose(*permutations[axis])
+        elif op == 'max':
+            prj = ds[fld].max(axis).transpose(*permutations[axis])
+        if noplot:
+            return prj
+        else:
+            prj = prj.to_numpy()
     else:
         TypeError("ds must be either yt or xarray dataset")
 
@@ -402,7 +382,8 @@ def plot_projection(s, ds, field='dens', axis='z',
 
 
 def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
-                              lw=0.5, ax=None, transpose=False):
+                              lw=0.5, ax=None, transpose=False, recenter=None,
+                              select=None):
     """Draw contours at the boundary of GRID-dendro objects
 
     Parameters
@@ -425,6 +406,11 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
         Axes to draw contours.
     transpose : bool, optional
         If true, transpose x and y axis.
+    recenter : tuple, optional
+        New (x, y, z) coordinates of the center.
+    select : dict, optional
+        Selected region to slice data. If recenter is True, the selected
+        region is understood in the recentered coordinates.
     """
     # some domain informations
     xmin, ymin, zmin = s.domain['le']
@@ -438,6 +424,10 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
 
     mask = xr.DataArray(np.ones(s.domain['Nx'].T), coords=coords)
     mask = gd.filter_data(mask, nodes, fill_value=0)
+    if recenter is not None:
+        mask, _ = tools.recenter_dataset(mask, recenter)
+    if select is not None:
+        mask = mask.sel(select)
     mask = mask.max(dim=axis)
     mask = mask.transpose(*permutations[axis])
 
@@ -446,7 +436,7 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
     if transpose:
         mask = mask.T
 
-    mask.plot.contour(levels=[0], linewidths=lw, colors=color,
+    mask.plot.contour(levels=[1e-16], linewidths=lw, colors=color,
                       add_labels=False)
     plt.xlim(extent[axis][0], extent[axis][1])
     plt.ylim(extent[axis][2], extent[axis][3])
