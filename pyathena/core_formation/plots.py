@@ -112,6 +112,8 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
                                   recenter=(xc, yc, zc), select=sel)
         plot_grid_dendro_contours(s, gd, gd.parent[core.nid], ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='tab:gray')
+        plot_grid_dendro_contours(s, gd, gd.parent[gd.parent[core.nid]], ds.coords, axis=prj_axis,
+                                  recenter=(xc, yc, zc), select=sel, color='tab:gray')
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
