@@ -144,7 +144,11 @@ if __name__ == "__main__":
         # make plots
         if args.make_plots:
             print(f"draw t_coll cores plots for model {mdl}", flush=True)
-            make_plots_core_evolution(s, pids=args.pids, overwrite=args.overwrite_plot_core_evolution)
+            def wrapper(pid):
+                make_plots_core_evolution(s, pids=pid,
+                                          overwrite=args.overwrite_plot_core_evolution)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.pids, 1)
 
             print(f"draw sink history plots for model {mdl}", flush=True)
             make_plots_sinkhistory(s, overwrite=args.overwrite_sink_history)
