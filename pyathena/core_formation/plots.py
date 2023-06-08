@@ -119,11 +119,15 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.sca(fig.add_subplot(gs[i, 1]))
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
         plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
-                                  recenter=(xc, yc, zc), select=sel)
+                                  recenter=(xc, yc, zc), select=sel, color='tab:gray')
         plot_grid_dendro_contours(s, gd, gd.parent[core.nid], ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='tab:gray')
         plot_grid_dendro_contours(s, gd, gd.parent[gd.parent[core.nid]], ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='tab:gray')
+        # Overplot critical radius
+        crcl = plt.Circle((0,0), s.cores[1].loc[num].critical_radius, fill=False,
+                          lw=1, ls='--', color='tab:gray')
+        plt.gca().add_artist(crcl)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
