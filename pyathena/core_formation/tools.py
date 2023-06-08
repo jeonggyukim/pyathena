@@ -87,8 +87,7 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
         center_density, edge_density, critical_radius, pindex, sonic_radius
     """
     if use_vel == 'disp':
-        # select the subsonic portion for fitting
-        vsq = rprf['vel1_sq_mw'] - rprf['vel1_mw']**2
+        vsq = rprf['dvel1_sq_mw']
     elif use_vel == 'total':
         vsq = rprf['vel1_sq_mw']
     else:
@@ -103,6 +102,7 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
     vr = np.sqrt(vsq.sel(r=slice(0, Rmax)).data[1:])
     rhoc = rprf.rho.isel(r=0).data[()]
     LJ_c = 1.0 / np.sqrt(rhoc)
+    MJ_c = 1.0 / np.sqrt(rhoc)
 
     if len(r) < 1:
         # Sonic radius is zero. Cannot find critical tes.
@@ -110,6 +110,7 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
         rs = np.nan
         rhoe = np.nan
         rcrit = np.nan
+        mcrit = np.nan
     else:
         # fit the velocity dispersion to get power law index and sonic radius
         if fixed_slope:
@@ -140,12 +141,14 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
             u, du = ts.solve(xi_crit)
             rhoe = rhoc*np.exp(u[-1])
             rcrit = xi_crit*LJ_c
+            mcrit = ts.get_mass(xi_crit)*MJ_c
         except ValueError:
             rcrit = np.nan
+            mcrit = np.nan
             rhoe = np.nan
 
     res = dict(center_density=rhoc, edge_density=rhoe, critical_radius=rcrit,
-               pindex=p, sonic_radius=rs)
+               critical_mass=mcrit, pindex=p, sonic_radius=rs)
     return res
 
 
