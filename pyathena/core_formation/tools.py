@@ -241,7 +241,11 @@ def get_accelerations(rprf):
         Accelerations appearing in Lagrangian EOM
 
     """
-    rprf = rprf.drop_indexes('num')
+    if 'num' in rprf.indexes:
+        # Temporary patch to the xarray bug;
+        # When there are multiple indexes associated with the same dimension 't',
+        # calculation among arrays are disabled. So drop 'num' index and reattach it
+        rprf = rprf.drop_indexes('num')
     pthm = rprf.rho
     ptrb = rprf.rho*rprf.dvel1_sq_mw
     acc = dict(adv=rprf.vel1_mw*rprf.vel1_mw.differentiate('r'),
@@ -253,7 +257,8 @@ def get_accelerations(rprf):
     acc = xr.Dataset(acc)
     acc['dvdt_lagrange'] = acc.thm + acc.trb + acc.grv + acc.cen + acc.ani
     acc['dvdt_euler'] = acc.dvdt_lagrange - acc.adv
-    return acc.set_xindex('num')
+    return acc
+
 
 def find_tcoll_core(s, pid):
     """Find the GRID-dendro ID of the t_coll core of particle pid"""
