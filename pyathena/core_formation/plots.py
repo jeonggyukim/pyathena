@@ -75,6 +75,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     for nd in gd.leaves:
         parents.append(gd.parent[nd])
     parents = set(parents)
+    parents.remove(gd.trunk)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(ds, core.nid)
@@ -101,6 +102,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
         plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
                                   color='tab:gray')
+        # Overplot contours of parents of leaves, excluding trunk.
         for nd in parents:
             plot_grid_dendro_contours(s, gd, nd, ds.coords, axis=prj_axis,
                                       color='tab:gray')
@@ -153,6 +155,11 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.plot(xi*LJ_c, rhoc*np.exp(u), 'b:', lw=1)
 
     plt.axvline(core.radius, ls=':', c='k')
+    # overplot radius of the parent core
+    nid = gd.parent[core.nid]
+    vol = len(gd.get_all_descendant_cells(nid))*s.dV
+    rparent = (3*vol/(4*np.pi))**(1./3.)
+    plt.axvline(rparent, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
     plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(1e0, rhoLP[0])
@@ -171,6 +178,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
     plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
     plt.axvline(core.radius, ls=':', c='k')
+    plt.axvline(rparent, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
     plt.axhline(0, ls=':')
     plt.xlim(0, hw)
@@ -195,6 +203,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
                  lw=1)
 
     plt.axvline(core.radius, ls=':', c='k')
+    plt.axvline(rparent, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
     plt.xlim(rprf.r[0], 2*hw)
     plt.ylim(1e-1, 1e1)
@@ -215,42 +224,28 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plot_forces(s, rprf)
     plt.title('')
     plt.axvline(core.radius, ls=':', c='k')
+    plt.axvline(rparent, ls=':', c='k')
     plt.axvline(core.critical_radius, ls='--', c='k')
     plt.xlim(0, hw)
-    plt.legend(ncol=3, fontsize=15)
+    plt.legend(ncol=3, fontsize=15, loc='lower right')
 
     return fig
 
 
 def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
-    pthm = rprf.rho*s.cs**2
-    ptrb = rprf.rho*rprf.dvel1_sq_mw
-    pram = rprf.rho*rprf.vel1_mw**2
-
-    f_pthm = -pthm.differentiate('r') / rprf.rho
-    f_ptrb = -ptrb.differentiate('r') / rprf.rho
-    f_pram = -(rprf.r**2*pram).differentiate('r') / rprf.r**2 / rprf.rho
-    f_aniso = (rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw)\
-        / rprf.r
-    f_cen = (rprf.vel2_mw**2 + rprf.vel3_mw**2) / rprf.r
-    f_grav = rprf.ggas1_mw + rprf.gstar1_mw
+    acc = tools.get_accelerations(rprf)
 
     if ax is not None:
         plt.sca(ax)
 
-    f_pthm.plot(lw=1, color='tab:orange', label=r'$f_\mathrm{thm}$')
-    f_ptrb.plot(lw=1, color='tab:blue', label=r'$f_\mathrm{trb}$')
-    f_pram.plot(lw=1, color='tab:gray', label=r'$f_\mathrm{ram}$')
-    f_aniso.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
-    f_cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
-    (-f_grav).plot(marker='x', ls='--', color='tab:red', lw=1,
+    acc.thm.plot(lw=1, color='tab:orange', label=r'$f_\mathrm{thm}$')
+    acc.trb.plot(lw=1, color='tab:blue', label=r'$f_\mathrm{trb}$')
+    acc.ani.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
+    acc.cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
+    (-acc.grv).plot(marker='x', ls='--', color='tab:red', lw=1,
                    label=r'$f_\mathrm{grav}$')
-    (f_pthm + f_ptrb).plot(marker='+', color='tab:pink', lw=1,
-                           label=r'$f_\mathrm{thm,trb}$')
-    (f_pthm + f_ptrb + f_cen).plot(marker='+', color='tab:cyan', lw=1,
-                                   label=r'$f_\mathrm{thm,trb,cen}$')
-    fin = -(f_pthm + f_ptrb + f_pram + f_cen + f_aniso + f_grav)
-    fin.plot(marker='+', color='k', lw=1, label='net inward')
+    (-acc.dvdt_lagrange).plot(marker='+', color='k', lw=1, label=r'$(dv/dt)_L$')
+    (-acc.dvdt_euler).plot(color='tab:gray', lw=1, label=r'$(dv/dt)_E$')
 
     # Overplot -GM/r^2
     Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
