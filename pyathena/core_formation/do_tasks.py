@@ -38,6 +38,8 @@ if __name__ == "__main__":
 
     parser.add_argument("-j", "--join-partab", action="store_true",
                         help="Join partab files")
+    parser.add_argument("-f", "--join-partab-full", action="store_true",
+                        help="Join partab files including last output")
     parser.add_argument("-g", "--grid-dendro", action="store_true",
                         help="Run GRID-dendro")
     parser.add_argument("-c", "--core-tracking", action="store_true",
@@ -90,7 +92,8 @@ if __name__ == "__main__":
         # Combine output files.
         if args.join_partab:
             print(f"Combine partab files for model {mdl}", flush=True)
-            combine_partab(s, remove=True)
+            include_last = True if args.join_partab_full else False
+            combine_partab(s, remove=True, include_last=include_last)
 
         # Run GRID-dendro.
         if args.grid_dendro:
