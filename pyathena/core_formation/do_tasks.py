@@ -48,12 +48,17 @@ if __name__ == "__main__":
                         help="Calculate radial profiles of each cores")
     parser.add_argument("-t", "--critical-tes", action="store_true",
                         help="Calculate critical TES of each cores")
-    parser.add_argument("-p", "--make-plots", action="store_true",
-                        help="Create various plots")
     parser.add_argument("-o", "--overwrite", action="store_true",
                         help="Overwrite everything")
     parser.add_argument("-m", "--make-movie", action="store_true",
                         help="Create movies")
+
+    parser.add_argument("--plot-core-evolution", action="store_true",
+                        help="Create core evolution plots")
+    parser.add_argument("--plot-sink-history", action="store_true",
+                        help="Create sink history plots")
+    parser.add_argument("--plot-pdfs", action="store_true",
+                        help="Create density pdf and velocity power spectrum")
 
     args = parser.parse_args()
 
@@ -117,7 +122,7 @@ if __name__ == "__main__":
 #        resample_hdf5(s)
 
         # make plots
-        if args.make_plots:
+        if args.plot_core_evolution:
             print(f"draw t_coll cores plots for model {mdl}", flush=True)
             def wrapper(pid):
                 make_plots_core_evolution(s, pids=pid,
@@ -125,14 +130,13 @@ if __name__ == "__main__":
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids, 1)
 
+        if args.plot_sink_history:
             print(f"draw sink history plots for model {mdl}", flush=True)
             make_plots_sinkhistory(s, overwrite=args.overwrite)
 
+        if args.plot_pdfs:
             print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
             make_plots_PDF_Pspec(s, overwrite=args.overwrite)
-
-            print(f"draw central density evolution plot for model {mdl}", flush=True)
-            make_plots_central_density_evolution(s, overwrite=args.overwrite)
 
         # make movie
         if args.make_movie:
