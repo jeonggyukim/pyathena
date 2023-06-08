@@ -75,7 +75,8 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     for nd in gd.leaves:
         parents.append(gd.parent[nd])
     parents = set(parents)
-    parents.remove(gd.trunk)
+    if gd.trunk in parents:
+        parents.remove(gd.trunk)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(ds, core.nid)
