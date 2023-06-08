@@ -228,6 +228,33 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     return rprf
 
 
+def get_accelerations(rprf):
+    """Calculate RHS of the Lagrangian EOM
+    Parameters
+    ----------
+    rprf : xarray.Dataset
+        Radial profiles
+
+    Returns
+    -------
+    acc : xarray.Dataset
+        Accelerations appearing in Lagrangian EOM
+
+    """
+    rprf = rprf.drop_indexes('num')
+    pthm = rprf.rho
+    ptrb = rprf.rho*rprf.dvel1_sq_mw
+    acc = dict(adv=rprf.vel1_mw*rprf.vel1_mw.differentiate('r'),
+               thm=-pthm.differentiate('r') / rprf.rho,
+               trb=-ptrb.differentiate('r') / rprf.rho,
+               cen=(rprf.vel2_mw**2 + rprf.vel3_mw**2) / rprf.r,
+               grv=rprf.ggas1_mw + rprf.gstar1_mw,
+               ani=(rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw) / rprf.r)
+    acc = xr.Dataset(acc)
+    acc['dvdt_lagrange'] = acc.thm + acc.trb + acc.grv + acc.cen + acc.ani
+    acc['dvdt_euler'] = acc.dvdt_lagrange - acc.adv
+    return acc.set_xindex('num')
+
 def find_tcoll_core(s, pid):
     """Find the GRID-dendro ID of the t_coll core of particle pid"""
     # load dendrogram at t = t_coll
