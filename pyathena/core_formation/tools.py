@@ -177,7 +177,7 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     """
     # Convert density and velocities to spherical coord.
     ds['phistar'] = ds['phi'] - ds['phigas']
-    vel, ggas, gstar, grad_pthm, grad_ptrb = {}, {}, {}, {}, {}
+    vel, ggas, gstar = {}, {}, {}
     for dim, axis in zip(['x', 'y', 'z'], [1, 2, 3]):
         # Recenter velocity and calculate gravitational acceleration
         vel_ = ds['mom{}'.format(axis)]/ds.dens
@@ -192,26 +192,16 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     _, (ds_sph['gstar1'], ds_sph['gstar2'], ds_sph['gstar3'])\
         = transform.to_spherical(gstar.values(), origin)
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
-    div_v = vel['x'].differentiate('x') + vel['y'].differentiate('y')\
-        + vel['z'].differentiate('z')
+    div_v = (vel['x'].differentiate('x')
+             + vel['y'].differentiate('y')
+             + vel['z'].differentiate('z'))
     ds_sph['div_v'] = div_v.assign_coords(dict(r=r))
-
-    # Calculate pressure gradient forces and transform to spherical coord.
-    pthm = ds.dens*s.cs**2
-    ptrb = ds.dens*ds_sph['vel1']**2
-    for dim in ['x', 'y', 'z']:
-        grad_pthm[dim] = pthm.differentiate(dim)
-        grad_ptrb[dim] = ptrb.differentiate(dim)
-    _, (ds_sph['grad_pthm1'], ds_sph['grad_pthm2'], ds_sph['grad_pthm3'])\
-        = transform.to_spherical(grad_pthm.values(), origin)
-    _, (ds_sph['grad_ptrb1'], ds_sph['grad_ptrb2'], ds_sph['grad_ptrb3'])\
-        = transform.to_spherical(grad_ptrb.values(), origin)
 
     # Radial binning
     edges = np.insert(np.arange(ds.dx1/2, rmax, ds.dx1), 0, 0)
     rprf = {}
 
-    for k in ['grad_pthm1', 'grad_ptrb1', 'rho', 'div_v']:
+    for k in ['rho', 'div_v']:
         rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
     # We can use weighted groupby_bins, but let's do it like this to reuse
     # rprf['rho'] for performance
@@ -243,8 +233,9 @@ def get_accelerations(rprf):
     """
     if 'num' in rprf.indexes:
         # Temporary patch to the xarray bug;
-        # When there are multiple indexes associated with the same dimension 't',
-        # calculation among arrays are disabled. So drop 'num' index and reattach it
+        # When there are multiple indexes associated with the same
+        # dimension 't', calculation among arrays are disabled.
+        # So drop 'num' index.
         rprf = rprf.drop_indexes('num')
     pthm = rprf.rho
     ptrb = rprf.rho*rprf.dvel1_sq_mw
@@ -253,7 +244,8 @@ def get_accelerations(rprf):
                trb=-ptrb.differentiate('r') / rprf.rho,
                cen=(rprf.vel2_mw**2 + rprf.vel3_mw**2) / rprf.r,
                grv=rprf.ggas1_mw + rprf.gstar1_mw,
-               ani=(rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw) / rprf.r)
+               ani=((rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw)
+                    / rprf.r))
     acc = xr.Dataset(acc)
     acc['dvdt_lagrange'] = acc.thm + acc.trb + acc.grv + acc.cen + acc.ani
     acc['dvdt_euler'] = acc.dvdt_lagrange - acc.adv
@@ -516,7 +508,7 @@ def get_critical_core_props(s, pid, e1=0.7, e2=0.4):
     tff = np.sqrt(3*np.pi/(32*cores.mean_density.loc[num_tcoll]))
     t1 = tcoll - e1*tff
     t2 = tcoll - e2*tff
-    mask = (cores.time > t1)&(cores.time < t2)
+    mask = cores.time > t1 and cores.time < t2
     cores = cores[mask]
     rprf = s.rprofs[pid].sel(num=cores.index)
     rhoe = []
