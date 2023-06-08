@@ -112,6 +112,7 @@ def save_critical_tes(s, pid, overwrite=False):
                                                  'center_density',
                                                  'edge_density',
                                                  'critical_radius',
+                                                 'critical_mass',
                                                  'pindex',
                                                  'sonic_radius'),
                                         dtype=object).set_index('num')
