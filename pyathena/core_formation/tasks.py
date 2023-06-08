@@ -83,7 +83,7 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False,
             print("Not all files are joined", flush=True)
 
 
-def save_critical_tes(s, pid, overwrite=False):
+def save_critical_tes(s, pid, use_vel='disp', fixed_slope=False, overwrite=False):
     """Calculates and saves critical tes associated with each core.
     
     Parameters
@@ -92,39 +92,42 @@ def save_critical_tes(s, pid, overwrite=False):
         LoadSimCoreFormation instance.
     pid : int
         Particle id.
+    use_vel : str, optional
+        If 'total', use <v_r^2> to find sonic radius.
+        If 'disp', use <dv_r^2> = <v_r^2> - <v_r>^2 to find sonic radius.
+    fixed_slope : bool, optional
+        If true, fix the slope of velocity-size relation to 0.5.
     overwrite : str, optional
         If true, overwrites the existing pickle file.
     """
-    for use_vel in ['disp', 'total']:
-        for fixed_slope in [False, True]:
-            # Check if file exists
-            suffix = "vel{}".format(use_vel)
-            if fixed_slope:
-                suffix += "_fixed_slope"
-            ofname = Path(s.basedir, 'cores',
-                          'critical_tes_{}.par{}.p'.format(suffix, pid))
-            ofname.parent.mkdir(exist_ok=True)
-            if ofname.exists() and not overwrite:
-                print('[save_critical_tes] file already exists. Skipping...')
-                continue
+    # Check if file exists
+    suffix = "vel{}".format(use_vel)
+    if fixed_slope:
+        suffix += "_fixed_slope"
+    ofname = Path(s.basedir, 'cores',
+                  'critical_tes_{}.par{}.p'.format(suffix, pid))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[save_critical_tes] file already exists. Skipping...')
+        return
 
-            critical_tes = pd.DataFrame(columns=('num',
-                                                 'center_density',
-                                                 'edge_density',
-                                                 'critical_radius',
-                                                 'critical_mass',
-                                                 'pindex',
-                                                 'sonic_radius'),
-                                        dtype=object).set_index('num')
-            for num, _ in s.cores[pid].iterrows():
-                msg = '[save_critical_tes] processing model {} pid {} num {}'
-                msg = msg.format(s.basename, pid, num)
-                print(msg)
-                rprf = s.rprofs[pid].sel(num=num)
-                critical_tes.loc[num] = tools.calculate_critical_tes(s, rprf, use_vel, fixed_slope)
+    critical_tes = pd.DataFrame(columns=('num',
+                                         'center_density',
+                                         'edge_density',
+                                         'critical_radius',
+                                         'critical_mass',
+                                         'pindex',
+                                         'sonic_radius'),
+                                dtype=object).set_index('num')
+    for num, _ in s.cores[pid].iterrows():
+        msg = '[save_critical_tes] processing model {} pid {} num {}'
+        msg = msg.format(s.basename, pid, num)
+        print(msg)
+        rprf = s.rprofs[pid].sel(num=num)
+        critical_tes.loc[num] = tools.calculate_critical_tes(s, rprf, use_vel, fixed_slope)
 
-            # write to file
-            critical_tes.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
+    # write to file
+    critical_tes.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def find_and_save_cores(s, pid, overwrite=False):
