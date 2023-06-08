@@ -71,6 +71,10 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # Load leaf dict at t = t_coll
     gd = s.load_dendrogram(num)
+    parents = []
+    for nd in gd.leaves:
+        parents.append(gd.parent[nd])
+    parents = set(parents)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(ds, core.nid)
@@ -95,7 +99,11 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         # 1. Projections
         plt.sca(fig.add_subplot(gs[i, 0]))
         plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
-        plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis)
+        plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
+                                  color='tab:gray')
+        for nd in parents:
+            plot_grid_dendro_contours(s, gd, nd, ds.coords, axis=prj_axis,
+                                      color='tab:gray')
         rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]),
                             2*hw, 2*hw, fill=False, ec='r')
         plt.gca().add_artist(rec)
