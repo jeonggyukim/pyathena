@@ -50,40 +50,12 @@ if __name__ == "__main__":
                         help="Calculate critical TES of each cores")
     parser.add_argument("-p", "--make-plots", action="store_true",
                         help="Create various plots")
-    parser.add_argument("-o", "--overwrite-all", action="store_true",
+    parser.add_argument("-o", "--overwrite", action="store_true",
                         help="Overwrite everything")
     parser.add_argument("-m", "--make-movie", action="store_true",
                         help="Create movies")
 
-    parser.add_argument("--overwrite-grid", action="store_true",
-                        help="Overwrite GRID-dendro output")
-    parser.add_argument("--overwrite-cores", action="store_true",
-                        help="Overwrite prestellar cores")
-    parser.add_argument("--overwrite-radial-profiles", action="store_true",
-                        help="Overwrite radial profiles of prestellar cores")
-    parser.add_argument("--overwrite-critical-tes", action="store_true",
-                        help="Overwrite critical turbulent equilibrium spheres"
-                             " for prestellar cores")
-    parser.add_argument("--overwrite-plot-core-evolution", action="store_true",
-                        help="Overwrite core evolution plots")
-    parser.add_argument("--overwrite-sink-history", action="store_true",
-                        help="Overwrite sink history plots")
-    parser.add_argument("--overwrite-pdf-pspecs", action="store_true",
-                        help="Overwrite PDF_Pspecs plots")
-    parser.add_argument("--overwrite-rhoc-evolution", action="store_true",
-                        help="Overwrite central density evolution plots")
-
     args = parser.parse_args()
-
-    if args.overwrite_all:
-        args.overwrite_grid = True
-        args.overwrite_cores = True
-        args.overwrite_radial_profiles = True
-        args.overwrite_critical_tes = True
-        args.overwrite_plot_core_evolution = True
-        args.overwrite_sink_history = True
-        args.overwrite_pdf_pspecs = True
-        args.overwrite_rhoc_evolution = True
 
     # Select models
     for mdl in args.models:
@@ -99,7 +71,7 @@ if __name__ == "__main__":
         if args.grid_dendro:
             print(f"Run GRID-dendro for model {mdl}", flush=True)
             def wrapper(num):
-                run_GRID(s, num, overwrite=args.overwrite_grid)
+                run_GRID(s, num, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums[GRID_NUM_START:], 1)
 
@@ -107,7 +79,7 @@ if __name__ == "__main__":
         if args.core_tracking:
             print(f"find t_coll cores for model {mdl}", flush=True)
             def wrapper(pid):
-                find_and_save_cores(s, pid, overwrite=args.overwrite_cores)
+                find_and_save_cores(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids, 1)
             try:
@@ -120,7 +92,7 @@ if __name__ == "__main__":
             msg = "calculate and save radial profiles of t_coll cores for model {}"
             print(msg.format(mdl), flush=True)
             def wrapper(pid):
-                save_radial_profiles(s, pid, overwrite=args.overwrite_radial_profiles)
+                save_radial_profiles(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids, 1)
             try:
@@ -132,7 +104,7 @@ if __name__ == "__main__":
         if args.critical_tes:
             print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
             def wrapper(pid):
-                save_critical_tes(s, pid, overwrite=args.overwrite_critical_tes)
+                save_critical_tes(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids, 1)
             try:
@@ -149,18 +121,18 @@ if __name__ == "__main__":
             print(f"draw t_coll cores plots for model {mdl}", flush=True)
             def wrapper(pid):
                 make_plots_core_evolution(s, pids=pid,
-                                          overwrite=args.overwrite_plot_core_evolution)
+                                          overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids, 1)
 
             print(f"draw sink history plots for model {mdl}", flush=True)
-            make_plots_sinkhistory(s, overwrite=args.overwrite_sink_history)
+            make_plots_sinkhistory(s, overwrite=args.overwrite)
 
             print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
-            make_plots_PDF_Pspec(s, overwrite=args.overwrite_pdf_pspecs)
+            make_plots_PDF_Pspec(s, overwrite=args.overwrite)
 
             print(f"draw central density evolution plot for model {mdl}", flush=True)
-            make_plots_central_density_evolution(s, overwrite=args.overwrite_rhoc_evolution)
+            make_plots_central_density_evolution(s, overwrite=args.overwrite)
 
         # make movie
         if args.make_movie:
