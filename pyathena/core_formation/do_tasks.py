@@ -86,11 +86,8 @@ if __name__ == "__main__":
             def wrapper(pid):
                 find_and_save_cores(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
-                p.map(wrapper, s.pids, 1)
-            try:
-                s._load_cores()
-            except FileNotFoundError:
-                pass
+                p.map(wrapper, s.pids)
+            s._load_cores()
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
@@ -99,11 +96,8 @@ if __name__ == "__main__":
             def wrapper(pid):
                 save_radial_profiles(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
-                p.map(wrapper, s.pids, 1)
-            try:
-                s._load_radial_profiles()
-            except FileNotFoundError:
-                pass
+                p.map(wrapper, s.pids)
+            s._load_radial_profiles()
 
         # Find critical tes
         if args.critical_tes:
@@ -111,11 +105,8 @@ if __name__ == "__main__":
             def wrapper(pid):
                 save_critical_tes(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
-                p.map(wrapper, s.pids, 1)
-            try:
-                s._load_cores()
-            except FileNotFoundError:
-                pass
+                p.map(wrapper, s.pids)
+            s._load_cores()
 
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}", flush=True)
