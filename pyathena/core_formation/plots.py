@@ -126,7 +126,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plot_grid_dendro_contours(s, gd, gd.parent[gd.parent[core.nid]], ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='tab:gray')
         # Overplot critical radius
-        if core.critical_radius is not None:
+        if np.isnan(core.critical_radius):
             crcl = plt.Circle((0,0), core.critical_radius, fill=False,
                               lw=1, ls='--', color='tab:gray')
             plt.gca().add_artist(crcl)
