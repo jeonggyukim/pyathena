@@ -75,7 +75,8 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False,
             file_list = []
             for fblock0 in block0_files:
                 for i in range(nblocks):
-                    file_list.append(fblock0.replace(outid, "block{}.{}".format(i, outid)))
+                    file_list.append(fblock0.replace(
+                        outid, "block{}.{}".format(i, outid)))
             file_list.sort()
             for f in file_list:
                 Path(f).unlink()
@@ -83,9 +84,10 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False,
             print("Not all files are joined", flush=True)
 
 
-def save_critical_tes(s, pid, use_vel='disp', fixed_slope=False, overwrite=False):
+def save_critical_tes(s, pid, use_vel='disp', fixed_slope=False,
+                      overwrite=False):
     """Calculates and saves critical tes associated with each core.
-    
+
     Parameters
     ----------
     s : LoadSimCoreFormation
@@ -124,7 +126,8 @@ def save_critical_tes(s, pid, use_vel='disp', fixed_slope=False, overwrite=False
         msg = msg.format(s.basename, pid, num)
         print(msg)
         rprf = s.rprofs[pid].sel(num=num)
-        critical_tes.loc[num] = tools.calculate_critical_tes(s, rprf, use_vel, fixed_slope)
+        critical_tes.loc[num] = tools.calculate_critical_tes(s, rprf, use_vel,
+                                                             fixed_slope)
 
     # write to file
     critical_tes.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
@@ -361,48 +364,43 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
             ax.cla()
 
 
-def make_plots_core_evolution(s, pids=None, overwrite=False):
+def make_plots_core_evolution(s, pid, overwrite=False):
     """Creates multi-panel plot for t_coll core properties
 
     Args:
         s: pyathena.LoadSim instance
     """
-    if pids is None:
-        pids = s.pids
-    elif isinstance(pids, int):
-        pids = [pids,]
-    for pid in pids:
-        # Read snapshot at t=t_coll and set plot limits
-        num = s.tcoll_cores.loc[pid].num
-        ds = s.load_hdf5(num, load_method='pyathena')
-        gd = s.load_dendrogram(num)
-        core = s.cores[pid].loc[num]
-        data = dict(rho=ds.dens.to_numpy(),
-                     vel1=(ds.mom1/ds.dens).to_numpy(),
-                     vel2=(ds.mom2/ds.dens).to_numpy(),
-                     vel3=(ds.mom3/ds.dens).to_numpy(),
-                     prs=s.cs**2*ds.dens.to_numpy(),
-                     phi=ds.phigas.to_numpy(),
-                     dvol=s.dV)
-        reff, engs = energy.calculate_cumulative_energies(gd, data, core.nid)
-        emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
-        emin = tools.rounddown(engs['egrv'].min(), 1)
-        rmax = tools.roundup(reff.max(), 2)
+    # Read snapshot at t=t_coll and set plot limits
+    num = s.tcoll_cores.loc[pid].num
+    ds = s.load_hdf5(num, load_method='pyathena')
+    gd = s.load_dendrogram(num)
+    core = s.cores[pid].loc[num]
+    data = dict(rho=ds.dens.to_numpy(),
+                vel1=(ds.mom1/ds.dens).to_numpy(),
+                vel2=(ds.mom2/ds.dens).to_numpy(),
+                vel3=(ds.mom3/ds.dens).to_numpy(),
+                prs=s.cs**2*ds.dens.to_numpy(),
+                phi=ds.phigas.to_numpy(),
+                dvol=s.dV)
+    reff, engs = energy.calculate_cumulative_energies(gd, data, core.nid)
+    emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
+    emin = tools.rounddown(engs['egrv'].min(), 1)
+    rmax = tools.roundup(reff.max(), 2)
 
-        # Now, loop through cores and make plots
-        for num, core in s.cores[pid].iterrows():
-            msg = '[make_plots_core_evolution] processing model {} pid {} num {}'
-            msg = msg.format(s.basename, pid, num)
-            print(msg)
-            fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
-                config.PLOT_PREFIX_TCOLL_CORES, pid, num))
-            fname.parent.mkdir(exist_ok=True)
-            if fname.exists() and not overwrite:
-                continue
-            fig = plots.plot_core_evolution(s, pid, num, emin=emin, emax=emax,
-                                            rmax=rmax)
-            fig.savefig(fname, bbox_inches='tight', dpi=200)
-            plt.close(fig)
+    # Now, loop through cores and make plots
+    for num, core in s.cores[pid].iterrows():
+        msg = '[make_plots_core_evolution] processing model {} pid {} num {}'
+        msg = msg.format(s.basename, pid, num)
+        print(msg)
+        fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
+            config.PLOT_PREFIX_TCOLL_CORES, pid, num))
+        fname.parent.mkdir(exist_ok=True)
+        if fname.exists() and not overwrite:
+            continue
+        fig = plots.plot_core_evolution(s, pid, num, emin=emin, emax=emax,
+                                        rmax=rmax)
+        fig.savefig(fname, bbox_inches='tight', dpi=200)
+        plt.close(fig)
 
 
 def make_plots_sinkhistory(s, overwrite=False):
