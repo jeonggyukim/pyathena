@@ -116,7 +116,7 @@ if __name__ == "__main__":
         if args.plot_core_evolution:
             print(f"draw t_coll cores plots for model {mdl}", flush=True)
             def wrapper(pid):
-                make_plots_core_evolution(s, pids=pid,
+                make_plots_core_evolution(s, pid,
                                           overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids, 1)
