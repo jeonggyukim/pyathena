@@ -287,6 +287,8 @@ def save_radial_profiles(s, pid, overwrite=False):
     rprf = rprf.set_xindex('num')
 
     # write to file
+    if ofname.exists():
+        ofname.unlink()
     rprf.to_netcdf(ofname)
 
 
