@@ -91,6 +91,9 @@ if __name__ == "__main__":
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
+            # TODO(SMOON) radial profile calculation is too expensive.
+            # Better to parallelize over `num`, or output individual radial profiles
+            # as a seperate files.
             msg = "calculate and save radial profiles of t_coll cores for model {}"
             print(msg.format(mdl), flush=True)
             def wrapper(pid):
