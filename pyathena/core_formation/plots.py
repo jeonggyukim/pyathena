@@ -71,12 +71,6 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # Load leaf dict at t = t_coll
     gd = s.load_dendrogram(num)
-    parents = []
-    for nd in gd.leaves:
-        parents.append(gd.parent[nd])
-    parents = set(parents)
-    if gd.trunk in parents:
-        parents.remove(gd.trunk)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(ds, core.nid)
@@ -104,9 +98,14 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
                                   color='tab:gray')
         # Overplot contours of parents of leaves, excluding trunk.
-        for nd in parents:
-            plot_grid_dendro_contours(s, gd, nd, ds.coords, axis=prj_axis,
-                                      color='tab:gray')
+        nodes = list(gd.leaves)
+        for nd in gd.leaves:
+            nodes.append(gd.parent[nd])
+        nodes = set(nodes)
+        if gd.trunk in nodes:
+            nodes.remove(gd.trunk)
+        plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
+                                  color='tab:gray')
         rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]),
                             2*hw, 2*hw, fill=False, ec='r')
         plt.gca().add_artist(rec)
@@ -119,16 +118,21 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         d = d.sel(sel)
         plt.sca(fig.add_subplot(gs[i, 1]))
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
-        plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
-                                  recenter=(xc, yc, zc), select=sel, color='tab:gray')
-        plot_grid_dendro_contours(s, gd, gd.parent[core.nid], ds.coords, axis=prj_axis,
-                                  recenter=(xc, yc, zc), select=sel, color='tab:gray')
-        plot_grid_dendro_contours(s, gd, gd.parent[gd.parent[core.nid]], ds.coords, axis=prj_axis,
+
+        parent = gd.parent[core.nid]
+        grandparent = gd.parent[parent]
+        nodes = list(gd.descendants[grandparent])
+        nodes.append(grandparent)
+        plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='tab:gray')
         # Overplot critical radius
         if not np.isnan(core.critical_radius):
             crcl = plt.Circle((0,0), core.critical_radius, fill=False,
-                              lw=1, ls='--', color='tab:gray')
+                              ls='--', color='tab:gray')
+            plt.gca().add_artist(crcl)
+        if not np.isnan(core.sonic_radius):
+            crcl = plt.Circle((0,0), core.sonic_radius, fill=False,
+                              ls=':', color='tab:gray')
             plt.gca().add_artist(crcl)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
@@ -160,13 +164,14 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     u, du = ts.solve(xi)
     plt.plot(xi*LJ_c, rhoc*np.exp(u), 'b:', lw=1)
 
-    plt.axvline(core.radius, ls=':', c='k')
     # overplot radius of the parent core
     nid = gd.parent[core.nid]
     vol = len(gd.get_all_descendant_cells(nid))*s.dV
     rparent = (3*vol/(4*np.pi))**(1./3.)
-    plt.axvline(rparent, ls=':', c='k')
-    plt.axvline(core.critical_radius, ls='--', c='k')
+    plt.axvline(core.radius, c='tab:gray', lw=1)
+    plt.axvline(rparent, c='tab:gray', lw=1)
+    plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+    plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(1e0, rhoLP[0])
     plt.xlabel(r'$r/L_{J,0}$')
@@ -183,15 +188,21 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
     plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
     plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
-    plt.axvline(core.radius, ls=':', c='k')
-    plt.axvline(rparent, ls=':', c='k')
-    plt.axvline(core.critical_radius, ls='--', c='k')
+    ln1 = plt.axvline(core.radius, c='tab:gray', lw=1)
+    plt.axvline(rparent, c='tab:gray', lw=1)
+    ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+    ln3 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.axhline(0, ls=':')
     plt.xlim(0, hw)
     plt.ylim(-2.5, 1.5)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v\right>/c_s$')
-    plt.legend()
+    lgd = plt.legend([ln1, ln2, ln3], [r'$R_\mathrm{tidal}$',
+                                       r'$R_\mathrm{crit}$',
+                                       r'$R_\mathrm{sonic}$'],
+                     loc='lower right')
+    plt.legend(loc='upper right')
+    plt.gca().add_artist(lgd)
 
     # Velocity dispersions
     plt.sca(fig.add_subplot(gs[2, 2]))
@@ -208,14 +219,15 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
                  lw=1)
 
-    plt.axvline(core.radius, ls=':', c='k')
-    plt.axvline(rparent, ls=':', c='k')
-    plt.axvline(core.critical_radius, ls='--', c='k')
+    plt.axvline(core.radius, c='tab:gray', lw=1)
+    plt.axvline(rparent, c='tab:gray', lw=1)
+    plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+    plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.xlim(rprf.r[0], 2*hw)
     plt.ylim(1e-1, 1e1)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v^2\right>^{1/2}/c_s$')
-    plt.legend()
+    plt.legend(loc='lower right')
 
     # 5. Energies
     plt.sca(fig.add_subplot(gs[0, 3]))
@@ -229,9 +241,10 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.sca(fig.add_subplot(gs[1, 3]))
     plot_forces(s, rprf)
     plt.title('')
-    plt.axvline(core.radius, ls=':', c='k')
-    plt.axvline(rparent, ls=':', c='k')
-    plt.axvline(core.critical_radius, ls='--', c='k')
+    plt.axvline(core.radius, c='tab:gray', lw=1)
+    plt.axvline(rparent, c='tab:gray', lw=1)
+    plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+    plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.xlim(0, hw)
     plt.legend(ncol=3, fontsize=15, loc='upper right')
 
@@ -249,9 +262,9 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     acc.ani.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
     acc.cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
     (-acc.grv).plot(marker='x', ls='--', color='tab:red', lw=1,
-                   label=r'$f_\mathrm{grav}$')
-    (-acc.dvdt_lagrange).plot(marker='+', color='k', lw=1, label=r'$(dv/dt)_L$')
-    (-acc.dvdt_euler).plot(color='tab:gray', lw=1, label=r'$(dv/dt)_E$')
+                   label=r'$-f_\mathrm{grav}$')
+    (-acc.dvdt_lagrange).plot(marker='+', color='k', lw=1, label=r'$-(dv/dt)_L$')
+    (-acc.dvdt_euler).plot(color='tab:gray', lw=1, label=r'$-(dv/dt)_E$')
 
     # Overplot -GM/r^2
     Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
@@ -433,22 +446,25 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
                                         (xmin, xmax, ymin, ymax))))
     permutations = dict(z=('y', 'x'), y=('x', 'z'), x=('z', 'y'))
 
-    mask = xr.DataArray(np.ones(s.domain['Nx'].T), coords=coords)
-    mask = gd.filter_data(mask, nodes, fill_value=0)
-    if recenter is not None:
-        mask, _ = tools.recenter_dataset(mask, recenter)
-    if select is not None:
-        mask = mask.sel(select)
-    mask = mask.max(dim=axis)
-    mask = mask.transpose(*permutations[axis])
+    for nd in nodes:
+        mask = xr.DataArray(np.ones(s.domain['Nx'].T), coords=coords)
+        mask = gd.filter_data(mask, nd, fill_value=0)
+        if recenter is not None:
+            mask, _ = tools.recenter_dataset(mask, recenter)
+        if select is not None:
+            mask = mask.sel(select)
+        if mask.max() == 0:
+            continue
+        mask = mask.max(dim=axis)
+        mask = mask.transpose(*permutations[axis])
 
-    if ax is not None:
-        plt.sca(ax)
-    if transpose:
-        mask = mask.T
+        if ax is not None:
+            plt.sca(ax)
+        if transpose:
+            mask = mask.T
 
-    mask.plot.contour(levels=[1e-16], linewidths=lw, colors=color,
-                      add_labels=False)
+        mask.plot.contour(levels=[0.5], linewidths=lw, colors=color,
+                          add_labels=False)
     plt.xlim(extent[axis][0], extent[axis][1])
     plt.ylim(extent[axis][2], extent[axis][3])
 
