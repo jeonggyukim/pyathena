@@ -96,10 +96,11 @@ if __name__ == "__main__":
             # as a seperate files.
             msg = "calculate and save radial profiles of t_coll cores for model {}"
             print(msg.format(mdl), flush=True)
-            def wrapper(pid):
-                save_radial_profiles(s, pid, overwrite=args.overwrite)
-            with Pool(args.np) as p:
-                p.map(wrapper, s.pids)
+            for pid in s.pids:
+                def wrapper(num):
+                    save_radial_profiles(s, pid, num, overwrite=args.overwrite)
+                with Pool(args.np) as p:
+                    p.map(wrapper, s.cores[pid].index)
             s._load_radial_profiles()
 
         # Find critical tes
