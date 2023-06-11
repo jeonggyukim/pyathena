@@ -222,7 +222,8 @@ def calculate_radial_profiles(s, ds, origin, rmax):
 
 
 def get_accelerations(rprf):
-    """Calculate RHS of the Lagrangian EOM
+    """Calculate RHS of the Lagrangian EOM (force per unit mass)
+
     Parameters
     ----------
     rprf : xarray.Dataset
