@@ -4,6 +4,7 @@ import xarray as xr
 import numpy as np
 import pathlib
 import pickle
+import logging
 
 from pyathena.load_sim import LoadSim
 from pyathena.util.units import Units
@@ -207,9 +208,27 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
     def _load_radial_profiles(self):
         self.rprofs = {}
         for pid in self.pids:
-            fname = pathlib.Path(self.basedir, 'cores',
-                                 'radial_profile.par{}.nc'.format(pid))
-            rprf = xr.open_dataset(fname)
+            try:
+                fname = pathlib.Path(self.basedir, 'radial_profile',
+                                     'radial_profile.par{}.nc'.format(pid))
+                rprf = xr.open_dataset(fname)
+            except FileNotFoundError:
+                try:
+                    core = self.cores[pid]
+                    rprf = []
+                    for num in core.index:
+                        fname2 = pathlib.Path(self.basedir, 'radial_profile',
+                                             'radial_profile.par{}.{:05d}.nc'.format(pid, num))
+                        rprf.append(xr.open_dataset(fname2))
+                    rprf = xr.concat(rprf, 't')
+                    rprf = rprf.assign_coords(dict(num=('t', core.index)))
+                    rprf.to_netcdf(fname)
+                except (FileNotFoundError, KeyError):
+                    # Fall back to old radial profile
+                    logging.warning("Cannot find new version of radial profiles. Reading from old one...")
+                    fname = pathlib.Path(self.basedir, 'cores',
+                                         'radial_profile.par{}.nc'.format(pid))
+                    rprf = xr.open_dataset(fname)
             for axis in [1, 2, 3]:
                 rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
                                              - rprf[f'vel{axis}_mw']**2)
