@@ -533,7 +533,7 @@ def get_critical_core_props(s, pid, e1=0.7, e2=0.4):
     tff = np.sqrt(3*np.pi/(32*cores.mean_density.loc[num_tcoll]))
     t1 = tcoll - e1*tff
     t2 = tcoll - e2*tff
-    mask = cores.time > t1 and cores.time < t2
+    mask = (cores.time > t1) & (cores.time < t2)  # logical and does not work here.
     cores = cores[mask]
     rprf = s.rprofs[pid].sel(num=cores.index)
     rhoe = []
