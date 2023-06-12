@@ -439,20 +439,41 @@ def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
 
 
-def test_isolated_core(s, pid, ncells_min=10):
-    """Test if the given core is isolated.
-
-    Criterion for an isolated core:
-    1. The core must not contain any particle at the time of collapse.
-    2. The core must not have another particle within ncells_min at the
-       time of collapse.
+def test_resolved_core(s, pid, ncells_min=10):
+    """Test if the given core is sufficiently resolved.
 
     Parameters
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata
+    pid : int
+        Unique ID of the particle.
     ncells_min : int
         Minimum grid distance between a core and a particle.
+
+    Returns
+    -------
+    bool
+        True if a core is isolated, false otherwise.
+    """
+    if s.cores[pid].iloc[-1].radius / s.dx > ncells_min:
+        return True
+    else:
+        return False
+
+
+def test_isolated_core(s, pid):
+    """Test if the given core is isolated.
+
+    Criterion for an isolated core is that the core must not contain
+    any particle at the time of collapse.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    pid : int
+        Unique ID of the particle.
 
     Returns
     -------
