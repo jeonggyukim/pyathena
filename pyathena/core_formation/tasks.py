@@ -133,7 +133,7 @@ def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
         pickle.dump(critical_tes, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def find_and_save_cores(s, pid, overwrite=False):
+def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1):
     """Loops over all sink particles and find their progenitor cores
 
     Finds a unique grid-dendro leaf at each snapshot that is going to collapse.
@@ -148,6 +148,9 @@ def find_and_save_cores(s, pid, overwrite=False):
         Particle id.
     overwrite : str, optional
         If true, overwrites the existing pickle file.
+    fdst_threshold: float, optional
+        if fdst = |d1 - d2| / max(R1, R2) is larger than this threshold,
+        stop back-tracking.
     """
     def _get_node_distance(ds, nd1, nd2):
         pos1 = tools.get_coords_node(ds, nd1)
@@ -216,19 +219,17 @@ def find_and_save_cores(s, pid, overwrite=False):
         # leading to sudden change in the core radius and mass.
         fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox)\
             / max(Rcore, Rcore_old)
-        fmass = np.abs(Mcore - Mcore_old) / max(Mcore, Mcore_old)
-        frds = np.abs(Rcore - Rcore_old) / max(Rcore, Rcore_old)
 
         # If relative errors are more than 100%, this core is unlikely the
         # same core at previous timestep. Stop backtracing.
-        if fdst > 1 or fmass > 1 or frds > 1:
+        if fdst > fdst_threshold:
             break
 
         # Add this core to list of progenitor cores
         cores.loc[num] = dict(nid=nid, time=ds.Time, radius=Rcore,
                               mass=Mcore)
 
-        # Save core properties
+        # Save old properties
         nid_old = nid
         pos_old = pos
         Mcore_old = Mcore
