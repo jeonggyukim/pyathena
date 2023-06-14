@@ -109,12 +109,14 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 # Load grid-dendro nodes
                 self._load_cores()
             except FileNotFoundError:
+                logging.warning("Failed to load core information")
                 pass
 
             try:
                 # Load radial profiles
                 self._load_radial_profiles()
             except FileNotFoundError:
+                logging.warning("Failed to load radial profiles")
                 pass
 
         elif isinstance(basedir_or_Mach, (float, int)):
@@ -201,6 +203,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             # Assign to attribute
             self.cores[pid] = core
 
+            found_tes_crit = True
             # Read critical TES info and concatenate to self.cores
             try:
                 fname = pathlib.Path(self.basedir, 'critical_tes',
@@ -218,11 +221,16 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 except FileNotFoundError:
                     # Fall back to old radial profile
                     logging.warning("Cannot find new version of critical TES. Reading from old one...")
-                    fname = pathlib.Path(self.basedir, 'cores',
-                                         f'critical_tes_{method}.par{pid}.p')
-                    tes_crit = pd.read_pickle(fname)
-            self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
-                                        axis=1).sort_values('num')
+                    try:
+                        fname = pathlib.Path(self.basedir, 'cores',
+                                             f'critical_tes_{method}.par{pid}.p')
+                        tes_crit = pd.read_pickle(fname)
+                    except FileNotFoundError:
+                        found_tes_crit = False
+                        pass
+            if found_tes_crit:
+                self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
+                                            axis=1).sort_values('num')
 
     def _load_radial_profiles(self):
         self.rprofs = {}
