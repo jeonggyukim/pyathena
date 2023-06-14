@@ -194,16 +194,35 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             fname = pathlib.Path(self.basedir, 'cores',
                                  'cores.par{}.p'.format(pid))
             core = pd.read_pickle(fname)
+
+            # Calculate derived quantities
             core['mean_density'] = core.mass / (4*np.pi*core.radius**3/3)
+
+            # Assign to attribute
             self.cores[pid] = core
+
+            # Read critical TES info and concatenate to self.cores
             try:
-                fname = pathlib.Path(self.basedir, 'cores',
+                fname = pathlib.Path(self.basedir, 'critical_tes',
                                      f'critical_tes_{method}.par{pid}.p')
                 tes_crit = pd.read_pickle(fname)
-                self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
-                                            axis=1).sort_values('num')
             except FileNotFoundError:
-                pass
+                try:
+                    tes_crit = []
+                    for num in core.index:
+                        fname2 = pathlib.Path(self.basedir, 'critical_tes',
+                                              'critical_tes_{}.par{}.{:05d}.p'.format(method, pid, num))
+                        tes_crit.append(pd.read_pickle(fname2))
+                    tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_values('num')
+                    tes_crit.to_pickle(fname, protocol=pickle.HIGHEST_PROTOCOL)
+                except FileNotFoundError:
+                    # Fall back to old radial profile
+                    logging.warning("Cannot find new version of critical TES. Reading from old one...")
+                    fname = pathlib.Path(self.basedir, 'cores',
+                                         f'critical_tes_{method}.par{pid}.p')
+                    tes_crit = pd.read_pickle(fname)
+            self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
+                                        axis=1).sort_values('num')
 
     def _load_radial_profiles(self):
         self.rprofs = {}
