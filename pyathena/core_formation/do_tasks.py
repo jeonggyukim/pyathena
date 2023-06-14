@@ -106,10 +106,11 @@ if __name__ == "__main__":
         # Find critical tes
         if args.critical_tes:
             print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
-            def wrapper(pid):
-                save_critical_tes(s, pid, overwrite=args.overwrite)
-            with Pool(args.np) as p:
-                p.map(wrapper, s.pids)
+            for pid in s.pids:
+                def wrapper(num):
+                    save_critical_tes(s, pid, num, overwrite=args.overwrite)
+                with Pool(args.np) as p:
+                    p.map(wrapper, s.cores[pid].index)
             s._load_cores()
 
         # Resample AMR data into uniform grid
