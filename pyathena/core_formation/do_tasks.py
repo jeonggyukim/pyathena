@@ -126,11 +126,29 @@ if __name__ == "__main__":
         # make plots
         if args.plot_core_evolution:
             print(f"draw t_coll cores plots for model {mdl}", flush=True)
-            def wrapper(pid):
-                make_plots_core_evolution(s, pid,
-                                          overwrite=args.overwrite)
-            with Pool(args.np) as p:
-                p.map(wrapper, s.pids, 1)
+            for pid in s.pids:
+                # Read snapshot at t=t_coll and set plot limits
+                num = s.tcoll_cores.loc[pid].num
+                ds = s.load_hdf5(num, load_method='pyathena')
+                gd = s.load_dendrogram(num)
+                core = s.cores[pid].loc[num]
+                data = dict(rho=ds.dens.to_numpy(),
+                            vel1=(ds.mom1/ds.dens).to_numpy(),
+                            vel2=(ds.mom2/ds.dens).to_numpy(),
+                            vel3=(ds.mom3/ds.dens).to_numpy(),
+                            prs=s.cs**2*ds.dens.to_numpy(),
+                            phi=ds.phigas.to_numpy(),
+                            dvol=s.dV)
+                reff, engs = energy.calculate_cumulative_energies(gd, data, core.nid)
+                emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
+                emin = tools.rounddown(engs['egrv'].min(), 1)
+                rmax = tools.roundup(reff.max(), 2)
+                def wrapper(num):
+                    make_plots_core_evolution(s, pid, num,
+                                              overwrite=args.overwrite,
+                                              emin=emin, emax=emax, rmax=rmax)
+                with Pool(args.np) as p:
+                    p.map(wrapper, s.cores[pid].index)
 
         if args.plot_sink_history:
             print(f"draw sink history plots for model {mdl}", flush=True)
