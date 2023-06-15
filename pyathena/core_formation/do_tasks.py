@@ -25,7 +25,10 @@ if __name__ == "__main__":
                   M5J2P1N512='/scratch/gpfs/sm69/cores/M5.J2.P1.N512',
                   M5J2P2N512='/scratch/gpfs/sm69/cores/M5.J2.P2.N512',
                   M5J2P3N512='/scratch/gpfs/sm69/cores/M5.J2.P3.N512',
-                  M5J2P4N512='/scratch/gpfs/sm69/cores/M5.J2.P4.N512')
+                  M5J2P4N512='/scratch/gpfs/sm69/cores/M5.J2.P4.N512',
+                  M5J2P5N512='/scratch/gpfs/sm69/cores/M5.J2.P5.N512',
+                  M5J2P6N512='/scratch/gpfs/sm69/cores/M5.J2.P6.N512',
+                  M5J2P7N512='/scratch/gpfs/sm69/cores/M5.J2.P7.N512')
     sa = pa.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
@@ -69,8 +72,11 @@ if __name__ == "__main__":
         # Combine output files.
         if args.join_partab:
             print(f"Combine partab files for model {mdl}", flush=True)
-            include_last = True if args.join_partab_full else False
-            combine_partab(s, remove=True, include_last=include_last)
+            combine_partab(s, remove=True, include_last=False)
+
+        if args.join_partab_full:
+            print(f"Combine all partab files for model {mdl}", flush=True)
+            combine_partab(s, remove=True, include_last=True)
 
         # Run GRID-dendro.
         if args.grid_dendro:
