@@ -364,43 +364,34 @@ def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
             ax.cla()
 
 
-def make_plots_core_evolution(s, pid, overwrite=False):
+def make_plots_core_evolution(s, pid, num, overwrite=False,
+                              emin=None, emax=None, rmax=None):
     """Creates multi-panel plot for t_coll core properties
 
-    Args:
-        s: pyathena.LoadSim instance
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata.
+    pid : int
+        Unique ID of a selected particle.
+    num : int
+        Snapshot number.
+    overwrite : str, optional
+        If true, overwrite output files.
     """
-    # Read snapshot at t=t_coll and set plot limits
-    num = s.tcoll_cores.loc[pid].num
-    ds = s.load_hdf5(num, load_method='pyathena')
-    gd = s.load_dendrogram(num)
-    core = s.cores[pid].loc[num]
-    data = dict(rho=ds.dens.to_numpy(),
-                vel1=(ds.mom1/ds.dens).to_numpy(),
-                vel2=(ds.mom2/ds.dens).to_numpy(),
-                vel3=(ds.mom3/ds.dens).to_numpy(),
-                prs=s.cs**2*ds.dens.to_numpy(),
-                phi=ds.phigas.to_numpy(),
-                dvol=s.dV)
-    reff, engs = energy.calculate_cumulative_energies(gd, data, core.nid)
-    emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
-    emin = tools.rounddown(engs['egrv'].min(), 1)
-    rmax = tools.roundup(reff.max(), 2)
+    msg = '[make_plots_core_evolution] processing model {} pid {} num {}'
+    msg = msg.format(s.basename, pid, num)
+    print(msg)
+    fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
+        config.PLOT_PREFIX_TCOLL_CORES, pid, num))
+    fname.parent.mkdir(exist_ok=True)
+    if fname.exists() and not overwrite:
+        return
 
-    # Now, loop through cores and make plots
-    for num, core in s.cores[pid].iterrows():
-        msg = '[make_plots_core_evolution] processing model {} pid {} num {}'
-        msg = msg.format(s.basename, pid, num)
-        print(msg)
-        fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
-            config.PLOT_PREFIX_TCOLL_CORES, pid, num))
-        fname.parent.mkdir(exist_ok=True)
-        if fname.exists() and not overwrite:
-            continue
-        fig = plots.plot_core_evolution(s, pid, num, emin=emin, emax=emax,
-                                        rmax=rmax)
-        fig.savefig(fname, bbox_inches='tight', dpi=200)
-        plt.close(fig)
+    fig = plots.plot_core_evolution(s, pid, num, emin=emin, emax=emax,
+                                    rmax=rmax)
+    fig.savefig(fname, bbox_inches='tight', dpi=200)
+    plt.close(fig)
 
 
 def make_plots_sinkhistory(s, overwrite=False):
