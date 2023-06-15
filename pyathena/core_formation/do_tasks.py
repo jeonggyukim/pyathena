@@ -63,6 +63,9 @@ if __name__ == "__main__":
     parser.add_argument("--plot-pdfs", action="store_true",
                         help="Create density pdf and velocity power spectrum")
 
+    parser.add_argument("--find-envelop", action="store_true",
+                        help="Find envelop tidal radius")
+
     args = parser.parse_args()
 
     # Select models
@@ -157,6 +160,9 @@ if __name__ == "__main__":
         if args.plot_pdfs:
             print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
             make_plots_PDF_Pspec(s, overwrite=args.overwrite)
+
+        if args.find_envelop:
+            find_envelop_tidal_radius(s)
 
         # make movie
         if args.make_movie:

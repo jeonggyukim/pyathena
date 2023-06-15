@@ -199,6 +199,12 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
 
             # Calculate derived quantities
             core['mean_density'] = core.mass / (4*np.pi*core.radius**3/3)
+            fname = pathlib.Path(self.basedir, 'cores',
+                                 'rtidal_envelop.par{}.npy'.format(pid))
+            try:
+                core['envelop_tidal_radius'] = np.load(fname)
+            except FileNotFoundError:
+                pass
 
             # Assign to attribute
             self.cores[pid] = core
