@@ -277,6 +277,205 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     plt.ylim(ylim)
 
 
+def plot_force_imbalance(s, pid, ax=None):
+    cores = s.cores[pid]
+    rprof = s.rprofs[pid]
+    ftot_lagrange, ftot_euler, fgrv = [], [], []
+    for num, rtidal in zip(cores.index, cores.radius):
+        rprf = rprof.sel(num=num).sel(r=slice(0, rtidal))
+        dm = 4*np.pi*rprf.r**2*rprf.rho
+        ftot_lagrange.append((rprf.dvdt_lagrange*dm).integrate('r').data[()])
+        ftot_euler.append((rprf.dvdt_euler*dm).integrate('r').data[()])
+        fgrv.append((rprf.grv*dm).integrate('r').data[()])
+    ftot_lagrange = np.array(ftot_lagrange)
+    ftot_euler = np.array(ftot_euler)
+    fgrv = np.array(fgrv)
+
+    tcoll_core = cores.iloc[-1]
+    tcoll = s.tcoll_cores.loc[pid].time
+    tff = np.sqrt(3*np.pi/(32*tcoll_core.mean_density))
+
+    if ax is not None:
+        plt.sca(ax)
+
+    plt.plot((cores.time - tcoll) / tff, ftot_lagrange/np.abs(fgrv), c='tab:blue')
+    plt.plot((cores.time - tcoll) / tff, ftot_euler/np.abs(fgrv), c='tab:blue', alpha=0.5)
+    plt.xlim(-2, 0)
+    plt.ylim(-0.5, 0.5)
+    plt.axhline(0, ls='--', c='k', lw=1)
+    plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
+    plt.ylabel(r'$F_\mathrm{total}/|F_\mathrm{grv}|$', c='tab:blue')
+
+    plt.twinx()
+    plt.semilogy((cores.time - tcoll) / tff, cores.radius/cores.critical_radius, c='tab:red',
+                 lw=1, label=r'$R_\mathrm{tidal}/R_\mathrm{crit}$')
+    plt.semilogy((cores.time - tcoll) / tff, cores.sonic_radius/cores.critical_radius,
+                 c='tab:orange', lw=1,
+                 label=r'$R_\mathrm{sonic}/R_\mathrm{crit}$')
+    plt.ylim(1e-1, 1e1)
+    plt.ylabel("Radius ratios")
+    plt.legend()
+
+
+def plot_radii(s, pid, ax=None):
+    if ax is not None:
+        plt.sca(ax)
+    cores = s.cores[pid]
+    tcoll_core = cores.iloc[-1]
+    tcoll = s.tcoll_cores.loc[pid].time
+    tff = np.sqrt(3*np.pi/(32*tcoll_core.mean_density))
+
+    plt.plot((cores.time - tcoll) / tff, cores.radius, label=r'$R_\mathrm{tidal}$')
+    plt.plot((cores.time - tcoll) / tff, cores.critical_radius, label=r'$R_\mathrm{crit}$')
+    plt.plot((cores.time - tcoll) / tff, cores.sonic_radius, label=r'$R_\mathrm{sonic}$')
+
+    plt.yscale('log')
+    plt.legend(loc='upper left')
+    plt.xlim(-2, 0)
+    plt.ylim(1e-2, 2e0)
+    plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
+    plt.ylabel(r'$R/L_{J,0}$')
+    plt.title('{}, core {}'.format(s.basename, pid))
+
+    plt.twinx()
+    plt.semilogy((cores.time - tcoll) / tff, cores.center_density, '--', color='tab:brown')
+    plt.ylabel(r'$\rho_c/\rho_0$', color='tab:brown')
+    plt.ylim(1e1, 1e4)
+
+
+def plot_radii_all(sa, models, ax=None, ncells_min=10):
+    if ax is None:
+        ax = plt.gca()
+    ax2 = ax.twinx()
+    for mdl in models:
+        s = sa.set_model(mdl)
+        for pid in s.pids:
+            if tools.test_isolated_core(s, pid) and tools.test_resolved_core(s, pid, ncells_min):
+                cores = s.cores[pid]
+                tcoll_core = cores.iloc[-1]
+                tcoll = s.tcoll_cores.loc[pid].time
+
+                # select time and length unit
+                time_unit = np.sqrt(3*np.pi/(32*tcoll_core.mean_density))
+                length_unit = tcoll_core.radius
+
+                # plot lines
+                plt.sca(ax)
+                l1, = plt.plot((cores.time - tcoll) / time_unit, cores.radius / length_unit,
+                         c='tab:blue', lw=1, label=r'$R_\mathrm{tidal}$', alpha=0.6)
+                l2, = plt.plot((cores.time - tcoll) / time_unit, cores.critical_radius / length_unit,
+                         c='tab:orange', lw=1, label=r'$R_\mathrm{crit}$', alpha=0.6)
+
+                ax2.semilogy((cores.time - tcoll) / time_unit, cores.center_density / s.get_rhoLP(s.dx/2),
+                         c='tab:brown', lw=1, ls='--', alpha=0.6)
+
+    plt.sca(ax)
+    plt.yscale('log')
+    plt.legend((l1, l2), (r'$R_\mathrm{tidal}$', r'$R_\mathrm{crit}$'), loc='upper right')
+    plt.xlim(-2, 0)
+    plt.xticks(np.arange(-2, 0.01, 0.5))
+    plt.ylim(1e-1, 1e1)
+    plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
+    plt.ylabel(r'$R/R_\mathrm{tidal, coll}$')
+    ax2.set_ylim(1e-4, 1e0)
+    ax2.set_ylabel(r'$\rho_c/\rho_\mathrm{LP}$', color='tab:brown')
+
+
+def plot_force_imbalance_all(sa, models, ax=None, ncells_min=10, pid_reject=None):
+    if ax is None:
+        ax = plt.gca()
+    ax2 = ax.twinx()
+
+    if pid_reject is None:
+        pid_reject = set()
+
+    times, fratios, rratios = [], [], []
+    for mdl in models:
+        s = sa.set_model(mdl)
+        for pid in s.pids:
+            if tools.test_isolated_core(s, pid) and tools.test_resolved_core(s, pid, ncells_min):
+                if mdl in pid_reject:
+                    if pid in pid_reject[mdl]:
+                        continue
+                cores = s.cores[pid]
+                rprof = s.rprofs[pid]
+                ftot_lagrange, ftot_euler, fgrv = [], [], []
+                for num, rtidal in zip(cores.index, cores.radius):
+                    rprf = rprof.sel(num=num).sel(r=slice(0, rtidal))
+                    dm = 4*np.pi*rprf.r**2*rprf.rho
+                    ftot_lagrange.append((rprf.dvdt_lagrange*dm).integrate('r').data[()])
+                    ftot_euler.append((rprf.dvdt_euler*dm).integrate('r').data[()])
+                    fgrv.append((rprf.grv*dm).integrate('r').data[()])
+                ftot_lagrange = np.array(ftot_lagrange)
+                ftot_euler = np.array(ftot_euler)
+                fgrv = np.array(fgrv)
+
+                tcoll_core = cores.iloc[-1]
+                tcoll = s.tcoll_cores.loc[pid].time
+                tff = np.sqrt(3*np.pi/(32*tcoll_core.mean_density))
+
+                # plot lines
+                t = (cores.time.values - tcoll) / tff
+                fratio = ftot_lagrange/np.abs(fgrv)
+                rratio = (cores.radius/cores.critical_radius).values
+                ax.plot(t, fratio, c='tab:blue', lw=1, alpha=0.6)
+                ax2.semilogy(t, rratio, c='tab:red', lw=1, alpha=0.6)
+                times.append(t)
+                fratios.append(fratio)
+                rratios.append(rratio)
+
+    plt.sca(ax)
+    plt.xlim(-2, 0)
+    plt.xticks(np.arange(-2, 0.01, 0.5))
+    plt.ylim(-0.5, 0.5)
+    plt.axhline(0, ls='--', c='k', lw=1)
+    plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
+    plt.ylabel(r'$F_\mathrm{total}/|F_\mathrm{grv}|$', c='tab:blue')
+    ax2.set_ylim(1e-1, 1e1)
+    ax2.set_ylabel(r'$R_\mathrm{tidal}/R_\mathrm{crit}$', c='tab:red')
+    return times, fratios, rratios, ax2
+
+
+def plot_rcrit_vs_rcore(sa, models, pid_sel=None, pid_exclude=None,
+                        e1=0.7, e2=0.4, ncells_min=10):
+    fig, axs = plt.subplots(2,2,figsize=(11,10))
+    for mdl in models:
+        s = sa.set_model(mdl)
+        if pid_sel is None:
+            pids = s.pids
+        else:
+            pids = pid_sel
+        for pid in pids:
+            if tools.test_isolated_core(s, pid) and tools.test_resolved_core(s, pid, ncells_min):
+                cores = s.cores[pid]
+                cprops_crit = tools.get_critical_core_props(s, pid, e1, e2)
+                plt.sca(axs[0,0])
+                plt.scatter(cores.radius, cores.critical_radius, marker='+')
+
+                plt.sca(axs[0,1])
+                plt.scatter(cprops_crit.radius, cprops_crit.critical_radius, marker='+')
+
+                plt.sca(axs[1,0])
+                plt.scatter(cores.sonic_radius, cores.critical_radius, marker='+')
+
+                plt.sca(axs[1,1])
+                plt.scatter(cprops_crit.sonic_radius, cprops_crit.critical_radius, marker='+')
+
+    for ax in axs.flat:
+        ax.set_aspect('equal')
+        ax.set_xscale('log')
+        ax.set_yscale('log')
+        ax.set_ylabel(r'$R_\mathrm{crit}/L_{J,0}$')
+        ax.set_xlim(1e-2, 1e0)
+        ax.set_ylim(1e-2, 1e0)
+        ax.plot([1e-2, 1e0], [1e-2, 1e0], '--', c='tab:gray')
+    for ax in axs[0,:]:
+        ax.set_xlabel(r'$R_\mathrm{tidal}/L_{J,0}$')
+    for ax in axs[1,:]:
+        ax.set_xlabel(r'$R_\mathrm{sonic}/L_{J,0}$')
+    return fig
+
+
 def plot_sinkhistory(s, ds, pds):
     # find end time
     ds_end = s.load_hdf5(s.nums[-1], load_method='yt')
@@ -445,7 +644,8 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
                                         (zmin, zmax, xmin, xmax),
                                         (xmin, xmax, ymin, ymax))))
     permutations = dict(z=('y', 'x'), y=('x', 'z'), x=('z', 'y'))
-
+    if isinstance(nodes, (int, np.int32, np.int64)):
+        nodes = [nodes,]
     for nd in nodes:
         mask = xr.DataArray(np.ones(s.domain['Nx'].T), coords=coords)
         mask = gd.filter_data(mask, nd, fill_value=0)
