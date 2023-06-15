@@ -130,7 +130,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
             crcl = plt.Circle((0,0), core.critical_radius, fill=False,
                               ls='--', color='tab:gray')
             plt.gca().add_artist(crcl)
-        if not np.isnan(core.sonic_radius):
+        if (not np.isnan(core.sonic_radius)) and core.sonic_radius < s.Lbox:
             crcl = plt.Circle((0,0), core.sonic_radius, fill=False,
                               ls=':', color='tab:gray')
             plt.gca().add_artist(crcl)
@@ -281,7 +281,8 @@ def plot_force_imbalance(s, pid, ax=None):
     cores = s.cores[pid]
     rprof = s.rprofs[pid]
     ftot_lagrange, ftot_euler, fgrv = [], [], []
-    for num, rtidal in zip(cores.index, cores.radius):
+#    for num, rtidal in zip(cores.index, cores.radius):
+    for num, rtidal in zip(cores.index, cores.envelop_tidal_radius):
         rprf = rprof.sel(num=num).sel(r=slice(0, rtidal))
         dm = 4*np.pi*rprf.r**2*rprf.rho
         ftot_lagrange.append((rprf.dvdt_lagrange*dm).integrate('r').data[()])
@@ -307,7 +308,7 @@ def plot_force_imbalance(s, pid, ax=None):
     plt.ylabel(r'$F_\mathrm{total}/|F_\mathrm{grv}|$', c='tab:blue')
 
     plt.twinx()
-    plt.semilogy((cores.time - tcoll) / tff, cores.radius/cores.critical_radius, c='tab:red',
+    plt.semilogy((cores.time - tcoll) / tff, cores.envelop_tidal_radius/cores.critical_radius, c='tab:red',
                  lw=1, label=r'$R_\mathrm{tidal}/R_\mathrm{crit}$')
     plt.semilogy((cores.time - tcoll) / tff, cores.sonic_radius/cores.critical_radius,
                  c='tab:orange', lw=1,
@@ -325,9 +326,13 @@ def plot_radii(s, pid, ax=None):
     tcoll = s.tcoll_cores.loc[pid].time
     tff = np.sqrt(3*np.pi/(32*tcoll_core.mean_density))
 
-    plt.plot((cores.time - tcoll) / tff, cores.radius, label=r'$R_\mathrm{tidal}$')
-    plt.plot((cores.time - tcoll) / tff, cores.critical_radius, label=r'$R_\mathrm{crit}$')
-    plt.plot((cores.time - tcoll) / tff, cores.sonic_radius, label=r'$R_\mathrm{sonic}$')
+    if 'envelop_tidal_radius' in cores:
+        plt.plot((cores.time - tcoll) / tff, cores.envelop_tidal_radius, c='tab:blue', ls='-', label=r'$R_\mathrm{tidal}$')
+        plt.plot((cores.time - tcoll) / tff, cores.radius, c='tab:blue', ls='--')
+    else:
+        plt.plot((cores.time - tcoll) / tff, cores.radius, c='tab:blue', ls='-', label=r'$R_\mathrm{tidal}$')
+    plt.plot((cores.time - tcoll) / tff, cores.critical_radius, c='tab:orange', label=r'$R_\mathrm{crit}$')
+    plt.plot((cores.time - tcoll) / tff, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
 
     plt.yscale('log')
     plt.legend(loc='upper left')
@@ -400,7 +405,9 @@ def plot_force_imbalance_all(sa, models, ax=None, ncells_min=10, pid_reject=None
                 cores = s.cores[pid]
                 rprof = s.rprofs[pid]
                 ftot_lagrange, ftot_euler, fgrv = [], [], []
-                for num, rtidal in zip(cores.index, cores.radius):
+# TODO
+#                for num, rtidal in zip(cores.index, cores.radius):
+                for num, rtidal in zip(cores.index, cores.envelop_tidal_radius):
                     rprf = rprof.sel(num=num).sel(r=slice(0, rtidal))
                     dm = 4*np.pi*rprf.r**2*rprf.rho
                     ftot_lagrange.append((rprf.dvdt_lagrange*dm).integrate('r').data[()])
@@ -417,7 +424,9 @@ def plot_force_imbalance_all(sa, models, ax=None, ncells_min=10, pid_reject=None
                 # plot lines
                 t = (cores.time.values - tcoll) / tff
                 fratio = ftot_lagrange/np.abs(fgrv)
-                rratio = (cores.radius/cores.critical_radius).values
+# TODO
+#                rratio = (cores.radius/cores.critical_radius).values
+                rratio = (cores.envelop_tidal_radius/cores.critical_radius).values
                 ax.plot(t, fratio, c='tab:blue', lw=1, alpha=0.6)
                 ax2.semilogy(t, rratio, c='tab:red', lw=1, alpha=0.6)
                 times.append(t)
@@ -653,10 +662,15 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
             mask, _ = tools.recenter_dataset(mask, recenter)
         if select is not None:
             mask = mask.sel(select)
-        if mask.max() == 0:
-            continue
+
         mask = mask.max(dim=axis)
         mask = mask.transpose(*permutations[axis])
+
+        if mask.max() == 0 or mask.min() == 1:
+            # If a core is outside the selected region, or the
+            # selected region is entirely contained in a core,
+            # no contour can be drawn.
+            continue
 
         if ax is not None:
             plt.sca(ax)
