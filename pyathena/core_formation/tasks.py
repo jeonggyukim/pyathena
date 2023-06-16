@@ -133,7 +133,7 @@ def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
         pickle.dump(critical_tes, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1):
+def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
     """Loops over all sink particles and find their progenitor cores
 
     Finds a unique grid-dendro leaf at each snapshot that is going to collapse.
@@ -151,6 +151,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1):
     fdst_threshold: float, optional
         if fdst = |d1 - d2| / max(R1, R2) is larger than this threshold,
         stop back-tracking.
+        # TODO Set to large number; otherwise premature optimization.
     """
     def _get_node_distance(ds, nd1, nd2):
         pos1 = tools.get_coords_node(ds, nd1)
@@ -159,7 +160,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1):
         return dst
 
     # Check if file exists
-    ofname = Path(s.basedir, 'cores', 'cores_fdst{}.par{}.p'.format(fdst_threshold, pid))
+    ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[find_and_save_cores] file already exists. Skipping...')

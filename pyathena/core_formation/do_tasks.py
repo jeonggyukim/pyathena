@@ -93,10 +93,14 @@ if __name__ == "__main__":
         if args.core_tracking:
             print(f"find t_coll cores for model {mdl}", flush=True)
             def wrapper(pid):
-                find_and_save_cores(s, pid, overwrite=args.overwrite, fdst_threshold=3)
+                find_and_save_cores(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids)
             s._load_cores()
+
+        if args.find_envelop:
+            find_envelop_tidal_radius(s, overwrite=True)
+
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
@@ -165,9 +169,6 @@ if __name__ == "__main__":
         if args.plot_pdfs:
             print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
             make_plots_PDF_Pspec(s, overwrite=args.overwrite)
-
-        if args.find_envelop:
-            find_envelop_tidal_radius(s, overwrite=True)
 
         # make movie
         if args.make_movie:
