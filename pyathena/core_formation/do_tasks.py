@@ -93,7 +93,7 @@ if __name__ == "__main__":
         if args.core_tracking:
             print(f"find t_coll cores for model {mdl}", flush=True)
             def wrapper(pid):
-                find_and_save_cores(s, pid, overwrite=args.overwrite)
+                find_and_save_cores(s, pid, overwrite=args.overwrite, fdst_threshold=3)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids)
             s._load_cores()
