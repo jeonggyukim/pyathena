@@ -8,7 +8,6 @@ import subprocess
 import pickle
 import glob
 import numpy as np
-import xarray as xr
 import pandas as pd
 
 # pyathena modules
@@ -17,7 +16,6 @@ from pyathena.core_formation import tools
 from pyathena.core_formation import config
 from pyathena.util import uniform
 from grid_dendro import dendrogram
-from grid_dendro import energy
 
 
 def combine_partab(s, ns=None, ne=None, partag="par0", remove=False,
@@ -247,7 +245,8 @@ def find_envelop_tidal_radius(s, tol=1.1, overwrite=False):
         ofname = Path(s.basedir, 'cores', 'rtidal_envelop.par{}'.format(pid))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
-            print('[find_envelop_tidal_radius] file already exists. Skipping...')
+            print("[find_envelop_tidal_radius] file already exists."
+                  " Skipping...")
             return
 
         rtidal = tools.find_rtidal_envelop(s, pid, tol)
