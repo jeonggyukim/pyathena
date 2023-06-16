@@ -11,7 +11,6 @@ from pyathena.util.units import Units
 from pyathena.io.timing_reader import TimingReader
 from pyathena.core_formation.hst import Hst
 from pyathena.core_formation.tools import LognormalPDF
-from pyathena.core_formation.tes import TESe
 from pyathena.core_formation import tools
 
 
@@ -220,16 +219,20 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                     tes_crit = []
                     for num in core.index:
                         fname2 = pathlib.Path(self.basedir, 'critical_tes',
-                                              'critical_tes_{}.par{}.{:05d}.p'.format(method, pid, num))
+                                              'critical_tes_{}.par{}.{:05d}.p'
+                                              .format(method, pid, num))
                         tes_crit.append(pd.read_pickle(fname2))
-                    tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_values('num')
+                    tes_crit = pd.DataFrame(tes_crit).set_index('num')
+                    tes_crit = tes_crit.sort_values('num')
                     tes_crit.to_pickle(fname, protocol=pickle.HIGHEST_PROTOCOL)
                 except FileNotFoundError:
                     # Fall back to old radial profile
-                    logging.warning("Cannot find new version of critical TES. Reading from old one...")
+                    logging.warning("Cannot find new version of critical TES."
+                                    " Reading from old one...")
                     try:
                         fname = pathlib.Path(self.basedir, 'cores',
-                                             f'critical_tes_{method}.par{pid}.p')
+                                             'critical_tes_{}.par{}.p'
+                                             .format(method, pid))
                         tes_crit = pd.read_pickle(fname)
                     except FileNotFoundError:
                         found_tes_crit = False
@@ -251,14 +254,16 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                     rprf = []
                     for num in core.index:
                         fname2 = pathlib.Path(self.basedir, 'radial_profile',
-                                             'radial_profile.par{}.{:05d}.nc'.format(pid, num))
+                                              'radial_profile.par{}.{:05d}.nc'
+                                              .format(pid, num))
                         rprf.append(xr.open_dataset(fname2))
                     rprf = xr.concat(rprf, 't')
                     rprf = rprf.assign_coords(dict(num=('t', core.index)))
                     rprf.to_netcdf(fname)
                 except (FileNotFoundError, KeyError):
                     # Fall back to old radial profile
-                    logging.warning("Cannot find new version of radial profiles. Reading from old one...")
+                    logging.warning("Cannot find new version of radial"
+                                    " Profiles. Reading from old one...")
                     fname = pathlib.Path(self.basedir, 'cores',
                                          'radial_profile.par{}.nc'.format(pid))
                     rprf = xr.open_dataset(fname)
