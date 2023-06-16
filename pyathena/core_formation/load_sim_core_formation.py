@@ -193,15 +193,9 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
     def _load_cores(self, method='veldisp'):
         self.cores = {}
         for pid in self.pids:
-            try:
-                fname = pathlib.Path(self.basedir, 'cores',
-                                     'cores_fdst3.par{}.p'.format(pid))
-                core = pd.read_pickle(fname)
-            except FileNotFoundError:
-                logging.warning("Cannot find new version of core tracking. Reading from old one...")
-                fname = pathlib.Path(self.basedir, 'cores',
-                                     'cores.par{}.p'.format(pid))
-                core = pd.read_pickle(fname)
+            fname = pathlib.Path(self.basedir, 'cores',
+                                 'cores.par{}.p'.format(pid))
+            core = pd.read_pickle(fname)
 
             # Calculate derived quantities
             core['mean_density'] = core.mass / (4*np.pi*core.radius**3/3)
