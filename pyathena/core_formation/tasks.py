@@ -159,7 +159,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1):
         return dst
 
     # Check if file exists
-    ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
+    ofname = Path(s.basedir, 'cores', 'cores_fdst{}.par{}.p'.format(fdst_threshold, pid))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[find_and_save_cores] file already exists. Skipping...')
