@@ -110,6 +110,11 @@ if __name__ == "__main__":
                     save_radial_profiles(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
+
+                # Remove combined rprofs which will be outdated.
+                fname = pathlib.Path(s.basedir, 'radial_profile',
+                                     'radial_profile.par{}.nc'.format(pid))
+                fname.unlink()
             s._load_radial_profiles()
 
         # Find critical tes
@@ -162,7 +167,7 @@ if __name__ == "__main__":
             make_plots_PDF_Pspec(s, overwrite=args.overwrite)
 
         if args.find_envelop:
-            find_envelop_tidal_radius(s)
+            find_envelop_tidal_radius(s, overwrite=True)
 
         # make movie
         if args.make_movie:
