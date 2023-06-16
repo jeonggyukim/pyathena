@@ -447,9 +447,12 @@ def recenter_dataset(ds, center):
         TypeError("Data type {} is not supported".format(type(ds)))
     hNz, hNy, hNx = shape >> 1
     xc, yc, zc = center
-    ishift = hNx - np.where(ds.x.data == xc)[0][0]
-    jshift = hNy - np.where(ds.y.data == yc)[0][0]
-    kshift = hNz - np.where(ds.z.data == zc)[0][0]
+    dx = ds.x.data[1] - ds.x.data[0]
+    dy = ds.y.data[1] - ds.y.data[0]
+    dz = ds.z.data[1] - ds.z.data[0]
+    ishift = hNx - np.where(np.isclose(ds.x.data, xc, atol=1e-1*dx))[0][0]
+    jshift = hNy - np.where(np.isclose(ds.y.data, yc, atol=1e-1*dy))[0][0]
+    kshift = hNz - np.where(np.isclose(ds.z.data, zc, atol=1e-1*dz))[0][0]
     xc_new = ds.x.isel(x=hNx).data[()]
     yc_new = ds.y.isel(y=hNy).data[()]
     zc_new = ds.z.isel(z=hNz).data[()]
