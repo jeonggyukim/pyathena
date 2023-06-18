@@ -5,6 +5,7 @@ from multiprocessing import Pool
 import pyathena as pa
 from pyathena.core_formation.tasks import *
 from pyathena.core_formation.config import *
+from grid_dendro import energy
 
 if __name__ == "__main__":
     # load all models
@@ -116,9 +117,10 @@ if __name__ == "__main__":
                     p.map(wrapper, s.cores[pid].index)
 
                 # Remove combined rprofs which will be outdated.
-                fname = pathlib.Path(s.basedir, 'radial_profile',
-                                     'radial_profile.par{}.nc'.format(pid))
-                fname.unlink()
+                fname = Path(s.basedir, 'radial_profile',
+                             'radial_profile.par{}.nc'.format(pid))
+                if fname.exists():
+                    fname.unlink()
             s._load_radial_profiles()
 
         # Find critical tes
