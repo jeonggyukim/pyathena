@@ -341,21 +341,23 @@ def get_coords_minimum(dat):
     return x0, y0, z0
 
 
-def get_coords_node(ds, node):
+def get_coords_node(s, nd):
     """Get coordinates of the generating point of this node
 
-    Args:
-        ds: xarray.Dataset instance containing conserved variables.
-        node: int representing the selected node.
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata.
+    nd : int
+        GRID-dendro node ID.
 
-    Returns:
-        coordinates: tuple representing physical coordinates (x, y, z)
+    Returns
+    -------
+    coordinates: tuple representing physical coordinates (x, y, z)
     """
-    k, j, i = np.unravel_index(node, ds.phi.shape, order='C')
-    x = ds.x.isel(x=i).values[()]
-    y = ds.y.isel(y=j).values[()]
-    z = ds.z.isel(z=k).values[()]
-    coordinates = (x, y, z)
+    k, j, i = np.unravel_index(nd, s.domain['Nx'].T, order='C')
+    coordinates = (s.domain['le']
+                   + np.array([i+0.5, j+0.5, k+0.5])*s.domain['dx'])
     return coordinates
 
 
@@ -599,21 +601,20 @@ def get_periodic_distance(pos1, pos2, Lbox):
     return dst
 
 
-def get_node_distance(ds, nd1, nd2):
+def get_node_distance(s, nd1, nd2):
     """Calculate periodic distance between two nodes
 
     Parameters
     ----------
-    ds : xarray.Dataset
-        Dataset containing coordinates
+    s : LoadSimCoreFormation
+        Simulation metadata.
     nd1 : int
         GRID-dendro node ID
     nd2 : int
         GRID-dendro node ID
     """
-    pos1 = get_coords_node(ds, nd1)
-    pos2 = get_coords_node(ds, nd2)
+    pos1 = get_coords_node(s, nd1)
+    pos2 = get_coords_node(s, nd2)
     # TODO generalize this
-    Lbox = ds.RootGridX1[1] - ds.RootGridX1[0]
-    dst = get_periodic_distance(pos1, pos2, Lbox)
+    dst = get_periodic_distance(pos1, pos2, s.Lbox)
     return dst
