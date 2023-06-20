@@ -124,14 +124,15 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         nodes = list(gd.descendants[grandparent])
         nodes.append(grandparent)
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
-                                  recenter=(xc, yc, zc), select=sel, color='tab:gray')
+                                  recenter=(xc, yc, zc), select=sel,
+                                  color='tab:gray')
         # Overplot critical radius
         if not np.isnan(core.critical_radius):
-            crcl = plt.Circle((0,0), core.critical_radius, fill=False,
+            crcl = plt.Circle((0, 0), core.critical_radius, fill=False,
                               ls='--', color='tab:gray')
             plt.gca().add_artist(crcl)
         if (not np.isnan(core.sonic_radius)) and core.sonic_radius < s.Lbox:
-            crcl = plt.Circle((0,0), core.sonic_radius, fill=False,
+            crcl = plt.Circle((0, 0), core.sonic_radius, fill=False,
                               ls=':', color='tab:gray')
             plt.gca().add_artist(crcl)
         plt.xlim(-hw, hw)
@@ -262,8 +263,9 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     acc.ani.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
     acc.cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
     (-acc.grv).plot(marker='x', ls='--', color='tab:red', lw=1,
-                   label=r'$-f_\mathrm{grav}$')
-    (-acc.dvdt_lagrange).plot(marker='+', color='k', lw=1, label=r'$-(dv/dt)_L$')
+                    label=r'$-f_\mathrm{grav}$')
+    (-acc.dvdt_lagrange).plot(marker='+', color='k', lw=1,
+                              label=r'$-(dv/dt)_L$')
     (-acc.dvdt_euler).plot(color='tab:gray', lw=1, label=r'$-(dv/dt)_E$')
 
     # Overplot -GM/r^2
@@ -281,7 +283,6 @@ def plot_force_imbalance(s, pid, ax=None):
     cores = s.cores[pid]
     rprof = s.rprofs[pid]
     ftot_lagrange, ftot_euler, fgrv = [], [], []
-#    for num, rtidal in zip(cores.index, cores.radius):
     for num, rtidal in zip(cores.index, cores.envelop_tidal_radius):
         rprf = rprof.sel(num=num).sel(r=slice(0, rtidal))
         dm = 4*np.pi*rprf.r**2*rprf.rho
@@ -299,17 +300,19 @@ def plot_force_imbalance(s, pid, ax=None):
     if ax is not None:
         plt.sca(ax)
 
-    plt.plot((cores.time - tcoll) / tff, ftot_lagrange/np.abs(fgrv), c='tab:blue')
-    plt.plot((cores.time - tcoll) / tff, ftot_euler/np.abs(fgrv), c='tab:blue', alpha=0.5)
+    plt.plot((cores.time - tcoll) / tff, ftot_lagrange/np.abs(fgrv),
+             c='tab:blue')
+    plt.plot((cores.time - tcoll) / tff, ftot_euler/np.abs(fgrv), c='tab:blue',
+             alpha=0.5)
     plt.xlim(-2, 0)
     plt.ylim(-0.5, 0.5)
     plt.axhline(0, ls='--', c='k', lw=1)
     plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
-    plt.ylabel(r'$F_\mathrm{total}/|F_\mathrm{grv}|$', c='tab:blue')
+    plt.ylabel(r'$F_\mathrm{net}/F_\mathrm{grv}$', c='tab:blue')
 
     plt.twinx()
-    plt.semilogy((cores.time - tcoll) / tff, cores.envelop_tidal_radius/cores.critical_radius, c='tab:red',
-                 lw=1, label=r'$R_\mathrm{tidal}/R_\mathrm{crit}$')
+    plt.semilogy((cores.time - tcoll) / tff, cores.envelop_tidal_radius/cores.critical_radius,
+                 c='tab:red', lw=1, label=r'$R_\mathrm{tidal}/R_\mathrm{crit}$')
     plt.semilogy((cores.time - tcoll) / tff, cores.sonic_radius/cores.critical_radius,
                  c='tab:orange', lw=1,
                  label=r'$R_\mathrm{sonic}/R_\mathrm{crit}$')
@@ -319,6 +322,17 @@ def plot_force_imbalance(s, pid, ax=None):
 
 
 def plot_radii(s, pid, ax=None):
+    """Plot Rtidal, Rcrit, and Rsonic
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata of a selected model
+    pid : int
+        Unique particle ID
+    ax : matplotlib.axes.Axes, optional
+        Axes to draw plot
+    """
     if ax is not None:
         plt.sca(ax)
     cores = s.cores[pid]
@@ -349,6 +363,12 @@ def plot_radii(s, pid, ax=None):
 
 
 def plot_radii_all(sa, models, ax=None, ncells_min=10):
+    """Plot radii of all cores in one axes
+
+    See Also
+    --------
+    plot_radii
+    """
     if ax is None:
         ax = plt.gca()
     ax2 = ax.twinx()
@@ -362,11 +382,11 @@ def plot_radii_all(sa, models, ax=None, ncells_min=10):
 
                 # select time and length unit
                 time_unit = np.sqrt(3*np.pi/(32*tcoll_core.mean_density))
-                length_unit = tcoll_core.radius
+                length_unit = tcoll_core.envelop_tidal_radius
 
                 # plot lines
                 plt.sca(ax)
-                l1, = plt.plot((cores.time - tcoll) / time_unit, cores.radius / length_unit,
+                l1, = plt.plot((cores.time - tcoll) / time_unit, cores.envelop_tidal_radius / length_unit,
                          c='tab:blue', lw=1, label=r'$R_\mathrm{tidal}$', alpha=0.6)
                 l2, = plt.plot((cores.time - tcoll) / time_unit, cores.critical_radius / length_unit,
                          c='tab:orange', lw=1, label=r'$R_\mathrm{crit}$', alpha=0.6)
@@ -405,8 +425,6 @@ def plot_force_imbalance_all(sa, models, ax=None, ncells_min=10, pid_reject=None
                 cores = s.cores[pid]
                 rprof = s.rprofs[pid]
                 ftot_lagrange, ftot_euler, fgrv = [], [], []
-# TODO
-#                for num, rtidal in zip(cores.index, cores.radius):
                 for num, rtidal in zip(cores.index, cores.envelop_tidal_radius):
                     rprf = rprof.sel(num=num).sel(r=slice(0, rtidal))
                     dm = 4*np.pi*rprf.r**2*rprf.rho
@@ -424,8 +442,6 @@ def plot_force_imbalance_all(sa, models, ax=None, ncells_min=10, pid_reject=None
                 # plot lines
                 t = (cores.time.values - tcoll) / tff
                 fratio = ftot_lagrange/np.abs(fgrv)
-# TODO
-#                rratio = (cores.radius/cores.critical_radius).values
                 rratio = (cores.envelop_tidal_radius/cores.critical_radius).values
                 ax.plot(t, fratio, c='tab:blue', lw=1, alpha=0.6)
                 ax2.semilogy(t, rratio, c='tab:red', lw=1, alpha=0.6)
@@ -439,7 +455,7 @@ def plot_force_imbalance_all(sa, models, ax=None, ncells_min=10, pid_reject=None
     plt.ylim(-0.5, 0.5)
     plt.axhline(0, ls='--', c='k', lw=1)
     plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
-    plt.ylabel(r'$F_\mathrm{total}/|F_\mathrm{grv}|$', c='tab:blue')
+    plt.ylabel(r'$(F_\mathrm{p,eff} - F_\mathrm{grv})/F_\mathrm{grv}$', c='tab:blue')
     ax2.set_ylim(1e-1, 1e1)
     ax2.set_ylabel(r'$R_\mathrm{tidal}/R_\mathrm{crit}$', c='tab:red')
     return times, fratios, rratios, ax2
