@@ -167,7 +167,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
 
     # Calculate position, mass, and radius of the core
     nid_old = tools.find_tcoll_core(s, pid)
-    pos_old = tools.get_coords_node(ds, nid_old)
+    pos_old = tools.get_coords_node(s, nid_old)
     rho = gd.filter_data(ds.dens, nid_old)
     Mcore_old = (rho*s.dV).sum().data[()]
     Vcore = ((rho > 0).sum()*s.dV).data[()]
@@ -199,7 +199,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
 
         # Calculate position, mass, and radius of the core and
         # check if this core is really the same core in different time
-        pos = tools.get_coords_node(ds, nid)
+        pos = tools.get_coords_node(s, nid)
         rho = gd.filter_data(ds.dens, nid)
         Mcore = (rho*s.dV).sum().data[()]
         Vcore = ((rho > 0).sum()*s.dV).data[()]
@@ -282,7 +282,7 @@ def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
         rmax = 0.5*s.Lbox
 
     # Find the location of the core
-    center = tools.get_coords_node(ds, core.nid)
+    center = tools.get_coords_node(s, core.nid)
 
     # Roll the data such that the core is at the center of the domain
     ds, center = tools.recenter_dataset(ds, center)

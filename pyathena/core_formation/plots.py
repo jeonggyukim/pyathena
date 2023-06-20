@@ -73,7 +73,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     gd = s.load_dendrogram(num)
 
     # Find the location of the core
-    xc, yc, zc = tools.get_coords_node(ds, core.nid)
+    xc, yc, zc = tools.get_coords_node(s, core.nid)
 
     # Calculate radial profile
     rprf = s.rprofs[pid].sel(num=num)
