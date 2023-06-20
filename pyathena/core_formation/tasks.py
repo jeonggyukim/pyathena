@@ -151,12 +151,6 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
         stop back-tracking.
         # TODO Set to large number; otherwise premature optimization.
     """
-    def _get_node_distance(ds, nd1, nd2):
-        pos1 = tools.get_coords_node(ds, nd1)
-        pos2 = tools.get_coords_node(ds, nd2)
-        dst = tools.get_periodic_distance(pos1, pos2, s.Lbox)
-        return dst
-
     # Check if file exists
     ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
     ofname.parent.mkdir(exist_ok=True)
@@ -196,7 +190,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
         gd = s.load_dendrogram(num)
 
         # find closeast leaf to the previous preimage
-        dst = {leaf: _get_node_distance(ds, leaf, nid_old)
+        dst = {leaf: tools.get_node_distance(ds, leaf, nid_old)
                for leaf in gd.leaves}
         dst_min = np.min(list(dst.values()))
         for k, v in dst.items():
