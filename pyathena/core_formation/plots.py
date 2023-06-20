@@ -279,7 +279,7 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     plt.ylim(ylim)
 
 
-def plot_force_imbalance(s, pid, ax=None):
+def plot_force_imbalance(s, pid, ax=None, normalized=True):
     cores = s.cores[pid]
     rprof = s.rprofs[pid]
     ftot_lagrange, ftot_euler, fgrv = [], [], []
@@ -300,28 +300,43 @@ def plot_force_imbalance(s, pid, ax=None):
     if ax is not None:
         plt.sca(ax)
 
-    plt.plot((cores.time - tcoll) / tff, ftot_lagrange/np.abs(fgrv),
-             c='tab:blue')
-    plt.plot((cores.time - tcoll) / tff, ftot_euler/np.abs(fgrv), c='tab:blue',
-             alpha=0.5)
-    plt.xlim(-2, 0)
+    if normalized:
+        plt.plot((cores.time - tcoll) / tff, ftot_lagrange/np.abs(fgrv),
+                 c='tab:blue')
+        plt.plot((cores.time - tcoll) / tff, ftot_euler/np.abs(fgrv), c='tab:blue',
+                 alpha=0.5)
+        plt.xlim(-2, 0)
+        plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
+    else:
+        plt.plot(cores.time, ftot_lagrange/np.abs(fgrv), c='tab:blue')
+        plt.plot(cores.time, ftot_euler/np.abs(fgrv), c='tab:blue', alpha=0.5)
+        plt.xlabel(r'$t/t_{J,0}$')
+
     plt.ylim(-0.5, 0.5)
     plt.axhline(0, ls='--', c='k', lw=1)
-    plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
     plt.ylabel(r'$F_\mathrm{net}/F_\mathrm{grv}$', c='tab:blue')
 
     plt.twinx()
-    plt.semilogy((cores.time - tcoll) / tff, cores.envelop_tidal_radius/cores.critical_radius,
-                 c='tab:red', lw=1, label=r'$R_\mathrm{tidal}/R_\mathrm{crit}$')
-    plt.semilogy((cores.time - tcoll) / tff, cores.sonic_radius/cores.critical_radius,
-                 c='tab:orange', lw=1,
-                 label=r'$R_\mathrm{sonic}/R_\mathrm{crit}$')
+
+    if normalized:
+        plt.semilogy((cores.time - tcoll) / tff, cores.envelop_tidal_radius/cores.critical_radius,
+                     c='tab:red', lw=1, label=r'$R_\mathrm{tidal}/R_\mathrm{crit}$')
+        plt.semilogy((cores.time - tcoll) / tff, cores.sonic_radius/cores.critical_radius,
+                     c='tab:orange', lw=1,
+                     label=r'$R_\mathrm{sonic}/R_\mathrm{crit}$')
+    else:
+        plt.semilogy(cores.time, cores.envelop_tidal_radius/cores.critical_radius,
+                     c='tab:red', lw=1, label=r'$R_\mathrm{tidal}/R_\mathrm{crit}$')
+        plt.semilogy(cores.time, cores.sonic_radius/cores.critical_radius,
+                     c='tab:orange', lw=1,
+                     label=r'$R_\mathrm{sonic}/R_\mathrm{crit}$')
+
     plt.ylim(1e-1, 1e1)
     plt.ylabel("Radius ratios")
     plt.legend()
 
 
-def plot_radii(s, pid, ax=None):
+def plot_radii(s, pid, ax=None, normalized=True):
     """Plot Rtidal, Rcrit, and Rsonic
 
     Parameters
@@ -340,24 +355,31 @@ def plot_radii(s, pid, ax=None):
     tcoll = s.tcoll_cores.loc[pid].time
     tff = np.sqrt(3*np.pi/(32*tcoll_core.mean_density))
 
-    if 'envelop_tidal_radius' in cores:
+    if normalized:
         plt.plot((cores.time - tcoll) / tff, cores.envelop_tidal_radius, c='tab:blue', ls='-', label=r'$R_\mathrm{tidal}$')
         plt.plot((cores.time - tcoll) / tff, cores.radius, c='tab:blue', ls='--')
+        plt.plot((cores.time - tcoll) / tff, cores.critical_radius, c='tab:orange', label=r'$R_\mathrm{crit}$')
+        plt.plot((cores.time - tcoll) / tff, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
+        plt.xlim(-2, 0)
+        plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
     else:
-        plt.plot((cores.time - tcoll) / tff, cores.radius, c='tab:blue', ls='-', label=r'$R_\mathrm{tidal}$')
-    plt.plot((cores.time - tcoll) / tff, cores.critical_radius, c='tab:orange', label=r'$R_\mathrm{crit}$')
-    plt.plot((cores.time - tcoll) / tff, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
+        plt.plot(cores.time, cores.envelop_tidal_radius, c='tab:blue', ls='-', label=r'$R_\mathrm{tidal}$')
+        plt.plot(cores.time, cores.radius, c='tab:blue', ls='--')
+        plt.plot(cores.time, cores.critical_radius, c='tab:orange', label=r'$R_\mathrm{crit}$')
+        plt.plot(cores.time, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
+        plt.xlabel(r'$t/t_{J,0}$')
 
     plt.yscale('log')
     plt.legend(loc='upper left')
-    plt.xlim(-2, 0)
     plt.ylim(1e-2, 2e0)
-    plt.xlabel(r'$(t-t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
     plt.ylabel(r'$R/L_{J,0}$')
     plt.title('{}, core {}'.format(s.basename, pid))
 
     plt.twinx()
-    plt.semilogy((cores.time - tcoll) / tff, cores.center_density, '--', color='tab:brown')
+    if normalized:
+        plt.semilogy((cores.time - tcoll) / tff, cores.center_density, '--', color='tab:brown')
+    else:
+        plt.semilogy(cores.time, cores.center_density, '--', color='tab:brown')
     plt.ylabel(r'$\rho_c/\rho_0$', color='tab:brown')
     plt.ylim(1e1, 1e4)
 
