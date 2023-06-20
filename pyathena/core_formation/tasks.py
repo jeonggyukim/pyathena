@@ -303,9 +303,21 @@ def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
     rprf.to_netcdf(ofname)
 
 
-def run_GRID(s, num, overwrite=False):
+def run_GRID(s, num, overwrite=False, use_phitot=False):
+    """Run GRID-dendro
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata.
+    num : int
+        Snapshot number.
+    use_phitot : bool, optional
+        Use total gravitational potential produced by both gas and sinks.
+    """
     # Check if file exists
-    ofname = Path(s.basedir, 'GRID', 'dendrogram.{:05d}.p'.format(num))
+    which = 'phitot' if use_phitot else 'phigas'
+    ofname = Path(s.basedir, 'GRID', 'dendrogram.{}.{:05d}.p'.format(which, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[run_GRID] file already exists. Skipping...')
@@ -314,7 +326,11 @@ def run_GRID(s, num, overwrite=False):
     # Load data and construct dendrogram
     print('[run_GRID] processing model {} num {}'.format(s.basename, num))
     ds = s.load_hdf5(num, load_method='pyathena').transpose('z', 'y', 'x')
-    gd = dendrogram.Dendrogram(ds.phigas.to_numpy(), verbose=False)
+    if use_phitot:
+        phi = ds.phi.to_numpy()
+    else:
+        phi = ds.phigas.to_numpy()
+    gd = dendrogram.Dendrogram(phi, verbose=False)
     gd.construct()
     gd.prune()
 

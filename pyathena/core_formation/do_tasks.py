@@ -63,7 +63,8 @@ if __name__ == "__main__":
                         help="Create sink history plots")
     parser.add_argument("--plot-pdfs", action="store_true",
                         help="Create density pdf and velocity power spectrum")
-
+    parser.add_argument("--use-phitot", default=False, action="store_true",
+                        help="Use total gravitational potential for analysis")
     parser.add_argument("--find-envelop", action="store_true",
                         help="Find envelop tidal radius")
 
@@ -86,7 +87,7 @@ if __name__ == "__main__":
         if args.grid_dendro:
             print(f"Run GRID-dendro for model {mdl}", flush=True)
             def wrapper(num):
-                run_GRID(s, num, overwrite=args.overwrite)
+                run_GRID(s, num, overwrite=args.overwrite, use_phitot=args.use_phitot)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums[GRID_NUM_START:], 1)
 
