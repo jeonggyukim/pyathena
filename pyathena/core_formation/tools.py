@@ -618,3 +618,42 @@ def get_node_distance(s, nd1, nd2):
     # TODO generalize this
     dst = get_periodic_distance(pos1, pos2, s.Lbox)
     return dst
+
+
+def apply_preimage_correction(s, cores):
+    """Find true preimage by applying distance criterion
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata.
+    cores : pandas.DataFrame
+        Dataframe containing core information.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Filtered DataFrame that only containing valid rows
+
+    Notes
+    -----
+    Initial core tracking is done with the maximum robustness, i.e., it finds
+    closeast leaf node without worring about whether it is true preimage. Then,
+    after envelop tidal radius correction, this function filters true preimage
+    by requiring any consecutive "core" must be closer than their individual
+    radius.
+    """
+    cores_itr = cores.sort_values('num', ascending=False).iterrows()
+    _, core = next(cores_itr)
+    nid_old = core.nid
+    rcore_old = core.envelop_tidal_radius
+    for num, core in cores_itr:
+        nid = core.nid
+        rcore = core.envelop_tidal_radius
+        fdst = get_node_distance(s, nid_old, nid) / max(rcore_old, rcore)
+        if fdst > 1:
+            num += 1  # roll back to previous num
+            break
+        nid_old = nid
+        rcore_old = rcore
+    return cores.sort_values('num').loc[num:]
