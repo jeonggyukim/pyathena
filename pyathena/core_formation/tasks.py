@@ -233,13 +233,13 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def find_envelop_tidal_radius(s, tol=1.1, overwrite=False):
+def correct_tidal_radius(s, tol=1.1, overwrite=False):
     for pid in s.pids:
         # Check if file exists
         ofname = Path(s.basedir, 'cores', 'rtidal_envelop.par{}'.format(pid))
         ofname.parent.mkdir(exist_ok=True)
         if ofname.exists() and not overwrite:
-            print("[find_envelop_tidal_radius] file already exists."
+            print("[correct_tidal_radius] file already exists."
                   " Skipping...")
             return
 
