@@ -606,7 +606,7 @@ def apply_preimage_correction(s, cores):
     by requiring any consecutive "core" must be closer than their individual
     radius.
     """
-    cores_itr = cores.sort_values('num', ascending=False).iterrows()
+    cores_itr = cores.sort_index(ascending=False).iterrows()
     _, core = next(cores_itr)
     nid_old = core.nid
     rcore_old = core.envelop_tidal_radius
@@ -619,7 +619,7 @@ def apply_preimage_correction(s, cores):
             break
         nid_old = nid
         rcore_old = rcore
-    return cores.sort_values('num').loc[num:]
+    return cores.sort_index().loc[num:]
 
 
 def find_rtidal_envelop(s, cores, tol=1.1):
@@ -641,7 +641,7 @@ def find_rtidal_envelop(s, cores, tol=1.1):
     rtidal : pandas.Series
         Envelop tidal radii.
     """
-    cores = cores.sort_values('num', ascending=False)
+    cores = cores.sort_index(ascending=False)
     rr = cores.iloc[0].radius
     node_id, rtidal = [], []
     for num, core in cores.iterrows():

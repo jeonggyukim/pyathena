@@ -229,7 +229,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
         Rcore_old = Rcore
 
     # write to file
-    cores = cores.sort_values('num')
+    cores = cores.sort_index()
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
