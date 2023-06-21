@@ -206,18 +206,27 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                                  'cores.par{}.p'.format(pid))
             core = pd.read_pickle(fname)
 
-            # Calculate derived quantities
-            core['mean_density'] = core.mass / (4*np.pi*core.radius**3/3)
+            # Read corrected tidal radius and mass
             fname = pathlib.Path(self.basedir, 'cores',
-                                 'rtidal_envelop.par{}.npy'.format(pid))
+                                 'rtidal_correction.par{}.p'.format(pid))
             try:
-                core['envelop_tidal_radius'] = np.load(fname)
-            except (FileNotFoundError, ValueError):
+                core = pd.concat([core, pd.read_pickle(fname)], axis=1, join='inner')
+                # Calculate derived quantities
+                core['mean_density'] = (core.envelop_tidal_mass
+                                        / (4*np.pi*core.envelop_tidal_radius**3/3))
+            except FileNotFoundError:
                 logging.warning("Failed to read envelop tidal radius")
                 pass
 
+            # Filter out true preimages by applying distance criterion
+            if 'envelop_tidal_radius' in core:
+                core = tools.apply_preimage_correction(self, core)
+            else:
+                logging.warning("Cannot perform preimage correction before"
+                                " finding envelop tidal radii")
+
             # Assign to attribute
-            self.cores[pid] = core
+            self.cores[pid] = core.sort_index()
 
             # Read critical TES info and concatenate to self.cores
             found_tes_crit = True
@@ -237,7 +246,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                                               .format(method, pid, num))
                         tes_crit.append(pd.read_pickle(fname2))
                     tes_crit = pd.DataFrame(tes_crit).set_index('num')
-                    tes_crit = tes_crit.sort_values('num')
+                    tes_crit = tes_crit.sort_index()
                     tes_crit.to_pickle(fname, protocol=pickle.HIGHEST_PROTOCOL)
                 except FileNotFoundError:
                     # Fall back to old radial profile
@@ -253,11 +262,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                         pass
             if found_tes_crit:
                 self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
-                                            axis=1).sort_values('num')
-
-            # Filter out true preimages by applying distance criterion
-            self.cores[pid] = tools.apply_preimage_correction(self,
-                                                              self.cores[pid])
+                                            axis=1, join='inner').sort_index()
 
     def _load_radial_profiles(self):
         self.rprofs = {}
