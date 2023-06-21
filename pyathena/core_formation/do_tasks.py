@@ -65,7 +65,7 @@ if __name__ == "__main__":
                         help="Create density pdf and velocity power spectrum")
     parser.add_argument("--use-phitot", default=False, action="store_true",
                         help="Use total gravitational potential for analysis")
-    parser.add_argument("--find-envelop", action="store_true",
+    parser.add_argument("--correct-tidal-radius", action="store_true",
                         help="Find envelop tidal radius")
 
     args = parser.parse_args()
@@ -100,9 +100,40 @@ if __name__ == "__main__":
                 p.map(wrapper, s.pids)
             s._load_cores()
 
-        if args.find_envelop:
-            correct_tidal_radius(s, overwrite=True)
+        if args.correct_tidal_radius:
+            for pid in s.pids:
+                # Check if file exists
+                ofname = Path(s.basedir, 'cores',
+                              'rtidal_correction.par{}.p'.format(pid))
+                ofname.parent.mkdir(exist_ok=True)
+                if ofname.exists() and not args.overwrite:
+                    print("[correct_tidal_radius] file already exists."
+                          " Skipping...")
+                    continue
 
+                # Do not use s.cores, which might have already been
+                # preimage corrected. Read from raw data.
+                fname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
+                cores = pd.read_pickle(fname)
+                nid, rtidal = tools.find_rtidal_envelop(s, cores, tol=1.1)
+                def wrapper(num):
+                    msg = '[correct_tidal_radius] processing model {} pid {} num {}'
+                    print(msg.format(s.basename, pid, num))
+                    ds = s.load_hdf5(num)
+                    gd = s.load_dendrogram(num)
+                    rho = gd.filter_data(ds.dens, nid.loc[num], drop=True)
+                    mtidal = (rho*s.dV).sum()
+                    return (num, mtidal)
+                with Pool(args.np) as p:
+                    mtidal = p.map(wrapper, cores.index)
+                mtidal = pd.Series(data = map(lambda x: x[1], mtidal),
+                                   index = map(lambda x: x[0], mtidal),
+                                   name='envelop_tidal_mass')
+                mtidal = mtidal.sort_index()
+                res = pd.DataFrame({nid.name:nid,
+                                    rtidal.name:rtidal,
+                                    mtidal.name:mtidal})
+                res.to_pickle(ofname)
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
