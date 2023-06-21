@@ -101,7 +101,7 @@ if __name__ == "__main__":
             s._load_cores()
 
         if args.find_envelop:
-            find_envelop_tidal_radius(s, overwrite=True)
+            correct_tidal_radius(s, overwrite=True)
 
 
         # Calculate radial profiles of t_coll cores and pickle them.
