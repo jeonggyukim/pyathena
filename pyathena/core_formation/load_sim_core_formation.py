@@ -213,19 +213,23 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             try:
                 core['envelop_tidal_radius'] = np.load(fname)
             except (FileNotFoundError, ValueError):
+                logging.warning("Failed to read envelop tidal radius")
                 pass
 
             # Assign to attribute
             self.cores[pid] = core
 
-            found_tes_crit = True
             # Read critical TES info and concatenate to self.cores
+            found_tes_crit = True
             try:
+                # Try reading joined critical TES pickle
                 fname = pathlib.Path(self.basedir, 'critical_tes',
                                      f'critical_tes_{method}.par{pid}.p')
                 tes_crit = pd.read_pickle(fname)
             except FileNotFoundError:
                 try:
+                    # Try reading individual critical TES pickles and
+                    # writing joined pickle.
                     tes_crit = []
                     for num in core.index:
                         fname2 = pathlib.Path(self.basedir, 'critical_tes',
@@ -250,6 +254,10 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             if found_tes_crit:
                 self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
                                             axis=1).sort_values('num')
+
+            # Filter out true preimages by applying distance criterion
+            self.cores[pid] = tools.apply_preimage_correction(self,
+                                                              self.cores[pid])
 
     def _load_radial_profiles(self):
         self.rprofs = {}
