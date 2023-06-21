@@ -1,5 +1,6 @@
 import numpy as np
 import xarray as xr
+import pandas as pd
 from scipy.special import erfinv
 from scipy import odr
 from pyathena.util import transform
@@ -219,44 +220,6 @@ def calculate_radial_profiles(s, ds, origin, rmax):
 
     rprf = xr.Dataset(rprf)
     return rprf
-
-
-def find_rtidal_envelop(s, pid, tol=1.1):
-    """Finds upper envelop of tidal radius evolution
-
-    Parameters
-    ----------
-    s : LoadSimCoreFormation
-        Object containing simulation metadata.
-    pid : int
-        Unique particle ID.
-    tol : float, optional
-        Tolerance in the temporal discontinuity.
-
-    Returns
-    -------
-    rtidal : array
-        Envelop tidal radius
-    """
-    cores = s.cores[pid].sort_values('num', ascending=False)
-    rr = cores.iloc[0].radius
-    rtidal = []
-    for num, core in cores.iterrows():
-        rl = core.radius
-        nid = core.nid
-        while rl < rr/tol:
-            gd = s.load_dendrogram(num)
-            nid = gd.parent[nid]
-            vol = len(gd.get_all_descendant_cells(nid))*s.dV
-            rparent = (3*vol/(4*np.pi))**(1./3.)
-            if rparent < rr*tol:
-                rl = rparent
-            else:
-                break
-        rtidal.append(rl)
-        rr = rl
-    rtidal = np.array(rtidal)[::-1]
-    return rtidal
 
 
 def get_accelerations(rprf):
@@ -657,3 +620,45 @@ def apply_preimage_correction(s, cores):
         nid_old = nid
         rcore_old = rcore
     return cores.sort_values('num').loc[num:]
+
+
+def find_rtidal_envelop(s, cores, tol=1.1):
+    """Finds upper envelop of tidal radius evolution
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    cores : pandas.DataFrame
+        Dataframe containing core information.
+    tol : float, optional
+        Tolerance in the temporal discontinuity.
+
+    Returns
+    -------
+    node_id : pandas.Series
+        GRID-dendro node ID of the envelop structures.
+    rtidal : pandas.Series
+        Envelop tidal radii.
+    """
+    cores = cores.sort_values('num', ascending=False)
+    rr = cores.iloc[0].radius
+    node_id, rtidal = [], []
+    for num, core in cores.iterrows():
+        rl = core.radius
+        nid = core.nid
+        while rl < rr/tol:
+            gd = s.load_dendrogram(num)
+            nid = gd.parent[nid]
+            vol = len(gd.get_all_descendant_cells(nid))*s.dV
+            rparent = (3*vol/(4*np.pi))**(1./3.)
+            if rparent < rr*tol:
+                rl = rparent
+            else:
+                break
+        node_id.append(nid)
+        rtidal.append(rl)
+        rr = rl
+    node_id = pd.Series(node_id, cores.index, name='envelop_nid')
+    rtidal = pd.Series(rtidal, cores.index, name='envelop_tidal_radius')
+    return node_id.sort_index(), rtidal.sort_index()

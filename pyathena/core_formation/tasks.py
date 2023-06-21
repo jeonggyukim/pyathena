@@ -233,20 +233,6 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def correct_tidal_radius(s, tol=1.1, overwrite=False):
-    for pid in s.pids:
-        # Check if file exists
-        ofname = Path(s.basedir, 'cores', 'rtidal_envelop.par{}'.format(pid))
-        ofname.parent.mkdir(exist_ok=True)
-        if ofname.exists() and not overwrite:
-            print("[correct_tidal_radius] file already exists."
-                  " Skipping...")
-            return
-
-        rtidal = tools.find_rtidal_envelop(s, pid, tol)
-        np.save(ofname, rtidal)
-
-
 def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
     """Calculates and pickles radial profiles of all cores.
 
@@ -311,7 +297,8 @@ def run_GRID(s, num, overwrite=False, use_phitot=False):
     """
     # Check if file exists
     which = 'phitot' if use_phitot else 'phigas'
-    ofname = Path(s.basedir, 'GRID', 'dendrogram.{}.{:05d}.p'.format(which, num))
+    ofname = Path(s.basedir, 'GRID',
+                  'dendrogram.{}.{:05d}.p'.format(which, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[run_GRID] file already exists. Skipping...')
