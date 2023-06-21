@@ -649,12 +649,15 @@ def find_rtidal_envelop(s, cores, tol=1.1):
         nid = core.nid
         while rl < rr/tol:
             gd = s.load_dendrogram(num)
-            nid = gd.parent[nid]
-            vol = len(gd.get_all_descendant_cells(nid))*s.dV
+            parent = gd.parent[nid]
+            vol = len(gd.get_all_descendant_cells(parent))*s.dV
             rparent = (3*vol/(4*np.pi))**(1./3.)
             if rparent < rr*tol:
+                # if parent joins continuously, accept it.
+                nid = parent
                 rl = rparent
             else:
+                # Reject this. Fall back to leaf.
                 break
         node_id.append(nid)
         rtidal.append(rl)
