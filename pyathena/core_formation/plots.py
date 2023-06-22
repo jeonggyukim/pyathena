@@ -415,6 +415,107 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     plt.ylim(ylim)
 
 
+def plot_diagnostics(s, pid, normalize_time=True):
+    """Create four-row plot showing history of core properties
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata
+    pid : int
+        Unique particle ID.
+    normalize_time : bool, optional
+        Flag to use normalized time (t-tcoll)/tff
+    """
+    fig, axs = plt.subplots(4, 1, figsize=(7, 15), sharex='col', gridspec_kw=dict(hspace=0.1))
+
+    # Load cores
+    cores = s.cores[pid].sort_index()
+    tcoll = s.tcoll_cores.loc[pid].time
+    tff = np.sqrt(3*np.pi/(32*cores.iloc[-1].mean_density))
+    if normalize_time:
+        time = (cores.time - tcoll) / tff
+    else:
+        time = cores.time
+
+    # Calculate total forces acting on a core
+    rprofs = s.rprofs[pid]
+    ftot_lagrange, ftot_euler, fgrv = [], [], []
+    fthm, ftrb, fcen, fani, fadv = [], [], [], [], []
+    for num, core in cores.iterrows():
+        rprf = rprofs.sel(num=num).sel(r=slice(0, core.envelop_tidal_radius))
+        dmdr = 4*np.pi*rprf.r**2*rprf.rho
+        fthm.append((rprf.thm*dmdr).integrate('r').data[()])
+        ftrb.append((rprf.trb*dmdr).integrate('r').data[()])
+        fcen.append((rprf.cen*dmdr).integrate('r').data[()])
+        fani.append((rprf.ani*dmdr).integrate('r').data[()])
+        fadv.append((rprf.adv*dmdr).integrate('r').data[()])
+        fgrv.append((-rprf.grv*dmdr).integrate('r').data[()])
+    fthm = np.array(fthm)
+    ftrb = np.array(ftrb)
+    fcen = np.array(fcen)
+    fani = np.array(fani)
+    fadv = np.array(fadv)
+    fgrv = np.array(fgrv)
+
+    # Do plotting
+    plt.sca(axs[0])
+    plt.plot(time, (fthm+ftrb+fcen+fani-fgrv)/fgrv, c='k')
+    plt.plot(time, (fthm+ftrb+fcen+fani-fgrv-fadv)/fgrv, c='k', alpha=0.5)
+    plt.ylim(-1, 1)
+    plt.ylabel(r'$(F_\mathrm{p, eff} - F_\mathrm{grv}) / F_\mathrm{grv}$')
+    if pid in s.good_cores:
+        plt.title('{}, core {}'.format(s.basename, pid))
+    else:
+        plt.title('{}, core {}'.format(s.basename, pid)+r'$^*$')
+    plt.twinx()
+    plt.plot(time, fthm, lw=1, c='cyan', label=r'$F_\mathrm{thm}$')
+    plt.plot(time, ftrb, lw=1, c='gray', label=r'$F_\mathrm{trb}$')
+    plt.plot(time, fcen, lw=1, c='olive', label=r'$F_\mathrm{cen}$')
+    plt.plot(time, fgrv, lw=1, c='pink', label=r'$F_\mathrm{grv}$')
+    plt.plot(time, fani, lw=1, c='brown', ls=':', label=r'$F_\mathrm{ani}$')
+    plt.plot(time, fadv, lw=1, c='purple', ls=':', label=r'$F_\mathrm{adv}$')
+    plt.yscale('log')
+    plt.ylim(1e-1, 1e2)
+    plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
+
+    plt.sca(axs[1])
+    plt.plot(time, cores.envelop_tidal_radius, c='tab:blue', label=r'$R_\mathrm{tidal}$')
+    plt.plot(time, cores.radius, c='tab:blue', ls='--', lw=1)
+    plt.plot(time, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
+    plt.plot(time, cores.critical_radius, c='tab:red', label=r'$R_\mathrm{crit}$')
+    plt.yscale('log')
+    plt.ylim(1e-2, 1e0)
+    plt.ylabel(r'$R/L_{J,0}$')
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+
+    plt.sca(axs[2])
+    plt.plot(time, cores.envelop_tidal_mass, c='tab:blue', label=r'$M_\mathrm{tidal}$')
+    plt.plot(time, cores.mass, c='tab:blue', ls='--', lw=1)
+    plt.plot(time, cores.critical_mass, c='tab:red', label=r'$M_\mathrm{crit}$')
+    plt.yscale('log')
+    plt.ylim(1e-3, 1e1)
+    plt.ylabel(r'$M/M_{J,0}$')
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+
+    plt.sca(axs[3])
+    plt.plot(time, cores.mean_density, c='tab:blue', label=r'$\overline{\rho}_\mathrm{tidal}$')
+    plt.plot(time, cores.center_density, c='tab:orange', label=r'$\rho_c$')
+    plt.yscale('log')
+    plt.ylabel(r'$\rho/\rho_0$')
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+    plt.ylim(5e0, 1e4)
+
+    if normalize_time:
+        plt.xlim(-2, 0)
+        plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
+    else:
+        plt.xlabel(r'$t/t_{J,0}$')
+    for ax in axs:
+        ax.grid()
+    return fig
+
+
 ##### DEPRECATED #####
 
 
