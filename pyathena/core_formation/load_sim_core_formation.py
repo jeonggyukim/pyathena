@@ -157,6 +157,9 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         tJeans = 1/np.sqrt(4*np.pi*self.G*rho)*lmb/np.sqrt(lmb**2 - 1)
         return tJeans
 
+    def get_tff(self, rho):
+        return np.sqrt(3*np.pi/(32*self.G*rho))
+
     def get_RLP(self, M):
         """Returns the LP radius enclosing  mass M"""
         RLP = self.G*M/8.86/self.cs**2
@@ -166,6 +169,20 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         """Larson-Penston asymptotic solution in dimensionless units"""
         rhoLP = 8.86*self.cs**2/(4*np.pi*self.G*r**2)
         return rhoLP
+
+    def find_good_cores(self, ncells_min=10):
+        self.good_cores = []
+        for pid in self.pids:
+            if tools.test_isolated_core(self, pid):
+                self.cores[pid].attrs['isolated'] = True
+            else:
+                self.cores[pid].attrs['isolated'] = False
+            if tools.test_resolved_core(self, pid, ncells_min):
+                self.cores[pid].attrs['resolved'] = True
+            else:
+                self.cores[pid].attrs['resolved'] = False
+            if (self.cores[pid].attrs['isolated'] and self.cores[pid].attrs['resolved']):
+                self.good_cores.append(pid)
 
     def _load_tcoll_cores(self):
         """Read .csv output and find their collapse time and snapshot number.
