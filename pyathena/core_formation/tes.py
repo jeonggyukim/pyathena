@@ -403,11 +403,11 @@ class TESc:
             istart = 0
         if np.all(xi <= self._xi_min):
             u = y0[0]*np.ones(xi.size)
-            du = y0[1]*np.ones(xi.size)/xi
+            du = y0[1]*np.ones(xi.size)
         else:
-            y = odeint(self._dydx, y0, np.log(xi))
+            y = odeint(self._dydx, y0, xi)
             u = y[istart:, 0]
-            du = y[istart:, 1]/xi[istart:]
+            du = y[istart:, 1]
         return u, du
 
     def get_crit(self):
@@ -507,10 +507,10 @@ class TESc:
         """
         y1, y2 = y
         dy1 = y2
-        f = 1 + (np.exp(x)/self.xi_s)**(2*self.p)
-        a = f
-        b = (2*self.p + 1)*f - 2*self.p
-        c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*np.exp(2*x+y1)
+        f = 1 + (x/self.xi_s)**(2*self.p)
+        a = x**2*f
+        b = 2*x*((1+self.p)*f - self.p)
+        c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*x**2*np.exp(y1)
         dy2 = -(b/a)*y2 - (c/a)
         return np.array([dy1, dy2])
 
