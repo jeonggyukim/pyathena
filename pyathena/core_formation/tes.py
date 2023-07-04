@@ -1,5 +1,5 @@
 from scipy.integrate import odeint
-from scipy.optimize import minimize_scalar, brentq
+from scipy.optimize import minimize_scalar, brentq, newton
 import matplotlib.pyplot as plt
 import numpy as np
 import pickle
@@ -413,6 +413,8 @@ class TESc:
     def get_crit(self):
         """Find critical TES
 
+        .. deprecated::
+
         Returns
         -------
         float
@@ -426,6 +428,27 @@ class TESc:
             u0_crit = tsm.get_crit()
             return u0_TESm - u0_crit
         logrmax = brentq(lambda x: func(10**x), 0, np.log10(32))
+        return 10**logrmax
+
+    def get_rcrit(self, mode='trb'):
+        """Find critical TES radius
+        Parameters
+        ----------
+        mode : str
+            Which bulk modulus to use; trb for turbulent, thm for thermal.
+
+        Returns
+        -------
+        float
+            Critical radius
+        """
+        if mode=='thm':
+            func = lambda x: self.get_bulk_modulus(10**x)[0]
+        elif mode=='trb':
+            func = lambda x: self.get_bulk_modulus(10**x)[1]
+        else:
+            raise ValueError("mode should be either thm or trb")
+        logrmax = newton(func, 0, tol=1e-5).squeeze()[()]
         return 10**logrmax
 
     def get_mass(self, xi0):
@@ -452,6 +475,21 @@ class TESc:
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
         return m.squeeze()[()]
 
+    def get_bulk_modulus(self, xi):
+        u, du = self.solve(xi)
+        m = self.get_mass(xi)
+        f = 1 + (xi / self.xi_s)**(2*self.p)
+        dsu, dslogm = self._get_sonic_radius_derivatives(xi)
+        dslogxi = m / (4*np.pi*xi**3*np.exp(u)) * (1 - dslogm)
+        dslogf = -2*self.p*(1 - 1/f)
+        num = 1 + 0.5*(dsu + dslogf) - dslogxi*np.pi*m/(2*f*xi)
+        denom = 1. - dslogxi
+        kappa_tot = (2/3)*num/denom
+        num = 1 + 0.5*dsu + 0.5*dslogxi*xi*du
+        kappa_thm = (2/3)*num/denom
+
+        return kappa_thm, kappa_tot
+
     def _dydx(self, y, x):
         """Differential equation for hydrostatic equilibrium.
 
@@ -475,6 +513,19 @@ class TESc:
         c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*x**2*np.exp(y1)
         dy2 = -(b/a)*y2 - (c/a)
         return np.array([dy1, dy2])
+
+    def _get_sonic_radius_derivatives(self, xi, dlog_xi_s=1e-3):
+        log_xi_s = np.log(self.xi_s)
+
+        xi_s = [np.exp(log_xi_s - dlog_xi_s),
+                np.exp(log_xi_s + dlog_xi_s)]
+        tsc = [TESc(xi_s=xi_s[0]), TESc(xi_s=xi_s[1])]
+        u = [tsc[0].solve(xi)[0], tsc[1].solve(xi)[0]]
+        m = [tsc[0].get_mass(xi), tsc[1].get_mass(xi)]
+        du = (u[1] - u[0]) / (2*dlog_xi_s)
+        dlogm = (np.log(m[1]) - np.log(m[0])) / (2*dlog_xi_s)
+
+        return du, dlogm
 
 
 def get_pv_diagram(rsonic, u0s=None):
@@ -722,7 +773,7 @@ def _get_critical_tes_at_fixed_rhoc(xi_s):
         Critical mass.
     """
     tsc = TESc(xi_s=xi_s)
-    rcrit = tsc.get_crit()
+    rcrit = tsc.get_rcrit()
     u, du = tsc.solve(rcrit)
     dcrit = np.exp(u[0])
     mcrit = tsc.get_mass(rcrit)
@@ -858,20 +909,26 @@ if __name__ == "__main__":
     central density, for different sonic radii.
     """
     # Dimensionless sonic radius r_s / L_{J,c}
-    rsonic = np.logspace(np.log10(0.4), 2, 1024)
-    critical_mass, critical_radius, critical_density = [], [], []
-    for xi_s in rsonic:
-        dcrit, rcrit, mcrit = get_critical_tes(xi_s=xi_s)
-        critical_density.append(dcrit)
-        critical_radius.append(rcrit)
-        critical_mass.append(mcrit)
-    critical_density = np.array(critical_density)
-    critical_radius = np.array(critical_radius)
-    critical_mass = np.array(critical_mass)
-    res = dict(rsonic=rsonic,
-               dcrit=critical_density,
-               rcrit=critical_radius,
-               mcrit=critical_mass)
-    fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_rhoc.p"
-    with open(fname, "wb") as handle:
-        pickle.dump(res, handle)
+    rsonic = np.logspace(np.log10(0.386), 2, 1024)
+
+    for mode in ['trb', 'thm']:
+        critical_mass, critical_radius, critical_density = [], [], []
+        for xi_s in rsonic:
+            tsc = TESc(xi_s = xi_s)
+            rcrit = tsc.get_rcrit(mode)
+            u, du = tsc.solve(rcrit)
+            dcrit = np.exp(u[0])
+            mcrit = tsc.get_mass(rcrit)
+            critical_density.append(dcrit)
+            critical_radius.append(rcrit)
+            critical_mass.append(mcrit)
+        critical_density = np.array(critical_density)
+        critical_radius = np.array(critical_radius)
+        critical_mass = np.array(critical_mass)
+        res = dict(rsonic=rsonic,
+                   dcrit=critical_density,
+                   rcrit=critical_radius,
+                   mcrit=critical_mass)
+        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_mode_{}.p".format(mode)
+        with open(fname, "wb") as handle:
+            pickle.dump(res, handle)
