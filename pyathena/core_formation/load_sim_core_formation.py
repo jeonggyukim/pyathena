@@ -170,14 +170,27 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         rhoLP = 8.86*self.cs**2/(4*np.pi*self.G*r**2)
         return rhoLP
 
-    def find_good_cores(self, ncells_min=10):
+    def find_good_cores(self, ncells_min=10, ftff=0.5):
+        """Examine the isolatedness and resolvedness of cores
+
+        This function will examine whether the cores are isolated or
+        resolved and assign attributes to the `cores`.
+
+        Parameters
+        ----------
+        ncells_min : int, optional
+            Minimum number of cells to be considered "resolved".
+        ftff : float, optional
+            fractional free fall time before t_coll, at which the
+            resolvedness is examined.
+        """
         self.good_cores = []
         for pid in self.pids:
             if tools.test_isolated_core(self, pid):
                 self.cores[pid].attrs['isolated'] = True
             else:
                 self.cores[pid].attrs['isolated'] = False
-            if tools.test_resolved_core(self, pid, ncells_min):
+            if tools.test_resolved_core(self, pid, ncells_min, f=ftff):
                 self.cores[pid].attrs['resolved'] = True
             else:
                 self.cores[pid].attrs['resolved'] = False
