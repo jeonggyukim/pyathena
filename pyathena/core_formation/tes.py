@@ -448,7 +448,15 @@ class TESc:
             func = lambda x: self.get_bulk_modulus(10**x)[1]
         else:
             raise ValueError("mode should be either thm or trb")
-        logrmax = newton(func, 0, tol=1e-5).squeeze()[()]
+        x0, x1 = 0, 0.1
+        dx = 0.2
+        for i in range(0, 20):
+            try:
+                logrmax = newton(func, x0, x1=x1, tol=1e-5).squeeze()[()]
+                break
+            except RuntimeError:
+                x0 += dx
+                x1 += dx
         return 10**logrmax
 
     def get_mass(self, xi0):
@@ -909,7 +917,7 @@ if __name__ == "__main__":
     central density, for different sonic radii.
     """
     # Dimensionless sonic radius r_s / L_{J,c}
-    rsonic = np.logspace(np.log10(0.386), 2, 1024)
+    rsonic = np.logspace(np.log10(0.3855), 2, 4096)
 
     for mode in ['trb', 'thm']:
         critical_mass, critical_radius, critical_density = [], [], []
