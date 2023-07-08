@@ -49,6 +49,7 @@ if __name__ == "__main__":
                 osp.basename(fout),
             ),
         )
+
         fin = osp.join(s.basedir, "pdf2d/*.png")
         fout = osp.join(s.basedir, "movies/{0:s}_pdf2d.mp4".format(s.basename))
         make_movie(fin, fout, fps_in=15, fps_out=15)

@@ -209,10 +209,17 @@ class LoadSim(object):
                 self.logger.error('load_method "{0:s}" not recognized.'.format(
                     self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
         elif self.fvtk.endswith('tar'):
-            self.ds = AthenaDataSetTar(self.fvtk, units=self.u, par=self.par, dfi=self.dfi)
-            self.domain = self.ds.domain
-            self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
-                osp.basename(self.fvtk), self.ds.domain['time']))
+            if self.load_method == 'yt':
+                if hasattr(self, 'u'):
+                    units_override = self.u.units_override
+                else:
+                    units_override = None
+                self.ds = yt.load(self.fvtk, units_override=units_override)
+            else:
+                self.ds = AthenaDataSetTar(self.fvtk, units=self.u, par=self.par, dfi=self.dfi)
+                self.domain = self.ds.domain
+                self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
+                    osp.basename(self.fvtk), self.ds.domain['time']))
 
         return self.ds
 

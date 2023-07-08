@@ -7,8 +7,7 @@ import astropy.units as au
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
 from matplotlib.colors import LogNorm, SymLogNorm, Normalize
-import cmasher.cm as cma
-import seaborn as sns
+import cmasher.cm as cmr
 
 import pyathena as pa
 import gc
@@ -42,8 +41,8 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
         pdf_cool.attrs["total_cooling"] = total_cooling
         pdf_heat.attrs["total_heating"] = total_heating
 
-    cmap_cool = sns.color_palette("Blues", as_cmap=True)
-    cmap_heat = sns.color_palette("Reds", as_cmap=True)
+    cmap_cool = plt.cm.Blues
+    cmap_heat = plt.cm.Reds
     fig = plt.figure(figsize=(15, 12))
     gs1 = gridspec.GridSpec(5, 4)
     gs1.update(left=0.05, right=0.48, wspace=0.05)

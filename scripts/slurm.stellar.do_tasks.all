@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --job-name=do_task       # create a name for your job
 #SBATCH --nodes=1                # node count
-#SBATCH --ntasks=24              # total number of tasks
+#SBATCH --ntasks=48              # total number of tasks
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
 #SBATCH --time=06:00:00          # total run time limit (HH:MM:SS)
@@ -13,14 +13,13 @@ conda activate pyathena
 MODULE="pyathena.tigress_ncr.do_tasks"
 export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
 
-echo "Move everything from scratch"
 cd $HOME/pyathena/scripts
-DIRS=`ls /tigress/changgoo/TIGRESS-NCR/ | grep $1.`
+DIRS=`ls /scratch/gpfs/changgoo/TIGRESS-NCR/ | grep $1`
 
 for dir in $DIRS
 do
   echo $dir
   echo "do tasks started"
-  OUTDIR=/tigress/changgoo/TIGRESS-NCR/$dir
-  srun python ../pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1>> join-$SLURM_JOB_ID.out 2>> join-$SLURM_JOB_ID.err
+  OUTDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$dir
+  srun python ../pyathena/tigress_ncr/do_tasks_extra.py -b $OUTDIR 1>> join-$SLURM_JOB_ID.out 2>> join-$SLURM_JOB_ID.err
 done

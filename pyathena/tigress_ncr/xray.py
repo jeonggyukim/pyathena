@@ -7,7 +7,7 @@ import matplotlib.pyplot as plt
 
 class Xray(object):
     def __init__(self, sim, ytds, zcut=128, verbose=True,
-                 emin=0.1, emax=10, nbins=1000,
+                 emin=0.1, emax=10, nbins=1000, redshift=0.00005,
                  model='spex', binscale='log'):
         self.sim = sim
         self.ytds = ytds
@@ -270,7 +270,7 @@ class Xray(object):
             if cbar: plt.colorbar(im)
         return fig,ax
 
-    def show(self, source='src'):
+    def show(self, source='src', width=0.2, vmin=0, vmax=100):
         from matplotlib.gridspec import GridSpec
 
         fig = plt.figure(figsize=(12,10))
@@ -281,7 +281,8 @@ class Xray(object):
         for f in sorted(self.find_img_files()):
             region, dist, axis, src, exptime, inst = self.parse_filename(f)
             if source != src: continue
-            self.plot_image(f,stretch='sqrt', cmap='arbre',width=0.2,vmax=1000,
+            self.plot_image(f,stretch='sqrt', cmap='arbre', width=width,
+                            vmin=vmin, vmax=vmax,
                             fig=fig,grid_spec=gs[0,i], cbar=i==2)
             plt.title(region)
             i += 1

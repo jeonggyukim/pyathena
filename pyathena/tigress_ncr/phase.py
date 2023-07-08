@@ -91,6 +91,7 @@ def recal_xT(dchunk):
     xs = ["xHI", "xHII"]
     log = [False, True]
     for T_ in T:
+        if not T_ in dchunk: continue
         for log_ in log:
             for xs_ in xs:
                 x, y, w = (

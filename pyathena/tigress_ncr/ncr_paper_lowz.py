@@ -17,22 +17,17 @@ from ..plt_tools.utils import texteffect
 import cmasher as cmr
 
 class LowZData(PaperData):
-    def __init__(self):
+    def __init__(self,basedir='/scratch/gpfs/changgoo/TIGRESS-NCR/'):
         self.outdir='/tigress/changgoo/public_html/TIGRESS-NCR/lowZ-figures/'
-        models, mlist_early = self._get_models('/scratch/gpfs/changgoo/TIGRESS-NCR/')
-        self.sa = pa.LoadSimTIGRESSNCRAll(models)
-        self.mlist_all = list(models)
-        self.mlist = list(mlist_early)
-        self.mlist_early = mlist_early
-        self._set_model_params()
-        self._set_model_list()
-
-        self._set_colors()
-        self._set_torb()
         os.makedirs(self.outdir,exist_ok=True)
 
-    def reset_model_list(self):
-        models, mlist_early = self._get_models('/scratch/gpfs/changgoo/TIGRESS-NCR/')
+        models, mlist_early = self._get_models(basedir)
+        self.basedir=basedir
+        self.sa = pa.LoadSimTIGRESSNCRAll(models)
+        self.update_model_list(basedir,verbose=False)
+
+    def update_model_list(self,basedir,verbose=True):
+        models, mlist_early = self._get_models(basedir,verbose=verbose)
         self.mlist_all = list(models)
         self.mlist = list(mlist_early)
         self.mlist_early = mlist_early
@@ -77,9 +72,12 @@ class LowZData(PaperData):
                 mgroup[head].append(m)
             else:
                 mgroup[head] = [m]
-        mgroup['R8']=mgroup['R8-b1']
-        mgroup['LGR4']=mgroup['LGR4-b1']
-        mgroup['LGR2-S150']=mgroup['LGR2-S150-Om01'] + mgroup['LGR2-S150-Om02']
+        try:
+            mgroup['R8']=mgroup['R8-b1']
+            mgroup['LGR4']=mgroup['LGR4-b1']
+            mgroup['LGR2-S150']=mgroup['LGR2-S150-Om01'] + mgroup['LGR2-S150-Om02']
+        except KeyError:
+            print("not all model groups are set")
 
         self.mgroup = mgroup
 
@@ -163,13 +161,14 @@ class LowZData(PaperData):
             s.beta = pp['beta']
             s.name = self.get_model_name(s)
 
-    def _get_models(self,basedir):
+    @staticmethod
+    def _get_models(basedir,verbose=True):
         dirs = sorted(os.listdir(basedir))[::-1]
         models = dict()
         for d in dirs:
             # if not os.path.isdir(d): continue
             if ('v3.iCR4' in d) or ('v3.iCR5' in d):
-                print(d)
+                if verbose: print(d)
                 models[d] = os.path.join(basedir,d)
         models['R8_8pc_NCR.full.b10.v3']=os.path.join(basedir,'R8_8pc_NCR.full.b10.v3')
 
@@ -205,8 +204,8 @@ class LowZData(PaperData):
         return models, mlist_early
 
     def _set_colors(self):
-        colors1 = cmr.take_cmap_colors('cmr.pride', 4, cmap_range=(0.05, 0.45))
-        colors2 = cmr.take_cmap_colors('cmr.pride_r', 4, cmap_range=(0.05, 0.45))
+        colors1 = cmr.take_cmap_colors('cmr.guppy', 4, cmap_range=(0.65, 1.0))
+        colors2 = cmr.take_cmap_colors('cmr.guppy_r', 4, cmap_range=(0.65, 1.0))
         self.plt_kwargs = dict()
         for gr in self.mgroup:
             self.plt_kwargs[gr]=dict()
@@ -315,7 +314,8 @@ class LowZData(PaperData):
                 trange = slice(s.torb_Myr*1.5,s.torb_Myr*5)
             else:
                 trange = slice(s.torb_Myr*2,s.torb_Myr*5)
-            print(m,s.torb_Myr,trange,zpmid.time.data.min(),zpmid.time.data.max())
+            if not silent:
+                print(m,s.torb_Myr,trange,zpmid.time.data.min(),zpmid.time.data.max())
 
         zpmid = zpmid.sel(time=trange)
         zpwmid = zpwmid.sel(time=trange)
@@ -323,23 +323,55 @@ class LowZData(PaperData):
         ydata = xr.Dataset()
 
         yield_conv = ((au.cm**(-3)*au.K*ac.k_B)/(ac.M_sun/ac.kpc**2/au.yr)).to('km/s').value
+        for ph in ['2p','hot']:
+            #midplane
+            A = zpmid['A'].sel(phase=ph)
+            Atop = zpmid['A_top'].sel(phase=ph)
+            for yf in ['Ptot','Pturb','Pth','Pimag','oPimag','dPimag','Prad']:
+                if not yf in zpmid: continue
+                yfname = yf if ph == '2p' else '{}_{}'.format(yf,ph)
+                # midplane pressure
+                y = zpmid[yf].sel(phase=ph)/A*s.u.pok
+                ydata[yfname] = y
+
+                # feedback yield
+                ydata[yfname.replace('Pi','Y').replace('P','Y')] = \
+                    y/zpmid[sfr_field]*yield_conv
+
+                # top pressure
+                ytop = zpmid['{}_top'.format(yf)].sel(phase=ph)/Atop*s.u.pok
+                ydata['{}_top'.format(yfname)] = ytop
+
+                # difference
+                ydata['d{}'.format(yfname)] = y-ytop
+        ydata['Ynonth'] = ydata['Yturb'] + ydata['Ymag']
         A = zpmid['A'].sel(phase='2p')
-        for yf in ['Ptot','Pturb','Pth','Pimag','oPimag','dPimag','Prad']:
-            y = zpmid[yf].sel(phase='2p')/A*s.u.pok
-            ydata[yf] = y
-            y = zpmid[yf].sel(phase='2p')/A*s.u.pok/zpmid[sfr_field]*yield_conv
-            ydata[yf.replace('Pi','Y').replace('P','Y')] = y
         for yf in ['nH']:
             y = zpmid[yf].sel(phase='2p')/A
             ydata[yf] = y
         for yf in ['sigma_eff_mid','sigma_eff','sigma_turb_mid','sigma_turb',
-                   'sigma_th_mid','sigma_th']:
+                   'sigma_th_mid','sigma_th','H']:
             y = zpmid[yf].sel(phase='2p')
             ydata[yf] = y
-        for yf in ['PDE','sfr10','sfr40','sfr100','Sigma_gas']:
+        for yf in ['PDE_whole_approx','PDE_2p_avg_approx','PDE_2p_mid_approx',
+                   'PDE_whole_full','PDE_2p_avg_full','PDE_2p_mid_full',
+                   'H_whole_full','H_2p_avg_full','H_2p_mid_full',
+                   'sfr10','sfr40','sfr100','Sigma_gas']:
             ydata[yf] = zpmid[yf]
         ydata['sfr'] = zpmid[sfr_field]
+        # full
         ydata['W'] = zpwmid['W']*s.u.pok
+        ydata['Wsg'] = zpwmid['Wsg']*s.u.pok
+        ydata['Wext'] = zpwmid['Wext']*s.u.pok
+        # top
+        ydata['W_top'] = zpmid['W_top'].sum(dim='phase')*s.u.pok
+        ydata['Wsg_top'] = zpmid['Wsg_top'].sum(dim='phase')*s.u.pok
+        ydata['Wext_top'] = zpmid['Wext_top'].sum(dim='phase')*s.u.pok
+        # difference
+        ydata['dW'] = ydata['W'] - ydata['W_top']
+        ydata['dWsg'] = ydata['Wsg'] - ydata['Wsg_top']
+        ydata['dWext'] = ydata['Wext'] - ydata['Wext_top']
+
         rhos = s.par['problem']['SurfS']/(2*s.par['problem']['zstar'])
         rhod = s.par['problem']['rhodm']
         ydata['rhotot'] = ydata['nH']*(1.4*ac.m_p/au.cm**3).to('Msun/pc^3').value+rhos+rhod
@@ -349,10 +381,13 @@ class LowZData(PaperData):
         ydata['tdep100'] = zpmid['Sigma_gas']/zpmid['sfr100']
         ydata['Zgas'] = s.Zgas*zpmid['Sigma_gas']/zpmid['Sigma_gas']
         ydata['Zdust'] = s.Zdust*zpmid['Sigma_gas']/zpmid['Sigma_gas']
-
-        if reduce: ydata = ydata.reduce(func,dim='time',**func_kwargs)
-        ydata = ydata.to_array().drop('phase')
+        ydata['PDE'] = zpmid['PDE_2p_avg_full']
+        if reduce:
+            # apply only on the good data points
+            ydata = ydata.where(~ydata['Ytot'].isin([np.nan,np.inf, -np.inf]),drop=True)
+            ydata = ydata.reduce(func,dim='time',**func_kwargs)
         ydata = ydata.assign_coords(name=m)
+        ydata = ydata.to_array().drop('phase')
 
         return ydata
 
@@ -481,7 +516,8 @@ def get_PW_zprof(s,recal=False):
     if not recal:
         if os.path.isfile(fzpmid):
             with xr.open_dataset(fzpmid) as zpmid:
-                return zpmid
+                zpmid.load()
+            return zpmid
 
     if hasattr(s,'newzp'):
         zp = s.newzp
@@ -525,6 +561,9 @@ def get_PW_zprof(s,recal=False):
         zpmid['oPmag'] = zpmid['Pmag']-zpmid['dPmag']
         zpmid['oPimag'] = zpmid['Pimag']-zpmid['dPimag']
         zpmid['Ptot'] += zpmid['Pimag']
+
+    # scale height
+    zpmid['H'] = np.sqrt((zp['d']*zp.z**2).sum(dim='z')/zp['d'].sum(dim='z'))
 
     # density, area
     zpmid['nH'] = zp['d']
@@ -584,6 +623,18 @@ def get_PW_time_series_from_zprof(s,zprof,sfr=None,dt=0,zrange=slice(-10,10),rec
 
     # select midplane
     zpmid = zprof.sel(z=zrange).mean(dim='z')
+    # select top and bottom
+    hzmax = s.par['domain1']['x3max']*0.5
+    for Pcomp in ['Pth','Pturb','Pmag','Pimag','dPmag','dPimag',
+                  'oPmag','oPimag','Ptot','Wext','Wsg','W','Prad']:
+        if Pcomp in zpmid:
+            k='{}_top'.format(Pcomp)
+            zpmid[k] = xr.concat([zprof[Pcomp].sel(z=slice(hzmax-10,hzmax+10)),
+                                  zprof[Pcomp].sel(z=slice(-hzmax-10,-hzmax+10))],
+                                  dim='z').mean(dim='z')
+    zpmid['A_top'] = xr.concat([zprof['A'].sel(z=slice(hzmax-10,hzmax+10)),
+                                zprof['A'].sel(z=slice(-hzmax-10,-hzmax+10))],
+                                dim='z').mean(dim='z')
     zpwmid = zprof.sel(z=zrange).mean(dim='z').sum(dim='phase')
 
     # SFR from history
@@ -616,10 +667,10 @@ def get_PW_time_series_from_zprof(s,zprof,sfr=None,dt=0,zrange=slice(-10,10),rec
 
     # PDE
 
-    zpmid['sigma_eff'] = szeff
+    zpmid['sigma_eff'] = szeff # vertically integrated
     zpmid['sigma_turb'] = vzeff
     zpmid['sigma_th'] = cseff
-    zpmid['sigma_eff_mid'] = np.sqrt(zpmid['Ptot']/zpmid['nH'])
+    zpmid['sigma_eff_mid'] = np.sqrt(zpmid['Ptot']/zpmid['nH']) # midplane
     zpmid['sigma_turb_mid'] = np.sqrt(zpmid['Pturb']/zpmid['nH'])
     zpmid['sigma_th_mid'] = np.sqrt(zpmid['Pth']/zpmid['nH'])
     zpmid['Sigma_gas'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['mass']*s.u.Msun*vol/area),coords=[zpmid.time])
@@ -628,9 +679,25 @@ def get_PW_time_series_from_zprof(s,zprof,sfr=None,dt=0,zrange=slice(-10,10),rec
     zpmid['PDE2_2p'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['sigma_eff'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
     zpmid['PDE2_2p_mid'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['sigma_eff_mid'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
     zpmid['PDE2'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['szeff']*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
-    zpmid['PDE_2p_mid'] = zpmid['PDE1']+zpmid['PDE2_2p_mid']
-    zpmid['PDE_2p'] = zpmid['PDE1']+zpmid['PDE2_2p']
-    zpmid['PDE'] = zpmid['PDE1']+zpmid['PDE2']
+    zpmid['PDE_2p_mid_approx'] = zpmid['PDE1']+zpmid['PDE2_2p_mid'] # PDE from midplane pressure and density of 2p gas
+    zpmid['PDE_2p_avg_approx'] = zpmid['PDE1']+zpmid['PDE2_2p'] # PDE from mass weighted mean VD of 2p gas
+    zpmid['PDE_whole_approx'] = zpmid['PDE1']+zpmid['PDE2'] # PDE from mass weighted mean VD of whole gas
+
+    # using PRFM package
+    import prfm
+    Sigma_star = s.par['problem']['SurfS']
+    H_star = s.par['problem']['zstar']
+    rho_dm=s.par['problem']['rhodm']
+    Sigma_gas = zpmid['Sigma_gas']
+
+    for sz,l in zip([zpmid['szeff'],zpmid['sigma_eff'].sel(phase='2p'),
+                     zpmid['sigma_eff_mid'].sel(phase='2p')],
+                    ['whole','2p_avg','2p_mid']):
+        model=prfm.PRFM(Sigma_gas=Sigma_gas,Sigma_star=Sigma_star,H_star=H_star,
+                        rho_dm=rho_dm,astro_units=True,sigma_eff=sz)
+        model.calc_self_consistent_solution()
+        zpmid['PDE_{}_full'.format(l)] = xr.DataArray(model.Wtot,coords=[zpmid.time])
+        zpmid['H_{}_full'.format(l)] = xr.DataArray(model.H_gas,coords=[zpmid.time])
 
     if os.path.isfile(fzpmid): os.remove(fzpmid)
     if os.path.isfile(fzpw): os.remove(fzpw)
@@ -710,13 +777,13 @@ def plot_DE(pdata,m,tr,xf,yf,sfrfield='sfr',
     if fit:
         if xf == 'W' and yf == 'Ptot':
             plt.plot(Prange,10.**(0.99*np.log10(Prange)+0.083),ls='-',color='k')
-        if xf == 'PDE' and yf == 'Ptot':
+        if xf.startswith('PDE') and yf == 'Ptot':
             plt.plot(Prange,10.**(1.03*np.log10(Prange)-0.199),ls='-',color='k')
-        if xf == 'PDE' and yf == 'W':
+        if xf.startswith('PDE') and yf == 'W':
             plt.plot(Prange,10.**(1.03*np.log10(Prange)-0.276),ls='-',color='k')
         if xf == 'W' and yf == 'sfr':
             plt.plot(Prange,10.**(1.18*np.log10(Prange)-7.32),ls='-',color='k')
-        if xf == 'PDE' and yf == 'sfr':
+        if xf.startswith('PDE') and yf == 'sfr':
             plt.plot(Prange,10.**(1.18*np.log10(Prange)-7.32),ls='-',color='k')
         if xf == 'Ptot' and yf == 'sfr':
             plt.plot(Prange,10.**(1.17*np.log10(Prange)-7.43),ls='-',color='k')
@@ -733,7 +800,7 @@ def plot_Pcomp(pdata,m,tr,yf,xf='PDE',label='',ax=None,fit=False,qr=[0.16,0.5,0.
     zpmid = zpmid.sel(time=tr)
     zpw = zpw.sel(time=tr)
 
-    wpdata=dict(W=zpw['W']*s.u.pok,PDE=zpmid['PDE'],
+    wpdata=dict(W=zpw['W']*s.u.pok,PDE=zpmid['PDE_2p_avg_full'],
                 Ptot=zpmid['Ptot'].sel(phase='2p')/zpmid['A'].sel(phase='2p')*s.u.pok)
 
     Ptot=zpmid['Ptot'].sel(phase='2p')
@@ -864,8 +931,8 @@ def plot_Upsilon_sfr(pdata,m,tr,xf,yf,label='',ax=None,fit=False,qr=[0.16,0.5,0.
                  marker='o',markersize=8,ecolor='k',markeredgecolor='k',
                  color=s.color,zorder=10,label=label)
     if xf == 'sfr': plt.xlabel(r'$\Sigma_{\rm SFR}$'+sfr_unit_label)
-    if xf == 'PDE': plt.xlabel(r'$P_{\rm DE}$'+Punit_label)
-    if xf == 'PDE_2p': plt.xlabel(r'$P_{\rm DE,2p}$'+Punit_label)
+    if xf.startswith('PDE_whole'): plt.xlabel(r'$P_{\rm DE}$'+Punit_label)
+    if xf.startswith('PDE_2p'): plt.xlabel(r'$P_{\rm DE,2p}$'+Punit_label)
     if xf == 'Zgas': plt.xlabel(r'$Z_{\rm gas}^\prime$')
     if xf == 'Zdust': plt.xlabel(r'$Z_{\rm dust}^\prime$')
     plt.ylabel(r'$\Upsilon_{{\rm {}}}$'.format(yf[2:] if yf.startswith('Pi') else yf[1:])+Uunit_label)
@@ -888,7 +955,7 @@ def plot_Upsilon_sfr(pdata,m,tr,xf,yf,label='',ax=None,fit=False,qr=[0.16,0.5,0.
             if yf=='Ptot':
 #                 plt.plot(sfrrange,770*(sfrrange/1.e-2)**(-0.15),ls=':',color='k')
                 plt.plot(sfrrange,740*(sfrrange/1.e-2)**(-0.2),ls='-',color='k')
-    if xf in ['PDE','PDE_2p']:
+    if xf.startswith('PDE'):
         plt.xlim(1.e3,1.e6)
         Prange = np.logspace(3,6)
         if fit:

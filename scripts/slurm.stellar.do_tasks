@@ -1,17 +1,19 @@
 #!/bin/bash
 #SBATCH --job-name=do_task       # create a name for your job
 #SBATCH --nodes=1                # node count
-#SBATCH --ntasks=24              # total number of tasks
+#SBATCH --ntasks=48              # total number of tasks
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=01:30:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=00:30:00          # total run time limit (HH:MM:SS)
 
 module purge
 module load anaconda3/2020.11 openmpi/gcc/4.1.0
 conda activate pyathena
 
 MODULE="pyathena.tigress_ncr.do_tasks"
-export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
+echo $PYTHONPATH
+export PYTHONPATH="$HOME/pyathena"
+echo $PYTHONPATH
 
 OUTDIR=$1
 
