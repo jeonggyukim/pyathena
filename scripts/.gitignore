@@ -2,3 +2,5 @@
 *.out
 join_vtk
 *.sh
+pbs.*.e*
+pbs.*.o*

@@ -5,4 +5,4 @@ import pyathena as pa
 
 print(sys.argv)
 s = pa.LoadSimTIGRESSNCR(sys.argv[1],verbose=True)
-s.create_tar_all(kind='vtk',remove_original=True)
+s.create_tar_all(kind='rst',move=False,remove_original=True)

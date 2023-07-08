@@ -285,11 +285,11 @@ class PDF:
         ax.axes.xaxis.set_visible(False)
         ax.axes.yaxis.set_visible(False)
 
-        ax = axes[2, 3]
-        ax.semilogy(hst["time_code"], hst["sfr10"])
-        ax.semilogy(hst["time_code"], hst["sfr40"])
-        ax.axvline(s.domain["time"], color="grey", lw=0.75)
-        ax.set(xlabel="time [code]", ylabel=r"$\Sigma_{\rm SFR}$", ylim=(1e-3, None))
+        #ax = axes[2, 3]
+        #ax.semilogy(hst["time_code"], hst["sfr10"])
+        #ax.semilogy(hst["time_code"], hst["sfr40"])
+        #ax.axvline(s.domain["time"], color="grey", lw=0.75)
+        #ax.set(xlabel="time [code]", ylabel=r"$\Sigma_{\rm SFR}$", ylim=(1e-3, None))
 
         if suptitle is None:
             suptitle = self.basename
