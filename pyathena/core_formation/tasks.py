@@ -106,8 +106,12 @@ def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
     suffix = "vel{}".format(use_vel)
     if fixed_slope:
         suffix += "_fixed_slope"
-    ofname = Path(s.basedir, 'critical_tes',
-                  'critical_tes_{}.par{}.{:05d}.p'.format(suffix, pid, num))
+    if s.use_phitot:
+        ofname = Path(s.basedir, 'critical_tes_phitot',
+                      'critical_tes_{}.par{}.{:05d}.p'.format(suffix, pid, num))
+    else:
+        ofname = Path(s.basedir, 'critical_tes',
+                      'critical_tes_{}.par{}.{:05d}.p'.format(suffix, pid, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[save_critical_tes] file already exists. Skipping...')
@@ -152,7 +156,10 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
         # TODO Set to large number; otherwise premature optimization.
     """
     # Check if file exists
-    ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
+    if s.use_phitot:
+        ofname = Path(s.basedir, 'cores_phitot', 'cores.par{}.p'.format(pid))
+    else:
+        ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[find_and_save_cores] file already exists. Skipping...')
@@ -190,7 +197,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
         gd = s.load_dendrogram(num)
 
         # find closeast leaf to the previous preimage
-        dst = {leaf: tools.get_node_distance(ds, leaf, nid_old)
+        dst = {leaf: tools.get_node_distance(s, leaf, nid_old)
                for leaf in gd.leaves}
         dst_min = np.min(list(dst.values()))
         for k, v in dst.items():
@@ -248,8 +255,12 @@ def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
         If true, overwrites the existing pickle file.
     """
     # Check if file exists
-    ofname = Path(s.basedir, 'radial_profile',
-                  'radial_profile.par{}.{:05d}.nc'.format(pid, num))
+    if s.use_phitot:
+        ofname = Path(s.basedir, 'radial_profile_phitot',
+                      'radial_profile.par{}.{:05d}.nc'.format(pid, num))
+    else:
+        ofname = Path(s.basedir, 'radial_profile',
+                      'radial_profile.par{}.{:05d}.nc'.format(pid, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[save_radial_profiles] file already exists. Skipping...')
