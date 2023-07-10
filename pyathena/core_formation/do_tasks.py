@@ -74,6 +74,8 @@ if __name__ == "__main__":
     for mdl in args.models:
         s = sa.set_model(mdl)
 
+        s.use_phitot = True if args.use_phitot else False
+
         # Combine output files.
         if args.join_partab:
             print(f"Combine partab files for model {mdl}", flush=True)
@@ -87,7 +89,7 @@ if __name__ == "__main__":
         if args.grid_dendro:
             print(f"Run GRID-dendro for model {mdl}", flush=True)
             def wrapper(num):
-                run_GRID(s, num, overwrite=args.overwrite, use_phitot=args.use_phitot)
+                run_GRID(s, num, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums[GRID_NUM_START:], 1)
 

@@ -79,6 +79,9 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         self.G = np.pi
         self.tff = np.sqrt(3/32)
 
+        # configurations
+        self.use_phitot = True
+
         if isinstance(basedir_or_Mach, (pathlib.PosixPath, str)):
             basedir = basedir_or_Mach
             super().__init__(basedir, savdir=savdir, load_method=load_method,
@@ -132,17 +135,15 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
-    def load_dendrogram(self, num, use_phitot=False):
+    def load_dendrogram(self, num):
         """Load pickled dendrogram object
 
         Parameters
         ----------
         num : int
             Snapshot number.
-        use_phitot : bool, optional
-            Use total gravitational potential produced by both gas and sinks.
         """
-        which = 'phitot' if use_phitot else 'phigas'
+        which = 'phitot' if self.use_phitot else 'phigas'
         fname = pathlib.Path(self.basedir, 'GRID',
                              'dendrogram.{}.{:05d}.p'.format(which, num))
         with open(fname, 'rb') as handle:
