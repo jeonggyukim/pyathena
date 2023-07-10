@@ -264,30 +264,15 @@ def find_tcoll_core(s, pid):
     gd = s.load_dendrogram(num)
 
     # find closeast leaf node to this particle
-    dx, dy, dz = s.domain['dx']
-    dst_inc = min(dx, dy, dz)
-    search_dst = dst_inc
-    vel = s.tcoll_cores.loc[pid][['v1', 'v2', 'v3']].to_numpy()
-    particle_speed = np.sqrt((vel**2).sum())
-    search_dst_max = max(20*max(dx, dy, dz),
-                         2*s.dt_output['hdf5']*particle_speed)
-    tcoll_core = set()
-    while len(tcoll_core) == 0:
-        for leaf in gd.leaves:
-            kji = np.unravel_index(leaf, s.domain['Nx'][::-1], order='C')
-            ijk = np.array(kji)[::-1]
-            pos_node = s.domain['le'] + ijk*s.domain['dx']
-            pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
-            pos_particle = pos_particle.to_numpy()
-            dst = get_periodic_distance(pos_node, pos_particle, s.Lbox)
-            if dst <= search_dst:
-                tcoll_core.add(leaf)
-        search_dst += dst_inc
-        if search_dst > search_dst_max:
-            msg = "pid = {}: Cannot find a t_coll core within distance {}"
-            msg = msg.format(pid, search_dst_max)
-            raise NoNearbyCoreError(msg)
-    return tcoll_core.pop()
+    pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
+    pos_particle = pos_particle.to_numpy()
+
+    distance = []
+    for leaf in gd.leaves:
+        pos_node = get_coords_node(s, leaf)
+        distance.append(get_periodic_distance(pos_node, pos_particle, s.Lbox))
+    tcoll_core = gd.leaves[np.argmin(distance)]
+    return tcoll_core
 
 
 def get_coords_minimum(dat):
