@@ -322,7 +322,6 @@ def run_GRID(s, num, overwrite=False):
         phi = ds.phigas.to_numpy()
     gd = dendrogram.Dendrogram(phi, verbose=False)
     gd.construct()
-    gd.prune()
 
     # Write to file
     with open(ofname, 'wb') as handle:
