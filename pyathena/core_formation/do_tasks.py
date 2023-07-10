@@ -63,7 +63,7 @@ if __name__ == "__main__":
                         help="Create sink history plots")
     parser.add_argument("--plot-pdfs", action="store_true",
                         help="Create density pdf and velocity power spectrum")
-    parser.add_argument("--use-phitot", default=False, action="store_true",
+    parser.add_argument("--use-phigas", default=False, action="store_true",
                         help="Use total gravitational potential for analysis")
     parser.add_argument("--correct-tidal-radius", action="store_true",
                         help="Find envelop tidal radius")
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     for mdl in args.models:
         s = sa.set_model(mdl)
 
-        s.use_phitot = True if args.use_phitot else False
+        s.use_phitot = False if args.use_phigas else True
 
         # Combine output files.
         if args.join_partab:
