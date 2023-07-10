@@ -852,11 +852,10 @@ def _get_critical_tes_cloud(mach, alpha_vir, mfrac=None, rhoe=None):
     Virial parameter is defined as usual,
         alpha_vir = 5 R sigma_1D / (G M).
     The sonic radius is defined by
-        sigma_3D / c_s = (R / r_s)^0.5
-    where sigma_3D^2 = 3 sigma_1D^2.
+        sigma_1D / c_s = (R / r_s)^0.5
     This yields the relationship of the sonic radius to the Mach number
     and virial paremter:
-        r_s/L_{J,0} = 1/(2 pi) * (alpha_vir/5)^-0.5 * Mach^-1.
+        r_s/L_{J,0} = sqrt(45/(4 pi^2)) * alpha_vir^-0.5 * Mach^-1.
 
     The sonic radius normalized to the central Jeans length can be found
     by the equation:
@@ -880,7 +879,7 @@ def _get_critical_tes_cloud(mach, alpha_vir, mfrac=None, rhoe=None):
     # Initialize interpolation functions for critical TES family
     from scipy.interpolate import interp1d
 
-    fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_rhoc.p"
+    fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_mode_trb.p"
     with open(fname, "rb") as handle:
         res = pickle.load(handle)
 
@@ -901,9 +900,9 @@ def _get_critical_tes_cloud(mach, alpha_vir, mfrac=None, rhoe=None):
     def get_mcrit(rsonic):
         return np.exp(itp_log_mcrit(np.log(rsonic)))
 
-    rsonic0 = np.sqrt(5/alpha_vir)/(2*np.pi*mach)  # See Notes section.
+    rsonic0 = np.sqrt(45)/(2*np.pi)/np.sqrt(alpha_vir)/mach  # See Notes section.
     rsonic = brentq(lambda x: x*np.sqrt(get_dcrit(x)) - rsonic0*np.sqrt(rhoe),
-                    0.4, 100)
+                    0.3855, 100)
     dcrit = get_dcrit(rsonic)
     rcrit = get_rcrit(rsonic)*np.sqrt(dcrit/rhoe)
     mcrit = get_mcrit(rsonic)*np.sqrt(dcrit/rhoe)
