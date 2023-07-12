@@ -16,6 +16,7 @@ if __name__ == "__main__":
                   M10J4P0N1024='/scratch/gpfs/sm69/cores/M10.J4.P0.N1024',
                   M10J4P1N1024='/scratch/gpfs/sm69/cores/M10.J4.P1.N1024',
                   M10J4P2N1024='/scratch/gpfs/sm69/cores/M10.J4.P2.N1024',
+                  M10J4P3N1024='/scratch/gpfs/sm69/cores/M10.J4.P3.N1024',
                   M75J3P0N512='/scratch/gpfs/sm69/cores/M7.5.J3.P0.N512',
                   M75J3P1N512='/scratch/gpfs/sm69/cores/M7.5.J3.P1.N512',
                   M75J3P2N512='/scratch/gpfs/sm69/cores/M7.5.J3.P2.N512',
