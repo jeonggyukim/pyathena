@@ -49,7 +49,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         All preimages of t_coll cores.
     """
 
-    def __init__(self, basedir_or_Mach=None, savdir=None,
+    def __init__(self, basedir_or_Mach=None, savdir=None, use_phitot=False,
                  load_method='pyathena', verbose=False):
         """The constructor for LoadSimCoreFormation class
 
@@ -61,6 +61,8 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         savdir : str
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
+        use_phitot : bool
+            Gas-only potential or total potential for core definition.
         load_method : str
             Load hdf5 using 'pyathena' or 'yt'. Default value is 'pyathena'.
         verbose : bool or str or int
@@ -80,7 +82,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         self.tff = np.sqrt(3/32)
 
         # configurations
-        self.use_phitot = True
+        self.use_phitot = use_phitot
 
         if isinstance(basedir_or_Mach, (pathlib.PosixPath, str)):
             basedir = basedir_or_Mach
@@ -340,16 +342,26 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena',
-                  verbose=False):
+    def set_model(self, model, savdir=None, use_phitot=False,
+                  load_method='pyathena', verbose=False,
+                  reset=False):
         self.model = model
-        try:
-            self.sim = self.simdict[model]
-        except KeyError:
+        if reset:
             self.sim = LoadSimCoreFormation(self.basedirs[model],
                                             savdir=savdir,
+                                            use_phitot=use_phitot,
                                             load_method=load_method,
                                             verbose=verbose)
             self.simdict[model] = self.sim
+        else:
+            try:
+                self.sim = self.simdict[model]
+            except KeyError:
+                self.sim = LoadSimCoreFormation(self.basedirs[model],
+                                                savdir=savdir,
+                                                use_phitot=use_phitot,
+                                                load_method=load_method,
+                                                verbose=verbose)
+                self.simdict[model] = self.sim
 
         return self.sim
