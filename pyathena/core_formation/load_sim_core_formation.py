@@ -280,17 +280,9 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                     tes_crit = tes_crit.sort_index()
                     tes_crit.to_pickle(fname, protocol=pickle.HIGHEST_PROTOCOL)
                 except FileNotFoundError:
-                    # Fall back to old radial profile
-                    logging.warning("Cannot find new version of critical TES."
-                                    " Reading from old one...")
-                    try:
-                        fname = pathlib.Path(self.basedir, 'cores',
-                                             'critical_tes_{}.par{}.p'
-                                             .format(method, pid))
-                        tes_crit = pd.read_pickle(fname)
-                    except FileNotFoundError:
-                        found_tes_crit = False
-                        pass
+                    logging.warning("Cannot find critical TES information.")
+                    found_tes_crit = False
+                    pass
             if found_tes_crit:
                 self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
                                             axis=1, join='inner').sort_index()
@@ -299,28 +291,22 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         self.rprofs = {}
         for pid in self.pids:
             try:
+                # Try reading joined radial profile
                 fname = pathlib.Path(self.basedir, 'radial_profile',
                                      'radial_profile.par{}.nc'.format(pid))
                 rprf = xr.open_dataset(fname)
             except FileNotFoundError:
-                try:
-                    core = self.cores[pid]
-                    rprf = []
-                    for num in core.index:
-                        fname2 = pathlib.Path(self.basedir, 'radial_profile',
-                                              'radial_profile.par{}.{:05d}.nc'
-                                              .format(pid, num))
-                        rprf.append(xr.open_dataset(fname2))
-                    rprf = xr.concat(rprf, 't')
-                    rprf = rprf.assign_coords(dict(num=('t', core.index)))
-                    rprf.to_netcdf(fname)
-                except (FileNotFoundError, KeyError):
-                    # Fall back to old radial profile
-                    logging.warning("Cannot find new version of radial"
-                                    " Profiles. Reading from old one...")
-                    fname = pathlib.Path(self.basedir, 'cores',
-                                         'radial_profile.par{}.nc'.format(pid))
-                    rprf = xr.open_dataset(fname)
+                # Read individual radial profiles and write joined file.
+                core = self.cores[pid]
+                rprf = []
+                for num in core.index:
+                    fname2 = pathlib.Path(self.basedir, 'radial_profile',
+                                          'radial_profile.par{}.{:05d}.nc'
+                                          .format(pid, num))
+                    rprf.append(xr.open_dataset(fname2))
+                rprf = xr.concat(rprf, 't')
+                rprf = rprf.assign_coords(dict(num=('t', core.index)))
+                rprf.to_netcdf(fname)
             for axis in [1, 2, 3]:
                 rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
                                              - rprf[f'vel{axis}_mw']**2)
