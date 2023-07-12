@@ -442,21 +442,27 @@ class TESc:
         float
             Critical radius
         """
+        xi = np.logspace(0, 2, 512)
+        kappa_thm, kappa_tot = self.get_bulk_modulus(xi)
         if mode=='thm':
+            idx = (kappa_thm < 0).nonzero()[0]
+            if len(idx) < 1:
+                return np.nan
+            else:
+                idx = idx[0] - 1
             func = lambda x: self.get_bulk_modulus(10**x)[0]
         elif mode=='trb':
+            idx = (kappa_tot < 0).nonzero()[0]
+            if len(idx) < 1:
+                return np.nan
+            else:
+                idx = idx[0] - 1
             func = lambda x: self.get_bulk_modulus(10**x)[1]
         else:
             raise ValueError("mode should be either thm or trb")
-        x0, x1 = 0, 0.1
-        dx = 0.2
-        for i in range(0, 20):
-            try:
-                logrmax = newton(func, x0, x1=x1, tol=1e-5).squeeze()[()]
-                break
-            except RuntimeError:
-                x0 += dx
-                x1 += dx
+
+        x0, x1 = np.log10(xi[idx]), np.log10(xi[idx+1])
+        logrmax = newton(func, x0, x1=x1).squeeze()[()]
         return 10**logrmax
 
     def get_mass(self, xi0):
@@ -527,7 +533,7 @@ class TESc:
 
         xi_s = [np.exp(log_xi_s - dlog_xi_s),
                 np.exp(log_xi_s + dlog_xi_s)]
-        tsc = [TESc(xi_s=xi_s[0]), TESc(xi_s=xi_s[1])]
+        tsc = [TESc(p=self.p, xi_s=xi_s[0]), TESc(p=self.p, xi_s=xi_s[1])]
         u = [tsc[0].solve(xi)[0], tsc[1].solve(xi)[0]]
         m = [tsc[0].get_mass(xi), tsc[1].get_mass(xi)]
         du = (u[1] - u[0]) / (2*dlog_xi_s)
@@ -879,17 +885,19 @@ def _get_critical_tes_cloud(mach, alpha_vir, mfrac=None, rhoe=None):
     # Initialize interpolation functions for critical TES family
     from scipy.interpolate import interp1d
 
-    fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_mode_trb.p"
+    fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_p0.5.p"
     with open(fname, "rb") as handle:
         res = pickle.load(handle)
+        idx = (~np.isnan(res['rcrit'])).nonzero()[0][0]
+        res['rsonic'] = res['rsonic'][idx:]
+        res['dcrit'] = res['dcrit'][idx:]
+        res['rcrit'] = res['rcrit'][idx:]
+        res['mcrit'] = res['mcrit'][idx:]
 
     # interpolation functions to dcrit, rcrit, mcrit
-    itp_log_dcrit = interp1d(np.log(res['rsonic']), np.log(res['dcrit']),
-                             kind='cubic')
-    itp_log_rcrit = interp1d(np.log(res['rsonic']), np.log(res['rcrit']),
-                             kind='cubic')
-    itp_log_mcrit = interp1d(np.log(res['rsonic']), np.log(res['mcrit']),
-                             kind='cubic')
+    itp_log_dcrit = interp1d(np.log(res['rsonic']), np.log(res['dcrit']))
+    itp_log_rcrit = interp1d(np.log(res['rsonic']), np.log(res['rcrit']))
+    itp_log_mcrit = interp1d(np.log(res['rsonic']), np.log(res['mcrit']))
 
     def get_dcrit(rsonic):
         return np.exp(itp_log_dcrit(np.log(rsonic)))
@@ -902,7 +910,7 @@ def _get_critical_tes_cloud(mach, alpha_vir, mfrac=None, rhoe=None):
 
     rsonic0 = np.sqrt(45)/(2*np.pi)/np.sqrt(alpha_vir)/mach  # See Notes section.
     rsonic = brentq(lambda x: x*np.sqrt(get_dcrit(x)) - rsonic0*np.sqrt(rhoe),
-                    0.3855, 100)
+                    res['rsonic'][0], res['rsonic'][-1])
     dcrit = get_dcrit(rsonic)
     rcrit = get_rcrit(rsonic)*np.sqrt(dcrit/rhoe)
     mcrit = get_mcrit(rsonic)*np.sqrt(dcrit/rhoe)
@@ -916,16 +924,20 @@ if __name__ == "__main__":
     central density, for different sonic radii.
     """
     # Dimensionless sonic radius r_s / L_{J,c}
-    rsonic = np.logspace(np.log10(0.3855), 2, 4096)
+    rsonic = np.logspace(-1, 2, 4096)
 
-    for mode in ['trb', 'thm']:
+    for pindex in [0.2, 0.5, 0.8]:
         critical_mass, critical_radius, critical_density = [], [], []
         for xi_s in rsonic:
-            tsc = TESc(xi_s = xi_s)
-            rcrit = tsc.get_rcrit(mode)
-            u, du = tsc.solve(rcrit)
-            dcrit = np.exp(u[0])
-            mcrit = tsc.get_mass(rcrit)
+            tsc = TESc(xi_s=xi_s, p=pindex)
+            rcrit = tsc.get_rcrit('trb')
+            if np.isnan(rcrit):
+                dcrit = np.nan
+                mcrit = np.nan
+            else:
+                u, du = tsc.solve(rcrit)
+                dcrit = np.exp(u[0])
+                mcrit = tsc.get_mass(rcrit)
             critical_density.append(dcrit)
             critical_radius.append(rcrit)
             critical_mass.append(mcrit)
@@ -936,6 +948,6 @@ if __name__ == "__main__":
                    dcrit=critical_density,
                    rcrit=critical_radius,
                    mcrit=critical_mass)
-        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_mode_{}.p".format(mode)
+        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_p{}.p".format(pindex)
         with open(fname, "wb") as handle:
             pickle.dump(res, handle)
