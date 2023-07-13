@@ -104,9 +104,10 @@ if __name__ == "__main__":
             s._load_cores()
 
         if args.correct_tidal_radius:
+            dirname = 'cores_phitot' if s.use_phitot else 'cores'
             for pid in s.pids:
                 # Check if file exists
-                ofname = Path(s.basedir, 'cores',
+                ofname = Path(s.basedir, dirname,
                               'rtidal_correction.par{}.p'.format(pid))
                 ofname.parent.mkdir(exist_ok=True)
                 if ofname.exists() and not args.overwrite:
@@ -116,7 +117,7 @@ if __name__ == "__main__":
 
                 # Do not use s.cores, which might have already been
                 # preimage corrected. Read from raw data.
-                fname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
+                fname = Path(s.basedir, dirname, 'cores.par{}.p'.format(pid))
                 cores = pd.read_pickle(fname)
                 nid, rtidal = tools.find_rtidal_envelop(s, cores, tol=1.1)
                 def wrapper(num):
