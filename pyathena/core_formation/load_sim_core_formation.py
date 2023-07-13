@@ -119,7 +119,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             try:
                 # Load radial profiles
                 self._load_radial_profiles()
-            except FileNotFoundError:
+            except (FileNotFoundError, KeyError):
                 logging.warning("Failed to load radial profiles")
                 pass
 
@@ -292,6 +292,14 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                                             axis=1, join='inner').sort_index()
 
     def _load_radial_profiles(self):
+        """
+        Raises
+        ------
+        FileNotFoundError
+            If individual radial profiles are not found
+        KeyError
+            If `cores` has not been initialized (due to missing files, etc.)
+        """
         self.rprofs = {}
         dirname = 'radial_profile_phitot' if self.use_phitot else 'radial_profile'
         for pid in self.pids:
