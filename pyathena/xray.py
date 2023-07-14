@@ -173,13 +173,10 @@ class Xray(object):
 
     def make_photons(
         self, exp_time=(100, "ks"), area=(1, "m**2"),
-        redshift=1.19e-5, overwrite=False
+        dist_kpc = 10,
+        overwrite = False
     ):
         ds = self.ytds
-
-        from yt.utilities.cosmology import Cosmology
-        cosmo = Cosmology()
-        dist_kpc = cosmo.angular_diameter_distance(0.0, redshift).to("kpc")
 
         photon_fname = os.path.join(self.savdir, f"{ds}_{int(dist_kpc):d}kpc_photons.h5")
 
@@ -191,10 +188,11 @@ class Xray(object):
             _photons, n_cells = pyxsim.make_photons(
                 photon_fname,
                 box,
-                redshift,
+                0.0,
                 area,
                 exp_time,
-                self.source_model
+                self.source_model,
+                dist=dist_kpc
             )
         self.photon_fname = photon_fname
 
