@@ -5,7 +5,7 @@ from multiprocessing import Pool
 import pyathena as pa
 from pyathena.core_formation.tasks import *
 from pyathena.core_formation.config import *
-from grid_dendro import energy
+from grid_dendro import energy, boundary, dendrogram
 
 if __name__ == "__main__":
     # load all models
@@ -127,16 +127,28 @@ if __name__ == "__main__":
                     gd = s.load_dendrogram(num)
                     rho = gd.filter_data(ds.dens, nid.loc[num], drop=True)
                     mtidal = (rho*s.dV).sum()
-                    return (num, mtidal)
+                    pcn = boundary.precompute_neighbor(s.domain['Nx'].T, 'periodic', corner=False)
+                    edge_cells = boundary.get_edge_cells(gd.get_all_descendant_cells(nid.loc[num]), pcn)
+                    rhoe = dendrogram.filter_by_dict(ds.dens, cells=edge_cells, drop=True)
+                    rhoe_mean = np.mean(rhoe)
+                    rhoe_med = np.median(rhoe)
+                    return (num, mtidal, rhoe_mean, rhoe_med)
                 with Pool(args.np) as p:
-                    mtidal = p.map(wrapper, cores.index)
-                mtidal = pd.Series(data = map(lambda x: x[1], mtidal),
-                                   index = map(lambda x: x[0], mtidal),
-                                   name='envelop_tidal_mass')
-                mtidal = mtidal.sort_index()
+                    res = p.map(wrapper, cores.index)
+                mtidal = pd.Series(data = map(lambda x: x[1], res),
+                                   index = map(lambda x: x[0], res),
+                                   name='envelop_tidal_mass').sort_index()
+                rhoe_mean = pd.Series(data = map(lambda x: x[2], res),
+                                      index = map(lambda x: x[0], res),
+                                      name='mean_edge_density').sort_index()
+                rhoe_med = pd.Series(data = map(lambda x: x[3], res),
+                                     index = map(lambda x: x[0], res),
+                                     name='median_edge_density').sort_index()
                 res = pd.DataFrame({nid.name:nid,
                                     rtidal.name:rtidal,
-                                    mtidal.name:mtidal})
+                                    mtidal.name:mtidal,
+                                    rhoe_mean.name:rhoe_mean,
+                                    rhoe_med.name:rhoe_med})
                 res.to_pickle(ofname)
 
         # Calculate radial profiles of t_coll cores and pickle them.
