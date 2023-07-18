@@ -73,9 +73,10 @@ if __name__ == "__main__":
 
     # Select models
     for mdl in args.models:
-        s = sa.set_model(mdl)
-
-        s.use_phitot = False if args.use_phigas else True
+        if args.use_phigas:
+            s = sa.set_model(mdl, use_phitot=False)
+        else:
+            s = sa.set_model(mdl, use_phitot=True)
 
         # Combine output files.
         if args.join_partab:
