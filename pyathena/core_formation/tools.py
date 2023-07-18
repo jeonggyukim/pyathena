@@ -63,7 +63,8 @@ class LognormalPDF:
         return np.exp(x)
 
 
-def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
+def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False,
+                           Mach_threshold=1.5):
     """Calculates critical tes given the radial profile.
 
     Given the radial profile, find the critical tes at the same central
@@ -81,6 +82,8 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
         If 'disp', use <dv_r^2> = <v_r^2> - <v_r>^2 to find sonic radius.
     fixed_slope : bool, optional
         If true, fix the slope of velocity-size relation to 0.5.
+    Mach_threshold : float, optional
+        Select the region to perform linear fit to the sigma(r) profile.
 
     Returns
     -------
@@ -96,7 +99,6 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False):
 
     # Select the region for fitting the velocity-size relation.
     Mach = np.sqrt(vsq.data) / s.cs
-    Mach_threshold = 1.5
     idx = np.where(Mach < Mach_threshold)[0][-1]
     Rmax = rprf.r.isel(r=idx).data[()]
     r = rprf.r.sel(r=slice(0, Rmax)).data[1:]
