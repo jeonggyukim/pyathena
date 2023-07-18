@@ -264,32 +264,21 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             self.cores[pid] = core.sort_index()
 
             # Read critical TES info and concatenate to self.cores
-            found_tes_crit = True
             try:
-                # Try reading joined critical TES pickle
-                fname = pathlib.Path(self.basedir, dirname_tes,
-                                     f'critical_tes_{method}.par{pid}.p')
-                tes_crit = pd.read_pickle(fname)
-            except FileNotFoundError:
-                try:
-                    # Try reading individual critical TES pickles and
-                    # writing joined pickle.
-                    tes_crit = []
-                    for num in core.index:
-                        fname2 = pathlib.Path(self.basedir, dirname_tes,
-                                              'critical_tes_{}.par{}.{:05d}.p'
-                                              .format(method, pid, num))
-                        tes_crit.append(pd.read_pickle(fname2))
-                    tes_crit = pd.DataFrame(tes_crit).set_index('num')
-                    tes_crit = tes_crit.sort_index()
-                    tes_crit.to_pickle(fname, protocol=pickle.HIGHEST_PROTOCOL)
-                except FileNotFoundError:
-                    logging.warning("Cannot find critical TES information.")
-                    found_tes_crit = False
-                    pass
-            if found_tes_crit:
+                # Try reading critical TES pickles
+                tes_crit = []
+                for num in core.index:
+                    fname = pathlib.Path(self.basedir, dirname_tes,
+                                          'critical_tes_{}.par{}.{:05d}.p'
+                                          .format(method, pid, num))
+                    tes_crit.append(pd.read_pickle(fname))
+                tes_crit = pd.DataFrame(tes_crit).set_index('num')
+                tes_crit = tes_crit.sort_index()
                 self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
                                             axis=1, join='inner').sort_index()
+            except FileNotFoundError:
+                logging.warning("Cannot find critical TES information.")
+                pass
 
     def _load_radial_profiles(self):
         """
