@@ -123,9 +123,10 @@ def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
 
     # Load the radial profile
     rprf = s.rprofs[pid].sel(num=num)
+    core = s.cores[pid].loc[num]
 
     # Calculate critical TES
-    critical_tes = tools.calculate_critical_tes(s, rprf, use_vel, fixed_slope)
+    critical_tes = tools.calculate_critical_tes(s, rprf, core, use_vel, fixed_slope)
     critical_tes['num'] = num
 
     # write to file

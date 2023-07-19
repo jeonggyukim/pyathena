@@ -63,7 +63,7 @@ class LognormalPDF:
         return np.exp(x)
 
 
-def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False,
+def calculate_critical_tes(s, rprf, core, use_vel='disp', fixed_slope=False,
                            Mach_threshold=1.5):
     """Calculates critical tes given the radial profile.
 
@@ -77,6 +77,8 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False,
         Object containing simulation metadata.
     rprf : xarray Dataset
         Object containing radial profiles.
+    core : pandas series
+        Object containing core informations
     use_vel : str, optional
         If 'total', use <v_r^2> to find sonic radius.
         If 'disp', use <dv_r^2> = <v_r^2> - <v_r>^2 to find sonic radius.
@@ -103,17 +105,25 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False,
     Rmax = rprf.r.isel(r=idx).data[()]
     r = rprf.r.sel(r=slice(0, Rmax)).data[1:]
     vr = np.sqrt(vsq.sel(r=slice(0, Rmax)).data[1:])
+
     rhoc = rprf.rho.isel(r=0).data[()]
     LJ_c = 1.0 / np.sqrt(rhoc)
     MJ_c = 1.0 / np.sqrt(rhoc)
+
+    rhoe = core.mean_edge_density
+    LJ_e = 1.0 / np.sqrt(rhoe)
+    MJ_e = 1.0 / np.sqrt(rhoe)
 
     if len(r) < 1:
         # Sonic radius is zero. Cannot find critical tes.
         p = np.nan
         rs = np.nan
-        rhoe = np.nan
+        dcrit = np.nan
         rcrit = np.nan
         mcrit = np.nan
+        dcrit_e = np.nan
+        rcrit_e = np.nan
+        mcrit_e = np.nan
     else:
         # fit the velocity dispersion to get power law index and sonic radius
         if fixed_slope:
@@ -138,20 +148,35 @@ def calculate_critical_tes(s, rprf, use_vel='disp', fixed_slope=False,
 
         # Find critical TES at the central density
         xi_s = rs / LJ_c
-        ts = tes.TESc(p=p, xi_s=xi_s)
+        tsc = tes.TESc(p=p, xi_s=xi_s)
         try:
-            xi_crit = ts.get_crit()
-            u, du = ts.solve(xi_crit)
-            rhoe = rhoc*np.exp(u[-1])
+            xi_crit = tsc.get_rcrit()
+            u, du = tsc.solve(xi_crit)
+            dcrit = np.exp(-u[0])
             rcrit = xi_crit*LJ_c
-            mcrit = ts.get_mass(xi_crit)*MJ_c
+            mcrit = tsc.get_mass(xi_crit)*MJ_c
         except ValueError:
             rcrit = np.nan
             mcrit = np.nan
-            rhoe = np.nan
+            dcrit = np.nan
 
-    res = dict(center_density=rhoc, edge_density=rhoe, critical_radius=rcrit,
-               critical_mass=mcrit, pindex=p, sonic_radius=rs)
+        # Find critical TES at the edge density
+        xi_s = rs / LJ_e
+        tse = tes.TESe(p=p, xi_s=xi_s)
+        try:
+            uc, rc, mc = tse.get_crit()
+            dcrit_e = np.exp(uc)
+            rcrit_e = rc*LJ_e
+            mcrit_e = mc*MJ_e
+        except ValueError:
+            rcrit_e = np.nan
+            mcrit_e = np.nan
+            dcrit_e = np.nan
+
+
+    res = dict(center_density=rhoc, edge_density=rhoe, pindex=p, sonic_radius=rs,
+               critical_contrast=dcrit, critical_radius=rcrit, critical_mass=mcrit,
+               critical_contrast_e=dcrit_e, critical_radius_e=rcrit_e, critical_mass_e=mcrit_e)
     return res
 
 
