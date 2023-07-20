@@ -151,10 +151,10 @@ class SliceProj:
                 fieldlist = list(allslc[k].keys())
                 data = allslc[k]
                 for f in fields:
-                    if f in self.dfi:
-                        newslc[k][f] = self.dfi[f]['func'](data,self.u)
-                    elif f in fieldlist:
+                    if f in fieldlist:
                         newslc[k][f] = data[f]
+                    elif f in self.dfi:
+                        newslc[k][f] = self.dfi[f]['func'](data,self.u)
                     else:
                         print("{} is not available".format(f))
         return newslc
@@ -267,10 +267,12 @@ class SliceProj:
             slc_dset = slc_to_xarray(slc, axis)
         return slc_dset
 
-    def read_slc_time_series(self, num1, num2, nskip=1,
-      fields='default', axis="zall", sfr=True):
+    def read_slc_time_series(self, num1=None, num2=None,
+      nskip=1, nums = None,
+      fields='default', axis="zall", sfr=True, radiation=False):
         slc_list = []
-        for num in range(num1, num2, nskip):
+        if nums is None: nums = range(num1, num2, nskip)
+        for num in nums:
             slc = self.read_slc_xarray(num,fields=fields,axis=axis)
             slc_list.append(slc)
         slc_dset = xr.concat(slc_list, dim="time")
@@ -278,6 +280,13 @@ class SliceProj:
             hst = self.read_hst()
             for fsfr in ['sfr10','sfr40','sfr100']:
                 slc_dset[fsfr] = hst[fsfr].to_xarray().rename(time_code='time').interp(time=slc_dset.time)
+        if radiation and self.test_newcool():
+            hst = self.read_hst()
+            for lum in ['Ltot_PH','Ltot_PE','Ltot_LW']:
+                slc_dset[lum] = hst[lum].to_xarray().rename(time_code='time').interp(time=slc_dset.time)
+            slc_dset['Ltot_FUV'] = slc_dset['Ltot_PE'] + slc_dset['Ltot_LW']
+            for fi in ['Sigma_gas','H_2p','nmid','nmid_2p']:
+                slc_dset[fi] = hst[fi].to_xarray().rename(time_code='time').interp(time=slc_dset.time)
 
         return slc_dset
 

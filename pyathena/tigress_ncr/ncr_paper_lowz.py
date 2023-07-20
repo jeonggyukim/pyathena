@@ -21,7 +21,7 @@ class LowZData(PaperData):
         self.outdir='/tigress/changgoo/public_html/TIGRESS-NCR/lowZ-figures/'
         os.makedirs(self.outdir,exist_ok=True)
 
-        models, mlist_early = self._get_models(basedir)
+        models, mlist_early = self._get_models(basedir,verbose=False)
         self.basedir=basedir
         self.sa = pa.LoadSimTIGRESSNCRAll(models)
         self.update_model_list(basedir,verbose=False)
