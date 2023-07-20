@@ -366,7 +366,7 @@ def set_derived_fields_def(par, x0, field_list):
             f = 'nHLambda_cool_net'
             field_dep[f] = set(['density','cool_rate','heat_rate'])
             def _nHLambda_cool_net(d, u):
-                return (d['cool_rate'] - d['heat_cool'])/d['density']
+                return (d['cool_rate'] - d['heat_rate'])/d['density']
             func[f] = _nHLambda_cool_net
             label[f] = r'$n_{\rm H}\Lambda_{\rm net}\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
             cmap[f] = 'cubehelix_r'
@@ -388,7 +388,7 @@ def set_derived_fields_def(par, x0, field_list):
             f = 't_heat'
             field_dep[f] = set(['pressure', 'heat_rate'])
             def _t_cool(d, u):
-                return d['pressure']/d['cool_rate']*u.Myr
+                return d['pressure']/d['heat_rate']*u.Myr
             func[f] = _t_cool
             label[f] = r'$t_{\rm heat}\;[{\rm yr}]$'
             cmap[f] = 'cubehelix_r'
