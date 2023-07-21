@@ -458,6 +458,12 @@ def plot_diagnostics(s, pid, normalize_time=True):
     fadv = np.array(fadv)
     fgrv = np.array(fgrv)
 
+    # Calculate edge density (TODO: replace this with more correct rho_e calculation)
+    rhoe = []
+    for num, core in cores.iterrows():
+        rhoe.append(rprofs.sel(num=num).rho.interp(r=core.envelop_tidal_radius).data[()])
+    rhoe = np.array(rhoe)
+
     # Do plotting
     plt.sca(axs[0])
     plt.plot(time, (fthm+ftrb+fcen+fani-fgrv)/fgrv, c='k')
@@ -499,12 +505,17 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     plt.sca(axs[3])
-    plt.plot(time, cores.mean_density, c='tab:blue', label=r'$\overline{\rho}_\mathrm{tidal}$')
-    plt.plot(time, cores.center_density, c='tab:orange', label=r'$\rho_c$')
+    plt.plot(time, cores.center_density, c='tab:blue', ls='-', label=r'$\rho_c$')
+    plt.plot(time, rhoe, c='tab:blue', ls='--', label=r'$\rho_e$')
+    plt.plot(time, cores.mean_density, c='tab:blue', ls=':', label=r'$\overline{\rho}_\mathrm{tidal}$')
     plt.yscale('log')
     plt.ylabel(r'$\rho/\rho_0$')
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-    plt.ylim(5e0, 1e4)
+    plt.legend(loc='upper left', bbox_to_anchor=(1.12, 1))
+    plt.ylim(1e0, 1e4)
+    plt.twinx()
+    plt.semilogy(time, cores.center_density/rhoe, lw=1, ls='-',  c='tab:gray')
+    plt.ylabel(r'$\rho_c/\rho_e$', c='tab:gray')
+    plt.ylim(1e0, 1e2)
 
     if normalize_time:
         plt.xlim(-2, 0)
@@ -550,7 +561,7 @@ def plot_sinkhistory(s, ds, pds):
         tslc = time < ds.current_time
         plt.plot(time[tslc], mass[tslc])
     plt.axvline(ds.current_time, linestyle=':', color='k', linewidth=0.5)
-    plt.xlim(0.19, tend)
+    plt.xlim(s.tcoll_cores.time.iloc[0], tend)
     plt.ylim(1e-2, 1e1)
     plt.yscale('log')
     plt.xlabel(r'$t/t_\mathrm{J,0}$')

@@ -413,23 +413,22 @@ def make_plots_core_evolution(s, pid, num, overwrite=False,
     plt.close(fig)
 
 
-def make_plots_sinkhistory(s, overwrite=False):
+def make_plots_sinkhistory(s, num, overwrite=False):
     """Creates multi-panel plot for sink particle history
 
     Args:
         s: pyathena.LoadSim instance
     """
-    for num in s.nums:
-        fname = Path(s.basedir, 'figures', "{}.{:05d}.png".format(
-            config.PLOT_PREFIX_SINK_HISTORY, num))
-        fname.parent.mkdir(exist_ok=True)
-        if fname.exists() and not overwrite:
-            continue
-        ds = s.load_hdf5(num, load_method='yt')
-        pds = s.load_partab(num)
-        fig = plots.plot_sinkhistory(s, ds, pds)
-        fig.savefig(fname, bbox_inches='tight', dpi=200)
-        plt.close(fig)
+    fname = Path(s.basedir, 'figures', "{}.{:05d}.png".format(
+        config.PLOT_PREFIX_SINK_HISTORY, num))
+    fname.parent.mkdir(exist_ok=True)
+    if fname.exists() and not overwrite:
+        return
+    ds = s.load_hdf5(num, load_method='yt')
+    pds = s.load_partab(num)
+    fig = plots.plot_sinkhistory(s, ds, pds)
+    fig.savefig(fname, bbox_inches='tight', dpi=200)
+    plt.close(fig)
 
 
 def make_plots_projections(s, overwrite=False):

@@ -215,7 +215,11 @@ if __name__ == "__main__":
 
         if args.plot_sink_history:
             print(f"draw sink history plots for model {mdl}", flush=True)
-            make_plots_sinkhistory(s, overwrite=args.overwrite)
+            def wrapper(num):
+                make_plots_sinkhistory(s, num, overwrite=args.overwrite)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
+
 
         if args.plot_pdfs:
             print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
@@ -225,7 +229,7 @@ if __name__ == "__main__":
         if args.make_movie:
             print(f"create movies for model {mdl}", flush=True)
             srcdir = Path(s.basedir, "figures")
-            plot_prefix = [PLOT_PREFIX_SINK_HISTORY, PLOT_PREFIX_PDF_PSPEC]
+            plot_prefix = [PLOT_PREFIX_SINK_HISTORY]
             for prefix in plot_prefix:
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
             for pid in s.pids:
