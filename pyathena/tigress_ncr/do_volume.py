@@ -234,14 +234,15 @@ def save_with_tf(ds, f, im, tf, fout):
         ax.imshow(im.swapaxes(0,1))
         ax2 = fig.add_axes([0.9,0.1,0.05,0.8])
         tf.vert_cbar(256,False,ax2,label_fmt="%d")
-        if f.startswith('xray'):
-            label = f"${ds.field_info[f].display_name.replace('$','')}\,[{ds.field_info[f].units}]$"
+        if f[1].startswith('xray'):
+            label = f"log ${ds.field_info[f].display_name.replace('$','')}\,[{ds.field_info[f].units}]$"
         else:
-            label = f"log {ds.field_info[f].display_name}[{ds.field_info[f].units}]"
+            label = f"log {ds.field_info[f].display_name} [{ds.field_info[f].units}]"
         ax2.set_ylabel(label,weight='bold',fontsize=15)
         ax.annotate(f"t={ds.current_time.to('Myr').v:5.1f} Myr",(0.05,0.95),
                     xycoords='axes fraction',ha='left',va='top',weight='bold')
         fig.savefig(fout,dpi=200,bbox_inches='tight')
+        print(f'file saved: {fout}')
 
 def make_many_volumes(s, ds, num):
     foutdir = osp.join(os.fspath(s.basedir), "volume")
@@ -418,7 +419,7 @@ if __name__ == "__main__":
     if True:
         for num in mynums:
             ds = s.ytload(num)
-            ds = add_fields(ds)
+            ds = add_fields(s,ds)
 
             sc = make_many_volumes(s, ds, num)
 
