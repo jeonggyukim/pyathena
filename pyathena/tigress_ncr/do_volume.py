@@ -18,9 +18,9 @@ from pyathena.plt_tools.make_movie import make_movie
 import astropy.constants as ac
 import astropy.units as au
 import yt
+from yt.visualization.volume_rendering.api import Scene, create_volume_source
 
 from pyathena.microphysics.cool import get_xCII, q10CII_
-
 
 def add_fields(s, ds, xray=True, CII=True):
     # yt standard abundance fields
@@ -35,21 +35,29 @@ def add_fields(s, ds, xray=True, CII=True):
     def _nH2(field, data):
         return 2.0 * data[("gas", "H_nuclei_density")] * data[("athena", "xH2")]
 
-    def _LHalpha(field, data):
+    def _jHalpha(field, data):
         T4 = data[("athena", "temperature")].v / 1.0e4
         idx = (T4 > 0.1) * (T4 < 3)
         alpha_eff = 1.17e-13 * T4 ** (-0.942 - 0.031 * np.log(T4))
-        hnu_halpha = 3.0268267464328148e-12
-        xHII = 1 - data[("athena", "xHI")] - 2 * data[("athena", "xH2")]
+        hnu_halpha = 3.0269e-13
         return (
             alpha_eff
             * hnu_halpha
             * idx
             * data[("gas", "El_number_density")]
             * data[("gas", "H_p1_number_density")]
-            * data[("gas", "cell_volume")]
             * (yt.units.erg * yt.units.cm**3 / yt.units.s)
         )
+
+    def _LHalpha(field, data):
+        return data[("gas","H_alpha_emissivity")]*data[("gas", "cell_volume")]
+
+    def _jHI21(field, data):
+        C = 4*np.pi*1.6201623e-33*yt.units.erg/yt.units.s # (3/16pi)h*nu*A (KKO14)
+        return C*data[("gas","H_p0_number_density")]
+
+    def _LHI21(field, data):
+        return data[("gas","HI_21cm_emissivity")]*data[("gas", "cell_volume")]
 
     # add/override fields
     ds.add_field(
@@ -76,12 +84,42 @@ def add_fields(s, ds, xray=True, CII=True):
         display_name=r"$n_{\rm H_2}$",
         sampling_type="cell",
     )
+
+    # Halpha
+    ds.add_field(
+        ("gas", "H_alpha_emissivity"),
+        function=_jHalpha,
+        force_override=True,
+        units="erg/s/cm**3",
+        display_name=r"$4\pi j_{\rm H\alpha}$",
+        sampling_type="cell",
+    )
+
     ds.add_field(
         ("gas", "H_alpha_luminosity"),
         function=_LHalpha,
         force_override=True,
         units="erg/s",
         display_name=r"$L_{\rm H\alpha}$",
+        sampling_type="cell",
+    )
+
+    # HI_21cm
+    ds.add_field(
+        ("gas", "HI_21cm_emissivity"),
+        function=_jHI21,
+        force_override=True,
+        units="erg/s/cm**3",
+        display_name=r"$4\pi j_{\rm HI}$",
+        sampling_type="cell",
+    )
+
+    ds.add_field(
+        ("gas", "HI_21cm_luminosity"),
+        function=_LHI21,
+        force_override=True,
+        units="erg/s",
+        display_name=r"$L_{\rm HI}$",
         sampling_type="cell",
     )
 
@@ -169,12 +207,14 @@ def add_fields(s, ds, xray=True, CII=True):
                 * yt.units.cm**3
             )
 
-        def _LCII(field, data):
+        def _jCII(field, data):
             return (
                 data[("gas", "Lambda_CII")]
                 * data[("gas", "H_nuclei_density")] ** 2
-                * data[("gas", "cell_volume")]
             )
+
+        def _LCII(field, data):
+            return data[("gas", "CII_emissivity")] * data[("gas", "cell_volume")]
 
         ds.add_field(
             ("gas", "xCII"),
@@ -192,6 +232,14 @@ def add_fields(s, ds, xray=True, CII=True):
             sampling_type="cell",
         )
         ds.add_field(
+            ("gas", "CII_emissivity"),
+            function=_jCII,
+            force_override=True,
+            units="erg/cm**3/s",
+            display_name=r"$4\pi j_{\rm CII}$",
+            sampling_type="cell",
+        )
+        ds.add_field(
             ("gas", "CII_luminosity"),
             function=_LCII,
             force_override=True,
@@ -202,11 +250,9 @@ def add_fields(s, ds, xray=True, CII=True):
 
     return ds
 
-def render_volume(ds, f, b, c, nlayer=0):
+def get_mytf(b, c, nlayer=0):
     def linramp(vals, minval, maxval):
         return 0.9 * (vals - vals.min()) / (vals.max() - vals.min()) + 0.1
-
-    sc = yt.create_scene(ds, field=f)
     tf = yt.ColorTransferFunction((np.log10(b[0]), np.log10(b[1])))
     if nlayer == 0:
         tf.map_to_colormap(
@@ -215,6 +261,12 @@ def render_volume(ds, f, b, c, nlayer=0):
     else:
         tf.add_layers(nlayer, w=0.3, alpha=np.linspace(10,40,nlayer), colormap=c)
 
+    return tf
+
+def render_volume(ds, f, b, c, nlayer=0, render = True):
+    sc = yt.create_scene(ds, field=f)
+
+    tf = get_mytf(b, c, nlayer=nlayer)
     sc[0].set_transfer_function(tf)
 
     cam = sc.camera
@@ -222,33 +274,59 @@ def render_volume(ds, f, b, c, nlayer=0):
     cam.zoom(1.5)
     cam.set_resolution(1024)
     sc.annotate_domain(ds,color=[1,1,1,1])
-    im = sc.render()
+    if render:
+        im = sc.render()
+    else:
+        im = None
+
+    return im, tf, sc
+
+def add_volume_source(sc, ds, f, b, c, nlayer=0, render=True):
+    vol = create_volume_source(ds, field=f)
+    tf = get_mytf(b, c, nlayer=nlayer)
+    vol.set_transfer_function(tf)
+
+    sc.add_source(vol)
+    if render:
+        im = sc.render()
+    else:
+        im = None
 
     return im, tf
 
-def save_with_tf(ds, f, im, tf, fout):
-    with plt.style.context("dark_background"):
-        fig = plt.figure(figsize=(5,5),dpi=200)
-        ax = fig.add_axes([0,0,1,1])
-        ax.axis('off')
-        ax.imshow(im.swapaxes(0,1))
-        ax2 = fig.add_axes([0.9,0.1,0.05,0.8])
-        tf.vert_cbar(256,False,ax2,label_fmt="%d")
-        if f[1].startswith('xray'):
-            label = f"log ${ds.field_info[f].display_name.replace('$','')}\,[{ds.field_info[f].units}]$"
-        else:
-            label = f"log {ds.field_info[f].display_name} [{ds.field_info[f].units}]"
-        ax2.set_ylabel(label,weight='bold',fontsize=15)
-        ax.annotate(f"t={ds.current_time.to('Myr').v:5.1f} Myr",(0.05,0.95),
-                    xycoords='axes fraction',ha='left',va='top',weight='bold')
+def add_tf_to_image(fig, ds, f, tf, xoff=0.1):
+    ax2 = fig.add_axes([1-xoff,0.1,0.05,0.8])
+    tf.vert_cbar(256,False,ax2,label_fmt="%d")
+    if f[1].startswith('xray'):
+        label = f"log ${ds.field_info[f].display_name.replace('$','')}\,[{ds.field_info[f].units}]$"
+    else:
+        label = f"log {ds.field_info[f].display_name} [{ds.field_info[f].units}]"
+    ax2.set_ylabel(label,weight='bold',fontsize=15)
+
+def save_with_tf(ds, f, im, tf, fout = None, xoff = 0.1):
+    fig = plt.figure(figsize=(5,5),dpi=200)
+    ax = fig.add_axes([0,0,1,1])
+    ax.axis('off')
+    ax.imshow(im.swapaxes(0,1))
+    add_tf_to_image(fig, ds, f, tf, xoff=xoff)
+    ax.annotate(f"t={ds.current_time.to('Myr').v:5.1f} Myr",(xoff,0.95),
+                xycoords='axes fraction',ha='left',va='top',weight='bold')
+    if fout is not None:
         fig.savefig(fout,dpi=200,bbox_inches='tight')
-        print(f'file saved: {fout}')
+    print(f'file saved: {fout}')
+
+    return fig
 
 def make_many_volumes(s, ds, num):
+    ncr = s.par['configure']['new_cooling'] == 'ON'
+    ncrsp = s.par['configure']['SpiralArm'] == 'yes'
+    xoff = -0.1 if ncrsp else 0.1
+
     foutdir = osp.join(os.fspath(s.basedir), "volume")
     fields = [
-        ("gas", "xray_luminosity_0.5_7.0_keV"),
+        ("gas", "HI_21cm_luminosity"),
         ("gas", "H_alpha_luminosity"),
+        ("gas", "xray_luminosity_0.5_7.0_keV"),
         ("gas", "CII_luminosity"),
         #   ("athena","rad_energy_density_PE"),
         #   ("athena","rad_energy_density_PH"),
@@ -260,9 +338,10 @@ def make_many_volumes(s, ds, num):
         ("gas", "H2_number_density"),
     ]
     bounds = [
+        (1.0e20, 1.0e30),
         (1.0e24, 1.0e34),
         (1.0e24, 1.0e34),
-        (1.0e24, 1.0e34),
+        (1.0e22, 1.0e32),
         #   (1.e-3,1.e3),(1.e-15,1.e4),
         # (0.02, 0.2),
         # (0.01, 1),
@@ -272,10 +351,10 @@ def make_many_volumes(s, ds, num):
         (1.0e-4, 1.0e2),
     ]
     cmaps = [
-        "winter",
+        "cool_r",
         "plasma",
+        "winter",
         "cividis",
-        #  'inferno','inferno',
         # "cool",
         # "cool",
         "viridis",
@@ -284,41 +363,46 @@ def make_many_volumes(s, ds, num):
         "viridis",
     ]
 
-    # linramp for observables
-    def linramp(vals, minval, maxval):
-        return 0.8 * (vals - vals.min()) / (vals.max() - vals.min()) + 0.2
-
     for f, b, c in zip(fields, bounds, cmaps):
-        im, tf = render_volume(ds, f, b, c, nlayer=0)
+        im, tf, sc = render_volume(ds, f, b, c, nlayer=0)
         fout = osp.join(
             foutdir,
             f"{f[1].replace('[','').replace(']','')}_linramp_time_{num:04d}.png",
         )
-        save_with_tf(ds, f, im, tf, fout)
+        save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
 
-        im, tf = render_volume(ds, f, b, c, nlayer=7)
+        im, tf, sc = render_volume(ds, f, b, c, nlayer=7)
         fout = osp.join(
             foutdir, f"{f[1].replace('[','').replace(']','')}_time_{num:04d}.png"
         )
-        save_with_tf(ds, f, im, tf, fout)
+        save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
 
-    # layers
-    # for f, b, c, a in zip(fields[2:], bounds[2:], cmaps[2:], alphas[2:]):
-    #     sc = yt.create_scene(ds, field=f)
-    #     tf = yt.ColorTransferFunction((np.log10(b[0]), np.log10(b[1])))
-    #     tf.add_layers(5, w=0.1, alpha=a, colormap=c)
+    # separately
+    # Halpha,HI,Xray
+    r,g,b = [1,0,2]
+    fields_rgb = [fields[r],fields[g],fields[b]]
+    bounds_rgb = [bounds[r],bounds[g],bounds[b]]
+    cmaps_rgb = ['Reds','Greens','Blues']
 
-    #     sc[0].set_transfer_function(tf)
+    for channel,f,b,c in zip(['R','G','B'],fields_rgb,bounds_rgb,cmaps_rgb):
+        im, tf, sc = render_volume(ds, f, b, c, nlayer=0)
+        fout = osp.join(
+                foutdir, f"luminosity_{channel}_time_{num:04d}.png"
+            )
+        save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
 
-    #     cam = sc.camera
-    #     cam.set_position([1024, -1024, 1024], north_vector=[0, 0, 1])
-    #     cam.zoom(1.5)
-    #     sc.annotate_domain(ds, color=[1, 1, 1, 1])
-
-    #     fout = osp.join(
-    #         foutdir, f"{f[1].replace('[','').replace(']','')}_time_{num:04d}.png"
-    #     )
-    #     sc.save(fout)
+    # combined
+    im, tf_r, sc = render_volume(ds, fields_rgb[0], bounds_rgb[0], cmaps_rgb[0],
+                                 nlayer=0, render=False)
+    im, tf_g = add_volume_source(sc, ds, fields_rgb[1], bounds_rgb[1], cmaps_rgb[1],
+                                 render=False)
+    im, tf_b = add_volume_source(sc, ds, fields_rgb[2], bounds_rgb[2], cmaps_rgb[2],
+                                 render=True)
+    fig = save_with_tf(ds, fields_rgb[0], im, tf_r, xoff=xoff)
+    add_tf_to_image(fig, ds, fields_rgb[1], tf_g, xoff=xoff-0.2)
+    add_tf_to_image(fig, ds, fields_rgb[2], tf_b, xoff=xoff-0.4)
+    fout = osp.join(foutdir, f"luminosity_RGB_time_{num:04d}.png")
+    fig.savefig(fout,dpi=200,bbox_inches='tight')
 
 
 def make_joint_pdfs(s, ds):
@@ -419,9 +503,10 @@ if __name__ == "__main__":
     if True:
         for num in mynums:
             ds = s.ytload(num)
-            ds = add_fields(s,ds)
+            ds = add_fields(s,ds,xray=True,CII=True)
 
-            sc = make_many_volumes(s, ds, num)
+            with plt.style.context("dark_background"):
+                make_many_volumes(s, ds, num)
 
             n = gc.collect()
             print("Unreachable objects:", n, end=" ")
