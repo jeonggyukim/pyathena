@@ -1,0 +1,19 @@
+#!/bin/bash
+#SBATCH --job-name=do_pdf        # create a name for your job
+#SBATCH --nodes=1                # node count
+#SBATCH --ntasks=12              # total number of tasks
+#SBATCH --exclusive
+#SBATCH --cpus-per-task=1        # cpu-cores per task
+#SBATCH --time=24:00:00          # total run time limit (HH:MM:SS)
+
+module purge
+module load anaconda3/2022.5 openmpi/gcc/4.1.0
+conda activate pyathena-lem
+
+export PYTHONPATH="$HOME/pyathena:$HOME/yt-changgoo"
+echo $PYTHONPATH
+
+OUTDIR=$1
+
+cd $HOME/pyathena
+srun python pyathena/tigress_ncr/do_tasks_extra.py -b $OUTDIR 1> scripts/logs/do_pdf-$SLURM_JOB_ID.out 2> scripts/logs/do_pdf-$SLURM_JOB_ID.err

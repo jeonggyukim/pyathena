@@ -25,15 +25,16 @@ from pyathena.microphysics.cool import get_xCII, q10CII_
 def add_fields(s, ds, xray=True, CII=True):
     # yt standard abundance fields
     def _nHI(field, data):
-        return data[("gas", "H_nuclei_density")] * data[("athena", "xHI")]
+        xHI = data[("athena", "xHI")]
+        return data[("gas", "H_nuclei_density")] * xHI * (xHI>0.01)
 
     def _nHII(field, data):
-        return data[("gas", "H_nuclei_density")] * (
-            1 - data[("athena", "xHI")] - 2 * data[("athena", "xH2")]
-        )
+        xHII =  1 - data[("athena", "xHI")] - 2 * data[("athena", "xH2")]
+        return data[("gas", "H_nuclei_density")] * xHII * (xHII>0.01)
 
     def _nH2(field, data):
-        return 2.0 * data[("gas", "H_nuclei_density")] * data[("athena", "xH2")]
+        xH2 = data[("athena", "xH2")]
+        return 2.0 * data[("gas", "H_nuclei_density")] * xH2 * (xH2>0.01)
 
     def _jHalpha(field, data):
         T4 = data[("athena", "temperature")].v / 1.0e4
@@ -199,9 +200,11 @@ def add_fields(s, ds, xray=True, CII=True):
 
             q10 = q10CII_(nH, T, xe, xHI, xH2)
             q01 = (g1CII_ / g0CII_) * q10 * np.exp(-E10CII_ / (kB_cgs * T))
-
+            T4 = data[("athena", "temperature")].v / 1.0e4
+            idx = T4 < 3.5
             return (
                 (q01 / (q01 + q10 + A10CII_) * A10CII_ * E10CII_ * xCII / nH)
+                * idx
                 * yt.units.erg
                 / yt.units.s
                 * yt.units.cm**3
@@ -247,6 +250,45 @@ def add_fields(s, ds, xray=True, CII=True):
             display_name=r"$L_{\rm C^+}$",
             sampling_type="cell",
         )
+
+    # more fields
+    def _specific_enthalphy(field,data):
+        return data["gas", "specific_thermal_energy"] + data["gas", "pressure"]/data["gas", "density"]
+    def _specific_kinetic_energy(field,data):
+        return 0.5*data["gas", "velocity_magnitude"]**2
+    def _total_energy_density(field,data):
+        return data["gas", "specific_total_energy"]*data["gas", "density"]
+    def _total_energy_flux_z(field,data):
+        return (data["gas", "specific_enthalphy"] + data["gas", "specific_kinetic_energy"])*data["gas", f"momentum_density_z"]
+    def _vzout(field,data):
+        return data["gas", "velocity_z"]*(data["gas","z"]/data["gas","z"])
+    def _vzin(field,data):
+        return data["gas", "velocity_z"]*(-data["gas","z"]/data["gas","z"])
+
+    ds.add_field(("gas","specific_enthalphy"),
+                function=_specific_enthalphy,
+                units='(km/s)**2',
+                sampling_type="cell",force_override=True)
+    ds.add_field(("gas","specific_kinetic_energy"),
+                function=_specific_kinetic_energy,
+                units='(km/s)**2',
+                sampling_type="cell",force_override=True)
+    ds.add_field(("gas","total_energy_density"),
+                function=_total_energy_density,
+                units='erg/cm**3',
+                sampling_type="cell",force_override=True)
+    ds.add_field(("gas","total_energy_flux_z"),
+                function=_total_energy_flux_z,
+                units='erg/s/cm**2',
+                sampling_type="cell",force_override=True)
+    ds.add_field(("gas","vzout"),
+                function=_vzout,
+                units='km/s',
+                sampling_type="cell",force_override=True)
+    ds.add_field(("gas","vzin"),
+                function=_vzin,
+                units='km/s',
+                sampling_type="cell",force_override=True)
 
     return ds
 
