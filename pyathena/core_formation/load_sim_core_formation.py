@@ -49,7 +49,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         All preimages of t_coll cores.
     """
 
-    def __init__(self, basedir_or_Mach=None, savdir=None, use_phitot=False,
+    def __init__(self, basedir_or_Mach=None, savdir=None, use_phitot=True,
                  load_method='pyathena', verbose=False):
         """The constructor for LoadSimCoreFormation class
 
@@ -339,7 +339,7 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, use_phitot=False,
+    def set_model(self, model, savdir=None, use_phitot=True,
                   load_method='pyathena', verbose=False,
                   reset=False):
         self.model = model
