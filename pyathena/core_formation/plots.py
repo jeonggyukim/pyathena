@@ -158,18 +158,19 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
         region is understood in the recentered coordinates.
     """
     # some domain informations
-    xmin, ymin, zmin = s.domain['le']
-    xmax, ymax, zmax = s.domain['re']
-    Lx, Ly, Lz = s.domain['Lx']
-
+    xmin, xmax = coords['x'].min(), coords['x'].max()
+    ymin, ymax = coords['y'].min(), coords['y'].max()
+    zmin, zmax = coords['z'].min(), coords['z'].max()
+    dims = coords.dims
     extent = dict(zip(('x', 'y', 'z'), ((ymin, ymax, zmin, zmax),
                                         (zmin, zmax, xmin, xmax),
                                         (xmin, xmax, ymin, ymax))))
     permutations = dict(z=('y', 'x'), y=('x', 'z'), x=('z', 'y'))
+
     if isinstance(nodes, (int, np.int32, np.int64)):
         nodes = [nodes,]
     for nd in nodes:
-        mask = xr.DataArray(np.ones(s.domain['Nx'].T), coords=coords)
+        mask = xr.DataArray(np.ones([dims['z'], dims['y'], dims['x']], dtype=bool), coords=coords)
         mask = gd.filter_data(mask, nd, fill_value=0)
         if recenter is not None:
             mask, _ = tools.recenter_dataset(mask, recenter)
@@ -177,13 +178,14 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
             mask = mask.sel(select)
 
         mask = mask.max(dim=axis)
-        mask = mask.transpose(*permutations[axis])
 
         if mask.max() == 0 or mask.min() == 1:
             # If a core is outside the selected region, or the
             # selected region is entirely contained in a core,
             # no contour can be drawn.
             continue
+
+        mask = mask.transpose(*permutations[axis])
 
         if ax is not None:
             plt.sca(ax)
@@ -231,17 +233,20 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         # 1. Projections
         plt.sca(fig.add_subplot(gs[i, 0]))
         plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
-        plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
-                                  color='tab:gray')
-        # Overplot contours of parents of leaves, excluding trunk.
-        nodes = list(gd.leaves)
-        for nd in gd.leaves:
-            nodes.append(gd.parent[nd])
-        nodes = set(nodes)
-        if gd.trunk in nodes:
-            nodes.remove(gd.trunk)
-        plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
-                                  color='tab:gray')
+
+#        # Overplot contours of leaves
+#        plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
+#                                  color='tab:gray')
+#        # Overplot contours of parents of leaves, excluding trunk.
+#        nodes = list(gd.leaves)
+#        for nd in gd.leaves:
+#            nodes.append(gd.parent[nd])
+#        nodes = set(nodes)
+#        if gd.trunk in nodes:
+#            nodes.remove(gd.trunk)
+#        plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
+#                                  color='tab:gray')
+
         rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]),
                             2*hw, 2*hw, fill=False, ec='r')
         plt.gca().add_artist(rec)
@@ -458,11 +463,11 @@ def plot_diagnostics(s, pid, normalize_time=True):
     fadv = np.array(fadv)
     fgrv = np.array(fgrv)
 
-    # Calculate edge density (TODO: replace this with more correct rho_e calculation)
-    rhoe = []
-    for num, core in cores.iterrows():
-        rhoe.append(rprofs.sel(num=num).rho.interp(r=core.envelop_tidal_radius).data[()])
-    rhoe = np.array(rhoe)
+#    # Calculate edge density (TODO: replace this with more correct rho_e calculation)
+#    rhoe = []
+#    for num, core in cores.iterrows():
+#        rhoe.append(rprofs.sel(num=num).rho.interp(r=core.envelop_tidal_radius).data[()])
+#    rhoe = np.array(rhoe)
 
     # Do plotting
     plt.sca(axs[0])
@@ -489,7 +494,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.plot(time, cores.envelop_tidal_radius, c='tab:blue', label=r'$R_\mathrm{tidal}$')
     plt.plot(time, cores.radius, c='tab:blue', ls='--', lw=1)
     plt.plot(time, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
-    plt.plot(time, cores.critical_radius, c='tab:red', label=r'$R_\mathrm{crit}$')
+    plt.plot(time, cores.critical_radius, c='tab:red', label=r'$R_\mathrm{crit,c}$')
+    plt.plot(time, cores.critical_radius_e, c='tab:red', ls='--', label=r'$R_\mathrm{crit,e}$')
     plt.yscale('log')
     plt.ylim(1e-2, 1e0)
     plt.ylabel(r'$R/L_{J,0}$')
@@ -498,7 +504,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.sca(axs[2])
     plt.plot(time, cores.envelop_tidal_mass, c='tab:blue', label=r'$M_\mathrm{tidal}$')
     plt.plot(time, cores.mass, c='tab:blue', ls='--', lw=1)
-    plt.plot(time, cores.critical_mass, c='tab:red', label=r'$M_\mathrm{crit}$')
+    plt.plot(time, cores.critical_mass, c='tab:red', label=r'$M_\mathrm{crit,c}$')
+    plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--', label=r'$M_\mathrm{crit,e}$')
     plt.yscale('log')
     plt.ylim(1e-3, 1e1)
     plt.ylabel(r'$M/M_{J,0}$')
@@ -506,14 +513,14 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
     plt.sca(axs[3])
     plt.plot(time, cores.center_density, c='tab:blue', ls='-', label=r'$\rho_c$')
-    plt.plot(time, rhoe, c='tab:blue', ls='--', label=r'$\rho_e$')
+    plt.plot(time, cores.mean_edge_density, c='tab:blue', ls='--', label=r'$\rho_e$')
     plt.plot(time, cores.mean_density, c='tab:blue', ls=':', label=r'$\overline{\rho}_\mathrm{tidal}$')
     plt.yscale('log')
     plt.ylabel(r'$\rho/\rho_0$')
     plt.legend(loc='upper left', bbox_to_anchor=(1.12, 1))
     plt.ylim(1e0, 1e4)
     plt.twinx()
-    plt.semilogy(time, cores.center_density/rhoe, lw=1, ls='-',  c='tab:gray')
+    plt.semilogy(time, cores.center_density/cores.mean_edge_density, lw=1, ls='-',  c='tab:gray')
     plt.ylabel(r'$\rho_c/\rho_e$', c='tab:gray')
     plt.ylim(1e0, 1e2)
 
