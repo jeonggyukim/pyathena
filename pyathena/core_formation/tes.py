@@ -462,7 +462,10 @@ class TESc:
             raise ValueError("mode should be either thm or trb")
 
         x0, x1 = np.log10(xi[idx]), np.log10(xi[idx+1])
-        logrmax = newton(func, x0, x1=x1).squeeze()[()]
+        try:
+            logrmax = newton(func, x0, x1=x1).squeeze()[()]
+        except:
+            logrmax = np.nan
         return 10**logrmax
 
     def get_mass(self, xi0):
@@ -926,7 +929,7 @@ if __name__ == "__main__":
     # Dimensionless sonic radius r_s / L_{J,c}
     rsonic = np.logspace(-1, 2, 4096)
 
-    for pindex in [0.2, 0.5, 0.8]:
+    for pindex in [0.3, 0.5, 0.7]:
         critical_mass, critical_radius, critical_density = [], [], []
         for xi_s in rsonic:
             tsc = TESc(xi_s=xi_s, p=pindex)
