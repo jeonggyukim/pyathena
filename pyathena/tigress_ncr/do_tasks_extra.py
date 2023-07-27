@@ -202,13 +202,23 @@ def do_pdf(s,num):
     for lf in lumfields:
         print(lf)
         pdflist = []
+        ppvlist = []
         for z1, z2 in zip(np.arange(zmin,zmax,dz),np.arange(zmin+dz,zmax+dz,dz)):
             print(z1,z2)
+            # pdfs
             box = ds.r[:,:,z1:z2]
             pdf = get_pdfs(box,lf,"velocity_z")
             pdf = pdf.assign_coords(zmin = z1)
             pdflist.append(pdf)
 
+            # ppvs
+            if z1<0:
+                box = ds.r[:,:,:z2]
+            else:
+                box = ds.r[:,:,z1:]
+            ppv = get_ppv(box,lf)
+            ppv = ppv.assign_coords(zmin = z1)
+            ppvlist.append(ppv)
         pdf = xr.concat(pdflist,dim='zmin')
 
         for f in list(pdf.keys()):
@@ -224,9 +234,16 @@ def do_pdf(s,num):
 
         pdf.close()
 
+        # save ppv
+        ppv = xr.concat(ppvlist,dim='zmin')
+        fout = os.path.join(foutdir,f"{lf}_ppv_{num:04d}.nc")
+        ppv.to_netcdf(fout)
+        ppv.close()
+
+    # in/out pdfs
     ipdflist = []
     opdflist = []
-    ppvlist = []
+
     for z1, z2 in zip(np.arange(zmin,zmax,dz),np.arange(zmin+dz,zmax+dz,dz)):
         print(z1,z2)
         box = ds.r[:,:,z1:z2]
@@ -235,14 +252,6 @@ def do_pdf(s,num):
         pdfout = pdfout.assign_coords(zmin = z1)
         ipdflist.append(pdfin)
         opdflist.append(pdfout)
-
-        if z1<0:
-            box = ds.r[:,:,:z2]
-        else:
-            box = ds.r[:,:,z1:]
-        ppv = get_ppv(box)
-        ppv = ppv.assign_coords(zmin = z1)
-        ppvlist.append(ppv)
 
     pdfin = xr.concat(ipdflist,dim='zmin')
     pdfout = xr.concat(opdflist,dim='zmin')
@@ -254,11 +263,6 @@ def do_pdf(s,num):
     fout = os.path.join(foutdir,f"pdfout_{num:04d}.nc")
     pdfout.to_netcdf(fout)
     pdfout.close()
-
-    ppv = xr.concat(ppvlist,dim='zmin')
-    fout = os.path.join(foutdir,f"ppv_{num:04d}.nc")
-    ppv.to_netcdf(fout)
-    ppv.close()
 
 if __name__ == "__main__":
 
