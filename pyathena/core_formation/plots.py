@@ -204,7 +204,11 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Load the progenitor GRID-core of this particle.
     if num > s.tcoll_cores.loc[pid].num:
         raise ValueError("num must be smaller than num_tcoll")
+
+    # Load core
     core = s.cores[pid].loc[num]
+    tcoll = s.tcoll_cores.loc[pid].time
+    tff = np.sqrt(3*np.pi/(32*s.cores[pid].iloc[-1].mean_density))
 
     # Load hdf5 snapshot at t = t_coll
     ds = s.load_hdf5(num, load_method='pyathena')
@@ -235,20 +239,6 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         # 1. Projections
         plt.sca(fig.add_subplot(gs[i, 0]))
         plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
-
-#        # Overplot contours of leaves
-#        plot_grid_dendro_contours(s, gd, gd.leaves, ds.coords, axis=prj_axis,
-#                                  color='tab:gray')
-#        # Overplot contours of parents of leaves, excluding trunk.
-#        nodes = list(gd.leaves)
-#        for nd in gd.leaves:
-#            nodes.append(gd.parent[nd])
-#        nodes = set(nodes)
-#        if gd.trunk in nodes:
-#            nodes.remove(gd.trunk)
-#        plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
-#                                  color='tab:gray')
-
         rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]),
                             2*hw, 2*hw, fill=False, ec='r')
         plt.gca().add_artist(rec)
@@ -268,16 +258,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         nodes.append(grandparent)
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel,
-                                  color='tab:gray')
-        # Overplot critical radius
-        if not np.isnan(core.critical_radius):
-            crcl = plt.Circle((0, 0), core.critical_radius, fill=False,
-                              ls='--', color='tab:gray')
-            plt.gca().add_artist(crcl)
-        if (not np.isnan(core.sonic_radius)) and core.sonic_radius < s.Lbox:
-            crcl = plt.Circle((0, 0), core.sonic_radius, fill=False,
-                              ls=':', color='tab:gray')
-            plt.gca().add_artist(crcl)
+                                  color='k')
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
@@ -294,19 +275,35 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     rhoc = rprf.rho.isel(r=0).data[()]
     LJ_c = 1.0/np.sqrt(rhoc)
     xi_min = rprf.r.isel(r=0).data[()]/LJ_c
-    if not np.isnan(core.critical_radius):
+    xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
+    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+    if not np.isnan(core.sonic_radius):
         ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
-        xi_max = core.critical_radius/LJ_c
-        xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
         u, du = ts.solve(xi)
-        plt.plot(xi*LJ_c, rhoc*np.exp(u), 'r--', lw=1)
+        plt.plot(xi*LJ_c, rhoc*np.exp(u), 'r--', lw=1.5)
 
     # overplot critical BE
     ts = tes.TESc()
-    xi_max = ts.get_crit()
-    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, du = ts.solve(xi)
-    plt.plot(xi*LJ_c, rhoc*np.exp(u), 'b:', lw=1)
+    plt.plot(xi*LJ_c, rhoc*np.exp(u), 'r:', lw=1)
+
+    # overplot critical tes given rho_edge
+    rhoe = core.mean_edge_density
+    LJ_e = 1.0/np.sqrt(rhoe)
+    xi_min = rprf.r.isel(r=0).data[()]/LJ_e
+    xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
+    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+    if not np.isnan(core.sonic_radius):
+        ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
+        uc, _, _ = ts.get_crit()
+        u, du = ts.solve(xi, uc)
+        plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b--', lw=1.5)
+
+    # overplot critical BE
+    ts = tes.TESe()
+    uc, _, _ = ts.get_crit()
+    u, du = ts.solve(xi, uc)
+    plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b:', lw=1)
 
     # overplot radius of the parent core
     nid = gd.parent[core.nid]
@@ -315,7 +312,9 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.axvline(core.radius, c='tab:gray', lw=1)
     plt.axvline(rparent, c='tab:gray', lw=1)
     plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+    plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
+    plt.axhline(core.mean_edge_density, ls='-.', c='tab:gray')
     plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(1e0, rhoLP[0])
     plt.xlabel(r'$r/L_{J,0}$')
@@ -327,6 +326,9 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.05, 0.05, r'$t-t_* = $'+r'${:.2f}$'.format((ds.Time - tcoll)/tff)+r'$\,t_{ff}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+
     # Velocities
     plt.sca(fig.add_subplot(gs[1, 2]))
     plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
@@ -382,8 +384,8 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.xlim(0, rmax)
 
     # 6. Accelerations
-    plt.sca(fig.add_subplot(gs[1, 3]))
-    plot_forces(s, rprf)
+    plt.sca(fig.add_subplot(gs[1:, 3]))
+    plot_forces(s, rprf, ylim=(-50, 150))
     plt.title('')
     plt.axvline(core.radius, c='tab:gray', lw=1)
     plt.axvline(rparent, c='tab:gray', lw=1)
