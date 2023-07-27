@@ -68,6 +68,8 @@ if __name__ == "__main__":
                         help="Use total gravitational potential for analysis")
     parser.add_argument("--correct-tidal-radius", action="store_true",
                         help="Find envelop tidal radius")
+    parser.add_argument("--pid-start", type=int)
+    parser.add_argument("--pid-end", type=int)
 
     args = parser.parse_args()
 
@@ -159,7 +161,11 @@ if __name__ == "__main__":
             # as a seperate files.
             msg = "calculate and save radial profiles of t_coll cores for model {}"
             print(msg.format(mdl), flush=True)
-            for pid in s.pids:
+            if args.pid_start is not None and args.pid_end is not None:
+                pids = np.arange(args.pid_start, args.pid_end+1)
+            else:
+                pids = s.pids
+            for pid in pids:
                 def wrapper(num):
                     save_radial_profiles(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
