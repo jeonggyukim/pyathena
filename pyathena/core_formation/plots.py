@@ -519,14 +519,11 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.plot(time, cores.center_density, c='tab:blue', ls='-', label=r'$\rho_c$')
     plt.plot(time, cores.mean_edge_density, c='tab:blue', ls='--', label=r'$\rho_e$')
     plt.plot(time, cores.mean_density, c='tab:blue', ls=':', label=r'$\overline{\rho}_\mathrm{tidal}$')
+    plt.plot(time, cores.mean_edge_density*cores.critical_contrast_e, c='tab:red', ls='--', label=r'$\rho_\mathrm{crit}$')
     plt.yscale('log')
     plt.ylabel(r'$\rho/\rho_0$')
     plt.legend(loc='upper left', bbox_to_anchor=(1.12, 1))
     plt.ylim(1e0, 1e4)
-    plt.twinx()
-    plt.semilogy(time, cores.center_density/cores.mean_edge_density, lw=1, ls='-',  c='tab:gray')
-    plt.ylabel(r'$\rho_c/\rho_e$', c='tab:gray')
-    plt.ylim(1e0, 1e2)
 
     if normalize_time:
         plt.xlim(-2, 0)
