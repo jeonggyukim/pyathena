@@ -100,6 +100,7 @@ def plot_projection(s, ds, field='dens', axis='z', op='sum',
         plt.sca(ax)
     if transpose:
         prj = prj.T
+        extent = {k: v[2:] + v[0:2] for k, v in extent.items()}
     img = plt.imshow(prj, norm=LogNorm(vmin, vmax), origin='lower',
                      extent=extent[axis], cmap=cmap, alpha=alpha)
     if add_colorbar:
@@ -191,6 +192,7 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
             plt.sca(ax)
         if transpose:
             mask = mask.T
+            extent = {k: v[2:] + v[0:2] for k, v in extent.items()}
 
         mask.plot.contour(levels=[0.5], linewidths=lw, colors=color,
                           add_labels=False)
