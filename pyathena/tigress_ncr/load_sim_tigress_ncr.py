@@ -102,9 +102,9 @@ class LoadSimTIGRESSNCR(
         except KeyError:
             s.ikgr_H2 = 0
 
-        s.config_time = pd.to_datetime(s.par["configure"]["config_date"])
-        if "PDT" in s.par["configure"]["config_date"]:
-            s.config_time = s.config_time.tz_convert("US/Pacific")
+        s.config_time = pd.to_datetime(s.par["configure"]["config_date"].replace("PDT","UTC"))
+        # if "PDT" in s.par["configure"]["config_date"]:
+        #     s.config_time = s.config_time.tz_convert("US/Pacific")
         if s.config_time < pd.to_datetime("2021-06-30 20:29:36 -04:00"):
             s.iCoolHIcollion = 0
         else:
