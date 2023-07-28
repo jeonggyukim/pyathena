@@ -129,7 +129,7 @@ if __name__ == "__main__":
                     msg = '[correct_tidal_radius] processing model {} pid {} num {}'
                     print(msg.format(s.basename, pid, num))
                     ds = s.load_hdf5(num)
-                    gd = s.load_dendrogram(num)
+                    gd = s.load_dendro(num)
                     rho = gd.filter_data(ds.dens, nid.loc[num], drop=True)
                     mtidal = (rho*s.dV).sum()
                     pcn = boundary.precompute_neighbor(s.domain['Nx'].T, 'periodic', corner=False)
@@ -201,7 +201,7 @@ if __name__ == "__main__":
                 # Read snapshot at t=t_coll and set plot limits
                 num = s.tcoll_cores.loc[pid].num
                 ds = s.load_hdf5(num, load_method='pyathena')
-                gd = s.load_dendrogram(num)
+                gd = s.load_dendro(num)
                 core = s.cores[pid].loc[num]
                 data = dict(rho=ds.dens.to_numpy(),
                             vel1=(ds.mom1/ds.dens).to_numpy(),
