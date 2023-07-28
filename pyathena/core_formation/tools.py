@@ -747,3 +747,22 @@ def tfreefall(dens, gconst):
         Gravitational free-fall time
     """
     return np.sqrt(3*np.pi/(32*gconst*dens))
+
+
+def reff_sph(vol):
+    """Effective radius of a volume
+
+    Reff = (3*vol/(4 pi))**(1/3)
+
+    Parameter
+    ---------
+    vol : float
+        Volume
+
+    Returns
+    -------
+    float
+        Effective spherical radius
+    """
+    fac = 0.6203504908994000865973817
+    return fac*vol**(1/3)
