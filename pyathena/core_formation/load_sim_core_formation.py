@@ -131,12 +131,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         else:
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
-    def load_leaves(self, num):
-        fname = pathlib.Path(self.basedir, 'GRID',
-                             'leaves.{:05d}.p'.format(num))
-        with open(fname, 'rb') as handle:
-            return pickle.load(handle)
-
     def load_dendrogram(self, num):
         """Load pickled dendrogram object
 
