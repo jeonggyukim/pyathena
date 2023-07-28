@@ -64,6 +64,8 @@ if __name__ == "__main__":
                         help="Create sink history plots")
     parser.add_argument("--plot-pdfs", action="store_true",
                         help="Create density pdf and velocity power spectrum")
+    parser.add_argument("--plot-diagnostics", action="store_true",
+                        help="Create diagnostics plot for each core")
     parser.add_argument("--use-phigas", default=False, action="store_true",
                         help="Use total gravitational potential for analysis")
     parser.add_argument("--correct-tidal-radius", action="store_true",
@@ -230,6 +232,15 @@ if __name__ == "__main__":
         if args.plot_pdfs:
             print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
             make_plots_PDF_Pspec(s, overwrite=args.overwrite)
+
+        if args.plot_diagnostics:
+            print(f"draw diagnostics plots for model {mdl}", flush=True)
+            if args.pid_start is not None and args.pid_end is not None:
+                pids = np.arange(args.pid_start, args.pid_end+1)
+            else:
+                pids = s.pids
+            for pid in pids:
+                make_plots_diagnostics(s, pid, overwrite=args.overwrite)
 
         # make movie
         if args.make_movie:
