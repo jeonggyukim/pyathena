@@ -23,7 +23,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         Mean density of the cloud in the code unit.
     cs : float
         Sound speed in the code unit.
-    G : float
+    gconst : float
         Gravitational constant in the code unit.
     tff : float
         Free fall time in the code unit.
@@ -78,7 +78,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         # [L] = L_{J,0}, [M] = M_{J,0}, [V] = c_s
         self.rho0 = 1.0
         self.cs = 1.0
-        self.G = np.pi
+        self.gconst = np.pi
         self.tff = np.sqrt(3/32)
 
         # configurations
