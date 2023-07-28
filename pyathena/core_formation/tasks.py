@@ -107,10 +107,10 @@ def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
     if fixed_slope:
         suffix += "_fixed_slope"
     if s.use_phitot:
-        ofname = Path(s.basedir, 'critical_tes_phitot',
+        ofname = Path(s.savdir, 'critical_tes_phitot',
                       'critical_tes_{}.par{}.{:05d}.p'.format(suffix, pid, num))
     else:
-        ofname = Path(s.basedir, 'critical_tes',
+        ofname = Path(s.savdir, 'critical_tes',
                       'critical_tes_{}.par{}.{:05d}.p'.format(suffix, pid, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
@@ -158,9 +158,9 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
     """
     # Check if file exists
     if s.use_phitot:
-        ofname = Path(s.basedir, 'cores_phitot', 'cores.par{}.p'.format(pid))
+        ofname = Path(s.savdir, 'cores_phitot', 'cores.par{}.p'.format(pid))
     else:
-        ofname = Path(s.basedir, 'cores', 'cores.par{}.p'.format(pid))
+        ofname = Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[find_and_save_cores] file already exists. Skipping...')
@@ -257,10 +257,10 @@ def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
     """
     # Check if file exists
     if s.use_phitot:
-        ofname = Path(s.basedir, 'radial_profile_phitot',
+        ofname = Path(s.savdir, 'radial_profile_phitot',
                       'radial_profile.par{}.{:05d}.nc'.format(pid, num))
     else:
-        ofname = Path(s.basedir, 'radial_profile',
+        ofname = Path(s.savdir, 'radial_profile',
                       'radial_profile.par{}.{:05d}.nc'.format(pid, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
@@ -307,7 +307,7 @@ def run_GRID(s, num, overwrite=False):
     """
     # Check if file exists
     which = 'phitot' if s.use_phitot else 'phigas'
-    ofname = Path(s.basedir, 'GRID',
+    ofname = Path(s.savdir, 'GRID',
                   'dendrogram.{}.{:05d}.p'.format(which, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
@@ -401,7 +401,7 @@ def make_plots_core_evolution(s, pid, num, overwrite=False,
     msg = '[make_plots_core_evolution] processing model {} pid {} num {}'
     msg = msg.format(s.basename, pid, num)
     print(msg)
-    fname = Path(s.basedir, 'figures', "{}.par{}.{:05d}.png".format(
+    fname = Path(s.savdir, 'figures', "{}.par{}.{:05d}.png".format(
         config.PLOT_PREFIX_TCOLL_CORES, pid, num))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
@@ -419,7 +419,7 @@ def make_plots_sinkhistory(s, num, overwrite=False):
     Args:
         s: pyathena.LoadSim instance
     """
-    fname = Path(s.basedir, 'figures', "{}.{:05d}.png".format(
+    fname = Path(s.savdir, 'figures', "{}.{:05d}.png".format(
         config.PLOT_PREFIX_SINK_HISTORY, num))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
@@ -443,7 +443,7 @@ def make_plots_projections(s, overwrite=False):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes('right', size='4%', pad=0.05)
     for num in s.nums:
-        fname = Path(s.basedir, 'figures',
+        fname = Path(s.savdir, 'figures',
                      "Projection_z_dens.{:05d}.png".format(num))
         if fname.exists() and not overwrite:
             continue
@@ -472,14 +472,14 @@ def make_plots_diagnostics(s, pid, overwrite=False):
     """
     msg = '[make_plots_diagnostics] processing model {} pid {}'
     print(msg.format(s.basename, pid))
-    fname = Path(s.basedir, 'figures', "diagnostics_normalized.par{}.png".format(pid))
+    fname = Path(s.savdir, 'figures', "diagnostics_normalized.par{}.png".format(pid))
     if fname.exists() and not overwrite:
         return
     fig = plots.plot_diagnostics(s, pid, normalize_time=True)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
     plt.close(fig)
 
-    fname = Path(s.basedir, 'figures', "diagnostics.par{}.png".format(pid))
+    fname = Path(s.savdir, 'figures', "diagnostics.par{}.png".format(pid))
     if fname.exists() and not overwrite:
         return
     fig = plots.plot_diagnostics(s, pid, normalize_time=False)
@@ -497,7 +497,7 @@ def make_plots_PDF_Pspec(s, overwrite=False):
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     ax1_twiny = axs[1].twiny()
     for num in s.nums:
-        fname = Path(s.basedir, 'figures', "{}.{:05d}.png".format(
+        fname = Path(s.savdir, 'figures', "{}.{:05d}.png".format(
             config.PLOT_PREFIX_PDF_PSPEC, num))
         fname.parent.mkdir(exist_ok=True)
         if fname.exists() and not overwrite:
@@ -521,7 +521,7 @@ def make_plots_central_density_evolution(s, overwrite=False):
     Args:
         s: pyathena.LoadSim instance
     """
-    fname = Path(s.basedir, 'figures',
+    fname = Path(s.savdir, 'figures',
                  "{}.png".format(config.PLOT_PREFIX_RHOC_EVOLUTION))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:

@@ -112,7 +112,7 @@ if __name__ == "__main__":
             dirname = 'cores_phitot' if s.use_phitot else 'cores'
             for pid in s.pids:
                 # Check if file exists
-                ofname = Path(s.basedir, dirname,
+                ofname = Path(s.savdir, dirname,
                               'rtidal_correction.par{}.p'.format(pid))
                 ofname.parent.mkdir(exist_ok=True)
                 if ofname.exists() and not args.overwrite:
@@ -122,7 +122,7 @@ if __name__ == "__main__":
 
                 # Do not use s.cores, which might have already been
                 # preimage corrected. Read from raw data.
-                fname = Path(s.basedir, dirname, 'cores.par{}.p'.format(pid))
+                fname = Path(s.savdir, dirname, 'cores.par{}.p'.format(pid))
                 cores = pd.read_pickle(fname)
                 nid, rtidal = tools.find_rtidal_envelop(s, cores, tol=1.1)
                 def wrapper(num):
@@ -174,7 +174,7 @@ if __name__ == "__main__":
                     p.map(wrapper, s.cores[pid].index)
 
                 # Remove combined rprofs which will be outdated.
-                fname = Path(s.basedir, 'radial_profile',
+                fname = Path(s.savdir, 'radial_profile',
                              'radial_profile.par{}.nc'.format(pid))
                 if fname.exists():
                     fname.unlink()
@@ -246,7 +246,7 @@ if __name__ == "__main__":
         # make movie
         if args.make_movie:
             print(f"create movies for model {mdl}", flush=True)
-            srcdir = Path(s.basedir, "figures")
+            srcdir = Path(s.savdir, "figures")
             plot_prefix = [PLOT_PREFIX_SINK_HISTORY]
             for prefix in plot_prefix:
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])

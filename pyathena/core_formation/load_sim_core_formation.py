@@ -140,7 +140,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             Snapshot number.
         """
         which = 'phitot' if self.use_phitot else 'phigas'
-        fname = pathlib.Path(self.basedir, 'GRID',
+        fname = pathlib.Path(self.savdir, 'GRID',
                              'dendrogram.{}.{:05d}.p'.format(which, num))
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
@@ -209,12 +209,12 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         dirname_cores = 'cores_phitot' if self.use_phitot else 'cores'
         dirname_tes = 'critical_tes_phitot' if self.use_phitot else 'critical_tes'
         for pid in self.pids:
-            fname = pathlib.Path(self.basedir, dirname_cores,
+            fname = pathlib.Path(self.savdir, dirname_cores,
                                  'cores.par{}.p'.format(pid))
             core = pd.read_pickle(fname)
 
             # Read corrected tidal radius and mass
-            fname = pathlib.Path(self.basedir, dirname_cores,
+            fname = pathlib.Path(self.savdir, dirname_cores,
                                  'rtidal_correction.par{}.p'.format(pid))
             try:
                 core = pd.concat([core, pd.read_pickle(fname)], axis=1, join='inner')
@@ -240,7 +240,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 # Try reading critical TES pickles
                 tes_crit = []
                 for num in core.index:
-                    fname = pathlib.Path(self.basedir, dirname_tes,
+                    fname = pathlib.Path(self.savdir, dirname_tes,
                                           'critical_tes_{}.par{}.{:05d}.p'
                                           .format(method, pid, num))
                     tes_crit.append(pd.read_pickle(fname))
@@ -266,7 +266,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         for pid in self.pids:
             try:
                 # Try reading joined radial profile
-                fname = pathlib.Path(self.basedir, dirname,
+                fname = pathlib.Path(self.savdir, dirname,
                                      'radial_profile.par{}.nc'.format(pid))
                 rprf = xr.open_dataset(fname)
             except FileNotFoundError:
@@ -274,7 +274,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 core = self.cores[pid]
                 rprf = []
                 for num in core.index:
-                    fname2 = pathlib.Path(self.basedir, dirname,
+                    fname2 = pathlib.Path(self.savdir, dirname,
                                           'radial_profile.par{}.{:05d}.nc'
                                           .format(pid, num))
                     rprf.append(xr.open_dataset(fname2))
