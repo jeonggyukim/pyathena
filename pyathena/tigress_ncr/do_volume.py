@@ -301,7 +301,7 @@ def get_mytf(b, c, nlayer=0):
             np.log10(b[0]), np.log10(b[1]), scale=20, scale_func=linramp, colormap=c
         )
     else:
-        tf.add_layers(nlayer, w=0.3, alpha=np.linspace(10,40,nlayer), colormap=c)
+        tf.add_layers(nlayer, w=0.1, alpha=np.linspace(10,40,nlayer), colormap=c)
 
     return tf
 
@@ -359,9 +359,9 @@ def save_with_tf(ds, f, im, tf, fout = None, xoff = 0.1):
 
     return fig
 
-def make_many_volumes(s, ds, num):
-    ncr = s.par['configure']['new_cooling'] == 'ON'
-    ncrsp = s.par['configure']['SpiralArm'] == 'yes'
+def make_many_volumes(s, ds, num, all = True, rgb = False):
+    ncr = s.test_newcool()
+    ncrsp = s.test_spiralarm()
     xoff = -0.1 if ncrsp else 0.1
 
     foutdir = osp.join(os.fspath(s.basedir), "volume")
@@ -383,7 +383,7 @@ def make_many_volumes(s, ds, num):
         (1.0e20, 1.0e30),
         (1.0e24, 1.0e34),
         (1.0e24, 1.0e34),
-        (1.0e22, 1.0e32),
+        (1.0e24, 1.0e34),
         #   (1.e-3,1.e3),(1.e-15,1.e4),
         # (0.02, 0.2),
         # (0.01, 1),
@@ -405,46 +405,55 @@ def make_many_volumes(s, ds, num):
         "viridis",
     ]
 
-    for f, b, c in zip(fields, bounds, cmaps):
-        im, tf, sc = render_volume(ds, f, b, c, nlayer=0)
-        fout = osp.join(
-            foutdir,
-            f"{f[1].replace('[','').replace(']','')}_linramp_time_{num:04d}.png",
-        )
-        save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
-
-        im, tf, sc = render_volume(ds, f, b, c, nlayer=7)
-        fout = osp.join(
-            foutdir, f"{f[1].replace('[','').replace(']','')}_time_{num:04d}.png"
-        )
-        save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
-
-    # separately
-    # Halpha,HI,Xray
-    r,g,b = [1,0,2]
-    fields_rgb = [fields[r],fields[g],fields[b]]
-    bounds_rgb = [bounds[r],bounds[g],bounds[b]]
-    cmaps_rgb = ['Reds','Greens','Blues']
-
-    for channel,f,b,c in zip(['R','G','B'],fields_rgb,bounds_rgb,cmaps_rgb):
-        im, tf, sc = render_volume(ds, f, b, c, nlayer=0)
-        fout = osp.join(
-                foutdir, f"luminosity_{channel}_time_{num:04d}.png"
+    if all:
+        for f, b, c in zip(fields, bounds, cmaps):
+            im, tf, sc = render_volume(ds, f, b, c, nlayer=0)
+            fout = osp.join(
+                foutdir,
+                f"{f[1].replace('[','').replace(']','')}_linramp_time_{num:04d}.png",
             )
-        save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
+            save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
 
-    # combined
-    im, tf_r, sc = render_volume(ds, fields_rgb[0], bounds_rgb[0], cmaps_rgb[0],
-                                 nlayer=0, render=False)
-    im, tf_g = add_volume_source(sc, ds, fields_rgb[1], bounds_rgb[1], cmaps_rgb[1],
-                                 render=False)
-    im, tf_b = add_volume_source(sc, ds, fields_rgb[2], bounds_rgb[2], cmaps_rgb[2],
-                                 render=True)
-    fig = save_with_tf(ds, fields_rgb[0], im, tf_r, xoff=xoff)
-    add_tf_to_image(fig, ds, fields_rgb[1], tf_g, xoff=xoff-0.2)
-    add_tf_to_image(fig, ds, fields_rgb[2], tf_b, xoff=xoff-0.4)
-    fout = osp.join(foutdir, f"luminosity_RGB_time_{num:04d}.png")
-    fig.savefig(fout,dpi=200,bbox_inches='tight')
+            im, tf, sc = render_volume(ds, f, b, c, nlayer=7)
+            fout = osp.join(
+                foutdir, f"{f[1].replace('[','').replace(']','')}_time_{num:04d}.png"
+            )
+            save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
+
+    if all or rgb:
+        # separately
+        # Halpha,HI,Xray
+        r,g,b = [1,0,2]
+        fields_rgb = [fields[r],fields[g],fields[b]]
+        bounds_rgb = [bounds[r],bounds[g],bounds[b]]
+        cmaps_rgb = ['Reds','Greens','Blues']
+
+        for channel,f,b,c in zip(['R','G','B'],fields_rgb,bounds_rgb,cmaps_rgb):
+            b_narrow = (b[0]*1.e2,b[1])
+            im, tf, sc = render_volume(ds, f, b_narrow, c, nlayer=0)
+            fout = osp.join(
+                    foutdir, f"luminosity_{channel}_time_{num:04d}.png"
+                )
+            save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
+
+        # combined
+        b = bounds_rgb[0]
+        b_narrow = (b[0]*1.e2,b[1])
+        im, tf_r, sc = render_volume(ds, fields_rgb[0], b_narrow, cmaps_rgb[0],
+                                    nlayer=0, render=False)
+        b = bounds_rgb[1]
+        b_narrow = (b[0]*1.e2,b[1])
+        im, tf_g = add_volume_source(sc, ds, fields_rgb[1], b_narrow, cmaps_rgb[1],
+                                    render=False)
+        b = bounds_rgb[2]
+        b_narrow = (b[0]*1.e2,b[1])
+        im, tf_b = add_volume_source(sc, ds, fields_rgb[2], b_narrow, cmaps_rgb[2],
+                                    render=True)
+        fig = save_with_tf(ds, fields_rgb[0], im, tf_r, xoff=xoff)
+        add_tf_to_image(fig, ds, fields_rgb[1], tf_g, xoff=xoff-0.2)
+        add_tf_to_image(fig, ds, fields_rgb[2], tf_b, xoff=xoff-0.4)
+        fout = osp.join(foutdir, f"luminosity_RGB_time_{num:04d}.png")
+        fig.savefig(fout,dpi=200,bbox_inches='tight')
 
 
 def make_joint_pdfs(s, ds):
@@ -524,12 +533,17 @@ if __name__ == "__main__":
     parser.add_argument(
         "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
     )
+
+    parser.add_argument(
+        "-i", "--inum0", type=int, default=0, help="Number of snapshot to start."
+    )
+
     args = vars(parser.parse_args())
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=True, load_method="yt")
 
-    nums = s.nums
+    nums = s.nums[inum0:]
 
     if COMM.rank == 0:
         print("basedir, nums", s.basedir, nums)
