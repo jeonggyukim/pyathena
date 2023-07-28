@@ -472,7 +472,6 @@ def make_plots_diagnostics(s, pid, overwrite=False):
     """
     msg = '[make_plots_diagnostics] processing model {} pid {}'
     print(msg.format(s.basename, pid))
-    s.find_good_cores()
     fname = Path(s.basedir, 'figures', "diagnostics_normalized.par{}.png".format(pid))
     if fname.exists() and not overwrite:
         return
