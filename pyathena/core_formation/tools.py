@@ -362,8 +362,8 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
     rhoc_BE, R_BE, M_BE = tes.get_critical_tes(rhoe=rho_amb, lmb_sonic=np.inf)
     rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rhoe=rho_amb,
                                                   lmb_sonic=lmb_sonic)
-    R_LP_BE = tools.lpradius(M_BE, s.cs, s.G)
-    R_LP_TES = tools.lpradius(M_TES, s.cs, s.G)
+    R_LP_BE = tools.lpradius(M_BE, s.cs, s.gconst)
+    R_LP_TES = tools.lpradius(M_TES, s.cs, s.gconst)
     dx_req_LP = R_LP_BE/ncells_min
     dx_req_BE = R_BE/ncells_min
     ncells_req_LP = np.ceil(Lbox/dx_req_LP).astype(int)
@@ -480,7 +480,7 @@ def test_resolved_core(s, pid, ncells_min, f=0.5):
         True if a core is isolated, false otherwise.
     """
     cores = s.cores[pid].sort_index()
-    tff = tfreefall(cores.iloc[-1].mean_density, s.G)
+    tff = tfreefall(cores.iloc[-1].mean_density, s.gconst)
     tcoll = s.tcoll_cores.loc[pid].time
     tcrit = tcoll - f*tff
     num = cores.time.sub(tcrit).abs().astype('float64').idxmin()
@@ -559,7 +559,7 @@ def get_critical_core_props(s, pid, e1=0.7, e2=0.4):
     tcoll = s.tcoll_cores.loc[pid].time
     num_tcoll = s.tcoll_cores.loc[pid].num
     # Mean free-fall time at t = t_coll
-    tff = tfreefall(cores.mean_density.loc[num_tcoll], s.G)
+    tff = tfreefall(cores.mean_density.loc[num_tcoll], s.gconst)
     t1 = tcoll - e1*tff
     t2 = tcoll - e2*tff
     mask = (cores.time > t1) & (cores.time < t2)

@@ -268,7 +268,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Density
     plt.sca(fig.add_subplot(gs[0, 2]))
     plt.loglog(rprf.r, rprf.rho, 'k-+')
-    rhoLP = tools.lpdensity(rprf.r, s.cs, s.G)
+    rhoLP = tools.lpdensity(rprf.r, s.cs, s.gconst)
     plt.loglog(rprf.r, rhoLP, 'k--')
 
     # overplot critical tes
@@ -415,7 +415,7 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
 
     # Overplot -GM/r^2
     Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
-    gr = s.G*Mr/rprf.r**2
+    gr = s.gconst*Mr/rprf.r**2
     gr.plot(color='tab:red', lw=1, ls='--')
 
     plt.axhline(0, linestyle=':')
@@ -643,7 +643,7 @@ def plot_central_density_evolution(s, ax=None):
         rprf = s.rprofs[pid]
         rprf.rho.isel(r=0).plot(label=f'par{pid}')
         plt.yscale('log')
-        plt.ylim(1e1, tools.lpdensity(0.5*s.dx, s.cs, s.G))
+        plt.ylim(1e1, tools.lpdensity(0.5*s.dx, s.cs, s.gconst))
     plt.axhline(rho_crit_KM05, linestyle='--')
     plt.text(s.rprofs[1].t.min(), rho_crit_KM05, r"$\rho_\mathrm{crit, KM05}$",
              fontsize=18, ha='left', va='bottom')
@@ -823,7 +823,7 @@ def plot_radii_all(sa, models, ax=None, ncells_min=10):
                          c='tab:orange', lw=1, label=r'$R_\mathrm{crit}$', alpha=0.6)
 
                 ax2.semilogy((cores.time - tcoll) / time_unit, cores.center_density
-                             / tools.lpdensity(s.dx/2, s.cs, s.G),
+                             / tools.lpdensity(s.dx/2, s.cs, s.gconst),
                              c='tab:brown', lw=1, ls='--', alpha=0.6)
 
     plt.sca(ax)
