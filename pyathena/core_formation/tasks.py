@@ -456,6 +456,37 @@ def make_plots_projections(s, overwrite=False):
     plt.close(fig)
 
 
+def make_plots_diagnostics(s, pid, overwrite=False):
+    """Creates diagnostics plots for a given model
+
+    Save projections in {basedir}/figures for all snapshots.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        LoadSim instance
+    pid : int
+        Particle ID
+    overwrite : bool, optional
+        Flag to overwrite
+    """
+    msg = '[make_plots_diagnostics] processing model {} pid {}'
+    print(msg.format(s.basename, pid))
+    s.find_good_cores()
+    fname = Path(s.basedir, 'figures', "diagnostics_normalized.par{}.png".format(pid))
+    if fname.exists() and not overwrite:
+        return
+    fig = plots.plot_diagnostics(s, pid, normalize_time=True)
+    fig.savefig(fname, bbox_inches='tight', dpi=200)
+    plt.close(fig)
+
+    fname = Path(s.basedir, 'figures', "diagnostics.par{}.png".format(pid))
+    if fname.exists() and not overwrite:
+        return
+    fig = plots.plot_diagnostics(s, pid, normalize_time=False)
+    fig.savefig(fname, bbox_inches='tight', dpi=200)
+    plt.close(fig)
+
 def make_plots_PDF_Pspec(s, overwrite=False):
     """Creates density PDF and velocity power spectrum for a given model
 
