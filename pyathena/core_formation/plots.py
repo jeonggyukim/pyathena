@@ -467,16 +467,13 @@ def plot_diagnostics(s, pid, normalize_time=True):
     fadv = np.array(fadv)
     fgrv = np.array(fgrv)
 
-#    # Calculate edge density (TODO: replace this with more correct rho_e calculation)
-#    rhoe = []
-#    for num, core in cores.iterrows():
-#        rhoe.append(rprofs.sel(num=num).rho.interp(r=core.envelop_tidal_radius).data[()])
-#    rhoe = np.array(rhoe)
-
     # Do plotting
     plt.sca(axs[0])
-    plt.plot(time, (fthm+ftrb+fcen+fani-fgrv)/fgrv, c='k')
-    plt.plot(time, (fthm+ftrb+fcen+fani-fgrv-fadv)/fgrv, c='k', alpha=0.5)
+
+    # Note that we do not include the force due to anisotropic turbulence.
+    plt.plot(time, (fthm+ftrb+fcen-fgrv)/fgrv, c='k')
+    plt.plot(time, (fthm+ftrb+fcen-fgrv-fadv)/fgrv, c='k', alpha=0.5)
+
     plt.ylim(-1, 1)
     plt.ylabel(r'$(F_\mathrm{p, eff} - F_\mathrm{grv}) / F_\mathrm{grv}$')
     if pid in s.good_cores:
