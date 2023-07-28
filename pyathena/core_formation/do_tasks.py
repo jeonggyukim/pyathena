@@ -239,6 +239,7 @@ if __name__ == "__main__":
                 pids = np.arange(args.pid_start, args.pid_end+1)
             else:
                 pids = s.pids
+            s.find_good_cores()
             for pid in pids:
                 make_plots_diagnostics(s, pid, overwrite=args.overwrite)
 
