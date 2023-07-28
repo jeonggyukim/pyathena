@@ -20,10 +20,10 @@ class Hst:
         # Time in code unit
         h['time'] = hst['time']
         # Time in unit of free-fall time
-        h['time_in_tff'] = h['time']/self.tff
+        h['time_in_tff'] = h['time']/self.tff0
         # Timestep
         h['dt'] = hst['dt']
-        h['dt_in_tff'] = h['dt']/self.tff
+        h['dt_in_tff'] = h['dt']/self.tff0
 
         # Total gas mass
         h['mass'] = hst['mass']

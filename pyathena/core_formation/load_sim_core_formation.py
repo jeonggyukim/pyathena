@@ -79,7 +79,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         self.rho0 = 1.0
         self.cs = 1.0
         self.gconst = np.pi
-        self.tff = np.sqrt(3/32)
+        self.tff0 = tools.tfreefall(self.rho0, self.gconst)
 
         # configurations
         self.use_phitot = use_phitot
