@@ -268,7 +268,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Density
     plt.sca(fig.add_subplot(gs[0, 2]))
     plt.loglog(rprf.r, rprf.rho, 'k-+')
-    rhoLP = s.get_rhoLP(rprf.r)
+    rhoLP = tools.lpdensity(rprf.r, s.cs, s.G)
     plt.loglog(rprf.r, rhoLP, 'k--')
 
     # overplot critical tes
@@ -643,7 +643,7 @@ def plot_central_density_evolution(s, ax=None):
         rprf = s.rprofs[pid]
         rprf.rho.isel(r=0).plot(label=f'par{pid}')
         plt.yscale('log')
-        plt.ylim(1e1, s.get_rhoLP(0.5*s.dx))
+        plt.ylim(1e1, tools.lpdensity(0.5*s.dx, s.cs, s.G))
     plt.axhline(rho_crit_KM05, linestyle='--')
     plt.text(s.rprofs[1].t.min(), rho_crit_KM05, r"$\rho_\mathrm{crit, KM05}$",
              fontsize=18, ha='left', va='bottom')
@@ -822,8 +822,9 @@ def plot_radii_all(sa, models, ax=None, ncells_min=10):
                 l2, = plt.plot((cores.time - tcoll) / time_unit, cores.critical_radius / length_unit,
                          c='tab:orange', lw=1, label=r'$R_\mathrm{crit}$', alpha=0.6)
 
-                ax2.semilogy((cores.time - tcoll) / time_unit, cores.center_density / s.get_rhoLP(s.dx/2),
-                         c='tab:brown', lw=1, ls='--', alpha=0.6)
+                ax2.semilogy((cores.time - tcoll) / time_unit, cores.center_density
+                             / tools.lpdensity(s.dx/2, s.cs, s.G),
+                             c='tab:brown', lw=1, ls='--', alpha=0.6)
 
     plt.sca(ax)
     plt.yscale('log')

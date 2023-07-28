@@ -151,28 +151,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
-    def get_tJeans(self, lmb, rho=None):
-        """e-folding time of the fastest growing mode of the Jeans instability
-        lmb = wavelength of the mode
-        """
-        if rho is None:
-            rho = self.rho0
-        tJeans = 1/np.sqrt(4*np.pi*self.G*rho)*lmb/np.sqrt(lmb**2 - 1)
-        return tJeans
-
-    def get_tff(self, rho):
-        return np.sqrt(3*np.pi/(32*self.G*rho))
-
-    def get_RLP(self, M):
-        """Returns the LP radius enclosing  mass M"""
-        RLP = self.G*M/8.86/self.cs**2
-        return RLP
-
-    def get_rhoLP(self, r):
-        """Larson-Penston asymptotic solution in dimensionless units"""
-        rhoLP = 8.86*self.cs**2/(4*np.pi*self.G*r**2)
-        return rhoLP
-
     def find_good_cores(self, ncells_min=10, ftff=0.5):
         """Examine the isolatedness and resolvedness of cores
 
