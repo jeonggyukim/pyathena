@@ -173,7 +173,7 @@ def get_ppv(box,lf):
             ("gas", "total_energy_flux_z"),
             ("gas", "total_energy_density"),
         ],
-        n_bins=(Nx,Ny,256),
+        n_bins=(int(Nx/2),int(Ny/2),128),
         units = {f:units[f] for f in bfs},
         extrema = {f:extrema[f] for f in bfs},
         weight_field=None,
@@ -212,13 +212,14 @@ def do_pdf(s,num):
             pdflist.append(pdf)
 
             # ppvs
-            if z1<0:
-                box = ds.r[:,:,:z2]
-            else:
-                box = ds.r[:,:,z1:]
-            ppv = get_ppv(box,lf)
-            ppv = ppv.assign_coords(zmin = z1)
-            ppvlist.append(ppv)
+            if num % 10 == 0:
+                if z1<0:
+                    box = ds.r[:,:,:z2]
+                else:
+                    box = ds.r[:,:,z1:]
+                ppv = get_ppv(box,lf)
+                ppv = ppv.assign_coords(zmin = z1)
+                ppvlist.append(ppv)
         pdf = xr.concat(pdflist,dim='zmin')
 
         for f in list(pdf.keys()):
@@ -235,10 +236,11 @@ def do_pdf(s,num):
         pdf.close()
 
         # save ppv
-        ppv = xr.concat(ppvlist,dim='zmin')
-        fout = os.path.join(foutdir,f"{lf}_ppv_{num:04d}.nc")
-        ppv.to_netcdf(fout)
-        ppv.close()
+        if num % 10 == 0:
+            ppv = xr.concat(ppvlist,dim='zmin')
+            fout = os.path.join(foutdir,f"{lf}_ppv_{num:04d}.nc")
+            ppv.to_netcdf(fout)
+            ppv.close()
 
     # in/out pdfs
     ipdflist = []
