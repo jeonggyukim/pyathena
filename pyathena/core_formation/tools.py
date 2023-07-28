@@ -288,7 +288,7 @@ def find_tcoll_core(s, pid):
     """Find the GRID-dendro ID of the t_coll core of particle pid"""
     # load dendrogram at t = t_coll
     num = s.tcoll_cores.loc[pid].num
-    gd = s.load_dendrogram(num)
+    gd = s.load_dendro(num)
 
     # find closeast leaf node to this particle
     pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
@@ -511,7 +511,7 @@ def test_isolated_core(s, pid):
     """
     num_tcoll = s.tcoll_cores.loc[pid].num
     pds = s.load_partab(num_tcoll)
-    gd = s.load_dendrogram(num_tcoll)
+    gd = s.load_dendro(num_tcoll)
 
     nid = s.cores[pid].loc[num_tcoll].nid
 
@@ -671,7 +671,7 @@ def find_rtidal_envelop(s, cores, tol=1.1):
         rl = core.radius
         nid = core.nid
         while rl < rr/tol:
-            gd = s.load_dendrogram(num)
+            gd = s.load_dendro(num)
             parent = gd.parent[nid]
             vol = len(gd.get_all_descendant_cells(parent))*s.dV
             rparent = (3*vol/(4*np.pi))**(1./3.)

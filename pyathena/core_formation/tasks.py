@@ -171,7 +171,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
     # Load data
     num = s.tcoll_cores.loc[pid].num
     ds = s.load_hdf5(num, load_method='pyathena')
-    gd = s.load_dendrogram(num)
+    gd = s.load_dendro(num)
 
     # Calculate position, mass, and radius of the core
     nid_old = tools.find_tcoll_core(s, pid)
@@ -195,7 +195,7 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
         print(msg)
         # loop backward in time to find all preimages of the t_coll core
         ds = s.load_hdf5(num, load_method='pyathena')
-        gd = s.load_dendrogram(num)
+        gd = s.load_dendro(num)
 
         # find closeast leaf to the previous preimage
         dst = {leaf: tools.get_node_distance(s, leaf, nid_old)

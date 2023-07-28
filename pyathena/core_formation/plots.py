@@ -214,7 +214,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     ds = s.load_hdf5(num, load_method='pyathena')
 
     # Load leaf dict at t = t_coll
-    gd = s.load_dendrogram(num)
+    gd = s.load_dendro(num)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(s, core.nid)

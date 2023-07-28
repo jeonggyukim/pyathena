@@ -131,7 +131,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         else:
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
-    def load_dendrogram(self, num):
+    def load_dendro(self, num):
         """Load pickled dendrogram object
 
         Parameters
