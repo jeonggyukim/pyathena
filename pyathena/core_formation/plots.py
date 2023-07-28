@@ -208,7 +208,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     # Load core
     core = s.cores[pid].loc[num]
     tcoll = s.tcoll_cores.loc[pid].time
-    tff = np.sqrt(3*np.pi/(32*s.cores[pid].iloc[-1].mean_density))
+    tff = tools.tfreefall(s.cores[pid].iloc[-1].mean_density, s.gconst)
 
     # Load hdf5 snapshot at t = t_coll
     ds = s.load_hdf5(num, load_method='pyathena')
@@ -441,7 +441,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     # Load cores
     cores = s.cores[pid].sort_index()
     tcoll = s.tcoll_cores.loc[pid].time
-    tff = np.sqrt(3*np.pi/(32*cores.iloc[-1].mean_density))
+    tff = tools.tfreefall(cores.iloc[-1].mean_density, s.gconst)
     if normalize_time:
         time = (cores.time - tcoll) / tff
     else:
