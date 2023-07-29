@@ -197,7 +197,11 @@ if __name__ == "__main__":
         # make plots
         if args.plot_core_evolution:
             print(f"draw t_coll cores plots for model {mdl}", flush=True)
-            for pid in s.pids:
+            if args.pid_start is not None and args.pid_end is not None:
+                pids = np.arange(args.pid_start, args.pid_end+1)
+            else:
+                pids = s.pids
+            for pid in pids:
                 # Read snapshot at t=t_coll and set plot limits
                 num = s.tcoll_cores.loc[pid].num
                 ds = s.load_hdf5(num, load_method='pyathena')
