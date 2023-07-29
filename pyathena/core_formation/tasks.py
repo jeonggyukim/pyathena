@@ -241,6 +241,43 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+def find_rtidal(s, ncells_min=5, fac=0.5):
+    dirname = 'cores_phitot' if s.use_phitot else 'cores'
+    for pid in s.pids:
+        # Check if file exists
+        ofname = Path(s.savdir, dirname,
+                      'rtidal_newcorr.par{}.p'.format(pid))
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not args.overwrite:
+            print("[find_rtidal] file already exists. Skipping...")
+            continue
+
+        nid_corr, rtidal_corr = [], []
+        for num, core in s.cores[pid].iterrows():
+            msg = '[find_rtidal] processing model {} pid {} num {}'
+            print(msg.format(s.basename, pid, num))
+            me = core.nid
+            gd = s.load_dendro(num)
+            while True:
+                rtidal_me = tools.reff_sph(gd.len(me)*s.dV)
+                if me == gd.trunk:
+                    nid_corr.append(me)
+                    rtidal_corr.append(rtidal_me)
+                    break
+                sibling = gd.sibling(me)
+                rtidal_sibling = tools.reff_sph(gd.len(sibling)*s.dV)
+                if rtidal_sibling < fac*rtidal_me or rtidal_me < ncells_min*s.dx:
+                    me = gd.parent[me]
+                else:
+                    nid_corr.append(me)
+                    rtidal_corr.append(rtidal_me)
+                    break
+        res = pd.DataFrame(dict(nid_corr=nid_corr,
+                           rtidal_corr=rtidal_corr),
+                           s.cores[pid].index)
+        res.to_pickle(ofname)
+
+
 def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
     """Calculates and pickles radial profiles of all cores.
 
@@ -485,6 +522,7 @@ def make_plots_diagnostics(s, pid, overwrite=False):
     fig = plots.plot_diagnostics(s, pid, normalize_time=False)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
     plt.close(fig)
+
 
 def make_plots_PDF_Pspec(s, overwrite=False):
     """Creates density PDF and velocity power spectrum for a given model
