@@ -166,7 +166,7 @@ class TESe:
         r_c = self.get_radius(u_c)
         m_c = self.get_mass(u_c)
         if u_c >= 0.999*upper_bound:
-            raise Exception("critical density contrast is out-of-bound")
+            raise ValueError("critical density contrast is out-of-bound")
         return u_c, r_c, m_c
 
     def _dydx(self, y, x):
