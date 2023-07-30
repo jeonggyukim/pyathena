@@ -252,10 +252,9 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.sca(fig.add_subplot(gs[i, 1]))
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
 
-        parent = gd.parent[core.nid]
-        grandparent = gd.parent[parent]
-        nodes = list(gd.descendants[grandparent])
-        nodes.append(grandparent)
+        nodes = list(gd.descendants[core.envelop_nid])
+        nodes.append(gd.sibling(core.envelop_nid))
+        nodes.append(core.envelop_nid)
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel,
                                   color='k')
@@ -295,22 +294,21 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     if not np.isnan(core.sonic_radius):
         ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
-        uc, _, _ = ts.get_crit()
-        u, du = ts.solve(xi, uc)
+        try:
+            uc, _, _ = ts.get_crit()
+            u, _ = ts.solve(xi, uc)
+        except ValueError:
+            u = np.nan
         plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b--', lw=1.5)
 
     # overplot critical BE
     ts = tes.TESe()
     uc, _, _ = ts.get_crit()
-    u, du = ts.solve(xi, uc)
+    u, _ = ts.solve(xi, uc)
     plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b:', lw=1)
 
     # overplot radius of the parent core
-    nid = gd.parent[core.nid]
-    vol = len(gd.get_all_descendant_cells(nid))*s.dV
-    rparent = (3*vol/(4*np.pi))**(1./3.)
-    plt.axvline(core.radius, c='tab:gray', lw=1)
-    plt.axvline(rparent, c='tab:gray', lw=1)
+    plt.axvline(core.envelop_tidal_radius, c='tab:gray', lw=1)
     plt.axvline(core.critical_radius, ls='--', c='tab:gray')
     plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
@@ -324,7 +322,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.8, r'$M = {:.2f}$'.format(core.mass)+r'$\,M_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
+    plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.envelop_tidal_radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.05, 0.05, r'$t-t_* = $'+r'${:.2f}$'.format((ds.Time - tcoll)/tff)+r'$\,t_{ff}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
@@ -334,9 +332,9 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
     plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
     plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
-    ln1 = plt.axvline(core.radius, c='tab:gray', lw=1)
-    plt.axvline(rparent, c='tab:gray', lw=1)
+    ln1 = plt.axvline(core.envelop_tidal_radius, c='tab:gray', lw=1)
     ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+    plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     ln3 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.axhline(0, ls=':')
     plt.xlim(0, hw)
@@ -365,9 +363,9 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
                  lw=1)
 
-    plt.axvline(core.radius, c='tab:gray', lw=1)
-    plt.axvline(rparent, c='tab:gray', lw=1)
+    plt.axvline(core.envelop_tidal_radius, c='tab:gray', lw=1)
     plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+    plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.xlim(rprf.r[0], 2*hw)
     plt.ylim(1e-1, 1e1)
@@ -377,7 +375,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # 5. Energies
     plt.sca(fig.add_subplot(gs[0, 3]))
-    plot_energies(s, ds, gd, core.nid)
+    plot_energies(s, ds, gd, core.envelop_nid)
     if emin is not None and emax is not None:
         plt.ylim(emin, emax)
     if rmax is not None:
@@ -387,9 +385,9 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.sca(fig.add_subplot(gs[1:, 3]))
     plot_forces(s, rprf, ylim=(-50, 150))
     plt.title('')
-    plt.axvline(core.radius, c='tab:gray', lw=1)
-    plt.axvline(rparent, c='tab:gray', lw=1)
+    plt.axvline(core.envelop_tidal_radius, c='tab:gray', lw=1)
     plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+    plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.xlim(0, hw)
     plt.legend(ncol=3, fontsize=15, loc='upper right')
@@ -409,9 +407,8 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     acc.cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
     (-acc.grv).plot(marker='x', ls='--', color='tab:red', lw=1,
                     label=r'$-f_\mathrm{grav}$')
-    (-acc.dvdt_lagrange).plot(marker='+', color='k', lw=1,
-                              label=r'$-(dv/dt)_L$')
-    (-acc.dvdt_euler).plot(color='tab:gray', lw=1, label=r'$-(dv/dt)_E$')
+    net = acc.thm + acc.trb + acc.cen + acc.grv
+    net.plot(lw=1, color='k', marker='+', label='net')
 
     # Overplot -GM/r^2
     Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
