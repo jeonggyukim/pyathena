@@ -380,7 +380,7 @@ if __name__ == "__main__":
         # if ncrsp:
         #     stitch_rgb2(s, i, ncrsp=ncrsp)
         # else:
-        stitch_rgb(s, i, ncrsp=ncrsp)
+        stitch_rgb2(s, i, ncrsp=ncrsp)
         plt.close("all")
 
     # movies

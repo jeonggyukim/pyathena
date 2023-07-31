@@ -36,8 +36,8 @@ if __name__ == "__main__":
     basename = os.path.basename(basedir)
     # Make movies
     if COMM.rank == 0 and movie:
-        fin = osp.join(basedir, "volume/time_rotation*.png")
-        fout = osp.join(basedir, "{0:s}_time_rotation.mp4".format(basename))
+        fin = osp.join(basedir, "volume/time_????.png")
+        fout = osp.join(basedir, "{0:s}_time.mp4".format(basename))
         make_movie(fin, fout, fps_in=15, fps_out=15)
         from shutil import copyfile
 

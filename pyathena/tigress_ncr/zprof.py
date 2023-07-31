@@ -15,6 +15,50 @@ from ..load_sim import LoadSim
 from ..io.read_zprof import read_zprof_all, ReadZprofBase
 from ..classic.utils import texteffect
 
+def zprof_rename(s):
+    if hasattr(s,'newzp'): return s.newzp
+    rename_dict = dict()
+    kind = 'new' if s.test_phase_sep_hst() else 'old'
+    shorthands = s.get_phase_shorthand()
+    for i,pname in enumerate(shorthands):
+        rename_dict['phase{}'.format(i+1)] = pname
+    if not hasattr(s,'zp'):
+        zp = s.read_zprof_new()
+    else:
+        if not 'phase' in s.zp:
+            zp = s.read_zprof_new()
+    zp = s.zp
+    zp = zp.to_array().to_dataset('phase').rename(rename_dict)
+    zp = zp.to_array('phase').to_dataset('variable')
+
+    newzp = xr.Dataset()
+    if not s.test_newcool():
+        newzp['CNM'] = zp.sel(phase='c').squeeze().to_array()
+        newzp['UNM'] = zp.sel(phase='u').squeeze().to_array()
+        newzp['WNM'] = zp.sel(phase='w').squeeze().to_array()
+        newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
+        newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
+    else:
+        if kind == 'old':
+            newzp['CMM'] = zp.sel(phase='mol').squeeze().to_array()
+            newzp['WIM'] = zp.sel(phase='pi').squeeze().to_array()
+            newzp['CNM'] = zp.sel(phase=['HIcc','HIc']).sum(dim='phase').to_array()
+            newzp['UNM'] = zp.sel(phase=['HIu','HIuc']).sum(dim='phase').to_array()
+            newzp['WNM'] = zp.sel(phase=['HIw','HIwh']).sum(dim='phase').to_array()
+            newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
+            newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
+        elif kind == 'new':
+            newzp['CMM'] = zp.sel(phase='cmm').squeeze().to_array()
+    #         newzp['UIM'] = zp.sel(phase='uim').squeeze().to_array()
+            newzp['WIM'] = zp.sel(phase=['uim','wpim','wcim']).sum(dim='phase').to_array()
+            newzp['CNM'] = zp.sel(phase='cnm').squeeze().to_array()
+            newzp['UNM'] = zp.sel(phase='unm').squeeze().to_array()
+            newzp['WNM'] = zp.sel(phase='wnm').squeeze().to_array()
+            newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
+            newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
+#         newzp['Others'] = (zp.sel(phase=['hotnothers']).squeeze()-zp.sel(phase=['h1','h2']).sum(dim='phase')).to_array()
+    s.newzp = newzp.to_array('phase').to_dataset('variable')
+    return s.newzp
 
 class Zprof(ReadZprofBase):
     def read_zprof_new(self, phase="all", savdir=None, force_override=False):
@@ -226,26 +270,28 @@ class Zprof(ReadZprofBase):
 
         if hasattr(self, "zp_outflux") and hasattr(self, "zp_netflux"):
             return self.zp_outflux, self.zp_netflux
-        if self.test_newcool():
-            zp = self.read_zprof(phase=["cu", "WNM", "pi", "h1", "h2", "whole"])
-            rename_dict = {
-                "cu": "cold",
-                "WNM": "WNM",
-                "pi": "WIM",
-                "h1": "int",
-                "h2": "hot",
-            }
-        else:
-            zp = self.read_zprof(phase=["cu", "w", "h1", "h2", "whole"])
-            rename_dict = {"cu": "cold", "w": "WNM", "h1": "int", "h2": "hot"}
+        zp = zprof_rename(self)
 
-        zplist = []
-        for ph in zp:
-            zplist.append(zp[ph].expand_dims("phase").assign_coords(phase=[ph]))
+        # if self.test_newcool():
+        #     zp = self.read_zprof(phase=["cu", "WNM", "pi", "h1", "h2", "whole"])
+        #     rename_dict = {
+        #         "cu": "cold",
+        #         "WNM": "WNM",
+        #         "pi": "WIM",
+        #         "h1": "int",
+        #         "h2": "hot",
+        #     }
+        # else:
+        #     zp = self.read_zprof(phase=["cu", "w", "h1", "h2", "whole"])
+        #     rename_dict = {"cu": "cold", "w": "WNM", "h1": "int", "h2": "hot"}
 
-        zp = xr.concat(zplist, dim="phase")
-        zp = zp.to_array().to_dataset("phase").rename(rename_dict)
-        zp = zp.to_array("phase").to_dataset("variable")
+        # zplist = []
+        # for ph in zp:
+        #     zplist.append(zp[ph].expand_dims("phase").assign_coords(phase=[ph]))
+
+        # zp = xr.concat(zplist, dim="phase")
+        # zp = zp.to_array().to_dataset("phase").rename(rename_dict)
+        # zp = zp.to_array("phase").to_dataset("variable")
 
         u = self.u
         pflux = xr.Dataset()

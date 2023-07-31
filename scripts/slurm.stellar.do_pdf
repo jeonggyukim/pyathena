@@ -16,4 +16,6 @@ echo $PYTHONPATH
 OUTDIR=$1
 
 cd $HOME/pyathena
+date -Iseconds
 srun python pyathena/tigress_ncr/do_tasks_extra.py -b $OUTDIR 1> scripts/logs/do_pdf-$SLURM_JOB_ID.out 2> scripts/logs/do_pdf-$SLURM_JOB_ID.err
+date -Iseconds

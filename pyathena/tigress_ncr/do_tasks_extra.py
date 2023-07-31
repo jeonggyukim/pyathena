@@ -71,6 +71,9 @@ def get_inout_pdfs(box):
         fields=[
             ("gas", "cell_volume"),
             ("gas", "cell_mass"),
+            ("gas", "H_p0_number_density"),
+            ("gas", "H_p1_number_density"),
+            ("gas", "H2_number_density"),
             ("gas", "HI_21cm_luminosity"),
             ("gas", "H_alpha_luminosity"),
             ("gas", "CII_luminosity"),
@@ -92,6 +95,9 @@ def get_inout_pdfs(box):
         fields=[
             ("gas", "cell_volume"),
             ("gas", "cell_mass"),
+            ("gas", "H_p0_number_density"),
+            ("gas", "H_p1_number_density"),
+            ("gas", "H2_number_density"),
             ("gas", "HI_21cm_luminosity"),
             ("gas", "H_alpha_luminosity"),
             ("gas", "CII_luminosity"),
@@ -191,7 +197,7 @@ def do_pdf(s,num):
     Lz = ds.domain_width[2].v
     zmin = ds.domain_left_edge[2].v
     zmax = ds.domain_right_edge[2].v
-    dz = Lz/8
+    dz = Lz/16
     Nx, Ny, Nz = ds.domain_dimensions
     le = ds.domain_left_edge.v
     re = ds.domain_right_edge.v
@@ -217,6 +223,7 @@ def do_pdf(s,num):
                     box = ds.r[:,:,:z2]
                 else:
                     box = ds.r[:,:,z1:]
+                if lf in lumfields[1:3]: continue
                 ppv = get_ppv(box,lf)
                 ppv = ppv.assign_coords(zmin = z1)
                 ppvlist.append(ppv)

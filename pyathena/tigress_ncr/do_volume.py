@@ -535,7 +535,7 @@ if __name__ == "__main__":
     )
 
     parser.add_argument(
-        "-i", "--inum0", type=int, default=0, help="Number of snapshot to start."
+        "-i", "--inum0", type=int, default=0, help="snapshot number to start."
     )
 
     args = vars(parser.parse_args())
