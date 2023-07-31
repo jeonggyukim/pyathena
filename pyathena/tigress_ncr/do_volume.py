@@ -25,6 +25,11 @@ from pyathena.microphysics.cool import get_xCII, q10CII_
 from pyathena.tigress_ncr.do_tasks import scatter_nums
 
 
+from tqdm import tqdm
+from functools import partialmethod
+
+tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
+
 def add_fields(s, ds, xray=True, CII=True):
     # yt standard abundance fields
     def _nHI(field, data):

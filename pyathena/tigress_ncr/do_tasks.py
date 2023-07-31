@@ -146,6 +146,11 @@ def process_one_file_slc_prj(s, num):
             plt.close(fig)
 
 
+from tqdm import tqdm
+from functools import partialmethod
+
+tqdm.__init__ = partialmethod(tqdm.__init__, disable=True)
+
 if __name__ == "__main__":
     COMM = MPI.COMM_WORLD
 
