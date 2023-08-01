@@ -110,7 +110,12 @@ def calculate_critical_tes(s, rprf, core, use_vel='disp', fixed_slope=False,
     LJ_c = 1.0 / np.sqrt(rhoc)
     MJ_c = 1.0 / np.sqrt(rhoc)
 
-    rhoe = core.mean_edge_density
+    gd = s.load_dendro(rprf.num.data[()])
+    pos0 = get_coords_node(s, core.nid)
+    pos1 = get_coords_node(s, gd.parent[core.envelop_nid])
+    rtidal = get_periodic_distance(pos0, pos1, s.Lbox)
+    mtidal = (4*np.pi*rprf.r**2*rprf.rho).sel(r=slice(0, rtidal)).integrate('r').data[()]
+    rhoe = rprf.rho.interp(r=rtidal).data[()]
     LJ_e = 1.0 / np.sqrt(rhoe)
     MJ_e = 1.0 / np.sqrt(rhoe)
 
@@ -176,7 +181,8 @@ def calculate_critical_tes(s, rprf, core, use_vel='disp', fixed_slope=False,
 
     res = dict(center_density=rhoc, edge_density=rhoe, pindex=p, sonic_radius=rs,
                critical_contrast=dcrit, critical_radius=rcrit, critical_mass=mcrit,
-               critical_contrast_e=dcrit_e, critical_radius_e=rcrit_e, critical_mass_e=mcrit_e)
+               critical_contrast_e=dcrit_e, critical_radius_e=rcrit_e, critical_mass_e=mcrit_e,
+               new_tidal_radius=rtidal, new_tidal_mass=mtidal)
     return res
 
 
@@ -362,8 +368,8 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
     rhoc_BE, R_BE, M_BE = tes.get_critical_tes(rhoe=rho_amb, lmb_sonic=np.inf)
     rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rhoe=rho_amb,
                                                   lmb_sonic=lmb_sonic)
-    R_LP_BE = tools.lpradius(M_BE, s.cs, s.gconst)
-    R_LP_TES = tools.lpradius(M_TES, s.cs, s.gconst)
+    R_LP_BE = lpradius(M_BE, s.cs, s.gconst)
+    R_LP_TES = lpradius(M_TES, s.cs, s.gconst)
     dx_req_LP = R_LP_BE/ncells_min
     dx_req_BE = R_BE/ncells_min
     ncells_req_LP = np.ceil(Lbox/dx_req_LP).astype(int)
