@@ -8,7 +8,9 @@ Recommended function signature:
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.colors import LogNorm
+from pathlib import Path
 import numpy as np
+import pandas as pd
 import xarray as xr
 import yt
 
@@ -258,6 +260,8 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel,
                                   color='k')
+        c0 = plt.Circle((0,0), core.new_tidal_radius, fill=False, color='k', lw=1)
+        plt.gca().add_artist(c0)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
@@ -287,7 +291,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.plot(xi*LJ_c, rhoc*np.exp(u), 'r:', lw=1)
 
     # overplot critical tes given rho_edge
-    rhoe = core.mean_edge_density
+    rhoe = core.edge_density
     LJ_e = 1.0/np.sqrt(rhoe)
     xi_min = rprf.r.isel(r=0).data[()]/LJ_e
     xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
@@ -297,9 +301,10 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         try:
             uc, _, _ = ts.get_crit()
             u, _ = ts.solve(xi, uc)
+            plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b--', lw=1.5)
         except ValueError:
-            u = np.nan
-        plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b--', lw=1.5)
+            # Cannot find critical TES. Do not plot.
+            pass
 
     # overplot critical BE
     ts = tes.TESe()
@@ -308,11 +313,11 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b:', lw=1)
 
     # overplot radius of the parent core
-    plt.axvline(core.envelop_tidal_radius, c='tab:gray', lw=1)
+    plt.axvline(core.new_tidal_radius, c='tab:gray', lw=1)
     plt.axvline(core.critical_radius, ls='--', c='tab:gray')
     plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
-    plt.axhline(core.mean_edge_density, ls='-.', c='tab:gray')
+    plt.axhline(core.edge_density, ls='-.', c='tab:gray')
     plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(1e0, rhoLP[0])
     plt.xlabel(r'$r/L_{J,0}$')
@@ -322,7 +327,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.8, r'$M = {:.2f}$'.format(core.mass)+r'$\,M_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.envelop_tidal_radius)+r'$\,L_{J,0}$',
+    plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.new_tidal_radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.05, 0.05, r'$t-t_* = $'+r'${:.2f}$'.format((ds.Time - tcoll)/tff)+r'$\,t_{ff}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
@@ -332,12 +337,15 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
     plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
     plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
-    ln1 = plt.axvline(core.envelop_tidal_radius, c='tab:gray', lw=1)
+    ln1 = plt.axvline(core.new_tidal_radius, c='tab:gray', lw=1)
     ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
     plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     ln3 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.axhline(0, ls=':')
-    plt.xlim(0, hw)
+    if rmax is not None:
+        plt.xlim(0, rmax)
+    else:
+        plt.xlim(0, hw)
     plt.ylim(-2.5, 1.5)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v\right>/c_s$')
@@ -363,7 +371,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
                  lw=1)
 
-    plt.axvline(core.envelop_tidal_radius, c='tab:gray', lw=1)
+    plt.axvline(core.new_tidal_radius, c='tab:gray', lw=1)
     plt.axvline(core.critical_radius, ls='--', c='tab:gray')
     plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
@@ -385,11 +393,14 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.sca(fig.add_subplot(gs[1:, 3]))
     plot_forces(s, rprf, ylim=(-50, 150))
     plt.title('')
-    plt.axvline(core.envelop_tidal_radius, c='tab:gray', lw=1)
+    plt.axvline(core.new_tidal_radius, c='tab:gray', lw=1)
     plt.axvline(core.critical_radius, ls='--', c='tab:gray')
     plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
     plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
-    plt.xlim(0, hw)
+    if rmax is not None:
+        plt.xlim(0, rmax)
+    else:
+        plt.xlim(0, hw)
     plt.legend(ncol=3, fontsize=15, loc='upper right')
 
     return fig
@@ -449,7 +460,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     ftot_lagrange, ftot_euler, fgrv = [], [], []
     fthm, ftrb, fcen, fani, fadv = [], [], [], [], []
     for num, core in cores.iterrows():
-        rprf = rprofs.sel(num=num).sel(r=slice(0, core.envelop_tidal_radius))
+        rprf = rprofs.sel(num=num).sel(r=slice(0, core.new_tidal_radius))
         dmdr = 4*np.pi*rprf.r**2*rprf.rho
         fthm.append((rprf.thm*dmdr).integrate('r').data[()])
         ftrb.append((rprf.trb*dmdr).integrate('r').data[()])
@@ -492,18 +503,25 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
 
     plt.sca(axs[1])
-    plt.plot(time, cores.envelop_tidal_radius, c='tab:blue', label=r'$R_\mathrm{tidal}$')
+    plt.plot(time, cores.new_tidal_radius, c='tab:blue', label=r'$R_\mathrm{tidal}$')
     plt.plot(time, cores.radius, c='tab:blue', ls='--', lw=1)
     plt.plot(time, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
     plt.plot(time, cores.critical_radius, c='tab:red', label=r'$R_\mathrm{crit,c}$')
     plt.plot(time, cores.critical_radius_e, c='tab:red', ls='--', label=r'$R_\mathrm{crit,e}$')
+
+#    ### TEMPORARY
+#    fname = Path(s.savdir, "cores_phitot", "rtidal_newcorr.par{}.p".format(pid))
+#    cr = pd.read_pickle(fname)
+#    plt.plot(time, cr.rtidal_corr, c='tab:blue', ls='-.')
+#    ### TEMPORARY
+
     plt.yscale('log')
     plt.ylim(1e-2, 1e0)
     plt.ylabel(r'$R/L_{J,0}$')
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     plt.sca(axs[2])
-    plt.plot(time, cores.envelop_tidal_mass, c='tab:blue', label=r'$M_\mathrm{tidal}$')
+    plt.plot(time, cores.new_tidal_mass, c='tab:blue', label=r'$M_\mathrm{tidal}$')
     plt.plot(time, cores.mass, c='tab:blue', ls='--', lw=1)
     plt.plot(time, cores.critical_mass, c='tab:red', label=r'$M_\mathrm{crit,c}$')
     plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--', label=r'$M_\mathrm{crit,e}$')
@@ -514,16 +532,17 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
     plt.sca(axs[3])
     plt.plot(time, cores.center_density, c='tab:blue', ls='-', label=r'$\rho_c$')
-    plt.plot(time, cores.mean_edge_density, c='tab:blue', ls='--', label=r'$\rho_e$')
+    plt.plot(time, cores.edge_density, c='tab:blue', ls='--', label=r'$\rho_e$')
     plt.plot(time, cores.mean_density, c='tab:blue', ls=':', label=r'$\overline{\rho}_\mathrm{tidal}$')
-    plt.plot(time, cores.mean_edge_density*cores.critical_contrast_e, c='tab:red', ls='--', label=r'$\rho_\mathrm{crit}$')
+    plt.plot(time, cores.edge_density*cores.critical_contrast_e, c='tab:red', ls='--', label=r'$\rho_\mathrm{crit}$')
+    plt.plot(time, cores.edge_density*14, c='tab:red', ls=':', label=r'$\rho_\mathrm{BE}$')
     plt.yscale('log')
     plt.ylabel(r'$\rho/\rho_0$')
     plt.legend(loc='upper left', bbox_to_anchor=(1.12, 1))
-    plt.ylim(1e0, 1e4)
+    plt.ylim(1e0, 1e5)
 
     if normalize_time:
-        plt.xlim(-2, 0)
+        plt.xlim(-4, 0)
         plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
     else:
         plt.xlabel(r'$t/t_{J,0}$')
