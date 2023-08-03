@@ -200,17 +200,10 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
 
     def _load_cores(self):
         self.cores = {}
+        pids_tes_not_found = []
         for pid in self.pids:
             fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             core = pd.read_pickle(fname)
-
-            # TODO(SMOON)
-#            # Filter out true preimages by applying distance criterion
-#            if 'envelop_tidal_radius' in core:
-#                core = tools.apply_preimage_correction(self, core)
-#            else:
-#                logging.warning("Cannot perform preimage correction before"
-#                                " finding envelop tidal radii")
 
             # Assign to attribute
             self.cores[pid] = core.sort_index()
@@ -229,8 +222,10 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
                                             axis=1, join='inner').sort_index()
             except FileNotFoundError:
-                logging.warning("Cannot find critical TES information.")
+                pids_tes_not_found.append(pid)
                 pass
+        if len(pids_tes_not_found) > 0:
+            logging.warning("Cannot find critical TES information for pid: {}.".format(pids_tes_not_found))
 
     def _load_radial_profiles(self):
         """

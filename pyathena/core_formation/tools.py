@@ -94,6 +94,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     # Calculate tidal radius
     rtidal = get_node_distance(s, lid, gd.parent[eid])
 
+    nums_track = [num,]
     leaf_id = [lid,]
     leaf_radius = [rlf,]
     envelop_id = [eid,]
@@ -164,6 +165,11 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
         # Calculate tidal radius
         rtidal = get_node_distance(s, lid, gd.parent[eid])
 
+        fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal, tidal_radius[-1])
+        if fdst > 1:
+            break
+
+        nums_track.append(num)
         leaf_id.append(lid)
         leaf_radius.append(rlf)
         envelop_id.append(eid)
@@ -177,7 +183,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
                               envelop_id=envelop_id,
                               envelop_radius=envelop_radius,
                               tidal_radius=tidal_radius),
-                         index=nums, dtype=object).sort_index()
+                         index=nums_track, dtype=object).sort_index()
     return cores
 
 
@@ -197,45 +203,6 @@ def correct_tidal_radius(s, gd, lid, tol):
         else:
             break
     return me, reff_me
-
-
-def apply_preimage_correction(s, cores):
-    """Find true preimage by applying distance criterion
-
-    Parameters
-    ----------
-    s : LoadSimCoreFormation
-        Simulation metadata.
-    cores : pandas.DataFrame
-        Dataframe containing core information.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Filtered DataFrame that only containing valid rows
-
-    Notes
-    -----
-    Initial core tracking is done with the maximum robustness, i.e., it finds
-    closeast leaf node without worring about whether it is true preimage. Then,
-    after envelop tidal radius correction, this function filters true preimage
-    by requiring any consecutive "core" must be closer than their individual
-    radius.
-    """
-    cores_itr = cores.sort_index(ascending=False).iterrows()
-    _, core = next(cores_itr)
-    nid_old = core.nid
-    rcore_old = core.envelop_tidal_radius
-    for num, core in cores_itr:
-        nid = core.nid
-        rcore = core.envelop_tidal_radius
-        fdst = get_node_distance(s, nid_old, nid) / max(rcore_old, rcore)
-        if fdst > 1:
-            num += 1  # roll back to previous num
-            break
-        nid_old = nid
-        rcore_old = rcore
-    return cores.sort_index().loc[num:]
 
 
 def calculate_critical_tes(s, rprf, core):
