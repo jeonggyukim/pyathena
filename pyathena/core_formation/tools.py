@@ -648,10 +648,14 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
     renv = reff_sph(gd.len(eid)*s.dV)
 
+    # Calculate tidal radius
+    rtidal = get_node_distance(s, lid, gd.parent[eid])
+
     leaf_id = [lid,]
     leaf_radius = [rlf,]
     envelop_id = [eid,]
     envelop_radius = [renv,]
+    tidal_radius = [rtidal,]
 
     for num in nums[1:]:
         msg = '[track_cores] processing model {} pid {} num {}'
@@ -665,6 +669,11 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
 
         # linear extrapolation to predict the envelop radius
         if len(envelop_radius) == 1:
+            dr = 0
+        elif leaf_radius[-1] > envelop_radius[-2]:
+            # If the tracked leaf is larger than the future envelop, this
+            # indicates fragmentation. In this case, extrapolation from
+            # (smaller) envelop to (larger) leaf is supressed.
             dr = 0
         else:
             dr = envelop_radius[-1] - envelop_radius[-2]
@@ -709,17 +718,22 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
             lid = enc_leaves[np.argmin(ranks)]
             rlf = reff_sph(gd.len(lid)*s.dV)
 
+        # Calculate tidal radius
+        rtidal = get_node_distance(s, lid, gd.parent[eid])
+
         leaf_id.append(lid)
         leaf_radius.append(rlf)
         envelop_id.append(eid)
         envelop_radius.append(renv)
+        tidal_radius.append(rtidal)
 
     # SMOON: Using dtype=object is to prevent automatic upcasting from int to float
     # when indexing a single row. Maybe there is a better approach.
     cores = pd.DataFrame(dict(leaf_id=leaf_id,
                               leaf_radius=leaf_radius,
                               envelop_id=envelop_id,
-                              envelop_radius=envelop_radius),
+                              envelop_radius=envelop_radius,
+                              tidal_radius=tidal_radius),
                          index=nums, dtype=object).sort_index()
     return cores
 
