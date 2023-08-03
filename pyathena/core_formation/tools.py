@@ -272,6 +272,7 @@ def calculate_critical_tes(s, rprf, core):
 
     mtidal = (4*np.pi*rprf.r**2*rprf.rho).sel(r=slice(0, core.tidal_radius)
                                               ).integrate('r').data[()]
+    mean_density = mtidal / (4*np.pi*core.tidal_radius**3/3)
 
     if len(r) < 1:
         # Sonic radius is zero. Cannot find critical tes.
@@ -322,11 +323,11 @@ def calculate_critical_tes(s, rprf, core):
             mcrit_e = np.nan
             dcrit_e = np.nan
 
-    res = dict(center_density=rhoc, edge_density=rhoe, pindex=p,
-               sonic_radius=rs, tidal_mass=mtidal, critical_contrast=dcrit,
-               critical_radius=rcrit, critical_mass=mcrit,
-               critical_contrast_e=dcrit_e, critical_radius_e=rcrit_e,
-               critical_mass_e=mcrit_e)
+    res = dict(tidal_mass=mtidal, center_density=rhoc, edge_density=rhoe,
+               mean_density=mean_density, sonic_radius=rs, pindex=p,
+               critical_contrast=dcrit, critical_radius=rcrit,
+               critical_mass=mcrit, critical_contrast_e=dcrit_e,
+               critical_radius_e=rcrit_e, critical_mass_e=mcrit_e)
     return res
 
 
