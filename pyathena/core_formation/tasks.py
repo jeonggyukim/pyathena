@@ -147,7 +147,7 @@ def core_tracking(s, pid, overwrite=False):
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def radial_profiles(s, pid, num, overwrite=False, rmax=None):
+def radial_profile(s, pid, num, overwrite=False, rmax=None):
     """Calculates and pickles radial profiles of all cores.
 
     Parameters
@@ -166,12 +166,11 @@ def radial_profiles(s, pid, num, overwrite=False, rmax=None):
                   'radial_profile.par{}.{:05d}.nc'.format(pid, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
-        print('[save_radial_profiles] file already exists. Skipping...')
+        print('[radial_profile] file already exists. Skipping...')
         return
 
-    msg = '[save_radial_profiles] processing model {} pid {} num {}'
-    msg = msg.format(s.basename, pid, num)
-    print(msg)
+    msg = '[radial_profile] processing model {} pid {} num {}'
+    print(msg.format(s.basename, pid, num))
 
     # Load the snapshot and the core id
     ds = s.load_hdf5(num, load_method='pyathena')
@@ -182,13 +181,13 @@ def radial_profiles(s, pid, num, overwrite=False, rmax=None):
         rmax = 0.5*s.Lbox
 
     # Find the location of the core
-    center = tools.get_coords_node(s, core.nid)
+    center = tools.get_coords_node(s, core.leaf_id)
 
     # Roll the data such that the core is at the center of the domain
     ds, center = tools.recenter_dataset(ds, center)
 
     # Calculate radial profile
-    rprf = tools.calculate_radial_profiles(s, ds, center, rmax)
+    rprf = tools.calculate_radial_profile(s, ds, center, rmax)
     rprf = rprf.expand_dims(dict(t=[ds.Time,]))
 
     # write to file

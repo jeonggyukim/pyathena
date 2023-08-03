@@ -112,7 +112,7 @@ if __name__ == "__main__":
             for pid in pids:
 
                 def wrapper(num):
-                    tasks.radial_profiles(s, pid, num,
+                    tasks.radial_profile(s, pid, num,
                                           overwrite=args.overwrite)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
