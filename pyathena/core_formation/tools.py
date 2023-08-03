@@ -647,7 +647,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     # start from t = t_coll and track backward
     nums = np.arange(s.tcoll_cores.loc[pid].num, config.GRID_NUM_START-1, -1)
     num = nums[0]
-    msg = '[find_and_save_cores] processing model {} pid {} num {}'
+    msg = '[track_cores] processing model {} pid {} num {}'
     print(msg.format(s.basename, pid, num))
     gd = s.load_dendro(num)
 
@@ -665,7 +665,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     envelop_radius = [renv,]
 
     for num in nums[1:]:
-        msg = '[find_and_save_cores] processing model {} pid {} num {}'
+        msg = '[track_cores] processing model {} pid {} num {}'
         print(msg.format(s.basename, pid, num))
         gd = s.load_dendro(num)
 
@@ -692,6 +692,8 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
 
         # If preimage is too small, go to envelop
         while renv < renv_predicted/tol:
+            if eid == gd.trunk:
+                break
             parent = gd.parent[eid]
             rparent = reff_sph(gd.len(parent)*s.dV)
             if rparent < renv_predicted*tol:
@@ -736,10 +738,10 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
 def correct_tidal_radius(s, gd, lid, tol):
     me = lid
     while True:
-        if me == gd.trunk:
-            raise ValueError("Reached trunk")
-        parent = gd.parent[me]
         reff_me = reff_sph(gd.len(me)*s.dV)
+        if me == gd.trunk:
+            return me, reff_me
+        parent = gd.parent[me]
 
         sib = gd.sibling(me)
         reff_sib = reff_sph(gd.len(sib)*s.dV)
