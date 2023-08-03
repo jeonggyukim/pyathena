@@ -101,9 +101,9 @@ if __name__ == "__main__":
 
         # Find t_coll cores and save their GRID-dendro node ID's.
         if args.core_tracking:
-            print(f"find t_coll cores for model {mdl}", flush=True)
+            print(f"Find t_coll cores for model {mdl}", flush=True)
             def wrapper(pid):
-                find_and_save_cores(s, pid, overwrite=args.overwrite)
+                core_tracking(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids)
             s._load_cores()
@@ -113,7 +113,7 @@ if __name__ == "__main__":
             for pid in s.pids:
                 # Check if file exists
                 ofname = Path(s.savdir, dirname,
-                              'rtidal_correction.par{}.p'.format(pid))
+                              'cores_corrected.par{}.p'.format(pid))
                 ofname.parent.mkdir(exist_ok=True)
                 if ofname.exists() and not args.overwrite:
                     print("[correct_tidal_radius] file already exists."
@@ -124,37 +124,9 @@ if __name__ == "__main__":
                 # preimage corrected. Read from raw data.
                 fname = Path(s.savdir, dirname, 'cores.par{}.p'.format(pid))
                 cores = pd.read_pickle(fname)
-                nid, rtidal = tools.find_rtidal_envelop(s, cores, tol=1.1)
-                def wrapper(num):
-                    msg = '[correct_tidal_radius] processing model {} pid {} num {}'
-                    print(msg.format(s.basename, pid, num))
-                    ds = s.load_hdf5(num)
-                    gd = s.load_dendro(num)
-                    rho = gd.filter_data(ds.dens, nid.loc[num], drop=True)
-                    mtidal = (rho*s.dV).sum()
-                    pcn = boundary.precompute_neighbor(s.domain['Nx'].T, 'periodic', corner=False)
-                    edge_cells = boundary.get_edge_cells(gd.get_all_descendant_cells(nid.loc[num]), pcn)
-                    rhoe = dendrogram.filter_by_dict(ds.dens, cells=edge_cells, drop=True)
-                    rhoe_mean = np.mean(rhoe)
-                    rhoe_med = np.median(rhoe)
-                    return (num, mtidal, rhoe_mean, rhoe_med)
-                with Pool(args.np) as p:
-                    res = p.map(wrapper, cores.index)
-                mtidal = pd.Series(data = map(lambda x: x[1], res),
-                                   index = map(lambda x: x[0], res),
-                                   name='envelop_tidal_mass').sort_index()
-                rhoe_mean = pd.Series(data = map(lambda x: x[2], res),
-                                      index = map(lambda x: x[0], res),
-                                      name='mean_edge_density').sort_index()
-                rhoe_med = pd.Series(data = map(lambda x: x[3], res),
-                                     index = map(lambda x: x[0], res),
-                                     name='median_edge_density').sort_index()
-                res = pd.DataFrame({nid.name:nid,
-                                    rtidal.name:rtidal,
-                                    mtidal.name:mtidal,
-                                    rhoe_mean.name:rhoe_mean,
-                                    rhoe_med.name:rhoe_med})
-                res.to_pickle(ofname)
+                cores = tools.find_envelop(s, cores, tol=1.1)
+                # TODO should modify leaf_nid using the node of the potential minimum
+                cores.to_pickle(ofname)
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
@@ -217,7 +189,8 @@ if __name__ == "__main__":
                 reff, engs = energy.calculate_cumulative_energies(gd, data, core.nid)
                 emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
                 emin = tools.rounddown(engs['egrv'].min(), 1)
-                rmax = tools.roundup(reff.max(), 2)
+                #rmax = tools.roundup(reff.max(), 2)
+                rmax = tools.roundup(1.5*core.new_tidal_radius, 2)
                 def wrapper(num):
                     make_plots_core_evolution(s, pid, num,
                                               overwrite=args.overwrite,

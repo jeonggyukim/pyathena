@@ -7,8 +7,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import subprocess
 import pickle
 import glob
-import numpy as np
-import pandas as pd
 
 # pyathena modules
 from pyathena.core_formation import plots
@@ -136,7 +134,7 @@ def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
         pickle.dump(critical_tes, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
+def core_tracking(s, pid, overwrite=False):
     """Loops over all sink particles and find their progenitor cores
 
     Finds a unique grid-dendro leaf at each snapshot that is going to collapse.
@@ -148,13 +146,9 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
     s : LoadSimCoreFormation
         LoadSimCoreFormation instance.
     pid : int
-        Particle id.
+        Particle ID
     overwrite : str, optional
         If true, overwrites the existing pickle file.
-    fdst_threshold: float, optional
-        if fdst = |d1 - d2| / max(R1, R2) is larger than this threshold,
-        stop back-tracking.
-        # TODO Set to large number; otherwise premature optimization.
     """
     # Check if file exists
     if s.use_phitot:
@@ -163,119 +157,11 @@ def find_and_save_cores(s, pid, overwrite=False, fdst_threshold=1e10):
         ofname = Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
-        print('[find_and_save_cores] file already exists. Skipping...')
+        print('[core_tracking] file already exists. Skipping...')
         return
 
-    # start from t = t_coll
-
-    # Load data
-    num = s.tcoll_cores.loc[pid].num
-    ds = s.load_hdf5(num, load_method='pyathena')
-    gd = s.load_dendro(num)
-
-    # Calculate position, mass, and radius of the core
-    nid_old = tools.find_tcoll_core(s, pid)
-    pos_old = tools.get_coords_node(s, nid_old)
-    rho = gd.filter_data(ds.dens, nid_old)
-    Mcore_old = (rho*s.dV).sum().data[()]
-    Vcore = ((rho > 0).sum()*s.dV).data[()]
-    Rcore_old = (3*Vcore/(4*np.pi))**(1./3.)
-
-    # Add t_coll core to a list of progenitor cores
-    cores = pd.DataFrame(dict(num=[num,],
-                              time=[ds.Time,],
-                              nid=[nid_old,],
-                              radius=[Rcore_old,],
-                              mass=[Mcore_old,]),
-                         dtype=object).set_index("num")
-
-    for num in np.arange(num-1, config.GRID_NUM_START-1, -1):
-        msg = '[find_and_save_cores] processing model {} pid {} num {}'
-        msg = msg.format(s.basename, pid, num)
-        print(msg)
-        # loop backward in time to find all preimages of the t_coll core
-        ds = s.load_hdf5(num, load_method='pyathena')
-        gd = s.load_dendro(num)
-
-        # find closeast leaf to the previous preimage
-        dst = {leaf: tools.get_node_distance(s, leaf, nid_old)
-               for leaf in gd.leaves}
-        dst_min = np.min(list(dst.values()))
-        for k, v in dst.items():
-            if v == dst_min:
-                nid = k
-
-        # Calculate position, mass, and radius of the core and
-        # check if this core is really the same core in different time
-        pos = tools.get_coords_node(s, nid)
-        rho = gd.filter_data(ds.dens, nid)
-        Mcore = (rho*s.dV).sum().data[()]
-        Vcore = ((rho > 0).sum()*s.dV).data[()]
-        Rcore = (3*Vcore/(4*np.pi))**(1./3.)
-
-        # Relative errors in position, mass, and radius.
-        # Note that the normalization is the maximum of current or
-        # previous core;
-        # This is to account for situation where a bud is suddenly merged
-        # leading to sudden change in the core radius and mass.
-        fdst = tools.get_periodic_distance(pos_old, pos, s.Lbox)\
-            / max(Rcore, Rcore_old)
-
-        # If relative errors are more than 100%, this core is unlikely the
-        # same core at previous timestep. Stop backtracing.
-        if fdst > fdst_threshold:
-            break
-
-        # Add this core to list of progenitor cores
-        cores.loc[num] = dict(nid=nid, time=ds.Time, radius=Rcore,
-                              mass=Mcore)
-
-        # Save old properties
-        nid_old = nid
-        pos_old = pos
-        Mcore_old = Mcore
-        Rcore_old = Rcore
-
-    # write to file
-    cores = cores.sort_index()
+    cores = tools.track_cores(s, pid)
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
-
-
-def find_rtidal(s, ncells_min=5, fac=0.5):
-    dirname = 'cores_phitot' if s.use_phitot else 'cores'
-    for pid in s.pids:
-        # Check if file exists
-        ofname = Path(s.savdir, dirname,
-                      'rtidal_newcorr.par{}.p'.format(pid))
-        ofname.parent.mkdir(exist_ok=True)
-        if ofname.exists() and not args.overwrite:
-            print("[find_rtidal] file already exists. Skipping...")
-            continue
-
-        nid_corr, rtidal_corr = [], []
-        for num, core in s.cores[pid].iterrows():
-            msg = '[find_rtidal] processing model {} pid {} num {}'
-            print(msg.format(s.basename, pid, num))
-            me = core.nid
-            gd = s.load_dendro(num)
-            while True:
-                rtidal_me = tools.reff_sph(gd.len(me)*s.dV)
-                if me == gd.trunk:
-                    nid_corr.append(me)
-                    rtidal_corr.append(rtidal_me)
-                    break
-                sibling = gd.sibling(me)
-                rtidal_sibling = tools.reff_sph(gd.len(sibling)*s.dV)
-                if rtidal_sibling < fac*rtidal_me or rtidal_me < ncells_min*s.dx:
-                    me = gd.parent[me]
-                else:
-                    nid_corr.append(me)
-                    rtidal_corr.append(rtidal_me)
-                    break
-        res = pd.DataFrame(dict(nid_corr=nid_corr,
-                           rtidal_corr=rtidal_corr),
-                           s.cores[pid].index)
-        res.to_pickle(ofname)
 
 
 def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
