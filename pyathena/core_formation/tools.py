@@ -63,6 +63,181 @@ class LognormalPDF:
         return np.exp(x)
 
 
+def track_cores(s, pid, tol=1.1, sub_frac=0.2):
+    """
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+    pid : int
+    tol : float, optional
+    sub_frac : float, optional
+
+    Returns
+    -------
+    cores : pandas.DataFrame
+    """
+    # start from t = t_coll and track backward
+    nums = np.arange(s.tcoll_cores.loc[pid].num, config.GRID_NUM_START-1, -1)
+    num = nums[0]
+    msg = '[track_cores] processing model {} pid {} num {}'
+    print(msg.format(s.basename, pid, num))
+    gd = s.load_dendro(num)
+
+    # Calculate effective radius of this leaf
+    lid = find_tcoll_core(s, pid)
+    rlf = reff_sph(gd.len(lid)*s.dV)
+
+    # Do the tidal correction to neglect attached substructures.
+    eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
+    renv = reff_sph(gd.len(eid)*s.dV)
+
+    # Calculate tidal radius
+    rtidal = get_node_distance(s, lid, gd.parent[eid])
+
+    leaf_id = [lid,]
+    leaf_radius = [rlf,]
+    envelop_id = [eid,]
+    envelop_radius = [renv,]
+    tidal_radius = [rtidal,]
+
+    for num in nums[1:]:
+        msg = '[track_cores] processing model {} pid {} num {}'
+        print(msg.format(s.basename, pid, num))
+        gd = s.load_dendro(num)
+
+        # find closeast leaf to the previous preimage
+        dst = [get_node_distance(s, leaf, leaf_id[-1]) for leaf in gd.leaves]
+        lid = gd.leaves[np.argmin(dst)]
+        rlf = reff_sph(gd.len(lid)*s.dV)
+
+        # linear extrapolation to predict the envelop radius
+        if len(envelop_radius) == 1:
+            dr = 0
+        elif leaf_radius[-1] > envelop_radius[-2]:
+            # If the tracked leaf is larger than the future envelop, this
+            # indicates fragmentation. In this case, extrapolation from
+            # (smaller) envelop to (larger) leaf is supressed.
+            dr = 0
+        else:
+            dr = envelop_radius[-1] - envelop_radius[-2]
+        renv_predicted = envelop_radius[-1] + dr
+
+        # Do the tidal correction to neglect attached substructures.
+        eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
+        renv = reff_sph(gd.len(eid)*s.dV)
+        if renv > renv_predicted*tol:
+            # preimage is too large; the tidal correction may have been too generous.
+            # Undo the tidal correction
+            eid = lid
+            renv = rlf
+
+        # If preimage is too small, go to envelop
+        while renv < renv_predicted/tol:
+            if eid == gd.trunk:
+                break
+            parent = gd.parent[eid]
+            rparent = reff_sph(gd.len(parent)*s.dV)
+            if rparent < renv_predicted*tol:
+                # Try going up in the hierarchy.
+                # If parent joins continuously, accept it.
+                eid = parent
+                renv = rparent
+            else:
+                # Stop going up in the hierarchy.
+                break
+
+        # Correct tidal radius for the last time
+        eid_try, _ = correct_tidal_radius(s, gd, eid, tol=sub_frac)
+        renv_try = reff_sph(gd.len(eid_try)*s.dV)
+        if renv_try < renv_predicted*tol:
+            eid = eid_try
+            renv = renv_try
+
+        # Reset the leaf such that it is has the minimum potential inside the
+        # envelop.
+        if eid not in gd.leaves:
+            enc_leaves = list(set(gd.descendants[eid]).intersection(gd.leaves))
+            ranks = [np.where(gd.cells_ordered == nd)[0][0] for nd in enc_leaves]
+            lid = enc_leaves[np.argmin(ranks)]
+            rlf = reff_sph(gd.len(lid)*s.dV)
+
+        # Calculate tidal radius
+        rtidal = get_node_distance(s, lid, gd.parent[eid])
+
+        leaf_id.append(lid)
+        leaf_radius.append(rlf)
+        envelop_id.append(eid)
+        envelop_radius.append(renv)
+        tidal_radius.append(rtidal)
+
+    # SMOON: Using dtype=object is to prevent automatic upcasting from int to float
+    # when indexing a single row. Maybe there is a better approach.
+    cores = pd.DataFrame(dict(leaf_id=leaf_id,
+                              leaf_radius=leaf_radius,
+                              envelop_id=envelop_id,
+                              envelop_radius=envelop_radius,
+                              tidal_radius=tidal_radius),
+                         index=nums, dtype=object).sort_index()
+    return cores
+
+
+def correct_tidal_radius(s, gd, lid, tol):
+    me = lid
+    while True:
+        reff_me = reff_sph(gd.len(me)*s.dV)
+        if me == gd.trunk:
+            return me, reff_me
+        parent = gd.parent[me]
+
+        sib = gd.sibling(me)
+        reff_sib = reff_sph(gd.len(sib)*s.dV)
+
+        if reff_sib < tol*reff_me:
+            me = parent
+        else:
+            break
+    return me, reff_me
+
+
+def apply_preimage_correction(s, cores):
+    """Find true preimage by applying distance criterion
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata.
+    cores : pandas.DataFrame
+        Dataframe containing core information.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Filtered DataFrame that only containing valid rows
+
+    Notes
+    -----
+    Initial core tracking is done with the maximum robustness, i.e., it finds
+    closeast leaf node without worring about whether it is true preimage. Then,
+    after envelop tidal radius correction, this function filters true preimage
+    by requiring any consecutive "core" must be closer than their individual
+    radius.
+    """
+    cores_itr = cores.sort_index(ascending=False).iterrows()
+    _, core = next(cores_itr)
+    nid_old = core.nid
+    rcore_old = core.envelop_tidal_radius
+    for num, core in cores_itr:
+        nid = core.nid
+        rcore = core.envelop_tidal_radius
+        fdst = get_node_distance(s, nid_old, nid) / max(rcore_old, rcore)
+        if fdst > 1:
+            num += 1  # roll back to previous num
+            break
+        nid_old = nid
+        rcore_old = rcore
+    return cores.sort_index().loc[num:]
+
+
 def calculate_critical_tes(s, rprf, core):
     """Calculates critical tes given the radial profile.
 
@@ -213,6 +388,24 @@ def calculate_radial_profile(s, ds, origin, rmax):
     return rprf
 
 
+def find_tcoll_core(s, pid):
+    """Find the GRID-dendro ID of the t_coll core of particle pid"""
+    # load dendrogram at t = t_coll
+    num = s.tcoll_cores.loc[pid].num
+    gd = s.load_dendro(num)
+
+    # find closeast leaf node to this particle
+    pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
+    pos_particle = pos_particle.to_numpy()
+
+    distance = []
+    for leaf in gd.leaves:
+        pos_node = get_coords_node(s, leaf)
+        distance.append(get_periodic_distance(pos_node, pos_particle, s.Lbox))
+    tcoll_core = gd.leaves[np.argmin(distance)]
+    return tcoll_core
+
+
 def get_accelerations(rprf):
     """Calculate RHS of the Lagrangian EOM (force per unit mass)
 
@@ -248,24 +441,6 @@ def get_accelerations(rprf):
     return acc
 
 
-def find_tcoll_core(s, pid):
-    """Find the GRID-dendro ID of the t_coll core of particle pid"""
-    # load dendrogram at t = t_coll
-    num = s.tcoll_cores.loc[pid].num
-    gd = s.load_dendro(num)
-
-    # find closeast leaf node to this particle
-    pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
-    pos_particle = pos_particle.to_numpy()
-
-    distance = []
-    for leaf in gd.leaves:
-        pos_node = get_coords_node(s, leaf)
-        distance.append(get_periodic_distance(pos_node, pos_particle, s.Lbox))
-    tcoll_core = gd.leaves[np.argmin(distance)]
-    return tcoll_core
-
-
 def get_coords_minimum(dat):
     """returns coordinates at the minimum of dat
 
@@ -298,6 +473,36 @@ def get_coords_node(s, nd):
     coordinates = (s.domain['le']
                    + np.array([i+0.5, j+0.5, k+0.5])*s.domain['dx'])
     return coordinates
+
+
+def get_periodic_distance(pos1, pos2, Lbox):
+    hLbox = 0.5*Lbox
+    rds2 = 0
+    for x1, x2 in zip(pos1, pos2):
+        dst = np.abs(x1-x2)
+        dst = Lbox - dst if dst > hLbox else dst
+        rds2 += dst**2
+    dst = np.sqrt(rds2)
+    return dst
+
+
+def get_node_distance(s, nd1, nd2):
+    """Calculate periodic distance between two nodes
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata.
+    nd1 : int
+        GRID-dendro node ID
+    nd2 : int
+        GRID-dendro node ID
+    """
+    pos1 = get_coords_node(s, nd1)
+    pos2 = get_coords_node(s, nd2)
+    # TODO generalize this
+    dst = get_periodic_distance(pos1, pos2, s.Lbox)
+    return dst
 
 
 def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
@@ -538,211 +743,6 @@ def get_critical_core_props(s, pid, e1=0.7, e2=0.4):
     cprops['t2'] = t2
     cprops['rhoe'] = rhoe
     return cprops
-
-
-def get_periodic_distance(pos1, pos2, Lbox):
-    hLbox = 0.5*Lbox
-    rds2 = 0
-    for x1, x2 in zip(pos1, pos2):
-        dst = np.abs(x1-x2)
-        dst = Lbox - dst if dst > hLbox else dst
-        rds2 += dst**2
-    dst = np.sqrt(rds2)
-    return dst
-
-
-def get_node_distance(s, nd1, nd2):
-    """Calculate periodic distance between two nodes
-
-    Parameters
-    ----------
-    s : LoadSimCoreFormation
-        Simulation metadata.
-    nd1 : int
-        GRID-dendro node ID
-    nd2 : int
-        GRID-dendro node ID
-    """
-    pos1 = get_coords_node(s, nd1)
-    pos2 = get_coords_node(s, nd2)
-    # TODO generalize this
-    dst = get_periodic_distance(pos1, pos2, s.Lbox)
-    return dst
-
-
-def apply_preimage_correction(s, cores):
-    """Find true preimage by applying distance criterion
-
-    Parameters
-    ----------
-    s : LoadSimCoreFormation
-        Simulation metadata.
-    cores : pandas.DataFrame
-        Dataframe containing core information.
-
-    Returns
-    -------
-    pandas.DataFrame
-        Filtered DataFrame that only containing valid rows
-
-    Notes
-    -----
-    Initial core tracking is done with the maximum robustness, i.e., it finds
-    closeast leaf node without worring about whether it is true preimage. Then,
-    after envelop tidal radius correction, this function filters true preimage
-    by requiring any consecutive "core" must be closer than their individual
-    radius.
-    """
-    cores_itr = cores.sort_index(ascending=False).iterrows()
-    _, core = next(cores_itr)
-    nid_old = core.nid
-    rcore_old = core.envelop_tidal_radius
-    for num, core in cores_itr:
-        nid = core.nid
-        rcore = core.envelop_tidal_radius
-        fdst = get_node_distance(s, nid_old, nid) / max(rcore_old, rcore)
-        if fdst > 1:
-            num += 1  # roll back to previous num
-            break
-        nid_old = nid
-        rcore_old = rcore
-    return cores.sort_index().loc[num:]
-
-
-def track_cores(s, pid, tol=1.1, sub_frac=0.2):
-    """
-    Parameters
-    ----------
-    s : LoadSimCoreFormation
-    pid : int
-    tol : float, optional
-    sub_frac : float, optional
-
-    Returns
-    -------
-    cores : pandas.DataFrame
-    """
-    # start from t = t_coll and track backward
-    nums = np.arange(s.tcoll_cores.loc[pid].num, config.GRID_NUM_START-1, -1)
-    num = nums[0]
-    msg = '[track_cores] processing model {} pid {} num {}'
-    print(msg.format(s.basename, pid, num))
-    gd = s.load_dendro(num)
-
-    # Calculate effective radius of this leaf
-    lid = find_tcoll_core(s, pid)
-    rlf = reff_sph(gd.len(lid)*s.dV)
-
-    # Do the tidal correction to neglect attached substructures.
-    eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
-    renv = reff_sph(gd.len(eid)*s.dV)
-
-    # Calculate tidal radius
-    rtidal = get_node_distance(s, lid, gd.parent[eid])
-
-    leaf_id = [lid,]
-    leaf_radius = [rlf,]
-    envelop_id = [eid,]
-    envelop_radius = [renv,]
-    tidal_radius = [rtidal,]
-
-    for num in nums[1:]:
-        msg = '[track_cores] processing model {} pid {} num {}'
-        print(msg.format(s.basename, pid, num))
-        gd = s.load_dendro(num)
-
-        # find closeast leaf to the previous preimage
-        dst = [get_node_distance(s, leaf, leaf_id[-1]) for leaf in gd.leaves]
-        lid = gd.leaves[np.argmin(dst)]
-        rlf = reff_sph(gd.len(lid)*s.dV)
-
-        # linear extrapolation to predict the envelop radius
-        if len(envelop_radius) == 1:
-            dr = 0
-        elif leaf_radius[-1] > envelop_radius[-2]:
-            # If the tracked leaf is larger than the future envelop, this
-            # indicates fragmentation. In this case, extrapolation from
-            # (smaller) envelop to (larger) leaf is supressed.
-            dr = 0
-        else:
-            dr = envelop_radius[-1] - envelop_radius[-2]
-        renv_predicted = envelop_radius[-1] + dr
-
-        # Do the tidal correction to neglect attached substructures.
-        eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
-        renv = reff_sph(gd.len(eid)*s.dV)
-        if renv > renv_predicted*tol:
-            # preimage is too large; the tidal correction may have been too generous.
-            # Undo the tidal correction
-            eid = lid
-            renv = rlf
-
-        # If preimage is too small, go to envelop
-        while renv < renv_predicted/tol:
-            if eid == gd.trunk:
-                break
-            parent = gd.parent[eid]
-            rparent = reff_sph(gd.len(parent)*s.dV)
-            if rparent < renv_predicted*tol:
-                # Try going up in the hierarchy.
-                # If parent joins continuously, accept it.
-                eid = parent
-                renv = rparent
-            else:
-                # Stop going up in the hierarchy.
-                break
-
-        # Correct tidal radius for the last time
-        eid_try, _ = correct_tidal_radius(s, gd, eid, tol=sub_frac)
-        renv_try = reff_sph(gd.len(eid_try)*s.dV)
-        if renv_try < renv_predicted*tol:
-            eid = eid_try
-            renv = renv_try
-
-        # Reset the leaf such that it is has the minimum potential inside the
-        # envelop.
-        if eid not in gd.leaves:
-            enc_leaves = list(set(gd.descendants[eid]).intersection(gd.leaves))
-            ranks = [np.where(gd.cells_ordered == nd)[0][0] for nd in enc_leaves]
-            lid = enc_leaves[np.argmin(ranks)]
-            rlf = reff_sph(gd.len(lid)*s.dV)
-
-        # Calculate tidal radius
-        rtidal = get_node_distance(s, lid, gd.parent[eid])
-
-        leaf_id.append(lid)
-        leaf_radius.append(rlf)
-        envelop_id.append(eid)
-        envelop_radius.append(renv)
-        tidal_radius.append(rtidal)
-
-    # SMOON: Using dtype=object is to prevent automatic upcasting from int to float
-    # when indexing a single row. Maybe there is a better approach.
-    cores = pd.DataFrame(dict(leaf_id=leaf_id,
-                              leaf_radius=leaf_radius,
-                              envelop_id=envelop_id,
-                              envelop_radius=envelop_radius,
-                              tidal_radius=tidal_radius),
-                         index=nums, dtype=object).sort_index()
-    return cores
-
-
-def correct_tidal_radius(s, gd, lid, tol):
-    me = lid
-    while True:
-        reff_me = reff_sph(gd.len(me)*s.dV)
-        if me == gd.trunk:
-            return me, reff_me
-        parent = gd.parent[me]
-
-        sib = gd.sibling(me)
-        reff_sib = reff_sph(gd.len(sib)*s.dV)
-
-        if reff_sib < tol*reff_me:
-            me = parent
-        else:
-            break
-    return me, reff_me
 
 
 def lpdensity(r, cs, gconst):
