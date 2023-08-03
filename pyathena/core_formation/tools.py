@@ -166,7 +166,7 @@ def calculate_critical_tes(s, rprf, core, Mach_threshold=1.5):
     return res
 
 
-def calculate_radial_profiles(s, ds, origin, rmax):
+def calculate_radial_profile(s, ds, origin, rmax):
     """Calculates radial profiles of various properties at selected position
 
     Parameters
@@ -189,45 +189,34 @@ def calculate_radial_profiles(s, ds, origin, rmax):
     -----
     vel1, vel2, vel3: density-weighted mean velocities (v_r, v_theta, v_phi).
     vel1_sq, vel2_sq, vel3_sq: density-weighted mean squared velocities.
-    ggas1, ggas2, ggas3: density-weighted mean gravity due to gas.
-    gstar1, gstar2, gstar3: density-weighted mean gravity due to stars.
+    gacc1: density-weighted mean gravitational acceleration.
     """
     # Convert density and velocities to spherical coord.
-    ds['phistar'] = ds['phi'] - ds['phigas']
-    vel, ggas, gstar = {}, {}, {}
+    vel, gacc = {}, {}
     for dim, axis in zip(['x', 'y', 'z'], [1, 2, 3]):
         # Recenter velocity and calculate gravitational acceleration
         vel_ = ds['mom{}'.format(axis)]/ds.dens
         vel[dim] = vel_ - vel_.sel(x=origin[0], y=origin[1], z=origin[2])
-        ggas[dim] = -ds['phigas'].differentiate(dim)
-        gstar[dim] = -ds['phistar'].differentiate(dim)
+        gacc[dim] = -ds.phi.differentiate(dim)
     ds_sph = {}
     r, (ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3'])\
         = transform.to_spherical(vel.values(), origin)
-    _, (ds_sph['ggas1'], ds_sph['ggas2'], ds_sph['ggas3'])\
-        = transform.to_spherical(ggas.values(), origin)
-    _, (ds_sph['gstar1'], ds_sph['gstar2'], ds_sph['gstar3'])\
-        = transform.to_spherical(gstar.values(), origin)
+    _, (ds_sph['gacc1'], ds_sph['gacc2'], ds_sph['gacc3'])\
+        = transform.to_spherical(gacc.values(), origin)
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
-    div_v = (vel['x'].differentiate('x')
-             + vel['y'].differentiate('y')
-             + vel['z'].differentiate('z'))
-    ds_sph['div_v'] = div_v.assign_coords(dict(r=r))
 
     # Radial binning
-    edges = np.insert(np.arange(ds.dx1/2, rmax, ds.dx1), 0, 0)
+    edges = np.insert(np.arange(s.dx/2, rmax, s.dx), 0, 0)
     rprf = {}
 
-    for k in ['rho', 'div_v']:
+    for k in ['rho']:
         rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
     # We can use weighted groupby_bins, but let's do it like this to reuse
     # rprf['rho'] for performance
-    for k in ['ggas1', 'gstar1', 'vel1', 'vel2', 'vel3']:
-        rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
+    for k in ['gacc1', 'vel1', 'vel2', 'vel3']:
         rprf[k+'_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k],
                                                'r', edges) / rprf['rho']
     for k in ['vel1', 'vel2', 'vel3']:
-        rprf[k+'_sq'] = transform.groupby_bins(ds_sph[k]**2, 'r', edges)
         rprf[k+'_sq_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k]**2,
                                                   'r', edges) / rprf['rho']
 
@@ -261,7 +250,7 @@ def get_accelerations(rprf):
                thm=-pthm.differentiate('r') / rprf.rho,
                trb=-ptrb.differentiate('r') / rprf.rho,
                cen=(rprf.vel2_mw**2 + rprf.vel3_mw**2) / rprf.r,
-               grv=rprf.ggas1_mw + rprf.gstar1_mw,
+               grv=rprf.gacc1_mw,
                ani=((rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw)
                     / rprf.r))
     acc = xr.Dataset(acc)
