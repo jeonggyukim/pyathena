@@ -63,7 +63,7 @@ class LognormalPDF:
         return np.exp(x)
 
 
-def calculate_critical_tes(s, rprf, core, Mach_threshold=1.5):
+def calculate_critical_tes(s, rprf, core):
     """Calculates critical tes given the radial profile.
 
     Given the radial profile, find the critical tes at the same central
@@ -78,37 +78,25 @@ def calculate_critical_tes(s, rprf, core, Mach_threshold=1.5):
         Object containing radial profiles.
     core : pandas series
         Object containing core informations
-    Mach_threshold : float, optional
-        Select the region to perform linear fit to the sigma(r) profile.
 
     Returns
     -------
     res : dict
         center_density, edge_density, critical_radius, pindex, sonic_radius
     """
-    vsq = rprf['dvel1_sq_mw']
+    # Select data for sonic radius fit
+    r = rprf.r.sel(r=slice(0, core.envelop_radius)).data[1:]
+    vr = np.sqrt(rprf.dvel1_sq_mw.sel(r=slice(0, core.envelop_radius)).data[1:])
 
-    # Select the region for fitting the velocity-size relation.
-    # TODO(SMOON) deprecate Mach_threshold and do fitting using
-    # all data up to rtidal.
-    Mach = np.sqrt(vsq.data) / s.cs
-    idx = np.where(Mach < Mach_threshold)[0][-1]
-    Rmax = rprf.r.isel(r=idx).data[()]
-    r = rprf.r.sel(r=slice(0, Rmax)).data[1:]
-    vr = np.sqrt(vsq.sel(r=slice(0, Rmax)).data[1:])
-
+    # Set scale length and mass based on the center and edge densities
     rhoc = rprf.rho.isel(r=0).data[()]
-    LJ_c = 1.0 / np.sqrt(rhoc)
-    MJ_c = 1.0 / np.sqrt(rhoc)
+    LJ_c = MJ_c = 1.0 / np.sqrt(rhoc)
 
-    gd = s.load_dendro(rprf.num.data[()])
-    pos0 = get_coords_node(s, core.nid)
-    pos1 = get_coords_node(s, gd.parent[core.envelop_nid])
-    rtidal = get_periodic_distance(pos0, pos1, s.Lbox)
-    mtidal = (4*np.pi*rprf.r**2*rprf.rho).sel(r=slice(0, rtidal)).integrate('r').data[()]
-    rhoe = rprf.rho.interp(r=rtidal).data[()]
-    LJ_e = 1.0 / np.sqrt(rhoe)
-    MJ_e = 1.0 / np.sqrt(rhoe)
+    rhoe = rprf.rho.interp(r=core.tidal_radius).data[()]
+    LJ_e = MJ_e = 1.0 / np.sqrt(rhoe)
+
+    mtidal = (4*np.pi*rprf.r**2*rprf.rho).sel(r=slice(0, core.tidal_radius)
+                                              ).integrate('r').data[()]
 
     if len(r) < 1:
         # Sonic radius is zero. Cannot find critical tes.
@@ -159,10 +147,11 @@ def calculate_critical_tes(s, rprf, core, Mach_threshold=1.5):
             mcrit_e = np.nan
             dcrit_e = np.nan
 
-    res = dict(center_density=rhoc, edge_density=rhoe, pindex=p, sonic_radius=rs,
-               critical_contrast=dcrit, critical_radius=rcrit, critical_mass=mcrit,
-               critical_contrast_e=dcrit_e, critical_radius_e=rcrit_e, critical_mass_e=mcrit_e,
-               new_tidal_radius=rtidal, new_tidal_mass=mtidal)
+    res = dict(center_density=rhoc, edge_density=rhoe, pindex=p,
+               sonic_radius=rs, tidal_mass=mtidal, critical_contrast=dcrit,
+               critical_radius=rcrit, critical_mass=mcrit,
+               critical_contrast_e=dcrit_e, critical_radius_e=rcrit_e,
+               critical_mass_e=mcrit_e)
     return res
 
 
