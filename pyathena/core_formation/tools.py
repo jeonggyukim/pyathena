@@ -92,7 +92,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     renv = reff_sph(gd.len(eid)*s.dV)
 
     # Calculate tidal radius
-    rtidal = get_node_distance(s, lid, gd.parent[eid])
+    rtidal = calculate_tidal_radius(s, gd, eid, lid)
 
     nums_track = [num,]
     leaf_id = [lid,]
@@ -157,13 +157,11 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
         # Reset the leaf such that it is has the minimum potential inside the
         # envelop.
         if eid not in gd.leaves:
-            enc_leaves = list(set(gd.descendants[eid]).intersection(gd.leaves))
-            ranks = [np.where(gd.cells_ordered == nd)[0][0] for nd in enc_leaves]
-            lid = enc_leaves[np.argmin(ranks)]
+            lid = gd.find_minimum(eid)
             rlf = reff_sph(gd.len(lid)*s.dV)
 
         # Calculate tidal radius
-        rtidal = get_node_distance(s, lid, gd.parent[eid])
+        rtidal = calculate_tidal_radius(s, gd, eid, lid)
 
         fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal, tidal_radius[-1])
         if fdst > 1:
@@ -203,6 +201,32 @@ def correct_tidal_radius(s, gd, lid, tol):
         else:
             break
     return me, reff_me
+
+
+def calculate_tidal_radius(s, gd, node, leaf=None):
+    """Calculate tidal radius of this node
+
+    Tidal radius is defined as the distance to the closest node, excluding
+    itself and its descendants.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+    gd : grid_dendro.Dendrogram
+    node : int
+        ID of the grid-dendro node.
+
+    Returns
+    -------
+    rtidal : float
+        Tidal radius.
+    """
+    if leaf is None:
+        leaf = gd.find_minimum(node)
+    nodes = set(gd.nodes.keys()) - set(gd.descendants[node]) - {node}
+    dst = [get_node_distance(s, nd, leaf) for nd in nodes]
+    rtidal = np.min(dst)
+    return rtidal
 
 
 def calculate_critical_tes(s, rprf, core):
