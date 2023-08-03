@@ -84,36 +84,34 @@ if __name__ == "__main__":
 
         # Run GRID-dendro.
         if args.run_grid:
-            print(f"Run GRID-dendro for model {mdl}")
-
             def wrapper(num):
                 tasks.run_grid(s, num, overwrite=args.overwrite)
+            print(f"Run GRID-dendro for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums[config.GRID_NUM_START:], 1)
 
         # Find t_coll cores and save their GRID-dendro node ID's.
         if args.core_tracking:
-            print(f"Find t_coll cores for model {mdl}")
-
             def wrapper(pid):
                 tasks.core_tracking(s, pid, overwrite=args.overwrite)
+            print(f"Find t_coll cores for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids)
             s._load_cores()
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
-            msg = "calculate and save radial profiles of t_coll cores for model {}"
+            msg = "calculate and save radial profiles of t_coll cores for"\
+                  " model {}"
             print(msg.format(mdl))
             if args.pid_start is not None and args.pid_end is not None:
                 pids = np.arange(args.pid_start, args.pid_end+1)
             else:
                 pids = s.pids
             for pid in pids:
-
                 def wrapper(num):
                     tasks.radial_profile(s, pid, num,
-                                          overwrite=args.overwrite)
+                                         overwrite=args.overwrite)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
 
@@ -174,10 +172,9 @@ if __name__ == "__main__":
                     p.map(wrapper, s.cores[pid].index)
 
         if args.plot_sink_history:
-            print(f"draw sink history plots for model {mdl}")
-
             def wrapper(num):
                 tasks.plot_sink_history(s, num, overwrite=args.overwrite)
+            print(f"draw sink history plots for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
