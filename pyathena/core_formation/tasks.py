@@ -102,8 +102,7 @@ def critical_tes(s, pid, num, overwrite=False):
         return
 
     msg = '[critical_tes] processing model {} pid {} num {}'
-    msg = msg.format(s.basename, pid, num)
-    print(msg)
+    print(msg.format(s.basename, pid, num))
 
     # Load the radial profile
     rprf = s.rprofs[pid].sel(num=num)
