@@ -147,7 +147,7 @@ def core_tracking(s, pid, overwrite=False):
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
+def radial_profiles(s, pid, num, overwrite=False, rmax=None):
     """Calculates and pickles radial profiles of all cores.
 
     Parameters
@@ -197,7 +197,7 @@ def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
     rprf.to_netcdf(ofname)
 
 
-def grid_dendro(s, num, overwrite=False):
+def run_grid(s, num, overwrite=False):
     """Run GRID-dendro
 
     Parameters
@@ -212,11 +212,11 @@ def grid_dendro(s, num, overwrite=False):
                   'dendrogram.{:05d}.p'.format(num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
-        print('[grid_dendro] file already exists. Skipping...')
+        print('[run_grid] file already exists. Skipping...')
         return
 
     # Load data and construct dendrogram
-    print('[grid_dendro] processing model {} num {}'.format(s.basename, num))
+    print('[run_grid] processing model {} num {}'.format(s.basename, num))
     ds = s.load_hdf5(num, load_method='pyathena').transpose('z', 'y', 'x')
     phi = ds.phi.to_numpy()
     gd = dendrogram.Dendrogram(phi, verbose=False)
