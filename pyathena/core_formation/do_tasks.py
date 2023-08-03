@@ -156,9 +156,8 @@ if __name__ == "__main__":
                             prs=s.cs**2*ds.dens.to_numpy(),
                             phi=ds.phi.to_numpy(),
                             dvol=s.dV)
-                # TODO(SMOON) use core.leaf_id
                 reff, engs = energy.calculate_cumulative_energies(gd, data,
-                                                                  core.nid)
+                                                                  core.leaf_id)
                 emax = tools.roundup(max(engs['ekin'].max(),
                                          engs['ethm'].max()), 1)
                 emin = tools.rounddown(engs['egrv'].min(), 1)

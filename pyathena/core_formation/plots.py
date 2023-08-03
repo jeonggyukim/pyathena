@@ -8,9 +8,7 @@ Recommended function signature:
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.colors import LogNorm
-from pathlib import Path
 import numpy as np
-import pandas as pd
 import xarray as xr
 import yt
 
@@ -173,7 +171,8 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
     if isinstance(nodes, (int, np.int32, np.int64)):
         nodes = [nodes,]
     for nd in nodes:
-        mask = xr.DataArray(np.ones([dims['z'], dims['y'], dims['x']], dtype=bool), coords=coords)
+        mask = xr.DataArray(np.ones([dims['z'], dims['y'], dims['x']],
+                                    dtype=bool), coords=coords)
         mask = gd.filter_data(mask, nd, fill_value=0)
         if recenter is not None:
             mask, _ = tools.recenter_dataset(mask, recenter)
@@ -202,7 +201,10 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
     plt.ylim(extent[axis][2], extent[axis][3])
 
 
-def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
+def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
+    if rmax is None:
+        rmax = hw
+
     # Load the progenitor GRID-core of this particle.
     if num > s.tcoll_cores.loc[pid].num:
         raise ValueError("num must be smaller than num_tcoll")
@@ -219,7 +221,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     gd = s.load_dendro(num)
 
     # Find the location of the core
-    xc, yc, zc = tools.get_coords_node(s, core.nid)
+    xc, yc, zc = tools.get_coords_node(s, core.leaf_id)
 
     # Calculate radial profile
     rprf = s.rprofs[pid].sel(num=num)
@@ -237,9 +239,17 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     xlabel = dict(z=r'$x$', x=r'$y$', y=r'$z$')
     ylabel = dict(z=r'$y$', x=r'$z$', y=r'$x$')
 
+    axs = dict(proj=[fig.add_subplot(gs[i, 0]) for i in [0, 1, 2]],
+               zoom=[fig.add_subplot(gs[i, 1]) for i in [0, 1, 2]],
+               rho=fig.add_subplot(gs[0, 2]),
+               vel=fig.add_subplot(gs[1, 2]),
+               veldisp=fig.add_subplot(gs[2, 2]),
+               energy=fig.add_subplot(gs[0, 3]),
+               acc=fig.add_subplot(gs[1:, 3]))
+
     for i, prj_axis in enumerate(['z', 'x', 'y']):
         # 1. Projections
-        plt.sca(fig.add_subplot(gs[i, 0]))
+        plt.sca(axs['proj'][i])
         plot_projection(s, ds, axis=prj_axis, add_colorbar=False)
         rec = plt.Rectangle((xlim[prj_axis][0], ylim[prj_axis][0]),
                             2*hw, 2*hw, fill=False, ec='r')
@@ -251,16 +261,15 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         sel = dict(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
         d, _ = tools.recenter_dataset(ds, (xc, yc, zc))
         d = d.sel(sel)
-        plt.sca(fig.add_subplot(gs[i, 1]))
+        plt.sca(axs['zoom'][i])
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
 
-        nodes = list(gd.descendants[core.envelop_nid])
-        nodes.append(gd.sibling(core.envelop_nid))
-        nodes.append(core.envelop_nid)
+        nodes = list(gd.descendants[core.envelop_id].copy())
+        nodes.append(core.envelop_id)
+        nodes.append(gd.sibling(core.envelop_id))
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
-                                  recenter=(xc, yc, zc), select=sel,
-                                  color='k')
-        c0 = plt.Circle((0,0), core.new_tidal_radius, fill=False, color='k', lw=1)
+                                  recenter=(xc, yc, zc), select=sel, color='k')
+        c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
         plt.gca().add_artist(c0)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
@@ -269,30 +278,28 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
 
     # 4. Radial profiles
     # Density
-    plt.sca(fig.add_subplot(gs[0, 2]))
+    plt.sca(axs['rho'])
     plt.loglog(rprf.r, rprf.rho, 'k-+')
     rhoLP = tools.lpdensity(rprf.r, s.cs, s.gconst)
     plt.loglog(rprf.r, rhoLP, 'k--')
 
     # overplot critical tes
-    rhoc = rprf.rho.isel(r=0).data[()]
-    LJ_c = 1.0/np.sqrt(rhoc)
+    LJ_c = 1.0/np.sqrt(core.center_density)
     xi_min = rprf.r.isel(r=0).data[()]/LJ_c
     xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     if not np.isnan(core.sonic_radius):
         ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
         u, du = ts.solve(xi)
-        plt.plot(xi*LJ_c, rhoc*np.exp(u), 'r--', lw=1.5)
+        plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
 
     # overplot critical BE
     ts = tes.TESc()
     u, du = ts.solve(xi)
-    plt.plot(xi*LJ_c, rhoc*np.exp(u), 'r:', lw=1)
+    plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
 
     # overplot critical tes given rho_edge
-    rhoe = core.edge_density
-    LJ_e = 1.0/np.sqrt(rhoe)
+    LJ_e = 1.0/np.sqrt(core.edge_density)
     xi_min = rprf.r.isel(r=0).data[()]/LJ_e
     xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
@@ -301,7 +308,7 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         try:
             uc, _, _ = ts.get_crit()
             u, _ = ts.solve(xi, uc)
-            plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b--', lw=1.5)
+            plt.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b--', lw=1.5)
         except ValueError:
             # Cannot find critical TES. Do not plot.
             pass
@@ -310,54 +317,28 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     ts = tes.TESe()
     uc, _, _ = ts.get_crit()
     u, _ = ts.solve(xi, uc)
-    plt.plot(xi*LJ_e, rhoe*np.exp(u), 'b:', lw=1)
+    plt.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b:', lw=1)
 
-    # overplot radius of the parent core
-    plt.axvline(core.new_tidal_radius, c='tab:gray', lw=1)
-    plt.axvline(core.critical_radius, ls='--', c='tab:gray')
-    plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
-    plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.axhline(core.edge_density, ls='-.', c='tab:gray')
     plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(1e0, rhoLP[0])
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\rho/\rho_0$')
-    # Annotations
-    plt.text(0.5, 0.9, r'$t = {:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
-             transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.5, 0.8, r'$M = {:.2f}$'.format(core.mass)+r'$\,M_{J,0}$',
-             transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.5, 0.7, r'$R = {:.2f}$'.format(core.new_tidal_radius)+r'$\,L_{J,0}$',
-             transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.05, 0.05, r'$t-t_* = $'+r'${:.2f}$'.format((ds.Time - tcoll)/tff)+r'$\,t_{ff}$',
-             transform=plt.gca().transAxes, backgroundcolor='w')
 
     # Velocities
-    plt.sca(fig.add_subplot(gs[1, 2]))
+    plt.sca(axs['vel'])
     plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
     plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
     plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
-    ln1 = plt.axvline(core.new_tidal_radius, c='tab:gray', lw=1)
-    ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
-    plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
-    ln3 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.axhline(0, ls=':')
-    if rmax is not None:
-        plt.xlim(0, rmax)
-    else:
-        plt.xlim(0, hw)
+    plt.xlim(0, rmax)
     plt.ylim(-2.5, 1.5)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v\right>/c_s$')
-    lgd = plt.legend([ln1, ln2, ln3], [r'$R_\mathrm{tidal}$',
-                                       r'$R_\mathrm{crit}$',
-                                       r'$R_\mathrm{sonic}$'],
-                     loc='lower right')
     plt.legend(loc='upper right')
-    plt.gca().add_artist(lgd)
 
     # Velocity dispersions
-    plt.sca(fig.add_subplot(gs[2, 2]))
+    plt.sca(axs['veldisp'])
     plt.loglog(rprf.r, np.sqrt(rprf.dvel1_sq_mw), marker='+', label=r'$v_r$')
     plt.loglog(rprf.r, np.sqrt(rprf.dvel2_sq_mw), marker='+',
                label=r'$v_\theta$')
@@ -371,10 +352,6 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
         plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
                  lw=1)
 
-    plt.axvline(core.new_tidal_radius, c='tab:gray', lw=1)
-    plt.axvline(core.critical_radius, ls='--', c='tab:gray')
-    plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
-    plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.xlim(rprf.r[0], 2*hw)
     plt.ylim(1e-1, 1e1)
     plt.xlabel(r'$r/L_{J,0}$')
@@ -382,26 +359,45 @@ def plot_core_evolution(s, pid, num, hw=0.25, emin=None, emax=None, rmax=None):
     plt.legend(loc='lower right')
 
     # 5. Energies
-    plt.sca(fig.add_subplot(gs[0, 3]))
-    plot_energies(s, ds, gd, core.envelop_nid)
+    plt.sca(axs['energy'])
+    plot_energies(s, ds, gd, core.envelop_id)
     if emin is not None and emax is not None:
         plt.ylim(emin, emax)
-    if rmax is not None:
-        plt.xlim(0, rmax)
+    plt.xlim(0, rmax)
 
     # 6. Accelerations
-    plt.sca(fig.add_subplot(gs[1:, 3]))
+    plt.sca(axs['acc'])
     plot_forces(s, rprf, ylim=(-50, 150))
     plt.title('')
-    plt.axvline(core.new_tidal_radius, c='tab:gray', lw=1)
-    plt.axvline(core.critical_radius, ls='--', c='tab:gray')
-    plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
-    plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
-    if rmax is not None:
-        plt.xlim(0, rmax)
-    else:
-        plt.xlim(0, hw)
+    plt.xlim(0, rmax)
     plt.legend(ncol=3, fontsize=15, loc='upper right')
+
+    # Annotations
+    plt.sca(axs['rho'])
+    plt.text(0.5, 0.9, r'$t={:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.5, 0.8, r'$M={:.2f}$'.format(core.tidal_mass)+r'$\,M_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.5, 0.7, r'$R={:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.05, 0.05, r'$t-t_*=$'+r'${:.2f}$'.format(
+             (ds.Time - tcoll)/tff) + r'$\,t_{ff}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+
+    for ax in (axs['rho'], axs['vel'], axs['veldisp'], axs['acc']):
+        plt.sca(ax)
+        ln1 = plt.axvline(core.tidal_radius, c='tab:gray', lw=1)
+        ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+        ln3 = plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
+        ln4 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
+
+    plt.sca(axs['vel'])
+    lgd = plt.legend([ln1, ln2, ln3, ln4], [r'$R_\mathrm{tidal}$',
+                                            r'$R_\mathrm{crit,c}$',
+                                            r'$R_\mathrm{crit,e}$',
+                                            r'$R_\mathrm{sonic}$'],
+                     loc='lower right')
+    plt.gca().add_artist(lgd)
 
     return fig
 
@@ -444,7 +440,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
     normalize_time : bool, optional
         Flag to use normalized time (t-tcoll)/tff
     """
-    fig, axs = plt.subplots(4, 1, figsize=(7, 15), sharex='col', gridspec_kw=dict(hspace=0.1))
+    fig, axs = plt.subplots(4, 1, figsize=(7, 15), sharex='col',
+                            gridspec_kw=dict(hspace=0.1))
 
     # Load cores
     cores = s.cores[pid].sort_index()
@@ -457,8 +454,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
     # Calculate total forces acting on a core
     rprofs = s.rprofs[pid]
-    ftot_lagrange, ftot_euler, fgrv = [], [], []
-    fthm, ftrb, fcen, fani, fadv = [], [], [], [], []
+    fthm, ftrb, fcen, fgrv, fani, fadv = [], [], [], [], [], []
     for num, core in cores.iterrows():
         rprf = rprofs.sel(num=num).sel(r=slice(0, core.new_tidal_radius))
         dmdr = 4*np.pi*rprf.r**2*rprf.rho
@@ -503,11 +499,15 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
 
     plt.sca(axs[1])
-    plt.plot(time, cores.new_tidal_radius, c='tab:blue', label=r'$R_\mathrm{tidal}$')
+    plt.plot(time, cores.new_tidal_radius, c='tab:blue',
+             label=r'$R_\mathrm{tidal}$')
     plt.plot(time, cores.radius, c='tab:blue', ls='--', lw=1)
-    plt.plot(time, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
-    plt.plot(time, cores.critical_radius, c='tab:red', label=r'$R_\mathrm{crit,c}$')
-    plt.plot(time, cores.critical_radius_e, c='tab:red', ls='--', label=r'$R_\mathrm{crit,e}$')
+    plt.plot(time, cores.sonic_radius, c='tab:green',
+             label=r'$R_\mathrm{sonic}$')
+    plt.plot(time, cores.critical_radius, c='tab:red',
+             label=r'$R_\mathrm{crit,c}$')
+    plt.plot(time, cores.critical_radius_e, c='tab:red', ls='--',
+             label=r'$R_\mathrm{crit,e}$')
 
     plt.yscale('log')
     plt.ylim(1e-2, 1e0)
@@ -515,21 +515,29 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     plt.sca(axs[2])
-    plt.plot(time, cores.new_tidal_mass, c='tab:blue', label=r'$M_\mathrm{tidal}$')
+    plt.plot(time, cores.new_tidal_mass, c='tab:blue',
+             label=r'$M_\mathrm{tidal}$')
     plt.plot(time, cores.mass, c='tab:blue', ls='--', lw=1)
-    plt.plot(time, cores.critical_mass, c='tab:red', label=r'$M_\mathrm{crit,c}$')
-    plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--', label=r'$M_\mathrm{crit,e}$')
+    plt.plot(time, cores.critical_mass, c='tab:red',
+             label=r'$M_\mathrm{crit,c}$')
+    plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--',
+             label=r'$M_\mathrm{crit,e}$')
     plt.yscale('log')
     plt.ylim(1e-3, 1e1)
     plt.ylabel(r'$M/M_{J,0}$')
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     plt.sca(axs[3])
-    plt.plot(time, cores.center_density, c='tab:blue', ls='-', label=r'$\rho_c$')
-    plt.plot(time, cores.edge_density, c='tab:blue', ls='--', label=r'$\rho_e$')
-    plt.plot(time, cores.mean_density, c='tab:blue', ls=':', label=r'$\overline{\rho}_\mathrm{tidal}$')
-    plt.plot(time, cores.edge_density*cores.critical_contrast_e, c='tab:red', ls='--', label=r'$\rho_\mathrm{crit}$')
-    plt.plot(time, cores.edge_density*14, c='tab:red', ls=':', label=r'$\rho_\mathrm{BE}$')
+    plt.plot(time, cores.center_density, c='tab:blue', ls='-',
+             label=r'$\rho_c$')
+    plt.plot(time, cores.edge_density, c='tab:blue', ls='--',
+             label=r'$\rho_e$')
+    plt.plot(time, cores.mean_density, c='tab:blue', ls=':',
+             label=r'$\overline{\rho}_\mathrm{tidal}$')
+    plt.plot(time, cores.edge_density*cores.critical_contrast_e, c='tab:red',
+             ls='--', label=r'$\rho_\mathrm{crit}$')
+    plt.plot(time, cores.edge_density*14, c='tab:red', ls=':',
+             label=r'$\rho_\mathrm{BE}$')
     plt.yscale('log')
     plt.ylabel(r'$\rho/\rho_0$')
     plt.legend(loc='upper left', bbox_to_anchor=(1.12, 1))
@@ -537,7 +545,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
     if normalize_time:
         plt.xlim(-4, 0)
-        plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}(\overline{\rho}_\mathrm{coll})$')
+        plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}$'
+                   r'$(\overline{\rho}_\mathrm{coll})$')
     else:
         plt.xlabel(r'$t/t_{J,0}$')
     for ax in axs:
@@ -545,7 +554,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     return fig
 
 
-##### DEPRECATED #####
+# DEPRECATED
 
 
 def plot_sinkhistory(s, ds, pds):
