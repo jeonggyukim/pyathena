@@ -6,7 +6,7 @@ from scipy import odr
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import tes
-from pyathena.core_formation.exceptions import NoNearbyCoreError
+from pyathena.core_formation import config
 
 
 class LognormalPDF:
@@ -177,7 +177,6 @@ def calculate_critical_tes(s, rprf, core, use_vel='disp', fixed_slope=False,
             rcrit_e = np.nan
             mcrit_e = np.nan
             dcrit_e = np.nan
-
 
     res = dict(center_density=rhoc, edge_density=rhoe, pindex=p, sonic_radius=rs,
                critical_contrast=dcrit, critical_radius=rcrit, critical_mass=mcrit,
@@ -651,49 +650,124 @@ def apply_preimage_correction(s, cores):
     return cores.sort_index().loc[num:]
 
 
-def find_rtidal_envelop(s, cores, tol=1.1):
-    """Finds upper envelop of tidal radius evolution
-
+def track_cores(s, pid, tol=1.1, sub_frac=0.2):
+    """
     Parameters
     ----------
     s : LoadSimCoreFormation
-        Object containing simulation metadata.
-    cores : pandas.DataFrame
-        Dataframe containing core information.
+    pid : int
     tol : float, optional
-        Tolerance in the temporal discontinuity.
+    sub_frac : float, optional
 
     Returns
     -------
-    node_id : pandas.Series
-        GRID-dendro node ID of the envelop structures.
-    rtidal : pandas.Series
-        Envelop tidal radii.
+    cores : pandas.DataFrame
     """
-    cores = cores.sort_index(ascending=False)
-    rr = cores.iloc[0].radius
-    node_id, rtidal = [], []
-    for num, core in cores.iterrows():
-        rl = core.radius
-        nid = core.nid
-        while rl < rr/tol:
-            gd = s.load_dendro(num)
-            parent = gd.parent[nid]
-            vol = len(gd.get_all_descendant_cells(parent))*s.dV
-            rparent = (3*vol/(4*np.pi))**(1./3.)
-            if rparent < rr*tol:
-                # if parent joins continuously, accept it.
-                nid = parent
-                rl = rparent
+    # start from t = t_coll and track backward
+    nums = np.arange(s.tcoll_cores.loc[pid].num, config.GRID_NUM_START-1, -1)
+    num = nums[0]
+    msg = '[find_and_save_cores] processing model {} pid {} num {}'
+    print(msg.format(s.basename, pid, num))
+    gd = s.load_dendro(num)
+
+    # Calculate effective radius of this leaf
+    lid = find_tcoll_core(s, pid)
+    rlf = reff_sph(gd.len(lid)*s.dV)
+
+    # Do the tidal correction to neglect attached substructures.
+    eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
+    renv = reff_sph(gd.len(eid)*s.dV)
+
+    leaf_id = [lid,]
+    leaf_radius = [rlf,]
+    envelop_id = [eid,]
+    envelop_radius = [renv,]
+
+    for num in nums[1:]:
+        msg = '[find_and_save_cores] processing model {} pid {} num {}'
+        print(msg.format(s.basename, pid, num))
+        gd = s.load_dendro(num)
+
+        # find closeast leaf to the previous preimage
+        dst = [get_node_distance(s, leaf, leaf_id[-1]) for leaf in gd.leaves]
+        lid = gd.leaves[np.argmin(dst)]
+        rlf = reff_sph(gd.len(lid)*s.dV)
+
+        # linear extrapolation to predict the envelop radius
+        if len(envelop_radius) == 1:
+            dr = 0
+        else:
+            dr = envelop_radius[-1] - envelop_radius[-2]
+        renv_predicted = envelop_radius[-1] + dr
+
+        # Do the tidal correction to neglect attached substructures.
+        eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
+        renv = reff_sph(gd.len(eid)*s.dV)
+        if renv > renv_predicted*tol:
+            # preimage is too large; the tidal correction may have been too generous.
+            # Undo the tidal correction
+            eid = lid
+            renv = rlf
+
+        # If preimage is too small, go to envelop
+        while renv < renv_predicted/tol:
+            parent = gd.parent[eid]
+            rparent = reff_sph(gd.len(parent)*s.dV)
+            if rparent < renv_predicted*tol:
+                # Try going up in the hierarchy.
+                # If parent joins continuously, accept it.
+                eid = parent
+                renv = rparent
             else:
-                # Reject this. Fall back to leaf.
+                # Stop going up in the hierarchy.
                 break
-        node_id.append(nid)
-        rtidal.append(rl)
-        rr = rl
-    node_id = pd.Series(node_id, cores.index, name='envelop_nid')
-    rtidal = pd.Series(rtidal, cores.index, name='envelop_tidal_radius')
-    return node_id.sort_index(), rtidal.sort_index()
+
+        # Correct tidal radius for the last time
+        eid_try, _ = correct_tidal_radius(s, gd, eid, tol=sub_frac)
+        renv_try = reff_sph(gd.len(eid_try)*s.dV)
+        if renv_try < renv_predicted*tol:
+            eid = eid_try
+            renv = renv_try
+
+        # Reset the leaf such that it is has the minimum potential inside the
+        # envelop.
+        if eid not in gd.leaves:
+            enc_leaves = list(set(gd.descendants[eid]).intersection(gd.leaves))
+            ranks = [np.where(gd.cells_ordered == nd)[0][0] for nd in enc_leaves]
+            lid = enc_leaves[np.argmin(ranks)]
+            rlf = reff_sph(gd.len(lid)*s.dV)
+
+        leaf_id.append(lid)
+        leaf_radius.append(rlf)
+        envelop_id.append(eid)
+        envelop_radius.append(renv)
+
+    # SMOON: Using dtype=object is to prevent automatic upcasting from int to float
+    # when indexing a single row. Maybe there is a better approach.
+    cores = pd.DataFrame(dict(leaf_id=leaf_id,
+                              leaf_radius=leaf_radius,
+                              envelop_id=envelop_id,
+                              envelop_radius=envelop_radius),
+                         index=nums, dtype=object).sort_index()
+    return cores
+
+
+def correct_tidal_radius(s, gd, lid, tol):
+    me = lid
+    while True:
+        if me == gd.trunk:
+            raise ValueError("Reached trunk")
+        parent = gd.parent[me]
+        reff_me = reff_sph(gd.len(me)*s.dV)
+
+        sib = gd.sibling(me)
+        reff_sib = reff_sph(gd.len(sib)*s.dV)
+
+        if reff_sib < tol*reff_me:
+            me = parent
+        else:
+            break
+    return me, reff_me
 
 
 def lpdensity(r, cs, gconst):
