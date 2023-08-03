@@ -260,8 +260,8 @@ def calculate_critical_tes(s, rprf, core):
         center_density, edge_density, critical_radius, pindex, sonic_radius
     """
     # Select data for sonic radius fit
-    r = rprf.r.sel(r=slice(0, core.envelop_radius)).data[1:]
-    vr = np.sqrt(rprf.dvel1_sq_mw.sel(r=slice(0, core.envelop_radius)).data[1:])
+    r = rprf.r.sel(r=slice(0, core.tidal_radius)).data[1:]
+    vr = np.sqrt(rprf.dvel1_sq_mw.sel(r=slice(0, core.tidal_radius)).data[1:])
 
     # Set scale length and mass based on the center and edge densities
     rhoc = rprf.rho.isel(r=0).data[()]
