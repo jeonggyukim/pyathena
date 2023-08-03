@@ -63,8 +63,7 @@ class LognormalPDF:
         return np.exp(x)
 
 
-def calculate_critical_tes(s, rprf, core, use_vel='disp', fixed_slope=False,
-                           Mach_threshold=1.5):
+def calculate_critical_tes(s, rprf, core, Mach_threshold=1.5):
     """Calculates critical tes given the radial profile.
 
     Given the radial profile, find the critical tes at the same central
@@ -79,11 +78,6 @@ def calculate_critical_tes(s, rprf, core, use_vel='disp', fixed_slope=False,
         Object containing radial profiles.
     core : pandas series
         Object containing core informations
-    use_vel : str, optional
-        If 'total', use <v_r^2> to find sonic radius.
-        If 'disp', use <dv_r^2> = <v_r^2> - <v_r>^2 to find sonic radius.
-    fixed_slope : bool, optional
-        If true, fix the slope of velocity-size relation to 0.5.
     Mach_threshold : float, optional
         Select the region to perform linear fit to the sigma(r) profile.
 
@@ -92,14 +86,11 @@ def calculate_critical_tes(s, rprf, core, use_vel='disp', fixed_slope=False,
     res : dict
         center_density, edge_density, critical_radius, pindex, sonic_radius
     """
-    if use_vel == 'disp':
-        vsq = rprf['dvel1_sq_mw']
-    elif use_vel == 'total':
-        vsq = rprf['vel1_sq_mw']
-    else:
-        ValueError("Unknown option for use_vel")
+    vsq = rprf['dvel1_sq_mw']
 
     # Select the region for fitting the velocity-size relation.
+    # TODO(SMOON) deprecate Mach_threshold and do fitting using
+    # all data up to rtidal.
     Mach = np.sqrt(vsq.data) / s.cs
     idx = np.where(Mach < Mach_threshold)[0][-1]
     Rmax = rprf.r.isel(r=idx).data[()]
@@ -130,25 +121,15 @@ def calculate_critical_tes(s, rprf, core, use_vel='disp', fixed_slope=False,
         rcrit_e = np.nan
         mcrit_e = np.nan
     else:
-        # fit the velocity dispersion to get power law index and sonic radius
-        if fixed_slope:
-            def f(B, x):
-                return 0.5*x + B
-            beta0 = [1,]
-        else:
-            def f(B, x):
-                return B[0]*x + B[1]
-            beta0 = [0.5, 1]
+        def f(B, x):
+            return B[0]*x + B[1]
+        beta0 = [0.5, 1]
 
         linear = odr.Model(f)
         mydata = odr.Data(np.log(r), np.log(vr/s.cs))
         myodr = odr.ODR(mydata, linear, beta0=beta0)
         myoutput = myodr.run()
-        if fixed_slope:
-            p = 0.5
-            intercept = myoutput.beta[0]
-        else:
-            p, intercept = myoutput.beta
+        p, intercept = myoutput.beta
         rs = np.exp(-intercept/(p))
 
         # Find critical TES at the central density
