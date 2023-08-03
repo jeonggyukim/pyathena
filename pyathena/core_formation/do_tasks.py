@@ -1,11 +1,11 @@
 from pathlib import Path
+import numpy as np
 import argparse
 import subprocess
 from multiprocessing import Pool
 import pyathena as pa
-from pyathena.core_formation.tasks import *
-from pyathena.core_formation.config import *
-from grid_dendro import energy, boundary, dendrogram
+from pyathena.core_formation import config, tasks, tools
+from grid_dendro import energy
 
 if __name__ == "__main__":
     # load all models
@@ -38,14 +38,13 @@ if __name__ == "__main__":
                         help="List of models to process")
     parser.add_argument("--pids", nargs='+', type=int,
                         help="List of particle ids to process")
-
-    parser.add_argument("--np", type=int, default=1, help="Number of processors")
-
+    parser.add_argument("--np", type=int, default=1,
+                        help="Number of processors")
     parser.add_argument("--combine-partab", action="store_true",
                         help="Join partab files")
     parser.add_argument("--combine-partab-full", action="store_true",
                         help="Join partab files including last output")
-    parser.add_argument("-g", "--grid-dendro", action="store_true",
+    parser.add_argument("-g", "--run-grid", action="store_true",
                         help="Run GRID-dendro")
     parser.add_argument("-c", "--core-tracking", action="store_true",
                         help="Eulerian core tracking")
@@ -57,7 +56,6 @@ if __name__ == "__main__":
                         help="Overwrite everything")
     parser.add_argument("-m", "--make-movie", action="store_true",
                         help="Create movies")
-
     parser.add_argument("--plot-core-evolution", action="store_true",
                         help="Create core evolution plots")
     parser.add_argument("--plot-sink-history", action="store_true",
@@ -77,44 +75,45 @@ if __name__ == "__main__":
 
         # Combine output files.
         if args.combine_partab:
-            print(f"Combine partab files for model {mdl}", flush=True)
-            combine_partab(s, remove=True, include_last=False)
+            print(f"Combine partab files for model {mdl}")
+            tasks.combine_partab(s, remove=True, include_last=False)
 
         if args.combine_partab_full:
-            print(f"Combine all partab files for model {mdl}", flush=True)
-            combine_partab(s, remove=True, include_last=True)
+            print(f"Combine all partab files for model {mdl}")
+            tasks.combine_partab(s, remove=True, include_last=True)
 
         # Run GRID-dendro.
-        if args.grid_dendro:
-            print(f"Run GRID-dendro for model {mdl}", flush=True)
+        if args.run_grid:
+            print(f"Run GRID-dendro for model {mdl}")
+
             def wrapper(num):
-                grid_dendro(s, num, overwrite=args.overwrite)
+                tasks.run_grid(s, num, overwrite=args.overwrite)
             with Pool(args.np) as p:
-                p.map(wrapper, s.nums[GRID_NUM_START:], 1)
+                p.map(wrapper, s.nums[config.GRID_NUM_START:], 1)
 
         # Find t_coll cores and save their GRID-dendro node ID's.
         if args.core_tracking:
-            print(f"Find t_coll cores for model {mdl}", flush=True)
+            print(f"Find t_coll cores for model {mdl}")
+
             def wrapper(pid):
-                core_tracking(s, pid, overwrite=args.overwrite)
+                tasks.core_tracking(s, pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids)
             s._load_cores()
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
-            # TODO(SMOON) radial profile calculation is too expensive.
-            # Better to parallelize over `num`, or output individual radial profiles
-            # as a seperate files.
             msg = "calculate and save radial profiles of t_coll cores for model {}"
-            print(msg.format(mdl), flush=True)
+            print(msg.format(mdl))
             if args.pid_start is not None and args.pid_end is not None:
                 pids = np.arange(args.pid_start, args.pid_end+1)
             else:
                 pids = s.pids
             for pid in pids:
+
                 def wrapper(num):
-                    save_radial_profiles(s, pid, num, overwrite=args.overwrite)
+                    tasks.radial_profiles(s, pid, num,
+                                          overwrite=args.overwrite)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
 
@@ -127,21 +126,21 @@ if __name__ == "__main__":
 
         # Find critical tes
         if args.critical_tes:
-            print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
+            print(f"find critical tes for t_coll cores for model {mdl}")
             for pid in s.pids:
                 def wrapper(num):
-                    critical_tes(s, pid, num, overwrite=args.overwrite)
+                    tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
             s._load_cores()
 
         # Resample AMR data into uniform grid
-#        print(f"resample AMR to uniform for model {mdl}", flush=True)
-#        resample_hdf5(s)
+#        print(f"resample AMR to uniform for model {mdl}")
+#        tasks.resample_hdf5(s)
 
         # make plots
         if args.plot_core_evolution:
-            print(f"draw t_coll cores plots for model {mdl}", flush=True)
+            print(f"draw t_coll cores plots for model {mdl}")
             if args.pid_start is not None and args.pid_end is not None:
                 pids = np.arange(args.pid_start, args.pid_end+1)
             else:
@@ -159,47 +158,52 @@ if __name__ == "__main__":
                             prs=s.cs**2*ds.dens.to_numpy(),
                             phi=ds.phi.to_numpy(),
                             dvol=s.dV)
-                reff, engs = energy.calculate_cumulative_energies(gd, data, core.nid)
-                emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
+                # TODO(SMOON) use core.leaf_id
+                reff, engs = energy.calculate_cumulative_energies(gd, data,
+                                                                  core.nid)
+                emax = tools.roundup(max(engs['ekin'].max(),
+                                         engs['ethm'].max()), 1)
                 emin = tools.rounddown(engs['egrv'].min(), 1)
-                #rmax = tools.roundup(reff.max(), 2)
-                rmax = tools.roundup(1.5*core.new_tidal_radius, 2)
+                rmax = tools.roundup(reff.max(), 2)
+
                 def wrapper(num):
-                    plot_core_evolution(s, pid, num,
-                                        overwrite=args.overwrite,
-                                        emin=emin, emax=emax, rmax=rmax)
+                    tasks.plot_core_evolution(s, pid, num,
+                                              overwrite=args.overwrite,
+                                              emin=emin, emax=emax, rmax=rmax)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
 
         if args.plot_sink_history:
-            print(f"draw sink history plots for model {mdl}", flush=True)
+            print(f"draw sink history plots for model {mdl}")
+
             def wrapper(num):
-                plot_sink_history(s, num, overwrite=args.overwrite)
+                tasks.plot_sink_history(s, num, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
-
         if args.plot_pdfs:
-            print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
-            plot_pdfs(s, overwrite=args.overwrite)
+            print(f"draw PDF-power spectrum plots for model {mdl}")
+            tasks.plot_pdfs(s, overwrite=args.overwrite)
 
         if args.plot_diagnostics:
-            print(f"draw diagnostics plots for model {mdl}", flush=True)
+            print(f"draw diagnostics plots for model {mdl}")
             if args.pid_start is not None and args.pid_end is not None:
                 pids = np.arange(args.pid_start, args.pid_end+1)
             else:
                 pids = s.pids
             s.find_good_cores()
             for pid in pids:
-                plot_diagnostics(s, pid, overwrite=args.overwrite)
+                tasks.plot_diagnostics(s, pid, overwrite=args.overwrite)
 
         # make movie
         if args.make_movie:
-            print(f"create movies for model {mdl}", flush=True)
+            print(f"create movies for model {mdl}")
             srcdir = Path(s.savdir, "figures")
-            plot_prefix = [PLOT_PREFIX_SINK_HISTORY]
+            plot_prefix = [config.PLOT_PREFIX_SINK_HISTORY]
             for prefix in plot_prefix:
-                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
+                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
+                                srcdir])
             for pid in s.pids:
-                prefix = "{}.par{}".format(PLOT_PREFIX_TCOLL_CORES, pid)
-                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
+                prefix = "{}.par{}".format(config.PLOT_PREFIX_TCOLL_CORES, pid)
+                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
+                                srcdir])
