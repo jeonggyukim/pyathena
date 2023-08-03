@@ -88,7 +88,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     rlf = reff_sph(gd.len(lid)*s.dV)
 
     # Do the tidal correction to neglect attached substructures.
-    eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
+    eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
     renv = reff_sph(gd.len(eid)*s.dV)
 
     # Calculate tidal radius
@@ -124,7 +124,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
         renv_predicted = envelop_radius[-1] + dr
 
         # Do the tidal correction to neglect attached substructures.
-        eid, _ = correct_tidal_radius(s, gd, lid, tol=sub_frac)
+        eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
         renv = reff_sph(gd.len(eid)*s.dV)
         if renv > renv_predicted*tol:
             # preimage is too large; the tidal correction may have been too generous.
@@ -148,7 +148,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
                 break
 
         # Correct tidal radius for the last time
-        eid_try, _ = correct_tidal_radius(s, gd, eid, tol=sub_frac)
+        eid_try, _ = disregard_substructures(s, gd, eid, tol=sub_frac)
         renv_try = reff_sph(gd.len(eid_try)*s.dV)
         if renv_try < renv_predicted*tol:
             eid = eid_try
@@ -185,22 +185,43 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     return cores
 
 
-def correct_tidal_radius(s, gd, lid, tol):
-    me = lid
+def disregard_substructures(s, gd, node, tol):
+    """Go up the dendrogram hierarchy by neglecting substructures.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    gd : grid_dendro.Dendrogram
+        Dendrogram object.
+    node : int
+        Input node to be corrected.
+    tol : float
+        Fraction of the effective radius below which a sibling is
+        considered as subtructure.
+
+    Returns
+    -------
+    nd : int
+        ID of the corrected node.
+    reff : float
+        Effective radius of the corrected node.
+    """
+    nd = node
     while True:
-        reff_me = reff_sph(gd.len(me)*s.dV)
-        if me == gd.trunk:
-            return me, reff_me
-        parent = gd.parent[me]
+        reff = reff_sph(gd.len(nd)*s.dV)
+        if nd == gd.trunk:
+            return nd, reff
+        parent = gd.parent[nd]
 
-        sib = gd.sibling(me)
-        reff_sib = reff_sph(gd.len(sib)*s.dV)
+        sib = gd.sibling(nd)
+        reff_sibling = reff_sph(gd.len(sib)*s.dV)
 
-        if reff_sib < tol*reff_me:
-            me = parent
+        if reff_sibling < tol*reff:
+            nd = parent
         else:
             break
-    return me, reff_me
+    return nd, reff
 
 
 def calculate_tidal_radius(s, gd, node, leaf=None):
@@ -212,7 +233,9 @@ def calculate_tidal_radius(s, gd, node, leaf=None):
     Parameters
     ----------
     s : LoadSimCoreFormation
+        Object containing simulation metadata.
     gd : grid_dendro.Dendrogram
+        Dendrogram object.
     node : int
         ID of the grid-dendro node.
 
