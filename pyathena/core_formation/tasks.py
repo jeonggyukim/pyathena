@@ -3,7 +3,6 @@
 # python modules
 from pathlib import Path
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 import subprocess
 import pickle
 import glob
@@ -80,8 +79,7 @@ def combine_partab(s, ns=None, ne=None, partag="par0", remove=False,
             print("Not all files are joined", flush=True)
 
 
-def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
-                      overwrite=False):
+def critical_tes(s, pid, num, overwrite=False):
     """Calculates and saves critical tes associated with each core.
 
     Parameters
@@ -92,30 +90,18 @@ def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
         Particle id.
     num : int
         Snapshot number
-    use_vel : str, optional
-        If 'total', use <v_r^2> to find sonic radius.
-        If 'disp', use <dv_r^2> = <v_r^2> - <v_r>^2 to find sonic radius.
-    fixed_slope : bool, optional
-        If true, fix the slope of velocity-size relation to 0.5.
     overwrite : str, optional
         If true, overwrites the existing pickle file.
     """
     # Check if file exists
-    suffix = "vel{}".format(use_vel)
-    if fixed_slope:
-        suffix += "_fixed_slope"
-    if s.use_phitot:
-        ofname = Path(s.savdir, 'critical_tes_phitot',
-                      'critical_tes_{}.par{}.{:05d}.p'.format(suffix, pid, num))
-    else:
-        ofname = Path(s.savdir, 'critical_tes',
-                      'critical_tes_{}.par{}.{:05d}.p'.format(suffix, pid, num))
+    ofname = Path(s.savdir, 'critical_tes',
+                  'critical_tes.par{}.{:05d}.p'.format(pid, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
-        print('[save_critical_tes] file already exists. Skipping...')
+        print('[critical_tes] file already exists. Skipping...')
         return
 
-    msg = '[save_critical_tes] processing model {} pid {} num {}'
+    msg = '[critical_tes] processing model {} pid {} num {}'
     msg = msg.format(s.basename, pid, num)
     print(msg)
 
@@ -124,7 +110,7 @@ def save_critical_tes(s, pid, num, use_vel='disp', fixed_slope=False,
     core = s.cores[pid].loc[num]
 
     # Calculate critical TES
-    critical_tes = tools.calculate_critical_tes(s, rprf, core, use_vel, fixed_slope)
+    critical_tes = tools.calculate_critical_tes(s, rprf, core)
     critical_tes['num'] = num
 
     # write to file
@@ -151,10 +137,7 @@ def core_tracking(s, pid, overwrite=False):
         If true, overwrites the existing pickle file.
     """
     # Check if file exists
-    if s.use_phitot:
-        ofname = Path(s.savdir, 'cores_phitot', 'cores.par{}.p'.format(pid))
-    else:
-        ofname = Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
+    ofname = Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[core_tracking] file already exists. Skipping...')
@@ -179,12 +162,8 @@ def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
         If true, overwrites the existing pickle file.
     """
     # Check if file exists
-    if s.use_phitot:
-        ofname = Path(s.savdir, 'radial_profile_phitot',
-                      'radial_profile.par{}.{:05d}.nc'.format(pid, num))
-    else:
-        ofname = Path(s.savdir, 'radial_profile',
-                      'radial_profile.par{}.{:05d}.nc'.format(pid, num))
+    ofname = Path(s.savdir, 'radial_profile',
+                  'radial_profile.par{}.{:05d}.nc'.format(pid, num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[save_radial_profiles] file already exists. Skipping...')
@@ -218,7 +197,7 @@ def save_radial_profiles(s, pid, num, overwrite=False, rmax=None):
     rprf.to_netcdf(ofname)
 
 
-def run_GRID(s, num, overwrite=False):
+def grid_dendro(s, num, overwrite=False):
     """Run GRID-dendro
 
     Parameters
@@ -229,21 +208,17 @@ def run_GRID(s, num, overwrite=False):
         Snapshot number.
     """
     # Check if file exists
-    which = 'phitot' if s.use_phitot else 'phigas'
     ofname = Path(s.savdir, 'GRID',
-                  'dendrogram.{}.{:05d}.p'.format(which, num))
+                  'dendrogram.{:05d}.p'.format(num))
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
-        print('[run_GRID] file already exists. Skipping...')
+        print('[grid_dendro] file already exists. Skipping...')
         return
 
     # Load data and construct dendrogram
-    print('[run_GRID] processing model {} num {}'.format(s.basename, num))
+    print('[grid_dendro] processing model {} num {}'.format(s.basename, num))
     ds = s.load_hdf5(num, load_method='pyathena').transpose('z', 'y', 'x')
-    if s.use_phitot:
-        phi = ds.phi.to_numpy()
-    else:
-        phi = ds.phigas.to_numpy()
+    phi = ds.phi.to_numpy()
     gd = dendrogram.Dendrogram(phi, verbose=False)
     gd.construct()
 
@@ -281,33 +256,8 @@ def resample_hdf5(s, level=0):
     uniform.main(**kwargs)
 
 
-def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
-    """Creates two panel plot comparing density projections
-
-    Save projections in {basedir}/figures for all snapshots.
-
-    Args:
-        s1: pyathena.LoadSim instance
-        s2: pyathena.LoadSim instance
-    """
-    fig, axs = plt.subplots(1, 2, figsize=(14, 7))
-    nums = list(set(s1.nums) & set(s2.nums))
-    odir = odir / "{}_{}".format(s1.basename, s2.basename)
-    odir.mkdir(exist_ok=True)
-    for num in nums:
-        for ax, s in zip(axs, [s1, s2]):
-            ds = s.load_hdf5(num, load_method='yt')
-            plots.plot_projection(s, ds, ax=ax, add_colorbar=False)
-            ax.set_title(r'$t={:.3f}$'.format(ds.current_time.value),
-                         fontsize=16)
-        fname = odir / "Projection_z_dens.{:05d}.png".format(num)
-        fig.savefig(fname, bbox_inches='tight', dpi=200)
-        for ax in axs:
-            ax.cla()
-
-
-def make_plots_core_evolution(s, pid, num, overwrite=False,
-                              emin=None, emax=None, rmax=None):
+def plot_core_evolution(s, pid, num, overwrite=False,
+                        emin=None, emax=None, rmax=None):
     """Creates multi-panel plot for t_coll core properties
 
     Parameters
@@ -321,7 +271,7 @@ def make_plots_core_evolution(s, pid, num, overwrite=False,
     overwrite : str, optional
         If true, overwrite output files.
     """
-    msg = '[make_plots_core_evolution] processing model {} pid {} num {}'
+    msg = '[plot_core_evolution] processing model {} pid {} num {}'
     msg = msg.format(s.basename, pid, num)
     print(msg)
     fname = Path(s.savdir, 'figures', "{}.par{}.{:05d}.png".format(
@@ -336,14 +286,14 @@ def make_plots_core_evolution(s, pid, num, overwrite=False,
     plt.close(fig)
 
 
-def make_plots_sinkhistory(s, num, overwrite=False):
+def plot_sink_history(s, num, overwrite=False):
     """Creates multi-panel plot for sink particle history
 
     Args:
         s: pyathena.LoadSim instance
     """
     fname = Path(s.savdir, 'figures', "{}.{:05d}.png".format(
-        config.PLOT_PREFIX_SINK_HISTORY, num))
+                 config.PLOT_PREFIX_SINK_HISTORY, num))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
         return
@@ -354,32 +304,7 @@ def make_plots_sinkhistory(s, num, overwrite=False):
     plt.close(fig)
 
 
-def make_plots_projections(s, overwrite=False):
-    """Creates density projections for a given model
-
-    Save projections in {basedir}/figures for all snapshots.
-
-    Args:
-        s: pyathena.LoadSim instance
-    """
-    fig, ax = plt.subplots(figsize=(8, 8))
-    divider = make_axes_locatable(ax)
-    cax = divider.append_axes('right', size='4%', pad=0.05)
-    for num in s.nums:
-        fname = Path(s.savdir, 'figures',
-                     "Projection_z_dens.{:05d}.png".format(num))
-        if fname.exists() and not overwrite:
-            continue
-        ds = s.load_hdf5(num, load_method='yt')
-        plots.plot_projection(s, ds, ax=ax, cax=cax)
-        ax.set_title(r'$t={:.3f}$'.format(ds.current_time.value), fontsize=16)
-        fig.savefig(fname, bbox_inches='tight', dpi=200)
-        ax.cla()
-        cax.cla()
-    plt.close(fig)
-
-
-def make_plots_diagnostics(s, pid, overwrite=False):
+def plot_diagnostics(s, pid, overwrite=False):
     """Creates diagnostics plots for a given model
 
     Save projections in {basedir}/figures for all snapshots.
@@ -393,16 +318,17 @@ def make_plots_diagnostics(s, pid, overwrite=False):
     overwrite : bool, optional
         Flag to overwrite
     """
-    msg = '[make_plots_diagnostics] processing model {} pid {}'
+    msg = '[plot_diagnosticplot_diagnostics pid {}'
     print(msg.format(s.basename, pid))
-    fname = Path(s.savdir, 'figures', "diagnostics_normalized.par{}.png".format(pid))
+    fname = Path(s.savdir, 'figures',
+                 'diagnostics_normalized.par{}.png'.format(pid))
     if fname.exists() and not overwrite:
         return
     fig = plots.plot_diagnostics(s, pid, normalize_time=True)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
     plt.close(fig)
 
-    fname = Path(s.savdir, 'figures', "diagnostics.par{}.png".format(pid))
+    fname = Path(s.savdir, 'figures', 'diagnostics.par{}.png'.format(pid))
     if fname.exists() and not overwrite:
         return
     fig = plots.plot_diagnostics(s, pid, normalize_time=False)
@@ -410,7 +336,7 @@ def make_plots_diagnostics(s, pid, overwrite=False):
     plt.close(fig)
 
 
-def make_plots_PDF_Pspec(s, overwrite=False):
+def plot_pdfs(s, overwrite=False):
     """Creates density PDF and velocity power spectrum for a given model
 
     Save figures in {basedir}/figures for all snapshots.
@@ -437,19 +363,26 @@ def make_plots_PDF_Pspec(s, overwrite=False):
     plt.close(fig)
 
 
-def make_plots_central_density_evolution(s, overwrite=False):
-    """Creates plot showing central density evolution for each cores
+def compare_projection(s1, s2, odir=Path("/tigress/sm69/public_html/files")):
+    """Creates two panel plot comparing density projections
 
-    Save figures in {basedir}/figures for all snapshots.
+    Save projections in {basedir}/figures for all snapshots.
 
     Args:
-        s: pyathena.LoadSim instance
+        s1: pyathena.LoadSim instance
+        s2: pyathena.LoadSim instance
     """
-    fname = Path(s.savdir, 'figures',
-                 "{}.png".format(config.PLOT_PREFIX_RHOC_EVOLUTION))
-    fname.parent.mkdir(exist_ok=True)
-    if fname.exists() and not overwrite:
-        return
-    plots.plot_central_density_evolution(s)
-    plt.savefig(fname, bbox_inches='tight')
-    plt.close()
+    fig, axs = plt.subplots(1, 2, figsize=(14, 7))
+    nums = list(set(s1.nums) & set(s2.nums))
+    odir = odir / "{}_{}".format(s1.basename, s2.basename)
+    odir.mkdir(exist_ok=True)
+    for num in nums:
+        for ax, s in zip(axs, [s1, s2]):
+            ds = s.load_hdf5(num, load_method='yt')
+            plots.plot_projection(s, ds, ax=ax, add_colorbar=False)
+            ax.set_title(r'$t={:.3f}$'.format(ds.current_time.value),
+                         fontsize=16)
+        fname = odir / "Projection_z_dens.{:05d}.png".format(num)
+        fig.savefig(fname, bbox_inches='tight', dpi=200)
+        for ax in axs:
+            ax.cla()

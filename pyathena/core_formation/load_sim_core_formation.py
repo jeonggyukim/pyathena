@@ -49,7 +49,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         All preimages of t_coll cores.
     """
 
-    def __init__(self, basedir_or_Mach=None, savdir=None, use_phitot=True,
+    def __init__(self, basedir_or_Mach=None, savdir=None,
                  load_method='pyathena', verbose=False):
         """The constructor for LoadSimCoreFormation class
 
@@ -61,8 +61,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         savdir : str
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
-        use_phitot : bool
-            Gas-only potential or total potential for core definition.
         load_method : str
             Load hdf5 using 'pyathena' or 'yt'. Default value is 'pyathena'.
         verbose : bool or str or int
@@ -80,9 +78,6 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         self.cs = 1.0
         self.gconst = np.pi
         self.tff0 = tools.tfreefall(self.rho0, self.gconst)
-
-        # configurations
-        self.use_phitot = use_phitot
 
         if isinstance(basedir_or_Mach, (pathlib.PosixPath, str)):
             basedir = basedir_or_Mach
@@ -139,9 +134,8 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
         num : int
             Snapshot number.
         """
-        which = 'phitot' if self.use_phitot else 'phigas'
         fname = pathlib.Path(self.savdir, 'GRID',
-                             'dendrogram.{}.{:05d}.p'.format(which, num))
+                             'dendrogram.{:05d}.p'.format(num))
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
@@ -204,33 +198,19 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                                         dtype=object)
         self.tcoll_cores.index.name = 'pid'
 
-    def _load_cores(self, method='veldisp'):
+    def _load_cores(self):
         self.cores = {}
-        dirname_cores = 'cores_phitot' if self.use_phitot else 'cores'
-        dirname_tes = 'critical_tes_phitot' if self.use_phitot else 'critical_tes'
         for pid in self.pids:
-            fname = pathlib.Path(self.savdir, dirname_cores,
-                                 'cores.par{}.p'.format(pid))
+            fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             core = pd.read_pickle(fname)
 
-            # Read corrected tidal radius and mass
-            fname = pathlib.Path(self.savdir, dirname_cores,
-                                 'rtidal_correction.par{}.p'.format(pid))
-            try:
-                core = pd.concat([core, pd.read_pickle(fname)], axis=1, join='inner')
-                # Calculate derived quantities
-                core['mean_density'] = (core.envelop_tidal_mass
-                                        / (4*np.pi*core.envelop_tidal_radius**3/3))
-            except FileNotFoundError:
-                logging.warning("Failed to read envelop tidal radius")
-                pass
-
-            # Filter out true preimages by applying distance criterion
-            if 'envelop_tidal_radius' in core:
-                core = tools.apply_preimage_correction(self, core)
-            else:
-                logging.warning("Cannot perform preimage correction before"
-                                " finding envelop tidal radii")
+            # TODO(SMOON)
+#            # Filter out true preimages by applying distance criterion
+#            if 'envelop_tidal_radius' in core:
+#                core = tools.apply_preimage_correction(self, core)
+#            else:
+#                logging.warning("Cannot perform preimage correction before"
+#                                " finding envelop tidal radii")
 
             # Assign to attribute
             self.cores[pid] = core.sort_index()
@@ -240,9 +220,9 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 # Try reading critical TES pickles
                 tes_crit = []
                 for num in core.index:
-                    fname = pathlib.Path(self.savdir, dirname_tes,
-                                          'critical_tes_{}.par{}.{:05d}.p'
-                                          .format(method, pid, num))
+                    fname = pathlib.Path(self.savdir, 'critical_tes',
+                                         'critical_tes.par{}.{:05d}.p'
+                                         .format(pid, num))
                     tes_crit.append(pd.read_pickle(fname))
                 tes_crit = pd.DataFrame(tes_crit).set_index('num')
                 tes_crit = tes_crit.sort_index()
@@ -262,11 +242,10 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             If `cores` has not been initialized (due to missing files, etc.)
         """
         self.rprofs = {}
-        dirname = 'radial_profile_phitot' if self.use_phitot else 'radial_profile'
         for pid in self.pids:
             try:
                 # Try reading joined radial profile
-                fname = pathlib.Path(self.savdir, dirname,
+                fname = pathlib.Path(self.savdir, 'radial_profile',
                                      'radial_profile.par{}.nc'.format(pid))
                 rprf = xr.open_dataset(fname)
             except FileNotFoundError:
@@ -274,7 +253,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 core = self.cores[pid]
                 rprf = []
                 for num in core.index:
-                    fname2 = pathlib.Path(self.savdir, dirname,
+                    fname2 = pathlib.Path(self.savdir, 'radial_profile',
                                           'radial_profile.par{}.{:05d}.nc'
                                           .format(pid, num))
                     rprf.append(xr.open_dataset(fname2))
@@ -311,14 +290,13 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, use_phitot=True,
+    def set_model(self, model, savdir=None,
                   load_method='pyathena', verbose=False,
                   reset=False):
         self.model = model
         if reset:
             self.sim = LoadSimCoreFormation(self.basedirs[model],
                                             savdir=savdir,
-                                            use_phitot=use_phitot,
                                             load_method=load_method,
                                             verbose=verbose)
             self.simdict[model] = self.sim
@@ -328,7 +306,6 @@ class LoadSimCoreFormationAll(object):
             except KeyError:
                 self.sim = LoadSimCoreFormation(self.basedirs[model],
                                                 savdir=savdir,
-                                                use_phitot=use_phitot,
                                                 load_method=load_method,
                                                 verbose=verbose)
                 self.simdict[model] = self.sim

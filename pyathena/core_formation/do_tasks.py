@@ -41,9 +41,9 @@ if __name__ == "__main__":
 
     parser.add_argument("--np", type=int, default=1, help="Number of processors")
 
-    parser.add_argument("-j", "--join-partab", action="store_true",
+    parser.add_argument("--combine-partab", action="store_true",
                         help="Join partab files")
-    parser.add_argument("-f", "--join-partab-full", action="store_true",
+    parser.add_argument("--combine-partab-full", action="store_true",
                         help="Join partab files including last output")
     parser.add_argument("-g", "--grid-dendro", action="store_true",
                         help="Run GRID-dendro")
@@ -66,10 +66,6 @@ if __name__ == "__main__":
                         help="Create density pdf and velocity power spectrum")
     parser.add_argument("--plot-diagnostics", action="store_true",
                         help="Create diagnostics plot for each core")
-    parser.add_argument("--use-phigas", default=False, action="store_true",
-                        help="Use total gravitational potential for analysis")
-    parser.add_argument("--correct-tidal-radius", action="store_true",
-                        help="Find envelop tidal radius")
     parser.add_argument("--pid-start", type=int)
     parser.add_argument("--pid-end", type=int)
 
@@ -77,17 +73,14 @@ if __name__ == "__main__":
 
     # Select models
     for mdl in args.models:
-        if args.use_phigas:
-            s = sa.set_model(mdl, use_phitot=False)
-        else:
-            s = sa.set_model(mdl, use_phitot=True)
+        s = sa.set_model(mdl)
 
         # Combine output files.
-        if args.join_partab:
+        if args.combine_partab:
             print(f"Combine partab files for model {mdl}", flush=True)
             combine_partab(s, remove=True, include_last=False)
 
-        if args.join_partab_full:
+        if args.combine_partab_full:
             print(f"Combine all partab files for model {mdl}", flush=True)
             combine_partab(s, remove=True, include_last=True)
 
@@ -95,7 +88,7 @@ if __name__ == "__main__":
         if args.grid_dendro:
             print(f"Run GRID-dendro for model {mdl}", flush=True)
             def wrapper(num):
-                run_GRID(s, num, overwrite=args.overwrite)
+                grid_dendro(s, num, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums[GRID_NUM_START:], 1)
 
@@ -107,26 +100,6 @@ if __name__ == "__main__":
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids)
             s._load_cores()
-
-        if args.correct_tidal_radius:
-            dirname = 'cores_phitot' if s.use_phitot else 'cores'
-            for pid in s.pids:
-                # Check if file exists
-                ofname = Path(s.savdir, dirname,
-                              'cores_corrected.par{}.p'.format(pid))
-                ofname.parent.mkdir(exist_ok=True)
-                if ofname.exists() and not args.overwrite:
-                    print("[correct_tidal_radius] file already exists."
-                          " Skipping...")
-                    continue
-
-                # Do not use s.cores, which might have already been
-                # preimage corrected. Read from raw data.
-                fname = Path(s.savdir, dirname, 'cores.par{}.p'.format(pid))
-                cores = pd.read_pickle(fname)
-                cores = tools.find_envelop(s, cores, tol=1.1)
-                # TODO should modify leaf_nid using the node of the potential minimum
-                cores.to_pickle(ofname)
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
@@ -157,7 +130,7 @@ if __name__ == "__main__":
             print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
             for pid in s.pids:
                 def wrapper(num):
-                    save_critical_tes(s, pid, num, overwrite=args.overwrite)
+                    critical_tes(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
             s._load_cores()
@@ -184,7 +157,7 @@ if __name__ == "__main__":
                             vel2=(ds.mom2/ds.dens).to_numpy(),
                             vel3=(ds.mom3/ds.dens).to_numpy(),
                             prs=s.cs**2*ds.dens.to_numpy(),
-                            phi=ds.phigas.to_numpy(),
+                            phi=ds.phi.to_numpy(),
                             dvol=s.dV)
                 reff, engs = energy.calculate_cumulative_energies(gd, data, core.nid)
                 emax = tools.roundup(max(engs['ekin'].max(), engs['ethm'].max()), 1)
@@ -192,23 +165,23 @@ if __name__ == "__main__":
                 #rmax = tools.roundup(reff.max(), 2)
                 rmax = tools.roundup(1.5*core.new_tidal_radius, 2)
                 def wrapper(num):
-                    make_plots_core_evolution(s, pid, num,
-                                              overwrite=args.overwrite,
-                                              emin=emin, emax=emax, rmax=rmax)
+                    plot_core_evolution(s, pid, num,
+                                        overwrite=args.overwrite,
+                                        emin=emin, emax=emax, rmax=rmax)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
 
         if args.plot_sink_history:
             print(f"draw sink history plots for model {mdl}", flush=True)
             def wrapper(num):
-                make_plots_sinkhistory(s, num, overwrite=args.overwrite)
+                plot_sink_history(s, num, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
 
         if args.plot_pdfs:
             print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
-            make_plots_PDF_Pspec(s, overwrite=args.overwrite)
+            plot_pdfs(s, overwrite=args.overwrite)
 
         if args.plot_diagnostics:
             print(f"draw diagnostics plots for model {mdl}", flush=True)
@@ -218,7 +191,7 @@ if __name__ == "__main__":
                 pids = s.pids
             s.find_good_cores()
             for pid in pids:
-                make_plots_diagnostics(s, pid, overwrite=args.overwrite)
+                plot_diagnostics(s, pid, overwrite=args.overwrite)
 
         # make movie
         if args.make_movie:

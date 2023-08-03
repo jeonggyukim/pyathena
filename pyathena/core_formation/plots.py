@@ -118,7 +118,7 @@ def plot_energies(s, ds, gd, nid, ax=None):
                 vel2=(ds.mom2/ds.dens).to_numpy(),
                 vel3=(ds.mom3/ds.dens).to_numpy(),
                 prs=s.cs**2*ds.dens.to_numpy(),
-                phi=ds.phigas.to_numpy(),
+                phi=ds.phi.to_numpy(),
                 dvol=s.dV)
     reff, engs = energy.calculate_cumulative_energies(gd, data, nid)
     plt.plot(reff, engs['ethm'], label='thermal')
@@ -508,12 +508,6 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.plot(time, cores.sonic_radius, c='tab:green', label=r'$R_\mathrm{sonic}$')
     plt.plot(time, cores.critical_radius, c='tab:red', label=r'$R_\mathrm{crit,c}$')
     plt.plot(time, cores.critical_radius_e, c='tab:red', ls='--', label=r'$R_\mathrm{crit,e}$')
-
-#    ### TEMPORARY
-#    fname = Path(s.savdir, "cores_phitot", "rtidal_newcorr.par{}.p".format(pid))
-#    cr = pd.read_pickle(fname)
-#    plt.plot(time, cr.rtidal_corr, c='tab:blue', ls='-.')
-#    ### TEMPORARY
 
     plt.yscale('log')
     plt.ylim(1e-2, 1e0)
