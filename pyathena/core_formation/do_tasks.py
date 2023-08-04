@@ -72,6 +72,11 @@ if __name__ == "__main__":
     for mdl in args.models:
         s = sa.set_model(mdl)
 
+        if args.pid_start is not None and args.pid_end is not None:
+            pids = np.arange(args.pid_start, args.pid_end+1)
+        else:
+            pids = s.pids
+
         # Combine output files.
         if args.combine_partab:
             print(f"Combine partab files for model {mdl}")
@@ -102,10 +107,6 @@ if __name__ == "__main__":
             msg = "calculate and save radial profiles of t_coll cores for"\
                   " model {}"
             print(msg.format(mdl))
-            if args.pid_start is not None and args.pid_end is not None:
-                pids = np.arange(args.pid_start, args.pid_end+1)
-            else:
-                pids = s.pids
             for pid in pids:
                 def wrapper(num):
                     tasks.radial_profile(s, pid, num,
@@ -122,7 +123,7 @@ if __name__ == "__main__":
         # Find critical tes
         if args.critical_tes:
             print(f"find critical tes for t_coll cores for model {mdl}")
-            for pid in s.pids:
+            for pid in pids:
                 def wrapper(num):
                     tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
@@ -135,10 +136,6 @@ if __name__ == "__main__":
         # make plots
         if args.plot_core_evolution:
             print(f"draw t_coll cores plots for model {mdl}")
-            if args.pid_start is not None and args.pid_end is not None:
-                pids = np.arange(args.pid_start, args.pid_end+1)
-            else:
-                pids = s.pids
             for pid in pids:
                 # Read snapshot at t=t_coll and set plot limits
                 num = s.tcoll_cores.loc[pid].num
@@ -172,10 +169,6 @@ if __name__ == "__main__":
 
         if args.plot_diagnostics:
             print(f"draw diagnostics plots for model {mdl}")
-            if args.pid_start is not None and args.pid_end is not None:
-                pids = np.arange(args.pid_start, args.pid_end+1)
-            else:
-                pids = s.pids
             s.find_good_cores()
             for pid in pids:
                 tasks.plot_diagnostics(s, pid, overwrite=args.overwrite)
@@ -188,7 +181,7 @@ if __name__ == "__main__":
             for prefix in plot_prefix:
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
                                 srcdir])
-            for pid in s.pids:
+            for pid in pids:
                 prefix = "{}.par{}".format(config.PLOT_PREFIX_TCOLL_CORES, pid)
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
                                 srcdir])
