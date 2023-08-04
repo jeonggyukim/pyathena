@@ -100,6 +100,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     msg = '[track_cores] processing model {} pid {} num {}'
     print(msg.format(s.basename, pid, num))
     gd = s.load_dendro(num)
+    ds = s.load_hdf5(num, header_only=True)
 
     # Calculate effective radius of this leaf
     lid = find_tcoll_core(s, pid)
@@ -113,6 +114,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     rtidal = calculate_tidal_radius(s, gd, eid, lid)
 
     nums_track = [num,]
+    time = [ds['Time'],]
     leaf_id = [lid,]
     leaf_radius = [rlf,]
     envelop_id = [eid,]
@@ -123,6 +125,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
         msg = '[track_cores] processing model {} pid {} num {}'
         print(msg.format(s.basename, pid, num))
         gd = s.load_dendro(num)
+        ds = s.load_hdf5(num, header_only=True)
 
         # find closeast leaf to the previous preimage
         dst = [get_node_distance(s, leaf, leaf_id[-1]) for leaf in gd.leaves]
@@ -186,6 +189,7 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
             break
 
         nums_track.append(num)
+        time.append(ds['Time'])
         leaf_id.append(lid)
         leaf_radius.append(rlf)
         envelop_id.append(eid)
@@ -194,7 +198,8 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
 
     # SMOON: Using dtype=object is to prevent automatic upcasting from int to float
     # when indexing a single row. Maybe there is a better approach.
-    cores = pd.DataFrame(dict(leaf_id=leaf_id,
+    cores = pd.DataFrame(dict(time=time,
+                              leaf_id=leaf_id,
                               leaf_radius=leaf_radius,
                               envelop_id=envelop_id,
                               envelop_radius=envelop_radius,
