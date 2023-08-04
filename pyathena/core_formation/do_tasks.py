@@ -5,7 +5,6 @@ import subprocess
 from multiprocessing import Pool
 import pyathena as pa
 from pyathena.core_formation import config, tasks, tools
-from grid_dendro import energy
 
 if __name__ == "__main__":
     # load all models
@@ -97,7 +96,6 @@ if __name__ == "__main__":
             print(f"Find t_coll cores for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, s.pids)
-            s._load_cores()
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
@@ -120,7 +118,6 @@ if __name__ == "__main__":
                              'radial_profile.par{}.nc'.format(pid))
                 if fname.exists():
                     fname.unlink()
-            s._load_radial_profiles()
 
         # Find critical tes
         if args.critical_tes:
@@ -130,7 +127,6 @@ if __name__ == "__main__":
                     tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
-            s._load_cores()
 
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}")
