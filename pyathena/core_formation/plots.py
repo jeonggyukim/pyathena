@@ -108,9 +108,16 @@ def plot_projection(s, ds, field='dens', axis='z', op='sum',
     return img
 
 
-def plot_energies(s, ds, gd, nid, ax=None):
+def plot_energies(s, ds, rprf, core, gd, node, ax=None):
     if ax is not None:
         plt.sca(ax)
+
+    rprf = tools.calculate_cumulative_energies(s, rprf, core)
+    plt.plot(rprf.r, rprf.ethm, ls='-', c='tab:blue', label='thermal')
+    plt.plot(rprf.r, rprf.ekin, ls='-', c='tab:orange', label='kinetic')
+    plt.plot(rprf.r, rprf.egrv, ls='-', c='tab:green', label='gravitational')
+    plt.plot(rprf.r, rprf.etot, ls='-', c='tab:red', label='total')
+
     data = dict(rho=ds.dens.to_numpy(),
                 vel1=(ds.mom1/ds.dens).to_numpy(),
                 vel2=(ds.mom2/ds.dens).to_numpy(),
@@ -118,12 +125,12 @@ def plot_energies(s, ds, gd, nid, ax=None):
                 prs=s.cs**2*ds.dens.to_numpy(),
                 phi=ds.phi.to_numpy(),
                 dvol=s.dV)
-    reff, engs = energy.calculate_cumulative_energies(gd, data, nid)
-    plt.plot(reff, engs['ethm'], label='thermal')
-    plt.plot(reff, engs['ekin'], label='kinetic')
-    plt.plot(reff, engs['egrv'], label='gravitational')
-    plt.plot(reff, engs['etot'], label='total')
-    plt.axhline(0, linestyle=':')
+    reff, engs = energy.calculate_cumulative_energies(gd, data, node)
+    plt.plot(reff, engs['ethm'], ls='--', c='tab:blue')
+    plt.plot(reff, engs['ekin'], ls='--', c='tab:orange')
+    plt.plot(reff, engs['egrv'], ls='--', c='tab:green')
+    plt.plot(reff, engs['etot'], ls='--', c='tab:red')
+    plt.axhline(0, linestyle=':', color='tab:gray')
     plt.legend(loc='lower left')
 
 
@@ -227,8 +234,8 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     rprf = s.rprofs[pid].sel(num=num)
 
     # Create figure
-    fig = plt.figure(figsize=(28, 21))
-    gs = gridspec.GridSpec(3, 4, wspace=0.23, hspace=0.15)
+    fig = plt.figure(figsize=(35, 21))
+    gs = gridspec.GridSpec(3, 5, wspace=0.23, hspace=0.15)
 
     xlim = dict(z=(xc-hw, xc+hw),
                 x=(yc-hw, yc+hw),
@@ -244,8 +251,8 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
                rho=fig.add_subplot(gs[0, 2]),
                vel=fig.add_subplot(gs[1, 2]),
                veldisp=fig.add_subplot(gs[2, 2]),
-               energy=fig.add_subplot(gs[0, 3]),
-               acc=fig.add_subplot(gs[1:, 3]))
+               energy=fig.add_subplot(gs[0, 3:]),
+               acc=fig.add_subplot(gs[1:, 3:]))
 
     for i, prj_axis in enumerate(['z', 'x', 'y']):
         # 1. Projections
@@ -327,11 +334,11 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
 
     # Velocities
     plt.sca(axs['vel'])
-    plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
-    plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
-    plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
+    plt.semilogx(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
+    plt.semilogx(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
+    plt.semilogx(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
     plt.axhline(0, ls=':')
-    plt.xlim(0, rmax)
+    plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(-2.5, 1.5)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v\right>/c_s$')
@@ -352,7 +359,7 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
         plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
                  lw=1)
 
-    plt.xlim(rprf.r[0], 2*hw)
+    plt.xlim(rprf.r[0]/2, 2*hw)
     plt.ylim(1e-1, 1e1)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v^2\right>^{1/2}/c_s$')
@@ -360,7 +367,7 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
 
     # 5. Energies
     plt.sca(axs['energy'])
-    plot_energies(s, ds, gd, core.envelop_id)
+    plot_energies(s, ds, rprf, core, gd, core.envelop_id)
     if emin is not None and emax is not None:
         plt.ylim(emin, emax)
     plt.xlim(0, rmax)
@@ -384,7 +391,7 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
              (ds.Time - tcoll)/tff) + r'$\,t_{ff}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
 
-    for ax in (axs['rho'], axs['vel'], axs['veldisp'], axs['acc']):
+    for ax in (axs['rho'], axs['vel'], axs['veldisp'], axs['energy'], axs['acc']):
         plt.sca(ax)
         ln1 = plt.axvline(core.tidal_radius, c='tab:gray', lw=1)
         ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')

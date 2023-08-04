@@ -149,19 +149,12 @@ if __name__ == "__main__":
                 ds = s.load_hdf5(num, load_method='pyathena')
                 gd = s.load_dendro(num)
                 core = s.cores[pid].loc[num]
-                data = dict(rho=ds.dens.to_numpy(),
-                            vel1=(ds.mom1/ds.dens).to_numpy(),
-                            vel2=(ds.mom2/ds.dens).to_numpy(),
-                            vel3=(ds.mom3/ds.dens).to_numpy(),
-                            prs=s.cs**2*ds.dens.to_numpy(),
-                            phi=ds.phi.to_numpy(),
-                            dvol=s.dV)
-                reff, engs = energy.calculate_cumulative_energies(gd, data,
-                                                                  core.leaf_id)
-                emax = tools.roundup(max(engs['ekin'].max(),
-                                         engs['ethm'].max()), 1)
-                emin = tools.rounddown(engs['egrv'].min(), 1)
-                rmax = tools.roundup(reff.max(), 2)
+                rprf = s.rprofs[pid].sel(num=num)
+                rprf = tools.calculate_cumulative_energies(s, rprf, core)
+                rprf = rprf.sel(r=slice(0, core.tidal_radius))
+                emax = tools.roundup(max(rprf.ekin.max(), rprf.ethm.max()), 1)
+                emin = tools.rounddown(rprf.egrv.min(), 1)
+                rmax = tools.roundup(core.tidal_radius, 2)
 
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,
