@@ -63,6 +63,24 @@ class LognormalPDF:
         return np.exp(x)
 
 
+def find_tcoll_core(s, pid):
+    """Find the GRID-dendro ID of the t_coll core of particle pid"""
+    # load dendrogram at t = t_coll
+    num = s.tcoll_cores.loc[pid].num
+    gd = s.load_dendro(num)
+
+    # find closeast leaf node to this particle
+    pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
+    pos_particle = pos_particle.to_numpy()
+
+    distance = []
+    for leaf in gd.leaves:
+        pos_node = get_coords_node(s, leaf)
+        distance.append(get_periodic_distance(pos_node, pos_particle, s.Lbox))
+    tcoll_core = gd.leaves[np.argmin(distance)]
+    return tcoll_core
+
+
 def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     """
     Parameters
@@ -446,27 +464,25 @@ def calculate_cumulative_energies(s, rprf, core):
     rprf['etot'] = ethm + ekin + egrv
 
     return rprf
-    
-
-def find_tcoll_core(s, pid):
-    """Find the GRID-dendro ID of the t_coll core of particle pid"""
-    # load dendrogram at t = t_coll
-    num = s.tcoll_cores.loc[pid].num
-    gd = s.load_dendro(num)
-
-    # find closeast leaf node to this particle
-    pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
-    pos_particle = pos_particle.to_numpy()
-
-    distance = []
-    for leaf in gd.leaves:
-        pos_node = get_coords_node(s, leaf)
-        distance.append(get_periodic_distance(pos_node, pos_particle, s.Lbox))
-    tcoll_core = gd.leaves[np.argmin(distance)]
-    return tcoll_core
 
 
-def get_accelerations(rprf):
+def calculate_infall_rate(rprofs, cores):
+    time, vr, mdot = [], [], []
+    for num, rtidal in cores.tidal_radius.items():
+        rprf = rprofs.sel(num=num).interp(r=rtidal)
+        time.append(rprf.t.data[()])
+        vr.append(-rprf.vel1_mw.data[()])
+        mdot.append((-4*np.pi*rprf.r**2*rprf.rho*rprf.vel1_mw).data[()])
+    if 'num' in rprofs.indexes:
+        rprofs = rprofs.drop_indexes('num')
+    rprofs['infall_speed'] = xr.DataArray(vr, coords=dict(t=time))
+    rprofs['infall_rate'] = xr.DataArray(mdot, coords=dict(t=time))
+    if 'num' not in rprofs.indexes:
+        rprofs = rprofs.set_xindex('num')
+    return rprofs
+
+
+def calculate_accelerations(rprf):
     """Calculate RHS of the Lagrangian EOM (force per unit mass)
 
     Parameters
@@ -481,10 +497,6 @@ def get_accelerations(rprf):
 
     """
     if 'num' in rprf.indexes:
-        # Temporary patch to the xarray bug;
-        # When there are multiple indexes associated with the same
-        # dimension 't', calculation among arrays are disabled.
-        # So drop 'num' index.
         rprf = rprf.drop_indexes('num')
     pthm = rprf.rho
     ptrb = rprf.rho*rprf.dvel1_sq_mw

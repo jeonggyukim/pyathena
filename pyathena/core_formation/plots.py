@@ -410,7 +410,7 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
 
 
 def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
-    acc = tools.get_accelerations(rprf)
+    acc = tools.calculate_accelerations(rprf)
 
     if ax is not None:
         plt.sca(ax)
