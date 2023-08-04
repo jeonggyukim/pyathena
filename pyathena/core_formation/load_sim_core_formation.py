@@ -258,7 +258,7 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
             for axis in [1, 2, 3]:
                 rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
                                              - rprf[f'vel{axis}_mw']**2)
-            rprf = rprf.merge(tools.get_accelerations(rprf))
+            rprf = rprf.merge(tools.calculate_accelerations(rprf))
             rprf = rprf.set_xindex('num')
             self.rprofs[pid] = rprf
 
