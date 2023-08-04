@@ -383,6 +383,7 @@ def calculate_radial_profile(s, ds, origin, rmax):
     _, (ds_sph['gacc1'], ds_sph['gacc2'], ds_sph['gacc3'])\
         = transform.to_spherical(gacc.values(), origin)
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
+    ds_sph['phi'] = ds.phi.assign_coords(dict(r=r))
 
     # Radial binning
     edges = np.insert(np.arange(s.dx/2, rmax, s.dx), 0, 0)
@@ -392,7 +393,7 @@ def calculate_radial_profile(s, ds, origin, rmax):
         rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
     # We can use weighted groupby_bins, but let's do it like this to reuse
     # rprf['rho'] for performance
-    for k in ['gacc1', 'vel1', 'vel2', 'vel3']:
+    for k in ['gacc1', 'vel1', 'vel2', 'vel3', 'phi']:
         rprf[k+'_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k],
                                                'r', edges) / rprf['rho']
     for k in ['vel1', 'vel2', 'vel3']:
