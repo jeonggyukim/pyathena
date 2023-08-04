@@ -263,9 +263,9 @@ def calculate_critical_tes(s, rprf, core):
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata.
-    rprf : xarray Dataset
+    rprf : xarray.Dataset
         Object containing radial profiles.
-    core : pandas series
+    core : pandas.Series
         Object containing core informations
 
     Returns
@@ -403,6 +403,50 @@ def calculate_radial_profile(s, ds, origin, rmax):
     rprf = xr.Dataset(rprf)
     return rprf
 
+
+def calculate_cumulative_energies(s, rprf, core):
+    """Calculate cumulative energies based on radial profiles
+
+    Use the mass-weighted mean gravitational potential at the tidal radius
+    as the reference point. Mass-weighted mean is appropriate if we want
+    the d(egrv)/dr = 0 as R -> Rtidal.
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    rprf : xarray.Dataset
+        Object containing radial profiles.
+    core : pandas.Series
+        Object containing core informations.
+
+    Returns
+    -------
+    rprf : xarray.Dataset
+        Object containing radial profiles, augmented by energy fields
+    """
+    # Thermal energy
+    gm1 = (5/3 - 1)
+    ethm = (4*np.pi*rprf.r**2*s.cs**2*rprf.rho/gm1).cumulative_integrate('r')
+
+    # Kinetic energy
+    vsq = rprf.vel1_sq_mw + rprf.vel2_sq_mw + rprf.vel3_sq_mw
+    vcomsq = rprf.vel1_mw**2 + rprf.vel2_mw**2 + rprf.vel3_mw**2
+    ekin = ((4*np.pi*rprf.r**2*0.5*rprf.rho*vsq).cumulative_integrate('r')
+            - vcomsq*(4*np.pi*rprf.r**2*0.5*rprf.rho).cumulative_integrate('r'))
+
+    # Gravitational energy
+    phi0 = rprf.phi_mw.interp(r=core.tidal_radius)
+    egrv = ((4*np.pi*rprf.r**2*rprf.rho*rprf.phi_mw).cumulative_integrate('r')
+            - phi0*(4*np.pi*rprf.r**2*rprf.rho).cumulative_integrate('r'))
+
+    rprf['ethm'] = ethm
+    rprf['ekin'] = ekin
+    rprf['egrv'] = egrv
+    rprf['etot'] = ethm + ekin + egrv
+
+    return rprf
+    
 
 def find_tcoll_core(s, pid):
     """Find the GRID-dendro ID of the t_coll core of particle pid"""
