@@ -698,7 +698,7 @@ def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
 
 
-def test_resolved_core(s, pid, ncells_min, f=0.5):
+def test_resolved_core(s, pid, ncells_min, f=1.0):
     """Test if the given core is sufficiently resolved.
 
     Estimates the envelop tidal radius when the core becomes critical,
@@ -725,7 +725,7 @@ def test_resolved_core(s, pid, ncells_min, f=0.5):
     tcoll = s.tcoll_cores.loc[pid].time
     tcrit = tcoll - f*tff
     num = cores.time.sub(tcrit).abs().astype('float64').idxmin()
-    ncells = cores.loc[num].envelop_tidal_radius / s.dx
+    ncells = cores.loc[num].tidal_radius / s.dx
     if ncells >= ncells_min:
         return True
     else:
@@ -754,10 +754,10 @@ def test_isolated_core(s, pid):
     pds = s.load_partab(num_tcoll)
     gd = s.load_dendro(num_tcoll)
 
-    nid = s.cores[pid].loc[num_tcoll].nid
+    nd = s.cores[pid].loc[num_tcoll].leaf_id
 
     # Get all cells in this node.
-    cells = set(gd.get_all_descendant_cells(nid))
+    cells = set(gd.get_all_descendant_cells(nd))
 
     # Test whether there are any existing particle.
     position_indices = np.floor((pds[['x1', 'x2', 'x3']] - s.domain['le'])
