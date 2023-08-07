@@ -368,7 +368,7 @@ def calculate_critical_tes(s, rprf, core):
     return res
 
 
-def calculate_radial_profile(s, ds, origin, rmax):
+def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     """Calculates radial profiles of various properties at selected position
 
     Parameters
@@ -381,6 +381,8 @@ def calculate_radial_profile(s, ds, origin, rmax):
         Coordinate origin (x0, y0, z0).
     rmax : float
         Maximum radius of radial bins.
+    lvec : array, optional
+        Angular momentum vector to align the polar axis.
 
     Returns
     -------
@@ -400,11 +402,12 @@ def calculate_radial_profile(s, ds, origin, rmax):
         vel_ = ds['mom{}'.format(axis)]/ds.dens
         vel[dim] = vel_ - vel_.sel(x=origin[0], y=origin[1], z=origin[2])
         gacc[dim] = -ds.phi.differentiate(dim)
+
     ds_sph = {}
     r, (ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3'])\
-        = transform.to_spherical(vel.values(), origin)
+        = transform.to_spherical(vel.values(), origin, lvec)
     _, (ds_sph['gacc1'], ds_sph['gacc2'], ds_sph['gacc3'])\
-        = transform.to_spherical(gacc.values(), origin)
+        = transform.to_spherical(gacc.values(), origin, lvec)
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
     ds_sph['phi'] = ds.phi.assign_coords(dict(r=r))
 
