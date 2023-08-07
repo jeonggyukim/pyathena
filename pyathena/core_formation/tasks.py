@@ -3,6 +3,8 @@
 # python modules
 from pathlib import Path
 import matplotlib.pyplot as plt
+import numpy as np
+import xarray as xr
 import subprocess
 import pickle
 import glob
@@ -185,9 +187,22 @@ def radial_profile(s, pid, num, overwrite=False, rmax=None):
     # Roll the data such that the core is at the center of the domain
     ds, center = tools.recenter_dataset(ds, center)
 
+    # Calculate the angular momentum vector within the tidal radius.
+    x = ds.x - center[0]
+    y = ds.y - center[1]
+    z = ds.z - center[2]
+    r = np.sqrt(x**2 + y**2 + z**2)
+    lx = (y*ds.mom3 - z*ds.mom2).where(r < core.tidal_radius).sum().data[()]*s.dV
+    ly = (z*ds.mom1 - x*ds.mom3).where(r < core.tidal_radius).sum().data[()]*s.dV
+    lz = (x*ds.mom2 - y*ds.mom1).where(r < core.tidal_radius).sum().data[()]*s.dV
+    lvec = np.array([lx, ly, lz])
+
     # Calculate radial profile
-    rprf = tools.calculate_radial_profile(s, ds, center, rmax)
+    rprf = tools.calculate_radial_profile(s, ds, center, rmax, lvec)
     rprf = rprf.expand_dims(dict(t=[ds.Time,]))
+    rprf['lx'] = xr.DataArray([lx,], dims='t')
+    rprf['ly'] = xr.DataArray([ly,], dims='t')
+    rprf['lz'] = xr.DataArray([lz,], dims='t')
 
     # write to file
     if ofname.exists():
