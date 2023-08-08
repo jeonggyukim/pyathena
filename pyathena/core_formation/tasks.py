@@ -232,7 +232,8 @@ def run_grid(s, num, overwrite=False):
 
     # Load data and construct dendrogram
     print('[run_grid] processing model {} num {}'.format(s.basename, num))
-    ds = s.load_hdf5(num, load_method='pyathena').transpose('z', 'y', 'x')
+    ds = s.load_hdf5(num, quantities=['phi',],
+                     load_method='pyathena').transpose('z', 'y', 'x')
     phi = ds.phi.to_numpy()
     gd = dendrogram.Dendrogram(phi, verbose=False)
     gd.construct()
