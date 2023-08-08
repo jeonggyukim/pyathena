@@ -174,7 +174,9 @@ def radial_profile(s, pid, num, overwrite=False, rmax=None):
     print(msg.format(s.basename, pid, num))
 
     # Load the snapshot and the core id
-    ds = s.load_hdf5(num, load_method='pyathena')
+    ds = s.load_hdf5(num,
+                     quantities=['dens','phi','mom1','mom2','mom3'],
+                     load_method='pyathena')
     ds = ds.transpose('z', 'y', 'x')
     core = s.cores[pid].loc[num]
 
@@ -331,7 +333,7 @@ def plot_diagnostics(s, pid, overwrite=False):
     overwrite : bool, optional
         Flag to overwrite
     """
-    msg = '[plot_diagnosticplot_diagnostics pid {}'
+    msg = '[plot_diagnostics] model {} pid {}'
     print(msg.format(s.basename, pid))
     fname = Path(s.savdir, 'figures',
                  'diagnostics_normalized.par{}.png'.format(pid))
