@@ -463,7 +463,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     rprofs = s.rprofs[pid]
     fthm, ftrb, fcen, fgrv, fani, fadv = [], [], [], [], [], []
     for num, core in cores.iterrows():
-        rprf = rprofs.sel(num=num).sel(r=slice(0, core.new_tidal_radius))
+        rprf = rprofs.sel(num=num).sel(r=slice(0, core.tidal_radius))
         dmdr = 4*np.pi*rprf.r**2*rprf.rho
         fthm.append((rprf.thm*dmdr).integrate('r').data[()])
         ftrb.append((rprf.trb*dmdr).integrate('r').data[()])
@@ -506,9 +506,10 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
 
     plt.sca(axs[1])
-    plt.plot(time, cores.new_tidal_radius, c='tab:blue',
+    plt.plot(time, cores.tidal_radius, c='tab:blue',
              label=r'$R_\mathrm{tidal}$')
-    plt.plot(time, cores.radius, c='tab:blue', ls='--', lw=1)
+    plt.plot(time, cores.envelop_radius, c='tab:blue', ls='-', lw=1)
+    plt.plot(time, cores.leaf_radius, c='tab:blue', ls='--', lw=1)
     plt.plot(time, cores.sonic_radius, c='tab:green',
              label=r'$R_\mathrm{sonic}$')
     plt.plot(time, cores.critical_radius, c='tab:red',
@@ -522,9 +523,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
     plt.sca(axs[2])
-    plt.plot(time, cores.new_tidal_mass, c='tab:blue',
+    plt.plot(time, cores.tidal_mass, c='tab:blue',
              label=r'$M_\mathrm{tidal}$')
-    plt.plot(time, cores.mass, c='tab:blue', ls='--', lw=1)
     plt.plot(time, cores.critical_mass, c='tab:red',
              label=r'$M_\mathrm{crit,c}$')
     plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--',
