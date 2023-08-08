@@ -108,9 +108,11 @@ if __name__ == "__main__":
                   " model {}"
             print(msg.format(mdl))
             for pid in pids:
+                rmax = s.cores[pid].tidal_radius.max()
                 def wrapper(num):
                     tasks.radial_profile(s, pid, num,
-                                         overwrite=args.overwrite)
+                                         overwrite=args.overwrite,
+                                         rmax=rmax)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
 
