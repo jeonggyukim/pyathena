@@ -221,6 +221,12 @@ class LoadSimCoreFormation(LoadSim, Hst, LognormalPDF, TimingReader):
                 tes_crit = tes_crit.sort_index()
                 self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
                                             axis=1, join='inner').sort_index()
+
+                # Calculate some derived fields
+                tcoll = self.tcoll_cores.loc[pid].time
+                tff = tools.tfreefall(self.cores[pid].iloc[-1].mean_density, self.gconst)
+                self.cores[pid].insert(1, 'tnorm', (self.cores[pid].time - tcoll) / tff)
+
             except FileNotFoundError:
                 pids_tes_not_found.append(pid)
                 pass
