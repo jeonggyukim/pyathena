@@ -718,7 +718,7 @@ def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
 
 
-def test_resolved_core(s, pid, ncells_min, f=1.0):
+def test_resolved_core(s, pid, ncells_min, f):
     """Test if the given core is sufficiently resolved.
 
     Estimates the envelop tidal radius when the core becomes critical,
@@ -732,7 +732,7 @@ def test_resolved_core(s, pid, ncells_min, f=1.0):
         Unique ID of the particle.
     ncells_min : int
         Minimum grid distance between a core and a particle.
-    f : float, optional
+    f : float
         Fuzzy factor to estimate critical time: tcoll - f*tff
 
     Returns
