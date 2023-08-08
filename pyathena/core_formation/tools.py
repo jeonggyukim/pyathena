@@ -395,6 +395,13 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     vel1_sq, vel2_sq, vel3_sq: density-weighted mean squared velocities.
     gacc1: density-weighted mean gravitational acceleration.
     """
+    # Slice data
+    nmax = np.floor(rmax/s.dx) + 1
+    edges = np.insert(np.arange(s.dx/2, (nmax + 1)*s.dx, s.dx), 0, 0)
+    ds = ds.sel(x=slice(origin[0] - edges[-1], origin[0] + edges[-1]),
+                y=slice(origin[1] - edges[-1], origin[1] + edges[-1]),
+                z=slice(origin[2] - edges[-1], origin[2] + edges[-1]))
+
     # Convert density and velocities to spherical coord.
     vel, gacc = {}, {}
     for dim, axis in zip(['x', 'y', 'z'], [1, 2, 3]):
@@ -412,10 +419,7 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     ds_sph['phi'] = ds.phi.assign_coords(dict(r=r))
 
     # Radial binning
-    nmax = np.floor(rmax/s.dx)
-    edges = np.insert(np.arange(s.dx/2, (nmax + 2)*s.dx, s.dx), 0, 0)
     rprf = {}
-
     for k in ['rho']:
         rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
     # We can use weighted groupby_bins, but let's do it like this to reuse
