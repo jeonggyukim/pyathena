@@ -220,7 +220,9 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     core = s.cores[pid].loc[num]
 
     # Load hdf5 snapshot at t = t_coll
-    ds = s.load_hdf5(num, load_method='pyathena')
+    ds = s.load_hdf5(num,
+                     quantities=['dens','mom1','mom2','mom3','phi'],
+                     load_method='pyathena')
 
     # Load leaf dict at t = t_coll
     gd = s.load_dendro(num)
@@ -562,8 +564,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
 def plot_sinkhistory(s, ds, pds):
     # find end time
-    ds_end = s.load_hdf5(s.nums[-1], load_method='yt')
-    tend = ds_end.current_time
+    ds_end = s.load_hdf5(s.nums[-1], header_only=True)
+    tend = ds_end['Time']
 
     # create figure
     fig = plt.figure(figsize=(18, 12))

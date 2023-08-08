@@ -141,8 +141,6 @@ if __name__ == "__main__":
             for pid in pids:
                 # Read snapshot at t=t_coll and set plot limits
                 num = s.tcoll_cores.loc[pid].num
-                ds = s.load_hdf5(num, load_method='pyathena')
-                gd = s.load_dendro(num)
                 core = s.cores[pid].loc[num]
                 rprf = s.rprofs[pid].sel(num=num)
                 rprf = tools.calculate_cumulative_energies(s, rprf, core)
