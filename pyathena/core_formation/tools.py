@@ -412,7 +412,8 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     ds_sph['phi'] = ds.phi.assign_coords(dict(r=r))
 
     # Radial binning
-    edges = np.insert(np.arange(s.dx/2, rmax, s.dx), 0, 0)
+    nmax = np.floor(rmax/s.dx)
+    edges = np.insert(np.arange(s.dx/2, (nmax + 2)*s.dx, s.dx), 0, 0)
     rprf = {}
 
     for k in ['rho']:
