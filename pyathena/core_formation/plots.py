@@ -218,8 +218,6 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
 
     # Load core
     core = s.cores[pid].loc[num]
-    tcoll = s.tcoll_cores.loc[pid].time
-    tff = tools.tfreefall(s.cores[pid].iloc[-1].mean_density, s.gconst)
 
     # Load hdf5 snapshot at t = t_coll
     ds = s.load_hdf5(num, load_method='pyathena')
@@ -387,9 +385,9 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.7, r'$R={:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.05, 0.05, r'$t-t_*=$'+r'${:.2f}$'.format(
-             (ds.Time - tcoll)/tff) + r'$\,t_{ff}$',
-             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.05, 0.05, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm)
+             + r'$\,t_{ff}$', transform=plt.gca().transAxes,
+             backgroundcolor='w')
 
     for ax in (axs['rho'], axs['vel'], axs['veldisp'], axs['energy'], axs['acc']):
         plt.sca(ax)
@@ -452,10 +450,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
     # Load cores
     cores = s.cores[pid].sort_index()
-    tcoll = s.tcoll_cores.loc[pid].time
-    tff = tools.tfreefall(cores.iloc[-1].mean_density, s.gconst)
     if normalize_time:
-        time = (cores.time - tcoll) / tff
+        time = cores.tnorm
     else:
         time = cores.time
 
