@@ -451,6 +451,13 @@ def calculate_cumulative_energies(s, rprf, core):
     rprf : xarray.Dataset
         Object containing radial profiles, augmented by energy fields
     """
+    # TODO(SMOON) change the argument core to rmax and
+    # substitute tidal_radius below to rmax.
+    # Also, return the bound radius.
+    # from scipy.interpolate import interp1d
+    # etot_f = interp1d(rprf.r, rprf.etot)
+    # rcore = brentq(etot_f, rprf.r[1], core.tidal_radius)
+
     # Thermal energy
     gm1 = (5/3 - 1)
     ethm = (4*np.pi*rprf.r**2*s.cs**2*rprf.rho/gm1).cumulative_integrate('r')
