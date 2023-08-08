@@ -409,6 +409,37 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     return fig
 
 
+def plot_cum_forces(s, rprf, core, ax=None, lw=1):
+    """Plot cumulative force per unit mass
+    """
+    dm = 4*np.pi*rprf.r**2*rprf.rho
+    mr =  dm.cumulative_integrate('r')
+    fthm = (dm*rprf.thm).cumulative_integrate('r') / mr
+    ftrb = (dm*rprf.trb).cumulative_integrate('r') / mr
+    fcen = (dm*rprf.cen).cumulative_integrate('r') / mr
+    fadv = (dm*rprf.adv).cumulative_integrate('r') / mr
+    fani = (dm*rprf.ani).cumulative_integrate('r') / mr
+    fgrv = (dm*rprf.grv).cumulative_integrate('r') / mr
+    ftot = fthm + ftrb + fcen + fgrv
+    f0 = (dm*s.gconst*mr/ftot.r**2).cumulative_integrate('r') / mr
+#    f0 = s.gconst*mr/ftot.r**2
+
+    if ax is not None:
+        plt.sca(ax)
+
+    plt.plot(fthm.r, fthm/f0, lw=lw, c='tab:blue', label=r'$f_\mathrm{thm}$')
+    plt.plot(ftrb.r, ftrb/f0, lw=lw, c='tab:orange', label=r'$f_\mathrm{trb}$')
+    plt.plot(fcen.r, fcen/f0, lw=lw, c='tab:green', label=r'$f_\mathrm{cen}$')
+    plt.plot(fcen.r, fani/f0, lw=lw, c='tab:purple', label=r'$f_\mathrm{ani}$')
+    plt.plot(fgrv.r, -fgrv/f0, lw=lw, c='tab:red', label=r'$f_\mathrm{grv}$')
+    plt.plot(ftot.r, ftot/f0, 'k-', lw=1.5*lw, label=r'$f_\mathrm{net}$')
+    plt.axhline(0, c='k', lw=1, ls='--')
+    plt.xlabel(r'$r$')
+    plt.ylabel(r'$f/\overline{GM(r)/r^2}$')
+    plt.ylim(-1, 1.5)
+    plt.legend(ncol=3, loc='lower left')
+
+
 def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     acc = tools.calculate_accelerations(rprf)
 
