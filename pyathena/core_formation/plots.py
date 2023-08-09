@@ -208,6 +208,187 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
     plt.ylim(extent[axis][2], extent[axis][3])
 
 
+def plot_cum_forces(s, rprf, core, ax=None, lw=1):
+    """Plot cumulative force per unit mass
+    """
+    dm = 4*np.pi*rprf.r**2*rprf.rho
+    mr =  dm.cumulative_integrate('r')
+    fthm = (dm*rprf.thm).cumulative_integrate('r') / mr
+    ftrb = (dm*rprf.trb).cumulative_integrate('r') / mr
+    fcen = (dm*rprf.cen).cumulative_integrate('r') / mr
+    fadv = (dm*rprf.adv).cumulative_integrate('r') / mr
+    fani = (dm*rprf.ani).cumulative_integrate('r') / mr
+    fgrv = (dm*rprf.grv).cumulative_integrate('r') / mr
+    ftot = fthm + ftrb + fcen + fgrv
+    f0 = (dm*s.gconst*mr/ftot.r**2).cumulative_integrate('r') / mr
+#    f0 = s.gconst*mr/ftot.r**2
+
+    if ax is not None:
+        plt.sca(ax)
+
+    plt.plot(fthm.r, fthm/f0, lw=lw, c='tab:blue', label=r'$f_\mathrm{thm}$')
+    plt.plot(ftrb.r, ftrb/f0, lw=lw, c='tab:orange', label=r'$f_\mathrm{trb}$')
+    plt.plot(fcen.r, fcen/f0, lw=lw, c='tab:green', label=r'$f_\mathrm{cen}$')
+    plt.plot(fcen.r, fani/f0, lw=lw, c='tab:purple', label=r'$f_\mathrm{ani}$')
+    plt.plot(fgrv.r, -fgrv/f0, lw=lw, c='tab:red', label=r'$f_\mathrm{grv}$')
+    plt.plot(ftot.r, ftot/f0, 'k-', lw=1.5*lw, label=r'$f_\mathrm{net}$')
+    plt.axhline(0, c='k', lw=1, ls='--')
+    plt.xlabel(r'$r$')
+    plt.ylabel(r'$f/\overline{GM(r)/r^2}$')
+    plt.ylim(-1, 1.5)
+    plt.legend(ncol=3, loc='lower left')
+
+
+def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
+    acc = tools.calculate_accelerations(rprf)
+
+    if ax is not None:
+        plt.sca(ax)
+
+    acc.thm.plot(lw=1, color='tab:orange', label=r'$f_\mathrm{thm}$')
+    acc.trb.plot(lw=1, color='tab:blue', label=r'$f_\mathrm{trb}$')
+    acc.ani.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
+    acc.cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
+    (-acc.grv).plot(marker='x', ls='--', color='tab:red', lw=1,
+                    label=r'$-f_\mathrm{grav}$')
+    net = acc.thm + acc.trb + acc.cen + acc.grv
+    net.plot(lw=1, color='k', marker='+', label='net')
+
+    # Overplot -GM/r^2
+    Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
+    gr = s.gconst*Mr/rprf.r**2
+    gr.plot(color='tab:red', lw=1, ls='--')
+
+    plt.axhline(0, linestyle=':')
+    plt.ylabel('acceleration')
+    plt.xlim(xlim)
+    plt.ylim(ylim)
+
+
+def plot_diagnostics(s, pid, normalize_time=True):
+    """Create four-row plot showing history of core properties
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata
+    pid : int
+        Unique particle ID.
+    normalize_time : bool, optional
+        Flag to use normalized time (t-tcoll)/tff
+    """
+    fig, axs = plt.subplots(4, 1, figsize=(7, 15), sharex='col',
+                            gridspec_kw=dict(hspace=0.1))
+
+    # Load cores
+    cores = s.cores[pid].sort_index()
+    if normalize_time:
+        time = cores.tnorm
+    else:
+        time = cores.time
+
+    # Calculate total forces acting on a core
+    rprofs = s.rprofs[pid]
+    fthm, ftrb, fcen, fgrv, fani, fadv = [], [], [], [], [], []
+    for num, core in cores.iterrows():
+        rprf = rprofs.sel(num=num).sel(r=slice(0, core.tidal_radius))
+        dmdr = 4*np.pi*rprf.r**2*rprf.rho
+        fthm.append((rprf.thm*dmdr).integrate('r').data[()])
+        ftrb.append((rprf.trb*dmdr).integrate('r').data[()])
+        fcen.append((rprf.cen*dmdr).integrate('r').data[()])
+        fani.append((rprf.ani*dmdr).integrate('r').data[()])
+        fadv.append((rprf.adv*dmdr).integrate('r').data[()])
+        fgrv.append((-rprf.grv*dmdr).integrate('r').data[()])
+    fthm = np.array(fthm)
+    ftrb = np.array(ftrb)
+    fcen = np.array(fcen)
+    fani = np.array(fani)
+    fadv = np.array(fadv)
+    fgrv = np.array(fgrv)
+
+    # Do plotting
+    plt.sca(axs[0])
+
+    # Note that we do not include the force due to anisotropic turbulence.
+    plt.plot(time, (fthm+ftrb+fcen-fgrv)/fgrv, c='k')
+    plt.plot(time, (fthm+ftrb+fcen-fgrv-fadv)/fgrv, c='k', alpha=0.5)
+
+    plt.ylim(-1, 1)
+    plt.ylabel(r'$(F_\mathrm{p, eff} - F_\mathrm{grv}) / F_\mathrm{grv}$')
+    if hasattr(s, "good_cores"):
+        if pid in s.good_cores:
+            plt.title('{}, core {}'.format(s.basename, pid))
+        else:
+            plt.title('{}, core {}'.format(s.basename, pid)+r'$^*$')
+    else:
+        plt.title('{}, core {}'.format(s.basename, pid))
+    plt.twinx()
+    plt.plot(time, fthm, lw=1, c='cyan', label=r'$F_\mathrm{thm}$')
+    plt.plot(time, ftrb, lw=1, c='gray', label=r'$F_\mathrm{trb}$')
+    plt.plot(time, fcen, lw=1, c='olive', label=r'$F_\mathrm{cen}$')
+    plt.plot(time, fgrv, lw=1, c='pink', label=r'$F_\mathrm{grv}$')
+    plt.plot(time, fani, lw=1, c='brown', ls=':', label=r'$F_\mathrm{ani}$')
+    plt.plot(time, fadv, lw=1, c='purple', ls=':', label=r'$F_\mathrm{adv}$')
+    plt.yscale('log')
+    plt.ylim(1e-1, 1e2)
+    plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
+
+    plt.sca(axs[1])
+    plt.plot(time, cores.tidal_radius, c='tab:blue',
+             label=r'$R_\mathrm{tidal}$')
+    plt.plot(time, cores.envelop_radius, c='tab:blue', ls='-', lw=1)
+    plt.plot(time, cores.leaf_radius, c='tab:blue', ls='--', lw=1)
+    plt.plot(time, cores.sonic_radius, c='tab:green',
+             label=r'$R_\mathrm{sonic}$')
+    plt.plot(time, cores.critical_radius, c='tab:red',
+             label=r'$R_\mathrm{crit,c}$')
+    plt.plot(time, cores.critical_radius_e, c='tab:red', ls='--',
+             label=r'$R_\mathrm{crit,e}$')
+
+    plt.yscale('log')
+    plt.ylim(1e-2, 1e0)
+    plt.ylabel(r'$R/L_{J,0}$')
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+
+    plt.sca(axs[2])
+    plt.plot(time, cores.tidal_mass, c='tab:blue',
+             label=r'$M_\mathrm{tidal}$')
+    plt.plot(time, cores.critical_mass, c='tab:red',
+             label=r'$M_\mathrm{crit,c}$')
+    plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--',
+             label=r'$M_\mathrm{crit,e}$')
+    plt.yscale('log')
+    plt.ylim(1e-3, 1e1)
+    plt.ylabel(r'$M/M_{J,0}$')
+    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
+
+    plt.sca(axs[3])
+    plt.plot(time, cores.center_density, c='tab:blue', ls='-',
+             label=r'$\rho_c$')
+    plt.plot(time, cores.edge_density, c='tab:blue', ls='--',
+             label=r'$\rho_e$')
+    plt.plot(time, cores.mean_density, c='tab:blue', ls=':',
+             label=r'$\overline{\rho}_\mathrm{tidal}$')
+    plt.plot(time, cores.edge_density*cores.critical_contrast_e, c='tab:red',
+             ls='--', label=r'$\rho_\mathrm{crit}$')
+    plt.plot(time, cores.edge_density*14, c='tab:red', ls=':',
+             label=r'$\rho_\mathrm{BE}$')
+    plt.yscale('log')
+    plt.ylabel(r'$\rho/\rho_0$')
+    plt.legend(loc='upper left', bbox_to_anchor=(1.12, 1))
+    plt.ylim(1e0, 1e5)
+
+    if normalize_time:
+        plt.xlim(-4, 0)
+        plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}$'
+                   r'$(\overline{\rho}_\mathrm{coll})$')
+    else:
+        plt.xlabel(r'$t/t_{J,0}$')
+    for ax in axs:
+        ax.grid()
+    return fig
+
+
 def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     if rmax is None:
         rmax = hw
@@ -409,186 +590,101 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     return fig
 
 
-def plot_cum_forces(s, rprf, core, ax=None, lw=1):
-    """Plot cumulative force per unit mass
-    """
-    dm = 4*np.pi*rprf.r**2*rprf.rho
-    mr =  dm.cumulative_integrate('r')
-    fthm = (dm*rprf.thm).cumulative_integrate('r') / mr
-    ftrb = (dm*rprf.trb).cumulative_integrate('r') / mr
-    fcen = (dm*rprf.cen).cumulative_integrate('r') / mr
-    fadv = (dm*rprf.adv).cumulative_integrate('r') / mr
-    fani = (dm*rprf.ani).cumulative_integrate('r') / mr
-    fgrv = (dm*rprf.grv).cumulative_integrate('r') / mr
-    ftot = fthm + ftrb + fcen + fgrv
-    f0 = (dm*s.gconst*mr/ftot.r**2).cumulative_integrate('r') / mr
-#    f0 = s.gconst*mr/ftot.r**2
+def core_structure(s, pid, num, rmax=None):
+    core = s.cores[pid].loc[num]
+    rprf = s.rprofs[pid].sel(num=num)
+    if rmax is None:
+        rmax = core.tidal_radius
 
-    if ax is not None:
+    # Create figure
+    fig, axs = plt.subplots(2, 2, figsize=(14, 10),
+                            gridspec_kw=dict(hspace=0.1, wspace=0.1))
+
+    for ax in axs[0]:
         plt.sca(ax)
+        plt.plot(rprf.r, rprf.rho, 'k-+')
+        rhoLP = tools.lpdensity(rprf.r, s.cs, s.gconst)
+        plt.plot(rprf.r, rhoLP, 'k--', lw=1)
 
-    plt.plot(fthm.r, fthm/f0, lw=lw, c='tab:blue', label=r'$f_\mathrm{thm}$')
-    plt.plot(ftrb.r, ftrb/f0, lw=lw, c='tab:orange', label=r'$f_\mathrm{trb}$')
-    plt.plot(fcen.r, fcen/f0, lw=lw, c='tab:green', label=r'$f_\mathrm{cen}$')
-    plt.plot(fcen.r, fani/f0, lw=lw, c='tab:purple', label=r'$f_\mathrm{ani}$')
-    plt.plot(fgrv.r, -fgrv/f0, lw=lw, c='tab:red', label=r'$f_\mathrm{grv}$')
-    plt.plot(ftot.r, ftot/f0, 'k-', lw=1.5*lw, label=r'$f_\mathrm{net}$')
-    plt.axhline(0, c='k', lw=1, ls='--')
-    plt.xlabel(r'$r$')
-    plt.ylabel(r'$f/\overline{GM(r)/r^2}$')
-    plt.ylim(-1, 1.5)
-    plt.legend(ncol=3, loc='lower left')
+        # overplot critical tes
+        LJ_c = 1.0/np.sqrt(core.center_density)
+        xi_min = rprf.r.isel(r=0).data[()]/LJ_c
+        xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
+        xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+        if not np.isnan(core.sonic_radius):
+            ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
+            u, du = ts.solve(xi)
+            plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
 
+        # overplot critical BE
+        ts = tes.TESc()
+        u, du = ts.solve(xi)
+        plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
 
-def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
-    acc = tools.calculate_accelerations(rprf)
+        # overplot critical tes given rho_edge
+        LJ_e = 1.0/np.sqrt(core.edge_density)
+        xi_min = rprf.r.isel(r=0).data[()]/LJ_e
+        xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
+        xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+        if not np.isnan(core.sonic_radius):
+            ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
+            try:
+                uc, _, _ = ts.get_crit()
+                u, _ = ts.solve(xi, uc)
+                plt.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b--', lw=1.5)
+            except ValueError:
+                # Cannot find critical TES. Do not plot.
+                pass
 
-    if ax is not None:
+        # overplot critical BE
+        ts = tes.TESe()
+        uc, _, _ = ts.get_crit()
+        u, _ = ts.solve(xi, uc)
+        plt.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b:', lw=1)
+
+        plt.axhline(core.edge_density, ls='-.', c='tab:gray')
+        plt.yscale('log')
+        plt.ylim(1e0, rhoLP[0]/10)
+
+    for ax in axs[1]:
+        plot_cum_forces(s, rprf, core, ax)
+
+    axs[0,0].set_ylabel(r'$\rho/\rho_0$')
+    for ax in axs[:,0]:
+        ax.set_xscale('log')
+    for ax in axs[:,1]:
+        ax.set_ylabel('')
+    for ax in axs[:,0]:
+        ax.set_xlim(rprf.r[0]/2, rmax*2)
+    for ax in axs[:,1]:
+        ax.set_xlim(0, rmax)
+    for ax in axs[1]:
+        ax.set_xlabel(r'$r/L_{J,0}$')
+
+    plt.sca(axs[0,0])
+    plt.text(0.5, 0.9, r'$t={:.3f}$'.format(core.time)+r'$\,t_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.5, 0.8, r'$M={:.2f}$'.format(core.tidal_mass)+r'$\,M_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.5, 0.7, r'$R={:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.05, 0.05, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm)
+             + r'$\,t_{ff}$', transform=plt.gca().transAxes,
+             backgroundcolor='w')
+
+    for ax in axs.flat:
         plt.sca(ax)
-
-    acc.thm.plot(lw=1, color='tab:orange', label=r'$f_\mathrm{thm}$')
-    acc.trb.plot(lw=1, color='tab:blue', label=r'$f_\mathrm{trb}$')
-    acc.ani.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
-    acc.cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
-    (-acc.grv).plot(marker='x', ls='--', color='tab:red', lw=1,
-                    label=r'$-f_\mathrm{grav}$')
-    net = acc.thm + acc.trb + acc.cen + acc.grv
-    net.plot(lw=1, color='k', marker='+', label='net')
-
-    # Overplot -GM/r^2
-    Mr = (4*np.pi*rprf.rho*rprf.r**2).cumulative_integrate('r')
-    gr = s.gconst*Mr/rprf.r**2
-    gr.plot(color='tab:red', lw=1, ls='--')
-
-    plt.axhline(0, linestyle=':')
-    plt.ylabel('acceleration')
-    plt.xlim(xlim)
-    plt.ylim(ylim)
-
-
-def plot_diagnostics(s, pid, normalize_time=True):
-    """Create four-row plot showing history of core properties
-
-    Parameters
-    ----------
-    s : LoadSimCoreFormation
-        Simulation metadata
-    pid : int
-        Unique particle ID.
-    normalize_time : bool, optional
-        Flag to use normalized time (t-tcoll)/tff
-    """
-    fig, axs = plt.subplots(4, 1, figsize=(7, 15), sharex='col',
-                            gridspec_kw=dict(hspace=0.1))
-
-    # Load cores
-    cores = s.cores[pid].sort_index()
-    if normalize_time:
-        time = cores.tnorm
-    else:
-        time = cores.time
-
-    # Calculate total forces acting on a core
-    rprofs = s.rprofs[pid]
-    fthm, ftrb, fcen, fgrv, fani, fadv = [], [], [], [], [], []
-    for num, core in cores.iterrows():
-        rprf = rprofs.sel(num=num).sel(r=slice(0, core.tidal_radius))
-        dmdr = 4*np.pi*rprf.r**2*rprf.rho
-        fthm.append((rprf.thm*dmdr).integrate('r').data[()])
-        ftrb.append((rprf.trb*dmdr).integrate('r').data[()])
-        fcen.append((rprf.cen*dmdr).integrate('r').data[()])
-        fani.append((rprf.ani*dmdr).integrate('r').data[()])
-        fadv.append((rprf.adv*dmdr).integrate('r').data[()])
-        fgrv.append((-rprf.grv*dmdr).integrate('r').data[()])
-    fthm = np.array(fthm)
-    ftrb = np.array(ftrb)
-    fcen = np.array(fcen)
-    fani = np.array(fani)
-    fadv = np.array(fadv)
-    fgrv = np.array(fgrv)
-
-    # Do plotting
-    plt.sca(axs[0])
-
-    # Note that we do not include the force due to anisotropic turbulence.
-    plt.plot(time, (fthm+ftrb+fcen-fgrv)/fgrv, c='k')
-    plt.plot(time, (fthm+ftrb+fcen-fgrv-fadv)/fgrv, c='k', alpha=0.5)
-
-    plt.ylim(-1, 1)
-    plt.ylabel(r'$(F_\mathrm{p, eff} - F_\mathrm{grv}) / F_\mathrm{grv}$')
-    if hasattr(s, "good_cores"):
-        if pid in s.good_cores:
-            plt.title('{}, core {}'.format(s.basename, pid))
-        else:
-            plt.title('{}, core {}'.format(s.basename, pid)+r'$^*$')
-    else:
-        plt.title('{}, core {}'.format(s.basename, pid))
-    plt.twinx()
-    plt.plot(time, fthm, lw=1, c='cyan', label=r'$F_\mathrm{thm}$')
-    plt.plot(time, ftrb, lw=1, c='gray', label=r'$F_\mathrm{trb}$')
-    plt.plot(time, fcen, lw=1, c='olive', label=r'$F_\mathrm{cen}$')
-    plt.plot(time, fgrv, lw=1, c='pink', label=r'$F_\mathrm{grv}$')
-    plt.plot(time, fani, lw=1, c='brown', ls=':', label=r'$F_\mathrm{ani}$')
-    plt.plot(time, fadv, lw=1, c='purple', ls=':', label=r'$F_\mathrm{adv}$')
-    plt.yscale('log')
-    plt.ylim(1e-1, 1e2)
-    plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
-
-    plt.sca(axs[1])
-    plt.plot(time, cores.tidal_radius, c='tab:blue',
-             label=r'$R_\mathrm{tidal}$')
-    plt.plot(time, cores.envelop_radius, c='tab:blue', ls='-', lw=1)
-    plt.plot(time, cores.leaf_radius, c='tab:blue', ls='--', lw=1)
-    plt.plot(time, cores.sonic_radius, c='tab:green',
-             label=r'$R_\mathrm{sonic}$')
-    plt.plot(time, cores.critical_radius, c='tab:red',
-             label=r'$R_\mathrm{crit,c}$')
-    plt.plot(time, cores.critical_radius_e, c='tab:red', ls='--',
-             label=r'$R_\mathrm{crit,e}$')
-
-    plt.yscale('log')
-    plt.ylim(1e-2, 1e0)
-    plt.ylabel(r'$R/L_{J,0}$')
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-
-    plt.sca(axs[2])
-    plt.plot(time, cores.tidal_mass, c='tab:blue',
-             label=r'$M_\mathrm{tidal}$')
-    plt.plot(time, cores.critical_mass, c='tab:red',
-             label=r'$M_\mathrm{crit,c}$')
-    plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--',
-             label=r'$M_\mathrm{crit,e}$')
-    plt.yscale('log')
-    plt.ylim(1e-3, 1e1)
-    plt.ylabel(r'$M/M_{J,0}$')
-    plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
-
-    plt.sca(axs[3])
-    plt.plot(time, cores.center_density, c='tab:blue', ls='-',
-             label=r'$\rho_c$')
-    plt.plot(time, cores.edge_density, c='tab:blue', ls='--',
-             label=r'$\rho_e$')
-    plt.plot(time, cores.mean_density, c='tab:blue', ls=':',
-             label=r'$\overline{\rho}_\mathrm{tidal}$')
-    plt.plot(time, cores.edge_density*cores.critical_contrast_e, c='tab:red',
-             ls='--', label=r'$\rho_\mathrm{crit}$')
-    plt.plot(time, cores.edge_density*14, c='tab:red', ls=':',
-             label=r'$\rho_\mathrm{BE}$')
-    plt.yscale('log')
-    plt.ylabel(r'$\rho/\rho_0$')
-    plt.legend(loc='upper left', bbox_to_anchor=(1.12, 1))
-    plt.ylim(1e0, 1e5)
-
-    if normalize_time:
-        plt.xlim(-4, 0)
-        plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}$'
-                   r'$(\overline{\rho}_\mathrm{coll})$')
-    else:
-        plt.xlabel(r'$t/t_{J,0}$')
-    for ax in axs:
-        ax.grid()
+        ln1 = plt.axvline(core.tidal_radius, c='tab:gray', lw=1)
+        ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
+        ln3 = plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
+        ln4 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
+    plt.sca(axs[0,1])
+    lgd = plt.legend([ln1, ln2, ln3, ln4], [r'$R_\mathrm{tidal}$',
+                                            r'$R_\mathrm{crit,c}$',
+                                            r'$R_\mathrm{crit,e}$',
+                                            r'$R_\mathrm{sonic}$'],
+                     loc='upper right')
     return fig
-
 
 # DEPRECATED
 

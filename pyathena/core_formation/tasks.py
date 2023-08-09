@@ -320,6 +320,20 @@ def plot_sink_history(s, num, overwrite=False):
     plt.close(fig)
 
 
+def plot_core_structure(s, pid, overwrite=False):
+    rmax = s.cores[pid].tidal_radius.max()
+    for num in s.cores[pid].index:
+        msg = '[plot_core_evolution] processing model {} pid {} num {}'
+        msg = msg.format(s.basename, pid, num)
+        print(msg)
+        fname = Path(s.savdir, 'figures', "core_structure.par{}.{:05d}.png".format(pid, num))
+        if fname.exists() and not overwrite:
+            return
+        fig = plots.core_structure(s, pid, num, rmax=rmax)
+        fig.savefig(fname, bbox_inches='tight', dpi=200)
+        plt.close(fig)
+
+
 def plot_diagnostics(s, pid, overwrite=False):
     """Creates diagnostics plots for a given model
 
