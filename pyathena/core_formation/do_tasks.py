@@ -76,6 +76,8 @@ if __name__ == "__main__":
             pids = np.arange(args.pid_start, args.pid_end+1)
         else:
             pids = s.pids
+        if args.pids:
+            pids = args.pids
 
         # Combine output files.
         if args.combine_partab:

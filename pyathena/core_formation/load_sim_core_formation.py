@@ -52,7 +52,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
     """
 
     def __init__(self, basedir_or_Mach=None, savdir=None,
-                 load_method='pyathena', verbose=False):
+                 load_method='pyathena', verbose=False, force_override=False):
         """The constructor for LoadSimCoreFormation class
 
         Parameters
@@ -104,18 +104,18 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             self.sonic_length = tools.get_sonic(self.Mach, self.Lbox)
 
             # Find the collapse time and corresponding snapshot numbers
-            self._load_tcoll_cores()
+            self.tcoll_cores = self._load_tcoll_cores(force_override=force_override)
 
             try:
                 # Load grid-dendro nodes
-                self._load_cores()
+                self.cores = self._load_cores(force_override=force_override)
             except FileNotFoundError:
                 logging.warning("Failed to load core information")
                 pass
 
             try:
                 # Load radial profiles
-                self._load_radial_profiles()
+                self.rprofs = self._load_radial_profiles(force_override=force_override)
             except (FileNotFoundError, KeyError):
                 logging.warning("Failed to load radial profiles")
                 pass
@@ -142,8 +142,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             return pickle.load(handle)
 
     @LoadSim.Decorators.check_pickle
-    def find_good_cores(self, ncells_min=10, ftff=0.5, savdir=None,
-                        force_override=False):
+    def find_good_cores(self, ncells_min=10, ftff=0.5, prefix='good_cores',
+                        savdir=None, force_override=False):
         """Examine the isolatedness and resolvedness of cores
 
         This function will examine whether the cores are isolated or
@@ -169,20 +169,20 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.cores[pid].attrs['resolved'] = False
             if (self.cores[pid].attrs['isolated'] and self.cores[pid].attrs['resolved']):
                 good_cores.append(pid)
-        self.good_cores = good_cores
         return good_cores
 
-    def _load_tcoll_cores(self):
+    @LoadSim.Decorators.check_pickle
+    def _load_tcoll_cores(self, prefix='tcoll_cores', savdir=None, force_override=False):
         """Read .csv output and find their collapse time and snapshot number.
 
         Additionally store their mass, position, velocity at the time of
         collapse.
         """
         # find collapse time and the snapshot numbers at the time of collapse
-        self.dt_output = {}
+        dt_output = {}
         for k, v in self.par.items():
             if k.startswith('output'):
-                self.dt_output[v['file_type']] = v['dt']
+                dt_output[v['file_type']] = v['dt']
 
         x1, x2, x3, v1, v2, v3 = {}, {}, {}, {}, {}, {}
         time, num = {}, {}
@@ -196,23 +196,25 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             v2[pid] = phst0.v2
             v3[pid] = phst0.v3
             time[pid] = phst0.time
-            num[pid] = np.floor(phst0.time / self.dt_output['hdf5']
+            num[pid] = np.floor(phst0.time / dt_output['hdf5']
                                 ).astype('int')
-        self.tcoll_cores = pd.DataFrame(dict(x1=x1, x2=x2, x3=x3,
+        tcoll_cores = pd.DataFrame(dict(x1=x1, x2=x2, x3=x3,
                                              v1=v1, v2=v2, v3=v3,
                                              time=time, num=num),
                                         dtype=object)
-        self.tcoll_cores.index.name = 'pid'
+        tcoll_cores.index.name = 'pid'
+        return tcoll_cores
 
-    def _load_cores(self):
-        self.cores = {}
+    @LoadSim.Decorators.check_pickle
+    def _load_cores(self, prefix='cores', savdir=None, force_override=False):
+        cores = {}
         pids_tes_not_found = []
         for pid in self.pids:
             fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             core = pd.read_pickle(fname)
 
             # Assign to attribute
-            self.cores[pid] = core.sort_index()
+            cores[pid] = core.sort_index()
 
             # Read critical TES info and concatenate to self.cores
             try:
@@ -225,21 +227,23 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     tes_crit.append(pd.read_pickle(fname))
                 tes_crit = pd.DataFrame(tes_crit).set_index('num')
                 tes_crit = tes_crit.sort_index()
-                self.cores[pid] = pd.concat([self.cores[pid], tes_crit],
+                cores[pid] = pd.concat([cores[pid], tes_crit],
                                             axis=1, join='inner').sort_index()
 
                 # Calculate some derived fields
                 tcoll = self.tcoll_cores.loc[pid].time
-                tff = tools.tfreefall(self.cores[pid].iloc[-1].mean_density, self.gconst)
-                self.cores[pid].insert(1, 'tnorm', (self.cores[pid].time - tcoll) / tff)
+                tff = tools.tfreefall(cores[pid].iloc[-1].mean_density, self.gconst)
+                cores[pid].insert(1, 'tnorm', (cores[pid].time - tcoll) / tff)
 
             except FileNotFoundError:
                 pids_tes_not_found.append(pid)
                 pass
         if len(pids_tes_not_found) > 0:
             logging.warning("Cannot find critical TES information for pid: {}.".format(pids_tes_not_found))
+        return cores
 
-    def _load_radial_profiles(self):
+    @LoadSim.Decorators.check_pickle
+    def _load_radial_profiles(self, prefix='radial_profile', savdir=None, force_override=False):
         """
         Raises
         ------
@@ -248,31 +252,24 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         KeyError
             If `cores` has not been initialized (due to missing files, etc.)
         """
-        self.rprofs = {}
+        rprofs = {}
         for pid in self.pids:
-            try:
-                # Try reading joined radial profile
-                fname = pathlib.Path(self.savdir, 'radial_profile',
-                                     'radial_profile.par{}.nc'.format(pid))
-                rprf = xr.open_dataset(fname)
-            except FileNotFoundError:
-                # Read individual radial profiles and write joined file.
-                core = self.cores[pid]
-                rprf = []
-                for num in core.index:
-                    fname2 = pathlib.Path(self.savdir, 'radial_profile',
-                                          'radial_profile.par{}.{:05d}.nc'
-                                          .format(pid, num))
-                    rprf.append(xr.open_dataset(fname2))
-                rprf = xr.concat(rprf, 't')
-                rprf = rprf.assign_coords(dict(num=('t', core.index)))
-                rprf.to_netcdf(fname)
+            core = self.cores[pid]
+            rprf = []
+            for num in core.index:
+                findv = pathlib.Path(self.savdir, 'radial_profile',
+                                      'radial_profile.par{}.{:05d}.nc'
+                                      .format(pid, num))
+                rprf.append(xr.open_dataset(findv))
+            rprf = xr.concat(rprf, 't')
+            rprf = rprf.assign_coords(dict(num=('t', core.index)))
             for axis in [1, 2, 3]:
                 rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
                                              - rprf[f'vel{axis}_mw']**2)
             rprf = rprf.merge(tools.calculate_accelerations(rprf))
             rprf = rprf.set_xindex('num')
-            self.rprofs[pid] = rprf
+            rprofs[pid] = rprf
+        return rprofs
 
 
 class LoadSimCoreFormationAll(object):
@@ -297,13 +294,14 @@ class LoadSimCoreFormationAll(object):
 
     def set_model(self, model, savdir=None,
                   load_method='pyathena', verbose=False,
-                  reset=False):
+                  reset=False, force_override=False):
         self.model = model
         if reset:
             self.sim = LoadSimCoreFormation(self.basedirs[model],
                                             savdir=savdir,
                                             load_method=load_method,
-                                            verbose=verbose)
+                                            verbose=verbose,
+                                            force_override=force_override)
             self.simdict[model] = self.sim
         else:
             try:
@@ -312,7 +310,8 @@ class LoadSimCoreFormationAll(object):
                 self.sim = LoadSimCoreFormation(self.basedirs[model],
                                                 savdir=savdir,
                                                 load_method=load_method,
-                                                verbose=verbose)
+                                                verbose=verbose,
+                                                force_override=force_override)
                 self.simdict[model] = self.sim
 
         return self.sim
