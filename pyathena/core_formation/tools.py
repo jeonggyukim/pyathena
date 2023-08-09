@@ -395,6 +395,12 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     vel1_sq, vel2_sq, vel3_sq: density-weighted mean squared velocities.
     gacc1: density-weighted mean gravitational acceleration.
     """
+    # Sometimes, tidal radius is so small that the angular momentum vector
+    # Cannot be computed. In this case, fall back to default behavior.
+    # (to_spherical will assume z axis as the polar axis).
+    if (np.array(lvec)**2).sum() == 0:
+        lvec = None
+
     # Slice data
     nmax = np.floor(rmax/s.dx) + 1
     edges = np.insert(np.arange(s.dx/2, (nmax + 1)*s.dx, s.dx), 0, 0)
