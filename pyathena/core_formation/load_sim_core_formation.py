@@ -141,9 +141,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
-    @LoadSim.Decorators.check_pickle
-    def find_good_cores(self, ncells_min=10, ftff=0.5, prefix='good_cores',
-                        savdir=None, force_override=False):
+    def good_cores(self):
         """Examine the isolatedness and resolvedness of cores
 
         This function will examine whether the cores are isolated or
@@ -159,14 +157,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         """
         good_cores = []
         for pid in self.pids:
-            if tools.test_isolated_core(self, pid):
-                self.cores[pid].attrs['isolated'] = True
-            else:
-                self.cores[pid].attrs['isolated'] = False
-            if tools.test_resolved_core(self, pid, ncells_min, f=ftff):
-                self.cores[pid].attrs['resolved'] = True
-            else:
-                self.cores[pid].attrs['resolved'] = False
             if (self.cores[pid].attrs['isolated'] and self.cores[pid].attrs['resolved']):
                 good_cores.append(pid)
         return good_cores
@@ -206,7 +196,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         return tcoll_cores
 
     @LoadSim.Decorators.check_pickle
-    def _load_cores(self, prefix='cores', savdir=None, force_override=False):
+    def _load_cores(self, ncells_min=10, fcrit=0.6, prefix='cores', savdir=None, force_override=False):
         cores = {}
         pids_tes_not_found = []
         for pid in self.pids:
@@ -234,6 +224,15 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 tcoll = self.tcoll_cores.loc[pid].time
                 tff = tools.tfreefall(cores[pid].iloc[-1].mean_density, self.gconst)
                 cores[pid].insert(1, 'tnorm', (cores[pid].time - tcoll) / tff)
+
+                if tools.test_isolated_core(self, pid):
+                    cores[pid].attrs['isolated'] = True
+                else:
+                    cores[pid].attrs['isolated'] = False
+                if tools.test_resolved_core(self, pid, ncells_min, f=fcrit):
+                    cores[pid].attrs['resolved'] = True
+                else:
+                    cores[pid].attrs['resolved'] = False
 
             except FileNotFoundError:
                 pids_tes_not_found.append(pid)
