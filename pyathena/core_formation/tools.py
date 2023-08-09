@@ -746,7 +746,7 @@ def test_resolved_core(s, pid, ncells_min, f):
     Returns
     -------
     bool
-        True if a core is isolated, false otherwise.
+        True if a core is resolved, false otherwise.
     """
     cores = s.cores[pid].sort_index()
     num = cores.tnorm.sub(-f).abs().astype('float64').idxmin()
@@ -780,7 +780,7 @@ def test_isolated_core(s, pid):
     pds = s.load_partab(num_tcoll)
     gd = s.load_dendro(num_tcoll)
 
-    nd = s.cores[pid].loc[num_tcoll].leaf_id
+    nd = s.cores[pid].loc[num_tcoll].envelop_id
 
     # Get all cells in this node.
     cells = set(gd.get_all_descendant_cells(nd))

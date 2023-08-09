@@ -116,7 +116,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             try:
                 # Load radial profiles
                 self.rprofs = self._load_radial_profiles(force_override=force_override)
-            except (FileNotFoundError, KeyError):
+            except (AttributeError, FileNotFoundError, KeyError):
                 logging.warning("Failed to load radial profiles")
                 pass
 
