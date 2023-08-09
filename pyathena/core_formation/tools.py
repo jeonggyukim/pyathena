@@ -721,8 +721,10 @@ def rounddown(a, decimal):
 def test_resolved_core(s, pid, ncells_min, f):
     """Test if the given core is sufficiently resolved.
 
-    Estimates the envelop tidal radius when the core becomes critical,
-    and test if it is resolved by at least `ncells_min` cells
+    Need to be resolved at the time of collapse and at the time of instability,
+    where former and latter are estimated to be t_coll and t_coll - f*tff.
+    The additional requirement that the core must be resolved also at t_coll
+    is to filter out such cores that form from unresolved fragmentation.
 
     Parameters
     ----------
@@ -741,11 +743,9 @@ def test_resolved_core(s, pid, ncells_min, f):
         True if a core is isolated, false otherwise.
     """
     cores = s.cores[pid].sort_index()
-    tff = tfreefall(cores.iloc[-1].mean_density, s.gconst)
-    tcoll = s.tcoll_cores.loc[pid].time
-    tcrit = tcoll - f*tff
-    num = cores.time.sub(tcrit).abs().astype('float64').idxmin()
+    num = cores.tnorm.sub(-f).abs().astype('float64').idxmin()
     ncells = cores.loc[num].tidal_radius / s.dx
+    ncells = min(ncells, cores.iloc[-1].tidal_radius / s.dx)
     if ncells >= ncells_min:
         return True
     else:
