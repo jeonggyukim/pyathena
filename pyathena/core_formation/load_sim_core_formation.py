@@ -141,7 +141,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
-    def find_good_cores(self, ncells_min=10, ftff=0.5):
+    @LoadSim.Decorators.check_pickle
+    def find_good_cores(self, ncells_min=10, ftff=0.5, savdir=None,
+                        force_override=False):
         """Examine the isolatedness and resolvedness of cores
 
         This function will examine whether the cores are isolated or
@@ -155,7 +157,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             fractional free fall time before t_coll, at which the
             resolvedness is examined.
         """
-        self.good_cores = []
+        good_cores = []
         for pid in self.pids:
             if tools.test_isolated_core(self, pid):
                 self.cores[pid].attrs['isolated'] = True
@@ -166,7 +168,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             else:
                 self.cores[pid].attrs['resolved'] = False
             if (self.cores[pid].attrs['isolated'] and self.cores[pid].attrs['resolved']):
-                self.good_cores.append(pid)
+                good_cores.append(pid)
+        self.good_cores = good_cores
+        return good_cores
 
     def _load_tcoll_cores(self):
         """Read .csv output and find their collapse time and snapshot number.
