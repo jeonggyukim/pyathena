@@ -477,7 +477,7 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     xi_min = rprf.r.isel(r=0).data[()]/LJ_c
     xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-    if not np.isnan(core.sonic_radius):
+    if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
         ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
         u, du = ts.solve(xi)
         plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
@@ -492,7 +492,7 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     xi_min = rprf.r.isel(r=0).data[()]/LJ_e
     xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-    if not np.isnan(core.sonic_radius):
+    if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
         ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
         try:
             uc, _, _ = ts.get_crit()
@@ -537,7 +537,7 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
 
     # overplot linear fit
-    if not np.isnan(core.sonic_radius):
+    if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
         plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
                  lw=1)
 
@@ -612,7 +612,7 @@ def core_structure(s, pid, num, rmax=None):
         xi_min = rprf.r.isel(r=0).data[()]/LJ_c
         xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
         xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-        if not np.isnan(core.sonic_radius):
+        if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
             ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
             u, du = ts.solve(xi)
             plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
@@ -627,7 +627,7 @@ def core_structure(s, pid, num, rmax=None):
         xi_min = rprf.r.isel(r=0).data[()]/LJ_e
         xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
         xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-        if not np.isnan(core.sonic_radius):
+        if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
             ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
             try:
                 uc, _, _ = ts.get_crit()
