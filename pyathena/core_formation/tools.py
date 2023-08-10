@@ -267,6 +267,10 @@ def calculate_tidal_radius(s, gd, node, leaf=None):
     rtidal : float
         Tidal radius.
     """
+    if node == gd.trunk:
+        # If this node is a trunk, tidal radius is the half the box size,
+        # assuming periodic boundary condition.
+        return 0.5*s.Lbox
     if leaf is None:
         leaf = gd.find_minimum(node)
     nodes = set(gd.nodes.keys()) - set(gd.descendants[node]) - {node}
