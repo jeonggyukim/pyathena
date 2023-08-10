@@ -435,6 +435,11 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
                energy=fig.add_subplot(gs[0, 3:]),
                acc=fig.add_subplot(gs[1:, 3:]))
 
+    # Zoom-in dataset
+    sel = dict(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
+    d, _ = tools.recenter_dataset(ds, (xc, yc, zc))
+    d = d.sel(sel)
+
     for i, prj_axis in enumerate(['z', 'x', 'y']):
         # 1. Projections
         plt.sca(axs['proj'][i])
@@ -446,12 +451,8 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
         plt.ylabel(ylabel[prj_axis])
 
         # 2. Zoom-in projections
-        sel = dict(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
-        d, _ = tools.recenter_dataset(ds, (xc, yc, zc))
-        d = d.sel(sel)
         plt.sca(axs['zoom'][i])
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
-
         nodes = list(gd.descendants[core.envelop_id].copy())
         nodes.append(core.envelop_id)
         nodes.append(gd.sibling(core.envelop_id))
