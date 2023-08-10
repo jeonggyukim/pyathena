@@ -225,11 +225,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 tff = tools.tfreefall(cores[pid].iloc[-1].mean_density, self.gconst)
                 cores[pid].insert(1, 'tnorm', (cores[pid].time - tcoll) / tff)
 
-                if tools.test_isolated_core(self, pid):
+                if tools.test_isolated_core(self, cores[pid]):
                     cores[pid].attrs['isolated'] = True
                 else:
                     cores[pid].attrs['isolated'] = False
-                if tools.test_resolved_core(self, pid, ncells_min, f=fcrit):
+                if tools.test_resolved_core(self, cores[pid], ncells_min, f=fcrit):
                     cores[pid].attrs['resolved'] = True
                 else:
                     cores[pid].attrs['resolved'] = False

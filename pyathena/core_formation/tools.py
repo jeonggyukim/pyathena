@@ -728,7 +728,7 @@ def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
 
 
-def test_resolved_core(s, pid, ncells_min, f):
+def test_resolved_core(s, cores, ncells_min, f):
     """Test if the given core is sufficiently resolved.
 
     Need to be resolved at the time of collapse and at the time of instability,
@@ -740,8 +740,8 @@ def test_resolved_core(s, pid, ncells_min, f):
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata
-    pid : int
-        Unique ID of the particle.
+    cores : pandas.DataFrame
+        Object containing core informations.
     ncells_min : int
         Minimum grid distance between a core and a particle.
     f : float
@@ -752,7 +752,7 @@ def test_resolved_core(s, pid, ncells_min, f):
     bool
         True if a core is resolved, false otherwise.
     """
-    cores = s.cores[pid].sort_index()
+    cores = cores.sort_index()
     num = cores.tnorm.sub(-f).abs().astype('float64').idxmin()
     ncells = cores.loc[num].tidal_radius / s.dx
     ncells = min(ncells, cores.iloc[-1].tidal_radius / s.dx)
@@ -762,7 +762,7 @@ def test_resolved_core(s, pid, ncells_min, f):
         return False
 
 
-def test_isolated_core(s, pid):
+def test_isolated_core(s, cores):
     """Test if the given core is isolated.
 
     Criterion for an isolated core is that the core must not contain
@@ -772,19 +772,19 @@ def test_isolated_core(s, pid):
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata.
-    pid : int
-        Unique ID of the particle.
+    cores : pandas.DataFrame
+        Object containing core informations.
 
     Returns
     -------
     bool
         True if a core is isolated, false otherwise.
     """
-    num_tcoll = s.tcoll_cores.loc[pid].num
+    num_tcoll = cores.index[-1]
     pds = s.load_partab(num_tcoll)
     gd = s.load_dendro(num_tcoll)
 
-    nd = s.cores[pid].loc[num_tcoll].envelop_id
+    nd = cores.loc[num_tcoll].envelop_id
 
     # Get all cells in this node.
     cells = set(gd.get_all_descendant_cells(nd))
