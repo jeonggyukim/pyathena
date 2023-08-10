@@ -233,7 +233,7 @@ def plot_cum_forces(s, rprf, core, ax=None, lw=1):
     plt.plot(fgrv.r, -fgrv/f0, lw=lw, c='tab:red', label=r'$f_\mathrm{grv}$')
     plt.plot(ftot.r, ftot/f0, 'k-', lw=1.5*lw, label=r'$f_\mathrm{net}$')
     plt.axhline(0, c='k', lw=1, ls='--')
-    plt.xlabel(r'$r$')
+    plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$f/\overline{GM(r)/r^2}$')
     plt.ylim(-1, 1.5)
     plt.legend(ncol=3, loc='lower left')
@@ -416,7 +416,8 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
 
     # Create figure
     fig = plt.figure(figsize=(35, 21))
-    gs = gridspec.GridSpec(3, 5, wspace=0.23, hspace=0.15)
+    gs = gridspec.GridSpec(3, 5, wspace=0.23, hspace=0.15,
+                           width_ratios=[1, 1, 1.2, 1.2, 1.2])
 
     xlim = dict(z=(xc-hw, xc+hw),
                 x=(yc-hw, yc+hw),
@@ -429,11 +430,12 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
 
     axs = dict(proj=[fig.add_subplot(gs[i, 0]) for i in [0, 1, 2]],
                zoom=[fig.add_subplot(gs[i, 1]) for i in [0, 1, 2]],
-               rho=fig.add_subplot(gs[0, 2]),
-               vel=fig.add_subplot(gs[1, 2]),
-               veldisp=fig.add_subplot(gs[2, 2]),
-               energy=fig.add_subplot(gs[0, 3:]),
-               acc=fig.add_subplot(gs[1:, 3:]))
+               rho=[fig.add_subplot(gs[0, i]) for i in [2, 3]],
+               force=[fig.add_subplot(gs[1, i]) for i in [2, 3]],
+               vel=fig.add_subplot(gs[2, 2]),
+               veldisp=fig.add_subplot(gs[2, 3]),
+               energy=fig.add_subplot(gs[0, 4]),
+               acc=fig.add_subplot(gs[1:, 4]))
 
     # Zoom-in dataset
     sel = dict(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
@@ -467,11 +469,12 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
 
     # 4. Radial profiles
     # Density
-    plt.sca(axs['rho'])
-    plt.loglog(rprf.r, rprf.rho, 'k-+')
     rhoLP = tools.lpdensity(rprf.r, s.cs, s.gconst)
-    plt.loglog(rprf.r, rhoLP, 'k--')
-
+    for ax in axs['rho']:
+        plt.sca(ax)
+        plt.plot(rprf.r, rprf.rho, 'k-+')
+        plt.plot(rprf.r, rhoLP, 'k--')
+    
     # overplot critical tes
     LJ_c = 1.0/np.sqrt(core.center_density)
     xi_min = rprf.r.isel(r=0).data[()]/LJ_c
@@ -480,12 +483,14 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
         ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
         u, du = ts.solve(xi)
-        plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
+        for ax in axs['rho']:
+            ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
 
     # overplot critical BE
     ts = tes.TESc()
     u, du = ts.solve(xi)
-    plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
+    for ax in axs['rho']:
+        ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
 
     # overplot critical tes given rho_edge
     LJ_e = 1.0/np.sqrt(core.edge_density)
@@ -497,7 +502,8 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
         try:
             uc, _, _ = ts.get_crit()
             u, _ = ts.solve(xi, uc)
-            plt.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b--', lw=1.5)
+            for ax in axs['rho']:
+                ax.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b--', lw=1.5)
         except ValueError:
             # Cannot find critical TES. Do not plot.
             pass
@@ -506,13 +512,33 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     ts = tes.TESe()
     uc, _, _ = ts.get_crit()
     u, _ = ts.solve(xi, uc)
-    plt.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b:', lw=1)
+    for ax in axs['rho']:
+        ax.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b:', lw=1)
+        ax.axhline(core.edge_density, ls='-.', c='tab:gray')
+        ax.set_xlabel(r'$r/L_{J,0}$')
+        ax.set_ylabel(r'$\rho/\rho_0$')
+        ax.set_ylim(1e0, rhoLP[0]/5)
 
-    plt.axhline(core.edge_density, ls='-.', c='tab:gray')
-    plt.xlim(rprf.r[0]/2, 2*hw)
-    plt.ylim(1e0, rhoLP[0])
-    plt.xlabel(r'$r/L_{J,0}$')
-    plt.ylabel(r'$\rho/\rho_0$')
+    plt.sca(axs['rho'][0])
+    plt.xlim(rprf.r[0]/2, 2*rmax)
+    plt.xscale('log')
+    plt.yscale('log')
+
+    plt.sca(axs['rho'][1])
+    plt.xlim(0, rmax)
+    plt.yscale('log')
+
+    # Forces
+    for ax in axs['force']:
+        plot_cum_forces(s, rprf, core, ax)
+    plt.sca(axs['force'][0])
+    plt.xlim(rprf.r[0]/2, 2*rmax)
+    plt.xscale('log')
+    plt.legend()
+    plt.sca(axs['force'][1])
+    plt.xlim(0, rmax)
+    plt.legend([], [])
+
 
     # Velocities
     plt.sca(axs['vel'])
@@ -562,30 +588,31 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
     plt.legend(ncol=3, fontsize=15, loc='upper right')
 
     # Annotations
-    plt.sca(axs['rho'])
-    plt.text(0.5, 0.9, r'$t={:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
+    plt.sca(axs['rho'][0])
+    plt.text(0.6, 0.9, r'$t={:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.5, 0.8, r'$M={:.2f}$'.format(core.tidal_mass)+r'$\,M_{J,0}$',
-             transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.5, 0.7, r'$R={:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
-             transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.05, 0.05, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm)
+    plt.text(0.48, 0.8, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm)
              + r'$\,t_{ff}$', transform=plt.gca().transAxes,
              backgroundcolor='w')
+    plt.text(0.6, 0.7, r'$M={:.2f}$'.format(core.tidal_mass)+r'$\,M_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.6, 0.6, r'$R={:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
 
-    for ax in (axs['rho'], axs['vel'], axs['veldisp'], axs['energy'], axs['acc']):
+    for ax in (axs['rho'][0], axs['rho'][1], axs['force'][0], axs['force'][1],
+               axs['vel'], axs['veldisp'], axs['energy'], axs['acc']):
         plt.sca(ax)
         ln1 = plt.axvline(core.tidal_radius, c='tab:gray', lw=1)
         ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
         ln3 = plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
         ln4 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
 
-    plt.sca(axs['vel'])
+    plt.sca(axs['rho'][1])
     lgd = plt.legend([ln1, ln2, ln3, ln4], [r'$R_\mathrm{tidal}$',
                                             r'$R_\mathrm{crit,c}$',
                                             r'$R_\mathrm{crit,e}$',
                                             r'$R_\mathrm{sonic}$'],
-                     loc='lower right')
+                     loc='upper right')
     plt.gca().add_artist(lgd)
 
     return fig
