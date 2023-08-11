@@ -70,7 +70,7 @@ if __name__ == "__main__":
 
     # Select models
     for mdl in args.models:
-        s = sa.set_model(mdl)
+        s = sa.set_model(mdl, force_override=True)
 
         if args.pid_start is not None and args.pid_end is not None:
             pids = np.arange(args.pid_start, args.pid_end+1)
