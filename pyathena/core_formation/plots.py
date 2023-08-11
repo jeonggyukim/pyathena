@@ -315,13 +315,11 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
     plt.ylim(-1, 1)
     plt.ylabel(r'$(F_\mathrm{p, eff} - F_\mathrm{grv}) / F_\mathrm{grv}$')
-    if hasattr(s, "good_cores"):
-        if pid in s.good_cores:
-            plt.title('{}, core {}'.format(s.basename, pid))
-        else:
-            plt.title('{}, core {}'.format(s.basename, pid)+r'$^*$')
-    else:
+    good_cores = s.good_cores()
+    if pid in good_cores:
         plt.title('{}, core {}'.format(s.basename, pid))
+    else:
+        plt.title('{}, core {}'.format(s.basename, pid)+r'$^*$')
     plt.twinx()
     plt.plot(time, fthm, lw=1, c='cyan', label=r'$F_\mathrm{thm}$')
     plt.plot(time, ftrb, lw=1, c='gray', label=r'$F_\mathrm{trb}$')
