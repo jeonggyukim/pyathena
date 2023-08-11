@@ -229,12 +229,12 @@ def plot_cum_forces(s, rprf, core, ax=None, lw=1):
     plt.plot(fthm.r, fthm/f0, lw=lw, c='tab:blue', label=r'$f_\mathrm{thm}$')
     plt.plot(ftrb.r, ftrb/f0, lw=lw, c='tab:orange', label=r'$f_\mathrm{trb}$')
     plt.plot(fcen.r, fcen/f0, lw=lw, c='tab:green', label=r'$f_\mathrm{cen}$')
-    plt.plot(fcen.r, fani/f0, lw=lw, c='tab:purple', label=r'$f_\mathrm{ani}$')
+    plt.plot(fani.r, fani/f0, lw=lw, c='tab:purple', label=r'$f_\mathrm{ani}$')
     plt.plot(fgrv.r, -fgrv/f0, lw=lw, c='tab:red', label=r'$f_\mathrm{grv}$')
     plt.plot(ftot.r, ftot/f0, 'k-', lw=1.5*lw, label=r'$f_\mathrm{net}$')
     plt.axhline(0, c='k', lw=1, ls='--')
     plt.xlabel(r'$r/L_{J,0}$')
-    plt.ylabel(r'$f/\overline{GM(r)/r^2}$')
+    plt.ylabel(r'$f_\mathrm{cumulative}/\overline{GM(r)/r^2}$')
     plt.ylim(-1, 1.5)
     plt.legend(ncol=3, loc='lower left')
 
@@ -245,12 +245,12 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     if ax is not None:
         plt.sca(ax)
 
-    acc.thm.plot(lw=1, color='tab:orange', label=r'$f_\mathrm{thm}$')
-    acc.trb.plot(lw=1, color='tab:blue', label=r'$f_\mathrm{trb}$')
-    acc.ani.plot(lw=1, color='tab:green', label=r'$f_\mathrm{aniso}$')
-    acc.cen.plot(lw=1, color='tab:olive', label=r'$f_\mathrm{cen}$')
+    acc.thm.plot(lw=1, color='tab:blue', label=r'$f_\mathrm{thm}$')
+    acc.trb.plot(lw=1, color='tab:orange', label=r'$f_\mathrm{trb}$')
+    acc.cen.plot(lw=1, color='tab:green', label=r'$f_\mathrm{cen}$')
+    acc.ani.plot(lw=1, color='tab:purple', label=r'$f_\mathrm{ani}$')
     (-acc.grv).plot(marker='x', ls='--', color='tab:red', lw=1,
-                    label=r'$-f_\mathrm{grav}$')
+                    label=r'$-f_\mathrm{grv}$')
     net = acc.thm + acc.trb + acc.cen + acc.grv
     net.plot(lw=1, color='k', marker='+', label='net')
 
@@ -260,7 +260,7 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     gr.plot(color='tab:red', lw=1, ls='--')
 
     plt.axhline(0, linestyle=':')
-    plt.ylabel('acceleration')
+    plt.ylabel('force per mass')
     plt.xlim(xlim)
     plt.ylim(ylim)
 
@@ -387,9 +387,10 @@ def plot_diagnostics(s, pid, normalize_time=True):
     return fig
 
 
-def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
+def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
     if rmax is None:
-        rmax = hw
+        rmax = s.cores[pid].tidal_radius.max()
+    hw = 1.2*rmax
 
     # Load the progenitor GRID-core of this particle.
     if num > s.tcoll_cores.loc[pid].num:
@@ -430,8 +431,8 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
                zoom=[fig.add_subplot(gs[i, 1]) for i in [0, 1, 2]],
                rho=[fig.add_subplot(gs[0, i]) for i in [2, 3]],
                force=[fig.add_subplot(gs[1, i]) for i in [2, 3]],
-               vel=fig.add_subplot(gs[2, 2]),
-               veldisp=fig.add_subplot(gs[2, 3]),
+               veldisp=fig.add_subplot(gs[2, 2]),
+               vel=fig.add_subplot(gs[2, 3]),
                energy=fig.add_subplot(gs[0, 4]),
                acc=fig.add_subplot(gs[1:, 4]))
 
@@ -540,11 +541,11 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
 
     # Velocities
     plt.sca(axs['vel'])
-    plt.semilogx(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
-    plt.semilogx(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
-    plt.semilogx(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
+    plt.plot(rprf.r, rprf.vel1_mw, marker='+', label=r'$v_r$')
+    plt.plot(rprf.r, rprf.vel2_mw, marker='+', label=r'$v_\theta$')
+    plt.plot(rprf.r, rprf.vel3_mw, marker='+', label=r'$v_\phi$')
     plt.axhline(0, ls=':')
-    plt.xlim(rprf.r[0]/2, 2*hw)
+    plt.xlim(0, rmax)
     plt.ylim(-2.5, 1.5)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v\right>/c_s$')
@@ -565,7 +566,7 @@ def plot_core_evolution(s, pid, num, hw=0.3, emin=None, emax=None, rmax=None):
         plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
                  lw=1)
 
-    plt.xlim(rprf.r[0]/2, 2*hw)
+    plt.xlim(rprf.r[0]/2, 2*rmax)
     plt.ylim(1e-1, 1e1)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v^2\right>^{1/2}/c_s$')
