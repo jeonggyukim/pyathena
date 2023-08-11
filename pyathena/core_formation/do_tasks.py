@@ -149,12 +149,11 @@ if __name__ == "__main__":
                 rprf = rprf.sel(r=slice(0, core.tidal_radius))
                 emax = tools.roundup(max(rprf.ekin.max(), rprf.ethm.max()), 1)
                 emin = tools.rounddown(rprf.egrv.min(), 1)
-                rmax = tools.roundup(core.tidal_radius, 2)
 
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,
                                               overwrite=args.overwrite,
-                                              emin=emin, emax=emax, rmax=rmax)
+                                              emin=emin, emax=emax)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
 
