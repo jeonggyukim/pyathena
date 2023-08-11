@@ -53,11 +53,14 @@ class TESe:
     >>> # plot density profile
     >>> plt.loglog(r, np.exp(u))
     """
-    def __init__(self, p=0.5, xi_s=np.inf):
+    def __init__(self, p=0.5, xi_s=np.inf, mode='thm'):
         self.p = p
         self.xi_s = xi_s
         self._xi_min = 1e-5
         self._xi_max = 1e3
+        if mode not in {'thm', 'trb'}:
+            raise ValueError("mode should be either thm or trb")
+        self.mode = mode
 
     def solve(self, xi, u0):
         """Solve equilibrium equation
@@ -136,7 +139,10 @@ class TESe:
             xi0 = self.get_radius(u0)
         u, du = self.solve(xi0, u0)
         f = 1 + (xi0/self.xi_s)**(2*self.p)
-        m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
+        if self.mode=='thm':
+            m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
+        elif self.mode=='trb':
+            m = -xi0**2*f*du/np.pi
         return m.squeeze()[()]
 
     def get_crit(self):
@@ -189,7 +195,10 @@ class TESe:
         f = 1 + (x/self.xi_s)**(2*self.p)
         a = x**2*f
         b = 2*x*((1+self.p)*f - self.p)
-        c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*x**2*np.exp(y1)
+        if self.mode=='thm':
+            c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*x**2*np.exp(y1)
+        elif self.mode=='trb':
+            c = 4*np.pi**2*x**2*np.exp(y1)/f
         dy2 = -(b/a)*y2 - (c/a)
         return np.array([dy1, dy2])
 
@@ -430,7 +439,7 @@ class TESc:
         logrmax = brentq(lambda x: func(10**x), 0, np.log10(32))
         return 10**logrmax
 
-    def get_rcrit(self, mode='trb'):
+    def get_rcrit(self, mode='thm'):
         """Find critical TES radius
         Parameters
         ----------
