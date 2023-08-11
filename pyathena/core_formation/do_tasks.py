@@ -78,6 +78,7 @@ if __name__ == "__main__":
             pids = s.pids
         if args.pids:
             pids = args.pids
+        pids = sorted(list(set(s.pids) & set(pids)))
 
         # Combine output files.
         if args.combine_partab:
