@@ -171,7 +171,6 @@ if __name__ == "__main__":
 
         if args.plot_diagnostics:
             print(f"draw diagnostics plots for model {mdl}")
-            s.find_good_cores()
             for pid in pids:
                 tasks.plot_diagnostics(s, pid, overwrite=args.overwrite)
 
