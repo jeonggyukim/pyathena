@@ -302,6 +302,23 @@ def plot_core_evolution(s, pid, num, overwrite=False,
     plt.close(fig)
 
 
+def plot_mass_radius(s, pid, overwrite=False):
+    fig = plt.figure()
+    ax = fig.add_subplot()
+    for num in s.cores[pid].index:
+        msg = '[plot_mass_radius] processing model {} pid {} num {}'
+        msg = msg.format(s.basename, pid, num)
+        print(msg)
+        fname = Path(s.savdir, 'figures', "{}.par{}.{:05d}.png".format(
+            config.PLOT_PREFIX_MASS_RADIUS, pid, num))
+        fname.parent.mkdir(exist_ok=True)
+        if fname.exists() and not overwrite:
+            return
+        plots.mass_radius(s, pid, num, ax=ax)
+        fig.savefig(fname, bbox_inches='tight', dpi=200)
+        ax.cla()
+
+
 def plot_sink_history(s, num, overwrite=False):
     """Creates multi-panel plot for sink particle history
 
