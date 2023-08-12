@@ -194,8 +194,8 @@ class LoadSim(object):
             else:
                 kind = ['vtk_tar', 'vtk', 'vtk_id0']
 
-        self.fvtk = self._get_fvtk(kind[0], num, ivtk)
-        if self.fvtk is None or not osp.exists(self.fvtk):
+        self.fname = self._get_filename(kind[0], num, ivtk)
+        if self.fname is None or not osp.exists(self.fname):
             if id0:
                 self.logger.info('[load_vtk]: Vtk file does not exist. ' + \
                                  'Try joined/tarred vtk')
@@ -205,48 +205,48 @@ class LoadSim(object):
 
             for kind_ in (kind[1], kind[2]):
                 # Check if joined vtk (or vtk in id0) exists
-                self.fvtk = self._get_fvtk(kind_, num, ivtk)
-                if self.fvtk is None or not osp.exists(self.fvtk):
+                self.fname = self._get_filename(kind_, num, ivtk)
+                if self.fname is None or not osp.exists(self.fname):
                     self.logger.info('[load_vtk]: Vtk file does not exist.')
                 else:
                     self.logger.info('[load_vtk]: Found vtk file in "{}"\
                                      '.format(kind_))
                     break
 
-        if self.fvtk.endswith('vtk'):
+        if self.fname.endswith('vtk'):
             if self.load_method == 'pyathena':
-                self.ds = AthenaDataSet(self.fvtk, units=self.u, dfi=self.dfi)
+                self.ds = AthenaDataSet(self.fname, units=self.u, dfi=self.dfi)
                 self.domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
-                    osp.basename(self.fvtk), self.ds.domain['time']))
+                    osp.basename(self.fname), self.ds.domain['time']))
 
             elif self.load_method == 'pyathena_classic':
-                self.ds = AthenaDataSetClassic(self.fvtk)
+                self.ds = AthenaDataSetClassic(self.fname)
                 self.domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
-                    osp.basename(self.fvtk), self.ds.domain['time']))
+                    osp.basename(self.fname), self.ds.domain['time']))
 
             elif self.load_method == 'yt':
                 if hasattr(self, 'u'):
                     units_override = self.u.units_override
                 else:
                     units_override = None
-                self.ds = yt.load(self.fvtk, units_override=units_override)
+                self.ds = yt.load(self.fname, units_override=units_override)
             else:
                 self.logger.error('load_method "{0:s}" not recognized.'.format(
                     self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
-        elif self.fvtk.endswith('tar'):
+        elif self.fname.endswith('tar'):
             if self.load_method == 'pyathena':
-                self.ds = AthenaDataSetTar(self.fvtk, units=self.u, dfi=self.dfi)
+                self.ds = AthenaDataSetTar(self.fname, units=self.u, dfi=self.dfi)
                 self.domain = self.ds.domain
                 self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
-                    osp.basename(self.fvtk), self.ds.domain['time']))
+                    osp.basename(self.fname), self.ds.domain['time']))
             elif self.load_method == 'yt':
                 if hasattr(self, 'u'):
                     units_override = self.u.units_override
                 else:
                     units_override = None
-                self.ds = yt.load(self.fvtk, units_override=units_override)
+                self.ds = yt.load(self.fname, units_override=units_override)
             else:
                 self.logger.error('load_method "{0:s}" not recognized.'.format(
                     self.load_method) + ' Use either "yt" or "pyathena".')
@@ -401,7 +401,7 @@ class LoadSim(object):
             raise ValueError('Specify either num or ivtk')
 
         # get starpar_vtk file name and check if it exist
-        self.fstarvtk = self._get_fvtk('starpar_vtk', num, ivtk)
+        self.fstarvtk = self._get_filename('starpar_vtk', num, ivtk)
         if self.fstarvtk is None or not osp.exists(self.fstarvtk):
             self.logger.error('[load_starpar_vtk]: Starpar vtk file does not exist.')
 
@@ -417,7 +417,7 @@ class LoadSim(object):
             raise ValueError('Specify either num or irst')
 
         # get starpar_vtk file name and check if it exist
-        self.frst = self._get_fvtk('rst', num, irst)
+        self.frst = self._get_filename('rst', num, irst)
         if self.frst is None or not osp.exists(self.frst):
             self.logger.error('[load_rst]: rst file does not exist.')
 
@@ -460,9 +460,9 @@ class LoadSim(object):
         os.makedirs(tardir)
         # find files
         if kind == 'vtk':
-            id_files = [self._get_fvtk('vtk_id0',num=num)]
+            id_files = [self._get_filename('vtk_id0',num=num)]
         elif kind == 'rst':
-            id_files = [self._get_fvtk('rst',num=num)]
+            id_files = [self._get_filename('rst',num=num)]
         id_files += self._find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
                                      format(self.problem_id, num, kind))])
         # move each file
@@ -632,10 +632,12 @@ class LoadSim(object):
                         ('*.????.vtk',)]
 
         vtk_id0_patterns = [('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
-                            # ('vtk', '[0-9]'*4, '*.' + '[0-9]'*4 + '.vtk'),
                             ('id0', '*.' + '[0-9]'*4 + '.vtk')]
 
         vtk_tar_patterns = [('vtk', '*.????.tar')]
+
+        vtk_athenapp_patterns = [('*.block*.out*.?????.vtk',),
+                                 ('*.joined.out*.?????.vtk',)]
 
         hdf5_patterns = [('hdf5', '*.out?.?????.athdf'),
                          ('*.out?.?????.athdf',)]
@@ -802,7 +804,7 @@ class LoadSim(object):
 
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
-        if 'vtk' in self.out_fmt:
+        if 'vtk' in self.out_fmt and not self.athena_pp:
             self.files['vtk'] = self._find_match(vtk_patterns)
             self.files['vtk_id0'] = self._find_match(vtk_id0_patterns)
             self.files['vtk_tar'] = self._find_match(vtk_tar_patterns)
@@ -857,6 +859,11 @@ class LoadSim(object):
                 self.logger.warning('Vtk file size is not unique.')
                 for f in flist:
                    self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
+        elif 'vtk' in self.out_fmt and self.athena_pp:
+            # Athena++ vtk files
+            self.files['vtk'] = self._find_match(vtk_athenapp_patterns)
+            self.nums_vtk = list(set([int(f[-9:-4]) for f in self.files['vtk']]))
+            self.nums_vtk.sort()
 
         # Find hdf5 files
         # hdf5 files in basedir
@@ -1030,8 +1037,8 @@ class LoadSim(object):
                 self.logger.info('{0:s} files not found '.format(fmt))
 
 
-    def _get_fvtk(self, kind, num=None, ivtk=None):
-        """Get vtk file path
+    def _get_filename(self, kind, num=None, ivtk=None):
+        """Get file path
         """
 
         try:
@@ -1039,7 +1046,7 @@ class LoadSim(object):
         except IndexError:
             return None
         if ivtk is not None:
-            fvtk = self.files[kind][ivtk]
+            fname = self.files[kind][ivtk]
         else:
             if kind == 'starpar_vtk':
                 fpattern = '{0:s}.{1:04d}.starpar.vtk'
@@ -1051,9 +1058,9 @@ class LoadSim(object):
                 fpattern = '{0:s}.{1:04d}.tar'
             else:
                 fpattern = '{0:s}.{1:04d}.vtk'
-            fvtk = osp.join(dirname, fpattern.format(self.problem_id, num))
+            fname = osp.join(dirname, fpattern.format(self.problem_id, num))
 
-        return fvtk
+        return fname
 
     def _get_fhdf5(self, outid, outvar, num=None, ihdf5=None):
         """Get hdf5 file path
