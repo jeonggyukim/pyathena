@@ -17,7 +17,7 @@ import tarfile
 import shutil
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
-from .io.read_vtk import AthenaDataSet
+from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
 from .io.read_particles import read_partab, read_parhst
@@ -182,6 +182,16 @@ class LoadSim(object):
         # Override load_method
         if load_method is not None:
             self.load_method = load_method
+
+        if self.athena_pp:
+            def filter_vtk_files(kind='vtk', num=None):
+                def func(num):
+                    return lambda fname: '.{0:05d}.vtk'.format(num) in fname
+
+                return list(filter(func(num), self.files[kind]))
+
+            fnames = filter_vtk_files('vtk', num)
+            return read_vtk_athenapp(fnames)
 
         if not self.files['vtk_id0']:
             id0 = False
@@ -1346,4 +1356,3 @@ class LoadSimAll(object):
                            load_method=load_method,
                            units=units, verbose=verbose)
         return self.sim
-

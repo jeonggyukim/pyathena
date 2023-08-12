@@ -12,7 +12,35 @@ import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
 
+from .athena_read import vtk
+
 from ..util.units import Units
+
+def read_vtk_athenapp(filenames):
+    x1f = []
+    x2f = []
+    x3f = []
+    dat = dict()
+    for i,filename in enumerate(filenames):
+        x1f_, x2f_, x3f_, dat_ = vtk(filename)
+        x1f.append(x1f_)
+        x2f.append(x2f_)
+        x3f.append(x3f_)
+        if i == 0:
+            for k in dat_.keys():
+                dat[k] = []
+
+        for k in dat_.keys():
+            dat[k].append(dat_[k])
+
+    for k in dat.keys():
+        dat[k] = np.array(dat[k])
+
+    dat['x1f'] = np.array(x1f)
+    dat['x2f'] = np.array(x2f)
+    dat['x3f'] = np.array(x3f)
+
+    return dat
 
 def read_vtk(filename, id0_only=False):
     """Convenience wrapper function to read Athena vtk output file
@@ -344,12 +372,12 @@ class AthenaDataSet(object):
         # Works only for 3d data
         if as_xarray:
             # Cell center positions
-            x = dict()
+            coords = dict()
             for axis, le, re, dx in zip(('x', 'y', 'z'), \
                     self.region['gle'], self.region['gre'], self.domain['dx']):
                 # May not result in correct number of elements due to truncation error
                 # x[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
-                x[axis] = np.arange(le + 0.5*dx, re + 0.25*dx, dx)
+                coords[axis] = np.arange(le + 0.5*dx, re + 0.25*dx, dx)
 
             dat = dict()
             for k, v in arr.items():
@@ -362,7 +390,7 @@ class AthenaDataSet(object):
             attrs = dict()
             for k, v in self.domain.items():
                 attrs[k] = v
-            return xr.Dataset(dat, coords=x, attrs=attrs)
+            return xr.Dataset(dat, coords=coords, attrs=attrs)
         else:
             if len(field) == 1:
                 return arr[field[0]]
