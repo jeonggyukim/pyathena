@@ -617,6 +617,49 @@ def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
     return fig
 
 
+def mass_radius(s, pid, num, rmax=None, ax=None):
+    if rmax is None:
+        rmax = s.cores[pid].tidal_radius.max()
+    core = s.cores[pid].loc[num]
+    rprf = s.rprofs[pid].sel(num=num)
+
+    lw = 1.5
+
+    menc = (4*np.pi*rprf.r**2*rprf.rho).cumulative_integrate('r')
+    plt.plot(rprf.r, menc, 'k-+', lw=lw)
+
+    tse = tes.TESe(p=core.pindex, xi_s=core.sonic_radius*np.sqrt(core.edge_density))
+    uc, rc, mc = tse.get_crit()
+    ymax = s.cores[pid].tidal_mass.max()
+    nsample = 100
+    rds, mass = np.zeros(nsample), np.zeros(nsample)
+    for i, u0 in enumerate(np.linspace(0, 4*uc, nsample)):
+        rds[i] = tse.get_radius(u0)
+        mass[i] = tse.get_mass(u0)
+    for i in [1,2,4]:
+        rhoe = core.edge_density*i
+        plt.plot(rds/np.sqrt(rhoe), mass/np.sqrt(rhoe), 'k-', lw=lw/2)
+    plt.plot(rds, rds*mc/rc, 'k-', lw=lw)
+    plt.fill_between(rds, rds*mc/rc, y2=ymax, facecolor='lightgray')
+
+    # Critical equilibrium profile
+    rhoe = core.edge_density/1.25
+    r = np.linspace(0.01, rc)
+    u, _ = tse.solve(r, uc)
+    rho = xr.DataArray(np.exp(u), coords=dict(r=r))
+    menc = (4*np.pi*r**2*rho).cumulative_integrate('r')
+    plt.plot(r/np.sqrt(rhoe), menc/np.sqrt(rhoe), c='k', lw=lw, ls='-.')
+
+    plt.xlim(0, rmax)
+    plt.ylim(0, ymax)
+    plt.xlabel(r'$R/L_{J,0}$')
+    plt.ylabel(r'$M/M_{J,0}$')
+    plt.axvline(core.tidal_radius, lw=1, ls='-', c='tab:gray')
+    plt.axvline(core.critical_radius_e, lw=1, ls='-.', c='tab:gray')
+    plt.axhline(core.critical_mass_e, lw=1, ls='-.', c='tab:gray')
+    plt.axvline(core.critical_radius, lw=1, ls='--', c='tab:gray')
+
+
 def core_structure(s, pid, num, rmax=None):
     core = s.cores[pid].loc[num]
     rprf = s.rprofs[pid].sel(num=num)
