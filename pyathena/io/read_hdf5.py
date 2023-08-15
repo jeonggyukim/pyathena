@@ -4,16 +4,19 @@ Read athena++ hdf5 file
 
 import xarray as xr
 import numpy as np
+import h5py
 
 from .athena_read import athdf
 
-def read_hdf5(filename, **kwargs):
+def read_hdf5(filename, header_only=False, **kwargs):
     """Read Athena hdf5 file and convert it to xarray Dataset
 
     Parameters
     ----------
     filename : str
         Data filename
+    header_only : bool
+        Flag to read only attributes, not data.
     **kwargs : dict, optional
         Extra arguments passed to athdf. Refer to athdf documentation for
         a list of all possible arguments.
@@ -27,10 +30,18 @@ def read_hdf5(filename, **kwargs):
     --------
     io.athena_read.athdf
     """
+    if header_only:
+        with h5py.File(filename, 'r') as f:
+            data = {}
+            for key in f.attrs:
+                data[str(key)] = f.attrs[key]
+            return data
+
     ds = athdf(filename, **kwargs)
 
     # Convert to xarray object
-    varnames = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
+    possibilities = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
+    varnames = {var for var in possibilities if var in ds}
     variables = [(['z', 'y', 'x'], ds[varname]) for varname in varnames]
     attr_keys = (set(ds.keys()) - varnames
                  - {'VariableNames','x1f','x2f','x3f','x1v','x2v','x3v'})
