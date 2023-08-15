@@ -11,7 +11,7 @@ import pandas as pd
 
 def read_hst(filename, force_override=False, verbose=False):
     """ Function to read athena history file and pickle
-    
+
     Parameters
     ----------
     filename : string
@@ -27,8 +27,6 @@ def read_hst(filename, force_override=False, verbose=False):
         Each column contains time series data
     """
 
-    skiprows = 3
-
     fpkl = filename + '.p'
     if not force_override and os.path.exists(fpkl) and \
        os.path.getmtime(fpkl) > os.path.getmtime(filename):
@@ -41,11 +39,9 @@ def read_hst(filename, force_override=False, verbose=False):
                       ' Reading {0:s}'.format(filename))
         vlist = _get_hst_var(filename)
 
-        # c engine does not support regex separators
-        hst = pd.read_csv(filename, names=vlist, skiprows=skiprows,
+        # C engine is faster but python engine is currently more feature-complete
+        hst = pd.read_csv(filename, names=vlist,
                           comment='#', delim_whitespace=True, engine='python')
-        #hst = pd.read_table(filename, names=vlist, skiprows=skiprows,
-        #                    comment='#', delim_whitespace=True, engine='python')
         try:
             hst.to_pickle(fpkl)
         except IOError:
@@ -53,7 +49,7 @@ def read_hst(filename, force_override=False, verbose=False):
 
     return hst
 
-      
+
 def _get_hst_var(filename):
     """Read variable names from history file
 
@@ -69,10 +65,10 @@ def _get_hst_var(filename):
     """
 
     with open(filename, 'r') as f:
-        # For the moment, skip the first line which contains information about
-        # the volume of the simulation domain
+        # Skip the first line
         # "Athena history dump for level=.. domain=0 volume=..."
-        # "#   [1]=time      [2]=dt         [3]=mass ......"
+        # or
+        # "# Athena++ history data"
         h = f.readline()
         h = f.readline()
 
