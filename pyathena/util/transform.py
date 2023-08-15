@@ -1,8 +1,33 @@
 import numpy as np
 import xarray as xr
+from scipy.spatial.transform import Rotation
 
 
-def to_spherical(vec, origin):
+def euler_rotation(vec, angles):
+    """Rotate coordinate axes to transform the components of vector field `vec`
+
+    Parameters
+    ----------
+    vec : tuple-like
+        (vx, vy, vz) representing Cartesian vector components
+    angles : array
+        Euler angles [alpha, beta, gamma] in radian
+
+    Returns
+    -------
+    tuple
+        Cartesian components of the rotated vector.
+    """
+    angles = np.array(angles)
+    r = Rotation.from_euler('zyx', -angles, degrees=False)
+    rotmat = r.as_matrix()
+    vxp = rotmat[0,0]*vec[0] + rotmat[0,1]*vec[1] + rotmat[0,2]*vec[2]
+    vyp = rotmat[1,0]*vec[0] + rotmat[1,1]*vec[1] + rotmat[1,2]*vec[2]
+    vzp = rotmat[2,0]*vec[0] + rotmat[2,1]*vec[1] + rotmat[2,2]*vec[2]
+    return (vxp, vyp, vzp)
+
+
+def to_spherical(vec, origin, newz=None):
     """Transform vector components from Cartesian to spherical coordinates
 
     Assumes vec is a tuple of xarray.DataArray.
@@ -13,6 +38,9 @@ def to_spherical(vec, origin):
         (vx, vy, vz) representing Cartesian vector components
     origin : tuple-like
         (x0, y0, z0) representing the origin of the spherical coords.
+    newz : array, optional
+        Cartesian components of the z-axis vector for the spherical
+        coordinates. If not given, it is assumed to be (0, 0, 1).
 
     Returns
     -------
@@ -24,22 +52,35 @@ def to_spherical(vec, origin):
     """
     vx, vy, vz = vec
     x0, y0, z0 = origin
-    x, y, z = vx.x, vx.y, vx.z
+    x, y, z = vx.x - x0, vx.y - y0, vx.z - z0
+
+    if newz is not None:
+        if ((np.array(newz)**2).sum() == 0):
+            raise ValueError("new z axis vector should not be a null vector")
+
+        # Rotate to align z axis
+        zhat = np.array([0, 0, 1])
+        alpha = np.arctan2(newz[1], newz[0])
+        beta = np.arccos(np.dot(newz, zhat) / np.sqrt(np.dot(newz, newz)))
+        vx, vy, vz = euler_rotation((vx, vy, vz), [alpha, beta, 0])
+        x, y, z = euler_rotation((x, y, z), [alpha, beta, 0])
 
     # Calculate spherical coordinates
-    R = np.sqrt((x-x0)**2 + (y-y0)**2)
-    r = np.sqrt(R**2 + (z-z0)**2)
-    th = np.arctan2(R, z-z0)
-    ph = np.arctan2(y-y0, x-x0)
+    R = np.sqrt(x**2 + y**2)
+    r = np.sqrt(R**2 + z**2)
+    th = np.arctan2(R, z)
+    ph = np.arctan2(y, x)
+
     # Move branch cut [-pi, pi] -> [0, 2pi]
     ph = ph.where(ph >= 0, other=ph + 2*np.pi)
-    sin_th, cos_th = R/r, (z-z0)/r
-    sin_ph, cos_ph = (y-y0)/R, (x-x0)/R
+    sin_th, cos_th = R/r, z/r
+    sin_ph, cos_ph = y/R, x/R
+
     # Avoid singularity
-    sin_th.loc[dict(x=x0, y=y0, z=z0)] = 0
-    cos_th.loc[dict(x=x0, y=y0, z=z0)] = 0
-    sin_ph.loc[dict(x=x0, y=y0)] = 0
-    cos_ph.loc[dict(x=x0, y=y0)] = 0
+    sin_th = sin_th.where(r!=0, other=0)
+    cos_th = cos_th.where(r!=0, other=0)
+    sin_ph = sin_ph.where(R!=0, other=0)
+    cos_ph = cos_ph.where(R!=0, other=0)
 
     # Transform Cartesian (vx, vy, vz) ->  spherical (v_r, v_th, v_phi)
     v_r = (vx*sin_th*cos_ph + vy*sin_th*sin_ph + vz*cos_th).rename('v_r')
