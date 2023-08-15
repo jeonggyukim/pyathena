@@ -90,9 +90,9 @@ class TESe:
             u = y0[0]*np.ones(xi.size)
             du = y0[1]*np.ones(xi.size)
         else:
-            y = odeint(self._dydx, y0, xi)
+            y = odeint(self._dydx, y0, np.log(xi))
             u = y[istart:, 0]
-            du = y[istart:, 1]
+            du = y[istart:, 1]/xi[istart:]
         return u, du
 
     def get_radius(self, u0):
@@ -192,13 +192,14 @@ class TESe:
         """
         y1, y2 = y
         dy1 = y2
-        f = 1 + (x/self.xi_s)**(2*self.p)
-        a = x**2*f
-        b = 2*x*((1+self.p)*f - self.p)
+        xi = np.exp(x)
+        f = 1 + (xi/self.xi_s)**(2*self.p)
+        a = f
+        b = (2*self.p + 1)*f - 2*self.p
         if self.mode=='thm':
-            c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*x**2*np.exp(y1)
+            c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*xi**2*np.exp(y1)
         elif self.mode=='trb':
-            c = 4*np.pi**2*x**2*np.exp(y1)/f
+            c = 4*np.pi**2*xi**2*np.exp(y1)/f
         dy2 = -(b/a)*y2 - (c/a)
         return np.array([dy1, dy2])
 
