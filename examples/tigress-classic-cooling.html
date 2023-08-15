@@ -386,6 +386,39 @@ document.write(`
 </pre></div>
 </div>
 </div>
+<div class="cell_output docutils container">
+<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
+<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
+<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">9</span>
+<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="kn">import</span> <span class="nn">sys</span>
+<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;../../&#39;</span><span class="p">)</span>
+<span class="ne">----&gt; </span><span class="mi">9</span> <span class="kn">import</span> <span class="nn">pyathena</span> <span class="k">as</span> <span class="nn">pa</span>
+
+<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">54</span>
+<span class="g g-Whitespace">     </span><span class="mi">51</span> <span class="kn">from</span> <span class="nn">.classic.vtk_reader</span> <span class="kn">import</span> <span class="n">AthenaDataSet</span> <span class="k">as</span> <span class="n">AthenaDataSetClassic</span>
+<span class="g g-Whitespace">     </span><span class="mi">53</span> <span class="c1"># LoadSim classes</span>
+<span class="ne">---&gt; </span><span class="mi">54</span> <span class="kn">from</span> <span class="nn">.load_sim</span> <span class="kn">import</span> <span class="n">LoadSim</span><span class="p">,</span> <span class="n">LoadSimAll</span>
+<span class="g g-Whitespace">     </span><span class="mi">56</span> <span class="c1"># Problem specific subclasses</span>
+<span class="g g-Whitespace">     </span><span class="mi">57</span> <span class="kn">from</span> <span class="nn">.feedback_test.load_sim_feedback_test</span> <span class="kn">import</span> <span class="n">LoadSimFeedbackTest</span><span class="p">,</span> <span class="n">LoadSimFeedbackTestAll</span>
+
+<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="n">load_sim</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">22</span>
+<span class="g g-Whitespace">     </span><span class="mi">20</span> <span class="kn">from</span> <span class="nn">.io.read_vtk</span> <span class="kn">import</span> <span class="n">AthenaDataSet</span>
+<span class="g g-Whitespace">     </span><span class="mi">21</span> <span class="kn">from</span> <span class="nn">.io.read_vtk_tar</span> <span class="kn">import</span> <span class="n">AthenaDataSetTar</span>
+<span class="ne">---&gt; </span><span class="mi">22</span> <span class="kn">from</span> <span class="nn">.io.read_hdf5</span> <span class="kn">import</span> <span class="n">read_hdf5</span>
+<span class="g g-Whitespace">     </span><span class="mi">23</span> <span class="kn">from</span> <span class="nn">.io.read_particles</span> <span class="kn">import</span> <span class="n">read_partab</span><span class="p">,</span> <span class="n">read_parhst</span>
+<span class="g g-Whitespace">     </span><span class="mi">24</span> <span class="kn">from</span> <span class="nn">.io.read_rst</span> <span class="kn">import</span> <span class="n">read_rst</span>
+
+<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="n">io</span><span class="o">/</span><span class="n">read_hdf5</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">7</span>
+<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
+<span class="g g-Whitespace">      </span><span class="mi">6</span> <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="ne">----&gt; </span><span class="mi">7</span> <span class="kn">import</span> <span class="nn">h5py</span>
+<span class="g g-Whitespace">      </span><span class="mi">9</span> <span class="kn">from</span> <span class="nn">.athena_read</span> <span class="kn">import</span> <span class="n">athdf</span>
+<span class="g g-Whitespace">     </span><span class="mi">11</span> <span class="k">def</span> <span class="nf">read_hdf5</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">header_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+
+<span class="ne">ModuleNotFoundError</span>: No module named &#39;h5py&#39;
+</pre></div>
+</div>
+</div>
 </div>
 <section class="tex2jax_ignore mathjax_ignore" id="cooling-in-tigress-classic">
 <h1>Cooling in TIGRESS-classic<a class="headerlink" href="#cooling-in-tigress-classic" title="Permalink to this heading">#</a></h1>
@@ -445,11 +478,7 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/tmp/ipykernel_1980/2492099347.py:18: UserWarning: The figure layout has changed to tight
-  plt.tight_layout()
-</pre></div>
-</div>
-<img alt="../_images/9b303a42ba59b3cf7afffafea7743356f070c83783a478086a8155389ed3d8ab.png" src="../_images/9b303a42ba59b3cf7afffafea7743356f070c83783a478086a8155389ed3d8ab.png" />
+<img alt="../_images/18917a320b2b159568179e921942a82e81040bd3c7aeb3766ba21ec566d26f78.png" src="../_images/18917a320b2b159568179e921942a82e81040bd3c7aeb3766ba21ec566d26f78.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -475,7 +504,7 @@ document.write(`
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0.5, 1.0, &#39;Thermal Equilibrium for $\\Gamma=\\Gamma_0$&#39;)
 </pre></div>
 </div>
-<img alt="../_images/615e757baff45f3596f69f80e88d7c1414d056dc4ba69912e7c53a3fe65be9c4.png" src="../_images/615e757baff45f3596f69f80e88d7c1414d056dc4ba69912e7c53a3fe65be9c4.png" />
+<img alt="../_images/b281e3024f9a9d4b5d11473d4fdf4c5d0605a83050f670ab8bc42f54fe43be01.png" src="../_images/b281e3024f9a9d4b5d11473d4fdf4c5d0605a83050f670ab8bc42f54fe43be01.png" />
 </div>
 </div>
 </section>
