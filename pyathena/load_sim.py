@@ -287,6 +287,9 @@ class LoadSim(object):
 
         >>> # Load the selected fields.
         >>> ds = read_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
+
+        >>> # Load the selected region.
+        >>> ds = read_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
         """
 
         if num is None and ihdf5 is None:
