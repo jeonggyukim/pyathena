@@ -324,7 +324,7 @@ document.write(`
 
 <div class="viewcode-block" id="read_hst"><a class="viewcode-back" href="../../../readers.html#pyathena.read_hst">[docs]</a><span class="k">def</span> <span class="nf">read_hst</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">force_override</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot; Function to read athena history file and pickle</span>
-<span class="sd">    </span>
+
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
 <span class="sd">    filename : string</span>
@@ -340,8 +340,6 @@ document.write(`
 <span class="sd">        Each column contains time series data</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="n">skiprows</span> <span class="o">=</span> <span class="mi">3</span>
-
     <span class="n">fpkl</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">force_override</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="ow">and</span> \
        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
@@ -354,11 +352,9 @@ document.write(`
                       <span class="s1">&#39; Reading </span><span class="si">{0:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
         <span class="n">vlist</span> <span class="o">=</span> <span class="n">_get_hst_var</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
 
-        <span class="c1"># c engine does not support regex separators</span>
-        <span class="n">hst</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">vlist</span><span class="p">,</span> <span class="n">skiprows</span><span class="o">=</span><span class="n">skiprows</span><span class="p">,</span>
+        <span class="c1"># C engine is faster but python engine is currently more feature-complete</span>
+        <span class="n">hst</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">vlist</span><span class="p">,</span>
                           <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;#&#39;</span><span class="p">,</span> <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">)</span>
-        <span class="c1">#hst = pd.read_table(filename, names=vlist, skiprows=skiprows,</span>
-        <span class="c1">#                    comment=&#39;#&#39;, delim_whitespace=True, engine=&#39;python&#39;)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">hst</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
@@ -366,7 +362,7 @@ document.write(`
 
     <span class="k">return</span> <span class="n">hst</span></div>
 
-      
+
 <span class="k">def</span> <span class="nf">_get_hst_var</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Read variable names from history file</span>
 
@@ -382,10 +378,10 @@ document.write(`
 <span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
-        <span class="c1"># For the moment, skip the first line which contains information about</span>
-        <span class="c1"># the volume of the simulation domain</span>
+        <span class="c1"># Skip the first line</span>
         <span class="c1"># &quot;Athena history dump for level=.. domain=0 volume=...&quot;</span>
-        <span class="c1"># &quot;#   [1]=time      [2]=dt         [3]=mass ......&quot;</span>
+        <span class="c1"># or</span>
+        <span class="c1"># &quot;# Athena++ history data&quot;</span>
         <span class="n">h</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
         <span class="n">h</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
 
