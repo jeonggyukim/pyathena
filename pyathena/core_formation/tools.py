@@ -352,6 +352,9 @@ def calculate_critical_tes(s, rprf, core, mode='thm'):
             dcrit = np.nan
 
         # Find critical TES at the edge density
+        if mode=='trb':
+            f = 1 + (core.tidal_radius/core.sonic_radius)**(2*core.pindex)
+            LJ_e /= np.sqrt(f)
         xi_s = rs / LJ_e
         tse = tes.TESe(p=p, xi_s=xi_s, mode=mode)
         try:
