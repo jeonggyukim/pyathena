@@ -29,6 +29,16 @@ def read_hdf5(filename, header_only=False, **kwargs):
     See Also
     --------
     io.athena_read.athdf
+    load_sim.LoadSim.load_hdf5
+
+    Examples
+    --------
+    >>> from pyathena.io import read_hdf5
+    >>> ds = read_hdf5("/path/to/hdf/file")
+
+    >>> from pyathena.load_sim import LoadSim
+    >>> s = LoadSim("/path/to/basedir")
+    >>> ds = read_hdf5(s.files['hdf5']['prim'][30])
     """
     if header_only:
         with h5py.File(filename, 'r') as f:

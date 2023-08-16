@@ -279,6 +279,7 @@ class LoadSim(object):
 
         Examples
         --------
+        >>> from pyathena.load_sim import LoadSim
         >>> s = LoadSim("/path/to/basedir")
         >>> # Load everything at snapshot number 30.
         >>> ds = s.load_hdf5(30)
