@@ -328,9 +328,16 @@ class Hst:
         ########################
         # Outward radial force #
         ########################
-        cols = ['Fthm', 'Fgrav', 'Fcent']
+        cols = ['Fthm', 'Fthm_cl', 'Fthm_xcm', 'Fthm_xcm_cl',
+                'Fthm_HII', 'Fthm_HII_cl', 'Fthm_xcm_HII', 'Fthm_xcm_HII_cl',
+                'Fcent', 'Fcent_cl', 'Fcent_xcm', 'Fcent_xcm_cl',
+                'Fcent_HII', 'Fcent_HII_cl', 'Fcent_xcm_HII', 'Fcent_xcm_HII_cl',
+                'Fgrav', 'Fgrav_cl', 'Fgrav_xcm', 'Fgrav_xcm_cl',
+                'Fgrav_HII', 'Fgrav_HII_cl', 'Fgrav_xcm_HII', 'Fgrav_xcm_HII_cl']
+        
         if rayt:
-            cols += ['Frad']
+            cols += ['Frad', 'Frad_cl', 'Frad_xcm', 'Frad_xcm_cl',
+                     'Frad_HII', 'Frad_HII_cl', 'Frad_xcm_HII', 'Frad_xcm_HII_cl']
         if mhd:
             cols += ['Fmagp','Fmagt']
 

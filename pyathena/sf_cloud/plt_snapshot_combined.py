@@ -33,7 +33,8 @@ class PltSnapshotCombined:
             copyfile(fout, fout2)
             print('Copied movie file to {0:s}'.format(fout2))
     
-    def plt_snapshot_combined(self, num, dim='z', pos=0.0, zoom=1.0, savfig=True):
+    def plt_snapshot_combined(self, num, dim='z', pos=0.0,
+                              zoom=1.0, bfields=True, savfig=True):
         """Plot slices, projections, pdf, and mass history
         
         Parameters
@@ -67,9 +68,20 @@ class PltSnapshotCombined:
             fields = ['nH', 'T', 'pok', 'chi_FUV', 'xH2']
         else:
             fields = ['nH', 'T', 'pok', 'chi_FUV', 'Erad_LyC']
+
+        if self.par['configure']['gas'] == 'hydro':
+            bfields = False
+            
+        if bfields:
+            fields.append('Bx')
+            fields.append('Bz')
+            print(fields)
             
         ds = self.load_vtk(num)
-        sp = self.load_starpar_vtk(num)
+        dt_output = self.get_dt_output()
+        num_ratio = int(dt_output['vtk']/dt_output['vtk_sp'])
+        num_sp = num*num_ratio
+        sp = self.load_starpar_vtk(num_sp)
         if sp.empty or isinstance(pos, float) or isinstance(pos, int):
             x0,y0 = (0.0,0.0)
         else:
@@ -116,14 +128,24 @@ class PltSnapshotCombined:
                               cbar_kwargs=dict(label=r'$P/k_{\rm B}\;[{\rm cm}^{-3}\,{\rm K}]$'))
 
         if noUV:
-            f = 'xHII'
-            dd[f].plot.imshow(ax=axes[3], norm=Normalize(0,1),
-                              cmap='viridis', add_labels=False, extend='neither',
-                              cbar_kwargs=dict(label=r'$x_{\rm HII}$'))
-            f = 'xH2'
-            (2.0*dd[f]).plot.imshow(ax=axes[4], norm=Normalize(0,1),
-                                    cmap='viridis', add_labels=False, extend='neither',
-                                    cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
+            if bfields:
+                f = 'Bz'
+                dd[f].plot.imshow(ax=axes[3], norm=Normalize(-20,20),
+                                  cmap='bwr', add_labels=False, extend='neither',
+                                  cbar_kwargs=dict(label=r'$B_z\;[{\mu G}]$'))
+                f = 'Bx'
+                dd[f].plot.imshow(ax=axes[4], norm=Normalize(-20,20),
+                                  cmap='bwr', add_labels=False, extend='neither',
+                                  cbar_kwargs=dict(label=r'$B_z\;[{\mu G}]$'))
+            else:
+                f = 'xHII'
+                dd[f].plot.imshow(ax=axes[3], norm=Normalize(0,1),
+                                  cmap='viridis', add_labels=False, extend='neither',
+                                  cbar_kwargs=dict(label=r'$x_{\rm HII}$'))
+                f = 'xH2'
+                (2.0*dd[f]).plot.imshow(ax=axes[4], norm=Normalize(0,1),
+                                        cmap='viridis', add_labels=False, extend='neither',
+                                        cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
         elif noPhotIon:
             f = 'xH2'
             (2.0*dd[f]).plot.imshow(ax=axes[3], norm=Normalize(0,1),

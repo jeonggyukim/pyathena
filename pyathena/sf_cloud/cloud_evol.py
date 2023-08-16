@@ -11,14 +11,6 @@ from scipy.special import erf
 
 from ..util.cloud import Cloud
 
-# def rk4(x, h, y, f):
-#     k1 = h * f(x, y)
-#     k2 = h * f(x + 0.5*h, y + 0.5*k1)
-#     k3 = h * f(x + 0.5*h, y + 0.5*k2)
-#     k4 = h * f(x + h, y + k3)
-#     return y + (k1 + 2.0*(k2 + k3) + k4)/6.0
-
-
 class CloudEvol(Cloud):
     def __init__(self, M=None, R=None, Sigma=None, alpha_vir=2.0,
                  SFE=None, sigmad=1e-21, eps_ff=0.1, sigma_lnSigma=1.0,

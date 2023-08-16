@@ -621,49 +621,49 @@ def load_all_sf_cloud(models=None,
 
     if models == 'default':
         if fpkl is None:
-            fpkl = '/tigress/jk11/SF-CLOUD/pickles/sf-cloud-all.p'
+            fpkl = '/scratch/gpfs/jk11/SF-CLOUD-JOINED/pickles/sf-cloud-all.p'
 
         models = dict(
     
             # M5 Sigma series
             M1E5S0025_PHRP='/scratch/gpfs/jk11/SF-CLOUD/M1E5S0025-PHRP-A4-B2-S4-N256/',
-            M1E5S0050_PHRP='/tigress/jk11/SF-CLOUD/M1E5S0050-PHRP-A4-B2-S4-N256/',
-            M1E5S0080_PHRP='/tigress/jk11/SF-CLOUD/M1E5R20-PHRP-A4-B2-S4-N256',
-            M1E5S0100_PHRP='/tigress/jk11/SF-CLOUD/M1E5S0100-PHRP-A4-B2-S4-N256',
-            M1E5S0200_PHRP='/tigress/jk11/SF-CLOUD/M1E5S0200-PHRP-A4-B2-S4-N256',
-            M1E5S0400_PHRP='/tigress/jk11/SF-CLOUD/M1E5S0400-PHRP-A4-B2-S4-N256',
-            M1E5S0800_PHRP='/tigress/jk11/SF-CLOUD/M1E5S0800-PHRP-A4-B2-S4-N256',
-            M1E5S1200_PHRP='/tigress/jk11/SF-CLOUD/M1E5S1200-PHRP-A4-B2-S4-N256',
-            M1E5S1600_PHRP='/tigress/jk11/SF-CLOUD/M1E5S1600-PHRP-A4-B2-S4-N256',
+            M1E5S0050_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0050-PHRP-A4-B2-S4-N256/',
+            M1E5S0080_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5R20-PHRP-A4-B2-S4-N256',
+            M1E5S0100_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-PHRP-A4-B2-S4-N256',
+            M1E5S0200_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0200-PHRP-A4-B2-S4-N256',
+            M1E5S0400_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0400-PHRP-A4-B2-S4-N256',
+            M1E5S0800_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0800-PHRP-A4-B2-S4-N256',
+            M1E5S1200_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S1200-PHRP-A4-B2-S4-N256',
+            M1E5S1600_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S1600-PHRP-A4-B2-S4-N256',
             
             # M6 Sigma series
-            M1E6S0100_PHRP='/tigress/jk11/SF-CLOUD/M1E6S0100-PHRP-A4-B2-S4-N256/',
-            M1E6S0200_PHRP='/tigress/jk11/SF-CLOUD/M1E6S0200-PHRP-A4-B2-S4-N256/',
+            M1E6S0100_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E6S0100-PHRP-A4-B2-S4-N256/',
+            M1E6S0200_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E6S0200-PHRP-A4-B2-S4-N256/',
             M1E6S0400_PHRP='/scratch/gpfs/jk11/SF-CLOUD/M1E6S0400-PHRP-A4-B2-S4-N256/',
-            M1E6S0600_PHRP='/tigress/jk11/SF-CLOUD/M1E6S0600-PHRP-A4-B2-S4-N256/',
-            M1E6S0800_PHRP='/tigress/jk11/SF-CLOUD/M1E6S0800-PHRP-A4-B2-S4-N256/',
+            M1E6S0600_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E6S0600-PHRP-A4-B2-S4-N256/',
+            M1E6S0800_PHRP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E6S0800-PHRP-A4-B2-S4-N256/',
             
             # PHRPSN
             M1E5S0050_PHRPSN='/scratch/gpfs/jk11/SF-CLOUD/M1E5S0050-PHRPSN-A4-B2-S4-N256/',
             M1E6S0100_PHRPSN='/scratch/gpfs/jk11/SF-CLOUD/M1E6S0100-PHRPSN-A4-B2-S4-N256/',
     
             # Control models at M5 and Sigma=100
-            M1E5S0100_PH='/tigress/jk11/SF-CLOUD/M1E5S0100-PH-A4-B2-S4-N256/',
-            M1E5S0100_RP='/tigress/jk11/SF-CLOUD/M1E5S0100-RP-A4-B2-S4-N256/',
-            M1E5S0100_RP_Binf='/tigress/jk11/SF-CLOUD/M1E5S0100-RP-A4-Binf-S4-N256/',
-            M1E5S0100_RP_Binf_HLLC='/tigress/jk11/SF-CLOUD/M1E5S0100-RP-A4-Binf-S4-N256-hllc/',
+            M1E5S0100_PH='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-PH-A4-B2-S4-N256/',
+            M1E5S0100_RP='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-RP-A4-B2-S4-N256/',
+            M1E5S0100_RP_Binf='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-RP-A4-Binf-S4-N256/',
+            M1E5S0100_RP_Binf_HLLC='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-RP-A4-Binf-S4-N256-hllc/',
 
             # Control models with feedback other than radiation
-            M1E5S0100_SN='/tigress/jk11/SF-CLOUD/M1E5S0100-SN-A4-B2-S4-N256/',
-            M1E5S0100_WN='/tigress/jk11/SF-CLOUD/M1E5S0100-WN-A4-B2-S4-N256/',
-            M1E5S0100_WN_recV5='/tigress/jk11/SF-CLOUD/M1E5S0100-WN-A4-B2-S4-N256-redV5/',
-            M1E5S0100_ALL='/tigress/jk11/SF-CLOUD/M1E5S0100-ALL-A4-B2-S4-N256-iWind1-redV5/',
-            M1E5S0100_ALL_iWind2='/tigress/jk11/SF-CLOUD/M1E5S0100-ALL-A4-B2-S4-N256-iWind2-redV5/',
+            M1E5S0100_SN='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-SN-A4-B2-S4-N256/',
+            M1E5S0100_WN='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-WN-A4-B2-S4-N256/',
+            M1E5S0100_WN_recV5='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-WN-A4-B2-S4-N256-redV5/',
+            M1E5S0100_ALL='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-ALL-A4-B2-S4-N256-iWind1-redV5/',
+            M1E5S0100_ALL_iWind2='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0100-ALL-A4-B2-S4-N256-iWind2-redV5/',
     
             # Control models at M5 and Sigma=800, 1600
-            M1E5S0800_PH='/tigress/jk11/SF-CLOUD/M1E5S0800-PH-A4-B2-S4-N256/',
-            M1E5S0800_PHRP_A2_Binf='/tigress/jk11/SF-CLOUD/M1E5S0800-PHRP-A2-Binf-S4-N256/',
-            M1E5S1600_PHRP_frad2='/tigress/jk11/SF-CLOUD/M1E5S1600-PHRP-A4-B2-S4-N256-frad2/',
+            M1E5S0800_PH='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0800-PH-A4-B2-S4-N256/',
+            M1E5S0800_PHRP_A2_Binf='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S0800-PHRP-A2-Binf-S4-N256/',
+            M1E5S1600_PHRP_frad2='/scratch/gpfs/jk11/SF-CLOUD-JOINED/M1E5S1600-PHRP-A4-B2-S4-N256-frad2/',
             M1E5S1600_PHRP_S2='/scratch/gpfs/jk11/SF-CLOUD/M1E5S1600-PHRP-A4-B2-S2-N256/',
 
         )
