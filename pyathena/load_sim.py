@@ -279,17 +279,15 @@ class LoadSim(object):
 
         Examples
         --------
+        >>> s = LoadSim("/path/to/basedir")
         >>> # Load everything at snapshot number 30.
-        >>> ds = read_hdf5(30)
-
+        >>> ds = s.load_hdf5(30)
         >>> # Read the domain information only, without loading the fields.
-        >>> ds = read_hdf5(30, header_only=True)
-
+        >>> ds = s.load_hdf5(30, header_only=True)
         >>> # Load the selected fields.
-        >>> ds = read_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
-
+        >>> ds = s.load_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
         >>> # Load the selected region.
-        >>> ds = read_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
+        >>> ds = s.load_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
         """
 
         if num is None and ihdf5 is None:
