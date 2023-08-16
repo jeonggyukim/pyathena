@@ -58,9 +58,14 @@ class TESe:
         self.xi_s = xi_s
         self._xi_min = 1e-5
         self._xi_max = 1e3
+        self._umax = 14
         if mode not in {'thm', 'trb'}:
             raise ValueError("mode should be either thm or trb")
         self.mode = mode
+        if mode=='trb':
+            if self.solve(self._xi_max, self._umax)[0][0] > 0:
+                raise ValueError("xi_s = {:.3f} is too small for p = {}."
+                                 " No solution could be found".format(xi_s, p))
 
     def solve(self, xi, u0):
         """Solve equilibrium equation
