@@ -20,20 +20,20 @@ class PiecewisePowerlaw(object):
     Powerlaw indicies by and array p
 
     a_n are the coefficients.
-    
-    f(x) = a_n x^{p_n} for l_{n-1} <= x < l_n
+
+    .. math:: f(x) = a_n x^{p_n} \\textrm{ for } l_{n-1} <= x < l_n
 
     Recursion relation for continuity:
 
-    a_n = a_{n-1} l_n^{p_{n-1} - p_n}
+    .. math:: a_n = a_{n-1} l_n^{p_{n-1} - p_n}
 
     Integral of a piece:
 
-    I_n = a_n p_n (l_{n+1}^{p_n - 1} - l_n^{p_n - 1})
+    .. math:: I_n = a_n p_n (l_{n+1}^{p_n - 1} - l_n^{p_n - 1})
 
     Total integral:
 
-    I_tot = Sum_0^N I_n
+    .. math:: I_{tot} = \sum_0^N I_n
 
     """
 
@@ -105,7 +105,7 @@ class PiecewisePowerlaw(object):
         if norm:
             # The total integral over the function.
             integralTot = np.sum(integrals)
-            
+
             coefficients = coefficients / integralTot
             integrals = integrals /  integralTot
 
@@ -117,7 +117,7 @@ class PiecewisePowerlaw(object):
         self._coefficients = coefficients.reshape((-1,1))
         self._powers = powers.reshape((-1,1))
         self._externalval = externalval
-    
+
     def __call__(self, x):
         """Evaluate the powerlaw at values x.
         """
@@ -149,7 +149,7 @@ class PiecewisePowerlaw(object):
                           limits[:-1]**(powers + 1.)))
         else:
             integrals = self._integrals
-        
+
         pairs = np.broadcast(low, high)
         integral = np.empty(pairs.shape)
         for (i, (x0, x1)) in enumerate(pairs):

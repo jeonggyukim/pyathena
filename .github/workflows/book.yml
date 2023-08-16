@@ -1,0 +1,39 @@
+name: deploy-book
+
+# Only run this when the master branch changes
+on:
+  push:
+    branches:
+    - master
+    - jupyter-book
+  pull_request:
+    branches:
+      - master
+  workflow_dispatch:
+
+# This job installs dependencies, build the book, and pushes it to `gh-pages`
+jobs:
+  deploy-book:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+        cache: 'pip' # caching pip dependencies
+        cache-dependency-path: '**/requirements*.txt'
+    - run: pip install --upgrade pip
+    - run: pip install -r docs/requirements-docs.txt
+
+    # Build the book
+    - name: Build the book
+      shell: bash -l {0}
+      run: |
+        PYTHONPATH=./ jupyter-book build docs/
+
+    # Push the book's HTML to github-pages
+    - name: GitHub Pages action
+      uses: peaceiris/actions-gh-pages@v3
+      with:
+        github_token: ${{ secrets.GITHUB_TOKEN }}
+        publish_dir: ./docs/_build/html

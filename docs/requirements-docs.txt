@@ -1,0 +1,14 @@
+yt
+matplotlib
+numpy
+astropy
+pandas
+xarray
+netCDF4
+healpy
+cmasher
+cmocean
+jupyter-book
+docutils==0.17.1
+tqdm
+periodictable

@@ -1,0 +1,18 @@
+# Table of contents
+# Learn more at https://jupyterbook.org/customize/toc.html
+
+format: jb-book
+root: intro
+parts:
+  - caption: Basics
+    chapters:
+    - file: install
+  - caption: API References
+    chapters:
+    - file: loadsim
+    - file: athenadataset
+    - file: readers
+    - file: utils
+  - caption: Examples
+    chapters:
+    - glob: examples/*
