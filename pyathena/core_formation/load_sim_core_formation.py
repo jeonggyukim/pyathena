@@ -295,7 +295,7 @@ class LoadSimCoreFormationAll(object):
                   load_method='pyathena', verbose=False,
                   reset=False, force_override=False):
         self.model = model
-        if reset:
+        if reset or force_override:
             self.sim = LoadSimCoreFormation(self.basedirs[model],
                                             savdir=savdir,
                                             load_method=load_method,
