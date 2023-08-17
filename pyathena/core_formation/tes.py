@@ -409,6 +409,11 @@ class TESc:
         du : array
             Derivative of u: d(u)/d(xi)
         """
+        if isinstance(xi, float) and np.isinf(xi):
+            return -np.inf, 0
+        else:
+            mask = np.isinf(xi)
+
         xi = np.array(xi, dtype='float64')
         y0 = np.array([0, 0])
         if xi.min() > self._xi_min:
@@ -423,7 +428,12 @@ class TESc:
             y = odeint(self._dydx, y0, np.log(xi))
             u = y[istart:, 0]
             du = y[istart:, 1]/xi[istart:]
-        return u, du
+
+        if not isinstance(xi, float):
+            u[mask] = -np.inf
+            du[mask] = 0
+
+        return u.squeeze()[()], du.squeeze()[()] # return scala when the input is scala
 
     def get_crit(self):
         """Find critical TES
@@ -469,7 +479,9 @@ class TESc:
         elif mode=='trb':
             idx = (kappa_tot < 0).nonzero()[0]
             if len(idx) < 1:
-                return np.nan
+                # kappa_tot is everywhere positive, meaning that this TES
+                # is stable at every radius. Return inf.
+                return np.inf
             else:
                 idx = idx[0] - 1
             func = lambda x: self.get_bulk_modulus(10**x)[1]
@@ -502,10 +514,17 @@ class TESc:
         float
             Dimensionless enclosed mass.
         """
+        # If xi0 is inf, mass is also inf.
+        if isinstance(xi0, float) and np.isinf(xi0):
+            return np.inf
+        else:
+            mask = np.isinf(xi0)
         u, du = self.solve(xi0)
         f = 1 + (xi0/self.xi_s)**(2*self.p)
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
-        return m.squeeze()[()]
+        if not isinstance(xi0, float):
+            m[mask] = np.inf
+        return m.squeeze()[()] # return scala when the input is scala
 
     def get_bulk_modulus(self, xi):
         u, du = self.solve(xi)
