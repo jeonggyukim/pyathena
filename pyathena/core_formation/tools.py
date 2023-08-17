@@ -279,7 +279,7 @@ def calculate_tidal_radius(s, gd, node, leaf=None):
     return rtidal
 
 
-def calculate_critical_tes(s, rprf, core, mode='thm'):
+def calculate_critical_tes(s, rprf, core, mode='tot'):
     """Calculates critical tes given the radial profile.
 
     Given the radial profile, find the critical tes at the same central
@@ -309,7 +309,7 @@ def calculate_critical_tes(s, rprf, core, mode='thm'):
     LJ_c = MJ_c = np.sqrt(s.rho0/rhoc)
 
     rhoe = rprf.rho.interp(r=core.tidal_radius).data[()]
-    if mode=='trb':
+    if mode=='tot':
         ptrb = (rprf.rho*rprf.dvel1_sq_mw).interp(r=core.tidal_radius).data[()]
         pthm = (rprf.rho*s.cs**2).interp(r=core.tidal_radius).data[()]
         LJ_e = MJ_e = np.sqrt(s.cs**2*s.rho0/(pthm + ptrb))
@@ -358,8 +358,8 @@ def calculate_critical_tes(s, rprf, core, mode='thm'):
 
         # Find critical TES at the edge density
         xi_s = rs / LJ_e
-        tse = tes.TESe(p=p, xi_s=xi_s, mode=mode)
         try:
+            tse = tes.TESe(p=p, xi_s=xi_s, mode=mode)
             uc, rc, mc = tse.get_crit()
             dcrit_e = np.exp(uc)
             rcrit_e = rc*LJ_e
