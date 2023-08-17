@@ -24,6 +24,7 @@ class Units(object):
             self.length = 1.0
             self.mass = 1.0
             self.time = 1.0
+            self.units_override = None
             return
 
         mH = 1.008*au.u
