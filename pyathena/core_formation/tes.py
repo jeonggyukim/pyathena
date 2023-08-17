@@ -53,16 +53,16 @@ class TESe:
     >>> # plot density profile
     >>> plt.loglog(r, np.exp(u))
     """
-    def __init__(self, p=0.5, xi_s=np.inf, mode='thm'):
+    def __init__(self, p=0.5, xi_s=np.inf, mode='tot'):
         self.p = p
         self.xi_s = xi_s
         self._xi_min = 1e-5
         self._xi_max = 1e3
         self._umax = 14
-        if mode not in {'thm', 'trb'}:
-            raise ValueError("mode should be either thm or trb")
+        if mode not in {'thm', 'tot'}:
+            raise ValueError("mode should be either thm or tot")
         self.mode = mode
-        if mode=='trb':
+        if mode=='tot':
             if self.solve(self._xi_max, self._umax)[0][0] > 0:
                 raise ValueError("xi_s = {:.3f} is too small for p = {}."
                                  " No solution could be found".format(xi_s, p))
@@ -146,7 +146,7 @@ class TESe:
         f = 1 + (xi0/self.xi_s)**(2*self.p)
         if self.mode=='thm':
             m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
-        elif self.mode=='trb':
+        elif self.mode=='tot':
             m = -xi0**2*f*du/np.pi
         return m.squeeze()[()]
 
@@ -203,7 +203,7 @@ class TESe:
         b = (2*self.p + 1)*f - 2*self.p
         if self.mode=='thm':
             c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*xi**2*np.exp(y1)
-        elif self.mode=='trb':
+        elif self.mode=='tot':
             c = 4*np.pi**2*xi**2*np.exp(y1)/f
         dy2 = -(b/a)*y2 - (c/a)
         return np.array([dy1, dy2])
@@ -455,12 +455,12 @@ class TESc:
         logrmax = brentq(lambda x: func(10**x), 0, np.log10(32))
         return 10**logrmax
 
-    def get_rcrit(self, mode='thm'):
+    def get_rcrit(self, mode='tot'):
         """Find critical TES radius
         Parameters
         ----------
         mode : str
-            Which bulk modulus to use; trb for turbulent, thm for thermal.
+            Which bulk modulus to use; tot for total, thm for thermal.
 
         Returns
         -------
@@ -476,7 +476,7 @@ class TESc:
             else:
                 idx = idx[0] - 1
             func = lambda x: self.get_bulk_modulus(10**x)[0]
-        elif mode=='trb':
+        elif mode=='tot':
             idx = (kappa_tot < 0).nonzero()[0]
             if len(idx) < 1:
                 # kappa_tot is everywhere positive, meaning that this TES
@@ -486,7 +486,7 @@ class TESc:
                 idx = idx[0] - 1
             func = lambda x: self.get_bulk_modulus(10**x)[1]
         else:
-            raise ValueError("mode should be either thm or trb")
+            raise ValueError("mode should be either thm or tot")
 
         x0, x1 = np.log10(xi[idx]), np.log10(xi[idx+1])
         try:
@@ -967,7 +967,7 @@ if __name__ == "__main__":
         critical_mass, critical_radius, critical_density = [], [], []
         for xi_s in rsonic:
             tsc = TESc(xi_s=xi_s, p=pindex)
-            rcrit = tsc.get_rcrit('trb')
+            rcrit = tsc.get_rcrit('tot')
             if np.isnan(rcrit):
                 dcrit = np.nan
                 mcrit = np.nan
