@@ -306,10 +306,15 @@ def calculate_critical_tes(s, rprf, core, mode='thm'):
 
     # Set scale length and mass based on the center and edge densities
     rhoc = rprf.rho.isel(r=0).data[()]
-    LJ_c = MJ_c = 1.0 / np.sqrt(rhoc)
+    LJ_c = MJ_c = np.sqrt(s.rho0/rhoc)
 
     rhoe = rprf.rho.interp(r=core.tidal_radius).data[()]
-    LJ_e = MJ_e = 1.0 / np.sqrt(rhoe)
+    if mode=='trb':
+        ptrb = (rprf.rho*rprf.dvel1_sq_mw).interp(r=core.tidal_radius).data[()]
+        pthm = (rprf.rho*s.cs**2).interp(r=core.tidal_radius).data[()]
+        LJ_e = MJ_e = np.sqrt(s.cs**2*s.rho0/(pthm + ptrb))
+    else:
+        LJ_e = MJ_e = np.sqrt(s.rho0/rhoe)
 
     mtidal = (4*np.pi*rprf.r**2*rprf.rho).sel(r=slice(0, core.tidal_radius)
                                               ).integrate('r').data[()]
@@ -352,9 +357,6 @@ def calculate_critical_tes(s, rprf, core, mode='thm'):
             dcrit = np.nan
 
         # Find critical TES at the edge density
-        if mode=='trb':
-            f = 1 + (core.tidal_radius/core.sonic_radius)**(2*core.pindex)
-            LJ_e /= np.sqrt(f)
         xi_s = rs / LJ_e
         tse = tes.TESe(p=p, xi_s=xi_s, mode=mode)
         try:
