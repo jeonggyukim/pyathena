@@ -348,7 +348,7 @@ def calculate_critical_tes(s, rprf, core, mode='thm'):
         try:
             xi_crit = tsc.get_rcrit(mode=mode)
             u, du = tsc.solve(xi_crit)
-            dcrit = np.exp(-u[0])
+            dcrit = np.exp(-u)
             rcrit = xi_crit*LJ_c
             mcrit = tsc.get_mass(xi_crit)*MJ_c
         except ValueError:
