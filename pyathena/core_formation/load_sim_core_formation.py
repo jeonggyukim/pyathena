@@ -265,6 +265,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             for axis in [1, 2, 3]:
                 rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
                                              - rprf[f'vel{axis}_mw']**2)
+            rprf['menc'] = (4*np.pi*rprf.r**2*rprf.rho).cumulative_integrate('r')
             rprf = rprf.merge(tools.calculate_accelerations(rprf))
             rprf = rprf.set_xindex('num')
             rprofs[pid] = rprf
