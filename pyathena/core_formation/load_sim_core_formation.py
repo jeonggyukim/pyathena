@@ -167,6 +167,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         for pid in self.pids:
             self.num_crit[pid] = tools.critical_time(self, pid)
 
+    def set_cores(self):
+        for pid in self.pids:
+            tools.find_core_mass_and_radius(self, pid)
+
     @LoadSim.Decorators.check_pickle
     def _load_tcoll_cores(self, prefix='tcoll_cores', savdir=None, force_override=False):
         """Read .csv output and find their collapse time and snapshot number.
