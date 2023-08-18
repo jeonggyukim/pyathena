@@ -548,6 +548,25 @@ def calculate_accelerations(rprf):
     return acc
 
 
+def critical_time(s, pid):
+    cores = s.cores[pid]
+    rprofs = s.rprofs[pid]
+    menc = []
+    for num, core in cores.iterrows():
+        # TODO(SMOON) critical radius become nan when pindex < 0
+        if np.isnan(core.critical_radius):
+            menc.append(np.nan)
+        else:
+            menc.append(rprofs.sel(num=num).menc.interp(r=core.critical_radius).data[()])
+    cond = ((cores.tidal_radius > cores.critical_radius)
+            & (menc > cores.critical_mass))
+    cores_past_critical = cores.index[cond]
+    if len(cores_past_critical) == 0:
+        return np.nan
+    else:
+        return cores_past_critical[0]
+
+
 def get_coords_minimum(dat):
     """returns coordinates at the minimum of dat
 
