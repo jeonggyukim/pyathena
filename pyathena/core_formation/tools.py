@@ -3,6 +3,7 @@ import xarray as xr
 import pandas as pd
 from scipy.special import erfinv
 from scipy import odr
+from scipy.optimize import brentq
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import tes
@@ -565,6 +566,28 @@ def critical_time(s, pid):
         return np.nan
     else:
         return cores_past_critical[0]
+
+
+def find_core_mass_and_radius(s, pid):
+    """Finds core mass at t_crit and radius beyond that"""
+    if not hasattr(s, 'num_crit'):
+        s.find_num_crit()
+    nc = s.num_crit[pid]
+    if np.isnan(nc):
+        return
+    cores = s.cores[pid]
+    rprofs = s.rprofs[pid]
+    mcore = rprofs.sel(num=nc).menc.interp(r=cores.loc[nc].critical_radius).data[()]
+
+    rcores = []
+    for num in cores.index:
+        if num < nc:
+            rcores.append(np.nan)
+        else:
+            rprf = rprofs.sel(num=num)
+            rcores.append(brentq(lambda x: rprf.menc.interp(r=x) - mcore, rprf.r.isel(r=0), rprf.r.isel(r=-1)))
+    cores['radius'] = rcores
+    cores.attrs['mass'] = mcore
 
 
 def get_coords_minimum(dat):
