@@ -121,7 +121,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 pass
 
             if hasattr(self, "cores") and hasattr(self, "rprofs"):
-                self.num_crit = self.find_num_crit()
+                self.num_crit = self.find_num_crit(force_override=force_override)
                 self.cores = self.set_cores(force_override=force_override)
 
         elif isinstance(basedir_or_Mach, (float, int)):
@@ -248,33 +248,50 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         pids_tes_not_found = []
         for pid in self.pids:
             fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
-            core = pd.read_pickle(fname)
+            core = pd.read_pickle(fname).sort_index()
+
+            # Remove duplicated nums that formed sink earlier.
+            for pid_prev in range(1, pid):
+                if len(cores[pid_prev]) == 0:
+                    continue
+                cc = cores[pid_prev].iloc[-1]
+                num = cc.name
+                lid = cc.leaf_id
+                if num in core.index and core.loc[num].leaf_id == lid:
+                    core = core.loc[num+1:]
 
             # Assign to attribute
-            cores[pid] = core.sort_index()
+            cores[pid] = core
 
-            # Read critical TES info and concatenate to self.cores
-            try:
-                # Try reading critical TES pickles
-                tes_crit = []
-                for num in core.index:
-                    fname = pathlib.Path(self.savdir, 'critical_tes',
-                                         'critical_tes.par{}.{:05d}.p'
-                                         .format(pid, num))
-                    tes_crit.append(pd.read_pickle(fname))
-                tes_crit = pd.DataFrame(tes_crit).set_index('num')
-                tes_crit = tes_crit.sort_index()
-                cores[pid] = pd.concat([cores[pid], tes_crit],
-                                            axis=1, join='inner').sort_index()
+            # Skip if len(core) == 0. This happens when two sinks
+            # form from the same "node" during one snapshot interval.
+            if len(core) > 0:
+                # Read critical TES info and concatenate to self.cores
+                try:
+                    # Try reading critical TES pickles
+                    tes_crit = []
+                    for num in core.index:
+                        fname = pathlib.Path(self.savdir, 'critical_tes',
+                                             'critical_tes.par{}.{:05d}.p'
+                                             .format(pid, num))
+                        tes_crit.append(pd.read_pickle(fname))
+                    try:
+                        tes_crit = pd.DataFrame(tes_crit).set_index('num')
+                    except KeyError:
+                        print(pid)
+                        print(tes_crit)
+                    tes_crit = tes_crit.sort_index()
+                    cores[pid] = pd.concat([cores[pid], tes_crit],
+                                                axis=1, join='inner').sort_index()
 
-                # Calculate some derived fields
-                tcoll = self.tcoll_cores.loc[pid].time
-                tff = tools.tfreefall(cores[pid].iloc[-1].mean_density, self.gconst)
-                cores[pid].insert(1, 'tnorm', (cores[pid].time - tcoll) / tff)
+                    # Calculate some derived fields
+                    tcoll = self.tcoll_cores.loc[pid].time
+                    tff = tools.tfreefall(cores[pid].iloc[-1].mean_density, self.gconst)
+                    cores[pid].insert(1, 'tnorm', (cores[pid].time - tcoll) / tff)
 
-            except FileNotFoundError:
-                pids_tes_not_found.append(pid)
-                pass
+                except FileNotFoundError:
+                    pids_tes_not_found.append(pid)
+                    pass
         if len(pids_tes_not_found) > 0:
             logging.warning("Cannot find critical TES information for pid: {}.".format(pids_tes_not_found))
         return cores
@@ -292,20 +309,23 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         rprofs = {}
         for pid in self.pids:
             core = self.cores[pid]
-            rprf = []
-            for num in core.index:
-                findv = pathlib.Path(self.savdir, 'radial_profile',
-                                      'radial_profile.par{}.{:05d}.nc'
-                                      .format(pid, num))
-                rprf.append(xr.open_dataset(findv))
-            rprf = xr.concat(rprf, 't')
-            rprf = rprf.assign_coords(dict(num=('t', core.index)))
-            for axis in [1, 2, 3]:
-                rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
-                                             - rprf[f'vel{axis}_mw']**2)
-            rprf['menc'] = (4*np.pi*rprf.r**2*rprf.rho).cumulative_integrate('r')
-            rprf = rprf.merge(tools.calculate_accelerations(rprf))
-            rprf = rprf.set_xindex('num')
+            if len(core) == 0:
+                rprf = None
+            else:
+                rprf = []
+                for num in core.index:
+                    findv = pathlib.Path(self.savdir, 'radial_profile',
+                                          'radial_profile.par{}.{:05d}.nc'
+                                          .format(pid, num))
+                    rprf.append(xr.open_dataset(findv))
+                rprf = xr.concat(rprf, 't')
+                rprf = rprf.assign_coords(dict(num=('t', core.index)))
+                for axis in [1, 2, 3]:
+                    rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
+                                                 - rprf[f'vel{axis}_mw']**2)
+                rprf['menc'] = (4*np.pi*rprf.r**2*rprf.rho).cumulative_integrate('r')
+                rprf = rprf.merge(tools.calculate_accelerations(rprf))
+                rprf = rprf.set_xindex('num')
             rprofs[pid] = rprf
         return rprofs
 
