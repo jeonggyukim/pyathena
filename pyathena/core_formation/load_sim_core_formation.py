@@ -120,6 +120,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 logging.warning("Failed to load radial profiles")
                 pass
 
+            if hasattr(self, "cores") and hasattr(self, "rprofs"):
+                self.num_crit = self.find_num_crit()
+                self.cores = self.set_cores(force_override=force_override)
+
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
             LognormalPDF.__init__(self, self.Mach)
@@ -161,15 +165,20 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 good_cores.append(pid)
         return good_cores
 
-    def find_num_crit(self):
+    @LoadSim.Decorators.check_pickle
+    def find_num_crit(self, prefix='num_crit', savdir=None, force_override=False):
         """Find the snapshot number at the critical time for each particle"""
-        self.num_crit = {}
+        num_crit = {}
         for pid in self.pids:
-            self.num_crit[pid] = tools.critical_time(self, pid)
+            num_crit[pid] = tools.critical_time(self, pid)
+        return num_crit
 
-    def set_cores(self):
+    @LoadSim.Decorators.check_pickle
+    def set_cores(self, prefix='cores', savdir=None, force_override=False):
+        cores = {}
         for pid in self.pids:
-            tools.find_core_mass_and_radius(self, pid)
+            cores[pid] = tools.find_lagrangian_core_properties(self, pid)
+        return cores
 
     @LoadSim.Decorators.check_pickle
     def _load_tcoll_cores(self, prefix='tcoll_cores', savdir=None, force_override=False):
