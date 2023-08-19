@@ -560,6 +560,8 @@ def calculate_accelerations(rprf):
 
 def critical_time(s, pid):
     cores = s.cores[pid]
+    if len(cores) == 0:
+        return np.nan
     rprofs = s.rprofs[pid]
     menc = []
     for num, core in cores.iterrows():
