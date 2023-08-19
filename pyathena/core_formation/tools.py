@@ -855,20 +855,13 @@ def test_isolated_core(s, cores):
     """
     num_tcoll = cores.index[-1]
     pds = s.load_partab(num_tcoll)
-    gd = s.load_dendro(num_tcoll)
+    pstar = pds[['x1', 'x2', 'x3']]
+    core = cores.iloc[-1]
 
-    nd = cores.loc[num_tcoll].envelop_id
+    nd = core.leaf_id
+    pcore = get_coords_node(s, nd)
 
-    # Get all cells in this node.
-    cells = set(gd.get_all_descendant_cells(nd))
-
-    # Test whether there are any existing particle.
-    position_indices = np.floor((pds[['x1', 'x2', 'x3']] - s.domain['le'])
-                                / s.domain['dx']).astype('int')
-    flatidx = (position_indices['x3']*s.domain['Nx'][2]*s.domain['Nx'][1]
-               + position_indices['x2']*s.domain['Nx'][1]
-               + position_indices['x1'])
-    return not np.any([i in cells for i in flatidx])
+    return (np.sqrt(((pstar - pcore)**2).sum(axis=1)) > core.tidal_radius).all()
 
 
 def get_critical_core_props(s, pid, e1=0.7, e2=0.4):
