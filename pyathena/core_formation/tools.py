@@ -546,6 +546,15 @@ def calculate_accelerations(rprf):
     acc = xr.Dataset(acc)
     acc['dvdt_lagrange'] = acc.thm + acc.trb + acc.grv + acc.cen + acc.ani
     acc['dvdt_euler'] = acc.dvdt_lagrange - acc.adv
+
+    dm = 4*np.pi*rprf.r**2*rprf.rho
+    acc['Fadv'] = (dm*acc.adv).cumulative_integrate('r')
+    acc['Fthm'] = (dm*acc.thm).cumulative_integrate('r')
+    acc['Ftrb'] = (dm*acc.trb).cumulative_integrate('r')
+    acc['Fcen'] = (dm*acc.cen).cumulative_integrate('r')
+    acc['Fgrv'] = (-dm*acc.grv).cumulative_integrate('r')
+    acc['Fani'] = (dm*acc.ani).cumulative_integrate('r')
+
     return acc
 
 
@@ -568,26 +577,43 @@ def critical_time(s, pid):
         return cores_past_critical[0]
 
 
-def find_core_mass_and_radius(s, pid):
+def find_lagrangian_core_properties(s, pid):
     """Finds core mass at t_crit and radius beyond that"""
+    cores = s.cores[pid].copy()
+    rprofs = s.rprofs[pid]
+
     if not hasattr(s, 'num_crit'):
         s.find_num_crit()
     nc = s.num_crit[pid]
     if np.isnan(nc):
-        return
-    cores = s.cores[pid]
-    rprofs = s.rprofs[pid]
-    mcore = rprofs.sel(num=nc).menc.interp(r=cores.loc[nc].critical_radius).data[()]
+        cores['radius'] = np.nan
+        cores['mass'] = np.nan
+        cores['fnet'] = np.nan
+        cores['tnorm2'] = np.nan
+    else:
+        rcore_crit = cores.loc[nc].critical_radius
+        mcore_crit = rprofs.sel(num=nc).menc.interp(r=rcore_crit).data[()]
+        mean_rho_crit = mcore_crit / (4*np.pi*rcore_crit**3/3)
+        tff_crit = tfreefall(mean_rho_crit, s.gconst)
+        tcoll = s.tcoll_cores.loc[pid].time
 
-    rcores = []
-    for num in cores.index:
-        if num < nc:
-            rcores.append(np.nan)
-        else:
+        fnet, mcore, rcore = [], [], []
+        for num, core in cores.iterrows():
             rprf = rprofs.sel(num=num)
-            rcores.append(brentq(lambda x: rprf.menc.interp(r=x) - mcore, rprf.r.isel(r=0), rprf.r.isel(r=-1)))
-    cores['radius'] = rcores
-    cores.attrs['mass'] = mcore
+            if rprf.menc.isel(r=-1) < mcore_crit:
+                rcore.append(core.tidal_radius)
+            else:
+                lagrangian_radius = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit, rprf.r.isel(r=0), rprf.r.isel(r=-1))
+                rcore.append(min(core.tidal_radius, lagrangian_radius))
+            mcore.append(rprf.menc.interp(r=rcore[-1]).data[()])
+
+            fnet.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
+                         ).interp(r=rcore[-1]).data[()])
+        cores['radius'] = rcore
+        cores['mass'] = mcore
+        cores['fnet'] = fnet
+        cores['tnorm2'] = (cores.time - tcoll) / tff_crit
+    return cores
 
 
 def get_coords_minimum(dat):
