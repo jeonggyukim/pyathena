@@ -801,7 +801,7 @@ def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
 
 
-def test_resolved_core(s, cores, ncells_min, f):
+def test_resolved_core(s, pid, ncells_min):
     """Test if the given core is sufficiently resolved.
 
     Need to be resolved at the time of collapse and at the time of instability,
@@ -813,29 +813,28 @@ def test_resolved_core(s, cores, ncells_min, f):
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata
-    cores : pandas.DataFrame
-        Object containing core informations.
+    pid : int
+        Particle ID.
     ncells_min : int
         Minimum grid distance between a core and a particle.
-    f : float
-        Fuzzy factor to estimate critical time: tcoll - f*tff
 
     Returns
     -------
     bool
         True if a core is resolved, false otherwise.
     """
-    cores = cores.sort_index()
-    num = cores.tnorm.sub(-f).abs().astype('float64').idxmin()
-    ncells = cores.loc[num].tidal_radius / s.dx
-    ncells = min(ncells, cores.iloc[-1].tidal_radius / s.dx)
+    cores = s.cores[pid]
+    num = s.num_crit[pid]
+    if np.isnan(num):
+        return False
+    ncells = cores.loc[num].radius / s.dx
     if ncells >= ncells_min:
         return True
     else:
         return False
 
 
-def test_isolated_core(s, cores):
+def test_isolated_core(s, pid):
     """Test if the given core is isolated.
 
     Criterion for an isolated core is that the core must not contain
@@ -845,18 +844,21 @@ def test_isolated_core(s, cores):
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata.
-    cores : pandas.DataFrame
-        Object containing core informations.
+    pid : int
+        Particle ID.
 
     Returns
     -------
     bool
         True if a core is isolated, false otherwise.
     """
-    num_tcoll = cores.index[-1]
-    pds = s.load_partab(num_tcoll)
+    cores = s.cores[pid]
+    num = s.num_crit[pid]
+    if np.isnan(num):
+        return False
+    pds = s.load_partab(num)
     pstar = pds[['x1', 'x2', 'x3']]
-    core = cores.iloc[-1]
+    core = cores.loc[num]
 
     nd = core.leaf_id
     pcore = get_coords_node(s, nd)
