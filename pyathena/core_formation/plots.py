@@ -290,15 +290,20 @@ def plot_diagnostics(s, pid, normalize_time=True):
     # Calculate total forces acting on a core
     rprofs = s.rprofs[pid]
     fthm, ftrb, fcen, fgrv, fani, fadv = [], [], [], [], [], []
+    menc = []
     for num, core in cores.iterrows():
-        rprf = rprofs.sel(num=num).sel(r=slice(0, core.tidal_radius))
-        dmdr = 4*np.pi*rprf.r**2*rprf.rho
-        fthm.append((rprf.thm*dmdr).integrate('r').data[()])
-        ftrb.append((rprf.trb*dmdr).integrate('r').data[()])
-        fcen.append((rprf.cen*dmdr).integrate('r').data[()])
-        fani.append((rprf.ani*dmdr).integrate('r').data[()])
-        fadv.append((rprf.adv*dmdr).integrate('r').data[()])
-        fgrv.append((-rprf.grv*dmdr).integrate('r').data[()])
+        rprf = rprofs.sel(num=num)
+        if np.isinf(core.critical_radius) or np.isnan(core.critical_radius):
+            menc.append(np.nan)
+        else:
+            menc.append(rprf.menc.interp(r=core.critical_radius))
+        fthm.append(rprf.Fthm.interp(r=core.tidal_radius).data[()])
+        ftrb.append(rprf.Ftrb.interp(r=core.tidal_radius).data[()])
+        fcen.append(rprf.Fcen.interp(r=core.tidal_radius).data[()])
+        fani.append(rprf.Fani.interp(r=core.tidal_radius).data[()])
+        fadv.append(rprf.Fadv.interp(r=core.tidal_radius).data[()])
+        fgrv.append(rprf.Fgrv.interp(r=core.tidal_radius).data[()])
+    menc = np.array(menc)
     fthm = np.array(fthm)
     ftrb = np.array(ftrb)
     fcen = np.array(fcen)
@@ -311,7 +316,6 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
     # Note that we do not include the force due to anisotropic turbulence.
     plt.plot(time, (fthm+ftrb+fcen-fgrv)/fgrv, c='k')
-    plt.plot(time, (fthm+ftrb+fcen-fgrv-fadv)/fgrv, c='k', alpha=0.5)
 
     plt.ylim(-1, 1)
     plt.ylabel(r'$(F_\mathrm{p, eff} - F_\mathrm{grv}) / F_\mathrm{grv}$')
@@ -326,7 +330,6 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.plot(time, fcen, lw=1, c='olive', label=r'$F_\mathrm{cen}$')
     plt.plot(time, fgrv, lw=1, c='pink', label=r'$F_\mathrm{grv}$')
     plt.plot(time, fani, lw=1, c='brown', ls=':', label=r'$F_\mathrm{ani}$')
-    plt.plot(time, fadv, lw=1, c='purple', ls=':', label=r'$F_\mathrm{adv}$')
     plt.yscale('log')
     plt.ylim(1e-1, 1e2)
     plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
@@ -351,6 +354,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.sca(axs[2])
     plt.plot(time, cores.tidal_mass, c='tab:blue',
              label=r'$M_\mathrm{tidal}$')
+    plt.plot(time, menc, c='tab:blue', ls='-.',
+             label=r'$M(R<R_\mathrm{crit,c})$')
     plt.plot(time, cores.critical_mass, c='tab:red',
              label=r'$M_\mathrm{crit,c}$')
     plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--',
@@ -377,7 +382,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.ylim(1e0, 1e5)
 
     if normalize_time:
-        plt.xlim(-4, 0)
+        plt.xlim(-2, 0)
         plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}$'
                    r'$(\overline{\rho}_\mathrm{coll})$')
     else:
