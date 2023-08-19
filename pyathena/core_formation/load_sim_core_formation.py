@@ -161,9 +161,24 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         """
         good_cores = []
         for pid in self.pids:
-            if (self.cores[pid].attrs['isolated'] and self.cores[pid].attrs['resolved']):
+            if self.cores[pid].attrs['isolated'] and self.cores[pid].attrs['resolved']:
                 good_cores.append(pid)
         return good_cores
+
+    def resolved_cores(self):
+        resolved_cores = []
+        for pid in self.pids:
+            if self.cores[pid].attrs['resolved']:
+                resolved_cores.append(pid)
+        return resolved_cores
+
+    def isolated_cores(self):
+        isolated_cores = []
+        for pid in self.pids:
+            if self.cores[pid].attrs['isolated']:
+                isolated_cores.append(pid)
+        return isolated_cores
+
 
     @LoadSim.Decorators.check_pickle
     def find_num_crit(self, prefix='num_crit', savdir=None, force_override=False):
@@ -174,10 +189,23 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         return num_crit
 
     @LoadSim.Decorators.check_pickle
-    def set_cores(self, prefix='cores', savdir=None, force_override=False):
+    def set_cores(self, ncells_min=10, prefix='cores', savdir=None, force_override=False):
         cores = {}
         for pid in self.pids:
             cores[pid] = tools.find_lagrangian_core_properties(self, pid)
+        self.cores = cores
+
+        for pid in self.pids:
+            # Test resolvedness and isolatedness
+            if tools.test_isolated_core(self, pid):
+                cores[pid].attrs['isolated'] = True
+            else:
+                cores[pid].attrs['isolated'] = False
+            if tools.test_resolved_core(self, pid, ncells_min):
+                cores[pid].attrs['resolved'] = True
+            else:
+                cores[pid].attrs['resolved'] = False
+
         return cores
 
     @LoadSim.Decorators.check_pickle
@@ -215,7 +243,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         return tcoll_cores
 
     @LoadSim.Decorators.check_pickle
-    def _load_cores(self, ncells_min=10, fcrit=0.6, prefix='cores', savdir=None, force_override=False):
+    def _load_cores(self, prefix='cores', savdir=None, force_override=False):
         cores = {}
         pids_tes_not_found = []
         for pid in self.pids:
@@ -243,15 +271,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 tcoll = self.tcoll_cores.loc[pid].time
                 tff = tools.tfreefall(cores[pid].iloc[-1].mean_density, self.gconst)
                 cores[pid].insert(1, 'tnorm', (cores[pid].time - tcoll) / tff)
-
-                if tools.test_isolated_core(self, cores[pid]):
-                    cores[pid].attrs['isolated'] = True
-                else:
-                    cores[pid].attrs['isolated'] = False
-                if tools.test_resolved_core(self, cores[pid], ncells_min, f=fcrit):
-                    cores[pid].attrs['resolved'] = True
-                else:
-                    cores[pid].attrs['resolved'] = False
 
             except FileNotFoundError:
                 pids_tes_not_found.append(pid)
