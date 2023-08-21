@@ -8,32 +8,10 @@ from pyathena.core_formation import config, tasks, tools
 
 if __name__ == "__main__":
     # load all models
-    models = dict(M10J2P0N512='/scratch/gpfs/sm69/cores/M10.J2.P0.N512',
-                  M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
-                  M10J4P1N512='/scratch/gpfs/sm69/cores/M10.J4.P1.N512',
-                  M10J4P2N512='/scratch/gpfs/sm69/cores/M10.J4.P2.N512',
-                  M10J4P0N1024='/scratch/gpfs/sm69/cores/M10.J4.P0.N1024',
-                  M10J4P1N1024='/scratch/gpfs/sm69/cores/M10.J4.P1.N1024',
-                  M10J4P2N1024='/scratch/gpfs/sm69/cores/M10.J4.P2.N1024',
-                  M10J4P3N1024='/scratch/gpfs/sm69/cores/M10.J4.P3.N1024',
-                  M10J4P4N1024='/scratch/gpfs/sm69/cores/M10.J4.P4.N1024',
-                  M75J3P0N512='/scratch/gpfs/sm69/cores/M7.5.J3.P0.N512',
-                  M75J3P1N512='/scratch/gpfs/sm69/cores/M7.5.J3.P1.N512',
-                  M75J3P2N512='/scratch/gpfs/sm69/cores/M7.5.J3.P2.N512',
-                  M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256',
-                  M5J2P1N256='/scratch/gpfs/sm69/cores/M5.J2.P1.N256',
-                  M5J2P2N256='/scratch/gpfs/sm69/cores/M5.J2.P2.N256',
-                  M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512',
-                  M5J2P1N512='/scratch/gpfs/sm69/cores/M5.J2.P1.N512',
-                  M5J2P2N512='/scratch/gpfs/sm69/cores/M5.J2.P2.N512',
-                  M5J2P3N512='/scratch/gpfs/sm69/cores/M5.J2.P3.N512',
-                  M5J2P4N512='/scratch/gpfs/sm69/cores/M5.J2.P4.N512',
-                  M5J2P5N512='/scratch/gpfs/sm69/cores/M5.J2.P5.N512',
-                  M5J2P6N512='/scratch/gpfs/sm69/cores/M5.J2.P6.N512',
-                  M5J2P7N512='/scratch/gpfs/sm69/cores/M5.J2.P7.N512',
-                  M5J2P8N512='/scratch/gpfs/sm69/cores/M5.J2.P8.N512',
-                  M5J2P9N512='/scratch/gpfs/sm69/cores/M5.J2.P9.N512',
-                  M5J2P10N512='/scratch/gpfs/sm69/cores/M5.J2.P10.N512')
+    models = {f"M5J2P{iseed}N512": f"/scratch/gpfs/sm69/cores/M5.J2.P{iseed}.N512"
+          for iseed in range(0, 16)}
+    for iseed in range(0, 5):
+        models[f"M10J4P{iseed}N1024"] = f"/scratch/gpfs/sm69/cores/M10.J4.P{iseed}.N1024"
     sa = pa.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
