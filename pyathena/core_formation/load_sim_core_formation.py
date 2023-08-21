@@ -120,7 +120,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 logging.warning("Failed to load radial profiles")
                 pass
 
-            if hasattr(self, "cores") and hasattr(self, "rprofs"):
+            if (hasattr(self, "cores") and hasattr(self, "rprofs")
+                and 'critical_radius' in self.cores[1]):  # Dirty fix, but should work.
                 self.num_crit = self.find_num_crit(force_override=force_override)
                 self.cores = self.set_cores(force_override=force_override)
 
