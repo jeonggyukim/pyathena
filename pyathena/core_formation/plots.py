@@ -761,6 +761,44 @@ def core_structure(s, pid, num, rmax=None):
                      loc='upper right')
     return fig
 
+
+def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
+    num = s.num_crit[pid]
+    core = s.cores[pid].loc[num]
+    rprf = s.rprofs[pid].sel(num=num)
+
+    if ax is not None:
+        plt.sca(ax)
+
+    plt.plot(rprf.r/core.tidal_radius, rprf.rho, ls='-', marker='+', color='k', lw=lw)
+
+    # Overplot critical TES
+    tsc = tes.TESc(p=core.pindex, xi_s=core.sonic_radius*np.sqrt(core.center_density))
+    xi_min = rprf.r[0].data[()]*np.sqrt(core.center_density)
+    xi_max = core.tidal_radius*np.sqrt(core.center_density)
+    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+    u, _ = tsc.solve(xi)
+    plt.plot(xi/np.sqrt(core.center_density)/core.tidal_radius, core.center_density*np.exp(u), c='tab:red', lw=lw)
+    plt.axvline(core.critical_radius/core.tidal_radius, color='tab:red', lw=lw/2, ls='--')
+
+    # Overplot critical BE
+    tsc = tes.TESc()
+    xi_min = rprf.r[0].data[()]*np.sqrt(core.center_density)
+    xi_max = core.tidal_radius*np.sqrt(core.center_density)
+    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+    u, _ = tsc.solve(xi)
+    plt.plot(xi/np.sqrt(core.center_density)/core.tidal_radius, core.center_density*np.exp(u), c='tab:blue', lw=lw)
+    plt.axvline(tsc.get_rcrit()/np.sqrt(core.center_density)/core.tidal_radius, lw=lw/2, c='tab:blue', ls='--')
+
+    # Overplot LP profile
+#    plt.plot(rprf.r/core.tidal_radius, tools.lpdensity(rprf.r, s.cs, s.gconst), 'k--', lw=lw/2)
+
+    plt.xlim(0, 1)
+    plt.xlabel(r'$r/R_\mathrm{tidal}$')
+    plt.ylabel(r'$\rho/\rho_0$')
+    plt.yscale('log')
+
+
 # DEPRECATED
 
 
