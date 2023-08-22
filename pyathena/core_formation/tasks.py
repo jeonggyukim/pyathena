@@ -365,12 +365,15 @@ def plot_diagnostics(s, pid, overwrite=False):
     overwrite : bool, optional
         Flag to overwrite
     """
-    msg = '[plot_diagnostics] model {} pid {}'
-    print(msg.format(s.basename, pid))
     fname = Path(s.savdir, 'figures',
                  'diagnostics_normalized.par{}.png'.format(pid))
+    fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
         return
+
+    msg = '[plot_diagnostics] model {} pid {}'
+    print(msg.format(s.basename, pid))
+
     fig = plots.plot_diagnostics(s, pid, normalize_time=True)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
     plt.close(fig)
@@ -379,6 +382,30 @@ def plot_diagnostics(s, pid, overwrite=False):
     if fname.exists() and not overwrite:
         return
     fig = plots.plot_diagnostics(s, pid, normalize_time=False)
+    fig.savefig(fname, bbox_inches='tight', dpi=200)
+    plt.close(fig)
+
+
+def plot_radial_profile_at_tcrit(s, nrows=5, ncols=6, overwrite=False):
+    fname = Path(s.savdir, 'figures', 'radial_profile_at_tcrit.png')
+    fname.parent.mkdir(exist_ok=True)
+    if fname.exists() and not overwrite:
+        return
+
+    msg = '[plot_radial_profile_at_tcrit] Processing model {}'
+    print(msg.format(s.basename))
+
+    if len(s.good_cores()) > nrows*ncols:
+        raise ValueError("Number of good cores {} exceeds the number of panels.".format(len(s.good_cores())))
+    fig, axs = plt.subplots(nrows, ncols, figsize=(6*ncols, 4*nrows), sharex=True, gridspec_kw={'hspace':0.05, 'wspace':0.12})
+    for pid, ax in zip(s.good_cores(), axs.flat):
+        plots.radial_profile_at_tcrit(s, pid, ax=ax)
+        ax.set_xlabel("")
+        ax.set_ylabel("")
+    for ax in axs[:, 0]:
+        ax.set_ylabel(r'$\rho/\rho_0$')
+    for ax in axs[-1, :]:
+        ax.set_xlabel(r'$r/R_\mathrm{tidal}$')
     fig.savefig(fname, bbox_inches='tight', dpi=200)
     plt.close(fig)
 
