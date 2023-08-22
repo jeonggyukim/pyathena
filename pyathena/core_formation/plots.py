@@ -283,7 +283,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     # Load cores
     cores = s.cores[pid].sort_index()
     if normalize_time:
-        time = cores.tnorm
+        time = cores.tnorm2
     else:
         time = cores.time
 
@@ -595,7 +595,7 @@ def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
     plt.sca(axs['rho'][0])
     plt.text(0.6, 0.9, r'$t={:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.48, 0.8, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm)
+    plt.text(0.48, 0.8, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm2)
              + r'$\,t_{ff}$', transform=plt.gca().transAxes,
              backgroundcolor='w')
     plt.text(0.6, 0.7, r'$M={:.2f}$'.format(core.tidal_mass)+r'$\,M_{J,0}$',
@@ -743,7 +743,7 @@ def core_structure(s, pid, num, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.7, r'$R={:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.05, 0.05, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm)
+    plt.text(0.05, 0.05, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm2)
              + r'$\,t_{ff}$', transform=plt.gca().transAxes,
              backgroundcolor='w')
 
