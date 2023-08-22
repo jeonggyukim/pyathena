@@ -461,7 +461,8 @@ def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
         nodes = list(gd.descendants[core.envelop_id].copy())
         nodes.append(core.envelop_id)
-        nodes.append(gd.sibling(core.envelop_id))
+        if core.envelop_id != gd.trunk:
+            nodes.append(gd.sibling(core.envelop_id))
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='k')
         c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
@@ -502,8 +503,8 @@ def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
     xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
-        ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
         try:
+            ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
             uc, _, _ = ts.get_crit()
             u, _ = ts.solve(xi, uc)
             for ax in axs['rho']:
