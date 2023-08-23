@@ -43,14 +43,6 @@ if __name__ == "__main__":
     ts['L0'], te['L0'] = 300, 400
     ts['L1'], te['L1'] = 300, 400
 
-    Rmax = dict(L0=710,
-                L1=710,
-                L2=760,
-                L3=870,
-                S0=185,
-                S1=205,
-                S2=245,
-                S3=245)
 
     # Select models
     for mdl in args.models:
@@ -72,9 +64,9 @@ if __name__ == "__main__":
         # Calculate ring averages
         if args.ring_average:
             fname = Path(s.basedir, "time_averages", "prims.nc")
-            if fname.exists() and mdl in Rmax:
+            if fname.exists() and mdl in config.Rmax:
                 print(f"Calculate ring masked averages for model {mdl}")
-                tasks.save_ring_averages(s, Rmax[mdl], mf_crit=0.9, overwrite=args.overwrite)
+                tasks.save_ring_averages(s, config.Rmax[mdl], mf_crit=0.9, overwrite=args.overwrite)
         # Calculate time averages
         if args.time_average:
             if mdl not in ['B100', 'B30', 'B10']:
