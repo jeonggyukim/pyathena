@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 from matplotlib import gridspec
 import numpy as np
 
-def plt_joint_pdf(x, y, hexbin_args=dict(),
+def plt_joint_pdf(x, y, hexbin_args=dict(), bins=30,
                   weights=None, gs=None):
     """
     Function to plot 2d + 1d joint pdf using hexbin
@@ -41,23 +41,26 @@ def plt_joint_pdf(x, y, hexbin_args=dict(),
     ax.hexbin(x, y, **_hexbin_args)
 
     # plot marginalized pdfs
-    bins = 30
     if _hexbin_args['xscale'] == 'log':
         h, bine = np.histogram(np.log10(x),weights=weights, bins=bins, density=True)
         axx.step(10.0**bine[1:], h, 'k-')
         axx.set_xscale('log')
+        axx.set_xlim(10**_hexbin_args['extent'][0], 10**_hexbin_args['extent'][1])
     else:
         h, bine = np.histogram(x, weights=weights, bins=bins, density=True)
         axx.step(bine[1:], h, 'k-')
-
+        axx.set_xlim(_hexbin_args['extent'][0], _hexbin_args['extent'][1])
+        
     if _hexbin_args['yscale'] == 'log':
         h, bine = np.histogram(np.log10(y), weights=weights, bins=bins, density=True)
         axy.step(h, 10.0**bine[1:], 'k-')
         axy.set_yscale('log')
+        axy.set_ylim(10**_hexbin_args['extent'][2], 10**_hexbin_args['extent'][3])
     else:
         h, bine = np.histogram(y, weights=weights, bins=bins, density=True)
         axy.step(h, bine[1:], 'k-')
-
+        axy.set_ylim(_hexbin_args['extent'][2], _hexbin_args['extent'][3])
+    
     # Turn off tick labels on marginals
     plt.setp(axx.get_xticklabels(), visible=False)
     plt.setp(axy.get_yticklabels(), visible=False)
