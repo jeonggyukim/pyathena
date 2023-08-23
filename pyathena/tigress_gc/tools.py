@@ -387,15 +387,18 @@ def add_derived_fields(s, dat, fields=[]):
         surf = (dat.density*s.dz).sum(dim='z')
         return surf
 
+    def _R():
+        return np.sqrt(dat.y**2 + dat.x**2)
+
+    def _ph():
+        return np.arctan2(dat.y, dat.x)
+
     if isinstance(fields, str):
         fields = [fields]
 
     for f in fields:
         if f not in dat:
-            dat[f] = locals()['_'+f]()
-
-#     if 'R' in fields:
-#         dat.coords['R'] = np.sqrt(dat.y**2 + dat.x**2)
-#
-#     if 'phi' in fields:
-#         dat.coords['phi'] = np.arctan2(dat.y, dat.x)
+            if f in ['R', 'ph']:
+                dat.coords[f] = locals()['_'+f]()
+            else:
+                dat[f] = locals()['_'+f]()
