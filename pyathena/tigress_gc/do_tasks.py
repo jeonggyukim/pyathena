@@ -1,11 +1,13 @@
+from pathlib import Path
 import argparse
+from multiprocessing import Pool
 import pyathena as pa
-from pyathena.tigress_gc.tasks import *
+from pyathena.tigress_gc import tasks, config
 
 if __name__ == "__main__":
     # load all models
-    models = dict(Binf='/tigress/sm69/M1Binf_512',
-                  B100='/tigress/sm69/M1B100_512',
+    models = dict(Binf='/tigress/sm69/public_html/M1Binf_512',
+                  B100='/tigress/sm69/public_html/M1B100_512',
                   B30='/tigress/sm69/M1B30_512',
                   B10='/tigress/sm69/M1B10_512',
                   L0='/projects/EOSTRIKE/TIGRESS-GC/L0_512',
@@ -21,12 +23,18 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("models", nargs='+', type=str,
                         help="List of models to process")
-    parser.add_argument("-oa", "--overwrite_azimuthal_averages", action="store_true",
-                        help="Overwrite azimuthal averages")
-    parser.add_argument("-or", "--overwrite_ring_averages", action="store_true",
-                        help="Overwrite ring averages")
-    parser.add_argument("-ot", "--overwrite_time_averages", action="store_true",
-                        help="Overwrite time averages")
+    parser.add_argument("--np", type=int, default=1,
+                        help="Number of processors")
+    parser.add_argument("--prfm", action="store_true",
+                        help="Write prfm quantities")
+    parser.add_argument("--azimuthal-average", action="store_true",
+                        help="Calculate azimuthally averaged quantities")
+    parser.add_argument("--ring-average", action="store_true",
+                        help="Calculate ring masked averages")
+    parser.add_argument("--time-average", action="store_true",
+                        help="Produce time averaged snapshots")
+    parser.add_argument("-o", "--overwrite", action="store_true",
+                        help="Overwrite everything")
 
     args = parser.parse_args()
 
@@ -48,18 +56,28 @@ if __name__ == "__main__":
     for mdl in args.models:
         s = sa.set_model(mdl)
 
+        # Calculate PRFM quantities
+        if args.prfm:
+            def wrapper(num):
+                tasks.prfm_quantities(s, num, overwrite=args.overwrite)
+            print(f"Calculate PRFM quantities for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums[config.NUM_START:], 1)
+
         # Calculate azimuthal averages
-        print(f"Calculate azimuthal averages for model {mdl}")
-        save_azimuthal_averages(s, overwrite=args.overwrite_azimuthal_averages)
+        if args.azimuthal_average:
+            print(f"Calculate azimuthal averages for model {mdl}")
+            tasks.save_azimuthal_averages(s, overwrite=args.overwrite)
 
         # Calculate ring averages
-        fname = Path(s.basedir, "time_averages", "prims.nc")
-        if fname.exists() and mdl in Rmax:
-            print(f"Calculate ring masked averages for model {mdl}")
-            save_ring_averages(s, Rmax[mdl], mf_crit=0.9, overwrite=args.overwrite_ring_averages)
-
+        if args.ring_average:
+            fname = Path(s.basedir, "time_averages", "prims.nc")
+            if fname.exists() and mdl in Rmax:
+                print(f"Calculate ring masked averages for model {mdl}")
+                tasks.save_ring_averages(s, Rmax[mdl], mf_crit=0.9, overwrite=args.overwrite)
         # Calculate time averages
-        if mdl not in ['B100', 'B30', 'B10']:
-            print(f"Calculate time averages for model {mdl}")
-            save_time_averaged_snapshot(s, ts[mdl], te[mdl],
-                                        overwrite=args.overwrite_time_averages)
+        if args.time_average:
+            if mdl not in ['B100', 'B30', 'B10']:
+                print(f"Calculate time averages for model {mdl}")
+                tasks.save_time_averaged_snapshot(s, ts[mdl], te[mdl],
+                                                  overwrite=args.overwrite)

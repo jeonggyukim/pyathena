@@ -52,38 +52,43 @@ def save_azimuthal_averages(s, overwrite=False):
         rprf.to_netcdf(fname)
 
 
-def save_prfm_quantities(s, overwrite=False):
+def prfm_quantities(s, num, overwrite=False):
     """Calculate Q(x, y) of the warm-cold gas.
 
     Parameters
     ----------
     s : pyathena.LoadSimTIGRESSGC
         LoadSim instance.
+    num : int
+        Snapshot number
     overwrite : bool, optional
         Flag to overwrite
     """
-    for num in s.nums:
-        fname = Path(s.basedir, 'prfm_quantities',
-                     'prfm.{:04}.nc'.format(num))
-        fname.parent.mkdir(exist_ok=True)
-        if fname.exists() and not overwrite:
-            print('File {} already exists; skipping...'.format(fname))
-            continue
-        ds = s.load_vtk(num, id0=False)
-        dat = ds.get_field(['density',
-                            'velocity',
-                            'pressure',
-                            'gravitational_potential'])
-        tools.add_derived_fields(s, dat, ['temperature',
-                                          'turbulent_pressure',
-                                          'weight_self',
-                                          'weight_ext',
-                                          'fwarm'])
-        ptot = (((dat.pressure + dat.turbulent_pressure)*dat.fwarm).sel(z=slice(-s.dz, s.dz)).sum(dim='z')
-        / (dat.fwarm.sel(z=slice(-s.dz, s.dz)).sum(dim='z')))
-        wtot = dat.weight_self + dat.weight_ext
-        prfm = xr.Dataset(dict(ptot=ptot, wtot=wtot))
-        prfm.to_netcdf(fname)
+    fname = Path(s.basedir, 'prfm_quantities',
+                 'prfm.{:04}.nc'.format(num))
+    fname.parent.mkdir(exist_ok=True)
+    if fname.exists() and not overwrite:
+        print('File {} already exists; skipping...'.format(fname))
+        return
+
+    msg = '[prfm_quantities] processing model {} num {}'
+    print(msg.format(s.basename, num))
+
+    ds = s.load_vtk(num, id0=False)
+    dat = ds.get_field(['density',
+                        'velocity',
+                        'pressure',
+                        'gravitational_potential'])
+    tools.add_derived_fields(s, dat, ['temperature',
+                                      'turbulent_pressure',
+                                      'weight_self',
+                                      'weight_ext',
+                                      'fwarm'])
+    ptot = (((dat.pressure + dat.turbulent_pressure)*dat.fwarm).sel(z=slice(-s.dz, s.dz)).sum(dim='z')
+    / (dat.fwarm.sel(z=slice(-s.dz, s.dz)).sum(dim='z')))
+    wtot = dat.weight_self + dat.weight_ext
+    prfm = xr.Dataset(dict(ptot=ptot, wtot=wtot))
+    prfm.to_netcdf(fname)
 
 
 def save_time_averaged_snapshot(s, ts, te, overwrite=False):
