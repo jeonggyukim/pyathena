@@ -83,11 +83,16 @@ def prfm_quantities(s, num, overwrite=False):
                                       'turbulent_pressure',
                                       'weight_self',
                                       'weight_ext',
-                                      'fwarm'])
+                                      'fwarm',
+                                      'surface_density',
+                                      'sfr40'])
     ptot = (((dat.pressure + dat.turbulent_pressure)*dat.fwarm).sel(z=slice(-s.dz, s.dz)).sum(dim='z')
-    / (dat.fwarm.sel(z=slice(-s.dz, s.dz)).sum(dim='z')))
+            / (dat.fwarm.sel(z=slice(-s.dz, s.dz)).sum(dim='z')))
     wtot = dat.weight_self + dat.weight_ext
-    prfm = xr.Dataset(dict(ptot=ptot, wtot=wtot))
+    prfm = xr.Dataset(dict(ptot=ptot*s.u.pok,
+                           wtot=wtot*s.u.pok,
+                           sigma=dat.surface_density*s.u.Msun,
+                           sigma_sfr=dat.sfr40))
     prfm.to_netcdf(fname)
 
 
