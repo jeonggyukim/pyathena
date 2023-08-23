@@ -9,9 +9,9 @@ import pandas as pd
 # pyathena modules
 from pyathena.tigress_gc import tools
 
+
 def save_ring_averages(s, Rmax, mf_crit=0.9, overwrite=False):
-    """
-    Calculates ring masked averages and save to file
+    """Calculates ring masked averages and save to file
 
     Parameters
     ----------
@@ -34,8 +34,7 @@ def save_ring_averages(s, Rmax, mf_crit=0.9, overwrite=False):
 
 
 def save_azimuthal_averages(s, overwrite=False):
-    """
-    Calculates azimuthal averages and save to file
+    """Calculates azimuthal averages and save to file
 
     Parameters
     ----------
@@ -53,9 +52,42 @@ def save_azimuthal_averages(s, overwrite=False):
         rprf.to_netcdf(fname)
 
 
-def save_time_averaged_snapshot(s, ts, te, overwrite=False):
+def save_prfm_quantities(s, overwrite=False):
+    """Calculate Q(x, y) of the warm-cold gas.
+
+    Parameters
+    ----------
+    s : pyathena.LoadSimTIGRESSGC
+        LoadSim instance.
+    overwrite : bool, optional
+        Flag to overwrite
     """
-    Generate time averaged snapshot between [ts, te]
+    for num in s.nums:
+        fname = Path(s.basedir, 'prfm_quantities',
+                     'prfm.{:04}.nc'.format(num))
+        fname.parent.mkdir(exist_ok=True)
+        if fname.exists() and not overwrite:
+            print('File {} already exists; skipping...'.format(fname))
+            continue
+        ds = s.load_vtk(num, id0=False)
+        dat = ds.get_field(['density',
+                            'velocity',
+                            'pressure',
+                            'gravitational_potential'])
+        tools.add_derived_fields(s, dat, ['temperature',
+                                          'turbulent_pressure',
+                                          'weight_self',
+                                          'weight_ext',
+                                          'fwarm'])
+        ptot = (((dat.pressure + dat.turbulent_pressure)*dat.fwarm).sel(z=slice(-s.dz, s.dz)).sum(dim='z')
+        / (dat.fwarm.sel(z=slice(-s.dz, s.dz)).sum(dim='z')))
+        wtot = dat.weight_self + dat.weight_ext
+        prfm = xr.Dataset(dict(ptot=ptot, wtot=wtot))
+        prfm.to_netcdf(fname)
+
+
+def save_time_averaged_snapshot(s, ts, te, overwrite=False):
+    """Generate time averaged snapshot between [ts, te]
 
     Parameters
     ----------
