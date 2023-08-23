@@ -1,6 +1,7 @@
 from pathlib import Path
 from pygc.pot import MHubble, Plummer
 import numpy as np
+import pandas as pd
 import xarray as xr
 from scipy import optimize
 from pyathena.tigress_gc import config
@@ -387,6 +388,11 @@ def add_derived_fields(s, dat, fields=[]):
         surf = (dat.density*s.dz).sum(dim='z')
         return surf
 
+    def _sfr40():
+        msp = grid_msp(s, dat.num, 0, 40)
+        sigsfr = msp*s.u.Msun/40/s.dx/s.dy
+        return sigsfr
+
     def _R():
         return np.sqrt(dat.y**2 + dat.x**2)
 
@@ -402,3 +408,31 @@ def add_derived_fields(s, dat, fields=[]):
                 dat.coords[f] = locals()['_'+f]()
             else:
                 dat[f] = locals()['_'+f]()
+
+
+def grid_msp(s, num, agemin, agemax):
+    """read starpar_vtk and remap starpar mass onto a grid"""
+    # domain information
+    le1, le2 = s.domain['le'][0], s.domain['le'][1]
+    re1, re2 = s.domain['re'][0], s.domain['re'][1]
+    dx1, dx2 = s.domain['dx'][0], s.domain['dx'][1]
+    Nx1, Nx2 = s.domain['Nx'][0], s.domain['Nx'][1]
+    i = np.arange(Nx1)
+    j = np.arange(Nx2)
+    x = np.linspace(le1+0.5*dx1, re1-0.5*dx1, Nx1)
+    y = np.linspace(le2+0.5*dx2, re2-0.5*dx2, Nx2)
+    # load starpar vtk
+    sp = s.load_starpar_vtk(num, force_override=True)[['x1','x2','mass','mage']]
+    # apply age cut
+    sp = sp[(sp.mage*s.u.Myr < agemax)&
+            (sp.mage*s.u.Myr >= agemin)]
+    # remap the starpar onto a grid
+    sp['i'] = np.floor((sp.x1-le1)/dx1).astype('int32')
+    sp['j'] = np.floor((sp.x2-le2)/dx2).astype('int32')
+    sp = sp.groupby(['j','i']).sum()
+    idx = pd.MultiIndex.from_product([j,i], names=['j','i'])
+    msp = pd.Series(np.zeros(Nx1*Nx2), index=idx)
+    msp[sp.index] = sp.mass
+    msp = msp.unstack().values
+    msp = xr.DataArray(msp, dims=['y','x'], coords=[y,x])
+    return msp
