@@ -1,5 +1,6 @@
 import os
 import os.path as osp
+import pathlib
 import pandas as pd
 import numpy as np
 import xarray as xr
@@ -48,6 +49,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         u = Units(muH=self.muH)
         self.u = u
         self.domain = self._get_domain_from_par(self.par)
+        self.dx, self.dy, self.dz = self.domain['dx']
         try:
             rprof = xr.open_dataset('{}/radial_profile.nc'.format(self.basedir), engine='netcdf4')
             Rring = self.par['problem']['Rring']
@@ -78,6 +80,19 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         except:
             self.rprof = None
 
+    def load_prfm(self, num):
+        """Load prfm quantities
+
+        Parameters
+        ----------
+        num : int
+            Snapshot number.
+        """
+        fname = pathlib.Path(self.basedir, 'prfm_quantities',
+                             'prfm.{:04}.nc'.format(num))
+        return xr.open_dataset(fname)
+
+
 class LoadSimTIGRESSGCAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
@@ -96,6 +111,7 @@ class LoadSimTIGRESSGCAll(object):
             else:
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
+
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
         self.model = model
