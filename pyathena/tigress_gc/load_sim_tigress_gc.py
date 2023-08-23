@@ -90,7 +90,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         """
         fname = pathlib.Path(self.basedir, 'prfm_quantities',
                              'prfm.{:04}.nc'.format(num))
-        return xr.open_dataset(fname)
+        return xr.open_dataset(fname, engine='netcdf4')
 
 
 class LoadSimTIGRESSGCAll(object):
