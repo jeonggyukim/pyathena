@@ -596,8 +596,8 @@ def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
     plt.sca(axs['rho'][0])
     plt.text(0.6, 0.9, r'$t={:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.48, 0.8, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm2)
-             + r'$\,t_{ff}$', transform=plt.gca().transAxes,
+    plt.text(0.48, 0.8, r'$t-t_\mathrm{crit}=$'+r'${:.2f}$'.format(core.tnorm2)
+             + r'$\,\Delta t_\mathrm{coll}$', transform=plt.gca().transAxes,
              backgroundcolor='w')
     plt.text(0.6, 0.7, r'$M={:.2f}$'.format(core.tidal_mass)+r'$\,M_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
@@ -744,8 +744,8 @@ def core_structure(s, pid, num, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
     plt.text(0.5, 0.7, r'$R={:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.05, 0.05, r'$t-t_*=$'+r'${:.2f}$'.format(core.tnorm2)
-             + r'$\,t_{ff}$', transform=plt.gca().transAxes,
+    plt.text(0.05, 0.05, r'$t-t_\mathrm{crit}=$'+r'${:.2f}$'.format(core.tnorm2)
+             + r'$\,\Delta t_\mathrm{coll}$', transform=plt.gca().transAxes,
              backgroundcolor='w')
 
     for ax in axs.flat:
@@ -764,8 +764,9 @@ def core_structure(s, pid, num, rmax=None):
 
 
 def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
-    num = s.num_crit[pid]
-    core = s.cores[pid].loc[num]
+    cores = s.cores[pid]
+    num = cores.attrs['numcrit']
+    core = cores.loc[num]
     rprf = s.rprofs[pid].sel(num=num)
 
     if ax is not None:

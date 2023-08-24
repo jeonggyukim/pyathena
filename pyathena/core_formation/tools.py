@@ -445,6 +445,50 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     return rprf
 
 
+def calculate_lagrangian_props(s, cores, rprofs):
+    # Find critical time
+    nc = critical_time(s, cores.attrs['pid'])
+    tcoll = s.tcoll_cores.loc[cores.attrs['pid']].time
+
+    if np.isnan(nc):
+        tcrit = rcore_crit = mcore_crit = mean_rho_crit = np.nan
+        radius = mass = net_force = tff_crit = np.nan
+    else:
+        tcrit = cores.loc[nc].time
+        rcore_crit = cores.loc[nc].critical_radius
+        mcore_crit = rprofs.sel(num=nc).menc.interp(r=rcore_crit).data[()]
+        mean_rho_crit = mcore_crit / (4*np.pi*rcore_crit**3/3)
+        tff_crit = tfreefall(mean_rho_crit, s.gconst)
+
+        net_force, mass, radius = [], [], []
+        for num, core in cores.iterrows():
+            rprf = rprofs.sel(num=num)
+            # Find radius which encloses mcore_crit.
+            if rprf.menc.isel(r=-1) < mcore_crit:
+                # In this case, no radius up to maximum tidal radius encloses
+                # mcore_crit. This means we are safe to set rcore = Rtidal.
+                radius.append(core.tidal_radius)
+            else:
+                lagrangian_radius = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit,
+                                           rprf.r.isel(r=0), rprf.r.isel(r=-1))
+                radius.append(min(core.tidal_radius, lagrangian_radius))
+            mass.append(rprf.menc.interp(r=radius[-1]).data[()])
+
+            net_force.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
+                              ).interp(r=radius[-1]).data[()])
+
+    lprops = pd.DataFrame(data = dict(radius=radius, mass=mass, net_force=net_force),
+                          index = cores.index)
+    lprops.attrs['rcore_crit'] = rcore_crit
+    lprops.attrs['mcore_crit'] = mcore_crit
+    lprops.attrs['mean_rho_crit'] = mean_rho_crit
+    lprops.attrs['tff_crit'] = tff_crit
+    lprops.attrs['tcrit'] = tcrit
+    lprops.attrs['numcrit'] = nc
+    lprops.attrs['tcoll'] = tcoll
+
+    return lprops
+
 def calculate_cumulative_energies(s, rprf, core):
     """Calculate cumulative energies based on radial profiles
 
@@ -571,45 +615,6 @@ def critical_time(s, pid):
         return np.nan
     else:
         return cores_past_critical[0]
-
-
-def find_lagrangian_core_properties(s, pid):
-    """Finds core mass at t_crit and radius beyond that"""
-    cores = s.cores[pid].copy()
-    rprofs = s.rprofs[pid]
-
-    if not hasattr(s, 'num_crit'):
-        s.find_num_crit()
-    nc = s.num_crit[pid]
-    if np.isnan(nc):
-        cores['radius'] = np.nan
-        cores['mass'] = np.nan
-        cores['fnet'] = np.nan
-        cores['tnorm2'] = np.nan
-    else:
-        rcore_crit = cores.loc[nc].critical_radius
-        mcore_crit = rprofs.sel(num=nc).menc.interp(r=rcore_crit).data[()]
-        mean_rho_crit = mcore_crit / (4*np.pi*rcore_crit**3/3)
-        tff_crit = tfreefall(mean_rho_crit, s.gconst)
-        tcoll = s.tcoll_cores.loc[pid].time
-
-        fnet, mcore, rcore = [], [], []
-        for num, core in cores.iterrows():
-            rprf = rprofs.sel(num=num)
-            if rprf.menc.isel(r=-1) < mcore_crit:
-                rcore.append(core.tidal_radius)
-            else:
-                lagrangian_radius = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit, rprf.r.isel(r=0), rprf.r.isel(r=-1))
-                rcore.append(min(core.tidal_radius, lagrangian_radius))
-            mcore.append(rprf.menc.interp(r=rcore[-1]).data[()])
-
-            fnet.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
-                         ).interp(r=rcore[-1]).data[()])
-        cores['radius'] = rcore
-        cores['mass'] = mcore
-        cores['fnet'] = fnet
-        cores['tnorm2'] = (cores.time - tcoll) / tff_crit
-    return cores
 
 
 def get_coords_minimum(dat):
@@ -820,7 +825,7 @@ def test_resolved_core(s, pid, ncells_min):
         True if a core is resolved, false otherwise.
     """
     cores = s.cores[pid]
-    num = s.num_crit[pid]
+    num = cores.attrs['numcrit']
     if np.isnan(num):
         return False
     ncells = cores.loc[num].radius / s.dx
@@ -849,7 +854,7 @@ def test_isolated_core(s, pid):
         True if a core is isolated, false otherwise.
     """
     cores = s.cores[pid]
-    num = s.num_crit[pid]
+    num = cores.attrs['numcrit']
     if np.isnan(num):
         return False
     pds = s.load_partab(num)
