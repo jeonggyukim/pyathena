@@ -120,10 +120,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 logging.warning("Failed to load radial profiles")
                 pass
 
-            if (hasattr(self, "cores") and hasattr(self, "rprofs")
-                and 'critical_radius' in self.cores[1]):  # Dirty fix, but should work.
-                self.num_crit = self.find_num_crit(force_override=force_override)
-                self.cores = self.set_cores(force_override=force_override)
+            if hasattr(self, "cores") and hasattr(self, "rprofs"):
+                self.cores = self.update_core_props(force_override=force_override)
 
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
@@ -180,34 +178,57 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 isolated_cores.append(pid)
         return isolated_cores
 
-
     @LoadSim.Decorators.check_pickle
-    def find_num_crit(self, prefix='num_crit', savdir=None, force_override=False):
-        """Find the snapshot number at the critical time for each particle"""
-        num_crit = {}
-        for pid in self.pids:
-            num_crit[pid] = tools.critical_time(self, pid)
-        return num_crit
+    def update_core_props(self, ncells_min=10, prefix='cores',
+                          savdir=None, force_override=False):
+        """Update core properties
 
-    @LoadSim.Decorators.check_pickle
-    def set_cores(self, ncells_min=10, prefix='cores', savdir=None, force_override=False):
-        cores = {}
-        for pid in self.pids:
-            cores[pid] = tools.find_lagrangian_core_properties(self, pid)
-        self.cores = cores
+        Calculate lagrangian core properties using the radial profiles
+        Set isolated and resolved flags
+        Add normalized times
 
+        Parameters
+        ----------
+        ncells_min : int, optional
+            Minimum number of cells to be considered 'resolved'
+
+        Returns
+        -------
+        pandas.DataFrame
+            Updated core dataframe.
+        """
         for pid in self.pids:
+            cores = self.cores[pid]  # shallow copy
+            if 'critical_radius' not in cores:
+                continue
+            rprofs = self.rprofs[pid]
+            attrs = cores.attrs.copy()
+            lprops = tools.calculate_lagrangian_props(self, cores, rprofs)
+            attrs.update(lprops.attrs)
+            cores = cores.join(lprops)
+            cores.attrs = attrs
+
+            # Workaround to use pid as an argument in the below
+            self.cores[pid] = cores
+
             # Test resolvedness and isolatedness
             if tools.test_isolated_core(self, pid):
-                cores[pid].attrs['isolated'] = True
+                cores.attrs['isolated'] = True
             else:
-                cores[pid].attrs['isolated'] = False
+                cores.attrs['isolated'] = False
             if tools.test_resolved_core(self, pid, ncells_min):
-                cores[pid].attrs['resolved'] = True
+                cores.attrs['resolved'] = True
             else:
-                cores[pid].attrs['resolved'] = False
+                cores.attrs['resolved'] = False
 
-        return cores
+            cores.insert(1, 'tnorm1',
+                         (cores.time - cores.attrs['tcoll'])
+                          / cores.attrs['tff_crit'])
+            cores.insert(2, 'tnorm2',
+                         (cores.time - cores.attrs['tcrit'])
+                          / (cores.attrs['tcoll'] - cores.attrs['tcrit']))
+
+        return self.cores
 
     @LoadSim.Decorators.check_pickle
     def _load_tcoll_cores(self, prefix='tcoll_cores', savdir=None, force_override=False):
@@ -253,46 +274,34 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             # Remove duplicated nums that formed sink earlier.
             for pid_prev in range(1, pid):
-                if len(cores[pid_prev]) == 0:
-                    continue
                 cc = cores[pid_prev].iloc[-1]
                 num = cc.name
                 lid = cc.leaf_id
-                if num in core.index and core.loc[num].leaf_id == lid:
+                if num in core.index[:-1] and core.loc[num].leaf_id == lid:
                     core = core.loc[num+1:]
+
+            # Read critical TES info and concatenate to self.cores
+            try:
+                # Try reading critical TES pickles
+                tes_crit = []
+                for num in core.index:
+                    fname = pathlib.Path(self.savdir, 'critical_tes',
+                                         'critical_tes.par{}.{:05d}.p'
+                                         .format(pid, num))
+                    tes_crit.append(pd.read_pickle(fname))
+                tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_index()
+                core = core.join(tes_crit)
+
+            except FileNotFoundError:
+                pids_tes_not_found.append(pid)
+                pass
+
+            # Set attributes
+            core.attrs['pid'] = pid
 
             # Assign to attribute
             cores[pid] = core
 
-            # Skip if len(core) == 0. This happens when two sinks
-            # form from the same "node" during one snapshot interval.
-            if len(core) > 0:
-                # Read critical TES info and concatenate to self.cores
-                try:
-                    # Try reading critical TES pickles
-                    tes_crit = []
-                    for num in core.index:
-                        fname = pathlib.Path(self.savdir, 'critical_tes',
-                                             'critical_tes.par{}.{:05d}.p'
-                                             .format(pid, num))
-                        tes_crit.append(pd.read_pickle(fname))
-                    try:
-                        tes_crit = pd.DataFrame(tes_crit).set_index('num')
-                    except KeyError:
-                        print(pid)
-                        print(tes_crit)
-                    tes_crit = tes_crit.sort_index()
-                    cores[pid] = pd.concat([cores[pid], tes_crit],
-                                                axis=1, join='inner').sort_index()
-
-                    # Calculate some derived fields
-                    tcoll = self.tcoll_cores.loc[pid].time
-                    tff = tools.tfreefall(cores[pid].iloc[-1].mean_density, self.gconst)
-                    cores[pid].insert(1, 'tnorm', (cores[pid].time - tcoll) / tff)
-
-                except FileNotFoundError:
-                    pids_tes_not_found.append(pid)
-                    pass
         if len(pids_tes_not_found) > 0:
             logging.warning("Cannot find critical TES information for pid: {}.".format(pids_tes_not_found))
         return cores

@@ -404,7 +404,10 @@ def plot_radial_profile_at_tcrit(s, nrows=5, ncols=6, overwrite=False):
         ax.set_xlabel("")
         ax.set_ylabel("")
         ax.text(0.6, 0.86, f"pid {pid}", transform=ax.transAxes)
-        ax.text(0.6, 0.73, "{:.2f} tff".format(s.cores[pid].loc[s.num_crit[pid]].tnorm2),
+        cores = s.cores[pid]
+        nc = cores.attrs['numcrit']
+        core = cores.loc[nc]
+        ax.text(0.6, 0.73, "{:.2f} tff".format(core.tnorm1),
                 transform=ax.transAxes)
     for ax in axs[:, 0]:
         ax.set_ylabel(r'$\rho/\rho_0$')
