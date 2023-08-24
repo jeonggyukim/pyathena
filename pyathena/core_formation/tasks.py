@@ -397,11 +397,15 @@ def plot_radial_profile_at_tcrit(s, nrows=5, ncols=6, overwrite=False):
 
     if len(s.good_cores()) > nrows*ncols:
         raise ValueError("Number of good cores {} exceeds the number of panels.".format(len(s.good_cores())))
-    fig, axs = plt.subplots(nrows, ncols, figsize=(6*ncols, 4*nrows), sharex=True, gridspec_kw={'hspace':0.05, 'wspace':0.12})
+    fig, axs = plt.subplots(nrows, ncols, figsize=(6*ncols, 4*nrows), sharex=True,
+                            gridspec_kw={'hspace':0.05, 'wspace':0.12})
     for pid, ax in zip(s.good_cores(), axs.flat):
         plots.radial_profile_at_tcrit(s, pid, ax=ax)
         ax.set_xlabel("")
         ax.set_ylabel("")
+        ax.text(0.6, 0.86, f"pid {pid}", transform=ax.transAxes)
+        ax.text(0.6, 0.73, "{:.2f} tff".format(s.cores[pid].loc[s.num_crit[pid]].tnorm2),
+                transform=ax.transAxes)
     for ax in axs[:, 0]:
         ax.set_ylabel(r'$\rho/\rho_0$')
     for ax in axs[-1, :]:

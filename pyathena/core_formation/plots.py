@@ -771,7 +771,7 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     if ax is not None:
         plt.sca(ax)
 
-    plt.plot(rprf.r/core.tidal_radius, rprf.rho, ls='-', marker='+', color='k', lw=lw)
+    plt.plot(rprf.r/core.tidal_radius, rprf.rho/core.center_density, ls='-', marker='+', color='k', lw=lw)
 
     # Overplot critical TES
     tsc = tes.TESc(p=core.pindex, xi_s=core.sonic_radius*np.sqrt(core.center_density))
@@ -779,7 +779,7 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     xi_max = core.tidal_radius*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
-    plt.plot(xi/np.sqrt(core.center_density)/core.tidal_radius, core.center_density*np.exp(u), c='tab:red', lw=lw)
+    plt.plot(xi/np.sqrt(core.center_density)/core.tidal_radius, np.exp(u), c='tab:red', lw=lw)
     plt.axvline(core.critical_radius/core.tidal_radius, color='tab:red', lw=lw/2, ls='--')
 
     # Overplot critical BE
@@ -788,13 +788,11 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     xi_max = core.tidal_radius*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
-    plt.plot(xi/np.sqrt(core.center_density)/core.tidal_radius, core.center_density*np.exp(u), c='tab:blue', lw=lw)
+    plt.plot(xi/np.sqrt(core.center_density)/core.tidal_radius, np.exp(u), c='tab:blue', lw=lw)
     plt.axvline(tsc.get_rcrit()/np.sqrt(core.center_density)/core.tidal_radius, lw=lw/2, c='tab:blue', ls='--')
 
-    # Overplot LP profile
-#    plt.plot(rprf.r/core.tidal_radius, tools.lpdensity(rprf.r, s.cs, s.gconst), 'k--', lw=lw/2)
-
     plt.xlim(0, 1)
+    plt.ylim(2e-3, 1e0)
     plt.xlabel(r'$r/R_\mathrm{tidal}$')
     plt.ylabel(r'$\rho/\rho_0$')
     plt.yscale('log')
