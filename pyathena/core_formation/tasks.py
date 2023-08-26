@@ -287,15 +287,15 @@ def plot_core_evolution(s, pid, num, overwrite=False,
     overwrite : str, optional
         If true, overwrite output files.
     """
-    msg = '[plot_core_evolution] processing model {} pid {} num {}'
-    msg = msg.format(s.basename, pid, num)
-    print(msg)
     fname = Path(s.savdir, 'figures', "{}.par{}.{:05d}.png".format(
         config.PLOT_PREFIX_TCOLL_CORES, pid, num))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
+        print('[plot_core_evolution] file already exists. Skipping...')
         return
-
+    msg = '[plot_core_evolution] processing model {} pid {} num {}'
+    msg = msg.format(s.basename, pid, num)
+    print(msg)
     fig = plots.plot_core_evolution(s, pid, num, emin=emin, emax=emax,
                                     rmax=rmax)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
@@ -313,6 +313,7 @@ def plot_mass_radius(s, pid, overwrite=False):
             config.PLOT_PREFIX_MASS_RADIUS, pid, num))
         fname.parent.mkdir(exist_ok=True)
         if fname.exists() and not overwrite:
+            print('[plot_mass_radius] file already exists. Skipping...')
             return
         plots.mass_radius(s, pid, num, ax=ax)
         fig.savefig(fname, bbox_inches='tight', dpi=200)
@@ -329,6 +330,7 @@ def plot_sink_history(s, num, overwrite=False):
                  config.PLOT_PREFIX_SINK_HISTORY, num))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
+        print('[plot_sink_history] file already exists. Skipping...')
         return
     ds = s.load_hdf5(num, load_method='yt')
     pds = s.load_partab(num)
@@ -342,6 +344,7 @@ def plot_core_structure(s, pid, overwrite=False):
     for num in s.cores[pid].index:
         fname = Path(s.savdir, 'figures', "core_structure.par{}.{:05d}.png".format(pid, num))
         if fname.exists() and not overwrite:
+            print('[plot_core_structure] file already exists. Skipping...')
             return
         msg = '[plot_core_evolution] processing model {} pid {} num {}'
         msg = msg.format(s.basename, pid, num)
@@ -369,6 +372,7 @@ def plot_diagnostics(s, pid, overwrite=False):
                  'diagnostics_normalized.par{}.png'.format(pid))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
+        print('[plot_diagnostics] file already exists. Skipping...')
         return
 
     msg = '[plot_diagnostics] model {} pid {}'
@@ -390,6 +394,7 @@ def plot_radial_profile_at_tcrit(s, nrows=5, ncols=6, overwrite=False):
     fname = Path(s.savdir, 'figures', 'radial_profile_at_tcrit.png')
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
+        print('[plot_radial_profile_at_tcrit] file already exists. Skipping...')
         return
 
     msg = '[plot_radial_profile_at_tcrit] Processing model {}'
@@ -432,6 +437,7 @@ def plot_pdfs(s, overwrite=False):
             config.PLOT_PREFIX_PDF_PSPEC, num))
         fname.parent.mkdir(exist_ok=True)
         if fname.exists() and not overwrite:
+            print('[plot_pdfs] file already exists. Skipping...')
             continue
         ds = s.load_hdf5(num, load_method='pyathena')
         plots.plot_PDF(s, ds, axs[0])

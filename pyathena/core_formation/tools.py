@@ -489,6 +489,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
 
     return lprops
 
+
 def calculate_cumulative_energies(s, rprf, core):
     """Calculate cumulative energies based on radial profiles
 
