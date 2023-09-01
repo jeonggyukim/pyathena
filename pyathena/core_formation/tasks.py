@@ -422,7 +422,7 @@ def plot_radial_profile_at_tcrit(s, nrows=5, ncols=6, overwrite=False):
     plt.close(fig)
 
 
-def plot_pdfs(s, overwrite=False):
+def plot_pdfs(s, num, overwrite=False):
     """Creates density PDF and velocity power spectrum for a given model
 
     Save figures in {basedir}/figures for all snapshots.
@@ -430,23 +430,21 @@ def plot_pdfs(s, overwrite=False):
     Args:
         s: pyathena.LoadSim instance
     """
+    fname = Path(s.savdir, 'figures', "{}.{:05d}.png".format(
+        config.PLOT_PREFIX_PDF_PSPEC, num))
+    fname.parent.mkdir(exist_ok=True)
+    if fname.exists() and not overwrite:
+        print('[plot_pdfs] file already exists. Skipping...')
+        return
     fig, axs = plt.subplots(1, 2, figsize=(12, 6))
     ax1_twiny = axs[1].twiny()
-    for num in s.nums:
-        fname = Path(s.savdir, 'figures', "{}.{:05d}.png".format(
-            config.PLOT_PREFIX_PDF_PSPEC, num))
-        fname.parent.mkdir(exist_ok=True)
-        if fname.exists() and not overwrite:
-            print('[plot_pdfs] file already exists. Skipping...')
-            continue
-        ds = s.load_hdf5(num, load_method='pyathena')
-        plots.plot_PDF(s, ds, axs[0])
-        plots.plot_Pspec(s, ds, axs[1], ax1_twiny)
-        fig.tight_layout()
-        fig.savefig(fname, bbox_inches='tight')
-        for ax in axs:
-            ax.cla()
-        ax1_twiny.cla()
+
+    ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'],
+                     load_method='pyathena')
+    plots.plot_PDF(s, ds, axs[0])
+    plots.plot_Pspec(s, ds, axs[1], ax1_twiny)
+    fig.tight_layout()
+    fig.savefig(fname, bbox_inches='tight')
     plt.close(fig)
 
 
