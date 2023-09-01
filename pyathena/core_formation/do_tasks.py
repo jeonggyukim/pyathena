@@ -150,8 +150,11 @@ if __name__ == "__main__":
                 p.map(wrapper, s.nums)
 
         if args.plot_pdfs:
+            def wrapper(num):
+                tasks.plot_pdfs(s, num, overwrite=args.overwrite)
             print(f"draw PDF-power spectrum plots for model {mdl}")
-            tasks.plot_pdfs(s, overwrite=args.overwrite)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
 
         if args.plot_diagnostics:
             print(f"draw diagnostics plots for model {mdl}")
