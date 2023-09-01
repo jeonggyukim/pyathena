@@ -453,6 +453,8 @@ def calculate_lagrangian_props(s, cores, rprofs):
     if np.isnan(nc):
         tcrit = rcore_crit = mcore_crit = mean_rho_crit = np.nan
         radius = mass = net_force = tff_crit = np.nan
+        radius2 = mass2 = net_force2 = np.nan
+        radius3 = mass3 = net_force3 = np.nan
     else:
         tcrit = cores.loc[nc].time
         rcore_crit = cores.loc[nc].critical_radius
@@ -461,8 +463,11 @@ def calculate_lagrangian_props(s, cores, rprofs):
         tff_crit = tfreefall(mean_rho_crit, s.gconst)
 
         net_force, mass, radius = [], [], []
+        net_force2, mass2, radius2 = [], [], []
+        net_force3, mass3, radius3 = [], [], []
         for num, core in cores.iterrows():
             rprf = rprofs.sel(num=num)
+
             # Find radius which encloses mcore_crit.
             if rprf.menc.isel(r=-1) < mcore_crit:
                 # In this case, no radius up to maximum tidal radius encloses
@@ -472,12 +477,31 @@ def calculate_lagrangian_props(s, cores, rprofs):
                 lagrangian_radius = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit,
                                            rprf.r.isel(r=0), rprf.r.isel(r=-1))
                 radius.append(min(core.tidal_radius, lagrangian_radius))
+
+            # Experimental: switch to Eulerian view before t_crit
+            if num < nc:
+                radius2.append(rcore_crit)
+                radius3.append(rcore_crit)
+            else:
+                lagrangian_radius = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit,
+                                           rprf.r.isel(r=0), rprf.r.isel(r=-1))
+                radius2.append(min(core.tidal_radius, lagrangian_radius))
+                radius3.append(lagrangian_radius)
+
             mass.append(rprf.menc.interp(r=radius[-1]).data[()])
+            mass2.append(rprf.menc.interp(r=radius2[-1]).data[()])
+            mass3.append(rprf.menc.interp(r=radius3[-1]).data[()])
 
             net_force.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
                               ).interp(r=radius[-1]).data[()])
+            net_force2.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
+                              ).interp(r=radius2[-1]).data[()])
+            net_force3.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
+                              ).interp(r=radius3[-1]).data[()])
 
-    lprops = pd.DataFrame(data = dict(radius=radius, mass=mass, net_force=net_force),
+    lprops = pd.DataFrame(data = dict(radius=radius, mass=mass, net_force=net_force,
+                                      radius2=radius2, mass2=mass2, net_force2=net_force2,
+                                      radius3=radius3, mass3=mass3, net_force3=net_force3),
                           index = cores.index)
     lprops.attrs['rcore_crit'] = rcore_crit
     lprops.attrs['mcore_crit'] = mcore_crit
