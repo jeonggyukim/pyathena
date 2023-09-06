@@ -772,28 +772,31 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     if ax is not None:
         plt.sca(ax)
 
-    plt.plot(rprf.r/core.tidal_radius, rprf.rho/core.center_density, ls='-', marker='+', color='k', lw=lw)
+#    r0 = core.tidal_radius
+    r0 = core.critical_radius
+
+    plt.plot(rprf.r/r0, rprf.rho/core.center_density, ls='-', marker='+', color='k', lw=lw)
 
     # Overplot critical TES
     tsc = tes.TESc(p=core.pindex, xi_s=core.sonic_radius*np.sqrt(core.center_density))
     xi_min = rprf.r[0].data[()]*np.sqrt(core.center_density)
-    xi_max = core.tidal_radius*np.sqrt(core.center_density)
+    xi_max = r0*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
-    plt.plot(xi/np.sqrt(core.center_density)/core.tidal_radius, np.exp(u), c='tab:red', lw=lw)
-    plt.axvline(core.critical_radius/core.tidal_radius, color='tab:red', lw=lw/2, ls='--')
+    plt.plot(xi/np.sqrt(core.center_density)/r0, np.exp(u), c='tab:red', lw=lw)
+#    plt.axvline(core.critical_radius/r0, color='tab:red', lw=lw/2, ls='--')
 
     # Overplot critical BE
     tsc = tes.TESc()
     xi_min = rprf.r[0].data[()]*np.sqrt(core.center_density)
-    xi_max = core.tidal_radius*np.sqrt(core.center_density)
+    xi_max = r0*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
-    plt.plot(xi/np.sqrt(core.center_density)/core.tidal_radius, np.exp(u), c='tab:blue', lw=lw)
-    plt.axvline(tsc.get_rcrit()/np.sqrt(core.center_density)/core.tidal_radius, lw=lw/2, c='tab:blue', ls='--')
+    plt.plot(xi/np.sqrt(core.center_density)/r0, np.exp(u), c='tab:blue', lw=lw)
+    plt.axvline(tsc.get_rcrit()/np.sqrt(core.center_density)/r0, lw=lw/2, c='tab:blue', ls='--')
 
     plt.xlim(0, 1)
-    plt.ylim(2e-3, 1e0)
+    plt.ylim(5e-3, 1e0)
     plt.xlabel(r'$r/R_\mathrm{tidal}$')
     plt.ylabel(r'$\rho/\rho_0$')
     plt.yscale('log')
@@ -880,7 +883,8 @@ def plot_Pspec(s, ds, ax=None, ax_twin=None):
     Pk.plot(marker='+')
     plt.yscale('log')
     plt.xscale('log')
-    plt.plot(Pk.k, Pk[0]*(Pk.k/Pk.k.min())**(-4), 'b--', label=r'$n=-4$')
+    plt.plot(Pk.k, Pk[0]*(Pk.k/Pk.k.min())**(-4), 'k--', lw=1, label=r'$n=-4$')
+    plt.plot(Pk.k, Pk[0]*(Pk.k/Pk.k.min())**(-(11/3)), 'k-.', lw=1, label=r'$n=-11/3$')
     plt.xlim(kmin, kmax)
     plt.xlabel(r'$k/L_J^{-1}$')
     plt.ylim(1e-7, 1e3)
@@ -891,10 +895,11 @@ def plot_Pspec(s, ds, ax=None, ax_twin=None):
     else:
         plt.twiny()
     plt.xscale('log')
-    xticks = np.array([1e-1, 1e0, 1e1, 1e2])
+    xticks = np.array([1e-2, 1e-1, 1e0, 1e1, 1e2])
     plt.gca().set_xticks(1/xticks)
     plt.gca().set_xticklabels(xticks)
     plt.xlim(1/lmax, 1/lmin)
+    plt.axvline(s.dx, ls='--', c='k', lw=1)
     plt.xlabel(r'$l/L_J$')
 
 
