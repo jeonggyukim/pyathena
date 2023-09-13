@@ -776,7 +776,7 @@ def plot_pv_diagram_for_fixed_pressure(logrhoc, rsonic0):
 
 
 def get_critical_tes(xi_s=None, mach=None, alpha_vir=None, mfrac=None,
-                     rhoe=None, lmb_sonic=None):
+                     rhoe=None, rsonic=None, pindex=None):
     """Top-level wrapper function to calculate critical TES
 
     Parameters
@@ -789,16 +789,16 @@ def get_critical_tes(xi_s=None, mach=None, alpha_vir=None, mfrac=None,
     -----
     """
     cond = (xi_s is not None and mach is None and alpha_vir is None
-            and mfrac is None and rhoe is None and lmb_sonic is None)
+            and mfrac is None and rhoe is None and rsonic is None)
     if cond:
         res = _get_critical_tes_at_fixed_rhoc(xi_s)
     cond = (mach is not None and alpha_vir is not None
             and (mfrac is not None or rhoe is not None))
     if cond:
         res = _get_critical_tes_cloud(mach, alpha_vir, mfrac, rhoe)
-    cond = rhoe is not None and lmb_sonic is not None
+    cond = rhoe is not None and rsonic is not None and pindex is not None
     if cond:
-        res = _get_critical_tes_at_fixed_rhoe(rhoe, lmb_sonic)
+        res = _get_critical_tes_at_fixed_rhoe(rhoe, rsonic, pindex)
     return res
 
 
@@ -831,7 +831,7 @@ def _get_critical_tes_at_fixed_rhoc(xi_s):
     return dcrit, rcrit, mcrit
 
 
-def _get_critical_tes_at_fixed_rhoe(rhoe, lmb_sonic, p=0.5):
+def _get_critical_tes_at_fixed_rhoe(rhoe, rsonic, p):
     """Calculate critical turbulent equilibrium sphere
 
     Critical mass of turbulent equilibrium sphere is given by
@@ -844,8 +844,8 @@ def _get_critical_tes_at_fixed_rhoe(rhoe, lmb_sonic, p=0.5):
     Parameters
     ----------
     rhoe : edge density
-    lmb_sonic : sonic radius
-    p (optional) : power law index for the linewidth-size relation
+    rsonic : sonic radius
+    p : power law index for the linewidth-size relation
 
     Returns
     -------
@@ -853,15 +853,22 @@ def _get_critical_tes_at_fixed_rhoe(rhoe, lmb_sonic, p=0.5):
     R : radius of the critical TES
     M : mass of the critical TES
     """
-    LJ_e = rhoe**-0.5
-    MJ_e = rhoe**-0.5
-    xi_s = lmb_sonic / LJ_e
-    tes = TESe(p, xi_s)
-    rat, xi0, m = tes.get_crit()
-    rhoc = rat*rhoe
-    R = LJ_e*xi0
-    M = MJ_e*m
-    return rhoc, R, M
+    def get_rhoe(rhoc, rs, p):
+        LJ_c = MJ_c = 1/np.sqrt(rhoc)
+        xi_s = rs/LJ_c
+        tsc = TESc(p=p, xi_s=xi_s)
+        rcrit = tsc.get_rcrit()
+        u, _ = tsc.solve(rcrit)
+        return rhoc*np.exp(u)
+
+    rhoc = 10**brentq(lambda x: get_rhoe(10**x, rsonic, p) - rhoe, 0, 5)
+    LJ_c = MJ_c = 1/np.sqrt(rhoc)
+    xi_s = rsonic/LJ_c
+    tsc = TESc(p=p, xi_s=xi_s)
+    rcrit = tsc.get_rcrit()
+    mcrit = tsc.get_mass(rcrit)
+
+    return rhoc, rcrit*LJ_c, mcrit*MJ_c
 
 
 def _get_critical_tes_cloud(mach, alpha_vir, mfrac=None, rhoe=None):
