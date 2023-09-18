@@ -208,7 +208,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores = cores.join(lprops)
             cores.attrs = attrs
 
-            # Workaround to use pid as an argument in the below
+            # Workaround to use pid as an argument in the function calls below
             self.cores[pid] = cores
 
             # Test resolvedness and isolatedness
@@ -227,6 +227,17 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.insert(2, 'tnorm2',
                          (cores.time - cores.attrs['tcrit'])
                           / (cores.attrs['tcoll'] - cores.attrs['tcrit']))
+            cores.attrs['dt_build'] = cores.attrs['tcrit'] - cores.iloc[0].time
+            cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
+            mcore = cores.attrs['mcore_crit']
+            phst = self.load_parhst(pid)
+            idx = phst.mass.sub(mcore).abs().argmin()
+            if np.isnan(mcore) or idx == phst.index[-1]:
+                tf = np.nan
+            else:
+                tf = phst.loc[idx].time
+            cores.attrs['tinfall_end'] = tf
+            cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
         return self.cores
 
