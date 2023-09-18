@@ -636,9 +636,20 @@ def critical_time(s, pid):
     cond = ((cores.tidal_radius > cores.critical_radius)
             & (menc > cores.critical_mass))
     cores_past_critical = cores.index[cond]
+
     if len(cores_past_critical) == 0:
         return np.nan
     else:
+        # Select last time when the conditions are met
+        foo = []
+        foo.append(cores_past_critical[-1])
+        for i in range(cores_past_critical.size - 1):
+            if cores_past_critical[-2-i] == cores_past_critical[-1-i] - 1:
+                foo.append(cores_past_critical[-2-i])
+            else:
+                break
+        foo = foo[::-1]
+        cores_past_critical = foo
         return cores_past_critical[0]
 
 
