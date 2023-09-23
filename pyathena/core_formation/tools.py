@@ -737,12 +737,11 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
     if mfrac is None and rho_amb is None:
         raise ValueError("Specify either mfrac or rho_amb")
     s = load_sim_core_formation.LoadSimCoreFormation(Mach)
-    lmb_sonic = get_sonic(Mach, Lbox)
+    rsonic = get_sonic(Mach, Lbox)
     if rho_amb is None:
         rho_amb = s.get_contrast(mfrac)
-    rhoc_BE, R_BE, M_BE = tes.get_critical_tes(rhoe=rho_amb, lmb_sonic=np.inf)
-    rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rhoe=rho_amb,
-                                                  lmb_sonic=lmb_sonic)
+    rhoc_BE, R_BE, M_BE = tes.get_critical_tes(rhoe=rho_amb, rsonic=np.inf, pindex=0.5)
+    rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rhoe=rho_amb, rsonic=rsonic, pindex=0.5)
     R_LP_BE = lpradius(M_BE, s.cs, s.gconst)
     R_LP_TES = lpradius(M_TES, s.cs, s.gconst)
     dx_req_LP = R_LP_BE/ncells_min
@@ -751,7 +750,7 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
     ncells_req_BE = np.ceil(Lbox/dx_req_BE).astype(int)
 
     print(f"Mach number = {Mach}")
-    print("sonic length = {}".format(lmb_sonic))
+    print("sonic length = {}".format(rsonic))
     print("Ambient density={:.3f}".format(rho_amb))
     print("Bonner-Ebert mass = {:.3f}".format(M_BE))
     print("Bonner-Ebert radius = {:.3f}".format(R_BE))
