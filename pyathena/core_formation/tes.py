@@ -527,6 +527,8 @@ class TESc:
         return m.squeeze()[()] # return scala when the input is scala
 
     def get_bulk_modulus(self, xi):
+        # Perturbation with the fixed turbulent velocity field
+        # i.e., p = r_s = const.
         u, du = self.solve(xi)
         m = self.get_mass(xi)
         f = 1 + (xi / self.xi_s)**(2*self.p)
@@ -538,6 +540,19 @@ class TESc:
         kappa_tot = (2/3)*num/denom
         num = 1 + 0.5*dsu + 0.5*dslogxi*xi*du
         kappa_thm = (2/3)*num/denom
+
+        # ======= EXPERIMENTAL ========
+        # Perturbation at fixed dv_r at the boundary.
+#        u, du = self.solve(xi)
+#        m = self.get_mass(xi)
+#        f = 1 + (xi / self.xi_s)**(2*self.p)
+#        dsu, dslogm = self._get_sonic_radius_derivatives(xi)
+#        pov = m / (4*np.pi*xi**3*np.exp(u))
+#        dslogf = -2*self.p*(1 - 1/f)
+#        num = 1 + pov*(0.5*dsu + 0.5*dslogf + dslogm - 0.5*np.pi*m/(f*xi))
+#        denom = 1. - pov*(1 - dslogm)
+#        kappa_tot = (2/3)*num/denom
+#        kappa_thm = None
 
         return kappa_thm, kappa_tot
 
@@ -967,31 +982,55 @@ if __name__ == "__main__":
     Calculate critical density, radius, and mass of the TES at a given
     central density, for different sonic radii.
     """
+    from scipy.integrate import simpson
     # Dimensionless sonic radius r_s / L_{J,c}
-    rsonic = np.logspace(-1, 2, 4096)
+    rsonic = np.logspace(-2, 3, 4096)
 
-    for pindex in [0.3, 0.5, 0.7]:
+    for pindex in [0.1, 0.3, 0.5, 0.7, 0.9]:
         critical_mass, critical_radius, critical_density = [], [], []
+        velocity_dispersion, edge_velocity_dispersion = [], []
         for xi_s in rsonic:
             tsc = TESc(xi_s=xi_s, p=pindex)
             rcrit = tsc.get_rcrit('tot')
             if np.isnan(rcrit):
                 dcrit = np.nan
                 mcrit = np.nan
+                mean_sigv = np.nan
+                edge_sigv = np.nan
+            elif np.isinf(rcrit):
+                dcrit = 0
+                mcrit = np.infty
+                mean_sigv = np.infty
+                edge_sigv = np.infty
             else:
                 u, du = tsc.solve(rcrit)
-                dcrit = np.exp(u[0])
+                dcrit = np.exp(u)
                 mcrit = tsc.get_mass(rcrit)
+
+                # Calculate mass-weighted velocity dispersion
+                xi = np.linspace(tsc._xi_min, rcrit, 512)
+                u, _ = tsc.solve(xi)
+                dv = (xi / xi_s)**pindex
+                dm = 4*np.pi*xi**2*np.exp(u)
+                mean_sigv = simpson(dm*dv, x=xi) / simpson(dm, x=xi)
+                edge_sigv = (rcrit / xi_s)**pindex
             critical_density.append(dcrit)
             critical_radius.append(rcrit)
             critical_mass.append(mcrit)
+            velocity_dispersion.append(mean_sigv)
+            edge_velocity_dispersion.append(edge_sigv)
+
         critical_density = np.array(critical_density)
         critical_radius = np.array(critical_radius)
         critical_mass = np.array(critical_mass)
+        velocity_dispersion = np.array(velocity_dispersion)
+        edge_velocity_dispersion = np.array(edge_velocity_dispersion)
         res = dict(rsonic=rsonic,
                    dcrit=critical_density,
                    rcrit=critical_radius,
-                   mcrit=critical_mass)
+                   mcrit=critical_mass,
+                   sigv=velocity_dispersion,
+                   edge_sigv=edge_velocity_dispersion)
         fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_p{}.p".format(pindex)
         with open(fname, "wb") as handle:
             pickle.dump(res, handle)
