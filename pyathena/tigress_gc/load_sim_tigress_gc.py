@@ -9,7 +9,7 @@ from ..load_sim import LoadSim
 from ..util.units import Units
 from .hst import Hst
 from .slc_prj import SliceProj
-from pyathena.tigress_gc import config
+from pyathena.tigress_gc import config, tools
 
 class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
     """LoadSim class for analyzing TIGRESS-GC simulations.
@@ -80,7 +80,9 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         except:
             self.rprof = None
 
-    def load_prfm(self, num):
+    @LoadSim.Decorators.check_pickle
+    def load_prfm(self, prefix='prfm_quantities', savdir=None,
+                  force_override=False):
         """Load prfm quantities
 
         Parameters
@@ -88,9 +90,17 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         num : int
             Snapshot number.
         """
-        fname = pathlib.Path(self.basedir, 'prfm_quantities',
-                             'prfm.{:04}.nc'.format(num))
-        return xr.open_dataset(fname, engine='netcdf4')
+        prfm = []
+        for num in self.nums[config.NUM_START:]:
+            fname = pathlib.Path(self.basedir, 'prfm_quantities',
+                                 'prfm.{:04}.nc'.format(num))
+            time = self.load_vtk(num).domain['time']*self.u.Myr
+            ds = xr.open_dataset(fname, engine='netcdf4').expand_dims(dict(t=[time]))
+            prfm.append(ds)
+        prfm = xr.concat(prfm, 't')
+        tools.add_derived_fields(self, prfm, 'R')
+        prfm = prfm.where(prfm.R < config.Rmax[self.basename.split('_')[0]], other=np.nan)
+        return prfm
 
 
 class LoadSimTIGRESSGCAll(object):
