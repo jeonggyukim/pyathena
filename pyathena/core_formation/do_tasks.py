@@ -9,9 +9,12 @@ from pyathena.core_formation import config, tasks, tools
 if __name__ == "__main__":
     # load all models
     models = {f"M5J2P{iseed}N512": f"/scratch/gpfs/sm69/cores/M5.J2.P{iseed}.N512"
-          for iseed in range(0, 16)}
-    for iseed in range(0, 5):
+          for iseed in range(0, 25)}
+    for iseed in range(0, 6):
         models[f"M10J4P{iseed}N1024"] = f"/scratch/gpfs/sm69/cores/M10.J4.P{iseed}.N1024"
+    models['M10J4P3N1024newsink'] = "/scratch/gpfs/sm69/cores/M10.J4.P3.N1024.newsink"
+    models['M5J2P3N512newsink'] = "/scratch/gpfs/sm69/cores/M5.J2.P3.N512.newsink"
+    models['M5J2P0N512dfloor'] = "/scratch/gpfs/sm69/cores/M5.J2.P0.N512.dfloor3"
     sa = pa.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
@@ -33,6 +36,8 @@ if __name__ == "__main__":
                         help="Calculate radial profiles of each cores")
     parser.add_argument("-t", "--critical-tes", action="store_true",
                         help="Calculate critical TES of each cores")
+    parser.add_argument("--linewidth-size", action="store_true",
+                        help="Calculate linewidth-size relation")
     parser.add_argument("-o", "--overwrite", action="store_true",
                         help="Overwrite everything")
     parser.add_argument("-m", "--make-movie", action="store_true",
@@ -93,7 +98,8 @@ if __name__ == "__main__":
                   " model {}"
             print(msg.format(mdl))
             for pid in pids:
-                rmax = s.cores[pid].tidal_radius.max()
+#                rmax = s.cores[pid].tidal_radius.max()
+                rmax = None
                 def wrapper(num):
                     tasks.radial_profile(s, pid, num,
                                          overwrite=args.overwrite,
@@ -119,6 +125,18 @@ if __name__ == "__main__":
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}")
 #        tasks.resample_hdf5(s)
+
+        # Calculate radial profiles of t_coll cores and pickle them.
+        if args.linewidth_size:
+            for num in [30, 40, 50, 60]:
+                ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'])
+                ds['vel1'] = ds.mom1/ds.dens
+                ds['vel2'] = ds.mom2/ds.dens
+                ds['vel3'] = ds.mom3/ds.dens
+                def wrapper(seed):
+                    tasks.calculate_linewidth_size(s, num, seed, overwrite=args.overwrite, ds=ds)
+                with Pool(args.np) as p:
+                    p.map(wrapper, np.arange(1000))
 
         # make plots
         if args.plot_core_evolution:
@@ -165,7 +183,7 @@ if __name__ == "__main__":
         if args.make_movie:
             print(f"create movies for model {mdl}")
             srcdir = Path(s.savdir, "figures")
-            plot_prefix = [config.PLOT_PREFIX_SINK_HISTORY]
+            plot_prefix = [config.PLOT_PREFIX_PDF_PSPEC, config.PLOT_PREFIX_SINK_HISTORY]
             for prefix in plot_prefix:
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
                                 srcdir])

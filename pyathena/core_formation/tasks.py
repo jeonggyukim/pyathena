@@ -13,7 +13,7 @@ import glob
 from pyathena.core_formation import plots
 from pyathena.core_formation import tools
 from pyathena.core_formation import config
-from pyathena.util import uniform
+from pyathena.util import uniform, transform
 from grid_dendro import dendrogram
 
 
@@ -420,6 +420,54 @@ def plot_radial_profile_at_tcrit(s, nrows=5, ncols=6, overwrite=False):
         ax.set_xlabel(r'$r/R_\mathrm{tidal}$')
     fig.savefig(fname, bbox_inches='tight', dpi=200)
     plt.close(fig)
+
+
+def calculate_linewidth_size(s, num, seed, overwrite=False, ds=None):
+    # Check if file exists
+    ofname = Path(s.savdir, 'linewidth_size',
+                  'linewidth_size.{:05d}.{}.nc'.format(num, seed))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[linewidth_size] file already exists. Skipping...')
+        return
+
+    msg = '[linewidth_size] processing model {} num {} seed {}'
+    print(msg.format(s.basename, num, seed))
+
+    if ds is None:
+        ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'])
+        ds['vel1'] = ds.mom1/ds.dens
+        ds['vel2'] = ds.mom2/ds.dens
+        ds['vel3'] = ds.mom3/ds.dens
+
+    rng = np.random.default_rng(seed)
+    i, j, k = rng.integers(low=0, high=511, size=(3))
+    origin = (ds.x.isel(x=i).data[()],
+              ds.y.isel(y=j).data[()],
+              ds.z.isel(z=k).data[()])
+
+    d, origin = tools.recenter_dataset(ds, origin)
+    d.coords['r'] = np.sqrt((d.z - origin[2])**2 + (d.y - origin[1])**2 + (d.x - origin[0])**2)
+
+    rmax = s.Lbox/2
+    nmax = np.floor(rmax/s.dx) + 1
+    edges = np.insert(np.arange(s.dx/2, (nmax + 1)*s.dx, s.dx), 0, 0)
+    d = d.sel(x=slice(origin[0] - edges[-1], origin[0] + edges[-1]),
+              y=slice(origin[1] - edges[-1], origin[1] + edges[-1]),
+              z=slice(origin[2] - edges[-1], origin[2] + edges[-1]))
+
+    rprf = {}
+    for k in ['vel1', 'vel2', 'vel3']:
+        rprf[k] = transform.groupby_bins(d[k], 'r', edges, cumulative=True)
+        rprf[k+'_sq'] = transform.groupby_bins(d[k]**2, 'r', edges, cumulative=True)
+        rprf['d'+k] = np.sqrt(rprf[k+'_sq'] - rprf[k]**2)
+    rprf['rho'] = transform.groupby_bins(d['dens'], 'r', edges, cumulative=True)
+    rprf = xr.Dataset(rprf)
+
+    # write to file
+    if ofname.exists():
+        ofname.unlink()
+    rprf.to_netcdf(ofname)
 
 
 def plot_pdfs(s, num, overwrite=False):
