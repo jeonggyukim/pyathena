@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 import pandas as pd
-from scipy.special import erfinv
+from scipy.special import erfcinv
 from scipy import odr
 from scipy.optimize import brentq
 from pyathena.util import transform
@@ -60,7 +60,7 @@ class LognormalPDF:
         frac : float
             Mass fraction.
         """
-        x = self.mu + np.sqrt(2)*self.sigma*erfinv(2*frac - 1)
+        x = self.mu + np.sqrt(2)*self.sigma*erfcinv(2 - 2*frac)
         return np.exp(x)
 
 
