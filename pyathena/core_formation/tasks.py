@@ -422,29 +422,49 @@ def plot_radial_profile_at_tcrit(s, nrows=5, ncols=6, overwrite=False):
     plt.close(fig)
 
 
-def calculate_linewidth_size(s, num, seed, overwrite=False, ds=None):
-    # Check if file exists
-    ofname = Path(s.savdir, 'linewidth_size',
-                  'linewidth_size.{:05d}.{}.nc'.format(num, seed))
-    ofname.parent.mkdir(exist_ok=True)
-    if ofname.exists() and not overwrite:
-        print('[linewidth_size] file already exists. Skipping...')
-        return
-
-    msg = '[linewidth_size] processing model {} num {} seed {}'
-    print(msg.format(s.basename, num, seed))
-
+def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=None):
     if ds is None:
         ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'])
         ds['vel1'] = ds.mom1/ds.dens
         ds['vel2'] = ds.mom2/ds.dens
         ds['vel3'] = ds.mom3/ds.dens
 
-    rng = np.random.default_rng(seed)
-    i, j, k = rng.integers(low=0, high=511, size=(3))
-    origin = (ds.x.isel(x=i).data[()],
-              ds.y.isel(y=j).data[()],
-              ds.z.isel(z=k).data[()])
+    if seed is not None and pid is not None:
+        raise ValueError("Provide either seed or pid, not both")
+    elif seed is not None:
+        # Check if file exists
+        ofname = Path(s.savdir, 'linewidth_size',
+                      'linewidth_size.{:05d}.{}.nc'.format(num, seed))
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            print('[linewidth_size] file already exists. Skipping...')
+            return
+
+        msg = '[linewidth_size] processing model {} num {} seed {}'
+        print(msg.format(s.basename, num, seed))
+
+        rng = np.random.default_rng(seed)
+        i, j, k = rng.integers(low=0, high=511, size=(3))
+        origin = (ds.x.isel(x=i).data[()],
+                  ds.y.isel(y=j).data[()],
+                  ds.z.isel(z=k).data[()])
+    elif pid is not None:
+        # Check if file exists
+        ofname = Path(s.savdir, 'linewidth_size',
+                      'linewidth_size.{:05d}.par{}.nc'.format(num, pid))
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            print('[linewidth_size] file already exists. Skipping...')
+            return
+
+        msg = '[linewidth_size] processing model {} num {} pid {}'
+        print(msg.format(s.basename, num, pid))
+
+        nc = s.cores[pid].attrs['numcrit']
+        lid = s.cores[pid].loc[nc].leaf_id
+        origin = tools.get_coords_node(s, lid)
+    else:
+        raise ValueError("Provide either seed or pid")
 
     d, origin = tools.recenter_dataset(ds, origin)
     d.coords['r'] = np.sqrt((d.z - origin[2])**2 + (d.y - origin[1])**2 + (d.x - origin[0])**2)
