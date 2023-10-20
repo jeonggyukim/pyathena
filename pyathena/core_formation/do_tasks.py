@@ -8,13 +8,13 @@ from pyathena.core_formation import config, tasks, tools
 
 if __name__ == "__main__":
     # load all models
-    models = {f"M5J2P{iseed}N512": f"/scratch/gpfs/sm69/cores/M5.J2.P{iseed}.N512"
-          for iseed in range(0, 25)}
-    for iseed in range(0, 6):
-        models[f"M10J4P{iseed}N1024"] = f"/scratch/gpfs/sm69/cores/M10.J4.P{iseed}.N1024"
-    models['M10J4P3N1024newsink'] = "/scratch/gpfs/sm69/cores/M10.J4.P3.N1024.newsink"
-    models['M5J2P3N512newsink'] = "/scratch/gpfs/sm69/cores/M5.J2.P3.N512.newsink"
-    models['M5J2P0N512dfloor'] = "/scratch/gpfs/sm69/cores/M5.J2.P0.N512.dfloor3"
+    m1 = {f"M5J2P{iseed}N512": f"/scratch/gpfs/sm69/cores/new/M5.J2.P{iseed}.N512" for iseed in range(0, 35)}
+    m2 = {f"M10J4P{iseed}N1024": f"/scratch/gpfs/sm69/cores/new/M10.J4.P{iseed}.N1024" for iseed in range(0, 5)}
+    m3 = {f"M5J2P{iseed}N256": f"/scratch/gpfs/sm69/cores/new/M5.J2.P{iseed}.N256" for iseed in range(0, 1)}
+    models = {**m1, **m2, **m3}
+#    models['M10J4P3N1024newsink'] = "/scratch/gpfs/sm69/cores/M10.J4.P3.N1024.newsink"
+#    models['M5J2P3N512newsink'] = "/scratch/gpfs/sm69/cores/M5.J2.P3.N512.newsink"
+#    models['M5J2P0N512dfloor'] = "/scratch/gpfs/sm69/cores/M5.J2.P0.N512.dfloor3"
     sa = pa.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
@@ -98,8 +98,8 @@ if __name__ == "__main__":
                   " model {}"
             print(msg.format(mdl))
             for pid in pids:
-#                rmax = s.cores[pid].tidal_radius.max()
-                rmax = None
+                rmax = s.cores[pid].tidal_radius.max()
+#                rmax = None
                 def wrapper(num):
                     tasks.radial_profile(s, pid, num,
                                          overwrite=args.overwrite,
@@ -134,9 +134,15 @@ if __name__ == "__main__":
                 ds['vel2'] = ds.mom2/ds.dens
                 ds['vel3'] = ds.mom3/ds.dens
                 def wrapper(seed):
-                    tasks.calculate_linewidth_size(s, num, seed, overwrite=args.overwrite, ds=ds)
+                    tasks.calculate_linewidth_size(s, num, seed=seed, overwrite=args.overwrite, ds=ds)
                 with Pool(args.np) as p:
                     p.map(wrapper, np.arange(1000))
+
+                def wrapper2(pid):
+                    tasks.calculate_linewidth_size(s, num, pid=pid, overwrite=args.overwrite, ds=ds)
+                with Pool(args.np) as p:
+                    p.map(wrapper2, s.good_cores())
+
 
         # make plots
         if args.plot_core_evolution:
@@ -183,10 +189,10 @@ if __name__ == "__main__":
         if args.make_movie:
             print(f"create movies for model {mdl}")
             srcdir = Path(s.savdir, "figures")
-            plot_prefix = [config.PLOT_PREFIX_PDF_PSPEC, config.PLOT_PREFIX_SINK_HISTORY]
-            for prefix in plot_prefix:
-                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
-                                srcdir])
+#            plot_prefix = [config.PLOT_PREFIX_PDF_PSPEC, config.PLOT_PREFIX_SINK_HISTORY]
+#            for prefix in plot_prefix:
+#                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
+#                                srcdir])
             for pid in pids:
                 prefix = "{}.par{}".format(config.PLOT_PREFIX_TCOLL_CORES, pid)
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
