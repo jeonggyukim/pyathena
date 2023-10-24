@@ -492,8 +492,8 @@ def calculate_lagrangian_props(s, cores, rprofs):
             mass2.append(rprf.menc.interp(r=radius2[-1]).data[()])
             mass3.append(rprf.menc.interp(r=radius3[-1]).data[()])
 
-            net_force.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
-                              ).interp(r=radius[-1]).data[()])
+            net_force.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv).interp(r=radius[-1])
+                             /rprf.Fgrv.interp(r=radius[-1])).data[()])
             net_force2.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
                               ).interp(r=radius2[-1]).data[()])
             net_force3.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv)/rprf.Fgrv
