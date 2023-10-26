@@ -287,35 +287,11 @@ def plot_diagnostics(s, pid, normalize_time=True):
     else:
         time = cores.time
 
-    # Calculate total forces acting on a core
-    rprofs = s.rprofs[pid]
-    fthm, ftrb, fcen, fgrv, fani, fadv = [], [], [], [], [], []
-    menc = []
-    for num, core in cores.iterrows():
-        rprf = rprofs.sel(num=num)
-        if np.isinf(core.critical_radius) or np.isnan(core.critical_radius):
-            menc.append(np.nan)
-        else:
-            menc.append(rprf.menc.interp(r=core.critical_radius))
-        fthm.append(rprf.Fthm.interp(r=core.tidal_radius).data[()])
-        ftrb.append(rprf.Ftrb.interp(r=core.tidal_radius).data[()])
-        fcen.append(rprf.Fcen.interp(r=core.tidal_radius).data[()])
-        fani.append(rprf.Fani.interp(r=core.tidal_radius).data[()])
-        fadv.append(rprf.Fadv.interp(r=core.tidal_radius).data[()])
-        fgrv.append(rprf.Fgrv.interp(r=core.tidal_radius).data[()])
-    menc = np.array(menc)
-    fthm = np.array(fthm)
-    ftrb = np.array(ftrb)
-    fcen = np.array(fcen)
-    fani = np.array(fani)
-    fadv = np.array(fadv)
-    fgrv = np.array(fgrv)
-
     # Do plotting
     plt.sca(axs[0])
 
     # Note that we do not include the force due to anisotropic turbulence.
-    plt.plot(time, (fthm+ftrb+fcen-fgrv)/fgrv, c='k')
+    plt.plot(time, cores.net_force, c='k')
 
     plt.ylim(-1, 1)
     plt.ylabel(r'$(F_\mathrm{p, eff} - F_\mathrm{grv}) / F_\mathrm{grv}$')
@@ -325,11 +301,11 @@ def plot_diagnostics(s, pid, normalize_time=True):
     else:
         plt.title('{}, core {}'.format(s.basename, pid)+r'$^*$')
     plt.twinx()
-    plt.plot(time, fthm, lw=1, c='cyan', label=r'$F_\mathrm{thm}$')
-    plt.plot(time, ftrb, lw=1, c='gray', label=r'$F_\mathrm{trb}$')
-    plt.plot(time, fcen, lw=1, c='olive', label=r'$F_\mathrm{cen}$')
-    plt.plot(time, fgrv, lw=1, c='pink', label=r'$F_\mathrm{grv}$')
-    plt.plot(time, fani, lw=1, c='brown', ls=':', label=r'$F_\mathrm{ani}$')
+    plt.plot(time, cores.Fthm, lw=1, c='cyan', label=r'$F_\mathrm{thm}$')
+    plt.plot(time, cores.Ftrb, lw=1, c='gray', label=r'$F_\mathrm{trb}$')
+    plt.plot(time, cores.Fcen, lw=1, c='olive', label=r'$F_\mathrm{cen}$')
+    plt.plot(time, cores.Fgrv, lw=1, c='pink', label=r'$F_\mathrm{grv}$')
+    plt.plot(time, cores.Fani, lw=1, c='brown', ls=':', label=r'$F_\mathrm{ani}$')
     plt.yscale('log')
     plt.ylim(1e-1, 1e2)
     plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
@@ -342,9 +318,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.plot(time, cores.sonic_radius, c='tab:green',
              label=r'$R_\mathrm{sonic}$')
     plt.plot(time, cores.critical_radius, c='tab:red',
-             label=r'$R_\mathrm{crit,c}$')
-    plt.plot(time, cores.critical_radius_e, c='tab:red', ls='--',
-             label=r'$R_\mathrm{crit,e}$')
+             label=r'$R_\mathrm{crit}$')
 
     plt.yscale('log')
     plt.ylim(1e-2, 1e0)
@@ -354,12 +328,10 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.sca(axs[2])
     plt.plot(time, cores.tidal_mass, c='tab:blue',
              label=r'$M_\mathrm{tidal}$')
-    plt.plot(time, menc, c='tab:blue', ls='-.',
-             label=r'$M(R<R_\mathrm{crit,c})$')
+    plt.plot(time, cores.menc, c='tab:blue', ls='-.',
+             label=r'$M_\mathrm{enc}$')
     plt.plot(time, cores.critical_mass, c='tab:red',
-             label=r'$M_\mathrm{crit,c}$')
-    plt.plot(time, cores.critical_mass_e, c='tab:red', ls='--',
-             label=r'$M_\mathrm{crit,e}$')
+             label=r'$M_\mathrm{crit}$')
     plt.yscale('log')
     plt.ylim(1e-3, 1e1)
     plt.ylabel(r'$M/M_{J,0}$')
@@ -371,11 +343,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.plot(time, cores.edge_density, c='tab:blue', ls='--',
              label=r'$\rho_e$')
     plt.plot(time, cores.mean_density, c='tab:blue', ls=':',
-             label=r'$\overline{\rho}_\mathrm{tidal}$')
-    plt.plot(time, cores.edge_density*cores.critical_contrast_e, c='tab:red',
-             ls='--', label=r'$\rho_\mathrm{crit}$')
-    plt.plot(time, cores.edge_density*14, c='tab:red', ls=':',
-             label=r'$\rho_\mathrm{BE}$')
+             label=r'$\overline{\rho}$')
     plt.yscale('log')
     plt.ylabel(r'$\rho/\rho_0$')
     plt.legend(loc='upper left', bbox_to_anchor=(1.12, 1))
@@ -386,6 +354,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
         plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}$'
                    r'$(\overline{\rho}_\mathrm{coll})$')
     else:
+        for ax in axs:
+            ax.axvline(cores.attrs['tcrit'], color='k', ls=':')
         plt.xlabel(r'$t/t_{J,0}$')
     for ax in axs:
         ax.grid()
