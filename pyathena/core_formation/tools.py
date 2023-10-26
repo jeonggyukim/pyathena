@@ -127,11 +127,24 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
         print(msg.format(s.basename, pid, num))
         gd = s.load_dendro(num)
         ds = s.load_hdf5(num, header_only=True)
+        pds = s.load_partab(num)
 
         # find closeast leaf to the previous preimage
         dst = [get_node_distance(s, leaf, leaf_id[-1]) for leaf in gd.leaves]
         lid = gd.leaves[np.argmin(dst)]
         rlf = reff_sph(gd.len(lid)*s.dV)
+
+        # If there is sink particle in the leaf, stop tracking.
+        idx = np.floor((pds[['x1', 'x2', 'x3']] - s.domain['le']) / s.dx).astype('int')
+        idx = idx[['x3', 'x2', 'x1']]
+        idx = idx.values
+        idx = idx[:, 0]*s.domain['Nx'][1]*s.domain['Nx'][0] + idx[:,1]*s.domain['Nx'][0] + idx[:, 2]
+        flag = 0
+        for idx_ in idx:
+            if idx_ in gd.get_all_descendant_cells(lid):
+                flag += 1
+        if flag > 0:
+            break
 
         # linear extrapolation to predict the envelop radius
         if len(envelop_radius) == 1:
