@@ -42,6 +42,8 @@ if __name__ == "__main__":
                         help="Overwrite everything")
     parser.add_argument("-m", "--make-movie", action="store_true",
                         help="Create movies")
+    parser.add_argument("--plot-core-evolution-all", action="store_true",
+                        help="Create core evolution plots")
     parser.add_argument("--plot-core-evolution", action="store_true",
                         help="Create core evolution plots")
     parser.add_argument("--plot-sink-history", action="store_true",
@@ -143,9 +145,17 @@ if __name__ == "__main__":
                 with Pool(args.np) as p:
                     p.map(wrapper2, s.good_cores())
 
-
         # make plots
         if args.plot_core_evolution:
+            print(f"draw t_coll cores plots for model {mdl}")
+            for pid in s.good_cores():
+                def wrapper(num):
+                    tasks.plot_core_evolution(s, pid, num,
+                                              overwrite=args.overwrite)
+                with Pool(args.np) as p:
+                    p.map(wrapper, s.cores[pid].index)
+
+        if args.plot_core_evolution_all:
             print(f"draw t_coll cores plots for model {mdl}")
             for pid in pids:
                 # Read snapshot at t=t_coll and set plot limits
@@ -160,9 +170,9 @@ if __name__ == "__main__":
                 emin = tools.rounddown(rprf.egrv.min(), 1)
 
                 def wrapper(num):
-                    tasks.plot_core_evolution(s, pid, num,
-                                              overwrite=args.overwrite,
-                                              emin=emin, emax=emax)
+                    tasks.plot_core_evolution_all(s, pid, num,
+                                                  overwrite=args.overwrite,
+                                                  emin=emin, emax=emax)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
 
@@ -197,3 +207,7 @@ if __name__ == "__main__":
                 prefix = "{}.par{}".format(config.PLOT_PREFIX_TCOLL_CORES, pid)
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
                                 srcdir])
+                if pid in s.good_cores():
+                    prefix = "{}.par{}".format(config.PLOT_PREFIX_CORE_EVOLUTION, pid)
+                    subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
+                                    srcdir])
