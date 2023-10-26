@@ -272,7 +272,7 @@ def resample_hdf5(s, level=0):
     uniform.main(**kwargs)
 
 
-def plot_core_evolution(s, pid, num, overwrite=False)
+def plot_core_evolution(s, pid, num, overwrite=False):
     """Creates multi-panel plot showing core evolution
 
     Parameters
