@@ -179,7 +179,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         return isolated_cores
 
     @LoadSim.Decorators.check_pickle
-    def update_core_props(self, ncells_min=10, prefix='cores',
+    def update_core_props(self, ncells_min=8, prefix='cores',
                           savdir=None, force_override=False):
         """Update core properties
 
