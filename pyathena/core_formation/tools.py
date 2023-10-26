@@ -176,15 +176,10 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
             eid = eid_try
             renv = renv_try
 
-        # Reset the leaf such that it is has the minimum potential inside the
-        # envelop.
-        if eid not in gd.leaves:
-            lid = gd.find_minimum(eid)
-            rlf = reff_sph(gd.len(lid)*s.dV)
-
         # Calculate tidal radius
         rtidal = calculate_tidal_radius(s, gd, eid, lid)
 
+        # If the center moved more than the tidal radius, stop tracking.
         fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal, tidal_radius[-1])
         if fdst > 1:
             break

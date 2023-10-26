@@ -362,7 +362,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     return fig
 
 
-def plot_core_evolution_simple(s, pid, num, rmax=None):
+def plot_core_evolution(s, pid, num, rmax=None):
     if rmax is None:
         rmax = s.cores[pid].tidal_radius.max()
     hw = 1.2*rmax
@@ -434,7 +434,7 @@ def plot_core_evolution_simple(s, pid, num, rmax=None):
     return fig
 
 
-def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
+def plot_core_evolution_all(s, pid, num, emin=None, emax=None, rmax=None):
     if rmax is None:
         rmax = s.cores[pid].tidal_radius.max()
     hw = 1.2*rmax
@@ -641,9 +641,9 @@ def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
     plt.text(0.48, 0.8, r'$t-t_\mathrm{crit}=$'+r'${:.2f}$'.format(core.tnorm2)
              + r'$\,\Delta t_\mathrm{coll}$', transform=plt.gca().transAxes,
              backgroundcolor='w')
-    plt.text(0.6, 0.7, r'$M={:.2f}$'.format(core.tidal_mass)+r'$\,M_{J,0}$',
+    plt.text(0.6, 0.7, r'$M={:.2f}$'.format(core.mass)+r'$\,M_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.6, 0.6, r'$R={:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
+    plt.text(0.6, 0.6, r'$R={:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
 
     for ax in (axs['rho'][0], axs['rho'][1], axs['force'][0], axs['force'][1],
@@ -651,14 +651,12 @@ def plot_core_evolution(s, pid, num, emin=None, emax=None, rmax=None):
         plt.sca(ax)
         ln1 = plt.axvline(core.tidal_radius, c='tab:gray', lw=1)
         ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
-        ln3 = plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
-        ln4 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
+        ln3 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
 
     plt.sca(axs['rho'][1])
-    lgd = plt.legend([ln1, ln2, ln3, ln4], [r'$R_\mathrm{tidal}$',
-                                            r'$R_\mathrm{crit,c}$',
-                                            r'$R_\mathrm{crit,e}$',
-                                            r'$R_\mathrm{sonic}$'],
+    lgd = plt.legend([ln1, ln2, ln3], [r'$R_\mathrm{tidal}$',
+                                       r'$R_\mathrm{crit,c}$',
+                                       r'$R_\mathrm{sonic}$'],
                      loc='upper right')
     plt.gca().add_artist(lgd)
 
