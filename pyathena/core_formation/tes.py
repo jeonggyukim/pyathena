@@ -1010,9 +1010,9 @@ if __name__ == "__main__":
                 # Calculate mass-weighted velocity dispersion
                 xi = np.linspace(tsc._xi_min, rcrit, 512)
                 u, _ = tsc.solve(xi)
-                dv = (xi / xi_s)**pindex
+                dv2 = (xi / xi_s)**(2*pindex)
                 dm = 4*np.pi*xi**2*np.exp(u)
-                mean_sigv = simpson(dm*dv, x=xi) / simpson(dm, x=xi)
+                mean_sigv = np.sqrt(simpson(dm*dv2, x=xi) / simpson(dm, x=xi))
                 edge_sigv = (rcrit / xi_s)**pindex
             critical_density.append(dcrit)
             critical_radius.append(rcrit)
