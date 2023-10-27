@@ -375,7 +375,6 @@ def plot_core_evolution(s, pid, num, rmax=None):
     ds = s.load_hdf5(num, quantities=['dens'], load_method='pyathena')
     gd = s.load_dendro(num)
     core = s.cores[pid].loc[num]
-    rprf = s.rprofs[pid].sel(num=num)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(s, core.leaf_id)
@@ -415,11 +414,16 @@ def plot_core_evolution(s, pid, num, rmax=None):
         plt.sca(axs['zoom'][i])
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
         nodes = list(gd.descendants[core.envelop_id].copy())
-        nodes.append(core.envelop_id)
         if core.envelop_id != gd.trunk:
-            nodes.append(gd.sibling(core.envelop_id))
+            sib = gd.sibling(core.envelop_id)
+            nodes.append(sib)
+            nodes += list(gd.descendants[sib].copy())
+
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='k')
+        plot_grid_dendro_contours(s, gd, core.envelop_id, ds.coords, axis=prj_axis,
+                                  recenter=(xc, yc, zc), select=sel, color='r')
+
         c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
         plt.gca().add_artist(c0)
         plt.xlim(-hw, hw)
@@ -428,8 +432,9 @@ def plot_core_evolution(s, pid, num, rmax=None):
         plt.ylabel(ylabel[prj_axis])
 
     axs['proj'][0].set_title(r'$t={:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$')
-    axs['proj'][1].set_title(r'$t-t_\mathrm{crit}=$'+r'${:.2f}$'.format(core.tnorm2)
-                             + r'$\,\Delta t_\mathrm{coll}$')
+    if 'tnorm2' in core:
+        axs['proj'][1].set_title(r'$t-t_\mathrm{crit}=$'+r'${:.2f}$'.format(core.tnorm2)
+                                 + r'$\,\Delta t_\mathrm{coll}$')
 
     return fig
 

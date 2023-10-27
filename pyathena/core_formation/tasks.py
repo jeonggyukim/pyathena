@@ -295,7 +295,7 @@ def plot_core_evolution(s, pid, num, overwrite=False):
     msg = '[plot_core_evolution] processing model {} pid {} num {}'
     msg = msg.format(s.basename, pid, num)
     print(msg)
-    fig = plots.plot_core_evolution(s, pid, num, rmax=rmax)
+    fig = plots.plot_core_evolution(s, pid, num)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
     plt.close(fig)
 
