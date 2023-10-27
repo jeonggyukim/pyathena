@@ -92,7 +92,7 @@ if __name__ == "__main__":
                 tasks.core_tracking(s, pid, overwrite=args.overwrite)
             print(f"Find t_coll cores for model {mdl}")
             with Pool(args.np) as p:
-                p.map(wrapper, s.pids)
+                p.map(wrapper, pids)
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         # make plots
         if args.plot_core_evolution:
             print(f"draw t_coll cores plots for model {mdl}")
-            for pid in s.good_cores():
+            for pid in pids:
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,
                                               overwrite=args.overwrite)
@@ -199,15 +199,19 @@ if __name__ == "__main__":
         if args.make_movie:
             print(f"create movies for model {mdl}")
             srcdir = Path(s.savdir, "figures")
-#            plot_prefix = [config.PLOT_PREFIX_PDF_PSPEC, config.PLOT_PREFIX_SINK_HISTORY]
-#            for prefix in plot_prefix:
-#                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
-#                                srcdir])
-            for pid in pids:
-                prefix = "{}.par{}".format(config.PLOT_PREFIX_TCOLL_CORES, pid)
+            plot_prefix = [
+#                    config.PLOT_PREFIX_PDF_PSPEC,
+#                    config.PLOT_PREFIX_SINK_HISTORY,
+                          ]
+            for prefix in plot_prefix:
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
                                 srcdir])
-                if pid in s.good_cores():
-                    prefix = "{}.par{}".format(config.PLOT_PREFIX_CORE_EVOLUTION, pid)
-                    subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
-                                    srcdir])
+            plot_prefix = [
+#                    config.PLOT_PREFIX_TCOLL_CORES,
+#                    config.PLOT_PREFIX_CORE_EVOLUTION,
+                          ]
+            for prefix in plot_prefix:
+                for pid in pids:
+                    prf = "{}.par{}".format(prefix, pid)
+                    subprocess.run(["make_movie", "-p", prf, "-s", srcdir,
+                                    "-d", srcdir])
