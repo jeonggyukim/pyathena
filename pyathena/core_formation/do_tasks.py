@@ -42,8 +42,6 @@ if __name__ == "__main__":
                         help="Overwrite everything")
     parser.add_argument("-m", "--make-movie", action="store_true",
                         help="Create movies")
-    parser.add_argument("--plot-core-evolution-all", action="store_true",
-                        help="Create core evolution plots")
     parser.add_argument("--plot-core-evolution", action="store_true",
                         help="Create core evolution plots")
     parser.add_argument("--plot-sink-history", action="store_true",
@@ -147,32 +145,13 @@ if __name__ == "__main__":
 
         # make plots
         if args.plot_core_evolution:
-            print(f"draw t_coll cores plots for model {mdl}")
+            print(f"draw core evolution plots for model {mdl}")
             for pid in pids:
+                if pid not in s.good_cores():
+                    continue
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,
                                               overwrite=args.overwrite)
-                with Pool(args.np) as p:
-                    p.map(wrapper, s.cores[pid].index)
-
-        if args.plot_core_evolution_all:
-            print(f"draw t_coll cores plots for model {mdl}")
-            for pid in pids:
-                # Read snapshot at t=t_coll and set plot limits
-                num = s.tcoll_cores.loc[pid].num
-                if len(s.cores[pid]) == 0:
-                    continue
-                core = s.cores[pid].loc[num]
-                rprf = s.rprofs[pid].sel(num=num)
-                rprf = tools.calculate_cumulative_energies(s, rprf, core)
-                rprf = rprf.sel(r=slice(0, core.tidal_radius))
-                emax = tools.roundup(max(rprf.ekin.max(), rprf.ethm.max()), 1)
-                emin = tools.rounddown(rprf.egrv.min(), 1)
-
-                def wrapper(num):
-                    tasks.plot_core_evolution_all(s, pid, num,
-                                                  overwrite=args.overwrite,
-                                                  emin=emin, emax=emax)
                 with Pool(args.np) as p:
                     p.map(wrapper, s.cores[pid].index)
 
@@ -207,8 +186,7 @@ if __name__ == "__main__":
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
                                 srcdir])
             plot_prefix = [
-#                    config.PLOT_PREFIX_TCOLL_CORES,
-#                    config.PLOT_PREFIX_CORE_EVOLUTION,
+                    config.PLOT_PREFIX_CORE_EVOLUTION,
                           ]
             for prefix in plot_prefix:
                 for pid in pids:

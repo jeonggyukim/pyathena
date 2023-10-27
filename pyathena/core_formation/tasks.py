@@ -272,8 +272,8 @@ def resample_hdf5(s, level=0):
     uniform.main(**kwargs)
 
 
-def plot_core_evolution(s, pid, num, overwrite=False):
-    """Creates multi-panel plot showing core evolution
+def plot_core_evolution(s, pid, num, overwrite=False, rmax=None):
+    """Creates multi-panel plot for t_coll core properties
 
     Parameters
     ----------
@@ -295,37 +295,7 @@ def plot_core_evolution(s, pid, num, overwrite=False):
     msg = '[plot_core_evolution] processing model {} pid {} num {}'
     msg = msg.format(s.basename, pid, num)
     print(msg)
-    fig = plots.plot_core_evolution(s, pid, num)
-    fig.savefig(fname, bbox_inches='tight', dpi=200)
-    plt.close(fig)
-
-
-def plot_core_evolution_all(s, pid, num, overwrite=False,
-                        emin=None, emax=None, rmax=None):
-    """Creates multi-panel plot for t_coll core properties
-
-    Parameters
-    ----------
-    s : LoadSimCoreFormation
-        Simulation metadata.
-    pid : int
-        Unique ID of a selected particle.
-    num : int
-        Snapshot number.
-    overwrite : str, optional
-        If true, overwrite output files.
-    """
-    fname = Path(s.savdir, 'figures', "{}.par{}.{:05d}.png".format(
-        config.PLOT_PREFIX_TCOLL_CORES, pid, num))
-    fname.parent.mkdir(exist_ok=True)
-    if fname.exists() and not overwrite:
-        print('[plot_core_evolution_all] file already exists. Skipping...')
-        return
-    msg = '[plot_core_evolution_all] processing model {} pid {} num {}'
-    msg = msg.format(s.basename, pid, num)
-    print(msg)
-    fig = plots.plot_core_evolution_all(s, pid, num, emin=emin, emax=emax,
-                                    rmax=rmax)
+    fig = plots.plot_core_evolution(s, pid, num, rmax=rmax)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
     plt.close(fig)
 
