@@ -448,22 +448,14 @@ def plot_core_evolution_all(s, pid, num, emin=None, emax=None, rmax=None):
     if num > s.tcoll_cores.loc[pid].num:
         raise ValueError("num must be smaller than num_tcoll")
 
-    # Load core
-    core = s.cores[pid].loc[num]
-
-    # Load hdf5 snapshot at t = t_coll
-    ds = s.load_hdf5(num,
-                     quantities=['dens','mom1','mom2','mom3','phi'],
-                     load_method='pyathena')
-
-    # Load leaf dict at t = t_coll
+    # Load data
+    ds = s.load_hdf5(num, quantities=['dens'], load_method='pyathena')
     gd = s.load_dendro(num)
+    core = s.cores[pid].loc[num]
+    rprf = s.rprofs[pid].sel(num=num)
 
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(s, core.leaf_id)
-
-    # Calculate radial profile
-    rprf = s.rprofs[pid].sel(num=num)
 
     # Create figure
     fig = plt.figure(figsize=(35, 21))
@@ -507,12 +499,15 @@ def plot_core_evolution_all(s, pid, num, emin=None, emax=None, rmax=None):
         plt.sca(axs['zoom'][i])
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
         nodes = list(gd.descendants[core.envelop_id].copy())
-        nodes.append(core.envelop_id)
         if core.envelop_id != gd.trunk:
             nodes.append(gd.sibling(core.envelop_id))
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='k')
+        plot_grid_dendro_contours(s, gd, core.envelop_id, ds.coords, axis=prj_axis,
+                                  recenter=(xc, yc, zc), select=sel, color='r')
         c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
+        plt.gca().add_artist(c0)
+        c0 = plt.Circle((0, 0), core.critical_radius, fill=False, color='k', lw=1, ls='--')
         plt.gca().add_artist(c0)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
@@ -586,7 +581,8 @@ def plot_core_evolution_all(s, pid, num, emin=None, emax=None, rmax=None):
                label=r'$v_\theta$')
     plt.loglog(rprf.r, np.sqrt(rprf.dvel3_sq_mw), marker='+',
                label=r'$v_\phi$')
-    plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**0.5, 'k--')
+    rcl = tools.reff_sph(s.Lbox**3)
+    plt.plot(rprf.r, s.Mach*(rprf.r/rcl)**0.5, 'k--')
     plt.plot(rprf.r, (rprf.r/(s.sonic_length/2))**1, 'k--')
 
     # overplot linear fit
@@ -601,11 +597,14 @@ def plot_core_evolution_all(s, pid, num, emin=None, emax=None, rmax=None):
     plt.legend(loc='lower right')
 
     # 5. Energies
-    plt.sca(axs['energy'])
-    plot_energies(s, ds, rprf, core, gd, core.envelop_id)
-    if emin is not None and emax is not None:
-        plt.ylim(emin, emax)
-    plt.xlim(0, rmax)
+    # TODO On-the-fly calculation is too expensive.
+    # Until precalculating the energies, disable the plot
+    axs['energy'].remove()
+#    plt.sca(axs['energy'])
+#    plot_energies(s, ds, rprf, core, gd, core.envelop_id)
+#    if emin is not None and emax is not None:
+#        plt.ylim(emin, emax)
+#    plt.xlim(0, rmax)
 
     # 6. Accelerations
     plt.sca(axs['acc'])
@@ -627,7 +626,7 @@ def plot_core_evolution_all(s, pid, num, emin=None, emax=None, rmax=None):
              transform=plt.gca().transAxes, backgroundcolor='w')
 
     for ax in (axs['rho'][0], axs['rho'][1], axs['force'][0], axs['force'][1],
-               axs['vel'], axs['veldisp'], axs['energy'], axs['acc']):
+               axs['vel'], axs['veldisp'], axs['acc']):
         plt.sca(ax)
         ln1 = plt.axvline(core.tidal_radius, c='tab:gray', lw=1)
         ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
