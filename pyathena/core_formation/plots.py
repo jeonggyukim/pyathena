@@ -543,30 +543,6 @@ def plot_core_evolution_all(s, pid, num, emin=None, emax=None, rmax=None):
     u, du = ts.solve(xi)
     for ax in axs['rho']:
         ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
-
-    # overplot critical tes given rho_edge
-    LJ_e = 1.0/np.sqrt(core.edge_density)
-    xi_min = rprf.r.isel(r=0).data[()]/LJ_e
-    xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
-    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-    if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
-        try:
-            ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
-            uc, _, _ = ts.get_crit()
-            u, _ = ts.solve(xi, uc)
-            for ax in axs['rho']:
-                ax.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b--', lw=1.5)
-        except ValueError:
-            # Cannot find critical TES. Do not plot.
-            pass
-
-    # overplot critical BE
-    ts = tes.TESe()
-    uc, _, _ = ts.get_crit()
-    u, _ = ts.solve(xi, uc)
-    for ax in axs['rho']:
-        ax.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b:', lw=1)
-        ax.axhline(core.edge_density, ls='-.', c='tab:gray')
         ax.set_xlabel(r'$r/L_{J,0}$')
         ax.set_ylabel(r'$\rho/\rho_0$')
         ax.set_ylim(1e0, rhoLP[0]/5)
@@ -590,7 +566,6 @@ def plot_core_evolution_all(s, pid, num, emin=None, emax=None, rmax=None):
     plt.sca(axs['force'][1])
     plt.xlim(0, rmax)
     plt.legend([], [])
-
 
     # Velocities
     plt.sca(axs['vel'])
