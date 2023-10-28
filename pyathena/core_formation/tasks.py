@@ -421,12 +421,6 @@ def plot_radial_profile_at_tcrit(s, nrows=5, ncols=6, overwrite=False):
 
 
 def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=None):
-    if ds is None:
-        ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'])
-        ds['vel1'] = ds.mom1/ds.dens
-        ds['vel2'] = ds.mom2/ds.dens
-        ds['vel3'] = ds.mom3/ds.dens
-
     if seed is not None and pid is not None:
         raise ValueError("Provide either seed or pid, not both")
     elif seed is not None:
@@ -441,12 +435,22 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
         msg = '[linewidth_size] processing model {} num {} seed {}'
         print(msg.format(s.basename, num, seed))
 
+        if ds is None:
+            ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'])
+            ds['vel1'] = ds.mom1/ds.dens
+            ds['vel2'] = ds.mom2/ds.dens
+            ds['vel3'] = ds.mom3/ds.dens
+
         rng = np.random.default_rng(seed)
         i, j, k = rng.integers(low=0, high=511, size=(3))
         origin = (ds.x.isel(x=i).data[()],
                   ds.y.isel(y=j).data[()],
                   ds.z.isel(z=k).data[()])
     elif pid is not None:
+        if num not in s.cores[pid].index:
+            print(f'[linewidth_size] {num} is not in the snapshot list of core {pid}')
+            return
+
         # Check if file exists
         ofname = Path(s.savdir, 'linewidth_size',
                       'linewidth_size.{:05d}.par{}.nc'.format(num, pid))
@@ -458,9 +462,14 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
         msg = '[linewidth_size] processing model {} num {} pid {}'
         print(msg.format(s.basename, num, pid))
 
-        nc = s.cores[pid].attrs['numcrit']
-        lid = s.cores[pid].loc[nc].leaf_id
+        lid = s.cores[pid].loc[num].leaf_id
         origin = tools.get_coords_node(s, lid)
+
+        if ds is None:
+            ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'])
+            ds['vel1'] = ds.mom1/ds.dens
+            ds['vel2'] = ds.mom2/ds.dens
+            ds['vel3'] = ds.mom3/ds.dens
     else:
         raise ValueError("Provide either seed or pid")
 
