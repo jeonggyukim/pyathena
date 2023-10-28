@@ -430,7 +430,8 @@ def plot_core_evolution(s, pid, num, rmax=None):
                                   recenter=(xc, yc, zc), select=sel, color='r')
         c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
         plt.gca().add_artist(c0)
-        c0 = plt.Circle((0, 0), core.critical_radius, fill=False, color='k', lw=1, ls='--')
+        if np.isfinite(core.critical_radius):
+            c0 = plt.Circle((0, 0), core.critical_radius, fill=False, color='k', lw=1, ls='--')
         plt.gca().add_artist(c0)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
