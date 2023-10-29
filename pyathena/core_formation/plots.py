@@ -431,11 +431,12 @@ def plot_core_evolution(s, pid, num, rmax=None):
                                   recenter=(xc, yc, zc), select=sel, color='k')
         plot_grid_dendro_contours(s, gd, core.envelop_id, ds.coords, axis=prj_axis,
                                   recenter=(xc, yc, zc), select=sel, color='r')
-        c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
-        plt.gca().add_artist(c0)
-        if np.isfinite(core.critical_radius):
+        if core.tidal_radius <= np.sqrt(2)*hw:
+            c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
+            plt.gca().add_artist(c0)
+        if np.isfinite(core.critical_radius) and core.critical_radius <= np.sqrt(2)*hw:
             c0 = plt.Circle((0, 0), core.critical_radius, fill=False, color='k', lw=1, ls='--')
-        plt.gca().add_artist(c0)
+            plt.gca().add_artist(c0)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
