@@ -364,8 +364,11 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
 def plot_core_evolution(s, pid, num, rmax=None):
     if rmax is None:
-        rmax = s.cores[pid].tidal_radius.max()
-    hw = 1.2*rmax
+        if np.isfinite(s.cores[pid].attrs['rcore_crit']):
+            rmax = 2*s.cores[pid].attrs['rcore_crit']
+        else:
+            rmax = s.cores[pid].tidal_radius.max()
+    hw = 1.1*rmax
 
     # Load the progenitor GRID-core of this particle.
     if num > s.tcoll_cores.loc[pid].num:
