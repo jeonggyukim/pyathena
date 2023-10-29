@@ -619,31 +619,27 @@ def critical_time(s, pid):
     if len(cores) == 0:
         return np.nan
     rprofs = s.rprofs[pid]
-    menc = []
-    for num, core in cores.iterrows():
-        # TODO(SMOON) critical radius become nan when pindex < 0
-        if np.isnan(core.critical_radius):
-            menc.append(np.nan)
-        else:
-            menc.append(rprofs.sel(num=num).menc.interp(r=core.critical_radius).data[()])
-    cond = ((cores.tidal_radius > cores.critical_radius)
-            & (menc > cores.critical_mass))
-    cores_past_critical = cores.index[cond]
 
-    if len(cores_past_critical) == 0:
-        return np.nan
-    else:
-        # Select last time when the conditions are met
-        foo = []
-        foo.append(cores_past_critical[-1])
-        for i in range(cores_past_critical.size - 1):
-            if cores_past_critical[-2-i] == cores_past_critical[-1-i] - 1:
-                foo.append(cores_past_critical[-2-i])
-            else:
-                break
-        foo = foo[::-1]
-        cores_past_critical = foo
-        return cores_past_critical[0]
+    ncrit = None
+    for num, core in cores.sort_index(ascending=False).iterrows():
+        if num == cores.index[-1] and np.isnan(core.critical_radius):
+            continue
+        rprf = rprofs.sel(num=num)
+        if np.isfinite(core.critical_radius):
+            menc = rprf.menc.interp(r=core.critical_radius).data[()]
+        else:
+            menc = np.nan
+        cond1 = core.tidal_radius >= core.critical_radius
+        cond2 = menc >= core.critical_mass
+        cond = cond1 and cond2
+        if not cond:
+            ncrit = num + 1
+            break
+    if ncrit is None or ncrit == cores.index[-1] + 1:
+        # If the critical condition is satisfied for all time, or is not satisfied at t_coll,
+        # set ncrit to NaN.
+        ncrit = np.nan
+    return ncrit
 
 
 def get_coords_minimum(dat):
