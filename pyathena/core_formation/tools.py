@@ -316,22 +316,13 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
     # Set scale length and mass based on the center and edge densities
     rhoc = rprf.rho.isel(r=0).data[()]
     LJ_c = MJ_c = np.sqrt(s.rho0/rhoc)
-
-    rhoe = rprf.rho.interp(r=core.tidal_radius).data[()]
-    if mode=='tot':
-        ptrb = (rprf.rho*rprf.dvel1_sq_mw).interp(r=core.tidal_radius).data[()]
-        pthm = (rprf.rho*s.cs**2).interp(r=core.tidal_radius).data[()]
-        LJ_e = MJ_e = np.sqrt(s.cs**2*s.rho0/(pthm + ptrb))
-    else:
-        LJ_e = MJ_e = np.sqrt(s.rho0/rhoe)
-
     mtidal = (4*np.pi*rprf.r**2*rprf.rho).sel(r=slice(0, core.tidal_radius)
                                               ).integrate('r').data[()]
-    mean_density = mtidal / (4*np.pi*core.tidal_radius**3/3)
+    mean_tidal_density = mtidal / (4*np.pi*core.tidal_radius**3/3)
 
     if len(r) < 1:
         # Sonic radius is zero. Cannot find critical tes.
-        p = rs = dcrit = rcrit = mcrit = dcrit_e = rcrit_e = mcrit_e = np.nan
+        p = rs = dcrit = rcrit = mcrit = np.nan
     else:
         def f(B, x):
             return B[0]*x + B[1]
@@ -344,7 +335,7 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
         p, intercept = myoutput.beta
 
         if p <= 0:
-            rs = dcrit = rcrit = mcrit = dcrit_e = rcrit_e = mcrit_e = np.nan
+            rs = dcrit = rcrit = mcrit = np.nan
         else:
             # sonic radius
             rs = np.exp(-intercept/(p))
@@ -360,23 +351,11 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
                 mcrit = tsc.get_mass(xi_crit)*MJ_c
             except ValueError:
                 dcrit = rcrit = mcrit = np.nan
-    
-            # Find critical TES at the edge density
-            xi_s = rs / LJ_e
-            try:
-                tse = tes.TESe(p=p, xi_s=xi_s, mode=mode)
-                uc, rc, mc = tse.get_crit()
-                dcrit_e = np.exp(uc)
-                rcrit_e = rc*LJ_e
-                mcrit_e = mc*MJ_e
-            except ValueError:
-                dcrit_e = rcrit_e = mcrit_e = np.nan
 
-    res = dict(tidal_mass=mtidal, center_density=rhoc, edge_density=rhoe,
-               mean_density=mean_density, sonic_radius=rs, pindex=p,
+    res = dict(tidal_mass=mtidal, center_density=rhoc,
+               mean_tidal_density=mean_tidal_density, sonic_radius=rs, pindex=p,
                critical_contrast=dcrit, critical_radius=rcrit,
-               critical_mass=mcrit, critical_contrast_e=dcrit_e,
-               critical_radius_e=rcrit_e, critical_mass_e=mcrit_e)
+               critical_mass=mcrit)
     return res
 
 
