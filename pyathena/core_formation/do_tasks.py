@@ -143,11 +143,17 @@ if __name__ == "__main__":
                 with Pool(args.np) as p:
                     p.map(wrapper2, s.good_cores())
 
+            def wrapper2(pid):
+                nc = s.cores[pid].attrs['numcrit']
+                tasks.calculate_linewidth_size(s, nc, pid=pid, overwrite=args.overwrite)
+            with Pool(args.np) as p:
+                p.map(wrapper2, s.good_cores())
+
         # make plots
         if args.plot_core_evolution:
             print(f"draw core evolution plots for model {mdl}")
             for pid in pids:
-                if pid not in s.good_cores():
+                if len(s.cores[pid]) == 0:
                     continue
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,
