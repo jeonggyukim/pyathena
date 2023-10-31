@@ -30,6 +30,8 @@ if __name__ == "__main__":
                         help="Join partab files including last output")
     parser.add_argument("-g", "--run-grid", action="store_true",
                         help="Run GRID-dendro")
+    parser.add_argument("--prune", action="store_true",
+                        help="Prune dendrogram")
     parser.add_argument("-c", "--core-tracking", action="store_true",
                         help="Eulerian core tracking")
     parser.add_argument("-r", "--radial-profile", action="store_true",
@@ -80,6 +82,14 @@ if __name__ == "__main__":
         if args.run_grid:
             def wrapper(num):
                 tasks.run_grid(s, num, overwrite=args.overwrite)
+            print(f"Run GRID-dendro for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums[config.GRID_NUM_START:], 1)
+
+        # Run GRID-dendro.
+        if args.prune:
+            def wrapper(num):
+                tasks.prune(s, num, overwrite=args.overwrite)
             print(f"Run GRID-dendro for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums[config.GRID_NUM_START:], 1)

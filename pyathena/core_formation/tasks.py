@@ -243,6 +243,34 @@ def run_grid(s, num, overwrite=False):
         pickle.dump(gd, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+def prune(s, num, overwrite=False):
+    """Prune GRID-dendro
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Simulation metadata.
+    num : int
+        Snapshot number.
+    """
+    # Check if file exists
+    ofname = Path(s.savdir, 'GRID',
+                  'dendrogram.pruned.{:05d}.p'.format(num))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[prune] file already exists. Skipping...')
+        return
+
+    # Load original dendrogram and prune it
+    print('[prune] processing model {} num {}'.format(s.basename, num))
+    gd = s.load_dendro(num, pruned=False)
+    gd.prune()
+
+    # Write to file
+    with open(ofname, 'wb') as handle:
+        pickle.dump(gd, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
 def resample_hdf5(s, level=0):
     """Resamples AMR output into uniform resolution.
 
