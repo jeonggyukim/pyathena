@@ -146,48 +146,9 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
         if flag > 0:
             break
 
-        # linear extrapolation to predict the envelop radius
-        if len(envelop_radius) == 1:
-            dr = 0
-        elif leaf_radius[-1] > envelop_radius[-2]:
-            # If the tracked leaf is larger than the future envelop, this
-            # indicates fragmentation. In this case, extrapolation from
-            # (smaller) envelop to (larger) leaf is supressed.
-            dr = 0
-        else:
-            dr = envelop_radius[-1] - envelop_radius[-2]
-        renv_predicted = envelop_radius[-1] + dr
-
         # Do the tidal correction to neglect attached substructures.
         eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
         renv = reff_sph(gd.len(eid)*s.dV)
-        if renv > renv_predicted*tol:
-            # preimage is too large; the tidal correction may have been too generous.
-            # Undo the tidal correction
-            eid = lid
-            renv = rlf
-
-        # If preimage is too small, go to envelop
-        while renv < renv_predicted/tol:
-            if eid == gd.trunk:
-                break
-            parent = gd.parent[eid]
-            rparent = reff_sph(gd.len(parent)*s.dV)
-            if rparent < renv_predicted*tol:
-                # Try going up in the hierarchy.
-                # If parent joins continuously, accept it.
-                eid = parent
-                renv = rparent
-            else:
-                # Stop going up in the hierarchy.
-                break
-
-        # Correct tidal radius for the last time
-        eid_try, _ = disregard_substructures(s, gd, eid, tol=sub_frac)
-        renv_try = reff_sph(gd.len(eid_try)*s.dV)
-        if renv_try < renv_predicted*tol:
-            eid = eid_try
-            renv = renv_try
 
         # Calculate tidal radius
         rtidal = calculate_tidal_radius(s, gd, eid, lid)
