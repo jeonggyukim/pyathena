@@ -400,7 +400,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
 
     if np.isnan(nc):
         tcrit = rcore_crit = mcore_crit = mean_rho_crit = np.nan
-        radius = mass = net_force = tff_crit = menc = np.nan
+        radius = mass = tff_crit = menc = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
         tcrit = cores.loc[nc].time
@@ -409,7 +409,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
         mean_rho_crit = mcore_crit / (4*np.pi*rcore_crit**3/3)
         tff_crit = tfreefall(mean_rho_crit, s.gconst)
 
-        net_force, mass, radius, menc = [], [], [], []
+        mass, radius, menc = [], [], []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
         for num, core in cores.iterrows():
             rprf = rprofs.sel(num=num)
@@ -432,8 +432,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
             Fcen.append(rprf.Fcen.data[()])
             Fani.append(rprf.Fani.data[()])
             Fgrv.append(rprf.Fgrv.data[()])
-            net_force.append(((rprf.Fthm + rprf.Ftrb + rprf.Fcen - rprf.Fgrv) / rprf.Fgrv).data[()])
-    lprops = pd.DataFrame(data = dict(radius=radius, mass=mass, net_force=net_force, menc=menc,
+    lprops = pd.DataFrame(data = dict(radius=radius, mass=mass, menc=menc,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
     lprops.attrs['rcore_crit'] = rcore_crit
