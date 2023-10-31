@@ -131,16 +131,23 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         else:
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
-    def load_dendro(self, num):
+    def load_dendro(self, num, pruned=True):
         """Load pickled dendrogram object
 
         Parameters
         ----------
         num : int
             Snapshot number.
+        pruned : bool
+            If true, load the pruned dendrogram
         """
-        fname = pathlib.Path(self.savdir, 'GRID',
-                             'dendrogram.{:05d}.p'.format(num))
+        if pruned:
+            fname = pathlib.Path(self.savdir, 'GRID',
+                                 'dendrogram.pruned.{:05d}.p'.format(num))
+        else:
+            fname = pathlib.Path(self.savdir, 'GRID',
+                                 'dendrogram.{:05d}.p'.format(num))
+
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
