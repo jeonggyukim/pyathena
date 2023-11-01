@@ -548,9 +548,7 @@ def plot_core_evolution(s, pid, num, rmax=None):
     plt.text(0.48, 0.8, r'$t-t_\mathrm{crit}=$'+r'${:.2f}$'.format(core.tnorm2)
              + r'$\,\Delta t_\mathrm{coll}$', transform=plt.gca().transAxes,
              backgroundcolor='w')
-    plt.text(0.6, 0.7, r'$M={:.2f}$'.format(core.mass)+r'$\,M_{J,0}$',
-             transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.6, 0.6, r'$R={:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
+    plt.text(0.6, 0.7, r'$R={:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
 
     for ax in (axs['rho'][0], axs['rho'][1], axs['force'][0], axs['force'][1],
