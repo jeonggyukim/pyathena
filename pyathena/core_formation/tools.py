@@ -400,7 +400,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
 
     if np.isnan(nc):
         tcrit = rcore_crit = mcore_crit = mean_rho_crit = np.nan
-        radius = mass = tff_crit = menc = np.nan
+        radius = tff_crit = menc = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
         tcrit = cores.loc[nc].time
@@ -409,7 +409,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
         mean_rho_crit = mcore_crit / (4*np.pi*rcore_crit**3/3)
         tff_crit = tfreefall(mean_rho_crit, s.gconst)
 
-        mass, radius, menc = [], [], []
+        radius, menc = [], []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
         for num, core in cores.iterrows():
             rprf = rprofs.sel(num=num)
@@ -418,21 +418,20 @@ def calculate_lagrangian_props(s, cores, rprofs):
             if rprf.menc.isel(r=-1) < mcore_crit:
                 # In this case, no radius up to maximum tidal radius encloses
                 # mcore_crit. This means we are safe to set rcore = Rtidal.
-                radius.append(core.tidal_radius)
+                radius.append(np.inf)
             else:
                 lagrangian_radius = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit,
                                            rprf.r.isel(r=0), rprf.r.isel(r=-1))
-                radius.append(min(core.tidal_radius, lagrangian_radius))
+                radius.append(lagrangian_radius)
             menc.append(rprf.menc.interp(r=core.critical_radius).data[()])
 
             rprf = rprf.interp(r=radius[-1])
-            mass.append(rprf.menc.data[()])
             Fthm.append(rprf.Fthm.data[()])
             Ftrb.append(rprf.Ftrb.data[()])
             Fcen.append(rprf.Fcen.data[()])
             Fani.append(rprf.Fani.data[()])
             Fgrv.append(rprf.Fgrv.data[()])
-    lprops = pd.DataFrame(data = dict(radius=radius, mass=mass, menc=menc,
+    lprops = pd.DataFrame(data = dict(radius=radius, menc=menc,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
     lprops.attrs['rcore_crit'] = rcore_crit
