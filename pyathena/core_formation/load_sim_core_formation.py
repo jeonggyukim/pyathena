@@ -248,6 +248,16 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['tinfall_end'] = tf
             cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
+            # Calculate velocity dispersion
+            if np.isnan(cores.attrs['numcrit']):
+                sigma_r = np.nan
+            else:
+                rprf = rprofs.sel(num=cores.attrs['numcrit'])
+                rprf = rprf.sel(r=slice(0, cores.attrs['rcore_crit']))
+                sigma_r = np.sqrt(rprf.dvel1_sq_mw.weighted(
+                    rprf.r**2*rprf.rho).mean().data[()])
+            cores.attrs['sigma_r'] = sigma_r
+
         return self.cores
 
     @LoadSim.Decorators.check_pickle
