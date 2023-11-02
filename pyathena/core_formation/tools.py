@@ -64,22 +64,38 @@ class LognormalPDF:
         return np.exp(x)
 
 
-def find_tcoll_core(s, pid):
-    """Find the GRID-dendro ID of the t_coll core of particle pid"""
+def find_tcoll_core(s, pid, ncells_min=27):
+    """Find the GRID-dendro ID of the t_coll core of particle pid
+
+    Parameters
+    ----------
+    s : LoadSim
+        LoadSimCoreFormation instance.
+    pid : int
+        Particle id.
+
+    Returns
+    -------
+    lid : int or None
+        ID of the leaf corresponding to t_coll core. If unresolved, return None.
+    """
     # load dendrogram at t = t_coll
     num = s.tcoll_cores.loc[pid].num
-    gd = s.load_dendro(num)
+    gd = s.load_dendro(num, pruned=False)
 
     # find closeast leaf node to this particle
     pos_particle = s.tcoll_cores.loc[pid][['x1', 'x2', 'x3']]
     pos_particle = pos_particle.to_numpy()
+    dst = [get_periodic_distance(get_coords_node(s, lid), pos_particle, s.Lbox)
+           for lid in gd.leaves]
+    lid = gd.leaves[np.argmin(dst)]
 
-    distance = []
-    for leaf in gd.leaves:
-        pos_node = get_coords_node(s, leaf)
-        distance.append(get_periodic_distance(pos_node, pos_particle, s.Lbox))
-    tcoll_core = gd.leaves[np.argmin(distance)]
-    return tcoll_core
+    if gd.len(lid) < ncells_min:
+        # t_coll core is unresolved
+        return None
+    else:
+        # return the grid-dendro ID of the t_coll core
+        return lid
 
 
 def track_cores(s, pid, tol=1.1, sub_frac=0.2):
@@ -98,53 +114,30 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
     # start from t = t_coll and track backward
     nums = np.arange(s.tcoll_cores.loc[pid].num, config.GRID_NUM_START-1, -1)
     num = nums[0]
-    msg = '[track_cores] processing model {} pid {} num {}'
-    print(msg.format(s.basename, pid, num))
-    gd = s.load_dendro(num)
+    msg = f'[track_cores] processing model {s.basename} pid {pid} num {num}'
+    print(msg)
+
+    lid = find_tcoll_core(s, pid)
     ds = s.load_hdf5(num, header_only=True)
 
-    # Calculate effective radius of this leaf
-    lid = find_tcoll_core(s, pid)
-    rlf = reff_sph(gd.len(lid)*s.dV)
-
-    # Do the tidal correction to neglect attached substructures.
-    eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
-    renv = reff_sph(gd.len(eid)*s.dV)
-
-    # Calculate tidal radius
-    rtidal = calculate_tidal_radius(s, gd, eid, lid)
-
-    nums_track = [num,]
-    time = [ds['Time'],]
-    leaf_id = [lid,]
-    leaf_radius = [rlf,]
-    envelop_id = [eid,]
-    envelop_radius = [renv,]
-    tidal_radius = [rtidal,]
-
-    for num in nums[1:]:
-        msg = '[track_cores] processing model {} pid {} num {}'
-        print(msg.format(s.basename, pid, num))
+    if lid is None:
+        msg = (
+            f'[track_cores] t_coll core for pid {pid} is unresolved. '
+            ' do not perform core tracking for this core.'
+        )
+        print(msg)
+        nums_track = [num,]
+        time = [ds['Time'],]
+        leaf_id = [np.nan,]
+        leaf_radius = [np.nan,]
+        envelop_id = [np.nan,]
+        envelop_radius = [np.nan,]
+        tidal_radius = [np.nan,]
+    else:
         gd = s.load_dendro(num)
-        ds = s.load_hdf5(num, header_only=True)
-        pds = s.load_partab(num)
 
-        # find closeast leaf to the previous preimage
-        dst = [get_node_distance(s, leaf, leaf_id[-1]) for leaf in gd.leaves]
-        lid = gd.leaves[np.argmin(dst)]
+        # Calculate effective radius of this leaf
         rlf = reff_sph(gd.len(lid)*s.dV)
-
-        # If there is sink particle in the leaf, stop tracking.
-        idx = np.floor((pds[['x1', 'x2', 'x3']] - s.domain['le']) / s.dx).astype('int')
-        idx = idx[['x3', 'x2', 'x1']]
-        idx = idx.values
-        idx = idx[:, 0]*s.domain['Nx'][1]*s.domain['Nx'][0] + idx[:,1]*s.domain['Nx'][0] + idx[:, 2]
-        flag = 0
-        for idx_ in idx:
-            if idx_ in gd.get_all_descendant_cells(lid):
-                flag += 1
-        if flag > 0:
-            break
 
         # Do the tidal correction to neglect attached substructures.
         eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
@@ -153,18 +146,57 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
         # Calculate tidal radius
         rtidal = calculate_tidal_radius(s, gd, eid, lid)
 
-        # If the center moved more than the tidal radius, stop tracking.
-        fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal, tidal_radius[-1])
-        if fdst > 1:
-            break
+        nums_track = [num,]
+        time = [ds['Time'],]
+        leaf_id = [lid,]
+        leaf_radius = [rlf,]
+        envelop_id = [eid,]
+        envelop_radius = [renv,]
+        tidal_radius = [rtidal,]
 
-        nums_track.append(num)
-        time.append(ds['Time'])
-        leaf_id.append(lid)
-        leaf_radius.append(rlf)
-        envelop_id.append(eid)
-        envelop_radius.append(renv)
-        tidal_radius.append(rtidal)
+        for num in nums[1:]:
+            msg = '[track_cores] processing model {} pid {} num {}'
+            print(msg.format(s.basename, pid, num))
+            gd = s.load_dendro(num)
+            ds = s.load_hdf5(num, header_only=True)
+            pds = s.load_partab(num)
+
+            # find closeast leaf to the previous preimage
+            dst = [get_node_distance(s, leaf, leaf_id[-1]) for leaf in gd.leaves]
+            lid = gd.leaves[np.argmin(dst)]
+            rlf = reff_sph(gd.len(lid)*s.dV)
+
+            # If there is sink particle in the leaf, stop tracking.
+            idx = np.floor((pds[['x1', 'x2', 'x3']] - s.domain['le']) / s.dx).astype('int')
+            idx = idx[['x3', 'x2', 'x1']]
+            idx = idx.values
+            idx = idx[:, 0]*s.domain['Nx'][1]*s.domain['Nx'][0] + idx[:,1]*s.domain['Nx'][0] + idx[:, 2]
+            flag = 0
+            for idx_ in idx:
+                if idx_ in gd.get_all_descendant_cells(lid):
+                    flag += 1
+            if flag > 0:
+                break
+
+            # Do the tidal correction to neglect attached substructures.
+            eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
+            renv = reff_sph(gd.len(eid)*s.dV)
+
+            # Calculate tidal radius
+            rtidal = calculate_tidal_radius(s, gd, eid, lid)
+
+            # If the center moved more than the tidal radius, stop tracking.
+            fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal, tidal_radius[-1])
+            if fdst > 1:
+                break
+
+            nums_track.append(num)
+            time.append(ds['Time'])
+            leaf_id.append(lid)
+            leaf_radius.append(rlf)
+            envelop_id.append(eid)
+            envelop_radius.append(renv)
+            tidal_radius.append(rtidal)
 
     # SMOON: Using dtype=object is to prevent automatic upcasting from int to float
     # when indexing a single row. Maybe there is a better approach.
