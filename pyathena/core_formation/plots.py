@@ -437,6 +437,9 @@ def plot_core_evolution(s, pid, num, rmax=None):
         if np.isfinite(core.critical_radius) and core.critical_radius <= np.sqrt(2)*hw:
             c0 = plt.Circle((0, 0), core.critical_radius, fill=False, color='k', lw=1, ls='--')
             plt.gca().add_artist(c0)
+        if np.isfinite(core.radius) and core.radius <= np.sqrt(2)*hw:
+            c0 = plt.Circle((0, 0), core.radius, fill=False, color='b', lw=1, ls='-.')
+            plt.gca().add_artist(c0)
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
@@ -557,11 +560,13 @@ def plot_core_evolution(s, pid, num, rmax=None):
         ln1 = plt.axvline(core.tidal_radius, c='tab:gray', lw=1)
         ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
         ln3 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
+        ln4 = plt.axvline(core.radius, ls='-.', c='b')
 
     plt.sca(axs['rho'][1])
-    lgd = plt.legend([ln1, ln2, ln3], [r'$R_\mathrm{tidal}$',
-                                       r'$R_\mathrm{crit,c}$',
-                                       r'$R_\mathrm{sonic}$'],
+    lgd = plt.legend([ln1, ln2, ln3, ln4], [r'$R_\mathrm{tidal}$',
+                                            r'$R_\mathrm{crit,c}$',
+                                            r'$R_\mathrm{sonic}$',
+                                            r'$r_M$'],
                      loc='upper right')
     plt.gca().add_artist(lgd)
 
