@@ -167,6 +167,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         """
         good_cores = []
         for pid in self.pids:
+            if np.isnan(self.cores[pid].iloc[-1].leaf_id):
+                continue
             if self.cores[pid].attrs['isolated'] and self.cores[pid].attrs['resolved']:
                 good_cores.append(pid)
         return good_cores
@@ -298,21 +300,22 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 if num in core.index[:-1] and core.loc[num].leaf_id == lid:
                     core = core.loc[num+1:]
 
-            # Read critical TES info and concatenate to self.cores
-            try:
-                # Try reading critical TES pickles
-                tes_crit = []
-                for num in core.index:
-                    fname = pathlib.Path(self.savdir, 'critical_tes',
-                                         'critical_tes.par{}.{:05d}.p'
-                                         .format(pid, num))
-                    tes_crit.append(pd.read_pickle(fname))
-                tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_index()
-                core = core.join(tes_crit)
+            if np.isfinite(core.iloc[-1].leaf_id):
+                # Read critical TES info and concatenate to self.cores
+                try:
+                    # Try reading critical TES pickles
+                    tes_crit = []
+                    for num in core.index:
+                        fname = pathlib.Path(self.savdir, 'critical_tes',
+                                             'critical_tes.par{}.{:05d}.p'
+                                             .format(pid, num))
+                        tes_crit.append(pd.read_pickle(fname))
+                    tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_index()
+                    core = core.join(tes_crit)
 
-            except FileNotFoundError:
-                pids_tes_not_found.append(pid)
-                pass
+                except FileNotFoundError:
+                    pids_tes_not_found.append(pid)
+                    pass
 
             # Set attributes
             core.attrs['pid'] = pid
@@ -337,7 +340,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         rprofs = {}
         for pid in self.pids:
             core = self.cores[pid]
-            if len(core) == 0:
+            if len(core) == 0 or np.isnan(core.iloc[-1].leaf_id):
                 rprf = None
             else:
                 rprf = []

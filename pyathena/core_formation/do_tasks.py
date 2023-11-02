@@ -108,6 +108,8 @@ if __name__ == "__main__":
                   " model {}"
             print(msg.format(mdl))
             for pid in pids:
+                if np.isnan(s.cores[pid].iloc[-1].leaf_id):
+                    continue
                 rmax = s.cores[pid].tidal_radius.max()
 #                rmax = None
                 def wrapper(num):
@@ -127,6 +129,8 @@ if __name__ == "__main__":
         if args.critical_tes:
             print(f"find critical tes for t_coll cores for model {mdl}")
             for pid in pids:
+                if np.isnan(s.cores[pid].iloc[-1].leaf_id):
+                    continue
                 def wrapper(num):
                     tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
@@ -163,7 +167,7 @@ if __name__ == "__main__":
         if args.plot_core_evolution:
             print(f"draw core evolution plots for model {mdl}")
             for pid in pids:
-                if len(s.cores[pid]) == 0:
+                if len(s.cores[pid]) == 0 or np.isnan(s.cores[pid].iloc[-1].leaf_id):
                     continue
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,
