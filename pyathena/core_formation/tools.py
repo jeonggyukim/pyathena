@@ -432,7 +432,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
 
     if np.isnan(nc):
         tcrit = rcore_crit = mcore_crit = mean_rho_crit = np.nan
-        radius = tff_crit = menc = np.nan
+        radius = tff_crit = menc = rhoe = rhoavg = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
         tcrit = cores.loc[nc].time
@@ -441,7 +441,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
         mean_rho_crit = mcore_crit / (4*np.pi*rcore_crit**3/3)
         tff_crit = tfreefall(mean_rho_crit, s.gconst)
 
-        radius, menc = [], []
+        radius, menc, rhoe, rhoavg = [], [], [], []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
         for num, core in cores.iterrows():
             rprf = rprofs.sel(num=num)
@@ -450,20 +450,24 @@ def calculate_lagrangian_props(s, cores, rprofs):
             if rprf.menc.isel(r=-1) < mcore_crit:
                 # In this case, no radius up to maximum tidal radius encloses
                 # mcore_crit. This means we are safe to set rcore = Rtidal.
-                radius.append(np.inf)
+                r_M = np.inf
             else:
-                lagrangian_radius = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit,
+                r_M = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit,
                                            rprf.r.isel(r=0), rprf.r.isel(r=-1))
-                radius.append(lagrangian_radius)
+            radius.append(r_M)
+            # enclosed mass within the critical radius
             menc.append(rprf.menc.interp(r=core.critical_radius).data[()])
 
-            rprf = rprf.interp(r=radius[-1])
+            # select r = r_M
+            rprf = rprf.interp(r=r_M)
+            rhoe.append(rprf.rho.data[()])
+            rhoavg.append(mcore_crit / (4*np.pi*r_M**3/3))
             Fthm.append(rprf.Fthm.data[()])
             Ftrb.append(rprf.Ftrb.data[()])
             Fcen.append(rprf.Fcen.data[()])
             Fani.append(rprf.Fani.data[()])
             Fgrv.append(rprf.Fgrv.data[()])
-    lprops = pd.DataFrame(data = dict(radius=radius, menc=menc,
+    lprops = pd.DataFrame(data = dict(radius=radius, menc=menc, edge_density=rhoe, mean_density=rhoavg,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
     lprops.attrs['rcore_crit'] = rcore_crit
