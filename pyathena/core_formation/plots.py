@@ -219,7 +219,7 @@ def plot_cum_forces(s, rprf, core, ax=None, lw=1):
     fadv = (dm*rprf.adv).cumulative_integrate('r') / mr
     fani = (dm*rprf.ani).cumulative_integrate('r') / mr
     fgrv = (dm*rprf.grv).cumulative_integrate('r') / mr
-    ftot = fthm + ftrb + fcen + fgrv
+    ftot = fthm + ftrb + fcen + fani + fgrv
     f0 = (dm*s.gconst*mr/ftot.r**2).cumulative_integrate('r') / mr
 #    f0 = s.gconst*mr/ftot.r**2
 
@@ -287,19 +287,18 @@ def plot_diagnostics(s, pid, normalize_time=True):
     else:
         time = cores.time
 
-    # Do plotting
+    # Plot net force
     plt.sca(axs[0])
-
-    # Note that we do not include the force due to anisotropic turbulence.
-    plt.plot(time, cores.net_force, c='k')
-
+    fnet = (cores.Fthm + cores.Ftrb + cores.Fcen + cores.Fani - cores.Fgrv)/cores.Fgrv
+    plt.plot(time, fnet, c='k')
     plt.ylim(-1, 1)
-    plt.ylabel(r'$(F_\mathrm{p, eff} - F_\mathrm{grv}) / F_\mathrm{grv}$')
-    good_cores = s.good_cores()
-    if pid in good_cores:
+    plt.ylabel(r'$F_\mathrm{net}/ F_\mathrm{grv}$')
+    if pid in s.good_cores():
         plt.title('{}, core {}'.format(s.basename, pid))
     else:
         plt.title('{}, core {}'.format(s.basename, pid)+r'$^*$')
+
+    # Plot individual force components.
     plt.twinx()
     plt.plot(time, cores.Fthm, lw=1, c='cyan', label=r'$F_\mathrm{thm}$')
     plt.plot(time, cores.Ftrb, lw=1, c='gray', label=r'$F_\mathrm{trb}$')
@@ -310,6 +309,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.ylim(1e-1, 1e2)
     plt.legend(loc='center left', bbox_to_anchor=(1.08, 0.5))
 
+    # Plot radii
     plt.sca(axs[1])
     plt.plot(time, cores.tidal_radius, c='tab:blue',
              label=r'$R_\mathrm{tidal}$')
@@ -319,12 +319,14 @@ def plot_diagnostics(s, pid, normalize_time=True):
              label=r'$R_\mathrm{sonic}$')
     plt.plot(time, cores.critical_radius, c='tab:red',
              label=r'$R_\mathrm{crit}$')
-
+    plt.plot(time, cores.radius, c='k',
+             label=r'$r_\mathrm{M}$')
     plt.yscale('log')
     plt.ylim(1e-2, 1e0)
     plt.ylabel(r'$R/L_{J,0}$')
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
+    # Plot mass
     plt.sca(axs[2])
     plt.plot(time, cores.tidal_mass, c='tab:blue',
              label=r'$M_\mathrm{tidal}$')
@@ -337,12 +339,14 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.ylabel(r'$M/M_{J,0}$')
     plt.legend(loc='upper left', bbox_to_anchor=(1, 1))
 
+    # Plot densities
     plt.sca(axs[3])
     plt.plot(time, cores.center_density, c='tab:blue', ls='-',
              label=r'$\rho_c$')
     plt.plot(time, cores.edge_density, c='tab:blue', ls='--',
              label=r'$\rho_e$')
-    plt.plot(time, cores.mean_density, c='tab:blue', ls=':',
+    rhoavg = cores.attrs['mcore_crit'] / (4*np.pi*cores.radius**3/3)
+    plt.plot(time, rhoavg, c='tab:blue', ls=':',
              label=r'$\overline{\rho}$')
     plt.yscale('log')
     plt.ylabel(r'$\rho/\rho_0$')
@@ -350,9 +354,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.ylim(1e0, 1e5)
 
     if normalize_time:
-        plt.xlim(-2, 0)
-        plt.xlabel(r'$(t - t_\mathrm{coll})/t_\mathrm{ff}$'
-                   r'$(\overline{\rho}_\mathrm{coll})$')
+        plt.xlim(-2, 1)
+        plt.xlabel(r'$(t - t_\mathrm{crit})/(t_\mathrm{coll} - t_\mathrm{crit})$')
     else:
         for ax in axs:
             ax.axvline(cores.attrs['tcrit'], color='k', ls=':')
@@ -722,7 +725,6 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     if ax is not None:
         plt.sca(ax)
 
-#    r0 = core.tidal_radius
     r0 = core.critical_radius
 
     plt.plot(rprf.r/r0, rprf.rho/core.center_density, ls='-', marker='+', color='k', lw=lw)
@@ -734,7 +736,6 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
     plt.plot(xi/np.sqrt(core.center_density)/r0, np.exp(u), c='tab:red', lw=lw)
-#    plt.axvline(core.critical_radius/r0, color='tab:red', lw=lw/2, ls='--')
 
     # Overplot critical BE
     tsc = tes.TESc()
@@ -747,10 +748,9 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
 
     plt.xlim(0, 1)
     plt.ylim(5e-3, 1e0)
-    plt.xlabel(r'$r/R_\mathrm{tidal}$')
-    plt.ylabel(r'$\rho/\rho_0$')
+    plt.xlabel(r'$r/R_\mathrm{crit}$')
+    plt.ylabel(r'$\rho/\rho_c$')
     plt.yscale('log')
-
 
 # DEPRECATED
 
