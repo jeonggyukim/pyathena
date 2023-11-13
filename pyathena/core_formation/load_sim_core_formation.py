@@ -302,14 +302,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             core = pd.read_pickle(fname).sort_index()
 
-            # Remove duplicated nums that formed sink earlier.
-            for pid_prev in range(1, pid):
-                cc = cores[pid_prev].iloc[-1]
-                num = cc.name
-                lid = cc.leaf_id
-                if num in core.index[:-1] and core.loc[num].leaf_id == lid:
-                    core = core.loc[num+1:]
-
             if np.isfinite(core.iloc[-1].leaf_id):
                 # Read critical TES info and concatenate to self.cores
                 try:
