@@ -433,6 +433,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
     if np.isnan(nc):
         tcrit = rcore_crit = mcore_crit = mean_rho_crit = np.nan
         radius = tff_crit = menc = rhoe = rhoavg = np.nan
+        vinfall = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
         tcrit = cores.loc[nc].time
@@ -442,24 +443,30 @@ def calculate_lagrangian_props(s, cores, rprofs):
         tff_crit = tfreefall(mean_rho_crit, s.gconst)
 
         radius, menc, rhoe, rhoavg = [], [], [], []
+        vinfall = []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
         for num, core in cores.iterrows():
-            rprf = rprofs.sel(num=num)
+            rprof = rprofs.sel(num=num)
 
             # Find radius which encloses mcore_crit.
-            if rprf.menc.isel(r=-1) < mcore_crit:
+            if rprof.menc.isel(r=-1) < mcore_crit:
                 # In this case, no radius up to maximum tidal radius encloses
                 # mcore_crit. This means we are safe to set rcore = Rtidal.
                 r_M = np.inf
             else:
-                r_M = brentq(lambda x: rprf.menc.interp(r=x) - mcore_crit,
-                                           rprf.r.isel(r=0), rprf.r.isel(r=-1))
+                r_M = brentq(lambda x: rprof.menc.interp(r=x) - mcore_crit,
+                                           rprof.r.isel(r=0), rprof.r.isel(r=-1))
             radius.append(r_M)
             # enclosed mass within the critical radius
-            menc.append(rprf.menc.interp(r=core.critical_radius).data[()])
+            menc.append(rprof.menc.interp(r=core.critical_radius).data[()])
+
+            # Mass-weighted infall speed
+            rprf = rprof.sel(r=slice(0, r_M))
+            vin = rprf.vel1_mw.weighted(rprf.r**2*rprf.rho).mean().data[()]
+            vinfall.append(vin)
 
             # select r = r_M
-            rprf = rprf.interp(r=r_M)
+            rprf = rprof.interp(r=r_M)
             rhoe.append(rprf.rho.data[()])
             rhoavg.append(mcore_crit / (4*np.pi*r_M**3/3))
             Fthm.append(rprf.Fthm.data[()])
@@ -468,6 +475,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
             Fani.append(rprf.Fani.data[()])
             Fgrv.append(rprf.Fgrv.data[()])
     lprops = pd.DataFrame(data = dict(radius=radius, menc=menc, edge_density=rhoe, mean_density=rhoavg,
+                                      vinfall=vinfall,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
     lprops.attrs['rcore_crit'] = rcore_crit
