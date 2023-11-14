@@ -273,6 +273,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 sigma_r = np.sqrt(rprf.dvel1_sq_mw.weighted(
                     rprf.r**2*rprf.rho).mean().data[()])
             cores.attrs['sigma_r'] = sigma_r
+
+            # Sort attributes
+            cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
+
             self.cores[pid] = cores
 
         return self.cores
@@ -344,7 +348,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     pids_tes_not_found.append(pid)
                     pass
 
-            # Assign to attribute
+            # Sort attributes
+            cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
+
             cores_dict[pid] = cores
 
         if len(pids_tes_not_found) > 0:
