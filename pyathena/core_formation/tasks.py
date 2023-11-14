@@ -121,7 +121,7 @@ def critical_tes(s, pid, num, overwrite=False):
         pickle.dump(critical_tes, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def core_tracking(s, pid, overwrite=False):
+def core_tracking(s, pid, protostellar=False, overwrite=False):
     """Loops over all sink particles and find their progenitor cores
 
     Finds a unique grid-dendro leaf at each snapshot that is going to collapse.
@@ -134,18 +134,30 @@ def core_tracking(s, pid, overwrite=False):
         LoadSimCoreFormation instance.
     pid : int
         Particle ID
+    protostellar : bool
+        If True, track cores including the protostellar phase.
     overwrite : str, optional
         If true, overwrites the existing pickle file.
     """
-    # Check if file exists
-    ofname = Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
-    ofname.parent.mkdir(exist_ok=True)
-    if ofname.exists() and not overwrite:
-        print('[core_tracking] file already exists. Skipping...')
-        return
+    if protostellar:
+        if 'numcoll' in s.cores[pid].attrs and not overwrite:
+            print('[core_tracking] file already exists. Skipping...')
+            return
+        else:
+            ofname = Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
+            ofname.parent.mkdir(exist_ok=True)
+            cores = tools.track_protostellar_cores(s, pid)
+            cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
+    else:
+        # Check if file exists
+        ofname = Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            print('[core_tracking] file already exists. Skipping...')
+            return
 
-    cores = tools.track_cores(s, pid)
-    cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
+        cores = tools.track_cores(s, pid)
+        cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def radial_profile(s, pid, num, overwrite=False, rmax=None):
