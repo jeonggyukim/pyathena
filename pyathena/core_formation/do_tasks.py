@@ -124,7 +124,7 @@ if __name__ == "__main__":
                 ncoll = cores.attrs['numcoll']
                 if np.isnan(cores.loc[ncoll].leaf_id):
                     continue
-                rmax = cores.tidal_radius.max()
+                rmax = cores.loc[:ncoll].tidal_radius.max()
 #                rmax = None
                 def wrapper(num):
                     tasks.radial_profile(s, pid, num,
