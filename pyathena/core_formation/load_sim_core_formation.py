@@ -122,6 +122,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             if hasattr(self, "cores") and hasattr(self, "rprofs"):
                 self.cores = self.update_core_props(force_override=force_override)
+            else:
+                logging.warning("Failed to update core properties")
 
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
