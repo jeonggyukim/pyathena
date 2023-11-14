@@ -8,6 +8,7 @@ import xarray as xr
 import subprocess
 import pickle
 import glob
+import logging
 
 # pyathena modules
 from pyathena.core_formation import plots
@@ -101,6 +102,12 @@ def critical_tes(s, pid, num, overwrite=False):
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[critical_tes] file already exists. Skipping...')
+        return
+
+    if num not in s.rprofs[pid].num:
+        msg = (f"Radial profile for num={num} does not exist. "
+                "Cannot calculate critical_tes. Skipping...")
+        logging.warning(msg)
         return
 
     msg = '[critical_tes] processing model {} pid {} num {}'
