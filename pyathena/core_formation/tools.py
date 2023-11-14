@@ -683,9 +683,11 @@ def calculate_accelerations(rprf):
 
 
 def critical_time(s, pid):
-    cores = s.cores[pid]
+    cores = s.cores[pid].copy()
     if len(cores) == 0:
         return np.nan
+    if 'numcoll' in cores.attrs:
+        cores = cores.loc[:cores.attrs['numcoll']]
     rprofs = s.rprofs[pid]
 
     ncrit = None
