@@ -368,27 +368,37 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             If `cores` has not been initialized (due to missing files, etc.)
         """
         rprofs = {}
+        pids_not_found = []
         for pid in self.pids:
             cores = self.cores[pid]
             ncoll = cores.attrs['numcoll']
             if len(cores) == 0 or np.isnan(cores.loc[ncoll].leaf_id):
                 rprf = None
             else:
-                rprf = []
+                rprf, nums = [], []
                 for num in cores.index:
-                    findv = pathlib.Path(self.savdir, 'radial_profile',
-                                          'radial_profile.par{}.{:05d}.nc'
-                                          .format(pid, num))
-                    rprf.append(xr.open_dataset(findv))
-                rprf = xr.concat(rprf, 't')
-                rprf = rprf.assign_coords(dict(num=('t', cores.index)))
-                for axis in [1, 2, 3]:
-                    rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
-                                                 - rprf[f'vel{axis}_mw']**2)
-                rprf['menc'] = (4*np.pi*rprf.r**2*rprf.rho).cumulative_integrate('r')
-                rprf = rprf.merge(tools.calculate_accelerations(rprf))
-                rprf = rprf.set_xindex('num')
+                    try:
+                        findv = pathlib.Path(self.savdir, 'radial_profile',
+                                              'radial_profile.par{}.{:05d}.nc'
+                                              .format(pid, num))
+                        rprf.append(xr.open_dataset(findv))
+                        nums.append(num)
+                    except FileNotFoundError:
+                        pids_not_found.append(pid)
+                        break
+                if len(rprf) > 0:
+                    rprf = xr.concat(rprf, 't')
+                    rprf = rprf.assign_coords(dict(num=('t', nums)))
+                    for axis in [1, 2, 3]:
+                        rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
+                                                     - rprf[f'vel{axis}_mw']**2)
+                    rprf['menc'] = (4*np.pi*rprf.r**2*rprf.rho).cumulative_integrate('r')
+                    rprf = rprf.merge(tools.calculate_accelerations(rprf))
+                    rprf = rprf.set_xindex('num')
             rprofs[pid] = rprf
+        if len(pids_not_found) > 0:
+            msg = f"Some radial profiles are missing for pid {pids_not_found}."
+            logging.warning(msg)
         return rprofs
 
 
