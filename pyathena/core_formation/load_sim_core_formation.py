@@ -318,7 +318,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
     @LoadSim.Decorators.check_pickle
     def _load_cores(self, prefix='cores', savdir=None, force_override=False):
         cores_dict = {}
-        pids_tes_not_found = []
+        pids_not_found = []
         for pid in self.pids:
             fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             cores = pd.read_pickle(fname).sort_index()
@@ -326,14 +326,19 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             if np.isfinite(cores.loc[ncoll].leaf_id):
                 # Read critical TES info and concatenate to self.cores
-                try:
-                    # Try reading critical TES pickles
-                    tes_crit = []
-                    for num in cores.index:
+
+                # Try reading critical TES pickles
+                tes_crit = []
+                for num in cores.index:
+                    try:
                         fname = pathlib.Path(self.savdir, 'critical_tes',
                                              'critical_tes.par{}.{:05d}.p'
                                              .format(pid, num))
                         tes_crit.append(pd.read_pickle(fname))
+                    except FileNotFoundError:
+                        pids_not_found.append(pid)
+                        break
+                if len(tes_crit) > 0:
                     tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_index()
 
                     # Save attributes before performing join, which will drop them.
@@ -341,20 +346,17 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     attrs.update(tes_crit.attrs)
                     cores = cores.join(tes_crit)
 
-                    # Reattach attributes
-                    cores.attrs = attrs
-
-                except FileNotFoundError:
-                    pids_tes_not_found.append(pid)
-                    pass
+                # Reattach attributes
+                cores.attrs = attrs
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
 
             cores_dict[pid] = cores
 
-        if len(pids_tes_not_found) > 0:
-            logging.warning("Cannot find critical TES information for pid: {}.".format(pids_tes_not_found))
+        if len(pids_not_found) > 0:
+            msg = f"Some critical TES files are missing for pid {pids_not_found}"
+            logging.warning(msg)
         return cores_dict
 
     @LoadSim.Decorators.check_pickle
