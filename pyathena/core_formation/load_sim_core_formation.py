@@ -254,7 +254,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['dt_build'] = cores.attrs['tcrit'] - cores.iloc[0].time
 
             cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
-            mcore = cores.attrs['mcore_crit']
+            mcore = cores.attrs['mcore']
             phst = self.load_parhst(pid)
             idx = phst.mass.sub(mcore).abs().argmin()
             if np.isnan(mcore) or idx == phst.index[-1]:
@@ -269,7 +269,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 sigma_r = np.nan
             else:
                 rprf = rprofs.sel(num=cores.attrs['numcrit'])
-                rprf = rprf.sel(r=slice(0, cores.attrs['rcore_crit']))
+                rprf = rprf.sel(r=slice(0, cores.attrs['rcore']))
                 sigma_r = np.sqrt(rprf.dvel1_sq_mw.weighted(
                     rprf.r**2*rprf.rho).mean().data[()])
             cores.attrs['sigma_r'] = sigma_r

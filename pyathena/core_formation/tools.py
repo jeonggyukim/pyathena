@@ -523,20 +523,20 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
 
 def calculate_lagrangian_props(s, cores, rprofs):
     # Find critical time
-    nc = critical_time(s, cores.attrs['pid'])
+    ncrit = critical_time(s, cores.attrs['pid'])
     tcoll = s.tcoll_cores.loc[cores.attrs['pid']].time
 
-    if np.isnan(nc):
-        tcrit = rcore_crit = mcore_crit = mean_rho_crit = np.nan
+    if np.isnan(ncrit):
+        tcrit = rcore = mcore = mean_density = np.nan
         radius = tff_crit = menc = rhoe = rhoavg = np.nan
         vinfall = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
-        tcrit = cores.loc[nc].time
-        rcore_crit = cores.loc[nc].critical_radius
-        mcore_crit = rprofs.sel(num=nc).menc.interp(r=rcore_crit).data[()]
-        mean_rho_crit = mcore_crit / (4*np.pi*rcore_crit**3/3)
-        tff_crit = tfreefall(mean_rho_crit, s.gconst)
+        tcrit = cores.loc[ncrit].time
+        rcore = cores.loc[ncrit].critical_radius
+        mcore = rprofs.sel(num=ncrit).menc.interp(r=rcore).data[()]
+        mean_density = mcore / (4*np.pi*rcore**3/3)
+        tff_crit = tfreefall(mean_density, s.gconst)
 
         radius, menc, rhoe, rhoavg = [], [], [], []
         vinfall = []
@@ -544,13 +544,13 @@ def calculate_lagrangian_props(s, cores, rprofs):
         for num, core in cores.iterrows():
             rprof = rprofs.sel(num=num)
 
-            # Find radius which encloses mcore_crit.
-            if rprof.menc.isel(r=-1) < mcore_crit:
+            # Find radius which encloses mcore.
+            if rprof.menc.isel(r=-1) < mcore:
                 # In this case, no radius up to maximum tidal radius encloses
-                # mcore_crit. This means we are safe to set rcore = Rtidal.
+                # mcore. This means we are safe to set rcore = Rtidal.
                 r_M = np.inf
             else:
-                r_M = brentq(lambda x: rprof.menc.interp(r=x) - mcore_crit,
+                r_M = brentq(lambda x: rprof.menc.interp(r=x) - mcore,
                                            rprof.r.isel(r=0), rprof.r.isel(r=-1))
             radius.append(r_M)
             # enclosed mass within the critical radius
@@ -567,7 +567,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
             # select r = r_M
             rprf = rprof.interp(r=r_M)
             rhoe.append(rprf.rho.data[()])
-            rhoavg.append(mcore_crit / (4*np.pi*r_M**3/3))
+            rhoavg.append(mcore / (4*np.pi*r_M**3/3))
             Fthm.append(rprf.Fthm.data[()])
             Ftrb.append(rprf.Ftrb.data[()])
             Fcen.append(rprf.Fcen.data[()])
@@ -577,12 +577,12 @@ def calculate_lagrangian_props(s, cores, rprofs):
                                       vinfall=vinfall,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
-    lprops.attrs['rcore_crit'] = rcore_crit
-    lprops.attrs['mcore_crit'] = mcore_crit
-    lprops.attrs['mean_rho_crit'] = mean_rho_crit
+    lprops.attrs['rcore'] = rcore
+    lprops.attrs['mcore'] = mcore
+    lprops.attrs['mean_density'] = mean_density
     lprops.attrs['tff_crit'] = tff_crit
     lprops.attrs['tcrit'] = tcrit
-    lprops.attrs['numcrit'] = nc
+    lprops.attrs['numcrit'] = ncrit
     lprops.attrs['tcoll'] = tcoll
 
     return lprops
