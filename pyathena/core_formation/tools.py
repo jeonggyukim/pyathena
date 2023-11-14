@@ -213,6 +213,11 @@ def track_cores(s, pid, sub_frac=0.2):
                               envelop_radius=envelop_radius,
                               tidal_radius=tidal_radius),
                          index=nums_track, dtype=object).sort_index()
+
+    # Set attributes
+    cores.attrs['pid'] = pid
+    cores.attrs['numcoll'] = cores.index[-1]
+
     return cores
 
 
@@ -239,16 +244,13 @@ def track_protostellar_cores(s, pid, sub_frac=0.2):
     # We do not want to write derived properties into cores.par{}.p.
     fname = pathlib.Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
     cores = pd.read_pickle(fname).sort_index()
+    ncoll = cores.attrs['numcoll']
 
-    if 'numcoll' in cores.attrs:
-        # If there is already a protostellar cores, discard it
-        cores = cores.loc[:cores.attrs['numcoll']]
-    else:
-        # If there is only a prestellar cores, record num_coll
-        cores.attrs['numcoll'] = cores.index[-1]
+    # Select prestellar part
+    cores = cores.loc[:ncoll]
 
     # nums after t_coll
-    nums = [num for num in s.nums if num > cores.attrs['numcoll']]
+    nums = [num for num in s.nums if num > ncoll]
 
     nums_track = []
     time = []
@@ -697,8 +699,7 @@ def critical_time(s, pid):
     cores = s.cores[pid].copy()
     if len(cores) == 0:
         return np.nan
-    if 'numcoll' in cores.attrs:
-        cores = cores.loc[:cores.attrs['numcoll']]
+    cores = cores.loc[:cores.attrs['numcoll']]
     rprofs = s.rprofs[pid]
 
     ncrit = None

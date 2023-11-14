@@ -120,16 +120,18 @@ if __name__ == "__main__":
                   " model {}"
             print(msg.format(mdl))
             for pid in pids:
-                if np.isnan(s.cores[pid].iloc[-1].leaf_id):
+                cores = s.cores[pid]
+                ncoll = cores.attrs['numcoll']
+                if np.isnan(cores.loc[ncoll].leaf_id):
                     continue
-                rmax = s.cores[pid].tidal_radius.max()
+                rmax = cores.tidal_radius.max()
 #                rmax = None
                 def wrapper(num):
                     tasks.radial_profile(s, pid, num,
                                          overwrite=args.overwrite,
                                          rmax=rmax)
                 with Pool(args.np) as p:
-                    p.map(wrapper, s.cores[pid].index)
+                    p.map(wrapper, cores.index)
 
                 # Remove combined rprofs which will be outdated.
                 fname = Path(s.savdir, 'radial_profile',
@@ -141,12 +143,14 @@ if __name__ == "__main__":
         if args.critical_tes:
             print(f"find critical tes for t_coll cores for model {mdl}")
             for pid in pids:
-                if np.isnan(s.cores[pid].iloc[-1].leaf_id):
+                cores = s.cores[pid]
+                ncoll = cores.attrs['numcoll']
+                if np.isnan(cores.loc[ncoll].leaf_id):
                     continue
                 def wrapper(num):
                     tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
-                    p.map(wrapper, s.cores[pid].index)
+                    p.map(wrapper, cores.index)
 
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}")
@@ -170,8 +174,8 @@ if __name__ == "__main__":
                     p.map(wrapper2, s.good_cores())
 
             def wrapper2(pid):
-                nc = s.cores[pid].attrs['numcrit']
-                tasks.calculate_linewidth_size(s, nc, pid=pid, overwrite=args.overwrite)
+                ncrit = s.cores[pid].attrs['numcrit']
+                tasks.calculate_linewidth_size(s, ncrit, pid=pid, overwrite=args.overwrite)
             with Pool(args.np) as p:
                 p.map(wrapper2, s.good_cores())
 
@@ -179,13 +183,15 @@ if __name__ == "__main__":
         if args.plot_core_evolution:
             print(f"draw core evolution plots for model {mdl}")
             for pid in pids:
-                if len(s.cores[pid]) == 0 or np.isnan(s.cores[pid].iloc[-1].leaf_id):
+                cores = s.cores[pid]
+                ncoll = cores.attrs['numcoll']
+                if len(cores) == 0 or np.isnan(cores.loc[ncoll].leaf_id):
                     continue
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,
                                               overwrite=args.overwrite)
                 with Pool(args.np) as p:
-                    p.map(wrapper, s.cores[pid].index)
+                    p.map(wrapper, cores.index)
 
         if args.plot_sink_history:
             def wrapper(num):
