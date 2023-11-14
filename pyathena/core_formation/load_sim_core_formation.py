@@ -169,9 +169,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         """
         good_cores = []
         for pid in self.pids:
-            if np.isnan(self.cores[pid].iloc[-1].leaf_id):
+            cores = self.cores[pid]
+            ncoll = cores.attrs['numcoll']
+            if np.isnan(cores.loc[ncoll].leaf_id):
                 continue
-            if self.cores[pid].attrs['isolated'] and self.cores[pid].attrs['resolved']:
+            if cores.attrs['isolated'] and cores.attrs['resolved']:
                 good_cores.append(pid)
         return good_cores
 
@@ -247,7 +249,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.insert(2, 'tnorm2',
                          (cores.time - cores.attrs['tcrit'])
                           / (cores.attrs['tcoll'] - cores.attrs['tcrit']))
+
+            # TODO should be replaced
             cores.attrs['dt_build'] = cores.attrs['tcrit'] - cores.iloc[0].time
+
             cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
             mcore = cores.attrs['mcore_crit']
             phst = self.load_parhst(pid)
@@ -308,18 +313,19 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
     @LoadSim.Decorators.check_pickle
     def _load_cores(self, prefix='cores', savdir=None, force_override=False):
-        cores = {}
+        cores_dict = {}
         pids_tes_not_found = []
         for pid in self.pids:
             fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
-            core = pd.read_pickle(fname).sort_index()
+            cores = pd.read_pickle(fname).sort_index()
+            ncoll = cores.attrs['numcoll']
 
-            if np.isfinite(core.iloc[-1].leaf_id):
+            if np.isfinite(cores.loc[ncoll].leaf_id):
                 # Read critical TES info and concatenate to self.cores
                 try:
                     # Try reading critical TES pickles
                     tes_crit = []
-                    for num in core.index:
+                    for num in cores.index:
                         fname = pathlib.Path(self.savdir, 'critical_tes',
                                              'critical_tes.par{}.{:05d}.p'
                                              .format(pid, num))
@@ -327,26 +333,23 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_index()
 
                     # Save attributes before performing join, which will drop them.
-                    attrs = core.attrs.copy()
+                    attrs = cores.attrs.copy()
                     attrs.update(tes_crit.attrs)
-                    core = core.join(tes_crit)
+                    cores = cores.join(tes_crit)
 
                     # Reattach attributes
-                    core.attrs = attrs
+                    cores.attrs = attrs
 
                 except FileNotFoundError:
                     pids_tes_not_found.append(pid)
                     pass
 
-            # Set attributes
-            core.attrs['pid'] = pid
-
             # Assign to attribute
-            cores[pid] = core
+            cores_dict[pid] = cores
 
         if len(pids_tes_not_found) > 0:
             logging.warning("Cannot find critical TES information for pid: {}.".format(pids_tes_not_found))
-        return cores
+        return cores_dict
 
     @LoadSim.Decorators.check_pickle
     def _load_radial_profiles(self, prefix='radial_profile', savdir=None, force_override=False):
@@ -360,18 +363,19 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         """
         rprofs = {}
         for pid in self.pids:
-            core = self.cores[pid]
-            if len(core) == 0 or np.isnan(core.iloc[-1].leaf_id):
+            cores = self.cores[pid]
+            ncoll = cores.attrs['numcoll']
+            if len(cores) == 0 or np.isnan(cores.loc[ncoll].leaf_id):
                 rprf = None
             else:
                 rprf = []
-                for num in core.index:
+                for num in cores.index:
                     findv = pathlib.Path(self.savdir, 'radial_profile',
                                           'radial_profile.par{}.{:05d}.nc'
                                           .format(pid, num))
                     rprf.append(xr.open_dataset(findv))
                 rprf = xr.concat(rprf, 't')
-                rprf = rprf.assign_coords(dict(num=('t', core.index)))
+                rprf = rprf.assign_coords(dict(num=('t', cores.index)))
                 for axis in [1, 2, 3]:
                     rprf[f'dvel{axis}_sq_mw'] = (rprf[f'vel{axis}_sq_mw']
                                                  - rprf[f'vel{axis}_mw']**2)
