@@ -345,7 +345,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
              label=r'$\rho_c$')
     plt.plot(time, cores.edge_density, c='tab:blue', ls='--',
              label=r'$\rho_e$')
-    rhoavg = cores.attrs['mcore_crit'] / (4*np.pi*cores.radius**3/3)
+    rhoavg = cores.attrs['mcore'] / (4*np.pi*cores.radius**3/3)
     plt.plot(time, rhoavg, c='tab:blue', ls=':',
              label=r'$\overline{\rho}$')
     plt.yscale('log')
@@ -367,8 +367,8 @@ def plot_diagnostics(s, pid, normalize_time=True):
 
 def plot_core_evolution(s, pid, num, rmax=None):
     if rmax is None:
-        if np.isfinite(s.cores[pid].attrs['rcore_crit']):
-            rmax = 2*s.cores[pid].attrs['rcore_crit']
+        if np.isfinite(s.cores[pid].attrs['rcore']):
+            rmax = 2*s.cores[pid].attrs['rcore']
         else:
             rmax = s.cores[pid].tidal_radius.max()
     hw = 1.1*rmax
