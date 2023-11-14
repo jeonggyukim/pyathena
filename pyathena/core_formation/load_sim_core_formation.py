@@ -213,10 +213,19 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             if 'critical_radius' not in cores:
                 continue
             rprofs = self.rprofs[pid]
-            attrs = cores.attrs.copy()
             lprops = tools.calculate_lagrangian_props(self, cores, rprofs)
+            if set(lprops.columns).issubset(cores.columns):
+                msg = ("Lagrangian core properties are already included in "
+                       "cores attributes, even before computing them. "
+                       "The pickle might be currupted.")
+                raise ValueError(msg)
+
+            # Save attributes before performing join, which will drop them.
+            attrs = cores.attrs.copy()
             attrs.update(lprops.attrs)
             cores = cores.join(lprops)
+
+            # Reattach attributes
             cores.attrs = attrs
 
             # Workaround to use pid as an argument in the function calls below
@@ -259,6 +268,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 sigma_r = np.sqrt(rprf.dvel1_sq_mw.weighted(
                     rprf.r**2*rprf.rho).mean().data[()])
             cores.attrs['sigma_r'] = sigma_r
+            self.cores[pid] = cores
 
         return self.cores
 
@@ -315,7 +325,14 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                                              .format(pid, num))
                         tes_crit.append(pd.read_pickle(fname))
                     tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_index()
+
+                    # Save attributes before performing join, which will drop them.
+                    attrs = core.attrs.copy()
+                    attrs.update(tes_crit.attrs)
                     core = core.join(tes_crit)
+
+                    # Reattach attributes
+                    core.attrs = attrs
 
                 except FileNotFoundError:
                     pids_tes_not_found.append(pid)

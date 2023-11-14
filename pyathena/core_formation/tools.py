@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.special import erfcinv
 from scipy import odr
 from scipy.optimize import brentq
+import pathlib
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import tes
@@ -234,7 +235,10 @@ def track_protostellar_cores(s, pid, sub_frac=0.2):
                   the prestellar stage.
     """
     # Load prestellar core list
-    cores = s.cores[pid].copy()
+    # Do not load from self.cores, which might already contain the derived core properties.
+    # We do not want to write derived properties into cores.par{}.p.
+    fname = pathlib.Path(s.savdir, 'cores', 'cores.par{}.p'.format(pid))
+    cores = pd.read_pickle(fname).sort_index()
 
     if 'numcoll' in cores.attrs:
         # If there is already a protostellar cores, discard it
