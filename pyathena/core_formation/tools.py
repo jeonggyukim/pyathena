@@ -98,18 +98,23 @@ def find_tcoll_core(s, pid, ncells_min=27):
         return lid
 
 
-def track_cores(s, pid, tol=1.1, sub_frac=0.2):
-    """
+def track_cores(s, pid, sub_frac=0.2):
+    """Perform reverse core tracking
+
     Parameters
     ----------
     s : LoadSimCoreFormation
     pid : int
-    tol : float, optional
     sub_frac : float, optional
 
     Returns
     -------
     cores : pandas.DataFrame
+
+    See also
+    --------
+    track_protostellar_cores : Forward core tracking after t_coll into
+                               the protostellar stage.
     """
     # start from t = t_coll and track backward
     nums = np.arange(s.tcoll_cores.loc[pid].num, config.GRID_NUM_START-1, -1)
@@ -207,6 +212,87 @@ def track_cores(s, pid, tol=1.1, sub_frac=0.2):
                               envelop_radius=envelop_radius,
                               tidal_radius=tidal_radius),
                          index=nums_track, dtype=object).sort_index()
+    return cores
+
+
+def track_protostellar_cores(s, pid, sub_frac=0.2):
+    """Perform forward core tracking
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+    pid : int
+    sub_frac : float, optional
+
+    Returns
+    -------
+    cores : pandas.DataFrame
+
+    See also
+    --------
+    track_cores : Reverse core tracking from t_coll back into
+                  the prestellar stage.
+    """
+    # Load prestellar core list
+    cores = s.cores[pid].copy()
+
+    if 'numcoll' in cores.attrs:
+        # If there is already a protostellar cores, discard it
+        cores = cores.loc[:cores.attrs['numcoll']]
+    else:
+        # If there is only a prestellar cores, record num_coll
+        cores.attrs['numcoll'] = cores.index[-1]
+
+    # nums after t_coll
+    nums = [num for num in s.nums if num > cores.attrs['numcoll']]
+
+    nums_track = []
+    time = []
+    leaf_id = []
+    leaf_radius = []
+    envelop_id = []
+    envelop_radius = []
+    tidal_radius  = []
+    for num in nums:
+        msg = '[track_protostellar_cores] processing model {} pid {} num {}'
+        print(msg.format(s.basename, pid, num))
+        gd = s.load_dendro(num)
+        ds = s.load_hdf5(num, header_only=True)
+        pds = s.load_partab(num)
+
+        # Find closet leaf to the sink particle
+        sink_pos = pds.loc[pid][['x1', 'x2', 'x3']].to_numpy()
+        dst = [get_periodic_distance(get_coords_node(s, lid), sink_pos, s.Lbox)
+               for lid in gd.leaves]
+        lid = gd.leaves[np.argmin(dst)]
+        rlf = reff_sph(gd.len(lid)*s.dV)
+
+        # Do the tidal correction to neglect attached substructures.
+        eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
+        renv = reff_sph(gd.len(eid)*s.dV)
+
+        # Calculate tidal radius
+        rtidal = calculate_tidal_radius(s, gd, eid, lid)
+
+        nums_track.append(num)
+        time.append(ds['Time'])
+        leaf_id.append(lid)
+        leaf_radius.append(rlf)
+        envelop_id.append(eid)
+        envelop_radius.append(renv)
+        tidal_radius.append(rtidal)
+
+    tmp = pd.DataFrame(dict(time=time,
+                            leaf_id=leaf_id,
+                            leaf_radius=leaf_radius,
+                            envelop_id=envelop_id,
+                            envelop_radius=envelop_radius,
+                            tidal_radius=tidal_radius),
+                       index=nums_track, dtype=object).sort_index()
+    tmp.attrs = cores.attrs
+
+    cores = pd.concat([cores, tmp])
+
     return cores
 
 
