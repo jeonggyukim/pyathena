@@ -544,7 +544,10 @@ def calculate_lagrangian_props(s, cores, rprofs):
                                            rprof.r.isel(r=0), rprof.r.isel(r=-1))
             radius.append(r_M)
             # enclosed mass within the critical radius
-            menc.append(rprof.menc.interp(r=core.critical_radius).data[()])
+            if np.isnan(core.critical_radius):
+                menc.append(np.nan)
+            else:
+                menc.append(rprof.menc.interp(r=core.critical_radius).data[()])
 
             # Mass-weighted infall speed
             rprf = rprof.sel(r=slice(0, r_M))
