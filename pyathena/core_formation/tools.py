@@ -471,22 +471,24 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
 
     Notes
     -----
-    vel1, vel2, vel3: density-weighted mean velocities (v_r, v_theta, v_phi).
-    vel1_sq, vel2_sq, vel3_sq: density-weighted mean squared velocities.
-    gacc1: density-weighted mean gravitational acceleration.
+    vel1, vel2, vel3 : Mass-weighted mean velocities (v_r, v_theta, v_phi).
+    vel1_sq_mw, vel2_sq_mw, vel3_sq_mw : Mass-weighted variance of the velocities.
+    gacc1_mw : Mass-weighted mean gravitational acceleration.
+    phi_mw : Mass-weighted mean gravitational potential.
     """
     # Sometimes, tidal radius is so small that the angular momentum vector
     # Cannot be computed. In this case, fall back to default behavior.
     # (to_spherical will assume z axis as the polar axis).
-    if (np.array(lvec)**2).sum() == 0:
+    if lvec is not None and (np.array(lvec)**2).sum() == 0:
         lvec = None
 
     # Slice data
-    nmax = np.floor(rmax/s.dx) + 1
-    edges = np.insert(np.arange(s.dx/2, (nmax + 1)*s.dx, s.dx), 0, 0)
-    ds = ds.sel(x=slice(origin[0] - edges[-1], origin[0] + edges[-1]),
-                y=slice(origin[1] - edges[-1], origin[1] + edges[-1]),
-                z=slice(origin[2] - edges[-1], origin[2] + edges[-1]))
+    nbin = int(np.ceil(rmax/s.dx))
+    ledge = 0.5*s.dx
+    redge = (nbin + 0.5)*s.dx
+    ds = ds.sel(x=slice(origin[0] - redge, origin[0] + redge),
+                y=slice(origin[1] - redge, origin[1] + redge),
+                z=slice(origin[2] - redge, origin[2] + redge))
 
     # Convert density and velocities to spherical coord.
     vel, gacc = {}, {}
@@ -504,21 +506,29 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
     ds_sph['phi'] = ds.phi.assign_coords(dict(r=r))
 
-    # Radial binning
-    rprf = {}
-    for k in ['rho']:
-        rprf[k] = transform.groupby_bins(ds_sph[k], 'r', edges)
-    # We can use weighted groupby_bins, but let's do it like this to reuse
-    # rprf['rho'] for performance
-    for k in ['gacc1', 'vel1', 'vel2', 'vel3', 'phi']:
-        rprf[k+'_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k],
-                                               'r', edges) / rprf['rho']
-    for k in ['vel1', 'vel2', 'vel3']:
-        rprf[k+'_sq_mw'] = transform.groupby_bins(ds_sph['rho']*ds_sph[k]**2,
-                                                  'r', edges) / rprf['rho']
+    # Perform radial binnings
+    rprofs = {}
 
-    rprf = xr.Dataset(rprf)
-    return rprf
+    # Volume-weighted averages
+    for k in ['rho']:
+        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop(['x', 'y', 'z'])
+        rprf = transform.fast_groupby_bins(ds_sph[k], 'r', ledge, redge, nbin)
+        rprofs[k] = xr.concat([rprf_c, rprf], 'r')
+
+    # Mass-weighted averages
+    for k in ['gacc1', 'vel1', 'vel2', 'vel3', 'phi']:
+        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop(['x', 'y', 'z'])
+        rprf = transform.fast_groupby_bins(ds_sph['rho']*ds_sph[k], 'r', ledge, redge, nbin) / rprofs['rho']
+        rprofs[k+'_mw'] = xr.concat([rprf_c, rprf], 'r')
+
+    # RMS averages
+    for k in ['vel1', 'vel2', 'vel3']:
+        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop(['x', 'y', 'z'])**2
+        rprf = transform.fast_groupby_bins(ds_sph['rho']*ds_sph[k]**2, 'r', ledge, redge, nbin) / rprofs['rho']
+        rprofs[k+'_sq_mw'] = xr.concat([rprf_c, rprf], 'r')
+
+    rprofs = xr.Dataset(rprofs)
+    return rprofs
 
 
 def calculate_lagrangian_props(s, cores, rprofs):
