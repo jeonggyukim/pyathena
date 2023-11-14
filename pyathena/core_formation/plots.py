@@ -373,10 +373,6 @@ def plot_core_evolution(s, pid, num, rmax=None):
             rmax = s.cores[pid].tidal_radius.max()
     hw = 1.1*rmax
 
-    # Load the progenitor GRID-core of this particle.
-    if num > s.tcoll_cores.loc[pid].num:
-        raise ValueError("num must be smaller than num_tcoll")
-
     # Load data
     ds = s.load_hdf5(num, quantities=['dens'], load_method='pyathena')
     gd = s.load_dendro(num)
@@ -455,26 +451,27 @@ def plot_core_evolution(s, pid, num, rmax=None):
         plt.sca(ax)
         plt.plot(rprf.r, rprf.rho, 'k-+')
         plt.plot(rprf.r, rhoLP, 'k--')
-    
+
     # overplot critical tes
-    LJ_c = 1.0/np.sqrt(core.center_density)
-    xi_min = rprf.r.isel(r=0).data[()]/LJ_c
-    xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
-    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-    if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
-        ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
+    if np.isfinite(core.center_density):
+        LJ_c = 1.0/np.sqrt(core.center_density)
+        xi_min = rprf.r.isel(r=0).data[()]/LJ_c
+        xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
+        xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
+        if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
+            ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
+            u, du = ts.solve(xi)
+            for ax in axs['rho']:
+                ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
+
+        # overplot critical BE
+        ts = tes.TESc()
         u, du = ts.solve(xi)
         for ax in axs['rho']:
-            ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
-
-    # overplot critical BE
-    ts = tes.TESc()
-    u, du = ts.solve(xi)
-    for ax in axs['rho']:
-        ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
-        ax.set_xlabel(r'$r/L_{J,0}$')
-        ax.set_ylabel(r'$\rho/\rho_0$')
-        ax.set_ylim(1e0, rhoLP[0]/5)
+            ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
+            ax.set_xlabel(r'$r/L_{J,0}$')
+            ax.set_ylabel(r'$\rho/\rho_0$')
+            ax.set_ylim(1e0, rhoLP[0]/5)
 
     plt.sca(axs['rho'][0])
     plt.xlim(rprf.r[0]/2, 2*rmax)
