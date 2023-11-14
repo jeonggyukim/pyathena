@@ -264,6 +264,10 @@ def track_protostellar_cores(s, pid, sub_frac=0.2):
         ds = s.load_hdf5(num, header_only=True)
         pds = s.load_partab(num)
 
+        if pid not in pds.index:
+            # This sink particle has merged to other sink. Stop tracking
+            break
+
         # Find closet leaf to the sink particle
         sink_pos = pds.loc[pid][['x1', 'x2', 'x3']].to_numpy()
         dst = [get_periodic_distance(get_coords_node(s, lid), sink_pos, s.Lbox)
