@@ -526,6 +526,10 @@ def calculate_lagrangian_props(s, cores, rprofs):
     ncrit = critical_time(s, cores.attrs['pid'])
     tcoll = s.tcoll_cores.loc[cores.attrs['pid']].time
 
+    # Slice cores that have corresponding radial profiles
+    common_indices = sorted(set(cores.index) & set(rprofs.num.data))
+    cores = cores.loc[common_indices]
+
     if np.isnan(ncrit):
         tcrit = rcore = mcore = mean_density = np.nan
         radius = tff_crit = menc = rhoe = rhoavg = np.nan
