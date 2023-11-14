@@ -32,8 +32,10 @@ if __name__ == "__main__":
                         help="Run GRID-dendro")
     parser.add_argument("--prune", action="store_true",
                         help="Prune dendrogram")
-    parser.add_argument("-c", "--core-tracking", action="store_true",
-                        help="Eulerian core tracking")
+    parser.add_argument("--track-cores", action="store_true",
+                        help="Perform reverse core tracking (prestellar phase)")
+    parser.add_argument("--track-protostellar-cores", action="store_true",
+                        help="Perform forward core tracking (protostellar phase)")
     parser.add_argument("-r", "--radial-profile", action="store_true",
                         help="Calculate radial profiles of each cores")
     parser.add_argument("-t", "--critical-tes", action="store_true",
@@ -95,10 +97,20 @@ if __name__ == "__main__":
                 p.map(wrapper, s.nums[config.GRID_NUM_START:], 1)
 
         # Find t_coll cores and save their GRID-dendro node ID's.
-        if args.core_tracking:
+        if args.track_cores:
             def wrapper(pid):
                 tasks.core_tracking(s, pid, overwrite=args.overwrite)
-            print(f"Find t_coll cores for model {mdl}")
+            print(f"Perform core tracking for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, pids)
+
+        # Perform forward core tracking (only for good cores).
+        if args.track_protostellar_cores:
+            def wrapper(pid):
+                tasks.core_tracking(s, pid, protostellar=True, overwrite=args.overwrite)
+            print(f"Perform protostellar core tracking for model {mdl}")
+            # Only select resolved cores.
+            pids = sorted(set(pids) & set(s.good_cores()))
             with Pool(args.np) as p:
                 p.map(wrapper, pids)
 
@@ -191,7 +203,7 @@ if __name__ == "__main__":
 
         if args.plot_diagnostics:
             print(f"draw diagnostics plots for model {mdl}")
-            for pid in pids:
+            for pid in s.good_cores():
                 tasks.plot_diagnostics(s, pid, overwrite=args.overwrite)
 
         # make movie
