@@ -160,7 +160,7 @@ def core_tracking(s, pid, protostellar=False, overwrite=False):
     cores.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
-def radial_profile(s, pid, num, overwrite=False, rmax=None):
+def radial_profile(s, num, pids, overwrite=False, full_radius=False):
     """Calculates and pickles radial profiles of all cores.
 
     Parameters
@@ -174,54 +174,95 @@ def radial_profile(s, pid, num, overwrite=False, rmax=None):
     overwrite : str, optional
         If true, overwrites the existing pickle file.
     """
-    # Check if file exists
-    ofname = Path(s.savdir, 'radial_profile',
-                  'radial_profile.par{}.{:05d}.nc'.format(pid, num))
-    ofname.parent.mkdir(exist_ok=True)
-    if ofname.exists() and not overwrite:
-        print('[radial_profile] file already exists. Skipping...')
+
+    pids_skip = []
+    for pid in pids:
+        cores = s.cores[pid]
+        if np.isnan(cores.loc[cores.attrs['numcoll']].leaf_id):
+            pids_skip.append(pid)
+            continue
+        if num not in cores.index:
+            pids_skip.append(pid)
+            continue
+        ofname = Path(s.savdir, 'radial_profile',
+                      'radial_profile.par{}.{:05d}.nc'.format(pid, num))
+        if ofname.exists() and not overwrite:
+            pids_skip.append(pid)
+
+    pids_to_process = sorted(set(pids) - set(pids_skip))
+
+    if len(pids_to_process) == 0:
+        msg = ("[radial_profile] Every core alreay has radial profiles at "
+               f"num = {num}. Skipping...")
+        print(msg)
         return
 
-    msg = '[radial_profile] processing model {} pid {} num {}'
-    print(msg.format(s.basename, pid, num))
+    msg = ("[radial_profile] Start reading snapshot at "
+           f"num = {num}.")
+    print(msg)
+    # Load the snapshot
+    ds0 = s.load_hdf5(num, quantities=['dens','phi','mom1','mom2','mom3'])
+    ds0 = ds0.transpose('z', 'y', 'x')
 
-    # Load the snapshot and the core id
-    ds = s.load_hdf5(num,
-                     quantities=['dens','phi','mom1','mom2','mom3'],
-                     load_method='pyathena')
-    ds = ds.transpose('z', 'y', 'x')
-    core = s.cores[pid].loc[num]
+    # Loop through cores
+    for pid in pids_to_process:
+        cores = s.cores[pid]
+        if np.isnan(cores.loc[cores.attrs['numcoll']].leaf_id):
+            continue
 
-    if rmax is None:
-        rmax = 0.5*s.Lbox
+        if num not in cores.index:
+            # This snapshot `num` does not contain any image of the core `pid`
+            # Continue to the next core.
+            continue
 
-    # Find the location of the core
-    center = tools.get_coords_node(s, core.leaf_id)
+        # Create directory and check if a file already exists
+        ofname = Path(s.savdir, 'radial_profile',
+                      f'radial_profile.par{pid}.{num:05d}.nc')
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            msg = (f"[radial_profile] A file already exists for pid = {pid} "
+                   f", num = {num}. Continue to the next core")
+            print(msg)
+            continue
 
-    # Roll the data such that the core is at the center of the domain
-    ds, center = tools.recenter_dataset(ds, center)
+        msg = (f"[radial_profile] processing model {s.basename}, "
+               f"pid {pid}, num {num}")
+        print(msg)
 
-    # Calculate the angular momentum vector within the tidal radius.
-    x = ds.x - center[0]
-    y = ds.y - center[1]
-    z = ds.z - center[2]
-    r = np.sqrt(x**2 + y**2 + z**2)
-    lx = (y*ds.mom3 - z*ds.mom2).where(r < core.tidal_radius).sum().data[()]*s.dV
-    ly = (z*ds.mom1 - x*ds.mom3).where(r < core.tidal_radius).sum().data[()]*s.dV
-    lz = (x*ds.mom2 - y*ds.mom1).where(r < core.tidal_radius).sum().data[()]*s.dV
-    lvec = np.array([lx, ly, lz])
+        core = cores.loc[num]
 
-    # Calculate radial profile
-    rprf = tools.calculate_radial_profile(s, ds, center, rmax, lvec)
-    rprf = rprf.expand_dims(dict(t=[ds.Time,]))
-    rprf['lx'] = xr.DataArray([lx,], dims='t')
-    rprf['ly'] = xr.DataArray([ly,], dims='t')
-    rprf['lz'] = xr.DataArray([lz,], dims='t')
+        if full_radius:
+            rmax = 0.5*s.Lbox
+        else:
+            rmax = cores.loc[:cores.attrs['numcoll']].tidal_radius.max()
 
-    # write to file
-    if ofname.exists():
-        ofname.unlink()
-    rprf.to_netcdf(ofname)
+        # Find the location of the core
+        center = tools.get_coords_node(s, core.leaf_id)
+
+        # Roll the data such that the core is at the center of the domain
+        ds, center = tools.recenter_dataset(ds0, center)
+
+        # Calculate the angular momentum vector within the tidal radius.
+        x = ds.x - center[0]
+        y = ds.y - center[1]
+        z = ds.z - center[2]
+        r = np.sqrt(x**2 + y**2 + z**2)
+        lx = (y*ds.mom3 - z*ds.mom2).where(r < core.tidal_radius).sum().data[()]*s.dV
+        ly = (z*ds.mom1 - x*ds.mom3).where(r < core.tidal_radius).sum().data[()]*s.dV
+        lz = (x*ds.mom2 - y*ds.mom1).where(r < core.tidal_radius).sum().data[()]*s.dV
+        lvec = np.array([lx, ly, lz])
+
+        # Calculate radial profile
+        rprf = tools.calculate_radial_profile(s, ds, center, rmax, lvec)
+        rprf = rprf.expand_dims(dict(t=[ds.Time,]))
+        rprf['lx'] = xr.DataArray([lx,], dims='t')
+        rprf['ly'] = xr.DataArray([ly,], dims='t')
+        rprf['lz'] = xr.DataArray([lz,], dims='t')
+
+        # write to file
+        if ofname.exists():
+            ofname.unlink()
+        rprf.to_netcdf(ofname)
 
 
 def run_grid(s, num, overwrite=False):

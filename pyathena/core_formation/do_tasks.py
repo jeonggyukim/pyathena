@@ -116,28 +116,14 @@ if __name__ == "__main__":
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
-            msg = "calculate and save radial profiles of t_coll cores for"\
-                  " model {}"
-            print(msg.format(mdl))
-            for pid in pids:
-                cores = s.cores[pid]
-                ncoll = cores.attrs['numcoll']
-                if np.isnan(cores.loc[ncoll].leaf_id):
-                    continue
-                rmax = cores.loc[:ncoll].tidal_radius.max()
-#                rmax = None
-                def wrapper(num):
-                    tasks.radial_profile(s, pid, num,
-                                         overwrite=args.overwrite,
-                                         rmax=rmax)
-                with Pool(args.np) as p:
-                    p.map(wrapper, cores.index)
-
-                # Remove combined rprofs which will be outdated.
-                fname = Path(s.savdir, 'radial_profile',
-                             'radial_profile.par{}.nc'.format(pid))
-                if fname.exists():
-                    fname.unlink()
+            msg = ("calculate and save radial profiles for "
+                   f"model {mdl}")
+            print(msg)
+            def wrapper(num):
+                tasks.radial_profile(s, num, pids, overwrite=args.overwrite,
+                                     full_radius=False)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
 
         # Find critical tes
         if args.critical_tes:
