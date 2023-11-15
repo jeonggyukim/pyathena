@@ -528,6 +528,12 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
         rprofs[k+'_sq_mw'] = xr.concat([rprf_c, rprf], 'r')
 
     rprofs = xr.Dataset(rprofs)
+
+    # Drop theta and phi coordinates
+    for k in ['th', 'ph']:
+        if k in rprofs:
+            rprofs = rprofs.drop_vars(k)
+
     return rprofs
 
 
