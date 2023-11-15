@@ -120,9 +120,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 logging.warning("Failed to load radial profiles")
                 pass
 
-            if hasattr(self, "cores") and hasattr(self, "rprofs"):
+            try:
                 self.cores = self.update_core_props(force_override=force_override)
-            else:
+            except AttributeError:
                 logging.warning("Failed to update core properties")
 
         elif isinstance(basedir_or_Mach, (float, int)):
