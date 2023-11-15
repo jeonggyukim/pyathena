@@ -346,8 +346,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     attrs.update(tes_crit.attrs)
                     cores = cores.join(tes_crit)
 
-                # Reattach attributes
-                cores.attrs = attrs
+                    # Reattach attributes
+                    cores.attrs = attrs
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
