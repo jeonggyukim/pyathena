@@ -319,6 +319,17 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
     def _load_cores(self, prefix='cores', savdir=None, force_override=False):
         cores_dict = {}
         pids_not_found = []
+
+        # Try reading the go15 mass
+        try:
+            fname = pathlib.Path(self.savdir) / 'mcore_go15.p'
+            with open(fname, 'rb') as f:
+                mcore_go15 = pickle.load(f)
+            mcore_go15_found = True
+        except FileNotFoundError:
+            mcore_go15_found = False
+
+
         for pid in self.pids:
             fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             cores = pd.read_pickle(fname).sort_index()
@@ -348,6 +359,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
                     # Reattach attributes
                     cores.attrs = attrs
+                if mcore_go15_found:
+                    cores.attrs['mcore_go15'] = mcore_go15[pid]
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
