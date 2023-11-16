@@ -274,6 +274,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     rprf.r**2*rprf.rho).mean().data[()])
             cores.attrs['sigma_r'] = sigma_r
 
+            # Calculate freefall time at t_coll
+            ncoll = cores.attrs['numcoll']
+            cores.attrs['tff_coll'] = tools.tfreefall(cores.loc[ncoll].mean_density, self.gconst)
+
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
 
