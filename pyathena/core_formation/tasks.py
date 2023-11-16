@@ -578,6 +578,34 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
     rprf.to_netcdf(ofname)
 
 
+def calculate_go15_core_mass(s, overwrite=False):
+    """Calculate core mass using the definition of GO15
+
+    Core mass is defined as the enclosed mass within the largest closed contour
+    at t_coll
+    """
+    fname = Path(s.savdir) / 'mcore_go15.p'
+    if fname.exists():
+        if not overwrite:
+            return
+        else:
+            fname.unlink()
+    mcore = {}
+    for pid in s.pids:
+        cores = s.cores[pid]
+        ncoll = cores.attrs['numcoll']
+        ds = s.load_hdf5(ncoll, quantities=['dens'])
+        gd = s.load_dendro(ncoll)
+        lid = cores.loc[ncoll].leaf_id
+        if np.isnan(lid):
+            mcore[pid] = np.nan
+        else:
+            rho = gd.filter_data(ds.dens, lid, drop=True)
+            mcore[pid] = (rho*s.dV).sum()
+    with open(fname, 'wb') as f:
+        pickle.dump(mcore, f)
+
+
 def plot_pdfs(s, num, overwrite=False):
     """Creates density PDF and velocity power spectrum for a given model
 
