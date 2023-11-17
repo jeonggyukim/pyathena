@@ -99,6 +99,11 @@ def find_tcoll_core(s, pid, ncells_min=27):
         return lid
 
 
+# TODO Can we predict the new sink position using the mean velocity inside the core?
+# But that would require loading the hdf5 snapshot, making the core tracking more expensive.
+# TODO Stopping condition due to leaf distance is just arbitrary, because in principle if the
+# leaf disappears by a merger, it would keep tracking. We need more physically motivated stopping
+# condition
 def track_cores(s, pid, sub_frac=0.2):
     """Perform reverse core tracking
 
