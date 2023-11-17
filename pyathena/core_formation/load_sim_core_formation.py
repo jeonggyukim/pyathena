@@ -250,11 +250,24 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                          (cores.time - cores.attrs['tcrit'])
                           / (cores.attrs['tcoll'] - cores.attrs['tcrit']))
 
-            # TODO should be replaced
-            cores.attrs['dt_build'] = cores.attrs['tcrit'] - cores.iloc[0].time
-
-            cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
+            # Evolutionary timescales
             mcore = cores.attrs['mcore']
+            rcore = cores.attrs['rcore']
+            ncrit = cores.attrs['numcrit']
+
+            # Building time
+            # TODO Why ncrit is nan after all???
+            if np.isnan(ncrit):
+                cores.attrs['dt_build'] = np.nan
+            else:
+                rprf = rprofs.sel(num=ncrit)
+                mdot = (-4*np.pi*rcore**2*rprf.rho*rprf.vel1_mw).interp(r=rcore).data[()]
+                cores.attrs['dt_build'] = mcore / mdot
+
+            # Collapse time
+            cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
+
+            # Infall time
             phst = self.load_parhst(pid)
             idx = phst.mass.sub(mcore).abs().argmin()
             if np.isnan(mcore) or idx == phst.index[-1]:
@@ -265,11 +278,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
             # Calculate velocity dispersion
-            if np.isnan(cores.attrs['numcrit']):
+            if np.isnan(ncrit):
                 sigma_r = np.nan
             else:
-                rprf = rprofs.sel(num=cores.attrs['numcrit'])
-                rprf = rprf.sel(r=slice(0, cores.attrs['rcore']))
+                rprf = rprofs.sel(num=ncrit)
+                rprf = rprf.sel(r=slice(0, rcore))
                 sigma_r = np.sqrt(rprf.dvel1_sq_mw.weighted(
                     rprf.r**2*rprf.rho).mean().data[()])
             cores.attrs['sigma_r'] = sigma_r
