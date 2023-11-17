@@ -8,13 +8,10 @@ from pyathena.core_formation import config, tasks, tools
 
 if __name__ == "__main__":
     # load all models
-    m1 = {f"M5J2P{iseed}N512": f"/scratch/gpfs/sm69/cores/new/M5.J2.P{iseed}.N512" for iseed in range(0, 40)}
-    m2 = {f"M10J4P{iseed}N1024": f"/scratch/gpfs/sm69/cores/new/M10.J4.P{iseed}.N1024" for iseed in range(0, 7)}
-    m3 = {f"M5J2P{iseed}N256": f"/scratch/gpfs/sm69/cores/new/M5.J2.P{iseed}.N256" for iseed in range(0, 1)}
+    m1 = {f"M5J2P{iseed}N512": f"/scratch/gpfs/sm69/cores/M5.J2.P{iseed}.N512" for iseed in range(0, 40)}
+    m2 = {f"M10J4P{iseed}N1024": f"/scratch/gpfs/sm69/cores/M10.J4.P{iseed}.N1024" for iseed in range(0, 7)}
+    m3 = {f"M5J2P{iseed}N256": f"/scratch/gpfs/sm69/cores/M5.J2.P{iseed}.N256" for iseed in range(0, 1)}
     models = {**m1, **m2, **m3}
-#    models['M10J4P3N1024newsink'] = "/scratch/gpfs/sm69/cores/M10.J4.P3.N1024.newsink"
-#    models['M5J2P3N512newsink'] = "/scratch/gpfs/sm69/cores/M5.J2.P3.N512.newsink"
-#    models['M5J2P0N512dfloor'] = "/scratch/gpfs/sm69/cores/M5.J2.P0.N512.dfloor3"
     sa = pa.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
