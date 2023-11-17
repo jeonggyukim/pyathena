@@ -144,7 +144,9 @@ def track_cores(s, pid, sub_frac=0.2):
         envelop_id = [np.nan,]
         envelop_radius = [np.nan,]
         tidal_radius = [np.nan,]
+        tcoll_resolved = False
     else:
+        tcoll_resolved = True
         gd = s.load_dendro(num)
 
         # Calculate effective radius of this leaf
@@ -222,6 +224,7 @@ def track_cores(s, pid, sub_frac=0.2):
     # Set attributes
     cores.attrs['pid'] = pid
     cores.attrs['numcoll'] = cores.index[-1]
+    cores.attrs['tcoll_resolved'] = tcoll_resolved
 
     return cores
 
