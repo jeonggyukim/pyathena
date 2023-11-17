@@ -247,7 +247,7 @@ def plot_forces(s, rprf, ax=None, xlim=(0, 0.2), ylim=(-20, 50)):
     acc.ani.plot(lw=1, color='tab:purple', label=r'$f_\mathrm{ani}$')
     (-acc.grv).plot(marker='x', ls='--', color='tab:red', lw=1,
                     label=r'$-f_\mathrm{grv}$')
-    net = acc.thm + acc.trb + acc.cen + acc.grv
+    net = acc.thm + acc.trb + acc.cen + acc.ani + acc.grv
     net.plot(lw=1, color='k', marker='+', label='net')
 
     # Overplot -GM/r^2
@@ -378,6 +378,13 @@ def plot_core_evolution(s, pid, num, rmax=None):
     # Find the location of the core
     xc, yc, zc = tools.get_coords_node(s, core.leaf_id)
 
+    # Load sink particles
+    pds = s.load_partab(num)
+    pds = pds[((pds.x1 > xc - hw) & (pds.x1 < xc + hw)
+             & (pds.x2 > yc - hw) & (pds.x2 < yc + hw)
+             & (pds.x3 > zc - hw) & (pds.x3 < zc + hw))]
+    pds.loc[:, ['x1', 'x2', 'x3']] -= np.array([xc, yc, zc])
+
     # Create figure
     fig = plt.figure(figsize=(35, 21))
     gs = gridspec.GridSpec(3, 5, wspace=0.23, hspace=0.15,
@@ -391,6 +398,10 @@ def plot_core_evolution(s, pid, num, rmax=None):
                 y=(xc-hw, xc+hw))
     xlabel = dict(z=r'$x$', x=r'$y$', y=r'$z$')
     ylabel = dict(z=r'$y$', x=r'$z$', y=r'$x$')
+
+    xycoords = dict(z=['x1', 'x2'],
+                    x=['x2', 'x3'],
+                    y=['x3', 'x1'])
 
     axs = dict(proj=[fig.add_subplot(gs[i, 0]) for i in [0, 1, 2]],
                zoom=[fig.add_subplot(gs[i, 1]) for i in [0, 1, 2]],
@@ -435,10 +446,16 @@ def plot_core_evolution(s, pid, num, rmax=None):
         if np.isfinite(core.radius) and core.radius <= np.sqrt(2)*hw:
             c0 = plt.Circle((0, 0), core.radius, fill=False, color='b', lw=1, ls='-.')
             plt.gca().add_artist(c0)
+
+        # Overplot star particles
+        plt.scatter(pds[xycoords[prj_axis][0]], pds[xycoords[prj_axis][1]],
+                    marker=MarkerStyle('*', fillstyle='full'), color='y')
+
         plt.xlim(-hw, hw)
         plt.ylim(-hw, hw)
         plt.xlabel(xlabel[prj_axis])
         plt.ylabel(ylabel[prj_axis])
+
 
     # 4. Radial profiles
     # Density
