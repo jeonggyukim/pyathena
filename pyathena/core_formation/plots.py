@@ -8,6 +8,7 @@ Recommended function signature:
 import matplotlib.pyplot as plt
 from matplotlib import gridspec
 from matplotlib.colors import LogNorm
+from matplotlib.markers import MarkerStyle
 import numpy as np
 import xarray as xr
 import yt
@@ -211,30 +212,25 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
 def plot_cum_forces(s, rprf, core, ax=None, lw=1):
     """Plot cumulative force per unit mass
     """
+    g0 = (s.gconst*rprf.menc/rprf.r**2).where(rprf.r > 0, other=0)
     dm = 4*np.pi*rprf.r**2*rprf.rho
-    mr =  dm.cumulative_integrate('r')
-    fthm = (dm*rprf.thm).cumulative_integrate('r') / mr
-    ftrb = (dm*rprf.trb).cumulative_integrate('r') / mr
-    fcen = (dm*rprf.cen).cumulative_integrate('r') / mr
-    fadv = (dm*rprf.adv).cumulative_integrate('r') / mr
-    fani = (dm*rprf.ani).cumulative_integrate('r') / mr
-    fgrv = (dm*rprf.grv).cumulative_integrate('r') / mr
-    ftot = fthm + ftrb + fcen + fani + fgrv
-    f0 = (dm*s.gconst*mr/ftot.r**2).cumulative_integrate('r') / mr
-#    f0 = s.gconst*mr/ftot.r**2
+    Fgrv0 = (dm*g0).cumulative_integrate('r')
 
     if ax is not None:
         plt.sca(ax)
 
-    plt.plot(fthm.r, fthm/f0, lw=lw, c='tab:blue', label=r'$f_\mathrm{thm}$')
-    plt.plot(ftrb.r, ftrb/f0, lw=lw, c='tab:orange', label=r'$f_\mathrm{trb}$')
-    plt.plot(fcen.r, fcen/f0, lw=lw, c='tab:green', label=r'$f_\mathrm{cen}$')
-    plt.plot(fani.r, fani/f0, lw=lw, c='tab:purple', label=r'$f_\mathrm{ani}$')
-    plt.plot(fgrv.r, -fgrv/f0, lw=lw, c='tab:red', label=r'$f_\mathrm{grv}$')
-    plt.plot(ftot.r, ftot/f0, 'k-', lw=1.5*lw, label=r'$f_\mathrm{net}$')
+    plt.plot(rprf.r, rprf.Fthm/Fgrv0, lw=lw, c='tab:blue', label=r'$F_\mathrm{thm}$')
+    plt.plot(rprf.r, rprf.Ftrb/Fgrv0, lw=lw, c='tab:orange', label=r'$F_\mathrm{trb}$')
+    plt.plot(rprf.r, rprf.Fcen/Fgrv0, lw=lw, c='tab:green', label=r'$F_\mathrm{cen}$')
+    plt.plot(rprf.r, rprf.Fani/Fgrv0, lw=lw, c='tab:purple', label=r'$F_\mathrm{ani}$')
+    plt.plot(rprf.r, rprf.Fgrv/Fgrv0, lw=lw, c='tab:red', label=r'$F_\mathrm{grv}$')
+    fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
+    plt.plot(rprf.r, fnet/Fgrv0, 'k-', lw=1.5*lw, label=r'$F_\mathrm{net}$')
+
+
     plt.axhline(0, c='k', lw=1, ls='--')
     plt.xlabel(r'$r/L_{J,0}$')
-    plt.ylabel(r'$f_\mathrm{cumulative}/\overline{GM(r)/r^2}$')
+    plt.ylabel(r'$F/F_\mathrm{grv,0}$')
     plt.ylim(-1, 1.5)
     plt.legend(ncol=3, loc='lower left')
 
@@ -455,26 +451,27 @@ def plot_core_evolution(s, pid, num, rmax=None):
     # overplot critical tes
     if np.isfinite(core.center_density):
         LJ_c = 1.0/np.sqrt(core.center_density)
-        xi_min = rprf.r.isel(r=0).data[()]/LJ_c
         xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
-        xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
         if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
             ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
+            xi = np.logspace(np.log10(ts._xi_min), np.log10(xi_max))
             u, du = ts.solve(xi)
             for ax in axs['rho']:
                 ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
 
         # overplot critical BE
         ts = tes.TESc()
+        xi = np.logspace(np.log10(ts._xi_min), np.log10(xi_max))
         u, du = ts.solve(xi)
         for ax in axs['rho']:
             ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
             ax.set_xlabel(r'$r/L_{J,0}$')
             ax.set_ylabel(r'$\rho/\rho_0$')
-            ax.set_ylim(1e0, rhoLP[0]/5)
+            ax.set_ylim(1e0, rhoLP[1]*4)
 
     plt.sca(axs['rho'][0])
-    plt.xlim(rprf.r[0]/2, 2*rmax)
+    plt.plot(s.dx/2, rprf.rho.isel(r=0), marker=MarkerStyle(4, fillstyle='full'), ms=20)
+    plt.xlim(s.dx/2, 2*rmax)
     plt.xscale('log')
     plt.yscale('log')
 
@@ -486,7 +483,7 @@ def plot_core_evolution(s, pid, num, rmax=None):
     for ax in axs['force']:
         plot_cum_forces(s, rprf, core, ax)
     plt.sca(axs['force'][0])
-    plt.xlim(rprf.r[0]/2, 2*rmax)
+    plt.xlim(s.dx/2, 2*rmax)
     plt.xscale('log')
     plt.legend()
     plt.sca(axs['force'][1])
@@ -521,7 +518,7 @@ def plot_core_evolution(s, pid, num, rmax=None):
         plt.plot(rprf.r, (rprf.r/core.sonic_radius)**(core.pindex), 'r--',
                  lw=1)
 
-    plt.xlim(rprf.r[0]/2, 2*rmax)
+    plt.xlim(s.dx/2, 2*rmax)
     plt.ylim(1e-1, 1e1)
     plt.xlabel(r'$r/L_{J,0}$')
     plt.ylabel(r'$\left<v^2\right>^{1/2}/c_s$')

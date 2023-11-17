@@ -696,10 +696,10 @@ def calculate_accelerations(rprf):
     acc = dict(adv=rprf.vel1_mw*rprf.vel1_mw.differentiate('r'),
                thm=-pthm.differentiate('r') / rprf.rho,
                trb=-ptrb.differentiate('r') / rprf.rho,
-               cen=(rprf.vel2_mw**2 + rprf.vel3_mw**2) / rprf.r,
+               cen=((rprf.vel2_mw**2 + rprf.vel3_mw**2) / rprf.r).where(rprf.r > 0, other=0),
                grv=rprf.gacc1_mw,
                ani=((rprf.dvel2_sq_mw + rprf.dvel3_sq_mw - 2*rprf.dvel1_sq_mw)
-                    / rprf.r))
+                    / rprf.r).where(rprf.r > 0, other=0))
     acc = xr.Dataset(acc)
     acc['dvdt_lagrange'] = acc.thm + acc.trb + acc.grv + acc.cen + acc.ani
     acc['dvdt_euler'] = acc.dvdt_lagrange - acc.adv
