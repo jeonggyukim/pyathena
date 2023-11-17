@@ -442,11 +442,12 @@ def plot_core_evolution(s, pid, num, rmax=None):
 
     # 4. Radial profiles
     # Density
-    rhoLP = tools.lpdensity(rprf.r, s.cs, s.gconst)
+    r = np.linspace(s.dx/2, 2*rmax)
+    rhoLP = tools.lpdensity(r, s.cs, s.gconst)
     for ax in axs['rho']:
         plt.sca(ax)
         plt.plot(rprf.r, rprf.rho, 'k-+')
-        plt.plot(rprf.r, rhoLP, 'k--')
+        plt.plot(r, rhoLP, 'k--')
 
     # overplot critical tes
     if np.isfinite(core.center_density):
@@ -467,7 +468,7 @@ def plot_core_evolution(s, pid, num, rmax=None):
             ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
             ax.set_xlabel(r'$r/L_{J,0}$')
             ax.set_ylabel(r'$\rho/\rho_0$')
-            ax.set_ylim(1e0, rhoLP[1]*4)
+            ax.set_ylim(1e0, tools.lpdensity(s.dx/2, s.cs, s.gconst))
 
     plt.sca(axs['rho'][0])
     plt.plot(s.dx/2, rprf.rho.isel(r=0), marker=MarkerStyle(4, fillstyle='full'), ms=20)
@@ -667,7 +668,7 @@ def core_structure(s, pid, num, rmax=None):
 
         plt.axhline(core.edge_density, ls='-.', c='tab:gray')
         plt.yscale('log')
-        plt.ylim(1e0, rhoLP[0]/10)
+        plt.ylim(1e0, tools.lpdensity(s.dx/2, s.cs, s.gconst))
 
     for ax in axs[1]:
         plot_cum_forces(s, rprf, core, ax)
