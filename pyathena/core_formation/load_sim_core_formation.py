@@ -122,7 +122,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             try:
                 self.cores = self.update_core_props(force_override=force_override)
-            except AttributeError:
+            except (AttributeError, KeyError):
                 logging.warning("Failed to update core properties")
 
         elif isinstance(basedir_or_Mach, (float, int)):
