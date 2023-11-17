@@ -153,7 +153,9 @@ def core_tracking(s, pid, protostellar=False, overwrite=False):
         print('[core_tracking] file already exists. Skipping...')
         return
 
-    if protostellar:
+    # Perform protostellar core tracking only for resolved cores
+    # to save resources.
+    if protostellar and s.cores[pid].attrs['tcoll_resolved']:
         cores = tools.track_protostellar_cores(s, pid)
     else:
         cores = tools.track_cores(s, pid)
