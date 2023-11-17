@@ -383,7 +383,8 @@ def plot_core_evolution(s, pid, num, rmax=None):
     pds = pds[((pds.x1 > xc - hw) & (pds.x1 < xc + hw)
              & (pds.x2 > yc - hw) & (pds.x2 < yc + hw)
              & (pds.x3 > zc - hw) & (pds.x3 < zc + hw))]
-    pds.loc[:, ['x1', 'x2', 'x3']] -= np.array([xc, yc, zc])
+    pds = pds.copy()
+    pds.loc[:, ('x1', 'x2', 'x3')] -= np.array([xc, yc, zc])
 
     # Create figure
     fig = plt.figure(figsize=(35, 21))
