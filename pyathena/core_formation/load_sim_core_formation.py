@@ -170,8 +170,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         good_cores = []
         for pid in self.pids:
             cores = self.cores[pid]
-            ncoll = cores.attrs['numcoll']
-            if np.isnan(cores.loc[ncoll].leaf_id):
+            if not cores.attrs['tcoll_resolved']:
                 continue
             if cores.attrs['isolated'] and cores.attrs['resolved']:
                 good_cores.append(pid)
@@ -350,9 +349,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         for pid in self.pids:
             fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             cores = pd.read_pickle(fname).sort_index()
-            ncoll = cores.attrs['numcoll']
 
-            if np.isfinite(cores.loc[ncoll].leaf_id):
+            if cores.attrs['tcoll_resolved']:
                 # Read critical TES info and concatenate to self.cores
 
                 # Try reading critical TES pickles
@@ -403,8 +401,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         pids_not_found = []
         for pid in self.pids:
             cores = self.cores[pid]
-            ncoll = cores.attrs['numcoll']
-            if len(cores) == 0 or np.isnan(cores.loc[ncoll].leaf_id):
+            if not cores.attrs['tcoll_resolved']:
                 rprofs = None
             else:
                 rprofs, nums = [], []
