@@ -127,8 +127,7 @@ if __name__ == "__main__":
             print(f"find critical tes for t_coll cores for model {mdl}")
             for pid in pids:
                 cores = s.cores[pid]
-                ncoll = cores.attrs['numcoll']
-                if np.isnan(cores.loc[ncoll].leaf_id):
+                if not cores.attrs['tcoll_resolved']:
                     continue
                 def wrapper(num):
                     tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
@@ -167,8 +166,7 @@ if __name__ == "__main__":
             print(f"draw core evolution plots for model {mdl}")
             for pid in pids:
                 cores = s.cores[pid]
-                ncoll = cores.attrs['numcoll']
-                if len(cores) == 0 or np.isnan(cores.loc[ncoll].leaf_id):
+                if not cores.attrs['tcoll_resolved']:
                     continue
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,

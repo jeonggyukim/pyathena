@@ -180,7 +180,7 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False):
     pids_skip = []
     for pid in pids:
         cores = s.cores[pid]
-        if np.isnan(cores.loc[cores.attrs['numcoll']].leaf_id):
+        if not cores.attrs['tcoll_resolved']:
             pids_skip.append(pid)
             continue
         if num not in cores.index:
@@ -209,7 +209,7 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False):
     # Loop through cores
     for pid in pids_to_process:
         cores = s.cores[pid]
-        if np.isnan(cores.loc[cores.attrs['numcoll']].leaf_id):
+        if not cores.attrs['tcoll_resolved']:
             continue
 
         if num not in cores.index:
