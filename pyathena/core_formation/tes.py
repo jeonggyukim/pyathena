@@ -1,4 +1,4 @@
-from scipy.integrate import odeint
+from scipy.integrate import odeint, simpson
 from scipy.optimize import minimize_scalar, brentq, newton
 import matplotlib.pyplot as plt
 import numpy as np
@@ -555,6 +555,22 @@ class TESc:
 #        kappa_thm = None
 
         return kappa_thm, kappa_tot
+
+    def get_sigma(self):
+        """Calculate mass-weighted mean velocity dispersion within rcrit
+
+        Returns
+        -------
+        sigv : float
+            Mass-weighted radial velocity dispersion
+        """
+        rcrit = self.get_rcrit()
+        xi = np.linspace(self._xi_min, rcrit, 512)
+        u, _ = self.solve(xi)
+        dm = 4*np.pi*xi**2*np.exp(u)
+        dv2 = (xi / self.xi_s)**(2*self.p)
+        sigv = np.sqrt(simpson(dm*dv2, x=xi) / simpson(dm, x=xi))
+        return sigv
 
     def _dydx(self, y, x):
         """Differential equation for hydrostatic equilibrium.
