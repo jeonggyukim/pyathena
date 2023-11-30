@@ -62,7 +62,7 @@ class TESe:
         if mode not in {'thm', 'tot'}:
             raise ValueError("mode should be either thm or tot")
         self.mode = mode
-        if mode=='tot':
+        if mode == 'tot':
             if self.solve(self._xi_max, self._umax)[0][0] > 0:
                 raise ValueError("xi_s = {:.3f} is too small for p = {}."
                                  " No solution could be found".format(xi_s, p))
@@ -144,9 +144,9 @@ class TESe:
             xi0 = self.get_radius(u0)
         u, du = self.solve(xi0, u0)
         f = 1 + (xi0/self.xi_s)**(2*self.p)
-        if self.mode=='thm':
+        if self.mode == 'thm':
             m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
-        elif self.mode=='tot':
+        elif self.mode == 'tot':
             m = -xi0**2*f*du/np.pi
         return m.squeeze()[()]
 
@@ -201,9 +201,9 @@ class TESe:
         f = 1 + (xi/self.xi_s)**(2*self.p)
         a = f
         b = (2*self.p + 1)*f - 2*self.p
-        if self.mode=='thm':
+        if self.mode == 'thm':
             c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*xi**2*np.exp(y1)
-        elif self.mode=='tot':
+        elif self.mode == 'tot':
             c = 4*np.pi**2*xi**2*np.exp(y1)/f
         dy2 = -(b/a)*y2 - (c/a)
         return np.array([dy1, dy2])
@@ -388,11 +388,20 @@ class TESc:
     xi_s : float
         dimensionless sonic radius.
     """
-    def __init__(self, p=0.5, xi_s=np.inf):
-        self.p = p
-        self.xi_s = xi_s
+    def __init__(self, p=0.5, xi_s=np.inf, sigma_r=None):
         self._xi_min = 1e-5
         self._xi_max = 1e3
+        self.p = p
+        if sigma_r is None:
+            self.xi_s = xi_s
+        else:
+            def get_sigv(xi_s, p):
+                tsc = TESc(p=p, xi_s=xi_s)
+                sigv = tsc.get_sigma()
+                return sigv
+
+            self.xi_s = brentq(lambda x: get_sigv(x, p)-sigma_r,
+                               self.min_xi_s(), 999)
 
     def solve(self, xi):
         """Solve equilibrium equation
@@ -433,7 +442,8 @@ class TESc:
             u[mask] = -np.inf
             du[mask] = 0
 
-        return u.squeeze()[()], du.squeeze()[()] # return scala when the input is scala
+        # return scala when the input is scala
+        return u.squeeze()[()], du.squeeze()[()]
 
     def get_rcrit(self, mode='tot'):
         """Find critical TES radius
@@ -449,14 +459,14 @@ class TESc:
         """
         xi = np.logspace(0, 2, 512)
         kappa_thm, kappa_tot = self.get_bulk_modulus(xi)
-        if mode=='thm':
+        if mode == 'thm':
             idx = (kappa_thm < 0).nonzero()[0]
             if len(idx) < 1:
                 return np.nan
             else:
                 idx = idx[0] - 1
             func = lambda x: self.get_bulk_modulus(10**x)[0]
-        elif mode=='tot':
+        elif mode == 'tot':
             idx = (kappa_tot < 0).nonzero()[0]
             if len(idx) < 1:
                 # kappa_tot is everywhere positive, meaning that this TES
@@ -504,7 +514,8 @@ class TESc:
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
         if not isinstance(xi0, float):
             m[mask] = np.inf
-        return m.squeeze()[()] # return scala when the input is scala
+        # return scala when the input is scala
+        return m.squeeze()[()]
 
     def get_bulk_modulus(self, xi):
         # Perturbation with the fixed turbulent velocity field
@@ -551,6 +562,22 @@ class TESc:
         dv2 = (xi / self.xi_s)**(2*self.p)
         sigv = np.sqrt(simpson(dm*dv2, x=xi) / simpson(dm, x=xi))
         return sigv
+
+    def min_xi_s(self, atol=1e-4):
+        a = 0.01
+        b = 999
+
+        def f(x):
+            tsc = TESc(p=self.p, xi_s=x)
+            return tsc.get_rcrit()
+
+        while (b - a > atol):
+            c = (a + b)/2
+            if np.isinf(f(c)):
+                a = c
+            else:
+                b = c
+        return b
 
     def _dydx(self, y, x):
         """Differential equation for hydrostatic equilibrium.
@@ -865,7 +892,7 @@ def _get_critical_tes_at_fixed_rhoe(rhoe, rsonic, p):
     M : mass of the critical TES
     """
     def get_rhoe(rhoc, rs, p):
-        LJ_c = MJ_c = 1/np.sqrt(rhoc)
+        LJ_c = 1/np.sqrt(rhoc)
         xi_s = rs/LJ_c
         tsc = TESc(p=p, xi_s=xi_s)
         rcrit = tsc.get_rcrit()
@@ -963,7 +990,8 @@ def _get_critical_tes_cloud(mach, alpha_vir, mfrac=None, rhoe=None):
     def get_mcrit(rsonic):
         return np.exp(itp_log_mcrit(np.log(rsonic)))
 
-    rsonic0 = np.sqrt(45)/(2*np.pi)/np.sqrt(alpha_vir)/mach  # See Notes section.
+    # See Notes section.
+    rsonic0 = np.sqrt(45)/(2*np.pi)/np.sqrt(alpha_vir)/mach
     rsonic = brentq(lambda x: x*np.sqrt(get_dcrit(x)) - rsonic0*np.sqrt(rhoe),
                     res['rsonic'][0], res['rsonic'][-1])
     dcrit = get_dcrit(rsonic)
@@ -978,7 +1006,6 @@ if __name__ == "__main__":
     Calculate critical density, radius, and mass of the TES at a given
     central density, for different sonic radii.
     """
-    from scipy.integrate import simpson
     # Dimensionless sonic radius r_s / L_{J,c}
     rsonic = np.logspace(-2, 3, 4096)
 
