@@ -435,26 +435,6 @@ class TESc:
 
         return u.squeeze()[()], du.squeeze()[()] # return scala when the input is scala
 
-    def get_crit(self):
-        """Find critical TES
-
-        .. deprecated::
-
-        Returns
-        -------
-        float
-            Critical radius
-        """
-        def func(xi0):
-            menc = self.get_mass(xi0)
-            u0_TESm = np.log(np.pi**3*menc**2)
-            xi_s_TESm = self.xi_s / np.pi / menc
-            tsm = TESm(xi_s=xi_s_TESm)
-            u0_crit = tsm.get_crit()
-            return u0_TESm - u0_crit
-        logrmax = brentq(lambda x: func(10**x), 0, np.log10(32))
-        return 10**logrmax
-
     def get_rcrit(self, mode='tot'):
         """Find critical TES radius
         Parameters
