@@ -1007,11 +1007,13 @@ if __name__ == "__main__":
     central density, for different sonic radii.
     """
     # Dimensionless sonic radius r_s / L_{J,c}
-    rsonic = np.logspace(-2, 3, 4096)
 
-    for pindex in [0.1, 0.3, 0.5, 0.7, 0.9]:
+    for pindex in [0.01, 0.3, 0.5, 0.7, 0.99]:
         critical_mass, critical_radius, critical_density = [], [], []
         velocity_dispersion, edge_velocity_dispersion = [], []
+        tsc = TESc(p=pindex)
+        rsonic_min = tsc.min_xi_s()
+        rsonic = np.logspace(np.log10(rsonic_min), 4, 4096)
         for xi_s in rsonic:
             tsc = TESc(xi_s=xi_s, p=pindex)
             rcrit = tsc.get_rcrit('tot')
