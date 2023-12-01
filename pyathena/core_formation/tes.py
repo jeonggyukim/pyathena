@@ -53,19 +53,46 @@ class TESe:
     >>> # plot density profile
     >>> plt.loglog(r, np.exp(u))
     """
-    def __init__(self, p=0.5, xi_s=np.inf, mode='thm'):
-        self.p = p
-        self.xi_s = xi_s
-        self._xi_min = 1e-5
-        self._xi_max = 1e3
-        self._umax = 14
+    def __init__(self, p=0.5, xi_s=np.inf, sigma_r=None, mode='thm'):
         if mode not in {'thm', 'tot'}:
             raise ValueError("mode should be either thm or tot")
         self.mode = mode
-        if mode == 'tot':
-            if self.solve(self._xi_max, self._umax)[0][0] > 0:
-                raise ValueError("xi_s = {:.3f} is too small for p = {}."
-                                 " No solution could be found".format(xi_s, p))
+
+        self._xi_min = 1e-5
+        self._xi_max = 1e3
+        self.p = p
+        if sigma_r is None:
+            self.xi_s = xi_s
+        else:
+            def get_sigv(xi_s, p):
+                tse = TESe(p=p, xi_s=xi_s, mode=mode)
+                sigv = tse.get_sigma()
+                return sigv
+
+            min_xi_s = self.get_min_xi_s()
+            self.xi_s = 10**brentq(lambda x: get_sigv(10**x, p)-sigma_r,
+                                   np.log10(min_xi_s), 3)
+
+
+    def get_min_xi_s(self, atol=1e-4):
+        a = 0.01
+        b = 999
+
+        def f(x):
+            tse = TESe(p=self.p, xi_s=x, mode=self.mode)
+            try:
+                uc, rc, mc = tse.get_crit()
+            except ValueError:
+                rc = np.infty
+            return rc
+
+        while (b - a > atol):
+            c = (a + b)/2
+            if np.isinf(f(c)):
+                a = c
+            else:
+                b = c
+        return b
 
     def solve(self, xi, u0):
         """Solve equilibrium equation
@@ -114,6 +141,11 @@ class TESe:
         -------
         float
             Dimensionless radial extent
+
+        Raises
+        ------
+        ValueError
+            when radius exceeds the allowed range [xi_min, xi_max]
         """
         logxi0 = brentq(lambda x: self.solve(10**x, u0)[0],
                         np.log10(self._xi_min), np.log10(self._xi_max))
@@ -1054,56 +1086,69 @@ if __name__ == "__main__":
     Calculate critical density, radius, and mass of the TES at a given
     central density, for different sonic radii.
     """
-    # Dimensionless sonic radius r_s / L_{J,c}
 
-    for pindex in [0.01, 0.3, 0.5, 0.7, 0.99]:
-        critical_mass, critical_radius, critical_density = [], [], []
-        velocity_dispersion, edge_velocity_dispersion = [], []
-        tsc = TESc(p=pindex)
-        rsonic_min = tsc.min_xi_s()
-        rsonic = np.logspace(np.log10(rsonic_min), 4, 4096)
+#    for pindex in [0.01, 0.3, 0.5, 0.7, 0.99]:
+#        critical_mass, critical_radius, critical_density = [], [], []
+#        velocity_dispersion = []
+#        tsc = TESc(p=pindex)
+#        rsonic_min = tsc.min_xi_s()
+#        rsonic = np.logspace(np.log10(rsonic_min), 4, 4096)
+#        for xi_s in rsonic:
+#            tsc = TESc(xi_s=xi_s, p=pindex)
+#            rcrit = tsc.get_rcrit('tot')
+#            if np.isnan(rcrit):
+#                dcrit = np.nan
+#                mcrit = np.nan
+#                sigv = np.nan
+#            elif np.isinf(rcrit):
+#                dcrit = 0
+#                mcrit = np.infty
+#                sigv = np.infty
+#            else:
+#                u, du = tsc.solve(rcrit)
+#                dcrit = np.exp(u)
+#                mcrit = tsc.get_mass(rcrit)
+#                sigv = tsc.get_sigma()
+#
+#            critical_density.append(dcrit)
+#            critical_radius.append(rcrit)
+#            critical_mass.append(mcrit)
+#            velocity_dispersion.append(sigv)
+#
+#        critical_density = np.array(critical_density)
+#        critical_radius = np.array(critical_radius)
+#        critical_mass = np.array(critical_mass)
+#        velocity_dispersion = np.array(velocity_dispersion)
+#        res = dict(rsonic=rsonic,
+#                   dcrit=critical_density,
+#                   rcrit=critical_radius,
+#                   mcrit=critical_mass,
+#                   sigv=velocity_dispersion)
+#        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_p{}.p".format(pindex)
+#        with open(fname, "wb") as handle:
+#            pickle.dump(res, handle)
+
+    for pindex in [0.3, 0.5, 0.7]:
+        critical_contrast, critical_radius, critical_mass = [], [], []
+        velocity_dispersion = []
+        rsonic = np.logspace(-3, 1, 256)
         for xi_s in rsonic:
-            tsc = TESc(xi_s=xi_s, p=pindex)
-            rcrit = tsc.get_rcrit('tot')
-            if np.isnan(rcrit):
-                dcrit = np.nan
-                mcrit = np.nan
-                mean_sigv = np.nan
-                edge_sigv = np.nan
-            elif np.isinf(rcrit):
-                dcrit = 0
-                mcrit = np.infty
-                mean_sigv = np.infty
-                edge_sigv = np.infty
-            else:
-                u, du = tsc.solve(rcrit)
-                dcrit = np.exp(u)
-                mcrit = tsc.get_mass(rcrit)
-
-                # Calculate mass-weighted velocity dispersion
-                xi = np.linspace(tsc._xi_min, rcrit, 512)
-                u, _ = tsc.solve(xi)
-                dv2 = (xi / xi_s)**(2*pindex)
-                dm = 4*np.pi*xi**2*np.exp(u)
-                mean_sigv = np.sqrt(simpson(dm*dv2, x=xi) / simpson(dm, x=xi))
-                edge_sigv = (rcrit / xi_s)**pindex
-            critical_density.append(dcrit)
-            critical_radius.append(rcrit)
-            critical_mass.append(mcrit)
-            velocity_dispersion.append(mean_sigv)
-            edge_velocity_dispersion.append(edge_sigv)
-
-        critical_density = np.array(critical_density)
+            tse = TESe(xi_s=xi_s, p=pindex)
+            uc, rc, mc = tse.get_crit()
+            critical_contrast.append(np.exp(uc))
+            critical_radius.append(rc)
+            critical_mass.append(mc)
+            velocity_dispersion.append(tse.get_sigma())
+        critical_contrast = np.array(critical_contrast)
         critical_radius = np.array(critical_radius)
         critical_mass = np.array(critical_mass)
         velocity_dispersion = np.array(velocity_dispersion)
-        edge_velocity_dispersion = np.array(edge_velocity_dispersion)
+
         res = dict(rsonic=rsonic,
-                   dcrit=critical_density,
+                   dcrit=critical_contrast,
                    rcrit=critical_radius,
                    mcrit=critical_mass,
-                   sigv=velocity_dispersion,
-                   edge_sigv=edge_velocity_dispersion)
-        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_p{}.p".format(pindex)
+                   sigv=velocity_dispersion)
+        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_TESe_p{}.p".format(pindex)
         with open(fname, "wb") as handle:
             pickle.dump(res, handle)
