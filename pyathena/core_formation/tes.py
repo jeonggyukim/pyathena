@@ -53,7 +53,7 @@ class TESe:
     >>> # plot density profile
     >>> plt.loglog(r, np.exp(u))
     """
-    def __init__(self, p=0.5, xi_s=np.inf, sigma_r=None, mode='thm'):
+    def __init__(self, p=0.5, xi_s=np.inf, sigma_r=None, mode='tot'):
         if mode not in {'thm', 'tot'}:
             raise ValueError("mode should be either thm or tot")
         self.mode = mode
@@ -472,7 +472,7 @@ class TESc:
                 return sigv
 
             self.xi_s = brentq(lambda x: get_sigv(x, p)-sigma_r,
-                               self.min_xi_s(), 999)
+                               self.get_min_xi_s(), 999)
 
     def solve(self, xi):
         """Solve equilibrium equation
@@ -643,7 +643,7 @@ class TESc:
         sigv = np.sqrt(num/den)
         return sigv
 
-    def min_xi_s(self, atol=1e-4):
+    def get_min_xi_s(self, atol=1e-4):
         a = 0.01
         b = 999
 
@@ -1091,7 +1091,7 @@ if __name__ == "__main__":
 #        critical_mass, critical_radius, critical_density = [], [], []
 #        velocity_dispersion = []
 #        tsc = TESc(p=pindex)
-#        rsonic_min = tsc.min_xi_s()
+#        rsonic_min = tsc.get_min_xi_s()
 #        rsonic = np.logspace(np.log10(rsonic_min), 4, 4096)
 #        for xi_s in rsonic:
 #            tsc = TESc(xi_s=xi_s, p=pindex)
