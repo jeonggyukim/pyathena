@@ -1,4 +1,4 @@
-from scipy.integrate import odeint, simpson
+from scipy.integrate import odeint, simpson, quad
 from scipy.optimize import minimize_scalar, brentq, newton
 import matplotlib.pyplot as plt
 import numpy as np
@@ -191,7 +191,7 @@ class TESe:
         x0, x1 = u0s[idx-1], u0s[idx+1]
         uc = brentq(func, x0, x1)
         rc = self.get_radius(uc)
-        mc = self.get_mass(uc)
+        mc = self.get_mass(uc, xi0=rc)
         return uc, rc, mc
 
     def get_sigma(self):
@@ -202,12 +202,21 @@ class TESe:
         sigv : float
             Mass-weighted radial velocity dispersion
         """
-        ucrit, rcrit, mcrit = self.get_crit()
-        xi = np.linspace(self._xi_min, rcrit, 512)
-        u, _ = self.solve(xi, ucrit)
-        dm = 4*np.pi*xi**2*np.exp(u)
-        dv2 = (xi / self.xi_s)**(2*self.p)
-        sigv = np.sqrt(simpson(dm*dv2, x=xi) / simpson(dm, x=xi))
+        uc, rc, _ = self.get_crit()
+        def func(xi):
+            u, _ = self.solve(xi, uc)
+            dm = xi**2*np.exp(u)
+            dv2 = (xi / self.xi_s)**(2*self.p)
+            return dm*dv2
+        num, _ = quad(func, self._xi_min, rc)
+
+        def func(xi):
+            u, _ = self.solve(xi, uc)
+            dm = xi**2*np.exp(u)
+            return dm
+        den, _ = quad(func, self._xi_min, rc)
+
+        sigv = np.sqrt(num/den)
         return sigv
 
     def _dydx(self, y, x):
@@ -585,12 +594,21 @@ class TESc:
         sigv : float
             Mass-weighted radial velocity dispersion
         """
-        rcrit = self.get_rcrit()
-        xi = np.linspace(self._xi_min, rcrit, 512)
-        u, _ = self.solve(xi)
-        dm = 4*np.pi*xi**2*np.exp(u)
-        dv2 = (xi / self.xi_s)**(2*self.p)
-        sigv = np.sqrt(simpson(dm*dv2, x=xi) / simpson(dm, x=xi))
+        rc = self.get_rcrit()
+        def func(xi):
+            u, _ = self.solve(xi)
+            dm = xi**2*np.exp(u)
+            dv2 = (xi / self.xi_s)**(2*self.p)
+            return dm*dv2
+        num, _ = quad(func, self._xi_min, rc)
+
+        def func(xi):
+            u, _ = self.solve(xi)
+            dm = xi**2*np.exp(u)
+            return dm
+        den, _ = quad(func, self._xi_min, rc)
+
+        sigv = np.sqrt(num/den)
         return sigv
 
     def min_xi_s(self, atol=1e-4):
