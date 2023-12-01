@@ -53,7 +53,7 @@ class TESe:
     >>> # plot density profile
     >>> plt.loglog(r, np.exp(u))
     """
-    def __init__(self, p=0.5, xi_s=np.inf, mode='tot'):
+    def __init__(self, p=0.5, xi_s=np.inf, mode='thm'):
         self.p = p
         self.xi_s = xi_s
         self._xi_min = 1e-5
@@ -169,16 +169,46 @@ class TESe:
         The pressure at a given mass is P = pi^3 c_s^8 / (G^3 M^2) m^2, so
         the minimization is done with respect to m^2.
         """
-        # do minimization in log space for robustness and performance
-        upper_bound = 8
-        res = minimize_scalar(lambda x: -self.get_mass(x),
-                              bounds=(0, upper_bound), method='Bounded')
-        u_c = res.x
-        r_c = self.get_radius(u_c)
-        m_c = self.get_mass(u_c)
-        if u_c >= 0.999*upper_bound:
-            raise ValueError("critical density contrast is out-of-bound")
-        return u_c, r_c, m_c
+
+        def func(u0):
+            eps = 1e-6
+            ml = np.log10(self.get_mass(u0 - eps))
+            mr = np.log10(self.get_mass(u0 + eps))
+            return (mr - ml) / (2*eps)
+
+        # bracket the roots
+        u0s = np.linspace(0, 20)
+        m = []
+        for u0 in u0s:
+            m.append(self.get_mass(u0))
+        logm = np.log10(np.array(m))
+        dmdu = np.gradient(logm, u0s)
+        idx = (dmdu < 0).nonzero()[0]
+        if len(idx) < 1:
+            raise ValueError("Cannot find maximum mass")
+        else:
+            idx = idx[0] - 1
+        x0, x1 = u0s[idx-1], u0s[idx+1]
+        uc = brentq(func, x0, x1)
+        rc = self.get_radius(uc)
+        mc = self.get_mass(uc)
+        return uc, rc, mc
+
+    def get_sigma(self):
+        """Calculate mass-weighted mean velocity dispersion within rcrit
+
+        Returns
+        -------
+        sigv : float
+            Mass-weighted radial velocity dispersion
+        """
+        ucrit, rcrit, mcrit = self.get_crit()
+        xi = np.linspace(self._xi_min, rcrit, 512)
+        u, _ = self.solve(xi, ucrit)
+        dm = 4*np.pi*xi**2*np.exp(u)
+        dv2 = (xi / self.xi_s)**(2*self.p)
+        sigv = np.sqrt(simpson(dm*dv2, x=xi) / simpson(dm, x=xi))
+        return sigv
 
     def _dydx(self, y, x):
         """Differential equation for hydrostatic equilibrium.
