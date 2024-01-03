@@ -786,15 +786,19 @@ def get_coords_node(s, nd):
     return coordinates
 
 
-def get_periodic_distance(pos1, pos2, Lbox):
+def get_periodic_distance(pos1, pos2, Lbox, return_axis_distance=False):
     hLbox = 0.5*Lbox
-    rds2 = 0
+    axis_distance = []
     for x1, x2 in zip(pos1, pos2):
         dst = np.abs(x1-x2)
         dst = Lbox - dst if dst > hLbox else dst
-        rds2 += dst**2
-    dst = np.sqrt(rds2)
-    return dst
+        axis_distance.append(dst)
+    axis_distance = np.array(axis_distance)
+    dst = np.sqrt((axis_distance**2).sum())
+    if return_axis_distance:
+        return axis_distance
+    else:
+        return dst
 
 
 def get_node_distance(s, nd1, nd2):
