@@ -40,6 +40,7 @@ class TESe:
     to be a power-law in radius, such that
         <v_r^2> = c_s^2 (r / r_s)^{2p} = c_s^2 (xi / xi_s)^{2p}.
 
+    For mode='tot', the radius and mass should be rescaled such that
     m = M / M_{J,e},
 
     Examples
@@ -59,7 +60,7 @@ class TESe:
         self.mode = mode
 
         self._xi_min = 1e-5
-        self._xi_max = 1e3
+        self._xi_max = 1e20
         self.p = p
         if sigma_r is None:
             self.xi_s = xi_s
@@ -75,8 +76,8 @@ class TESe:
 
 
     def get_min_xi_s(self, atol=1e-4):
-        a = 0.01
-        b = 999
+        a = 1e-5
+        b = 1e3
 
         def f(x):
             tse = TESe(p=self.p, xi_s=x, mode=self.mode)
@@ -237,14 +238,22 @@ class TESe:
         uc, rc, _ = self.get_crit()
         def func(xi):
             u, _ = self.solve(xi, uc)
-            dm = xi**2*np.exp(u)
+            if self.mode == 'tot':
+                f = 1 + (xi/self.xi_s)**(2*self.p)
+                dm = xi**2*np.exp(u)/f
+            else:
+                dm = xi**2*np.exp(u)
             dv2 = (xi / self.xi_s)**(2*self.p)
             return dm*dv2
         num, _ = quad(func, self._xi_min, rc)
 
         def func(xi):
             u, _ = self.solve(xi, uc)
-            dm = xi**2*np.exp(u)
+            if self.mode == 'tot':
+                f = 1 + (xi/self.xi_s)**(2*self.p)
+                dm = xi**2*np.exp(u)/f
+            else:
+                dm = xi**2*np.exp(u)
             return dm
         den, _ = quad(func, self._xi_min, rc)
 
@@ -1129,25 +1138,26 @@ if __name__ == "__main__":
 #            pickle.dump(res, handle)
 
     for pindex in [0.3, 0.5, 0.7]:
-        critical_contrast, critical_radius, critical_mass = [], [], []
-        velocity_dispersion = []
-        rsonic = np.logspace(-3, 1, 256)
-        for xi_s in rsonic:
-            tse = TESe(xi_s=xi_s, p=pindex)
+        print(f"Processing pindex {pindex}")
+        sonic_radius, critical_contrast, critical_radius, critical_mass = [], [], [], []
+        velocity_dispersion = np.logspace(-1, 2, 256)
+        for sigma_r in velocity_dispersion:
+            tse = TESe(p=pindex, sigma_r=sigma_r)
             uc, rc, mc = tse.get_crit()
-            critical_contrast.append(np.exp(uc))
-            critical_radius.append(rc)
-            critical_mass.append(mc)
-            velocity_dispersion.append(tse.get_sigma())
+            fe = 1 + (rc/tse.xi_s)**(2*tse.p)
+            sonic_radius.append(tse.xi_s)
+            critical_contrast.append(fe*np.exp(uc))
+            critical_radius.append(rc/np.sqrt(fe))
+            critical_mass.append(mc/np.sqrt(fe))
+        sonic_radius = np.array(sonic_radius)
         critical_contrast = np.array(critical_contrast)
         critical_radius = np.array(critical_radius)
         critical_mass = np.array(critical_mass)
-        velocity_dispersion = np.array(velocity_dispersion)
 
-        res = dict(rsonic=rsonic,
-                   dcrit=critical_contrast,
+        res = dict(dcrit=critical_contrast,
                    rcrit=critical_radius,
                    mcrit=critical_mass,
+                   rsonic=sonic_radius,
                    sigv=velocity_dispersion)
         fname = "/home/sm69/pyathena/pyathena/core_formation/critical_TESe_p{}.p".format(pindex)
         with open(fname, "wb") as handle:
