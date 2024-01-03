@@ -51,7 +51,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         self.domain = self._get_domain_from_par(self.par)
         self.dx, self.dy, self.dz = self.domain['dx']
         try:
-            rprof = xr.open_dataset('{}/radial_profile.nc'.format(self.basedir), engine='netcdf4')
+            rprof = xr.open_dataset('{}/radial_profile_warmcold.nc'.format(self.basedir), engine='netcdf4')
             Rring = self.par['problem']['Rring']
             rprof.coords['eta'] = np.sqrt((rprof.R - Rring)**2 + rprof.z**2)
             eta0 = 200
@@ -83,13 +83,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
     @LoadSim.Decorators.check_pickle
     def load_prfm(self, prefix='prfm_quantities', savdir=None,
                   force_override=False):
-        """Load prfm quantities
-
-        Parameters
-        ----------
-        num : int
-            Snapshot number.
-        """
+        """Load prfm quantities"""
         prfm = []
         for num in self.nums[config.NUM_START:]:
             fname = pathlib.Path(self.basedir, 'prfm_quantities',
@@ -102,6 +96,17 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         prfm = prfm.where(prfm.R < config.Rmax[self.basename.split('_')[0]], other=np.nan)
         return prfm
 
+    def load_radial_profiles(self):
+        """Load radial profiles"""
+        rprofs = []
+        for num in self.nums:
+            fname = pathlib.Path(self.basedir, 'azimuthal_averages_warmcold',
+                                 'gc_azimuthal_average.{:04}.nc'.format(num))
+            time = self.load_vtk(num).domain['time']*self.u.Myr
+            ds = xr.open_dataset(fname, engine='netcdf4').expand_dims(dict(t=[time]))
+            rprofs.append(ds)
+        rprofs = xr.concat(rprofs, 't')
+        return rprofs
 
 class LoadSimTIGRESSGCAll(object):
     """Class to load multiple simulations"""
