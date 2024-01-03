@@ -25,6 +25,7 @@ from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
 from .io.read_athinput import read_athinput
+from .io.athena_read import athinput
 from .util.units import Units
 from .fields.fields import DerivedFields
 from .plt_tools.make_movie import make_movie
@@ -134,8 +135,12 @@ class LoadSim(object):
             if 'PDT' in self.par['configure']['config_date']:
                 self.config_time = self.config_time.tz_localize('US/Pacific')
         except:
-            # set it using hst file creation time
-            self.config_time = pd.to_datetime(osp.getctime(self.files['hst']),unit='s')
+            try:
+                # set it using hst file creation time
+                self.config_time = pd.to_datetime(osp.getctime(self.files['hst']),
+                                                  unit='s')
+            except:
+                self.config_time = None
 
         try:
             muH = self.par['problem']['muH']
@@ -327,7 +332,15 @@ class LoadSim(object):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
 
         if self.load_method == 'pyathena':
-            if self.par['mesh']['refinement'] != 'none':
+            try:
+                refinement = self.par['mesh']['refinement']
+            except KeyError:
+                # Cannot determine if refinement is turned on/off without reading the
+                # HDF5 file and without <refinement> block in athinput.
+                # This part needs to be improved later.
+                refinement = 'none'
+
+            if refinement != 'none':
                 self.logger.error('load_method "{0:s}" does not support mesh\
                         refinement data. Use "yt" instead'.format(self.load_method))
                 self.ds = None
@@ -630,15 +643,16 @@ class LoadSim(object):
 
         self.files = dict()
 
-        athinput_patterns = [('stdout.txt',),
-                             ('out.txt',),
-                             ('out*.txt',),
-                             ('log.txt',),
-                             ('*.par',),
-                             ('*.out',),
-                             ('slurm-*',),
-                             ('athinput.*',),
-                             ]
+        athinput_patterns = [
+            ('athinput.runtime',),
+            ('athinput.*',),
+            ('out.txt',),
+            ('out*.txt',),
+            ('stdout.txt',),
+            ('log.txt',),
+            ('*.par',),
+            ('*.out',),
+            ('slurm-*',)]
 
         hst_patterns = [('id0', '*.hst'),
                         ('hst', '*.hst'),
@@ -693,7 +707,10 @@ class LoadSim(object):
         fathinput = self._find_match(athinput_patterns)
         if fathinput:
             self.files['athinput'] = fathinput[0]
-            self.par = read_athinput(self.files['athinput'])
+            try:
+                self.par = read_athinput(self.files['athinput'])
+            except:
+                self.par = athinput(self.files['athinput'])
             self.logger.info('athinput: {0:s}'.format(self.files['athinput']))
             # self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
             #                 if 'output' in k]
@@ -726,7 +743,7 @@ class LoadSim(object):
                     self.hdf5_outvar = []
                     for k in self.par.keys():
                         if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
-                            self.hdf5_outid.append(int(re.split('(\d+)',k)[1]))
+                            self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
                             self.hdf5_outvar.append(self.par[k]['variable'])
                     for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
                         if 'prim' in v or 'cons' in v:
@@ -737,7 +754,7 @@ class LoadSim(object):
                 if 'partab' in self.out_fmt:
                     for k in self.par.keys():
                         if k.startswith('output') and self.par[k]['file_type'] == 'partab':
-                            self.partab_outid = int(re.split('(\d+)',k)[1])
+                            self.partab_outid = int(re.split(r'(\d+)',k)[1])
 
             else:
                 for k in self.par.keys():
@@ -955,7 +972,7 @@ class LoadSim(object):
                         self.nums_partab[partag][0], self.nums_partab[partag][-1]))
 
         # Find parhst files
-        if self.athena_pp:
+        if self.athena_pp and any(['particle' in k for k in self.par.keys()]):
             fparhst = self._find_match(parhst_patterns)
             if fparhst:
                 self.files['parhst'] = fparhst
