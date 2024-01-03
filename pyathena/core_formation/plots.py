@@ -360,7 +360,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
         ax.grid()
     return fig
 
-
+# TODO Fix bug in the star particle wrapping
 def plot_core_evolution(s, pid, num, rmax=None):
     if rmax is None:
         if np.isfinite(s.cores[pid].attrs['rcore']):
@@ -744,7 +744,7 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
 
     # Overplot critical TES
     tsc = tes.TESc(p=core.pindex, xi_s=core.sonic_radius*np.sqrt(core.center_density))
-    xi_min = rprf.r[0].data[()]*np.sqrt(core.center_density)
+    xi_min = tsc._xi_min*np.sqrt(core.center_density)
     xi_max = r0*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
@@ -752,7 +752,7 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
 
     # Overplot critical BE
     tsc = tes.TESc()
-    xi_min = rprf.r[0].data[()]*np.sqrt(core.center_density)
+    xi_min = tsc._xi_min*np.sqrt(core.center_density)
     xi_max = r0*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
@@ -799,7 +799,8 @@ def plot_sinkhistory(s, ds, pds):
         tslc = time < ds.current_time
         plt.plot(time[tslc], mass[tslc])
     plt.axvline(ds.current_time, linestyle=':', color='k', linewidth=0.5)
-    plt.xlim(s.tcoll_cores.time.iloc[0], tend)
+    if len(s.tcoll_cores) > 0:
+        plt.xlim(s.tcoll_cores.time.iloc[0], tend)
     plt.ylim(1e-2, 1e1)
     plt.yscale('log')
     plt.xlabel(r'$t/t_\mathrm{J,0}$')
