@@ -1,0 +1,20 @@
+#!/bin/bash
+#SBATCH --job-name=do_volume       # create a name for your job
+#SBATCH --nodes=1                # node count
+#SBATCH --ntasks=24              # total number of tasks
+#SBATCH --mem=1500G
+#SBATCH --time=06:00:00
+#SBATCH --partition=bigmem
+
+module purge
+module load anaconda3/2022.5 openmpi/gcc/4.1.0
+conda activate pyathena-lem
+
+export PYTHONPATH="$HOME/pyathena:$HOME/yt-changgoo"
+echo $PYTHONPATH
+
+OUTDIR=$1
+INUM=$2
+
+cd $HOME/pyathena
+srun python pyathena/tigress_ncr/do_volume.py -b $OUTDIR -i $INUM 1> scripts/logs/do_volume-$SLURM_JOB_ID.out 2> scripts/logs/do_volume-$SLURM_JOB_ID.err

@@ -20,6 +20,16 @@ from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigress_ncr.slc_prj import slc_to_xarray
 
+dirpath = os.path.dirname(__file__)
+
+plt.style.use(f"{dirpath}/../../mplstyle/presentation-dark.mplstyle")
+plt.rcParams["axes.grid"] = False
+plt.rcParams["image.interpolation"] = "nearest"
+plt.rcParams["ytick.direction"] = "out"
+plt.rcParams["ytick.minor.visible"] = False
+plt.rcParams["xtick.direction"] = "out"
+plt.rcParams["xtick.minor.visible"] = False
+
 labels = dict()
 labels["Sigma"] = r"$\Sigma_{\rm gas}\,[M_\odot\,{\rm pc^{-2}}]$"
 labels["Sigma_HI"] = r"$\Sigma_{\rm H}\,[M_\odot\,{\rm pc^{-2}}]$"
@@ -33,7 +43,7 @@ labels["nebar"] = r"$<n_e>\,[{\rm cm^{-3}}]$"
 labels["EM"] = r"${\rm EM}\,[{\rm cm^{-6}\,pc}]$"
 
 
-def do_surfmaps(s, num):
+def do_surfmaps(s, num, outdir):
     # some constants
     dx = s.domain["dx"][0] * s.u.length
     conv_Sigma = (dx * s.u.muH * ac.u.cgs / au.cm**3).to("Msun/pc**2").value
@@ -63,7 +73,7 @@ def do_surfmaps(s, num):
     EM0 = n0**2 * Lz
     for f in prjdata:
         d = prjdata[f]
-        fig = plt.figure(num=0)
+        fig = plt.figure(num=0, figsize=(6, 4))
         if f == "EM":
             kwargs = dict(norm=LogNorm(EM0 * 1.0e-4, EM0 * 100), cmap=plt.cm.plasma)
         elif f.startswith("ne"):
@@ -77,7 +87,11 @@ def do_surfmaps(s, num):
         plt.ylabel(r"$y\, [{\rm pc}]$")
 
         # save maps
-        fig.savefig(os.path.join(outdir, f"{f}.{int(num):04d}.png"), dpi=200)
+        fig.savefig(
+            os.path.join(outdir, f"{f}.{int(num):04d}.png"),
+            dpi=200,
+            bbox_inches="tight",
+        )
         plt.close(fig)
 
 
@@ -133,7 +147,7 @@ if __name__ == "__main__":
     time0 = time.time()
     for num in mynums:
         print(num, end=" ")
-        do_surfmaps(s, num)
+        do_surfmaps(s, num, outdir)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
@@ -141,22 +155,22 @@ if __name__ == "__main__":
         pprint.pprint(gc.garbage)
         sys.stdout.flush()
 
-    # Make movies
-    COMM.barrier()
+    # # Make movies
+    # COMM.barrier()
 
-    if COMM.rank == 0:
-        if not osp.isdir(osp.join(s.basedir, "movies")):
-            os.mkdir(osp.join(s.basedir, "movies"))
-        for field in labels:
-            fin = osp.join(outdir, "{field}.*.png")
-            fout = osp.join(s.basedir, f"movies/{s.basename}_{field}.mp4")
-            make_movie(fin, fout, fps_in=15, fps_out=15)
-            from shutil import copyfile
+    # if COMM.rank == 0:
+    #     if not osp.isdir(osp.join(s.basedir, "movies")):
+    #         os.mkdir(osp.join(s.basedir, "movies"))
+    #     for field in labels:
+    #         fin = osp.join(outdir, "{field}.*.png")
+    #         fout = osp.join(s.basedir, f"movies/{s.basename}_{field}.mp4")
+    #         make_movie(fin, fout, fps_in=15, fps_out=15)
+    #         from shutil import copyfile
 
-            copyfile(
-                fout,
-                osp.join(
-                    "/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR",
-                    osp.basename(fout),
-                ),
-            )
+    #         copyfile(
+    #             fout,
+    #             osp.join(
+    #                 "/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR",
+    #                 osp.basename(fout),
+    #             ),
+    #         )

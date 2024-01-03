@@ -4,11 +4,13 @@
 #SBATCH --ntasks=48              # total number of tasks
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=00:30:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=06:00:00          # total run time limit (HH:MM:SS)
 
 module purge
-module load anaconda3/2020.11 openmpi/gcc/4.1.0
-conda activate pyathena
+# module load anaconda3/2020.11 openmpi/gcc/4.1.0
+# conda activate pyathena
+module load anaconda3/2022.5 openmpi/gcc/4.1.0
+conda activate pyathena-lem
 
 MODULE="pyathena.tigress_ncr.do_tasks"
 echo $PYTHONPATH
