@@ -138,7 +138,7 @@ class SliceProj:
             pass
         if self.par["configure"]["gas"] == "mhd":
             fields_def += ["Bx", "By", "Bz", "Bmag"]
-        if fields is 'default':
+        if fields == 'default':
             fields = fields_def
 
         newslc = dict()
@@ -220,43 +220,92 @@ class SliceProj:
         return res
 
     @LoadSim.Decorators.check_pickle
-    def read_prj(
-        self, num, axes=["x", "y", "z"], prefix="prj", savdir=None, force_override=False
-    ):
+    def read_prj(self, num, axes=['x', 'y', 'z'],
+                 fields=['density', 'xHI', 'xH2', 'xHII', 'xe', 'nesq'],
+                 prefix='prj',
+                 savdir=None, force_override=False):
 
         axtoi = dict(x=0, y=1, z=2)
-        fields = ["nH"]
-        try:
-            if self.par["configure"]["radps"] == "ON":
-                fields += ["nH2", "nesq"]
-        except KeyError:
-            pass
         axes = np.atleast_1d(axes)
 
         ds = self.load_vtk(num=num)
         dat = ds.get_field(fields, as_xarray=True)
-
         res = dict()
-        res["time"] = ds.domain["time"]
-        res["extent"] = self._get_extent(ds.domain)
+        res['extent'] = self._get_extent(ds.domain)
+        res['time'] = ds.domain['time']
 
         for ax in axes:
             i = axtoi[ax]
-            dx = ds.domain["dx"][i] * self.u.length
-            conv_Sigma = (dx * self.u.muH * ac.u.cgs / au.cm ** 3).to("Msun/pc**2")
-            conv_EM = (dx * au.cm ** -6).to("pc cm-6")
+            dx = ds.domain['dx'][i]*self.u.length
+            conv_Sigma = (dx*self.u.muH*ac.u.cgs/au.cm**3).to('Msun/pc**2').value
+            conv_EM = (dx*au.cm**-6).to('pc cm-6').value
 
             res[ax] = dict()
-            res[ax]["Sigma_gas"] = (np.sum(dat["nH"], axis=2 - i) * conv_Sigma).data
-            try:
-                res[ax]["Sigma_H2"] = (
-                    2.0 * np.sum(dat["nH2"], axis=2 - i) * conv_Sigma
-                ).data
-                res[ax]["Sigma_HI"] = res[ax]["Sigma_gas"] - res[ax]["Sigma_H2"]
-                res[ax]["EM"] = (np.sum(dat["nesq"], axis=2 - i) * conv_EM).data
-            except KeyError:
-                res[ax]["Sigma_HI"] = res[ax]["Sigma_gas"]
+            res[ax]['Sigma_gas'] = (np.sum(dat['density'], axis=2-i)*conv_Sigma).data
+            for field in fields:
+                if field == 'xH2':
+                    val = (2.0*dat['density']*dat['xH2']).data
+                    valsum = (np.sum(val,axis=2-i)*conv_Sigma)
+                    res[ax]['Sigma_H2'] = valsum
+                elif field in ['xHI','xHII','xe']:
+                    val = (dat['density']*dat[field]).data
+                    valsum = (np.sum(val,axis=2-i)*conv_Sigma)
+                    res[ax][f'Sigma_{field[1:]}'] = valsum
+                elif field == 'nesq':
+                    val = (dat['nesq']).data
+                    valsum = (np.sum(val,axis=2-i)*conv_EM)
+                    res[ax]['EM'] = valsum
+                elif field.startswith('specific_scalar'):
+                    ns = field[-2:-1]
+                    val = (dat['density']*dat[f'specific_scalar[{ns}]']).data
+                    valsum = (np.sum(val,axis=2-i)*conv_Sigma)
+                    res[ax][f'Sigma_scalar{ns}'] = valsum
 
+        return res
+
+    @LoadSim.Decorators.check_pickle
+    def read_prj_RMDMEM(self, num, axes=['x', 'y', 'z'],
+                 fields=['nH','ne','xHI','cell_centered_B','T'],
+                 prefix='prj2',
+                 savdir=None, force_override=False):
+
+        axtoi = dict(x=0, y=1, z=2)
+        axes = np.atleast_1d(axes)
+
+        ds = self.load_vtk(num=num)
+        dat = ds.get_field(fields, as_xarray=True)
+        res = dict()
+        res['extent'] = self._get_extent(ds.domain)
+        res['time'] = ds.domain['time']
+
+        for ax in axes:
+            i = axtoi[ax]
+            dx = ds.domain['dx'][i]
+            Blos = dat[f'cell_centered_B{i+1}']
+            Btot = np.sqrt(dat['cell_centered_B1']**2+
+                           dat['cell_centered_B2']**2+
+                           dat['cell_centered_B3']**2)
+            nHI = dat['nH']*dat['xHI']
+            ne = dat['ne']
+
+            res[ax] = dict()
+            res[ax]['NHI'] = (nHI*dx).sum(dim=ax)
+            res[ax]['DM'] = (ne*dx).sum(dim=ax)
+            res[ax]['RM'] = (ne*Blos*dx).sum(dim=ax)
+            res[ax]['Blos'] = (Blos*dx).sum(dim=ax)
+            res[ax]['EM'] = (ne**2*dx).sum(dim=ax)
+            res[ax]['neB'] = (ne*Btot*dx).sum(dim=ax)
+            res[ax]['Btot'] = (Btot*dx).sum(dim=ax)
+
+            warm = dat['T']<3.5e4
+            res[ax]['NHI_w'] = (nHI*dx*warm).sum(dim=ax)
+            res[ax]['DM_w'] = (ne*dx*warm).sum(dim=ax)
+            res[ax]['RM_w'] = (ne*Blos*dx*warm).sum(dim=ax)
+            res[ax]['Blos_w'] = (Blos*dx*warm).sum(dim=ax)
+            res[ax]['EM_w'] = (ne**2*dx*warm).sum(dim=ax)
+            res[ax]['neB_w'] = (ne*Btot*dx*warm).sum(dim=ax)
+            res[ax]['Btot_w'] = (Btot*dx*warm).sum(dim=ax)
+            res[ax]['warm'] = (warm).sum(dim=ax)
         return res
 
     def read_slc_xarray(self, num, fields='default', axis="zall", force_override=False):
@@ -273,8 +322,11 @@ class SliceProj:
         slc_list = []
         if nums is None: nums = range(num1, num2, nskip)
         for num in nums:
-            slc = self.read_slc_xarray(num,fields=fields,axis=axis)
-            slc_list.append(slc)
+            try:
+                slc = self.read_slc_xarray(num,fields=fields,axis=axis)
+                slc_list.append(slc)
+            except OSError:
+                continue
         slc_dset = xr.concat(slc_list, dim="time")
         if sfr:
             hst = self.read_hst()
@@ -533,11 +585,21 @@ class SliceProj:
             aspect=True,
             share_all=True,
         )
+
+        exclude_fields = []
+        if self.par["configure"]["radps"] == "ON":
+            if self.par["radps"]["iPhotIon"] == 0:
+                exclude_fields += ["Erad_LyC"]
+            if self.par["cooling"]["iPEheating"] == 0:
+                exclude_fields += ["chi_FUV"]
+
         slc_fields = []
         for f in fields_xy:
+            if f in exclude_fields: continue
             if kind[f] == 'slc':
                 slc_fields += [f]
         for f in fields_xz:
+            if f in exclude_fields: continue
             if kind[f] == 'slc':
                 slc_fields += [f]
         slc_fields = list(set(slc_fields))

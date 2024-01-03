@@ -322,7 +322,7 @@ class PaperData(object):
         return s.h
 
     @staticmethod
-    def zprof_rename(s):
+    def zprof_rename(s,flist=None):
         if hasattr(s,'newzp'): return s.newzp
         rename_dict = dict()
         kind = 'new' if s.test_phase_sep_hst() else 'old'
@@ -330,10 +330,10 @@ class PaperData(object):
         for i,pname in enumerate(shorthands):
             rename_dict['phase{}'.format(i+1)] = pname
         if not hasattr(s,'zp'):
-            zp = s.read_zprof_new()
+            zp = s.read_zprof_new(flist=flist)
         else:
             if not 'phase' in s.zp:
-                zp = s.read_zprof_new()
+                zp = s.read_zprof_new(flist=flist)
         zp = s.zp
         zp = zp.to_array().to_dataset('phase').rename(rename_dict)
         zp = zp.to_array('phase').to_dataset('variable')
@@ -365,6 +365,7 @@ class PaperData(object):
                 newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
     #         newzp['Others'] = (zp.sel(phase=['hotnothers']).squeeze()-zp.sel(phase=['h1','h2']).sum(dim='phase')).to_array()
         s.newzp = newzp.to_array('phase').to_dataset('variable')
+        delattr(s,'zp')
         return s.newzp
 
     def Pmid_time_series(self,m,sfr=None,dt=0,zrange=slice(-10,10),

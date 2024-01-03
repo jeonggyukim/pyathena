@@ -275,8 +275,10 @@ class LoadSimTIGRESSNCR(
         with xr.open_dataset(fheat) as pdf_heat:
             pdf_heat.load()
         dhnu_HI_PH, dhnu_H2_PH = self.get_dhnu_PH()
-        pdf_heat["PH_HI"] = pdf_heat["PH_HI"] * dhnu_HI_PH / dhnu_HI_PH_default
-        pdf_heat["PH_H2"] = pdf_heat["PH_H2"] * dhnu_H2_PH / dhnu_H2_PH_default
+        if "PH_HI" in pdf_heat.dims:
+            pdf_heat["PH_HI"] = pdf_heat["PH_HI"] * dhnu_HI_PH / dhnu_HI_PH_default
+        if "PH_H2" in pdf_heat.dims:
+            pdf_heat["PH_H2"] = pdf_heat["PH_H2"] * dhnu_H2_PH / dhnu_H2_PH_default
         if "nH" in pdf_cool.dims:
             pdf_cool = pdf_cool.rename(nH='nH_bin')
         if "T" in pdf_cool.dims:

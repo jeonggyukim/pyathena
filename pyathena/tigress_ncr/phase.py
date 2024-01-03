@@ -91,7 +91,10 @@ def recal_xT(dchunk):
     xs = ["xHI", "xHII"]
     log = [False, True]
     for T_ in T:
-        if not T_ in dchunk: continue
+        try:
+            dchunk[T_]
+        except KeyError:
+            continue
         for log_ in log:
             for xs_ in xs:
                 x, y, w = (
@@ -119,6 +122,8 @@ def add_phase_cuts(
     xH2cut=0.25,
     xHI_CIE=True,
     log=False,
+    lkwargs = dict(color="b", ls="--", lw=1),
+    color_cie = "r"
 ):
     phcolors = get_phcolor_dict(
         cmap=None if T1 else cmr.pride,
@@ -127,7 +132,6 @@ def add_phase_cuts(
         cmax=0.9 if T1 else 0.85,
     )
     # deviding lines
-    lkwargs = dict(color="b", ls="--", lw=1)
     for T0 in Tlist:
         ymin = 0
         ymax = 1
@@ -156,8 +160,8 @@ def add_phase_cuts(
             elif xs_axis == "x":
                 plt.axhline(np.log10(T0), xmin=ymin, **lkwargs)
     # abundance cuts
-    xHIIcut = 0.5
-    xH2cut = 0.25
+    # xHIIcut = 0.5
+    # xH2cut = 0.25
     if T1:
         pass
     else:
@@ -194,7 +198,7 @@ def add_phase_cuts(
     yl = 0.05
     yr = 0.95
     if log:
-        yl = -5.95
+        yl = -2.95
         yr = np.log10(yr)
     if xs == "xHI":
         label_infos = dict()
@@ -312,9 +316,9 @@ def add_phase_cuts(
         if log:
             xHI = np.log10(xHI)
         if xs_axis == "y":
-            plt.plot(logT, xHI, c="r", ls="--", label="CIE", lw=1, dashes=[6, 2])
+            plt.plot(logT, xHI, c=color_cie, ls="--", label="CIE", lw=2, dashes=[6, 2])
         elif xs_axis == "x":
-            plt.plot(xHI, logT, c="r", ls="--", label="CIE", lw=1, dashes=[6, 2])
+            plt.plot(xHI, logT, c=color_cie, ls="--", label="CIE", lw=2, dashes=[6, 2])
 
 
 def get_dchunk(s, num, scratch_dir="/scratch/gpfs/changgoo/TIGRESS-NCR/"):

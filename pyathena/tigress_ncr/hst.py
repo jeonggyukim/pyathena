@@ -49,10 +49,11 @@ class Hst:
         nscalars = self.par["configure"]["nscalars"]
 
         hst = read_hst(self.files["hst"], force_override=force_override)
+        t = np.array(hst['time'])
         if self.test_phase_sep_hst():
             self.logger.info("[read_hst]: Reading phase separated history files...")
-            hw = self.read_hst_phase(iph=0, force_override=force_override).sel(time=hst['time'])
-            hph = self.read_hst_phase_all(force_override=force_override,reduced=False).sel(time=hst['time'])
+            hw = self.read_hst_phase(iph=0, force_override=force_override).sel(time=t)
+            hph = self.read_hst_phase_all(force_override=force_override,reduced=False).sel(time=t)
 
         h = pd.DataFrame()
 
@@ -238,74 +239,74 @@ class Hst:
         except KeyError:
             radps = False
 
-        if radps:
-            # Total/escaping luminosity in Lsun
-            ifreq = dict()
-            for f in ("PH", "LW", "PE"):  # ,'PE_unatt'):
-                try:
-                    ifreq[f] = par["radps"]["ifreq_{0:s}".format(f)]
-                except KeyError:
-                    pass
+        # if radps:
+        #     # Total/escaping luminosity in Lsun
+        #     ifreq = dict()
+        #     for f in ("PH", "LW", "PE"):  # ,'PE_unatt'):
+        #         try:
+        #             ifreq[f] = par["radps"]["ifreq_{0:s}".format(f)]
+        #         except KeyError:
+        #             pass
 
-            for i in range(par["radps"]["nfreq"]):
-                for k, v in ifreq.items():
-                    if i == v:
-                        try:
-                            h[f"Ltot_{k}"] = hst[f"Ltot{i}"] * u.Lsun # * vol is omitted as it is already taken into account
-                            h[f"Lesc_{k}"] = hst[f"Lesc{i}"] * u.Lsun # * vol
-                            if par["radps"]["eps_extinct"] > 0.0:
-                                h[f"Leps_{k}"] = hst[f"Leps{i}"] * u.Lsun # * vol
-                            try:
-                                h[f"Ldust_{k}"] = hst[f"Ldust{i}"] * u.Lsun # * vol
-                            except KeyError:
-                                self.logger.info("Ldust not found in hst")
+        #     for i in range(par["radps"]["nfreq"]):
+        #         for k, v in ifreq.items():
+        #             if i == v:
+        #                 try:
+        #                     h[f"Ltot_{k}"] = hst[f"Ltot{i}"] * u.Lsun # * vol is omitted as it is already taken into account
+        #                     h[f"Lesc_{k}"] = hst[f"Lesc{i}"] * u.Lsun # * vol
+        #                     if par["radps"]["eps_extinct"] > 0.0:
+        #                         h[f"Leps_{k}"] = hst[f"Leps{i}"] * u.Lsun # * vol
+        #                     try:
+        #                         h[f"Ldust_{k}"] = hst[f"Ldust{i}"] * u.Lsun # * vol
+        #                     except KeyError:
+        #                         self.logger.info("Ldust not found in hst")
 
-                            hnu = (par["radps"][f"hnu_{k}"] * au.eV).cgs.value
-                            h[f"Qtot_{k}"] = (
-                                h[f"Ltot_{k}"].values * (ac.L_sun.cgs.value) / hnu
-                            )
-                            h[f"Qesc_{k}"] = (
-                                h[f"Lesc_{k}"].values * (ac.L_sun.cgs.value) / hnu
-                            )
-                            if f'Ldust_{k}' in h:
-                                h[f'Qdust_{k}'] = (
-                                    h[f'Ldust_{k}'].values * (ac.L_sun.cgs.value)/hnu
-                                )
-                            # Cumulative number of escaped photons
-                            h[f"Qtot_cum_{k}"] = integrate.cumtrapz(
-                                h[f"Qtot_{k}"], h.time * u.time.cgs.value, initial=0.0
-                            )
-                            h[f"Qesc_cum_{k}"] = integrate.cumtrapz(
-                                h[f"Qesc_{k}"], h.time * u.time.cgs.value, initial=0.0
-                            )
-                            # Instantaneous escape fraction
-                            h[f"fesc_{k}"] = h[f"Lesc_{k}"] / h[f"Ltot_{k}"]
-                            # Cumulative escape fraction
-                            h[f"fesc_cum_{k}"] = integrate.cumtrapz(
-                                h[f"Lesc_{k}"], h.time, initial=0.0
-                            ) / integrate.cumtrapz(h[f"Ltot_{k}"], h.time, initial=0.0)
-                            h[f"fesc_cum_{k}"].fillna(value=0.0, inplace=True)
-                        except KeyError as e:
-                            pass
-                            # raise e
-            if 'Qtot_PH' in h.columns and \
-            'Qesc_PH' in h.columns and \
-            'Qdust_PH' in h.columns:
+        #                     hnu = (par["radps"][f"hnu_{k}"] * au.eV).cgs.value
+        #                     h[f"Qtot_{k}"] = (
+        #                         h[f"Ltot_{k}"].values * (ac.L_sun.cgs.value) / hnu
+        #                     )
+        #                     h[f"Qesc_{k}"] = (
+        #                         h[f"Lesc_{k}"].values * (ac.L_sun.cgs.value) / hnu
+        #                     )
+        #                     if f'Ldust_{k}' in h:
+        #                         h[f'Qdust_{k}'] = (
+        #                             h[f'Ldust_{k}'].values * (ac.L_sun.cgs.value)/hnu
+        #                         )
+        #                     # Cumulative number of escaped photons
+        #                     h[f"Qtot_cum_{k}"] = integrate.cumtrapz(
+        #                         h[f"Qtot_{k}"], h.time * u.time.cgs.value, initial=0.0
+        #                     )
+        #                     h[f"Qesc_cum_{k}"] = integrate.cumtrapz(
+        #                         h[f"Qesc_{k}"], h.time * u.time.cgs.value, initial=0.0
+        #                     )
+        #                     # Instantaneous escape fraction
+        #                     h[f"fesc_{k}"] = h[f"Lesc_{k}"] / h[f"Ltot_{k}"]
+        #                     # Cumulative escape fraction
+        #                     h[f"fesc_cum_{k}"] = integrate.cumtrapz(
+        #                         h[f"Lesc_{k}"], h.time, initial=0.0
+        #                     ) / integrate.cumtrapz(h[f"Ltot_{k}"], h.time, initial=0.0)
+        #                     h[f"fesc_cum_{k}"].fillna(value=0.0, inplace=True)
+        #                 except KeyError as e:
+        #                     pass
+        #                     # raise e
+        #     if 'Qtot_PH' in h.columns and \
+        #     'Qesc_PH' in h.columns and \
+        #     'Qdust_PH' in h.columns:
 
-                h['Qieff'] = h['Qtot_PH'] - h['Qesc_PH'] - h['Qdust_PH']
-                h['fion'] = h['Qieff']/h['Qtot_PH']
-                h['fion_cum'] = integrate.cumtrapz(h[f'Qieff'], h.time, initial=0.0)/\
-                            integrate.cumtrapz(h[f'Qtot_PH'], h.time, initial=0.0)
-            if "Ltot_LW" in h.columns and "Ltot_PE" in h.columns:
-                h["fesc_FUV"] = (h["Lesc_PE"] + h["Lesc_LW"]) / (
-                    h["Ltot_PE"] + h["Ltot_LW"]
-                )
-                h["fesc_cum_FUV"] = integrate.cumtrapz(
-                    h["Lesc_PE"] + h["Lesc_LW"], h.time, initial=0.0
-                ) / integrate.cumtrapz(
-                    h["Ltot_PE"] + h["Ltot_LW"], h.time, initial=0.0
-                )
-                h[f"fesc_cum_FUV"].fillna(value=0.0, inplace=True)
+        #         h['Qieff'] = h['Qtot_PH'] - h['Qesc_PH'] - h['Qdust_PH']
+        #         h['fion'] = h['Qieff']/h['Qtot_PH']
+        #         h['fion_cum'] = integrate.cumtrapz(h[f'Qieff'], h.time, initial=0.0)/\
+        #                     integrate.cumtrapz(h[f'Qtot_PH'], h.time, initial=0.0)
+        #     if "Ltot_LW" in h.columns and "Ltot_PE" in h.columns:
+        #         h["fesc_FUV"] = (h["Lesc_PE"] + h["Lesc_LW"]) / (
+        #             h["Ltot_PE"] + h["Ltot_LW"]
+        #         )
+        #         h["fesc_cum_FUV"] = integrate.cumtrapz(
+        #             h["Lesc_PE"] + h["Lesc_LW"], h.time, initial=0.0
+        #         ) / integrate.cumtrapz(
+        #             h["Ltot_PE"] + h["Ltot_LW"], h.time, initial=0.0
+        #         )
+        #         h[f"fesc_cum_FUV"].fillna(value=0.0, inplace=True)
 
         try:
             h["xi_CR0"] = hst["xi_CR0"]

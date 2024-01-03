@@ -53,11 +53,15 @@ class LowZData(PaperData):
             elif 'S150' in m:
                 head += '-S150'
                 if 'Om01' in m:
-                    head += '-Om01'
+                    head += '-Om100q0'
                 elif 'Om02' in m:
-                    head += '-Om02'
+                    head += '-Om200'
+                # if 'rstZ01' in m:
+                #     head += 'r'
             elif 'S100' in m:
                 head += '-S100'
+                # if 'rstZ01' in m:
+                #     head += 'r'
             elif 'S05' in m:
                 head += '-S05'
             else:
@@ -75,7 +79,7 @@ class LowZData(PaperData):
         try:
             mgroup['R8']=mgroup['R8-b1']
             mgroup['LGR4']=mgroup['LGR4-b1']
-            mgroup['LGR2-S150']=mgroup['LGR2-S150-Om01'] + mgroup['LGR2-S150-Om02']
+            mgroup['LGR2-S150']=mgroup['LGR2-S150-Om100q0'] + mgroup['LGR2-S150-Om200']
         except KeyError:
             print("not all model groups are set")
 
@@ -100,9 +104,9 @@ class LowZData(PaperData):
             elif 'S150' in m:
                 gkey = 'S150'
                 if 'Om01' in m:
-                    gkey += '-Om01'
+                    gkey += '-Om100q0'
                 elif 'Om02' in m:
-                    gkey += '-Om02'
+                    gkey += '-Om200'
             elif m.startswith('R8'):
                 gkey = 'R8'
             elif m.startswith('LGR4'):
@@ -129,9 +133,9 @@ class LowZData(PaperData):
         elif 'S150' in s.basename:
             head = 'S150'
             if 'Om01' in s.basename:
-                head += '-Om01'
+                head += '-Om100q0'
             elif 'Om02' in s.basename:
-                head += '-Om02'
+                head += '-Om200'
         elif 'S100' in s.basename:
             head = 'S100'
         elif 'S05' in s.basename:
@@ -146,6 +150,8 @@ class LowZData(PaperData):
         if zonly:
             return ztail
         else:
+            if 'rstZ01' in s.basename:
+                ztail += 'r'
             return '{}-{}'.format(head,ztail)
 
     def _set_model_params(self):
@@ -354,6 +360,7 @@ class LowZData(PaperData):
             y = zpmid[yf].sel(phase='2p')
             ydata[yf] = y
         for yf in ['PDE_whole_approx','PDE_2p_avg_approx','PDE_2p_mid_approx',
+                   'PDE_whole_approx_sp','PDE_2p_avg_approx_sp','PDE_2p_mid_approx_sp',
                    'PDE_whole_full','PDE_2p_avg_full','PDE_2p_mid_full',
                    'H_whole_full','H_2p_avg_full','H_2p_mid_full',
                    'sfr10','sfr40','sfr100','Sigma_gas']:
@@ -674,14 +681,22 @@ def get_PW_time_series_from_zprof(s,zprof,sfr=None,dt=0,zrange=slice(-10,10),rec
     zpmid['sigma_turb_mid'] = np.sqrt(zpmid['Pturb']/zpmid['nH'])
     zpmid['sigma_th_mid'] = np.sqrt(zpmid['Pth']/zpmid['nH'])
     zpmid['Sigma_gas'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['mass']*s.u.Msun*vol/area),coords=[zpmid.time])
+    zpmid['Sigma_sp'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['msp']*s.u.Msun*vol/area),coords=[zpmid.time])
     rhosd=0.5*s.par['problem']['SurfS']/s.par['problem']['zstar']+s.par['problem']['rhodm']
+    rhosd2=0.5*(s.par['problem']['SurfS']+zpmid['Sigma_sp'])/s.par['problem']['zstar']+s.par['problem']['rhodm']
     zpmid['PDE1'] = np.pi*zpmid['Sigma_gas']**2/2.0*(ac.G*(ac.M_sun/ac.pc**2)**2/ac.k_B).cgs.value
     zpmid['PDE2_2p'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['sigma_eff'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
     zpmid['PDE2_2p_mid'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['sigma_eff_mid'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
     zpmid['PDE2'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['szeff']*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
+    zpmid['PDE3_2p'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd2)*zpmid['sigma_eff'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
+    zpmid['PDE3_2p_mid'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd2)*zpmid['sigma_eff_mid'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
+    zpmid['PDE3'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd2)*zpmid['szeff']*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
     zpmid['PDE_2p_mid_approx'] = zpmid['PDE1']+zpmid['PDE2_2p_mid'] # PDE from midplane pressure and density of 2p gas
     zpmid['PDE_2p_avg_approx'] = zpmid['PDE1']+zpmid['PDE2_2p'] # PDE from mass weighted mean VD of 2p gas
     zpmid['PDE_whole_approx'] = zpmid['PDE1']+zpmid['PDE2'] # PDE from mass weighted mean VD of whole gas
+    zpmid['PDE_2p_mid_approx_sp'] = zpmid['PDE1']+zpmid['PDE3_2p_mid'] # PDE from midplane pressure and density of 2p gas + added new star particle gravity
+    zpmid['PDE_2p_avg_approx_sp'] = zpmid['PDE1']+zpmid['PDE3_2p'] # PDE from mass weighted mean VD of 2p gas + added new star particle gravity
+    zpmid['PDE_whole_approx_sp'] = zpmid['PDE1']+zpmid['PDE3'] # PDE from mass weighted mean VD of whole gas + added new star particle gravity
 
     # using PRFM package
     import prfm
@@ -1142,6 +1157,14 @@ class athena_data(object):
     def __getitem__(self,field):
         if field in self.data:
             return self.data[field]
+        elif field == "T":
+            if 'temperature' in self.data:
+                return self.data['temperature']
+            elif 'xe' in self.data:
+                d = self.data
+                u = self.sim.u
+                return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                    (ac.k_B/u.energy_density).cgs.value
         elif field in self.sim.dfi:
             return self.sim.dfi[field]['func'](self.data,self.sim.u)
         elif field == 'charging':

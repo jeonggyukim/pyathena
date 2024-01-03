@@ -61,7 +61,7 @@ def zprof_rename(s):
     return s.newzp
 
 class Zprof(ReadZprofBase):
-    def read_zprof_new(self, phase="all", savdir=None, force_override=False):
+    def read_zprof_new(self, phase="all", flist=None, savdir=None, force_override=False):
         f = self.files["zprof"][0]
         nphase = len(glob.glob(f[: f.rfind("phase")] + "*.zprof"))
 
@@ -75,6 +75,8 @@ class Zprof(ReadZprofBase):
             zp = self._read_zprof(
                 phase=ph, savdir=savdir, force_override=force_override
             )
+            if flist is not None:
+                zp = zp[flist]
             zplist.append(zp.expand_dims("phase").assign_coords(phase=[ph]))
 
         zp = xr.concat(zplist, dim="phase")
