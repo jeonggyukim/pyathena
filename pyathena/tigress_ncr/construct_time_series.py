@@ -81,9 +81,15 @@ class athena_data(object):
             self.data["tnetcool"] = (
                 1.5
                 * self["pressure"]
-                / (self["cool_rate"] - self["heat_rate"])
+                / np.abs(self["cool_rate"] - self["heat_rate"])
                 * self.u.Myr
             )
+        elif field == "vx2":
+            self.data["vx2"] = self["vx"]**2
+        elif field == "vy2":
+            self.data["vy2"] = self["vy"]**2
+        elif field == "vz2":
+            self.data["vz2"] = self["vz"]**2
         else:
             raise KeyError("{} is not available".format(field))
         return self.data[field]
@@ -120,6 +126,9 @@ class athena_data(object):
             "ne",
             "nHI",
             "nHII",
+            "vx","vx2",
+            "vy","vy2",
+            "vz","vz2"
         ]
         for f in flist:
             self[f]
@@ -172,6 +181,9 @@ def construct_timeseries(pdata, m, force_override=False):
             "xH2",
             "xHII",
             "xe",
+            "velocity1",
+            "velocity2",
+            "velocity3"
         ]
         s.slc = s.read_slc_time_series(
             nums=slcnums, fields=fields, sfr=True, radiation=True
