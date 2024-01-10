@@ -112,6 +112,25 @@ class SB99(object):
 
         return df
 
+    def read_yield(self):
+        names = ['time','Mdot_H','Mdot_He','Mdot_C','Mdot_N',
+                 'Mdot_O','Mdot_Mg','Mdot_Si','Mdot_S','Mdot_Fe',
+                 'Mdot_wind','Mdot_sn','Mdot_wind_sn','M_tot']
+        df = pd.read_csv(self.files['yield'], names=names,
+                         skiprows=7, delimiter='\s+')
+
+        # Normalize by cluster mass
+        for c in df.columns:
+            if c == 'time':
+                continue
+            df[c] = 10.0**(df[c] - self.logM)
+
+        df = df.rename(columns={'time': 'time_yr'})
+        df['time_Myr'] = df['time_yr']*1e-6
+        # df.set_index('time_Myr', inplace=True)
+
+        return df
+
     def read_wind(self):
         """Function to read power1 (stellar wind power) output
         """
