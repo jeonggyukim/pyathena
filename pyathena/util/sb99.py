@@ -1131,3 +1131,135 @@ def get_ISRF_SB99_plane_parallel(Sigma_gas=10.0*au.M_sun/au.pc**2,
         print('Overall correction factor : {:g}'.format(r['J_FUV']/r['J_FUV_unatt']))
 
     return r
+
+
+def write_sb99_output_for_tigress(sb):
+
+    rr = sb.read_rad()
+    ry = sb.read_yield()
+    rw = sb.read_wind()
+    rs = sb.read_sn()
+
+    from scipy.interpolate import interp1d
+
+    # Set age array (MUST BE THE SAME AS THE AGE ARRAYS IN Athena-TIGRESS)
+    dage_sn = 0.2
+    age_sn = np.arange(0,40.2,dage_sn)
+
+    dage_rad = 0.2
+    age_rad = np.arange(0,40.2,dage_rad)
+
+    # Separate age array for wind output to keep consistency with old TIGRESS version
+    dage_wind = 0.1
+    age_wind = np.arange(0,50.0,dage_wind) + 0.01
+    age_wind = np.insert(age_wind, 0, 0.0)
+
+    f_Psi_LW = interp1d(rr['time_Myr'], rr['L']['LW'],
+                        bounds_error=False, fill_value='extrapolate')
+    f_Psi_PE = interp1d(rr['time_Myr'], rr['L']['PE'],
+                        bounds_error=False, fill_value='extrapolate')
+    f_Xi_LyC = interp1d(rr['time_Myr'], rr['Q']['LyC'],
+                        bounds_error=False, fill_value='extrapolate')
+
+    # Set small numbers to zero
+    rs['SN_rate'].loc[(rs['SN_rate'] < 1e-35)] = 0.0
+    f_SN_rate = interp1d(rs['time_Myr'], rs['SN_rate']*1e6,
+                         bounds_error=False, fill_value='extrapolate')
+
+
+    f_log_Edot_wind = interp1d(rw['time_Myr'], np.log10(rw['Edot_all']),
+                               bounds_error=False, fill_value='extrapolate')
+    # Note that the mass loss rate is multiplied by 1e6 (from yr-1 to Myr-1)
+    f_log_Mdot_wind = interp1d(ry['time_Myr'], np.log10(ry['Mdot_wind']) + sb.logM,
+                               bounds_error=False, fill_value='extrapolate')
+
+    res_rad = dict()
+    res_wind = dict()
+    res_sn = dict()
+
+    res_sn['age_Myr'] = age_sn
+    res_sn['SN_rate'] = f_SN_rate(age_sn)
+
+    res_rad['age_Myr'] = age_rad
+    res_rad['Xi_LyC'] = f_Xi_LyC(age_rad)
+    res_rad['Psi_LW'] = f_Psi_LW(age_rad)
+    res_rad['Psi_PE'] = f_Psi_PE(age_rad)
+
+    res_wind['age_Myr'] = age_wind
+    res_wind['log_Edot_wind'] = f_log_Edot_wind(age_wind)
+    res_wind['log_Mdot_wind'] = f_log_Mdot_wind(age_wind)
+
+    df_sn = pd.DataFrame.from_dict(res_sn)
+    df_rad = pd.DataFrame.from_dict(res_rad)
+    df_wind = pd.DataFrame.from_dict(res_wind)
+
+    import json
+    from tabulate import tabulate
+
+    # https://stackoverflow.com/questions/27988356/save-fixed-width-text-file-from-pandas-dataframe
+    def to_fwf(df, fname):
+        content = tabulate(df.values.tolist(), list(df.columns), tablefmt="plain", floatfmt='.10e')
+        open(fname, "w").write(content)
+
+    pd.DataFrame.to_fwf = to_fwf
+
+    def get_name(sb):
+        basename = osp.basename(sb.basedir.strip('/'))
+        name = ''
+        for b in basename.split('_'):
+            if b.startswith('Z'):
+                name += b + '_'
+            if b.startswith('Geneva'):
+                name += b + '_'
+
+        return name.rstrip('_')
+
+    writedir1 = '/projects/EOSTRIKE/SB99/Tables-Athena-TIGRESS'
+    writedir2 = '/home/jk11/Athena-TIGRESS/dat/'
+
+    name = get_name(sb)
+    for writedir in (writedir1, writedir2):
+        print('Write to {0:s}'.format(writedir))
+        # Write SB99 input parameters (list) to a text file
+        # Can be read with json.load
+        with open(osp.join(writedir, name + '_par.txt'), 'w') as file:
+             file.write(json.dumps(sb.par))
+
+        # Write
+        df_sn.to_fwf(osp.join(writedir, name + '_sn.txt'))
+        df_wind.to_fwf(osp.join(writedir, name + '_wind.txt'))
+        df_rad.to_fwf(osp.join(writedir, name + '_rad.txt'))
+
+        # df_sn.to_csv(osp.join(writedir, name + '_sn.txt'),
+        # index=False, sep=r' ', float_format='%g', header=False)
+        # df_wind.to_csv(osp.join(writedir, name + '_wind.txt'),
+        # index=False, sep=r' ', float_format='%g', header=False)
+        # df_rad.to_csv(osp.join(writedir, name + '_rad.txt'),
+        # index=False, sep=r' ', float_format='%g', header=False)
+
+    return sb
+
+if __name__ == '__main__':
+
+    models = dict(
+        # Non-rotating models
+        #Z001_GenevaV00='/projects/EOSTRIKE/SB99/Z001_M1E6_GenevaV00_dt01/',
+        Z002_GenevaV00='/projects/EOSTRIKE/SB99/Z002_M1E6_GenevaV00_dt01/',
+        #Z008_GenevaV00='/projects/EOSTRIKE/SB99/Z008_M1E6_GenevaV00_dt01/',
+        Z014_GenevaV00='/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV00_dt01/',
+        #Z040_GenevaV00='/projects/EOSTRIKE/SB99/Z040_M1E6_GenevaV00_dt01/',
+
+        # Models with rotation
+        #Z001_GenevaV40='/projects/EOSTRIKE/SB99/Z001_M1E6_GenevaV40_dt01/',
+        Z002_GenevaV40='/projects/EOSTRIKE/SB99/Z002_M1E6_GenevaV40_dt01/',
+        #Z008_GenevaV40='/projects/EOSTRIKE/SB99/Z008_M1E6_GenevaV40_dt01/',
+        Z014_GenevaV40='/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV40_dt01/',
+        #Z040_GenevaV40='/projects/EOSTRIKE/SB99/Z040_M1E6_GenevaV40_dt01/',
+    )
+
+    for mdl in models.keys():
+        print(mdl)
+        sb = sb99.SB99(models[mdl])
+        sb = write_sb99_output_for_tigress(sb)
+        print(sb.par[25], sb.par[-7])
+        # break
