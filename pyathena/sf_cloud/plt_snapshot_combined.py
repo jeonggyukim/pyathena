@@ -22,7 +22,7 @@ class PltSnapshotCombined:
             savdir = osp.join(basedir, 'movies')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
-            
+
         fin = osp.join(basedir, 'snapshot-combined/*.png')
         fout = osp.join(savdir, '{0:s}-combined.mp4'.format(self.basename))
         if make_movie(fin, fout, fps, fps):
@@ -31,10 +31,11 @@ class PltSnapshotCombined:
             fout2 = osp.join(savdir2, osp.basename(fout))
             copyfile(fout, fout2)
             print('Copied movie file to {0:s}'.format(fout2))
-    
-    def plt_snapshot_combined(self, num, dim='z', pos=0.0, zoom=1.0, savfig=True):
+
+    def plt_snapshot_combined(self, num, dim='y', fields=['nH', 'T', 'pok', 'Bx', 'Bz'],
+                              pos=0.0, zoom=1.0, savfig=True):
         """Plot slices, projections, pdf, and mass history
-        
+
         Parameters
         ----------
         pos : float or str
@@ -52,13 +53,11 @@ class PltSnapshotCombined:
         else:
             noPhotIon = False
 
-        if noUV:
-            fields = ['nH', 'T', 'pok', 'xH2', 'xHII']
-        elif noPhotIon:
-            fields = ['nH', 'T', 'pok', 'Erad_FUV', 'xH2']
-        else:
-            fields = ['nH', 'T', 'pok', 'Erad_FUV', 'Erad_LyC']
-            
+        if self.par['configure']['gas'] == 'hydro':
+            fields=['nH', 'T', 'pok']
+            #fields.remove('Bx')
+            #fields.remove('Bz')
+
         ds = self.load_vtk(num)
         sp = self.load_starpar_vtk(num)
         if sp.empty or isinstance(pos, float) or isinstance(pos, int):
@@ -76,13 +75,13 @@ class PltSnapshotCombined:
             self.logger.info('Most massive star x,y,z:({0:.2f},{0:.2f},{0:.2f})'.\
                 format(float(spmm['x1']),float(spmm['x2']),float(spmm['x3'])))
 
-        fig, axes = plt.subplots(3,3,figsize=(20,15))
+        fig, axes = plt.subplots(3, 3, figsize=(20,15), constrained_layout=True)
         axes = axes.flatten()
 
-        hL = 0.5*self.domain['Lx'][0]/zoom
+        # Half the box size
+        hL = 0.5*self.domain['Lx'][0] / zoom
 
-        # SLICES
-        print(dim,fields,pos)
+        # Plot slices
         dd = ds.get_slice(dim, fields, pos)
         if zoom > 1.0:
             if dim == 'z':
@@ -95,49 +94,60 @@ class PltSnapshotCombined:
                 dd = dd.where((dd.y - x0 > -hL) & (dd.z - y0 > -hL) & \
                               (dd.y - x0 <  hL) & (dd.z - y0 <  hL), drop=True)
 
-                
-        dd['nH'].plot.imshow(ax=axes[0], norm=LogNorm(1e0,1e6),
-                             cmap='Spectral_r', add_labels=False, extend='neither',
-                             cbar_kwargs=dict(label=r'$n_{\rm H}\;[{\rm cm}^{-3}]$'))
-        dd['T'].plot.imshow(ax=axes[1], norm=LogNorm(1e0,1e6),
-                            #norm=Normalize(5e3,3e4),
-                            cmap=mycm['T'], add_labels=False, extend='neither',
-                            cbar_kwargs=dict(label=r'$T\;[{\rm K}]$'))
-        dd['pok'].plot.imshow(ax=axes[2], norm=LogNorm(1e3,1e12),
-                              cmap='inferno', add_labels=False, extend='neither',
-                              cbar_kwargs=dict(label=r'$P/k_{\rm B}\;[{\rm cm}^{-3}\,{\rm K}]$'))
+        for f in fields:
+            if f == 'nH':
+                dd['nH'].plot.imshow(ax=axes[0], norm=LogNorm(),
+                                     cmap='Spectral_r', add_labels=False, extend='neither',
+                                     cbar_kwargs=dict(label=r'$n_{\rm H}\;[{\rm cm}^{-3}]$'))
+            elif f == 'T':
+                dd['T'].plot.imshow(ax=axes[1], norm=LogNorm(),
+                                    #norm=Normalize(5e3,3e4),
+                                    cmap=mycm['T'], add_labels=False, extend='neither',
+                                    cbar_kwargs=dict(label=r'$T\;[{\rm K}]$'))
+            elif f == 'pok':
+                dd['pok'].plot.imshow(ax=axes[2], norm=LogNorm(),
+                                      cmap='inferno', add_labels=False, extend='neither',
+                                      cbar_kwargs=dict(label=r'$P/k_{\rm B}\;[{\rm cm}^{-3}\,{\rm K}]$'))
+            elif f == 'Bx':
+                dd['Bx'].plot.imshow(ax=axes[3], norm=Normalize(-20,20),
+                                     cmap='bwr', add_labels=False, extend='neither',
+                                     cbar_kwargs=dict(label=r'$B_x$'))
 
-        if noUV:
-            f = 'xHII'
-            dd[f].plot.imshow(ax=axes[3], norm=Normalize(0,1),
-                              cmap='viridis', add_labels=False, extend='neither',
-                              cbar_kwargs=dict(label=r'$x_{\rm HII}$'))
-            f = 'xH2'
-            (2.0*dd[f]).plot.imshow(ax=axes[4], norm=Normalize(0,1),
-                                    cmap='viridis', add_labels=False, extend='neither',
-                                    cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
-        elif noPhotIon:
-            f = 'xH2'
-            (2.0*dd[f]).plot.imshow(ax=axes[3], norm=Normalize(0,1),
-                                    cmap='viridis', add_labels=False, extend='neither',
-                                    cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
-            f = 'Erad_FUV'
-            if dd[f].max() != 0.0:
-                dd[f].plot.imshow(ax=axes[4], norm=LogNorm(1e-12,1e-7),
-                                  cmap='viridis', add_labels=False, extend='neither',
-              cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm FUV}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
+            elif f == 'Bz':
+                dd[f].plot.imshow(ax=axes[4], norm=Normalize(-20,20),
+                                  cmap='bwr', add_labels=False, extend='neither',
+                                  cbar_kwargs=dict(label=r'$B_z$'))
 
-        else:
-            f = 'Erad_LyC'
-            if dd[f].max() != 0.0:
-                dd[f].plot.imshow(ax=axes[3], norm=LogNorm(1e-12,1e-7),
-                                  cmap='viridis', add_labels=False, extend='neither',
-              cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm LyC}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
-            f = 'Erad_FUV'
-            if dd[f].max() != 0.0:
-                dd[f].plot.imshow(ax=axes[4], norm=LogNorm(1e-12,1e-7),
-                                  cmap='viridis', add_labels=False, extend='neither',
-              cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm FUV}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
+            # f = 'xHII'
+            # dd[f].plot.imshow(ax=axes[3], norm=Normalize(0,1),
+            #                   cmap='viridis', add_labels=False, extend='neither',
+            #                   cbar_kwargs=dict(label=r'$x_{\rm HII}$'))
+            # f = 'xH2'
+            # (2.0*dd[f]).plot.imshow(ax=axes[4], norm=Normalize(0,1),
+            #                         cmap='viridis', add_labels=False, extend='neither',
+            #                         cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
+        # elif noPhotIon:
+        #     f = 'xH2'
+        #     (2.0*dd[f]).plot.imshow(ax=axes[3], norm=Normalize(0,1),
+        #                             cmap='viridis', add_labels=False, extend='neither',
+        #                             cbar_kwargs=dict(label=r'$2x_{\rm H_2}$'))
+        #     f = 'Erad_FUV'
+        #     if dd[f].max() != 0.0:
+        #         dd[f].plot.imshow(ax=axes[4], norm=LogNorm(1e-12,1e-7),
+        #                           cmap='viridis', add_labels=False, extend='neither',
+        #       cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm FUV}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
+
+        # else:
+        #     f = 'Erad_LyC'
+        #     if dd[f].max() != 0.0:
+        #         dd[f].plot.imshow(ax=axes[3], norm=LogNorm(1e-12,1e-7),
+        #                           cmap='viridis', add_labels=False, extend='neither',
+        #       cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm LyC}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
+        #     f = 'Erad_FUV'
+        #     if dd[f].max() != 0.0:
+        #         dd[f].plot.imshow(ax=axes[4], norm=LogNorm(1e-12,1e-7),
+        #                           cmap='viridis', add_labels=False, extend='neither',
+        #       cbar_kwargs=dict(label=r'$\mathcal{E}_{\rm FUV}\,[{\rm erg}\,{\rm cm}^{-3}]$'))
 
         # MASS HISTORY
         h = self.read_hst()
@@ -156,10 +166,10 @@ class PltSnapshotCombined:
         conv_EM = ds.domain['dx'][0]
         d['Sigma'] = d['nH'].sum(dim=dim)*conv_Sigma
         d['EM'] = d['nesq'].sum(dim=dim)*conv_EM
-        d['Sigma'].plot.imshow(ax=axes[-3], norm=LogNorm(1e0,1e4),
+        d['Sigma'].plot.imshow(ax=axes[-3], norm=LogNorm(),
                                cmap='pink_r', add_labels=False, extend='neither',
                                cbar_kwargs=dict(label=r'$\Sigma\,[M_{\odot}\,{\rm pc}^{-2}]$'))
-        d['EM'].plot.imshow(ax=axes[-2], norm=LogNorm(1e1,1e6),
+        d['EM'].plot.imshow(ax=axes[-2], norm=LogNorm(),
                             cmap='plasma', add_labels=False, extend='neither',
                             cbar_kwargs=dict(label=r'${\rm EM}\,[{\rm cm}^{-6}\,{\rm pc}]$'))
 
@@ -186,7 +196,7 @@ class PltSnapshotCombined:
         else:
             nbins = np.logspace(-3,3,151)*self.cl.nH.value
             Tbins = np.logspace(0, 5, 101)
-        
+
         hb = ax.hist2d(d['nH'].data.flatten(), d['T'].data.flatten(),
                        norm=LogNorm(),
                        bins=(nbins, Tbins),
@@ -215,16 +225,24 @@ class PltSnapshotCombined:
         plt.suptitle(self.basename + r' $t$={0:4.2f}'.format(self.domain['time']) +\
                      r' $t/t_{\rm ff,0}$'+'={0:4.2f}'.format(ds.domain['time']*
                                                              self.u.Myr/self.cl.tff.value))
-        plt.tight_layout()
+        # plt.tight_layout()
 
         if savfig:
             savdir = osp.join(self.basedir, 'snapshot-combined')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
-            plt.savefig(osp.join(savdir, '{0:s}-combined-{1:04d}.png'.\
-                                 format(self.basename, num)), dpi=200)
+            fout = osp.join(savdir, '{0:s}-combined-{1:04d}.png'.\
+                            format(self.basename, num))
+            plt.savefig(fout, dpi=200)
+
+            savdir2='/tigress/{0:s}/public_html/movies/SF-CLOUD/{1:s}'.\
+                format(getpass.getuser(), self.basename)
+            if not osp.exists(savdir2):
+                os.makedirs(savdir2)
+
+            fout2 = osp.join(savdir2, '{0:s}-combined-{1:04d}.png'.\
+                             format(self.basename, num))
+            copyfile(fout, fout2)
 
         return fig,d,dd
-
-    

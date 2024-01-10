@@ -41,7 +41,7 @@ class Hst:
         vol_cgs = vol*u.cm**3
         Myr_cgs = u.time
         nscalars = par['configure']['nscalars']
-        
+
         if par['configure']['new_cooling'] == 'ON':
             newcool = True
         else:
@@ -54,7 +54,7 @@ class Hst:
                 rayt = False
         except KeyError:
             rayt = True
-            
+
         if par['configure']['sixray'] == 'ON':
             sixray = True
         else:
@@ -68,7 +68,7 @@ class Hst:
         cl = Cloud(M=par['problem']['M_cloud'],
                    R=par['problem']['R_cloud'],
                    alpha_vir=par['problem']['alpha_vir'])
-            
+
         iWind = par['feedback']['iWind']
 
         try:
@@ -78,9 +78,9 @@ class Hst:
                 iPhot = par['radps']['iPhotIon']
             except KeyError:
                 iPhot = True
-            
+
         iRadp = par['radps']['apply_force']
-        
+
         # Time in code unit
         hst['time_code'] = hst['time']
         # Time in Myr
@@ -103,14 +103,14 @@ class Hst:
             cols += ['M_cl_neu', 'M_H2', 'M_HI', 'M_H2_cl', 'M_HI_cl']
         if iWind:
             cols += ['M_s1']
-            
+
         for c in cols:
             try:
                 hst[c] *= vol*u.Msun
             except KeyError:
                 self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
                 continue
-            
+
         ######################
         # Star particle mass #
         ######################
@@ -122,7 +122,7 @@ class Hst:
         # Number of star particles and number of active star particles (active >= 0)
         hst['N_sp'] *= vol
         hst['N_sp_active'] *= vol
-        
+
         hst = self._calc_SFR(hst)
 
         ################
@@ -134,7 +134,7 @@ class Hst:
             cols += ['M_cl_neu', 'M_H2', 'M_HI', 'M_H2_cl', 'M_HI_cl']
         if iWind:
             cols += ['M_s1']
-            
+
         for c in cols:
             try:
                 hst['d'+c] *= vol*u.Msun/u.Myr # Outflow rate in Msun/Myr
@@ -213,7 +213,7 @@ class Hst:
             except KeyError:
                 self.logger.warning('[read_hst]: Column {0:s} not found'.format(c))
                 continue
-            
+
         #################################################
         # Energy cooled away in wind polluted gas [erg] #
         #################################################
@@ -222,11 +222,11 @@ class Hst:
             c = 'net_cool_s1'
             hst[c] *= vol_cgs
             hst[c+'_cumul'] = integrate.cumtrapz(hst[c], hst['time'], initial=0.0)*Myr_cgs
-            
+
             # Conversion factor for energy rate
             # conv_Edot = (1.0*au.M_sun*(au.km/au.s)**2/au.Myr).cgs.value
             # hst['']conv_Edot*(h['dEthm_s1']+h['dEkin_s1'])
-            
+
         ###########################
         # Outflow radial momentum #
         ###########################
@@ -235,7 +235,7 @@ class Hst:
             cols += ['pr_cl_neu', 'pr_H2', 'pr_HI', 'pr_H2_cl', 'pr_HI_cl',
                      'pr_xcm_cl_neu', 'pr_xcm_H2', 'pr_xcm_HI',
                      'pr_xcm_H2_cl', 'pr_xcm_HI_cl']
-            
+
         for c in cols:
             try:
                 hst['d'+c] *= vol*u.Msun*u.kms/u.Myr
@@ -263,7 +263,7 @@ class Hst:
 
         if rayt:
             hst = self._calc_radiation(hst)
-        
+
     #         hst.rho_out *= vol*u.Msun/u.Myr # Outflow rate in Msun/Myr
     #         hst['Mof_dot'] = hst.rho_out
     #         hst['Mof'] = integrate.cumtrapz(hst['rho_out'], hst['time'], initial=0.0)
@@ -286,7 +286,7 @@ class Hst:
     #         hst['Mof_cl'] = hst['Mof_cl_H2'] + hst['Mof_cl_HI'] + hst['Mof_cl_HII']
     #     except KeyError:
     #         pass
-                
+
 
         if iWind:
             hst['wind_Minj'] *= vol*u.Msun
@@ -295,10 +295,10 @@ class Hst:
             hst['wind_Mdot'] *= vol*u.Msun/u.Myr
             hst['wind_Edot'] *= vol*u.erg/u.s
             hst['wind_pdot'] *= vol*u.Msun*u.kms/u.Myr
-            
+
         return hst
-    
-            
+
+
     #     # Mass of (gas, gas, starpar, cold/intermediate/warm/hot temperature gas,
     #     #          molecular,atomic,ionized) in Msun
     #     for c in ('Mgas','Mcold','Minter','Mwarm','Mhot',
@@ -317,10 +317,10 @@ class Hst:
     #             self.logger.warning('Nscalar {0:i}, but column {0:s} not found'.\
     #                                 format(nscalars,c))
     #             continue
-            
+
     #     # Convert energy unit [Msun*(km/s)**2]
     #     for c in hst.columns:
-    #         if 'Emag' in c or 'Ekin' in c or 'Egrav' in c:                
+    #         if 'Emag' in c or 'Ekin' in c or 'Egrav' in c:
     #             hst[c] *=  vol*u.Msun*(u.kms)**2
 
     #     # Velocity dispersion
@@ -330,7 +330,7 @@ class Hst:
     #                                   /(hst['MHI_cl'] + hst['MH2_cl']))
     #     except KeyError:
     #         self.logger.warning('Could not compute vdisp_cl due to KeyError')
-        
+
 
     #     try:
     #         hst['MHII'] = hst['Mgas'] - hst['MHI'] - hst['MH2']
@@ -351,12 +351,12 @@ class Hst:
     #                              /(hst['Egrav_H2_cl']+hst['Egrav_HI_cl'])
     #     except KeyError:
     #         pass
-        
+
         #hst.index = hst['time_code']
-        
+
 
     # def _calc_outflow(self, hst):
-        
+
     #     u = self.u
     #     domain = self.domain
     #     vol = domain['Lx'].prod()
@@ -385,17 +385,17 @@ class Hst:
     #         hst['Mof_cl'] = hst['Mof_cl_H2'] + hst['Mof_cl_HI'] + hst['Mof_cl_HII']
     #     except KeyError:
     #         pass
-        
+
     #     return hst
-    
+
     def _calc_SFR(self, hst):
         """Compute instantaneous SFR, SFR averaged over the past 1 Myr, 3Myr, etc.
-        """        
+        """
 
         # Instantaneous SFR
         hst['SFR'] = deriv_convolve(hst['M_sp'].values, hst['time'].values,
                                     gauss=True, fft=False, stddev=3.0)
-        
+
         # Set any negative values to zero
         hst['SFR'][hst['SFR'] < 0.0] = 0.0
         if hst.time.max() > 1.0:
@@ -403,13 +403,13 @@ class Hst:
             winsize_1Myr = hst_.index.size
             hst['SFR_1Myr'] = hst.SFR.rolling(
                 winsize_1Myr, min_periods=1, win_type='boxcar').mean()
-            
+
         if hst.time.max() > 3.0:
             hst_ = hst[hst.time < 3.0]
             winsize_3Myr = 3*winsize_1Myr
             hst['SFR_3Myr'] = hst.SFR.rolling(
                 winsize_3Myr, min_periods=1, win_type='boxcar').mean()
-        
+
             # self.logger.warning('Failed to calculate SFR')
             # pass
 
@@ -420,8 +420,12 @@ class Hst:
         par = self.par
         u = self.u
         domain = self.domain
-        # total volume of domain (code unit)
-        vol = domain['Lx'].prod()        
+        if self.config_time > pd.to_datetime('2022-05-01 00:00:00 -04:00'):
+            vol = 1.0
+        else:
+            # total volume of domain (code unit)
+            vol = domain['Lx'].prod()
+
 
         # Total/escaping luminosity in Lsun
         ifreq = dict()
@@ -438,7 +442,7 @@ class Hst:
                         hst[f'Ltot_{k}'] = hst[f'Ltot{i}']*vol*u.Lsun
                         hst[f'Lesc_{k}'] = hst[f'Lesc{i}']*vol*u.Lsun
                         hst[f'Ldust_{k}'] = hst[f'Ldust{i}']*vol*u.Lsun
-                            
+
                         hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
                         hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
                                            (ac.L_sun.cgs.value)/hnu
@@ -463,7 +467,7 @@ class Hst:
                         hst[f'fdust_cum_{k}'].fillna(value=0.0, inplace=True)
                     except KeyError as e:
                         raise e
-                    
+
         if 'Ltot_LW' in hst.columns and 'Ltot_PE' in hst.columns:
             hst['fesc_FUV'] = (hst['Lesc_PE'] + hst['Lesc_LW'])/(hst['Ltot_PE'] + hst['Ltot_LW'])
             hst['fesc_cum_FUV'] = \
@@ -483,7 +487,7 @@ class Hst:
         hst['Ltot_over_c'] = ((hst['Ltot_PH'] + hst['Ltot_LW'] + self.par['radps']['frad_PE_boost']*hst['Ltot_PE']).values*\
                               ac.L_sun/ac.c).to('Msun km s-1 Myr-1')
         hst['Ltot_over_c_int'] = cumtrapz(hst['Ltot_over_c'], hst['time'], initial=0.0)
-        
+
         return hst
 
 
@@ -491,15 +495,16 @@ class PlotHst(object):
     """
     Plot time evolution of various quantities
     """
-    
+
     def __init__(self, sa, df, models=None, suptitle=None, tlim=None, normed_x=False,
-                 ls=['-','--',':','-.'],
-                 lw=[1.5, 1.5, 1.5, 1.5],
+                 ls=['-','--',':','-.','--',':'],
+                 lw=[1.5, 1.5, 1.5, 1.5, 3, 4],
                  subplots_kwargs=dict(nrows=1, ncols=2,
                                       figsize=(15,5), merge_last_row=False),
                  plt_vars_kwargs=dict(),
-                 plt_vars=['mass', 'momentum'], savfig=True):
-        
+                 plt_vars=['mass', 'momentum'],
+                 savfig=True, savdir=None):
+
         self.sa = sa
         self.df = df
         if models is None:
@@ -507,10 +512,10 @@ class PlotHst(object):
         else:
             self.models = models
         self.models = np.atleast_1d(self.models)
-        self.linestyles = ['solid','dashed','dotted','dot-dashed']
+        self.linestyles = ['solid','dashed','dotted','dot-dashed','thick-dashed','thick-dotted']
         self.ls = ls
         self.lw = lw
-        
+
         self.get_subplots(**subplots_kwargs)
         if suptitle is None:
             self.set_suptitle()
@@ -522,7 +527,7 @@ class PlotHst(object):
             self.col_time = 'tau'
         else:
             self.col_time = 'time_code'
-            
+
         for i, v in enumerate(plt_vars):
             method = getattr(self, 'plt_' + v)
             try:
@@ -531,15 +536,17 @@ class PlotHst(object):
                 method(self.axes[i])
 
         if savfig:
-            savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst')
+            if savdir is None:
+                savdir = osp.join('/tigress/jk11/figures/SF-CLOUD/hst')
+
             if not osp.exists(savdir):
                 os.makedirs(savdir)
 
             plt.savefig(osp.join(savdir, 'hst-{0:s}.png'.format('-'.join(self.models))),
                         dpi=200)
-                        
+
     def get_subplots(self, nrows=3, ncols=2, figsize=(15,15), merge_last_row=False):
-        
+
         self.fig, self.axes = plt.subplots(nrows, ncols,
                                            figsize=figsize, constrained_layout=True)
         self.axes = self.axes.flatten()
@@ -550,7 +557,7 @@ class PlotHst(object):
             for ax in self.axes[-2:]:
                 ax.remove()
             self.axbig = self.fig.add_subplot(gs[-1,:])
-    
+
     def set_suptitle(self):
         suptitle = ''
         if len(self.models) == 1:
@@ -563,7 +570,7 @@ class PlotHst(object):
                 suptitle += '\n {0:s}: {1:s}'.format(ls,mdl)
 
         self.fig.suptitle(suptitle, linespacing=0.7)
-        
+
     def set_params(self, ax, models, setp_kwargs, kind, **kwargs):
         if ax is None:
             ax = plt.gca()
@@ -574,7 +581,7 @@ class PlotHst(object):
             xlabel = 'time [code]'
         else:
             xlabel = r'${\rm time}/t_{\rm ff,0}$'
-            
+
         M0 = self.df.loc[models[0]]['M']
         if kind == 'mass':
             if kwargs['normed_y']:
@@ -583,10 +590,10 @@ class PlotHst(object):
             else:
                 ylabel = r'mass $[M_{\odot}]$'
                 ylim = (0.0, 1.1e5*M0/1e5)
-                
+
             setp_kwargs_def  = dict(xlabel=xlabel, ylabel=ylabel,
                                     yscale='linear', ylim=ylim)
-            
+
         if kind == 'volume':
             setp_kwargs_def = dict(xlabel=xlabel, ylabel='volume fraction',
                                    yscale='linear', ylim=(0,1.2))
@@ -608,7 +615,7 @@ class PlotHst(object):
                                    yscale='linear', ylim=(0,1.4))
         if setp_kwargs is not None:
             setp_kwargs_def.update(setp_kwargs)
-        
+
         return ax, models, setp_kwargs_def
 
     def plt_mass(self, ax=None, models=None, setp_kwargs=None, normed_y=True,
@@ -632,7 +639,7 @@ class PlotHst(object):
             plt.plot(x, (h['M_cl']-h['M_H2_cl']-h['M_HI_cl'])/M0, c='C3', ls=ls, lw=lw)
             plt.plot(x, h['M_cl_of']/M0, c='C5', ls=ls, lw=lw)
             plt.plot(x, (h['M_cl_of']-h['M_HI_cl_of']-h['M_H2_cl_of'])/M0, c='C7', ls=ls, lw=lw)
-            
+
             if plt_H2:
                 plt.plot(x, h['M_H2_cl']/M0, c='C4', ls=ls, lw=lw)
             if plt_hot:
@@ -642,9 +649,9 @@ class PlotHst(object):
                 plt.plot(x, h['M_sp_s1']/M0, c='C2', ls=ls, lw=3)
 
             plt.plot(x, (h['M_cl'] + h['M_sp'] + h['M_cl_of'])/M0, c='grey', ls=ls, lw=lw)
-                
+
         plt.setp(ax, **setp_kwargs)
-        labels = [r'$M_{\rm cl}$',r'$M_{\ast}$',r'$M_{\rm of,HII,cl}$']
+        labels = [r'$M_{\rm cl}$',r'$M_{\ast}$',r'$M_{\rm HII,cl}$']
         labels += [r'$M_{\rm of,cl}$',r'$M_{\rm of,HII,cl}$']
         if plt_H2:
             labels += [r'$M_{\rm H_2,cl}$']
@@ -653,9 +660,9 @@ class PlotHst(object):
         if iWind:
             labels.extend([r'$M_{\rm wind}$',r'$M_{\ast,{\rm wind}}$'])
 
-        ax.legend(labels, loc=1)
+        ax.legend(labels, loc=2)
 
-        
+
     def plt_volume(self, ax=None, models=None, setp_kwargs=None):
         ax, models, setp_kwargs = self.set_params(ax, models,
                         setp_kwargs, 'volume')
@@ -666,7 +673,7 @@ class PlotHst(object):
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
             x = h[self.col_time]
-                
+
             plt.plot(x, 1.0-h['V_HI']-h['V_H2'], c='C0', ls=ls, lw=1.5)
             plt.plot(x, h['Vi'] + h['Vh'], c='C1', ls=ls, lw=1.5)
             if iWind:
@@ -683,7 +690,7 @@ class PlotHst(object):
             h = self.df.loc[mdl]['hst']
             x = h[self.col_time]
 
-            plt.plot(x, h['dt'], ls=ls, c='k')
+            plt.plot(x, h['dt'], ls=ls, c='k', lw=lw)
             if dtHII:
                 plt.plot(x, h['dt_xHII_min'], ls=ls, c='C0')
 
@@ -701,15 +708,17 @@ class PlotHst(object):
             h = self.df.loc[mdl]['hst']
             x = h[self.col_time]
 
-            plt.plot(x, h['Fthm'], ls=ls, c='C0')
-            plt.plot(x, -h['Fgrav'], ls=ls, c='C2')
-            plt.plot(x, h['Fcent'], ls=ls, c='C3')
+            plt.plot(x, h['Fthm'], ls=ls, c='C0', lw=lw)
+            plt.plot(x, -h['Fgrav'], ls=ls, c='C2', lw=lw)
+            plt.plot(x, h['Fcent'], ls=ls, c='C3', lw=lw)
             if iRadp:
-                plt.plot(x, h['Frad'], ls=ls, c='C1')
+                plt.plot(x, h['Frad'], ls=ls, c='C1', lw=lw)
 
             Ftot = h['Fthm'] + h['Fgrav']+ h['Fcent']
             if iRadp:
                 Ftot += h['Frad']
+            if mhd:
+                Ftot += h['Fmagp'] + h['Fmagt']
 
             if plt_inj:
                 if iRadp:
@@ -717,8 +726,7 @@ class PlotHst(object):
                 if iWind:
                     plt.plot(x, h['wind_pdot'], ls=ls, c='C0', lw=0.5)
 
-            plt.plot(x, Ftot, ls=ls, c='k', lw=3)
-                
+            plt.plot(x, Ftot, ls=ls, c='k', lw=lw)
 
         plt.setp(ax, **setp_kwargs)
         labels = [r'$F_{\rm thm}$', r'$-F_{\rm grav}$',
@@ -732,7 +740,7 @@ class PlotHst(object):
                 labels += [r'$\dot{p}_{\rm w}$']
 
         labels += [r'$F_{\rm tot}$']
-        
+
         ax.legend(labels, loc=2)
 
     def plt_momentum(self, ax=None, models=None, setp_kwargs=None, plt_inj=True):
@@ -745,7 +753,7 @@ class PlotHst(object):
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
             x = h[self.col_time]
-                
+
             plt.plot(x, h['Fthm_int'], label='thm', ls=ls, c='C0')
             plt.plot(x, -h['Fgrav_int'], label='|grav|', ls=ls, c='C2')
             plt.plot(x, h['Fcent_int'], label='cent', ls=ls, c='C3')
@@ -755,7 +763,9 @@ class PlotHst(object):
             Ftot_int = h['Fthm_int'] + h['Fcent_int'] + h['Fgrav_int']
             if iRadp:
                 Ftot_int += h['Frad_int']
-                
+            # if mhd:
+            #     Ftot_int += h['Fmagp_int'] + h['Fmagt_int']
+
             if plt_inj:
                 if iRadp:
                     plt.plot(x, h['Ltot_over_c_int'], ls=ls, c='C1', lw=0.5)
@@ -782,9 +792,9 @@ class PlotHst(object):
         labels += [r'$\int F_{\rm tot} dt$',
                    r'$\Delta p_{\rm r,box} + p_{\rm r,of}$',]
 
-        ax.legend(labels, loc='best')
+        ax.legend(labels, loc=2)
 
-        
+
     def plt_luminosity(self, ax=None, models=None, setp_kwargs=None, plt_wind=True):
 
         ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'luminosity')
@@ -795,19 +805,19 @@ class PlotHst(object):
             tff = self.df.loc[mdl]['tff']
             h = self.df.loc[mdl]['hst']
             x = h[self.col_time]
-                
+
             plt.plot(x, h['Ltot_PH'], ls=ls, c='C0')
             plt.plot(x, h['Ltot_FUV'], ls=ls, c='C1')
             if plt_wind and iWind:
                 plt.plot(x, h['wind_Edot']/ac.L_sun.cgs.value, ls=ls, lw=0.5, c='k')
-                
+
         plt.setp(ax, **setp_kwargs)
         labels = [r'$L_{\rm LyC}$', r'$L_{\rm FUV}$']
         if plt_wind and iWind:
             labels += [r'$L_{\rm wind}$']
         ax.legend(labels, loc=4, ncol=2)
         ax.set_ylim(ax.get_ylim()[1]*1e-4,ax.get_ylim()[1])
-        
+
     def plt_fesc(self, ax=None, models=None, setp_kwargs=None,
                  plt_avg=True, plt_dust=True):
         ax, models, setp_kwargs = self.set_params(ax, models, setp_kwargs, 'fesc')
