@@ -225,6 +225,23 @@ def set_derived_fields_def(par, x0, newcool):
                          name='cmap_pyathena_Mr_abs')
     take_log[f] = True
 
+    # rho vr^2 / kB [cm^-3 K]
+    f = 'rhovr2ok'
+    field_dep[f] = set(['density','velocity'])
+    @static_vars(x0=x0)
+    def _rhovr2ok(d, u):
+        z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
+        r = xr.DataArray(np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
+                            dims=('z','y','x'), name='r')
+        return (d['density']*u.density.cgs.value)*\
+            ((x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r*u.velocity.cgs.value)**2/ac.k_B.cgs.value
+    func[f] = _rhovr2ok
+    label[f] = r'$\rho v_r^2\;[{\rm cm}^{-3}\,{\rm K}]$'
+    vminmax[f] = (1e2, 1e7)
+    # Set cmap midpoint accordingly (midpoint=abs(vmin)/(abs(vmin)+abs(vmax))
+    cmap[f] = 'inferno'
+    take_log[f] = True
+
     # Cooling related fields
     if par['configure']['cooling'] == 'ON':
         # T [K] - gas temperature
@@ -883,6 +900,19 @@ def set_derived_fields_rad(par, x0):
         vminmax[f] = (5e-16,5e-11)
         take_log[f] = True
 
+        # Ionizing photon number flux in cgs units [number / cm^2 / s]
+        f = 'Jphot_LyC'
+        field_dep[f] = set(['rad_energy_density_PH'])
+        def _Jphot_LyC(d, u):
+            hnu_LyC = (par['radps']['hnu_PH']*au.eV).cgs.value
+            return d['rad_energy_density_PH']*u.energy_density.cgs.value\
+                /hnu_LyC*ac.c.cgs.value/(4.0*np.pi)
+        func[f] = _Jphot_LyC
+        label[f] = r'$J_{\rm LyC}^{*}\;[{\rm phot}\,{\rm cm}^{-2}\,{\rm s}^{-1}\,{\rm sr}^{-1}]$'
+        cmap[f] = 'viridis'
+        vminmax[f] = (1e2,1e8)
+        take_log[f] = True
+
         # Dimensionless ionization parameter Uion = Erad_LyC/(hnu_LyC*nH)
         f = 'Uion'
         field_dep[f] = set(['density','rad_energy_density_PH'])
@@ -891,8 +921,8 @@ def set_derived_fields_rad(par, x0):
                     ((par['radps']['hnu_PH']*au.eV).cgs.value*d['density'])
         func[f] = _Uion
         label[f] = r'$\mathcal{U}_{\rm ion}$'
-        cmap[f] = 'viridis'
-        vminmax[f] = (1e-7,1e2)
+        cmap[f] = 'cubehelix'
+        vminmax[f] = (1e-5,1e2)
         take_log[f] = True
 
     # Halpha emissivity [erg/s/cm^-3/sr]
@@ -1039,7 +1069,7 @@ def set_derived_fields_rad(par, x0):
         T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
                     (ac.k_B/u.energy_density).cgs.value
         return G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
-    
+
     func[f] = _psi_gr
     label[f] = r'$\psi_{\rm gr}\;[{\rm cm}^{3}\,{\rm K}^{1/2}]$'
     cmap[f] = 'viridis'
@@ -1068,7 +1098,7 @@ def set_derived_fields_rad(par, x0):
         Gamma_dust_FUV = (d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
                           d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'])*conv
         return Gamma_pe/Gamma_dust_FUV
-    
+
     func[f] = _eps_pe
     label[f] = r'$\epsilon_{\rm pe}$'
     cmap[f] = 'viridis'
@@ -1089,13 +1119,13 @@ def set_derived_fields_rad(par, x0):
         x = G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
         return (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
             (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
-    
+
     func[f] = _eps_PE
     label[f] = r'$\epsilon_{\rm PE}$'
     cmap[f] = 'viridis'
     vminmax[f] = (1.0e-3,1)
     take_log[f] = True
-    
+
     try:
         if par['configure']['lwrad'] == 'ON':
             # Normalized LW intensity (attenuated by dust and H2 self-shielding)
@@ -1270,7 +1300,7 @@ class DerivedFields(object):
                     d = d.update(d_)
         except KeyError:
             pass
-        
+
         try:
             if par['feedback']['iWind'] != 0:
                 dicts_ = set_derived_fields_wind(par, x0)
