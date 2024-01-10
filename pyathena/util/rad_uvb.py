@@ -22,7 +22,7 @@ def read_FG20():
     r : dict
 
     """
-    
+
     fname = osp.join(local, '../../data/fg20_spec_lambda.dat')
     with open(fname) as fp:
         ll = fp.readlines()
@@ -52,7 +52,7 @@ def read_FG20():
     r['z'] = z
     r['Jnu'] = Jnu
     r['nu'] = (ac.c/wav).to('Hz').value
-    
+
     da = xr.DataArray(data=r['Jnu'], dims=['z', 'wav'], coords=[r['z'],r['wav']],
                       attrs=dict(description='FG20 UVB', units='ergs/s/cm^2/Hz/sr'))
     r['ds'] = xr.Dataset(dict(Jnu=da))
@@ -79,7 +79,7 @@ def read_FG20():
     from ..microphysics.photx import PhotX
     E_LyC = (ac.h*r['nu'][idx_LyC]*au.Hz).to('eV').value
     E_Xray = (ac.h*r['nu'][idx_Xray]*au.Hz).to('eV').value
-    
+
     px = PhotX()
     Eth_H = px.get_Eth(1,1)
     sigma_pi_H_LyC = px.get_sigma(1,1,E_LyC)
@@ -87,14 +87,14 @@ def read_FG20():
 
     # Photoionization rate
     # $\zeta_{\rm pi} = \int \frac{4\pi J_{\nu}}{h\nu} \sigma_{\rm pi} d\nu$
-    
+
     # $\mathcal{I}_{\rm phot} = n_{\rm HI}\int_{\nu_0}^{\infty}
     # \frac{4\pi J_{\nu}}{h\nu} \sigma_{\rm pi,\nu} d\nu = n_{\rm HI} \zeta_{\rm pi,H}$
 
     # Photoheating rate
     # $n_{\rm HI} q_{\rm pi,H}\zeta_{\rm pi,H} = n_{\rm H}\Gamma_{\rm pi} =
     # n_{\rm HI}\int_{\nu_0}^{\infty} \frac{4\pi J_{\nu}}{h\nu} \sigma_{\rm pi,\nu}(h\nu - h\nu_0) d\nu$
-    
+
     zeta_pi_H = -integrate.trapz(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]*\
                                  sigma_pi_H_LyC/(E_LyC*au.eV).cgs.value,
                                  x=r['nu'][idx_LyC])
@@ -110,7 +110,7 @@ def read_FG20():
     zeta_pi_H_Xray = -integrate.trapz(4.0*np.pi*r['ds']['Jnu'][:,idx_Xray]*\
                                       sigma_pi_H_Xray/(E_Xray*au.eV).cgs.value,
                                       x=r['nu'][idx_Xray])
-    
+
     # Save J as dataset
     r['ds_int'] = xr.Dataset(data_vars=dict(J_LyC=('z',r['J_LyC']),
                                             J_FUV=('z',r['J_FUV']),
@@ -121,10 +121,10 @@ def read_FG20():
                                             sigma_mean_pi_H=('z',sigma_mean_pi_H),
                                             ),
                              coords=dict(z=r['z']))
-    
+
     ## Save ISRF info for reference
     from .rad_isrf import nuJnu_Dr78
-    
+
     E = np.linspace(6,13.6, 1000)*au.eV
     nuJnu_ISRF = nuJnu_Dr78(E)
     wav = (ac.h*ac.c/E).to('angstrom')
@@ -135,7 +135,7 @@ def read_FG20():
     r['ISRF_Dr']['nuJnu'] = nuJnu_ISRF
     r['ISRF_Dr']['wav'] = wav
     r['ISRF_Dr']['J_FUV'] = J_FUV_ISRF
-    
+
     return r
 
 
@@ -145,7 +145,7 @@ def plt_UVB_Jnu_FG20(redshifts=[0,1,2,3,8]):
     plt.figure()
     r = read_FG20()
     Jnu = r['ds']['Jnu']
-    
+
     for z in redshifts:
         plt.loglog(r['wav'], r['nu']*Jnu.sel(z=z),
                    label=r'$z=${0:d}'.format(z))
@@ -160,7 +160,7 @@ def plt_UVB_Jnu_FG20(redshifts=[0,1,2,3,8]):
     plt.suptitle('FG20 UV background')
     plt.ylim(1e-9,1e-3)
     plt.legend(loc=2)
-    
+
     return plt.gcf()
 
 def plt_UVB_JFUV_JLyC_FG20():
@@ -169,9 +169,9 @@ def plt_UVB_JFUV_JLyC_FG20():
     """
 
     plt.figure()
-    
+
     r = read_FG20()
-    
+
     l, = plt.semilogy(r['z'],r['J_FUV'],label='FUV (912-2000)')
     plt.semilogy(r['z'], r['J_LyC'],label='LyC (<912)',c=l.get_color(),ls='--')
     plt.semilogy(r['z'], r['J_Xray'],label='X-ray only (<100)',c=l.get_color(),ls=':')
@@ -182,7 +182,7 @@ def plt_UVB_JFUV_JLyC_FG20():
     plt.ylim(1e-9,5e-4)
     plt.legend()
     plt.suptitle('Frequency integrated mean intensity')
-    
+
     return plt.gcf()
 
 def plt_UVB_pi_heat_rates():
@@ -230,7 +230,7 @@ def f_sshld_R13(nH, sigma_pi_mean, T, zeta_pi, fg=0.17, z=0.0):
         alpha1 = -2.28
         alpha2 = -0.84
         beta = 1.64
-        f = 0.2
+        f = 0.02
 
     x = nH/n0
     return (1.0 - f)*(1.0 + x**beta)**alpha1 + f*(1.0 + x)**alpha2
