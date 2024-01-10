@@ -9,16 +9,18 @@ from mpi4py import MPI
 import matplotlib.pyplot as plt
 
 import pyathena as pa
-from ..util.split_container import split_container
-from ..plt_tools.make_movie import make_movie
+from pyathena.util.split_container import split_container
+#from ..util.split_container import split_container
+# from ..plt_tools.make_movie import make_movie
 
 if __name__ == '__main__':
 
     COMM = MPI.COMM_WORLD
 
-    basedir = '/tigress/jk11/radps_postproc/R8_4pc_newacc.xymax1024/'
-    s = pa.LoadSimTIGRESSDIG(basedir, verbose=False)
-    # nums = s.nums
+    basedir = '/projects/EOSTRIKE/TIGRESS-DIG/R8_4pc_newacc.xymax1024'
+    s = pa.LoadSimTIGRESSDIG(basedir, verbose=False, load_method='pyathena_classic')
+
+    nums = s.nums
     # nums = s.nums[0:5]
     # nums = s.nums[5:10]
     # nums = s.nums[10:15]
@@ -28,11 +30,11 @@ if __name__ == '__main__':
     # nums = s.nums[30:35]
     # nums = s.nums[35:40]
 
-    # nums = s.nums[0:150]
+    # nums = s.nums[0:200]
     # nums = s.nums[150:300]
     # nums = s.nums[301:450]
-    nums = s.nums[450:571]
-    
+    # nums = s.nums[450:571]
+
     # nums = s.nums[208:209]
     # nums = s.nums[300:350]
     # nums = s.nums[350:400]
@@ -55,12 +57,14 @@ if __name__ == '__main__':
         print(num, end=' ')
         # res = s.read_EM_pdf(num, force_override=True)
         #res = s.read_phot_dust_U_pdf(num, force_override=True)
-        res = s.read_VFF_Peters17(num, force_override=True)
+        # res = s.read_VFF_Peters17(num, force_override=True)
+
+        res = s.read_zprof_partially_ionized(num, force_override=True)
         n = gc.collect()
         print('Unreachable objects:', n)
         print('Remaining Garbage:', end=' ')
         pprint.pprint(gc.garbage)
-        
+
     # if COMM.rank == 0:
     #     fin = osp.join(s.basedir, 'snapshots2/*.png')
     #     fout = osp.join(s.basedir, 'movies/{0:s}_snapshots2.mp4'.format(s.basename))
@@ -69,7 +73,6 @@ if __name__ == '__main__':
     #     copyfile(fout, osp.join('/tigress/jk11/public_html/movies',
     #                             osp.basename(fout)))
 
-        
     COMM.barrier()
     if COMM.rank == 0:
         print('')

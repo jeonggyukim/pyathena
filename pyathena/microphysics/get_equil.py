@@ -37,7 +37,10 @@ def get_equil(f_Lambda, z=0.0, manual=True, Gamma_pe0=None,
         # WD PE heating with xe_eq from UV background
         
         if sshld:
-            f_sshld = f_sshld_R13(nH, sigma_pi_H, T, zeta_pi_H)
+            if sshld == 'RAMSES':
+                f_sshld = np.exp(-nH/1e-2)
+            else:
+                f_sshld = f_sshld_R13(nH, sigma_pi_H, T, zeta_pi_H)
         else:
             f_sshld = 1.0
 
@@ -67,7 +70,10 @@ def get_equil(f_Lambda, z=0.0, manual=True, Gamma_pe0=None,
             print('Not converged nH Teq',nH_,T[i],root_result_)
         
     if sshld:
-        f_sshld = f_sshld_R13(nH, sigma_pi_H, T, zeta_pi_H)
+        if sshld == 'RAMSES':
+            f_sshld = np.exp(-nH/1e-2)
+        else:
+            f_sshld = f_sshld_R13(nH, sigma_pi_H, T, zeta_pi_H)
     else:
         f_sshld = 1.0
     
@@ -97,6 +103,7 @@ def get_equil(f_Lambda, z=0.0, manual=True, Gamma_pe0=None,
     res = dict(nH=nH, T=T, xn=xn, f_sshld=f_sshld, 
                heating_pe=heating_pe, heating_pi_UVB=heating_pi_UVB, 
                heating_cr=heating_cr, Gamma_pe=Gamma_pe,
+               zeta_pi_H=zeta_pi_H,
                Gamma_pi_UVB=Gamma_pi_UVB, Gamma_cr=Gamma_cr,
                root_result=root_result)
     
@@ -108,7 +115,7 @@ def get_f_Lambda_newcool_grackle_rosen(newcool=True, grackle=True, Rosen95=True)
     
     if newcool:
         models = dict(
-            Unshld_CRvar_Z1='/scratch/gpfs/jk11/SIXRAY-TEST-UNSHIELDED-CRFIX-again3/Unshld.CRvar.Zg1.0.Zd1.0/',
+            Unshld_CRvar_Z1='/tigress/jk11/NEWCOOL-TESTS/SIXRAY-TEST-UNSHIELDED/Unshld.CRvar.Zg1.0.Zd1.0/'
         )
         sa, da = sixray_test.load_sixray_test_all(models=models, cool=True)
         d = da['Unshld_CRvar_Z1'].sel(log_chi_PE=0.0, method='nearest')

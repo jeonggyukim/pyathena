@@ -1,19 +1,36 @@
 #!/bin/bash
 #SBATCH --job-name=do_task       # create a name for your job
-#SBATCH --nodes=1                # node count
-#SBATCH --ntasks=24              # total number of tasks
+#SBATCH --nodes=2                # node count
+#SBATCH --ntasks=8               # total number of tasks
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=06:00:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=00:10:00          # total run time limit (HH:MM:SS)
 
 module purge
 module load anaconda3/2020.11 openmpi/gcc/4.1.0
-conda activate pyathena
+#module load anaconda3/2020.11 intel/2021.1 intel-mpi/intel/2021.1.1
+conda activate myenv
+export MPICC=$(which mpicc)
 
-MODULE="pyathena.tigress_ncr.do_tasks"
-export PYTHONPATH="$PYTHONPATH:$HOME/pyathena"
+# module load anaconda3/2020.11 openmpi/gcc/4.1.0
+# conda activate myenv
+# export MPICC=$(which mpicc)
+
+echo $MPICC
+pip install mpi4py --no-cache-dir
+
+# #MODULE="pyathena.tigress_ncr.do_tasks"
+# MODULE="pyathena.tigress_dig.do_tasks"
+
+export PYTHONPATH="$PYTHONPATH:/tigress/jk11/pyathena"
+# conda activate pyathena
 
 OUTDIR=$1
+echo "Outdir ${OUTDIR}"
 
-cd $HOME/pyathena
-srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1> scripts/do_tasks-$SLURM_JOB_ID.out 2> scripts/do_tasks-$SLURM_JOB_ID.err
+# cd $HOME/pyathena
+cd /tigress/jk11/pyathena
+
+#srun python pyathena/tigress_ncr/do_tasks.py -b $OUTDIR 1> scripts/do_tasks-$SLURM_JOB_ID.out 2> scripts/do_tasks-$SLURM_JOB_ID.err
+
+srun python pyathena/tigress_dig/do_tasks.py -b $OUTDIR 1> scripts/do_tasks-$SLURM_JOB_ID.out 2> scripts/do_tasks-$SLURM_JOB_ID.err

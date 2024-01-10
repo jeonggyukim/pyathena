@@ -14,65 +14,32 @@ from ..util.split_container import split_container
 from ..plt_tools.make_movie import make_movie
 from .load_sim_sf_cloud import load_all_alphabeta
 
-
 if __name__ == '__main__':
 
     COMM = MPI.COMM_WORLD
 
-    sa, r = load_all_alphabeta()
+    fpkl = '/tigress/jk11/SF-CLOUD/pickles/sf-cloud-tests-new.p'
+    models = dict(
+        M1E5S0100_PHRP='/tigress/jk11/SF-CLOUD/M1E5S0100-PHRP-A4-B2-S4-N256/',
+        M1E5S0200_PHRP='/scratch/gpfs/jk11/SF-CLOUD/M1E5S0200-PHRP-A4-B2-S4-N256/',
+        M1E5S0400_PHRP='/scratch/gpfs/jk11/SF-CLOUD/M1E5S0400-PHRP-A4-B2-S4-N256/',
+        M1E5S0800_PHRP='/scratch/gpfs/jk11/SF-CLOUD/M1E5S0800-PHRP-A4-B2-S4-N256/',
+        M1E5S1600_PHRP='/scratch/gpfs/jk11/SF-CLOUD/M1E5S1600-PHRP-A4-B2-S4-N256/',
+    )
 
-    # # alpha series
-    # seed = 4
-    # models = list(r[(r['seed'] == seed) & (r['mu'] == 2.0) & (r['mu'] != np.inf)].index)
-    # models.remove('B2S{0:d}'.format(seed))
-    # print(models)
+    sa, df = load_all_sf_cloud(models, fpkl=fpkl, force_override=True)
 
-    # # beta series
-    # seed = 4
-    # models = list(r[(r['seed'] == seed) & (r['alpha_vir'] == 2.0) & (r['mu'] != np.inf)].index)
-    # models.remove('A2S{0:d}'.format(seed))
-    # print(models)
+    models = sa.models
+    # models = ['M1E5S0100_WN_redV5']
 
-    # models = list(r[(r['seed'] == 4) & (r['mu'] == 2.0)].index)
-
-    seed = 1
-    sstr = r'S{0:d}'.format(seed)
-    #models = ['B2'+sstr, 'B05'+sstr, 'B8'+sstr, 'B1'+sstr, 'B4'+sstr] # beta only
-    models = ['Binf'+sstr]
-    # models = ['A5'+sstr, 'A1'+sstr, 'A4'+sstr, 'A3'+sstr] # alpha only except for fiducial
-    # models = ['B2'+sstr, 'B8'+sstr, 'B1'+sstr, 'B05'+sstr, 'B4'+sstr,
-    #           'A1'+sstr, 'A5'+sstr, 'A4'+sstr, 'A3'+sstr] # alpha and beta
-
-    # models = ['B2S4_N512']
-    # models = ['A1S4', 'A4S4', 'A3S4', 'A5S4']
-    
-    # models = ['B2S1', 'B2S2', 'B2S3', 'B2S5']
-    # models = ['B2S1_N128','B2S2_N128','B2S3_N128','B2S4_N128','B2S5_N128']
-
-    #models = ['B2S4','A5S4','B05S4']
-    #models = ['B2S4']
-    # models = ['A5S4']
-    #models = ['B05S4']
-
-    # sa = pa.LoadSimSFCloudAll(dict(B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'))
-    # models = sa.models
-    
-    # models = dict(nofb='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.NOFB.B2.A2.S4.N256/')
-    # sa = pa.LoadSimSFCloudAll(models)
-    # models = sa.models
-
-    # For snapshot_2panels
-    #models = ['B2S4_N512']
-    models = ['B2S4']
-    #name = 'A2B2S4_N512'
-    name = r'$(\alpha_{\rm vir,0},\,\mu_{\Phi,0})=(2,2)$'
+    # name = models[0]
     for mdl in models:
         print(mdl)
         s = sa.set_model(mdl)
         # nums = range(0, s.get_num_max_virial())
-        # nums = s.nums[::]
-        nums = range(0,1000,1)
-        
+        nums = s.nums[0::1]
+        #nums = range(0,1000,1)
+
         if COMM.rank == 0:
             print('basedir, nums', s.basedir, nums)
             nums = split_container(nums, COMM.size)
@@ -85,7 +52,7 @@ if __name__ == '__main__':
         time0 = time.time()
         for num in mynums:
             print(num, end=' ')
-            
+
             # print('read_virial', end=' ')
             # res = s.read_virial(num, force_override=True)
             # n = gc.collect()
@@ -101,7 +68,7 @@ if __name__ == '__main__':
             # print('Unreachable objects:', n, end=' ')
             # print('Remaining Garbage:', end=' ')
             # pprint.pprint(gc.garbage)
-            
+
             # print('read_outflow', end=' ')
             # of = s.read_outflow(num, force_override=True)
             # n = gc.collect()
@@ -118,7 +85,7 @@ if __name__ == '__main__':
             # print('Remaining Garbage:', end=' ')
             # pprint.pprint(gc.garbage)
 
-            
+
             # print('read_slc_prj', end=' ')
             # # slc = s.read_slc(num, force_override=False)
             # prj = s.read_prj(num, force_override=False)
@@ -134,7 +101,7 @@ if __name__ == '__main__':
             # print('Remaining Garbage:', end=' ')
             # pprint.pprint(gc.garbage)
 
-            # print('plt_Bproj', end=' ')        
+            # print('plt_Bproj', end=' ')
             # fig = s.plt_Bproj(num)
 
             # print('plt_snapshot')
@@ -145,9 +112,13 @@ if __name__ == '__main__':
             # plt.close(fig)
 
             # print('plt_snapshot_2panel')
-            fig = s.plt_snapshot_2panel(num, name=name)
+            # fig = s.plt_snapshot_2panel(num, name=name)
+            # plt.close(fig)
+
+            print('plt_snapshot_combined')
+            fig,d,dd = s.plt_snapshot_combined(num, zoom=1.0, savfig=True);
             plt.close(fig)
-            
+
         # # Make movies
         # if COMM.rank == 0:
         #     fin = osp.join(s.basedir, 'snapshots/*.png')
@@ -165,5 +136,3 @@ if __name__ == '__main__':
             print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
             print('################################################')
             print('')
-
-            

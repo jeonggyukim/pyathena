@@ -36,7 +36,7 @@ def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI,
                              np.exp(-0.7529152*lnT - 21.293937))
     else:
         k_Cplus_e = CII_rec_rate(T)
-        
+
     if gr_rec:
         psi_gr = 1.7*G_PE*np.sqrt(T)/(nH*xe + small_) + small_
         cCp_ = np.array([45.58, 6.089e-3, 1.128, 4.331e2, 4.845e-2,0.8120, 1.333e-4])
@@ -66,7 +66,7 @@ def get_xCO(nH, xH2, xCII, xOII, Z_d, Z_g, xi_CR, chi_CO,
     xCO = nH**2/(nH**2 + ncrit**2)
     xCO = xCO*(2.0*xH2)
     xCO = xCO*np.minimum(xCtot - xCII,xOtot-xOII)
-    
+
     return xCO,ncrit
 
 def get_charge_param(nH, T, xe, chi_PE, phi=1.0):
@@ -114,6 +114,7 @@ def heatCR(nH, xe, xHI, xH2, xi_CR):
                    (17 + (log_nH - 7.0)/3)*eV_cgs, 0.0) + \
           np.where(log_nH >= 10.0, 18.0*eV_cgs, 0.0)
 
+    #return xi_CR*(xHI*qHI + 2.0*xH2*qH2 + 4.6e-10*xe) # last term included in Bialy+19
     return xi_CR*(xHI*qHI + 2.0*xH2*qH2)
 
 def heatCR_old(nH, xe, xHI, xH2, xi_CR):
@@ -139,16 +140,16 @@ def heatCR_old(nH, xe, xHI, xH2, xi_CR):
     return ktot*(xHI*qHI + 2.0*xH2*qH2)
 
 def heatH2(nH, T, xHI, xH2, Z_d, kgr_H2, xi_diss_H2, ikgr_H2, iH2heating):
-    
+
     eV_cgs = (1.0*au.eV).cgs.value
     f_pump = 8.0
-    
+
     if ikgr_H2 == 0: # Constant coeff
         kgr = kgr_H2*Z_d
     else:
         T2 = T*1e-2
         kgr = kgr_H2*Z_d*sqrt(T2)*2.0/(1+0.4*np.sqrt(T2)+0.2*T2+0.08*T2*T2)
-    
+
     if iH2heating == 1:
         A = 2.0e-7
         D = xi_diss_H2
@@ -173,7 +174,7 @@ def heatH2(nH, T, xHI, xH2, Z_d, kgr_H2, xi_diss_H2, ikgr_H2, iH2heating):
 
 def heatH2pump(nH, T, xHI, xH2, xi_diss_H2):
     # Hollenbach & McKee (1978)
-    f_pump = 9.0 # Use Draine & Bertoldi (1996) value (9.0 in HM79) 
+    f_pump = 9.0 # Use Draine & Bertoldi (1996) value (9.0 in HM79)
     eV_cgs = (1.0*au.eV).cgs.value
     de = 1.6*xHI*np.exp(-(400.0/T)**2) + 1.4*xH2*np.exp(-12000.0/(1200.0 + T))
     ncrit = 1e6/np.sqrt(T)/de
@@ -342,7 +343,7 @@ def coolneb(nH, T, xe, xHII, Z_g):
                         aNEB_[4]*lnT4_2 +
                         aNEB_[5]*lnT4 + aNEB_[6])
     f_red = 1/(1.0 + 0.12*np.power(xe*nH*1e-2, 0.38 - 0.12*lnT4))
-    
+
     return 3.677602203699553e-21*\
         Z_g*xHII*xe*nH/np.sqrt(T)*np.exp(-38585.52/T)*poly_fit*f_red
 
@@ -451,13 +452,13 @@ def coolHISmith21(nH, T, xe, xHI):
                                0.0959324 + 1.89951*T6 - 6.96467*T6_SQR + 10.6362*T6_CUB)
     Upsilon_15_cool = np.where(T6 > 0.3, 0.16427759999999997,
                                0.0747075 + 0.670939*T6 - 2.28512*T6_SQR + 3.4796*T6_CUB)
-    
+
     # Total = sum_n E1n*exp(-T1n/T)*Upsilon_1n_Cool
     total = 1.63490e-11*Upsilon_12_cool*np.exp(-118415.6*Tinv) + \
         1.93766e-11*Upsilon_13_cool*np.exp(-140344.4*Tinv) + \
         2.04363e-11*Upsilon_14_cool*np.exp(-148019.5*Tinv) + \
         2.09267e-11*Upsilon_15_cool*np.exp(-151572.0*Tinv)
-    
+
     return xHI*nH*xe*prefactor/(g1*np.sqrt(T))*total
 
 
@@ -652,7 +653,7 @@ def cooldust(nH, T, Td, Z_d):
     # Strictly speaking the coupling constant alpha_gd depends on chemical composition
     alpha_gd = 3.2e-34
     return Z_d*alpha_gd*nH*np.sqrt(T)*(T - Td)
-    
+
 def cool3Level_(q01, q10, q02, q20, q12, q21,
                 A10, A20, A21, E10, E20, E21, xs):
     # Equilibrium level population including
@@ -1277,11 +1278,11 @@ def get_xn_eq(T, nH, zeta_pi=0.0, zeta_cr=0.0, coll_ion=True):
         zeta_ci = nH*coeff_kcoll_H(T)
     else:
         zeta_ci = 0.0
-        
+
     zeta_rec = nH*coeff_alpha_rr_H(T)
 
     aa = 1.0 + zeta_ci/zeta_rec
     bb = -(2.0 + (zeta_pi + zeta_cr + zeta_ci)/zeta_rec)
     x = -bb/(2.0*aa)*(1 - (np.lib.scimath.sqrt(1 - 4.0*aa/bb**2)).real)
-    
+
     return x

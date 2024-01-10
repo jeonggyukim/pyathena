@@ -35,7 +35,7 @@ class StarPar():
 
         rr = pd.DataFrame(rr)
         return rr
-    
+
     @LoadSim.Decorators.check_pickle
     def read_starpar(self, num, savdir=None, force_override=False):
         """Function to read post-processed starpar dump
@@ -46,7 +46,7 @@ class StarPar():
         domain = self.domain
         par = self.par
         LxLy = domain['Lx'][0]*domain['Lx'][1]
-        
+
         try:
             agemax = par['radps']['agemax_rad']
         except KeyError:
@@ -56,7 +56,7 @@ class StarPar():
         sp['age'] *= u.Myr
         sp['mage'] *= u.Myr
         sp['mass'] *= u.Msun
-        
+
         # Select non-runaway starpar particles with mass-weighted age < agemax_rad
         isrc = np.logical_and(sp['mage'] < agemax,
                               sp['mass'] != 0.0)
@@ -72,10 +72,10 @@ class StarPar():
         r['nstars'] = sp.nstars
         r['isrc'] = isrc
         r['nsrc'] = np.sum(isrc)
-        
+
         # Select only sources
         sp = sp[(sp['mage'] < agemax) & (sp['mass'] != 0.0)].copy()
-        
+
         # Calculate luminosity of source particles
         LtoM = mass_to_lum(model='SB99')
         sp['Qi'] = LtoM.calc_Qi_SB99(sp['mass'], sp['mage'])
@@ -85,7 +85,7 @@ class StarPar():
 
         # Save source as separate DataFrame
         r['sp_src'] = sp
-        
+
         r['z_max'] = np.max(sp['x3'])
         r['z_min'] = np.min(sp['x3'])
         r['z_mean_mass'] = np.average(sp['x3'], weights=sp['mass'])
@@ -102,12 +102,12 @@ class StarPar():
         r['L_LW_tot'] = np.sum(sp['L_LW'])
         r['L_PE_tot'] = np.sum(sp['L_PE'])
         r['L_FUV_tot'] = np.sum(sp['L_FUV'])
-        
+
         # Ionizing photon per unit area
         r['Phi_i'] = r['Qi_tot']/LxLy
         # FUV luminosity per unit area
         r['Sigma_FUV'] = r['L_FUV_tot']/LxLy
-        
+
         return r
 
     @staticmethod
@@ -134,7 +134,7 @@ class StarPar():
         #     dsq -= (z - domain['re'][2])**2
 
         return dsq > 0
-    
+
 
     def starpar_copy_location(self, sp, factor=1.0):
         """
@@ -217,7 +217,7 @@ class StarPar():
                             x3copy.append(newx3)
                             idcopy.append(spid)
                             ncopy += 1
-                            
+
 
             r['x1copy'].append(np.array(x1copy))
             r['x2copy'].append(np.array(x2copy))
@@ -228,7 +228,7 @@ class StarPar():
         return r
 
     def starpar_select_and_calc_rad_sources(self, sp):
-        """Select radiation sources 
+        """Select radiation sources
         (s > 0 & flag != -2 & mage < agemax_rad)
         and calculate luminosity and dmax_eff
         """
@@ -236,14 +236,14 @@ class StarPar():
         u = self.u
         par = self.par
         domain = self.domain
-        
+
         agemax_rad = self.par['radps']['agemax_rad']/u.Myr
         sp_src = sp[(sp['mass'] > 0.0) & # exclude runaways
                     (sp['flag'] != -2) & # -2 for star particle created at t=0
                     (sp['mage'] < agemax_rad)].copy(deep=True)
 
         sp_src.time = sp.time
-    
+
         mray = par['radps']['ray_number']
         eps_PP = par['radps']['eps_extinct']
 
@@ -258,12 +258,13 @@ class StarPar():
         sp_src['L_PE'] = MtoL.calc_LPE_SB99(sp_src['mass']*u.Msun, sp_src['mage']*u.Myr)
         sp_src['L_LW'] = MtoL.calc_LLW_SB99(sp_src['mass']*u.Msun, sp_src['mage']*u.Myr)
         sp_src['L_FUV'] = sp_src['L_PE'] + sp_src['L_LW']
+        sp_src['L_tot'] = sp_src['L_FUV'] + sp_src['L_LyC']
 
         # Fraction of total Qi
         sp_src['eps_src_LyC'] = sp_src['Qi']/sp_src['Qi'].sum()
         sp_src['eps_src_FUV'] = sp_src['L_FUV']/sp_src['L_FUV'].sum()
 
-        # Maximum distance that PPs can travel from individual sources 
+        # Maximum distance that PPs can travel from individual sources
         # in the optically-thin limit
         tau = 0.0 # optical depth from the source
         try:
@@ -282,18 +283,18 @@ class StarPar():
 
         domain = self.domain
         par = self.par
-        
+
         sp_copy['intersect'] = []
         if kind == 'rad':
             for x1copy,x2copy,radius in zip(sp_copy['x1copy'],sp_copy['x2copy'],sp_src['dmax_eff']):
                 intersect = []
                 for x1,x2 in zip(x1copy,x2copy):
-                    # True if photon packets launched from this image source can reach the 
+                    # True if photon packets launched from this image source can reach the
                     # computational domain (in the optically thin limit)
                     intersect.append(self.does_domain_intersect_circle(domain, x1, x2, radius))
 
                 sp_copy['intersect'].append(np.array(intersect))
-                
+
         elif kind == 'sn':
             # Maximum feedback radius
             radius = min(domain['Lx'].min()*0.5, par['feedback']['rfb_sn_max'])
@@ -304,22 +305,22 @@ class StarPar():
                                 x1, x2, radius))
 
                 sp_copy['intersect'].append(np.array(intersect))
-                
+
         if flatten:
             for k in sp_copy.keys():
                 try:
                     sp_copy[k] = np.concatenate(sp_copy[k]).ravel()
                 except ValueError:
                     pass
-                
-                
+
+
         return sp_copy
 
     def plt_starpar_copy(self, sp_src, sp_copy, kind='rad'):
         """
         Plot radiation sources (real and image sources)
         """
-        
+
         par = self.par
         u = self.u
         domain = self.domain
@@ -357,7 +358,7 @@ class StarPar():
             radius = min(domain['Lx'].min()*0.5, par['feedback']['rfb_sn_max'])
             circ = [mpl.patches.Circle((x1,x2), radius) for x1,x2 \
                     in zip(sp_src['x1'],sp_src['x2'])]
-            
+
         pc2  = mpl.collections.PatchCollection(circ, alpha=1, facecolor='none',
                                                edgecolor='grey', linewidth=0.5, linestyle='-')
         ax.add_collection(pc2)
@@ -374,7 +375,7 @@ class StarPar():
         plt.ylim(-1.5*Ly,1.5*Ly)
         plt.xlabel('x')
         plt.ylabel('y')
-        plt.suptitle(r'$t=$' + r'{0:0.1f}'.format(sp_src.time) + 
+        plt.suptitle(r'$t=$' + r'{0:0.1f}'.format(sp_src.time) +
                      r', $\Delta y=$' + r'{0:0.1f}'.format(deltay), y=0.92)
 
         return fig
@@ -382,7 +383,7 @@ class StarPar():
     @staticmethod
     def calc_Erad_in_uniform_medium(dd, sp_src, r, k_atten=0.005, bands=['LyC','PE']):
         """
-        Function to compute Erad in a uniform medium 
+        Function to compute Erad in a uniform medium
         given radiation sources that allow for shear-periodic BCs
 
         Parameters
