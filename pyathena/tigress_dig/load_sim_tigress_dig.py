@@ -12,7 +12,7 @@ from .extract_data import ExtractData
 class LoadSimTIGRESSDIG(LoadSim, Hst, Zprof, PltHstZprof, ExtractData):
     """LoadSim class for analyzing TIGRESS DIG simulations.
     """
-    
+
     def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=False):
         """The constructor for LoadSimTIGRESSDIG class
 
@@ -34,20 +34,21 @@ class LoadSimTIGRESSDIG(LoadSim, Hst, Zprof, PltHstZprof, ExtractData):
             Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
             accepted.
         """
-        
+
         super(LoadSimTIGRESSDIG,self).__init__(basedir, savdir=savdir,
                                         load_method=load_method, verbose=verbose)
 
         # Set unit
         self.u = Units(muH=1.4271)
-        
+
         # Get domain info
         if not self.files['vtk']:
             self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
             self.ds = self.load_vtk(num=0, id0=True, load_method=load_method)
         else:
             self.ds = self.load_vtk(ivtk=0, load_method=load_method)
-            
+
+
 
 class LoadSimTIGRESSDIGAll(object):
     """Class to load multiple simulations"""
@@ -59,12 +60,12 @@ class LoadSimTIGRESSDIGAll(object):
 
         self.models = list(models.keys())
         self.basedirs = dict()
-        
+
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
-        
+
         self.model = model
         self.sim = LoadSimTIGRESSDIG(self.basedirs[model], savdir=savdir,
                                      load_method=load_method, verbose=verbose)
