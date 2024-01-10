@@ -18,15 +18,15 @@
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=5b4479735964841361fd" rel="stylesheet" />
-<link href="../../../_static/styles/bootstrap.css?digest=5b4479735964841361fd" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=5b4479735964841361fd" rel="stylesheet" />
+  <link href="../../../_static/styles/theme.css?digest=bd9e20870c6007c4c509" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=bd9e20870c6007c4c509" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=bd9e20870c6007c4c509" rel="stylesheet" />
 
   
-  <link href="../../../_static/vendor/fontawesome/6.1.2/css/all.min.css?digest=5b4479735964841361fd" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.1.2/webfonts/fa-regular-400.woff2" />
+  <link href="../../../_static/vendor/fontawesome/6.5.1/css/all.min.css?digest=bd9e20870c6007c4c509" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.1/webfonts/fa-regular-400.woff2" />
 
     <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
     <link rel="stylesheet" href="../../../_static/styles/sphinx-book-theme.css?digest=14f4ca6b54d191a8c7657f6c759bf11a5fb86285" type="text/css" />
@@ -37,9 +37,9 @@
     <link rel="stylesheet" type="text/css" href="../../../_static/design-style.4045f2051d55cab465a707391d5b2007.min.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=5b4479735964841361fd" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=5b4479735964841361fd" />
-  <script src="../../../_static/vendor/fontawesome/6.1.2/js/all.min.js?digest=5b4479735964841361fd"></script>
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=bd9e20870c6007c4c509" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=bd9e20870c6007c4c509" />
+  <script src="../../../_static/vendor/fontawesome/6.5.1/js/all.min.js?digest=bd9e20870c6007c4c509"></script>
 
     <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
     <script src="../../../_static/jquery.js"></script>
@@ -73,7 +73,7 @@ const thebe_selector_output = ".output, .cell_output"
 
   
   
-  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <a id="pst-skip-link" class="skip-link" href="#main-content">Skip to main content</a>
   
   <div id="pst-scroll-pixel-helper"></div>
 
@@ -116,12 +116,20 @@ const thebe_selector_output = ".output, .cell_output"
   <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
 </form></div>
   </div>
+
+  <header>
   
-    <nav class="bd-header navbar navbar-expand-lg bd-navbar">
-    </nav>
+    <div class="bd-header navbar navbar-expand-lg bd-navbar">
+    </div>
   
+  </header>
+
   <div class="bd-container">
     <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
       
       <div class="bd-sidebar-primary bd-sidebar">
         
@@ -322,7 +330,7 @@ document.write(`
               
                 
 <div id="searchbox"></div>
-                <article class="bd-article" role="main">
+                <article class="bd-article">
                   
   <h1>Source code for pyathena.util.sb99</h1><div class="highlight"><pre>
 <span></span><span class="kn">import</span> <span class="nn">pathlib</span>
@@ -438,6 +446,25 @@ document.write(`
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">cols</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">df</span></div>
+
+    <span class="k">def</span> <span class="nf">read_yield</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_H&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_He&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_C&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_N&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;Mdot_O&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Mg&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Si&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_S&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Fe&#39;</span><span class="p">,</span>
+                 <span class="s1">&#39;Mdot_wind&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_sn&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_wind_sn&#39;</span><span class="p">,</span><span class="s1">&#39;M_tot&#39;</span><span class="p">]</span>
+        <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;yield&#39;</span><span class="p">],</span> <span class="n">names</span><span class="o">=</span><span class="n">names</span><span class="p">,</span>
+                         <span class="n">skiprows</span><span class="o">=</span><span class="mi">7</span><span class="p">,</span> <span class="n">delimiter</span><span class="o">=</span><span class="s1">&#39;\s+&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Normalize by cluster mass</span>
+        <span class="k">for</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">c</span> <span class="o">==</span> <span class="s1">&#39;time&#39;</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="n">df</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">**</span><span class="p">(</span><span class="n">df</span><span class="p">[</span><span class="n">c</span><span class="p">]</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">logM</span><span class="p">)</span>
+
+        <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">columns</span><span class="o">=</span><span class="p">{</span><span class="s1">&#39;time&#39;</span><span class="p">:</span> <span class="s1">&#39;time_yr&#39;</span><span class="p">})</span>
+        <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time_yr&#39;</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-6</span>
+        <span class="c1"># df.set_index(&#39;time_Myr&#39;, inplace=True)</span>
+
+        <span class="k">return</span> <span class="n">df</span>
 
 <div class="viewcode-block" id="SB99.read_wind"><a class="viewcode-back" href="../../../utils.html#pyathena.util.SB99.read_wind">[docs]</a>    <span class="k">def</span> <span class="nf">read_wind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read power1 (stellar wind power) output</span>
@@ -1439,6 +1466,138 @@ document.write(`
         <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Overall correction factor : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">]))</span>
 
     <span class="k">return</span> <span class="n">r</span>
+
+
+<span class="k">def</span> <span class="nf">write_sb99_output_for_tigress</span><span class="p">(</span><span class="n">sb</span><span class="p">):</span>
+
+    <span class="n">rr</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_rad</span><span class="p">()</span>
+    <span class="n">ry</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_yield</span><span class="p">()</span>
+    <span class="n">rw</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_wind</span><span class="p">()</span>
+    <span class="n">rs</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_sn</span><span class="p">()</span>
+
+    <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+
+    <span class="c1"># Set age array (MUST BE THE SAME AS THE AGE ARRAYS IN Athena-TIGRESS)</span>
+    <span class="n">dage_sn</span> <span class="o">=</span> <span class="mf">0.2</span>
+    <span class="n">age_sn</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">40.2</span><span class="p">,</span><span class="n">dage_sn</span><span class="p">)</span>
+
+    <span class="n">dage_rad</span> <span class="o">=</span> <span class="mf">0.2</span>
+    <span class="n">age_rad</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">40.2</span><span class="p">,</span><span class="n">dage_rad</span><span class="p">)</span>
+
+    <span class="c1"># Separate age array for wind output to keep consistency with old TIGRESS version</span>
+    <span class="n">dage_wind</span> <span class="o">=</span> <span class="mf">0.1</span>
+    <span class="n">age_wind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mf">50.0</span><span class="p">,</span><span class="n">dage_wind</span><span class="p">)</span> <span class="o">+</span> <span class="mf">0.01</span>
+    <span class="n">age_wind</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="n">age_wind</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+
+    <span class="n">f_Psi_LW</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;L&#39;</span><span class="p">][</span><span class="s1">&#39;LW&#39;</span><span class="p">],</span>
+                        <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+    <span class="n">f_Psi_PE</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;L&#39;</span><span class="p">][</span><span class="s1">&#39;PE&#39;</span><span class="p">],</span>
+                        <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+    <span class="n">f_Xi_LyC</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">][</span><span class="s1">&#39;LyC&#39;</span><span class="p">],</span>
+                        <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+
+    <span class="c1"># Set small numbers to zero</span>
+    <span class="n">rs</span><span class="p">[</span><span class="s1">&#39;SN_rate&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">loc</span><span class="p">[(</span><span class="n">rs</span><span class="p">[</span><span class="s1">&#39;SN_rate&#39;</span><span class="p">]</span> <span class="o">&lt;</span> <span class="mf">1e-35</span><span class="p">)]</span> <span class="o">=</span> <span class="mf">0.0</span>
+    <span class="n">f_SN_rate</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">rs</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="n">rs</span><span class="p">[</span><span class="s1">&#39;SN_rate&#39;</span><span class="p">]</span><span class="o">*</span><span class="mf">1e6</span><span class="p">,</span>
+                         <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+
+
+    <span class="n">f_log_Edot_wind</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">rw</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rw</span><span class="p">[</span><span class="s1">&#39;Edot_all&#39;</span><span class="p">]),</span>
+                               <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+    <span class="c1"># Note that the mass loss rate is multiplied by 1e6 (from yr-1 to Myr-1)</span>
+    <span class="n">f_log_Mdot_wind</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">ry</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">ry</span><span class="p">[</span><span class="s1">&#39;Mdot_wind&#39;</span><span class="p">])</span> <span class="o">+</span> <span class="n">sb</span><span class="o">.</span><span class="n">logM</span><span class="p">,</span>
+                               <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="s1">&#39;extrapolate&#39;</span><span class="p">)</span>
+
+    <span class="n">res_rad</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">res_wind</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+    <span class="n">res_sn</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+
+    <span class="n">res_sn</span><span class="p">[</span><span class="s1">&#39;age_Myr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">age_sn</span>
+    <span class="n">res_sn</span><span class="p">[</span><span class="s1">&#39;SN_rate&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_SN_rate</span><span class="p">(</span><span class="n">age_sn</span><span class="p">)</span>
+
+    <span class="n">res_rad</span><span class="p">[</span><span class="s1">&#39;age_Myr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">age_rad</span>
+    <span class="n">res_rad</span><span class="p">[</span><span class="s1">&#39;Xi_LyC&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_Xi_LyC</span><span class="p">(</span><span class="n">age_rad</span><span class="p">)</span>
+    <span class="n">res_rad</span><span class="p">[</span><span class="s1">&#39;Psi_LW&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_Psi_LW</span><span class="p">(</span><span class="n">age_rad</span><span class="p">)</span>
+    <span class="n">res_rad</span><span class="p">[</span><span class="s1">&#39;Psi_PE&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_Psi_PE</span><span class="p">(</span><span class="n">age_rad</span><span class="p">)</span>
+
+    <span class="n">res_wind</span><span class="p">[</span><span class="s1">&#39;age_Myr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">age_wind</span>
+    <span class="n">res_wind</span><span class="p">[</span><span class="s1">&#39;log_Edot_wind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_log_Edot_wind</span><span class="p">(</span><span class="n">age_wind</span><span class="p">)</span>
+    <span class="n">res_wind</span><span class="p">[</span><span class="s1">&#39;log_Mdot_wind&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">f_log_Mdot_wind</span><span class="p">(</span><span class="n">age_wind</span><span class="p">)</span>
+
+    <span class="n">df_sn</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">res_sn</span><span class="p">)</span>
+    <span class="n">df_rad</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">res_rad</span><span class="p">)</span>
+    <span class="n">df_wind</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">from_dict</span><span class="p">(</span><span class="n">res_wind</span><span class="p">)</span>
+
+    <span class="kn">import</span> <span class="nn">json</span>
+    <span class="kn">from</span> <span class="nn">tabulate</span> <span class="kn">import</span> <span class="n">tabulate</span>
+
+    <span class="c1"># https://stackoverflow.com/questions/27988356/save-fixed-width-text-file-from-pandas-dataframe</span>
+    <span class="k">def</span> <span class="nf">to_fwf</span><span class="p">(</span><span class="n">df</span><span class="p">,</span> <span class="n">fname</span><span class="p">):</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="n">tabulate</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">values</span><span class="o">.</span><span class="n">tolist</span><span class="p">(),</span> <span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="p">),</span> <span class="n">tablefmt</span><span class="o">=</span><span class="s2">&quot;plain&quot;</span><span class="p">,</span> <span class="n">floatfmt</span><span class="o">=</span><span class="s1">&#39;.10e&#39;</span><span class="p">)</span>
+        <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s2">&quot;w&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">content</span><span class="p">)</span>
+
+    <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="o">.</span><span class="n">to_fwf</span> <span class="o">=</span> <span class="n">to_fwf</span>
+
+    <span class="k">def</span> <span class="nf">get_name</span><span class="p">(</span><span class="n">sb</span><span class="p">):</span>
+        <span class="n">basename</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">sb</span><span class="o">.</span><span class="n">basedir</span><span class="o">.</span><span class="n">strip</span><span class="p">(</span><span class="s1">&#39;/&#39;</span><span class="p">))</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span>
+        <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">basename</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Z&#39;</span><span class="p">):</span>
+                <span class="n">name</span> <span class="o">+=</span> <span class="n">b</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span>
+            <span class="k">if</span> <span class="n">b</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;Geneva&#39;</span><span class="p">):</span>
+                <span class="n">name</span> <span class="o">+=</span> <span class="n">b</span> <span class="o">+</span> <span class="s1">&#39;_&#39;</span>
+
+        <span class="k">return</span> <span class="n">name</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="s1">&#39;_&#39;</span><span class="p">)</span>
+
+    <span class="n">writedir1</span> <span class="o">=</span> <span class="s1">&#39;/projects/EOSTRIKE/SB99/Tables-Athena-TIGRESS&#39;</span>
+    <span class="n">writedir2</span> <span class="o">=</span> <span class="s1">&#39;/home/jk11/Athena-TIGRESS/dat/&#39;</span>
+
+    <span class="n">name</span> <span class="o">=</span> <span class="n">get_name</span><span class="p">(</span><span class="n">sb</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">writedir</span> <span class="ow">in</span> <span class="p">(</span><span class="n">writedir1</span><span class="p">,</span> <span class="n">writedir2</span><span class="p">):</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Write to </span><span class="si">{0:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">writedir</span><span class="p">))</span>
+        <span class="c1"># Write SB99 input parameters (list) to a text file</span>
+        <span class="c1"># Can be read with json.load</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">writedir</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_par.txt&#39;</span><span class="p">),</span> <span class="s1">&#39;w&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">file</span><span class="p">:</span>
+             <span class="n">file</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">dumps</span><span class="p">(</span><span class="n">sb</span><span class="o">.</span><span class="n">par</span><span class="p">))</span>
+
+        <span class="c1"># Write</span>
+        <span class="n">df_sn</span><span class="o">.</span><span class="n">to_fwf</span><span class="p">(</span><span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">writedir</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_sn.txt&#39;</span><span class="p">))</span>
+        <span class="n">df_wind</span><span class="o">.</span><span class="n">to_fwf</span><span class="p">(</span><span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">writedir</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_wind.txt&#39;</span><span class="p">))</span>
+        <span class="n">df_rad</span><span class="o">.</span><span class="n">to_fwf</span><span class="p">(</span><span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">writedir</span><span class="p">,</span> <span class="n">name</span> <span class="o">+</span> <span class="s1">&#39;_rad.txt&#39;</span><span class="p">))</span>
+
+        <span class="c1"># df_sn.to_csv(osp.join(writedir, name + &#39;_sn.txt&#39;),</span>
+        <span class="c1"># index=False, sep=r&#39; &#39;, float_format=&#39;%g&#39;, header=False)</span>
+        <span class="c1"># df_wind.to_csv(osp.join(writedir, name + &#39;_wind.txt&#39;),</span>
+        <span class="c1"># index=False, sep=r&#39; &#39;, float_format=&#39;%g&#39;, header=False)</span>
+        <span class="c1"># df_rad.to_csv(osp.join(writedir, name + &#39;_rad.txt&#39;),</span>
+        <span class="c1"># index=False, sep=r&#39; &#39;, float_format=&#39;%g&#39;, header=False)</span>
+
+    <span class="k">return</span> <span class="n">sb</span>
+
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+
+    <span class="n">models</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span>
+        <span class="c1"># Non-rotating models</span>
+        <span class="c1">#Z001_GenevaV00=&#39;/projects/EOSTRIKE/SB99/Z001_M1E6_GenevaV00_dt01/&#39;,</span>
+        <span class="n">Z002_GenevaV00</span><span class="o">=</span><span class="s1">&#39;/projects/EOSTRIKE/SB99/Z002_M1E6_GenevaV00_dt01/&#39;</span><span class="p">,</span>
+        <span class="c1">#Z008_GenevaV00=&#39;/projects/EOSTRIKE/SB99/Z008_M1E6_GenevaV00_dt01/&#39;,</span>
+        <span class="n">Z014_GenevaV00</span><span class="o">=</span><span class="s1">&#39;/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV00_dt01/&#39;</span><span class="p">,</span>
+        <span class="c1">#Z040_GenevaV00=&#39;/projects/EOSTRIKE/SB99/Z040_M1E6_GenevaV00_dt01/&#39;,</span>
+
+        <span class="c1"># Models with rotation</span>
+        <span class="c1">#Z001_GenevaV40=&#39;/projects/EOSTRIKE/SB99/Z001_M1E6_GenevaV40_dt01/&#39;,</span>
+        <span class="n">Z002_GenevaV40</span><span class="o">=</span><span class="s1">&#39;/projects/EOSTRIKE/SB99/Z002_M1E6_GenevaV40_dt01/&#39;</span><span class="p">,</span>
+        <span class="c1">#Z008_GenevaV40=&#39;/projects/EOSTRIKE/SB99/Z008_M1E6_GenevaV40_dt01/&#39;,</span>
+        <span class="n">Z014_GenevaV40</span><span class="o">=</span><span class="s1">&#39;/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV40_dt01/&#39;</span><span class="p">,</span>
+        <span class="c1">#Z040_GenevaV40=&#39;/projects/EOSTRIKE/SB99/Z040_M1E6_GenevaV40_dt01/&#39;,</span>
+    <span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">mdl</span> <span class="ow">in</span> <span class="n">models</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">mdl</span><span class="p">)</span>
+        <span class="n">sb</span> <span class="o">=</span> <span class="n">sb99</span><span class="o">.</span><span class="n">SB99</span><span class="p">(</span><span class="n">models</span><span class="p">[</span><span class="n">mdl</span><span class="p">])</span>
+        <span class="n">sb</span> <span class="o">=</span> <span class="n">write_sb99_output_for_tigress</span><span class="p">(</span><span class="n">sb</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">sb</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="mi">25</span><span class="p">],</span> <span class="n">sb</span><span class="o">.</span><span class="n">par</span><span class="p">[</span><span class="o">-</span><span class="mi">7</span><span class="p">])</span>
+        <span class="c1"># break</span>
 </pre></div>
 
                 </article>
@@ -1457,6 +1616,8 @@ document.write(`
             </div>
             
             
+              
+                <div class="bd-sidebar-secondary bd-toc"></div>
               
             
           </div>
@@ -1501,8 +1662,8 @@ By Jeong-Gyu Kim, Chang-Goo Kim, Sanghyuk Moon
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../../../_static/scripts/bootstrap.js?digest=5b4479735964841361fd"></script>
-<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=5b4479735964841361fd"></script>
+  <script src="../../../_static/scripts/bootstrap.js?digest=bd9e20870c6007c4c509"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=bd9e20870c6007c4c509"></script>
 
   <footer class="bd-footer">
   </footer>
