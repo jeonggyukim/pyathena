@@ -36,7 +36,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
 
     # if ret == 0:
     # else:
-        
+
     #return subprocess.call(cmd)
 
 def display_movie(filename):

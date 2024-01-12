@@ -23,12 +23,12 @@ def delete_fields_vtk(fname, fname_new, field_del, verbose=False):
 
     Returns nothing
     """
-    
+
     if fname == fname_new:
         raise ValueError('New filename cannot be the same as the original one.')
 
     field_del = np.atleast_1d(field_del)
-    
+
     ds = read_vtk(fname)
     fmap = ds.grid[0]['field_map']
     # Remove fields to be deleted from field map

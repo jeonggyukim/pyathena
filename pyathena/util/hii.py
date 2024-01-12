@@ -1,4 +1,3 @@
-
 import numpy as np
 from astropy import constants as ac
 from astropy import units as au

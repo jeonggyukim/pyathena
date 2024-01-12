@@ -333,4 +333,3 @@ def slc_get_all_z(slc):
         else:
             pass
     return xr.concat(dlist,dim='z').sortby('z')
-

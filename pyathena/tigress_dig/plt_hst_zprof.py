@@ -7,11 +7,11 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 
 class PltHstZprof:
-    
+
     def plt_hst(self, savname=None, force_override=False):
         """Function to draw time evolution of Sigma_SFR, escape fraction, etc.
         """
-        
+
         hst = self.read_hst(force_override=force_override)
         fig, axes = plt.subplots(5, 1, figsize=(18, 12), sharex=True,
                                  gridspec_kw=dict(hspace=0.1))
@@ -67,7 +67,7 @@ class PltHstZprof:
         # dust absorption
         #plt.plot(hst.time, hst.Qidust/hst.Qi, 'g-')
         #plt.plot(hst.time, hst.Qidust.cumsum()/hst.Qi.cumsum(), 'g--')
-        
+
         plt.ylabel('radiation\n' + 'escape fraction')
         plt.legend([l1, l2],
                    [r'$f_{\rm esc,i}$', r'$f_{\rm esc,n}$'], loc=1,
@@ -82,15 +82,15 @@ class PltHstZprof:
         plt.sca(axes[3])
         alpha=0.5
         p1 = plt.fill_between(hst.time, 0,
-                              hst.fesc0_est, 
+                              hst.fesc0_est,
                               color='b', alpha=alpha)
-        p2 = plt.fill_between(hst.time, 
+        p2 = plt.fill_between(hst.time,
                               hst.fesc0_est,
                               hst.fesc0_est + (hst.Qiphot/hst.Qi),
                               color='g', alpha=alpha)
         p3 = plt.fill_between(hst.time,
-                              hst.fesc0_est + (hst.Qiphot/hst.Qi), 
-                              hst.fesc0_est + (hst.Qiphot/hst.Qi) + (hst.Qidust/hst.Qi), 
+                              hst.fesc0_est + (hst.Qiphot/hst.Qi),
+                              hst.fesc0_est + (hst.Qiphot/hst.Qi) + (hst.Qidust/hst.Qi),
                               color='grey', alpha=alpha)
         plt.ylabel('fraction')
         plt.ylim(0, 1)
@@ -106,7 +106,7 @@ class PltHstZprof:
         plt.plot(hst.time, hst.H_c, label=r'$H_{\rm c}$')
         plt.yscale('log')
         plt.legend(loc=1, fontsize='large')
-        
+
         # alpha=0.5
         # plt.ylabel('fraction')
         # plt.ylim(0, 1)
@@ -114,7 +114,7 @@ class PltHstZprof:
         #            ['Escape','H absorption','Dust absorption'],
         #            loc=1)
 
-        
+
         for ax in axes:
             ax.set_xlim(hst.time.iloc[0], hst.time.iloc[-1])
 
@@ -123,13 +123,13 @@ class PltHstZprof:
 
         plt.suptitle(self.basename)
         plt.subplots_adjust(top=0.95)
-        
+
         if savname is None:
             savname = osp.join(self.savdir, 'hst',
                                self.problem_id + '_hst.png')
-            
+
         plt.savefig(savname, dpi=200)
-        
+
         self.logger.info('History plot saved to {:s}'.format(savname))
 
         return plt.gcf()
@@ -137,10 +137,10 @@ class PltHstZprof:
     def plt_zprof_median(self, savname=None, force_override=False):
         """Function to draw median z-profiles of nH, ne, xi, etc.
         """
-        
+
         zp = self.read_zprof(['w', 'h'], force_override=force_override)
         fig, axes = plt.subplots(2, 2, figsize=(12, 10))
-    
+
         ylog = dict(d=True, ne=True, nebar=True, nesq=True, xi=False, A=False)
         ylim = dict(d=(1e-4, 2e1),
                     ne=(1e-4, 2e1),
@@ -149,7 +149,7 @@ class PltHstZprof:
                     nebar=(1e-4, 2e1),
                     A=(0.0, 1.0)
                     )
-        
+
         ylabel = dict(d=r'$\langle n_{\rm H}\rangle\;[{\rm cm^{-3}}]$',
                       ne=r'$\langle n_{\rm e}\rangle\;[{\rm cm^{-3}}]$',
                       xi=r'$\langle x_{\rm i}\rangle$',
@@ -159,7 +159,7 @@ class PltHstZprof:
         phase = ['w', 'w', 'w', 'w']
         var = ['d', 'ne', 'xi', 'nebar']
         xlim = (zp['w'].z_kpc.min(),zp['w'].z_kpc.max())
-        
+
         axes = axes.flatten()
         for ax, ph, v in zip(axes, phase, var):
             plt_zprof_var(ax, zp[ph], v,
@@ -186,20 +186,20 @@ class PltHstZprof:
         plt.sca(axes[2])
         plt.plot(zp[ph].z_kpc, zp[ph]['A'].quantile(0.5, dim='time'),
                  alpha=alpha, c='tab:blue', lw=lw, ls='--')
-        
+
         plt.sca(axes[0])
         plt.legend([axes[0].get_lines()[-2], l], ['warm','hot'], loc=2)
 
         plt.suptitle(self.basename, fontsize='large')
         plt.subplots_adjust(wspace=0.5)
         #plt.tight_layout()
-        
+
         if savname is None:
             savname = osp.join(self.savdir, 'zprof',
                                self.problem_id + '_zprof.png')
 
         plt.savefig(savname, dpi=200)
-        
+
         self.logger.info('zprof plot saved to {:s}'.format(savname))
 
         return plt.gcf()
@@ -207,7 +207,7 @@ class PltHstZprof:
     def plt_zprof_frac(self, savname=None, force_override=False):
         """Function to draw time-averaged z-profiles of volume and mass fractions
         """
-        
+
         zpw = self.read_zprof('w')
         zpa = self.read_zprof('whole') # all
         zp2p = self.read_zprof('2p') # 2-phase (c + u + w)
@@ -224,7 +224,7 @@ class PltHstZprof:
         vfwi_vfw = (zpw['xi']/zpw['A']).mean(dim='time')
         vfu = (zpu['A']).mean(dim='time')
         vfc = (zpc['A']).mean(dim='time')
-        
+
         # Mass fractions of hot, warm, warm ionized, and cold
         mfh = (zph['d']/zpa['d']).mean(dim='time')
         mfw = (zpw['d']/zpa['d']).mean(dim='time')
@@ -235,7 +235,7 @@ class PltHstZprof:
 
         # x axis
         x = zpw.z_kpc
-        
+
         mpl.rcParams['font.size'] = 16
         fig, axes = plt.subplots(1, 2, figsize=(15, 6))
         # Volume fractions
@@ -265,27 +265,27 @@ class PltHstZprof:
         plt.ylabel('mass fraction')
         plt.locator_params(nbins=10)
         plt.grid()
-        
+
         plt.suptitle(self.basename, fontsize='large')
         plt.subplots_adjust(wspace=0.4)
         # #plt.tight_layout()
-        
+
         if savname is None:
             savname = osp.join(self.savdir, 'zprof',
                                self.problem_id + '_zprof_frac.png')
 
         plt.savefig(savname, dpi=200)
-        
+
         self.logger.info('zprof frac plot saved to {:s}'.format(savname))
 
         return plt.gcf()
-    
+
 def plt_zprof_var(ax, zp, v, xlim, ylim, ylog, ylabel, alpha=0.02):
     """Function to draw median, 10/25/75/90 percentile ranges."""
 
     if alpha is None:
         alpha = 0.02*(500.0/zp[v].shape[1])**0.5
-        
+
     plt.sca(ax)
     plt.plot(zp.z_kpc, zp[v], alpha=alpha, c='grey')
     plt.plot(zp.z_kpc, zp[v].quantile(0.5, dim='time'), c='tab:blue')
@@ -297,15 +297,14 @@ def plt_zprof_var(ax, zp, v, xlim, ylim, ylog, ylabel, alpha=0.02):
                      zp[v].quantile(0.10, dim='time'),
                      zp[v].quantile(0.90, dim='time'),
                      alpha=0.20, color='tab:orange')
-    
+
     if ylog:
         plt.yscale('log')
     else:
         plt.yscale('linear')
-        
+
     plt.xlabel('z [kpc]')
     plt.ylabel(ylabel)
     plt.xlim(xlim)
     plt.ylim(ylim)
     #plt.suptitle(v)
-

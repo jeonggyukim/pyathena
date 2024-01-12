@@ -36,7 +36,7 @@ class Hst:
         # total volume of domain (code unit)
         vol = domain['Lx'].prod()
         nscalars = par['configure']['nscalars']
-        
+
         # Rename column names
         hst = hst.rename(columns={"mass": "Mgas",     # total gas mass
                                   "mass_sp": "Mstar", # star particle mass in the box
@@ -47,7 +47,7 @@ class Hst:
             hst = hst.rename(columns={"mass_sp_s2": "Mstar_s2"})
         except KeyError:
             pass
-        
+
         # Time in code unit
         hst['time_code'] = hst['time']
         # Time in Myr
@@ -59,7 +59,7 @@ class Hst:
            (par['configure']['radps'] == 'ON' or par['configure']['sixray'] == 'ON'):
             for c in ('dt_cool_min','dt_xH2_min','dt_xHII_min'):
                 hst[c] *= u.Myr*vol
-        
+
         # Mass of (gas, gas, starpar, cold/intermediate/warm/hot temperature gas,
         #          molecular,atomic,ionized) in Msun
         for c in ('Mgas','Mcold','Minter','Mwarm','Mhot',
@@ -78,10 +78,10 @@ class Hst:
                 self.logger.warning('Nscalar {0:i}, but column {0:s} not found'.\
                                     format(nscalars,c))
                 continue
-            
+
         # Convert energy unit [Msun*(km/s)**2]
         for c in hst.columns:
-            if 'Emag' in c or 'Ekin' in c or 'Egrav' in c:                
+            if 'Emag' in c or 'Ekin' in c or 'Egrav' in c:
                 hst[c] *=  vol*u.Msun*(u.kms)**2
 
         # Velocity dispersion
@@ -91,7 +91,7 @@ class Hst:
                                       /(hst['MHI_cl'] + hst['MH2_cl']))
         except KeyError:
             self.logger.warning('Could not compute vdisp_cl due to KeyError')
-        
+
         # Mstar: total
         # Mstar_in: mass of sp currently in the domain
         # Mstar_esc: mass of sp escaped the domain
@@ -120,15 +120,15 @@ class Hst:
                                  /(hst['Egrav_H2_cl']+hst['Egrav_HI_cl'])
         except KeyError:
             pass
-        
+
         #hst.index = hst['time_code']
-        
+
         self.hst = hst
-        
+
         return hst
 
     def _calc_outflow(self, hst):
-        
+
         u = self.u
         domain = self.domain
         vol = domain['Lx'].prod()
@@ -157,17 +157,17 @@ class Hst:
             hst['Mof_cl'] = hst['Mof_cl_H2'] + hst['Mof_cl_HI'] + hst['Mof_cl_HII']
         except KeyError:
             pass
-        
+
         return hst
-    
+
     def _calc_SFR(self, hst):
         """Compute instantaneous SFR, SFR averaged over the past 1 Myr, 3Myr, etc.
-        """        
+        """
 
         # Instantaneous SFR
         hst['SFR'] = deriv_convolve(hst['Mstar'].values, hst['time'].values,
                                     gauss=True, fft=False, stddev=3.0)
-        
+
         # Set any negative values to zero
         hst['SFR'][hst['SFR'] < 0.0] = 0.0
 
@@ -191,7 +191,7 @@ class Hst:
         u = self.u
         domain = self.domain
         # total volume of domain (code unit)
-        vol = domain['Lx'].prod()        
+        vol = domain['Lx'].prod()
 
         # Total/escaping luminosity in Lsun
         ifreq = dict()
@@ -211,7 +211,7 @@ class Hst:
                             hst[f'Ldust_{k}'] = hst[f'Ldust{i}']*vol*u.Lsun
                         except KeyError:
                             self.logger.info('Ldust not found in hst')
-                            
+
                         hnu = (par['radps'][f'hnu_{k}']*au.eV).cgs.value
                         hst[f'Qtot_{k}'] = hst[f'Ltot_{k}'].values * \
                                            (ac.L_sun.cgs.value)/hnu
@@ -231,14 +231,14 @@ class Hst:
                         hst[f'fesc_cum_{k}'].fillna(value=0.0, inplace=True)
                     except KeyError as e:
                         raise e
-                    
+
         if 'Ltot_LW' in hst.columns and 'Ltot_PE' in hst.columns:
             hst['fesc_FUV'] = (hst['Lesc_PE'] + hst['Lesc_LW'])/(hst['Ltot_PE'] + hst['Ltot_LW'])
             hst['fesc_cum_FUV'] = \
                 integrate.cumtrapz(hst['Lesc_PE'] + hst['Lesc_LW'], hst.time, initial=0.0)/\
                 integrate.cumtrapz(hst['Ltot_PE'] + hst['Ltot_LW'], hst.time, initial=0.0)
             hst[f'fesc_cum_FUV'].fillna(value=0.0, inplace=True)
-            
+
         return hst
 
 
@@ -316,4 +316,3 @@ def plt_hst_compare(sa, models=['B2S4'], ls=['-'], r=None, savefig=True):
         scp_to_pc(savname, target='GMC-MHD-Results')
 
     return fig
-

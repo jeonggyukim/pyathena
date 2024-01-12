@@ -8,7 +8,7 @@ def set_aux(model='solar',verbose=False):
     """
     Set auxiliary information about fields
     """
-    
+
     aux = {}
 
     # Somewhat confusing, but let's take following convention
@@ -18,7 +18,7 @@ def set_aux(model='solar',verbose=False):
         cmap=plt.cm.Spectral_r,clim=(2.e-5,2.e2), \
         cticks=(1.e-4,1.e-2,1,1.e2), \
         n_bins=128, norm=LogNorm())
-    
+
     aux['nH']=dict(label=r'$n_H\;[{\rm cm}^{-3}]$', \
         unit='cm**(-3)', limits=(1.e-6,1.e6), \
         cmap=plt.cm.Spectral_r,clim=(2.e-5,2.e2), \
@@ -30,12 +30,12 @@ def set_aux(model='solar',verbose=False):
         cmap=plt.cm.Spectral_r,clim=(1e0,2.e3), \
         cticks=(1.e0,1e1,1.e2,1e3), \
         n_bins=128, norm=LogNorm())
-    
+
     # Legacy from the previous pyathena convention
     aux['surface_density']=dict( \
         label=r'$\Sigma\;[{\rm M}_{\odot} {\rm pc}^{-2}]$', \
         cmap=plt.cm.pink_r,clim=(0.1,100),norm=LogNorm())
-    
+
     # Gas density rho = nH*muH [g/cm^3]
     aux['rho']=dict(label=r'$\rho\;[{\rm g}\,{\rm cm}^{-3}]$', \
         unit='g*cm**(-3)', limits=(1.e-30,1.e18), \
@@ -146,7 +146,7 @@ def set_aux(model='solar',verbose=False):
         cmap=plt.cm.viridis,clim=(1e-11,1e-16), \
         cticks=(1e-15,1e-13,1e-11), \
         n_bins=128, norm=LogNorm())
-    
+
     # Radiation energy density1
     aux['Erad1']=dict(label=r'$\mathcal{E}_{\rm n}\,[{\rm erg\,cm}^{-3}]$', \
         unit='erg*cm**(-3)*s**(-1)', limits=(1e-8,1e-18), \

@@ -1,4 +1,3 @@
-
 import numpy as np
 import astropy.units as au
 import pandas as pd
@@ -32,7 +31,7 @@ class H2:
                     rr[k].append(r[k])
 
         rr = pd.DataFrame(rr)
-        
+
         return rr
 
     @LoadSim.Decorators.check_pickle
@@ -131,13 +130,13 @@ class H2:
         res['pdf2d'][k]['biney'] = biney
         res['pdf2d'][k]['h'] = hw
 
-        
+
         # Calculate 1d pdf
         res['pdf1d'] = dict()
         k = 'nH-w-nH2'
         hw, bine = np.histogram(dd['nH'].data.flatten(),
                                 bins=np.logspace(-5,5,101),
-                                weights=(2.0*Mconv*dd['nH']*dd['xH2']).data.flatten())        
+                                weights=(2.0*Mconv*dd['nH']*dd['xH2']).data.flatten())
         res['pdf1d'][k] = dict()
         res['pdf1d'][k]['bine'] = bine
         res['pdf1d'][k]['h'] = hw

@@ -8,7 +8,7 @@ import xarray as xr
 def read_rad_lost(filename, force_override=False, verbose=False):
     """
     Function to read rad_lost.txt and pickle
-    
+
     Parameters:
        filename : string
            Name of the file to open, including extension
@@ -19,7 +19,7 @@ def read_rad_lost(filename, force_override=False, verbose=False):
        df, da : tuple
           (pandas dataframe, xarray dataarray)
     """
-    
+
     fpkl = filename + '.p'
     if not force_override and os.path.exists(fpkl) and \
        os.path.getmtime(fpkl) > os.path.getmtime(filename):
@@ -57,6 +57,6 @@ def read_rad_lost(filename, force_override=False, verbose=False):
     # lost_mum = df.columns[5 + df.N_mu[0]/2:5 + df.N_mu[0]]
     # df['L_lost0p'] = df[lost_mup].sum(axis=1)
     # df['L_lost0m'] = df[lost_mum].sum(axis=1)
-    
+
     # df.to_pickle(fpkl)
     # return df, da

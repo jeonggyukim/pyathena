@@ -3,12 +3,12 @@ import numpy as np
 class CoolRosen95(object):
     """Compute Lambda from Rosen & Bregman (1995)
     """
-    
+
     def __init__(self):
-        
+
         self.T = np.logspace(np.log10(300.0001),8,1000)
         self.T_extrapolate = np.logspace(np.log10(10.0),8,1000)
-    
+
     @staticmethod
     def LambdaRosen95(T):
         """
@@ -24,7 +24,7 @@ class CoolRosen95(object):
                           1.6700e-18*T**-0.65, 0.0) + \
                  np.where(T >= 4e7, 3.2217e-27*T**0.5, 0.0)
         return Lambda
-    
+
     @staticmethod
     def LambdaRosen95_extrapolate(T):
         """
@@ -39,5 +39,5 @@ class CoolRosen95(object):
                  np.where(np.logical_and(T >= 1e5, T < 4e7),
                           1.6700e-18*T**-0.65, 0.0) + \
                  np.where(T >= 4e7, 3.2217e-27*T**0.5, 0.0)
-        
+
         return Lambda

@@ -91,7 +91,7 @@ def calculate_azimuthal_averages(s, num, warmcold=False):
     s : pa.LoadSim object
     num : integer index of simulation output
     warmcold : if True, calculate quantities only for T < 2e4 gas
-    
+
     Description
     -----------
     Calculates following Fields (function of (z,R))
@@ -162,7 +162,7 @@ def calculate_azimuthal_averages(s, num, warmcold=False):
     R, vec_cyl = transform.to_cylindrical(vec, (0, 0, 0))
     for i, axis in enumerate([1,2,3]):
         dat[f'velocity{axis}'] = vec_cyl[i]
-    
+
     if 'cell_centered_B1' in dat:
         vec = (dat['cell_centered_B1'], dat['cell_centered_B2'], dat['cell_centered_B3'])
         R, vec_cyl = transform.to_cylindrical(vec, (0, 0, 0))
@@ -174,7 +174,7 @@ def calculate_azimuthal_averages(s, num, warmcold=False):
 
     # calculate circular velocity
     vcirc = get_circular_velocity(s, dat.x, dat.y)
-    
+
     # Calculate derived quantities
     dat['Reynolds'] = dat.density*dat.velocity1*(dat.velocity2 - vcirc)
     dat['mass_flux1'] = dat.density*dat.velocity1
@@ -193,7 +193,7 @@ def calculate_azimuthal_averages(s, num, warmcold=False):
     dat['gz_ext'] = dat.gz_ext.transpose('z','y','x')
     dat['Wself'] = -(dat.density*dat.gz_sg*dz).sel(z=slice(0, s.domain['re'][2])).sum(dim='z')
     dat['Wext'] = -(dat.density*dat.gz_ext*dz).sel(z=slice(0, s.domain['re'][2])).sum(dim='z')
-    
+
     # Radial binning
     nbin = 64
     edges = np.linspace(0, 1000, nbin+1)
@@ -243,7 +243,7 @@ def mask_ring_by_mass(s, dat, Rmax, mf_crit=0.9):
     dat : xarray dataset
     Rmax : maximum radius to exclude dust lanes
     mf_crit : mass fraction threshold
-    
+
     Description
     -----------
     This function generates ring mask by selecting cells whose surface density

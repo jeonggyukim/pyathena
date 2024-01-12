@@ -1,4 +1,3 @@
-
 import xarray as xr
 import pandas as pd
 import os, glob
@@ -66,16 +65,16 @@ def cleanup_directory(base,problem_id,problem_dir=None):
         if ext is 'rst':
             for i in range(1,nprocs):
                 files=glob.glob('{}{}/id{}/{}-id{}.????.rst'.format(base,problem_dir,i,problem_id,i))
-                if len(files): 
+                if len(files):
                     for f in files: shutil.move(f,f.replace('id{}/'.format(i),'rst/'))
 
     return success
 
 def zprof_to_xarray(base,problem_dir,problem_id):
     """
-        merge zprof dumps along t-axis and create netCDF files 
+        merge zprof dumps along t-axis and create netCDF files
         files should have moved to zprof/
-    """    
+    """
     zpmerge_dir='{}{}/zprof_merged/'.format(base,problem_dir)
     if not os.path.isdir(zpmerge_dir): os.mkdir(zpmerge_dir)
     plist=['phase1','phase2','phase3','phase4','phase5','whole']
@@ -98,7 +97,7 @@ def zprof_to_xarray(base,problem_dir,problem_id):
                 dfall=np.array(df)[np.newaxis,:]
             else:
                 dfall=np.concatenate([dfall,np.array(df)[np.newaxis,:]],axis=0)
-    
+
         da=xr.DataArray(dfall.T,coords={'fields':fields,'zaxis':zaxis,'taxis':taxis},
                                 dims=('fields','zaxis','taxis'))
         zpfile='{}{}/zprof_merged/{}.{}.zprof.nc'.format(base,problem_dir,problem_id,phase)
@@ -108,7 +107,7 @@ def zprof_to_xarray(base,problem_dir,problem_id):
 def merge_xarray(base,problem_dir,problem_id):
     """
         merge all phases into a single file
-    """    
+    """
     plist=['phase1','phase2','phase3','phase4','phase5']
     datasets = xr.Dataset()
     for phase in plist:
@@ -139,7 +138,7 @@ def panel_to_xarray(base,problem_dir,problem_id):
             taxis=zpdata.minor_axis.values
             zaxis=zpdata.major_axis.values
             fields=zpdata.items.values
-            
+
             da=xr.DataArray(zpdata.values,coords={'fields':fields,'zaxis':zaxis,'taxis':taxis},
                                 dims=('fields','zaxis','taxis'))
             ncfile=zpfile.replace('whole.zprof.p','{}.zprof.nc'.format(ph))
@@ -151,22 +150,22 @@ def recal_rates(h,sn,base,problem_dir,problem_id):
     from pyathena.set_plt import units
     from pyathena.parse_par import parse_par
     import pandas as pd
-    
+
     par,blocks,fields,=parse_par('{}{}/{}.par'.format(base,problem_dir,problem_id))
     dt=float(par['output1']['dt'][0])*units['Myr']
     Lx=float(par['domain1']['x1max'][0])-float(par['domain1']['x1min'][0])
     Ly=float(par['domain1']['x2max'][0])-float(par['domain1']['x2min'][0])
     area=Lx*Ly
-    
+
     nhst=len(h.index)
-    
+
     starvtk=glob.glob('{}{}/starpar/{}.*.starpar.vtk'.format(base,problem_dir,problem_id))
     starvtk.sort()
     sp=pa.read_starvtk(starvtk[-1])
     cl=sp[sp.mass!=0]
     cl_birth_time=(cl.time-cl.age)*units['Myr']
     cl_mass=cl.mass*units['Msun']
-    
+
     time=np.arange(nhst+1)*dt
     Msp,t=np.histogram(cl_birth_time,bins=time,weights=cl_mass)
     sfr_inst=pd.Series(Msp/area/dt)
@@ -182,7 +181,7 @@ def recal_rates(h,sn,base,problem_dir,problem_id):
         rates['snr{}'.format(lab)]=NSN/dt/area
 
     for rinst_key in ['sfr','snr','snr_run','snr_cl']:
-        rinst=rates[rinst_key] 
+        rinst=rates[rinst_key]
         for tbin in [1.,10.,40.,100.]:
             window=int(tbin/dt)
             rates['{}{}'.format(rinst_key,int(tbin))]=rinst.rolling(window,min_periods=1).mean()
@@ -352,8 +351,8 @@ def processing_zprof_dump(h,rates,params,zprof_ds,hstfile):
         h_zp['cs{}'.format(ph)] = np.sqrt(zp.sel(fields='P').sum(dim='zaxis')/dphase)
         h_zp['sigma_eff{}'.format(ph)] = h_zp['cs{}'.format(ph)]**2 + h_zp['v3{}'.format(ph)]**2
         if mhd:
-            h_zp['sigma_eff{}'.format(ph)] += 0.5*(h_zp['vA1{}'.format(ph)]**2 + 
-                                                   h_zp['vA2{}'.format(ph)]**2 - 
+            h_zp['sigma_eff{}'.format(ph)] += 0.5*(h_zp['vA1{}'.format(ph)]**2 +
+                                                   h_zp['vA2{}'.format(ph)]**2 -
                                                    h_zp['vA3{}'.format(ph)]**2)
         h_zp['sigma_eff{}'.format(ph)] = np.sqrt(h_zp['sigma_eff{}'.format(ph)])
 
@@ -503,11 +502,11 @@ def processing_zprof_dump(h,rates,params,zprof_ds,hstfile):
     h_zp['PDE2']=h_zp['PDE_gas']+h_zp['PDE_ext2']+h_zp['PDE_sp']
 
     h_zp.index=zpw.taxis
-     
+
     h_zp.to_pickle(hstfile)
     print('new {} is created'.format(hstfile))
     return h_zp
-    
+
 def draw_history(h_zp,metadata,figfname=''):
     from pyathena.set_plt import labels,plt
     nplot=len(metadata)
@@ -543,10 +542,10 @@ def doall(base,problem_id,problem_dir=None,do_pickling=True,use_yt=True):
     print('preparing metadata for {}...'.format(problem_id))
     done=cleanup_directory(base,problem_id,problem_dir=problem_dir)
     for k in done:
-        if done[k]: print('{}.{} is moved'.format(problem_id,k)) 
+        if done[k]: print('{}.{} is moved'.format(problem_id,k))
 
     parfile='{}{}/{}.par'.format(base,problem_dir,problem_id)
-    params=pa.get_params(parfile)    
+    params=pa.get_params(parfile)
 
     zpfile='{}{}/zprof_merged/{}.whole.zprof.nc'.format(base,problem_dir,problem_id)
     from pyathena.utils import compare_files

@@ -30,7 +30,7 @@ def set_plt_default():
 
     # plt.rcParams['xtick.top'] = True
     # plt.rcParams['ytick.right'] = True
-    
+
 def set_plt_fancy():
     # Chang-Goo's fancystyle
     plt.rcParams['lines.linewidth'] = 2.0

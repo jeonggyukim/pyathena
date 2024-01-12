@@ -8,8 +8,8 @@ class Colormaps(object):
     def __init__(self):
         self.cm = dict(T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
                        )
-        
-        
+
+
 def cmap_apply_alpha(name='Blues'):
 
     NN = np.linspace(0, 1, 256)
@@ -56,7 +56,7 @@ def cmap_shift(cmap, start=0.0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
 
     # shifted index to match the data
     shift_index = np.hstack([
-        np.linspace(0.0, midpoint, 128, endpoint=False), 
+        np.linspace(0.0, midpoint, 128, endpoint=False),
         np.linspace(midpoint, 1.0, 129, endpoint=True)
     ])
 

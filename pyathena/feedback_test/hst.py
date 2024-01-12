@@ -69,10 +69,10 @@ class Hst:
 
         if 'Vhps' in hst.columns and 'Vhf' in hst.columns:
             hst['Vh'] = hst['Vhps'] + hst['Vhf']
-            
+
         if 'Ethm_hps' in hst.columns and 'Ethm_hf' in hst.columns:
             hst['Ethm_h'] = hst['Ethm_hps'] + hst['Ethm_hf']
-        
+
         # try:
         #     # hot gas mass in Msun
         #     hst['Mh'] *= u.Msun*vol
@@ -109,7 +109,7 @@ class Hst:
                 hst[c] *= vol*u.Msun
             except KeyError:
                 continue
-            
+
         # try:
         #     # Hot and ionized
         #     hst['Mhi'] = hst['Mh'] + hst['Mi']
@@ -147,7 +147,7 @@ class Hst:
                     hst['pr_hps'] *= pr_conv
                 except KeyError:
                     pass
-                
+
         hst['prsh'] *= pr_conv
 
         ########################
@@ -186,7 +186,7 @@ class Hst:
             L_conv = vol*(u.energy/u.time).cgs.value
         else:
             L_conv = vol_cgs
-            
+
         hst['cool_rate'] *= L_conv
         hst['heat_rate'] *= L_conv
         hst['net_cr'] *= L_conv
@@ -211,7 +211,7 @@ class Hst:
                 ((hst['Vi'] + hst['Vh'])*vol_cgs)/ac.k_B.cgs.value
         except:
             pass
-        
+
         hst['Vbub'] *= vol
         hst['Rbub'] = (3.0*hst['Vbub']/(4.0*np.pi))**(1.0/3.0)
         hst['vrbub'] = np.gradient(hst['Rbub'], hst['time_code'])
@@ -257,13 +257,13 @@ class Hst:
                 hst['wind_pr_u'] = hst['pr_u_swind_mixed4']*pr_conv
             except: # typo
                 hst['wind_pr_u'] = hst['pr_y_swind_mixed4']*pr_conv
-                
+
             hst['wind_pr'] = hst['wind_pr_c'] + hst['wind_pr_i'] + \
                 hst['wind_pr_w'] + hst['wind_pr_u'] + hst['wind_pr_hf'] + \
                 hst['wind_pr_hps']
         except:
             pass
-        
+
         hst['wind_pr_hf'] = hst['pr_hf']*pr_conv
         hst['wind_pr_hps'] = hst['pr_hps']*pr_conv
 
@@ -355,5 +355,3 @@ class Hst:
             pass
 
         return hst
-
-

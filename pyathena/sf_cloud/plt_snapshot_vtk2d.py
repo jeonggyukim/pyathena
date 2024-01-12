@@ -1,4 +1,3 @@
-
 import os
 import os.path as osp
 from shutil import copyfile
@@ -28,7 +27,7 @@ class PltSnapshotVTK2D:
             savdir = osp.join(basedir, 'movies')
             if not osp.exists(savdir):
                 os.makedirs(savdir)
-            
+
         fin = osp.join(basedir, 'snapshot_vtk2d/*.png')
         fout = osp.join(savdir, '{0:s}_snapshot_vtk2d.mp4'.format(self.basename))
         if make_movie(fin, fout, fps, fps):
@@ -49,7 +48,7 @@ class PltSnapshotVTK2D:
             fields = ['Sigma','Sigma_H2','Sigma_HI',
                       'EM','d','T',
                       'P','vmag','Erad_LyC']
-       
+
         fig = plt.figure(figsize=figsize)
         axes = ImageGrid(fig, 111, nrows_ncols=nrows_ncols,
                          axes_pad=axes_pad, label_mode='1',
@@ -58,8 +57,8 @@ class PltSnapshotVTK2D:
 
         for ax,field in zip(axes,fields):
             dd = self.plt_snapshot_vtk2d_one_axis(self, num, field, dim, ax)
- 
-        
+
+
         sp = self.load_starpar_vtk(num)
         agemax_sp = 10.0
         if not sp.empty:
@@ -84,9 +83,9 @@ class PltSnapshotVTK2D:
 #         cb.ax.xaxis.set_ticks_position('top')
 #         cb.ax.xaxis.set_label_position('top')
 
-        
+
         bbox1 = axes[0].get_position()
-        
+
         if suptitle is None:
             suptitle = self.basename
         plt.suptitle(suptitle + '  time={0:5.2f}'.format(sp.time),
@@ -109,7 +108,7 @@ class PltSnapshotVTK2D:
     def plt_snapshot_vtk2d_one_axis(s, num, field, dim='y',
                                     ax=None, norm=None, cmap=None):
 
-        dtoi = dict(x=1,y=2,z=3)        
+        dtoi = dict(x=1,y=2,z=3)
 
         cmap_def = dict(
             Sigma=plt.cm.pink_r,
@@ -123,7 +122,7 @@ class PltSnapshotVTK2D:
             Bmag=cmocean.cm.amp,
             Erad_LyC=plt.cm.viridis,
         )
-        
+
         norm_def = dict(
             Sigma=LogNorm(1e0,1e3),
             Sigma_H2=LogNorm(1e0,1e3),
@@ -136,7 +135,7 @@ class PltSnapshotVTK2D:
             Bmag=LogNorm(1e-1,1e2),
             Erad_LyC=LogNorm(1e-16,1e-10),
         )
-        
+
         label = dict(
             Sigma=r'$\Sigma\,[M_{\odot}\,{\rm pc}^{-2}]$',
             Sigma_H2=r'$\Sigma_{\rm H_2}\,[M_{\odot}\,{\rm pc}^{-2}]$',
@@ -149,7 +148,7 @@ class PltSnapshotVTK2D:
             Bmag=r'$|\mathbf{B}|\,[\mu {\rm G}]$',
             Erad_LyC=r'$\mathcal{E}_{\rm LyC}\,[{\rm erg}\,{\rm cm}^{-3}]$',
         )
-        
+
         unit_conv = dict(
             Sigma=(s.u.density*s.domain['dx'][dtoi[dim]]*s.u.length).to('Msun/pc2').value,
             Sigma_H2=(s.u.density*s.domain['dx'][dtoi[dim]]*s.u.length).to('Msun/pc2').value,
@@ -193,7 +192,7 @@ class PltSnapshotVTK2D:
         ds = read_vtk(s.files[f][num])
         d = ds.get_field(f)
         dd = d.sel(**{dim:0.0}, method='nearest')*unit_conv[field]
-        
+
         # Set arguments
         imshow_args = dict(
             ax=ax, norm=norm, cmap=cmap, xticks=xticks, yticks=yticks,
@@ -208,5 +207,5 @@ class PltSnapshotVTK2D:
         cb.ax.xaxis.set_label_position('top')
         cb.ax.xaxis.set_ticks_position('top')
         cb.ax.tick_params(labelsize=12)
-        
+
         return dd

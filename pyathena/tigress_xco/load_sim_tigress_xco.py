@@ -9,7 +9,7 @@ from .hst import Hst
 class LoadSimTIGRESSXCO(LoadSim, Hst):
     """LoadSim class for analyzing TIGRESS simulations.
     """
-    
+
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  muH=1.4271, verbose=False):
         """The constructor for LoadSimRPS class
@@ -35,10 +35,10 @@ class LoadSimTIGRESSXCO(LoadSim, Hst):
 
         super(LoadSimTIGRESSXCO,self).__init__(basedir, savdir=savdir,
                                                load_method=load_method, verbose=verbose)
-        
+
         # Set unit
         self.u = Units(muH=muH)
-        
+
         # Get domain info
         if not self.files['vtk']:
             self.logger.info('Loading {0:s}'.format(self.files['vtk_id0'][0]))
@@ -46,7 +46,7 @@ class LoadSimTIGRESSXCO(LoadSim, Hst):
         else:
             self.ds = self.load_vtk(ivtk=0, load_method=load_method)
 
-            
+
 class LoadSimTIGRESSXCOAll(object):
     """Class to load multiple simulations"""
     def __init__(self, models=None):
@@ -68,7 +68,7 @@ class LoadSimTIGRESSXCOAll(object):
             # R4_2pc_L512
             models['R4_2pc_L512.Z1.CR001.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R4_2pc_L512_B10.noHII.Z1.CR001.L010'
             models['R4_2pc_L512.Z1.CR010.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R4_2pc_L512_B10.noHII.Z1.CR010.L010'
-            
+
             models['R4_2pc_L512.Z2.CR010.L010'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/R4_2pc_L512_B10.noHII.Z2.CR010.L010'
 
             # R8_2pc_rst
@@ -82,18 +82,17 @@ class LoadSimTIGRESSXCOAll(object):
 
             # M1_2pc_Tth50
             models['M1_2pc_Tth50.Z2.CR010.L100'] = '/projects/EOSTRIKE/TIGRESS_XCO_ART/M1_2pc_Tth50.noHII.Z2.CR010.L100'
-            
+
 
         self.models = list(models.keys())
         self.basedirs = dict()
-        
+
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
-            
+
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
-        
+
         self.model = model
         self.sim = LoadSimTIGRESSXCO(self.basedirs[model], savdir=savdir,
                                      load_method=load_method, verbose=verbose)
         return self.sim
-

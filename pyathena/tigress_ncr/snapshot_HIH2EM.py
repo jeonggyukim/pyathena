@@ -13,7 +13,7 @@ class Snapshot_HIH2EM():
         nc = 4
         fig, axes = plt.subplots(nr, nc, figsize=(16,21), #constrained_layout=True,
                                  gridspec_kw=dict(hspace=0.1, wspace=0.1,
-                                                  height_ratios=[0.75,0.2], 
+                                                  height_ratios=[0.75,0.2],
                                                   width_ratios=[0.25,0.25,0.25,0.25]))
 
         d = self.read_prj(num=num)
@@ -32,7 +32,7 @@ class Snapshot_HIH2EM():
                                          norm=norm, extent=extent, origin='lower', cmap=plt.cm.pink_r))
             im3.append(axes[i,2].imshow(d[axis]['Sigma_HI'],
                                          norm=norm, extent=extent, origin='lower', cmap=plt.cm.pink_r))
-            im4.append(axes[i,3].imshow(d[axis]['EM']+1e-20, norm=norm_EM, 
+            im4.append(axes[i,3].imshow(d[axis]['EM']+1e-20, norm=norm_EM,
                                          cmap='plasma', extent=extent, origin='lower'))
 
         # Overplot starpar
@@ -77,5 +77,3 @@ class Snapshot_HIH2EM():
 
         print('saved to ', savname)
         return fig
-
-    

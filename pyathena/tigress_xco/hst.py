@@ -13,9 +13,9 @@ class Hst:
     def read_hst(self, savdir=None, merge_mhd=True, force_override=False):
         """Function to read hst and convert quantities to convenient units
         """
-        
+
         hst = read_hst(self.files['hst'], force_override=force_override)
-    
+
         # delete the first row (post-processing)
         hst.drop(hst.index[:1], inplace=True)
 
@@ -40,7 +40,7 @@ class Hst:
         # H mass/surface density in Msun
         hst['MH'] = hst['mass']/u.muH
         hst['Sigma_H'] = hst['MH']/(LxLy*u.pc**2)
-        
+
         # H2 mass in Msun
         try:
             hst['MH2'] = hst['MH2']*vol*u.Msun/u.muH
@@ -50,7 +50,7 @@ class Hst:
         except KeyError:
             pass
 
-        # Neutral gas mass in Msun 
+        # Neutral gas mass in Msun
         try:
             hst['Mneu'] = hst['scalar{:d}'.format(domain['IHI'])]*vol*u.Msun
         except KeyError:
@@ -60,13 +60,13 @@ class Hst:
         hst['sfr10'] = hst['sfr10']/(LxLy*u.pc**2)
         hst['sfr40'] = hst['sfr40']/(LxLy*u.pc**2)
         hst['sfr100'] = hst['sfr100']/(LxLy*u.pc**2)
-        
+
         # Cosmic ray ionization rate without attenuation
         hst['xi_CR0'] = 2e-16*self.par['problem']['xi_CR_amp']*(hst['sfr40']/3e-3)
-        
+
         hst.index = hst['time_code']
         #hst.index.name = 'index'
-        
+
         # Merge with mhd history dump
         if merge_mhd:
             try:
@@ -75,11 +75,11 @@ class Hst:
                                       tolerance=0.1).combine_first(hst)
             except FileNotFoundError:
                 pass
-                
+
         self.hst = hst
-        
+
         return hst
-        
+
         # # Ionized gas mass in Msun
         # hst['Mion'] *= vol*u.Msun
         # # Collisionally ionized gas (before ray tracing) in Msun
@@ -137,7 +137,7 @@ class Hst:
     #         hst['H_wnesq'] = np.sqrt(hst['H2wnesq'] / hst['wnesq'])
     #         hst.drop(columns=['H2wnesq', 'wnesq'], inplace=True)
 
-    #     # For warm medium, 
+    #     # For warm medium,
     #     # append _ to distinguish from mhd history variable
     #     if 'H2w' in hst.columns and 'massw' in hst.columns:
     #         hst['H_w_'] = np.sqrt(hst['H2w'] / hst['massw'])
@@ -151,7 +151,7 @@ class Hst:
     #         hst['Mwion'] = hst['masswi']*vol*u.Msun
     #         hst['mf_wion'] = hst['Mwion']/hst['mass']
     #         hst.drop(columns=['H2wi', 'masswi'], inplace=True)
-            
+
     #     ##########################
     #     # With ionizing radiation
     #     ##########################
@@ -256,7 +256,7 @@ class Hst:
                     np.sqrt(2*hst['x{}ME'.format(ax)]/hst['mass'])
             h['v{}_2p'.format(ax)] = \
                 np.sqrt(2*hst['x{}KE_2p'.format(ax)]/hst['mass']/h['mf_2p'])
-            
+
         h['cs'] = np.sqrt(hst['P']/hst['mass'])
         h['Pth_mid'] = hst['Pth']*u.pok
         h['Pth_mid_2p'] = hst['Pth_2p']*u.pok/hst['Vmid_2p']
@@ -274,10 +274,10 @@ class Hst:
 
         h.index = h['time_code']
         #h.index.name = 'index'
-        
+
         self.hst_mhd = h
 
         return self.hst_mhd
-    
+
         # return pd.read_pickle(
         #     '/tigress/changgoo/{0:s}/hst/{0:s}.hst_cal.p'.format(self.problem_id))

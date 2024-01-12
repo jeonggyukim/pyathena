@@ -2,7 +2,7 @@
 
 import os
 import os.path as osp
-import pathlib 
+import pathlib
 import h5py
 import numpy as np
 
@@ -15,16 +15,16 @@ class CoolWiersma09(object):
     # https://www.strw.leidenuniv.nl/WSS08/z_collis.txt
     # https://www.strw.leidenuniv.nl/WSS08/coolingtables_highres.tar.gz
     """
-    
+
     def __init__(self, z=0.0, CIE=False):
 
         self.basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
                                 '../../data/microphysics/Wiersma09/tables')
-        
+
         self.r = self.read_table(z=z, CIE=CIE)
 
     def read_table(self, z=0.0, CIE=False):
-        
+
             if CIE:
                 fname = osp.join(self.basedir, 'z_collis.hdf5')
             else:
@@ -72,5 +72,3 @@ class CoolWiersma09(object):
                 r['abd']['muH'] = X.sum()/X[0]
 
             return r
-
-        

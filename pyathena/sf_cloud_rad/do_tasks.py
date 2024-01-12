@@ -45,7 +45,7 @@ if __name__ == '__main__':
 
     # models = ['B2S4_N512']
     # models = ['A1S4', 'A4S4', 'A3S4', 'A5S4']
-    
+
     # models = ['B2S1', 'B2S2', 'B2S3', 'B2S5']
     # models = ['B2S1_N128','B2S2_N128','B2S3_N128','B2S4_N128','B2S5_N128']
 
@@ -56,7 +56,7 @@ if __name__ == '__main__':
 
     # sa = pa.LoadSimSFCloudRadAll(dict(B2S4_N128='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.R.B2.A2.S4.N128.again/'))
     # models = sa.models
-    
+
     # models = dict(nofb='/perseus/scratch/gpfs/jk11/GMC/M1E5R20.NOFB.B2.A2.S4.N256/')
     # sa = pa.LoadSimSFCloudRadAll(models)
     # models = sa.models
@@ -72,7 +72,7 @@ if __name__ == '__main__':
         # nums = range(0, s.get_num_max_virial())
         # nums = s.nums[::]
         nums = range(0,1000,1)
-        
+
         if COMM.rank == 0:
             print('basedir, nums', s.basedir, nums)
             nums = split_container(nums, COMM.size)
@@ -85,7 +85,7 @@ if __name__ == '__main__':
         time0 = time.time()
         for num in mynums:
             print(num, end=' ')
-            
+
             # print('read_virial', end=' ')
             # res = s.read_virial(num, force_override=True)
             # n = gc.collect()
@@ -101,7 +101,7 @@ if __name__ == '__main__':
             # print('Unreachable objects:', n, end=' ')
             # print('Remaining Garbage:', end=' ')
             # pprint.pprint(gc.garbage)
-            
+
             # print('read_outflow', end=' ')
             # of = s.read_outflow(num, force_override=True)
             # n = gc.collect()
@@ -118,7 +118,7 @@ if __name__ == '__main__':
             # print('Remaining Garbage:', end=' ')
             # pprint.pprint(gc.garbage)
 
-            
+
             # print('read_slc_prj', end=' ')
             # # slc = s.read_slc(num, force_override=False)
             # prj = s.read_prj(num, force_override=False)
@@ -134,7 +134,7 @@ if __name__ == '__main__':
             # print('Remaining Garbage:', end=' ')
             # pprint.pprint(gc.garbage)
 
-            # print('plt_Bproj', end=' ')        
+            # print('plt_Bproj', end=' ')
             # fig = s.plt_Bproj(num)
 
             # print('plt_snapshot')
@@ -147,7 +147,7 @@ if __name__ == '__main__':
             # print('plt_snapshot_2panel')
             fig = s.plt_snapshot_2panel(num, name=name)
             plt.close(fig)
-            
+
         # # Make movies
         # if COMM.rank == 0:
         #     fin = osp.join(s.basedir, 'snapshots/*.png')
@@ -165,5 +165,3 @@ if __name__ == '__main__':
             print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
             print('################################################')
             print('')
-
-            

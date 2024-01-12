@@ -9,21 +9,21 @@ def read_P20(shielded=True, z=0.0, logZ=0.0, verbose=False):
 
     https://ui.adsabs.harvard.edu/abs/2020MNRAS.497.4857P/abstract
     """
-    
+
     if shielded:
         fname='/tigress/jk11/code/Ploeckinger20/UVB_dust1_CR1_G1_shield1.hdf5'
     else:
         fname='/tigress/jk11/code/Ploeckinger20/UVB_dust1_CR1_G1_shield0.hdf5'
-        
+
     f = h5py.File(fname, mode='r')
     if verbose:
         for key in f.keys():
             print(f[key]) #Names of the groups in HDF5 file.
-        
+
         for k in f['NumberOfBins'].keys():
             print('Key:',k)
             print('Number of bins', f['NumberOfBins'][k], f['NumberOfBins'][k][()])
-        
+
     n = 10.0**f['TableBins']['DensityBins'][()]
     zz = f['TableBins']['RedshiftBins'][()]
     ZZ = f['TableBins']['MetallicityBins'][()]
@@ -41,10 +41,10 @@ def read_P20(shielded=True, z=0.0, logZ=0.0, verbose=False):
     def _find_nearest(array, value):
         array = np.asarray(array)
         return (np.abs(array - value)).argmin()
-    
+
     idx_z = _find_nearest(zz, z)
     idx_Z = _find_nearest(ZZ, logZ)
-    
+
     r = dict()
     r['n'] = n
     r['pok'] = pok[idx_z,idx_Z,:]
@@ -55,16 +55,16 @@ def read_P20(shielded=True, z=0.0, logZ=0.0, verbose=False):
     #r['heatTotalMetal'] = heat[idx_z,idx_Z,:,24]
     r['heat'] = heat[idx_z,idx_Z,:,:]
     r['cool'] = cool[idx_z,idx_Z,:,:]
-    
+
     r['IdentifierHeating'] = list(f['IdentifierHeating'])
     r['IdentifierCooling'] = list(f['IdentifierCooling'])
-    
+
     if verbose:
         print('IdentifierHeating')
         print(r['IdentifierHeating'])
         print('IdentifierCooling')
         print(r['IdentifierCooling'])
-    
+
     f.close()
-    
+
     return r

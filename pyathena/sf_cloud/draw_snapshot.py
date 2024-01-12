@@ -49,7 +49,7 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
                        color='k', alpha=1.0, label=label, facecolors='k')
         ss.append(s)
         labels.append(label)
-    
+
     ax.set_xlim(ext[0], ext[1])
     ax.set_ylim(ext[3], ext[2])
     if location == 'top':
@@ -71,10 +71,10 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
 
 
 def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=False):
-    
+
     from ..classic.plot_tools.scatter_sp import scatter_sp
     from ..plt_tools.cmap import cmap_apply_alpha
-    
+
     # Read data
     ds = s.load_vtk(num)
     fields = ['nH2','nHI']
@@ -82,11 +82,11 @@ def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=Fals
         fields += ['j_X']
     if s.par['configure']['ionrad'] == 'ON':
         fields += ['nesq']
-        
+
     dd = ds.get_field(fields) # read 3d fields nH2 = xH2*nH, nHI = xHI*nH
     dfi = dd.dfi # dictionary containing derived field info
     sp = s.load_starpar_vtk(num) # read starpar vtk as pandas DataFrame
-    
+
     dim_to_idx = dict(z=2,y=1,x=0)
     idx = dim_to_idx[dim]
     if dim == 'z':
@@ -98,18 +98,18 @@ def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=Fals
     elif dim == 'x':
         lx = s.domain['Lx'][1]
         ly = s.domain['Lx'][2]
-        
+
     xticks = [-0.5*lx,-0.25*lx,0.0,0.25*lx,0.5*lx]
     yticks = [-0.5*ly,-0.25*ly,0.0,0.25*ly,0.5*ly]
-    
-    
+
+
     fig, axes = plt.subplots(1, 2, figsize=(15, 6))
 
     # Get neutral gas surface density in Msun/pc^2
     to_Sigma = (s.u.density*ds.domain['dx'][idx]*s.u.length).to('Msun/pc2').value
     dd['Sigma_neu'] = to_Sigma*(2.0*dd.sum(dim=dim)['nH2'] + dd.sum(dim=dim)['nHI'])
     # Plot using xarray imshow
-    im0 = dd['Sigma_neu'].plot.imshow(ax=axes[0], cmap='pink_r', norm=LogNorm(1e-1,1e3), 
+    im0 = dd['Sigma_neu'].plot.imshow(ax=axes[0], cmap='pink_r', norm=LogNorm(1e-1,1e3),
                                       extend='neither', add_labels=False,
                                       xticks=xticks, yticks=yticks,
                                       cbar_kwargs=dict(label=r'$\Sigma_{\rm n}\;[M_{\odot}\,{\rm pc}^{-2}]$'))
@@ -127,14 +127,14 @@ def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=Fals
         im1 = dd['EM'].plot.imshow(ax=axes[1], norm=LogNorm(1e1,1e5), extend='neither',cmap='plasma',
                                    add_labels=False, xticks=xticks, yticks=yticks,
                  cbar_kwargs=dict(label=r'${\rm EM}\;[{\rm cm^{-6}\,{\rm pc}}]$'))
-        
+
     for ax in axes:
         ax.set_aspect('equal')
-    
+
     # Scatter plot star particles (color: age, mass: size)
     if not sp.empty:
         for ax in (axes[0],axes[1]):
-            scatter_sp(sp, ax, axis=0, norm_factor=1.0, 
+            scatter_sp(sp, ax, axis=0, norm_factor=1.0,
                        type='proj', kpc=False, runaway=True, agemax=agemax_sp)
             extent = (ds.domain['le'][0], ds.domain['re'][0])
             ax.set_xlim(*extent)
@@ -154,7 +154,7 @@ def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=Fals
     legend_sp(axes[0], norm_factor=1.0, mass=[1e2, 1e3], location='top', fontsize='medium',
               bbox_to_anchor=dict(top=(0.22, 0.97),
                                   right=(0.48, 0.91)))
-    
+
     # Set simulation time [code] as suptitle
     plt.suptitle(r'time={0:.2f}'.format(ds.domain['time']), x=0.5, y=0.95)
     plt.tight_layout()
@@ -168,7 +168,7 @@ def plt_snapshot_2panel(s, num, dim='z', agemax_sp=8.0, savdir=None, savfig=Fals
 
         plt.savefig(osp.join(savdir, 'snapshot_2panel_{0:04d}.png'.format(num)), dpi=200)
         #plt.close(fig)
-        
+
     return ds,dd,sp,axes,(im0,im1)
 
 
@@ -191,21 +191,21 @@ def draw_snapshot_rgb(s, num, ax, minimum=20.0, stretch=15000, Q=15):
     g = dd['EM'].data*norm_g
     #print(r.max(),g.max(),b.max(),r.min(),g.min(),b.min())
     #print(norm_b,norm_g)
-    
+
     image = make_lupton_rgb(r, g, b, minimum=minimum, stretch=stretch, Q=Q)
     ax.imshow(image, interpolation='bicubic', origin='lower')
 
     ax.set_xticks([]); ax.set_yticks([])
     ax.set_xticklabels(''); ax.set_yticklabels('')
-    
+
     return ax, dd, image
 
 
 def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
-    
+
     from ..classic.plot_tools.scatter_sp import scatter_sp
     from ..plt_tools.cmap import cmap_apply_alpha
-    
+
     cm1 = cmap_apply_alpha('Blues')
     cm2 = cmap_apply_alpha('Greens')
     cm3 = cmap_apply_alpha('Oranges')
@@ -215,17 +215,17 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
     #dd = ds.get_field(['nH2','nHI','nHII','ne','T','j_X'])
     dfi = dd.dfi
     sp = s.load_starpar_vtk(num*10)
-    
+
     fig, axes = plt.subplots(2,2,figsize=(15, 12))
     axes = axes.flatten()
-    
+
     # Neutral gas surface density
     to_surf = (s.u.density*ds.domain['dx'][0]*s.u.length).to('Msun/pc2').value
     dd['Sigma_neu'] = to_surf*(2.0*dd.sum(axis=0)['nH2']+dd.sum(axis=0)['nHI'])
     dd['Sigma_neu'].plot.imshow(ax=axes[0], cmap='pink_r', norm=LogNorm(1e0,1e3), extend='neither',
                add_labels=False, xticks=[-40,-20,0,20,40], yticks=[-40,-20,0,20,40],
                cbar_kwargs=dict(label=r'$\Sigma_{\rm neu}\;[M_{\odot}\,{\rm pc}^{-2}]$'))
-    
+
     # Emission measure
     ((dd['ne']**2).sum(axis=0)*ds.domain['dx'][2]).plot.\
         imshow(ax=axes[1],cmap='plasma',norm=LogNorm(1e1,1e5), extend='neither',
@@ -251,7 +251,7 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
     #                       extend='neither',cmap='Blues',
     #                       add_labels=False, xticks=[-40,-20,0,20,40],yticks=[-40,-20,0,20,40],
     #                       cbar_kwargs=dict(label=r'$I_X\;[{\rm erg\,{\rm cm}^{-2}\,{\rm s}^{-1}}]$'))
-    
+
     # im = dd['I_X'].plot.imshow(ax=axes[3], norm=LogNorm(1e-10,1e-6),
     #                        extend='neither',cmap='Blues',
     #                        add_labels=False, xticks=[-40,-20,0,20,40],yticks=[-40,-20,0,20,40],
@@ -268,13 +268,13 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
     plt.xlabel(dfi['nH']['label']); plt.ylabel(dfi['pok']['label'])
     plt.xscale('log'); plt.yscale('log')
     plt.xlim(1e-3,5e4) ; plt.ylim(1e0,1e8)
-    
+
     for ax in axes[:-1]:
         ax.set_aspect('equal')
-    
+
     if not sp.empty:
         for ax in (axes[0],axes[1]):
-            scatter_sp(sp, ax, axis=0, norm_factor=1.0, 
+            scatter_sp(sp, ax, axis=0, norm_factor=1.0,
                        type='prj', kpc=False, runaway=True, agemax=10.0)
             extent = (ds.domain['le'][0], ds.domain['re'][0])
             ax.set_xlim(*extent)
@@ -293,7 +293,7 @@ def plt_snapshot2(s, num, axis='z', savdir=None, savfig=False):
 
         plt.savefig(osp.join(savdir, 'snapshot_{0:04d}.png'.format(num)), dpi=200)
         plt.close(fig)
-        
+
     return ds,axes,im
 
 def plt_snapshot(s, h, num, axis='y', savdir=None, savfig=True):
@@ -312,14 +312,14 @@ def plt_snapshot(s, h, num, axis='y', savdir=None, savfig=True):
     else:
         fields = ['r','nH','T', 'pok','heat_rate','cool_rate']
         new_cool = False
-        
+
     ds = s.load_vtk(num)
     Lx = ds.domain['Lx'][0]
     slc = ds.get_slice(axis, fields)
 
     fig, axes = plt.subplots(2, 3, figsize=(15,10))
     axes = axes.flatten()
-    
+
     plt.sca(axes[0])
     if new_cool:
         fields = ('2nH2','nHI','nHII','ne')
@@ -327,7 +327,7 @@ def plt_snapshot(s, h, num, axis='y', savdir=None, savfig=True):
         fields = ('nH',)
     for f in fields:
         plt.scatter(slc['r'], slc[f], s=2.0, label=slc.dfi[f]['label'])
-    
+
     plt.xlim(0, 0.5*2.0**0.5*Lx)
     plt.ylim(1e-6*n0,20.0*n0)
     plt.yscale('log')
@@ -340,7 +340,7 @@ def plt_snapshot(s, h, num, axis='y', savdir=None, savfig=True):
         fields = ('nH',)
     for f in fields:
         plt.scatter(slc['r'], slc[f], s=2.0, label=slc.dfi[f]['label'])
-    
+
     plt.xlim(0, 0.5*2.0**0.5*Lx)
     plt.ylim(1e-6,2.0)
     plt.yscale('log')
@@ -357,12 +357,12 @@ def plt_snapshot(s, h, num, axis='y', savdir=None, savfig=True):
     plt.sca(axes[4])
     for f in ('cool_rate','heat_rate'):
         plt.scatter(slc['r'], slc[f], s=2.0, label=f)
-    
+
     plt.xlim(0, 0.5*2.0**0.5*Lx)
     plt.ylim(1e-25,1e-18)
     plt.yscale('log')
     plt.legend(loc=1)
-    
+
     plt.sca(axes[5])
 #     d = ds.get_slice(axis, ['r','nH','xHI','xHII','xe','rad_energy_density_PH','T'])
 #     hnu_PH = (s.par['radps']['hnu_PH']*au.eV).cgs.value
@@ -383,7 +383,7 @@ def plt_snapshot(s, h, num, axis='y', savdir=None, savfig=True):
     plt.xlabel(dfi['nH']['label']); plt.ylabel(dfi['T']['label'])
     plt.xscale('log'); plt.yscale('log')
     plt.xlim(1e-5*n0,1e2*n0) ; plt.ylim(1e1,1e7)
-    
+
 #     for f in ('chi_PE','chi_LW', 'chi_LW_dust'):
 #         plt.scatter(slc['r'], slc[f], s=2.0, label=slc.dfi[f]['label'])
 
@@ -392,17 +392,17 @@ def plt_snapshot(s, h, num, axis='y', savdir=None, savfig=True):
 #     plt.ylim(1e5,1e15)
 #     plt.yscale('log')
 #     plt.legend(loc=1)
-    
+
     # Temperature slice
-#     slc['T'].plot.imshow(ax=axes[3], norm=LogNorm(1e1,1e3), 
+#     slc['T'].plot.imshow(ax=axes[3], norm=LogNorm(1e1,1e3),
 #                          label=slc.dfi['T']['label'],
 #                          cbar_kwargs=dict(label=slc.dfi['T']['label']))
     f = 'nH'
-    slc[f].plot.imshow(ax=axes[3], norm=LogNorm(1e-4,1e4), # norm=slc.dfi[f]['norm'], 
+    slc[f].plot.imshow(ax=axes[3], norm=LogNorm(1e-4,1e4), # norm=slc.dfi[f]['norm'],
                          label=slc.dfi[f]['label'],cmap='Spectral_r',
                          cbar_kwargs=dict(label=slc.dfi[f]['label']))
     axes[3].set_aspect('equal')
-    
+
     plt.suptitle(f'Model: {s.basename}  ' + \
              r'num={0:2d} time={1:f}'.format(num, ds.domain['time']))
     print('time:',ds.domain['time'])
@@ -427,7 +427,7 @@ if __name__ == '__main__':
     s = pa.LoadSimSFCloud(basedir, verbose=False)
     #h = s.read_hst(force_override=True)
     nums = s.nums
-    
+
     if COMM.rank == 0:
         print('basedir, nums', s.basedir, nums)
         nums = split_container(nums, COMM.size)
@@ -446,7 +446,7 @@ if __name__ == '__main__':
         print('Unreachable objects:', n)
         print('Remaining Garbage:', end=' ')
         pprint.pprint(gc.garbage)
-    
+
     # # Make movies
     # if COMM.rank == 0:
     #     fin = osp.join(s.basedir, 'snapshots2/*.png')
@@ -455,7 +455,7 @@ if __name__ == '__main__':
     #     from shutil import copyfile
     #     copyfile(fout, osp.join('/tigress/jk11/public_html/movies',
     #                             osp.basename(fout)))
-        
+
     COMM.barrier()
     if COMM.rank == 0:
         print('')

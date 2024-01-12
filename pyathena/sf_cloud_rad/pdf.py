@@ -27,7 +27,7 @@ class PDF:
               Bmag=np.logspace(-7,-4,91),
               Erad_LyC=np.logspace(-17,-8,91),
     )
-    
+
     @LoadSim.Decorators.check_pickle
     def read_pdf2d(self, num,
                    bin_fields=None, bins=None, prefix='pdf2d',
@@ -35,18 +35,18 @@ class PDF:
 
         if bins is not None:
             self.bins = bins
-            
+
         bin_fields_def = [['nH', 'pok'], ['nH', 'T']]
         if bin_fields is None:
             bin_fields = bin_fields_def
 
         ds = self.load_vtk(num=num)
         res = dict()
-        
+
         for bf in bin_fields:
             k = '-'.join(bf)
             res[k] = dict()
-            dd = ds.get_field(bf) 
+            dd = ds.get_field(bf)
             xdat = dd[bf[0]].data.flatten()
             ydat = dd[bf[1]].data.flatten()
             # Volume weighted hist
@@ -56,7 +56,7 @@ class PDF:
             res[k]['H'] = H
             res[k]['xe'] = xe
             res[k]['ye'] = ye
-            
+
             # Density weighted hist
             weights = (ds.get_field('nH'))['nH'].data.flatten()
             Hw, xe, ye = np.histogram2d(xdat, ydat, (self.bins[bf[0]], self.bins[bf[1]]),
@@ -64,7 +64,7 @@ class PDF:
             res[k]['Hw'] = Hw
 
         res['domain'] = ds.domain
-        
+
         return res
 
     @LoadSim.Decorators.check_pickle
@@ -73,11 +73,11 @@ class PDF:
         """
         Read 2d pdf of density, chi_FUV, pok
         """
-        
+
         r = dict()
         ds = self.load_vtk(num)
         fields = ['nH','xH2','xHII','xHI','pok','T','Bmag','Erad_LyC']
-        
+
         self.logger.info('Reading fields {0:s}'.format(', '.join(fields)))
         dd = self.get_chi(ds, fields=fields, freq=['LW','PE']) # see ./fields.py
 
@@ -139,7 +139,7 @@ class PDF:
                         dd['nH'].data.flatten()[idx_HI]),
             'nHII-Bmag': (dd['nH'].data.flatten()[idx_HII],
                          dd['Bmag'].data.flatten()[idx_HII],
-                         dd['nH'].data.flatten()[idx_HII]),                   
+                         dd['nH'].data.flatten()[idx_HII]),
 
             'nH-T': (dd['nH'].data.flatten(),
                        dd['T'].data.flatten(),
@@ -152,7 +152,7 @@ class PDF:
                         dd['nH'].data.flatten()[idx_HI]),
             'nHII-T': (dd['nH'].data.flatten()[idx_HII],
                          dd['T'].data.flatten()[idx_HII],
-                         dd['nH'].data.flatten()[idx_HII]),                   
+                         dd['nH'].data.flatten()[idx_HII]),
 
             'nH-Erad_LyC': (dd['nH'].data.flatten(),
                             dd['Erad_LyC'].data.flatten(),
@@ -174,7 +174,7 @@ class PDF:
             r[k]['xe'] = xe
             r[k]['ye'] = ye
 
-        return r    
+        return r
 
     @LoadSim.Decorators.check_pickle
     def read_density_pdf_all(self, prefix='density_pdf_all',
@@ -183,7 +183,7 @@ class PDF:
         # nums = self.nums
         #nums = [0,10,20]
         nums = range(0, self.get_num_max_virial())
-        
+
 
         print('density_pdf_all: {0:s} nums:'.format(self.basename), nums, end=' ')
 
@@ -220,7 +220,7 @@ class PDF:
 
         res = dict()
         res['time_code'] = ds.domain['time']
-        
+
         try:
             res['nH_cl_meanV'] = np.mean(nH_cl)
             res['nH_cl_meanM'] = np.average(nH_cl, weights=nH_cl)
@@ -233,14 +233,14 @@ class PDF:
 
         except ZeroDivisionError:
             pass
-        
+
         return res
 
 def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
                         force_override=False):
     """Function to plot 2d histograms at different snapshots
     """
-    
+
     minmax = dict(chi_PE_tot=(1e-4,1e4),
                   chi_FUV_tot=(1e-4,1e4),
                   pok=(1e2,1e7),
@@ -257,13 +257,13 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
                    Bmag=r'$|\mathbf{B}|\;[\mu{\rm G}]$',
                    Erad_LyC=r'$\mathcal{E}_{\rm LyC}\;[10^{-13}\,{\rm erg}\,{\rm cm}^{-3}]$',
     )
-    
+
     pcargs = dict(edgecolor='face', linewidth=0, rasterized=True)
     norm = [mpl.colors.LogNorm(1e-6,5e-2),
             mpl.colors.LogNorm(1e-5,5e-2),
             mpl.colors.LogNorm(1e-5,5e-2),
             mpl.colors.LogNorm(1e-5,5e-2)]
-    
+
     nums = s.get_nums(dt_Myr=dt_Myr)
     cm0 = plt.cm.viridis
     # cm1 = cmap_apply_alpha('Blues')
@@ -328,7 +328,7 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
             for U in Uion:
                 Erad = hnui*U*nH
                 ax.loglog(nH, Erad*1e13, c='grey', lw=0.75, ls='--')
-                
+
             ax.set(xscale='log', yscale='log', xlim=minmax['nH'], ylim=minmax['Erad_LyC'],
                    xlabel=r'$n_{\rm H}\;[{\rm cm^{-3}}]$', ylabel=ylabels['Erad_LyC'])
         else:
@@ -336,7 +336,7 @@ def plt_pdf2d_one_model(s, dt_Myr=[-0.2,2,5,8], yvar='chi_PE_tot', alpha=1.0,
                    xlabel=r'$n_{\rm H}\;[{\rm cm^{-3}}]$', ylabel=ylabels[yvar])
         ax.grid()
 
-        
+
     # Annotate time
     for ic, dt_ in zip(range(nc),dt_Myr):
         if dt_ < 0.0:

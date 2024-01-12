@@ -1,4 +1,3 @@
-
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib
@@ -53,4 +52,3 @@ def cmap_shift(cmap, start=0.0, midpoint=0.5, stop=1.0, name='shiftedcmap'):
     #plt.register_cmap(cmap=cmap_new)
 
     return cmap_new
-

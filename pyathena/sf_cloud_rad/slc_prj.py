@@ -27,15 +27,15 @@ class SliceProj:
                   domain['le'][2], domain['re'][2])
         r['z'] = (domain['le'][0], domain['re'][0],
                   domain['le'][1], domain['re'][1])
-        
+
         return r
-    
+
     @LoadSim.Decorators.check_pickle
     def read_slc(self, num, axes=['x', 'y', 'z'],
                  fields=['nH', 'nH2', 'nHI', 'nHII', 'T', 'nHn', 'chi_PE',
                          'Erad_FUV', 'Erad_LyC'], prefix='slc',
                  savdir=None, force_override=False):
-            
+
         axes = np.atleast_1d(axes)
         ds = self.load_vtk(num=num)
         res = dict()
@@ -68,13 +68,13 @@ class SliceProj:
         res = dict()
         res['extent'] = self.get_extent(ds.domain)
         res['time'] = ds.domain['time']
-        
+
         for ax in axes:
             i = axtoi[ax]
             dx = ds.domain['dx'][i]*self.u.length
             conv_Sigma = (dx*self.u.muH*ac.u.cgs/au.cm**3).to('Msun/pc**2')
             conv_EM = (dx*au.cm**-6).to('pc cm-6')
-            
+
             res[ax] = dict()
             res[ax]['Sigma'] = (np.sum(dat['density'], axis=2-i)*conv_Sigma).data
             if 'xH2' in fields:
@@ -95,7 +95,7 @@ class SliceProj:
             if 'specific_scalar[2]' in fields:
                 res[ax]['Sigma_scalar2'] = (np.sum(dat['density']*dat['specific_scalar[2]'],
                                                    axis=2-i)*conv_Sigma).data
-                
+
 
         return res
 
@@ -105,9 +105,9 @@ class SliceProj:
         im = ax.imshow(dat[dim][field], cmap=cmap, extent=dat['extent'][dim],
                        norm=norm, origin='lower', interpolation='none')
         return im
-    
+
     def plt_snapshot(self, num, savefig=True):
-        
+
         d = self.read_prj(num, force_override=False)
         sp = self.load_starpar_vtk(num)
         nr = 3
@@ -151,7 +151,7 @@ class SliceProj:
                   r'$\Sigma_{\rm H_2}\;[{M_{\odot}\,{\rm pc}^{-2}}]$',
                   r'$\Sigma_{\rm H\,I}\;[{M_{\odot}\,{\rm pc}^{-2}}]$',
                   r'${\rm EM}\;[{\rm pc}\,{\rm cm}^{-6}]$']
-        
+
         for j,im,label in zip(range(nc),(im1,im2,im3,im4),labels):
             bbox_ax_top = axes[0,j].get_position()
             cax = fig.add_axes([bbox_ax_top.x0+0.01, bbox_ax_top.y1+0.01,
@@ -166,7 +166,7 @@ class SliceProj:
 
         plt.subplots_adjust(wspace=None, hspace=None)
         plt.suptitle(self.basename + '  t={0:4.1f}'.format(sp.time))
-        
+
         if savefig:
             savdir = osp.join(self.savdir, 'snapshots')
             # savdir = osp.join('/tigress/jk11/figures/GMC', self.basename, 'snapshots')
@@ -175,5 +175,5 @@ class SliceProj:
 
             savname = osp.join(savdir, '{0:s}_{1:04d}.png'.format(self.basename, num))
             plt.savefig(savname, dpi=200, bbox_inches='tight')
-            
-        return fig            
+
+        return fig

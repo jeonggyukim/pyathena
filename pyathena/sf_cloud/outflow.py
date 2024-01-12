@@ -53,7 +53,7 @@ class Outflow:
             # Constant factor need to be taken out later (along with bug fix below)
             #y = rr[c]*0.3125*1e6
             y = rr[c]
-            
+
             xn = np.linspace(x.min(),x.max(),(len(x)-1)*10+1)
             spl = interpolate.splrep(x, y, k=1, s=0)
             yn = interpolate.splev(xn, spl, der=0)
@@ -63,26 +63,26 @@ class Outflow:
             rr[c + '_int'] = yint
 
         return rr
-    
+
     @LoadSim.Decorators.check_pickle
     def read_outflow(self, num, prefix='outflow',
                      savdir=None, force_override=False):
         """
         Function to calculate outflow rate using surface integral
         of momentum flux at the computational boundary
-        """        
-                
+        """
+
         ds = self.load_vtk(num)
         dd = ds.get_field(['rho','specific_scalar_CL',
                            'xH2','xHI','xHII','vx','vy','vz'])
-        
+
         # Found a bug: need to run script again for all models
-        # dA = self.domain['dx'][0]*au.pc**2 
+        # dA = self.domain['dx'][0]*au.pc**2
         # conv = (dA*au.g/au.cm**3*au.km/au.s).to('Msun yr-1').value
-        
+
         dA = self.domain['dx'][0]**2*au.pc**2
         conv = (dA*au.g/au.cm**3*au.km/au.s).to('Msun Myr-1').value
-        
+
         keys = ['x', 'y', 'z', 'tot', 'xcl', 'ycl', 'zcl', 'totcl']
         phases = ['HI','HII','H2']
         fac = dict(HI=1.0,HII=1.0,H2=2.0)
@@ -106,5 +106,5 @@ class Outflow:
             Mof['ycl_'+ph_] = (Mycl[:,-1,:].sum() - Mycl[:,0,:].sum())*conv
             Mof['zcl_'+ph_] = (Mzcl[-1,:,:].sum() - Mzcl[0,:,:].sum())*conv
             Mof['totcl_'+ph_] = Mof['xcl_'+ph_] + Mof['ycl_'+ph_] + Mof['zcl_'+ph_]
-        
+
         return Mof

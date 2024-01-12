@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 import pathlib
 
 class RecRate(object):
-    """Class to compute Badnell (radiative/dielectronic) recombination rates, 
+    """Class to compute Badnell (radiative/dielectronic) recombination rates,
     Draine (2011)'s recombination rates
     """
-    
+
     def __init__(self):
         # read data
         self._read_data()
@@ -24,11 +24,11 @@ class RecRate(object):
         self.fname_dr_C = os.path.join(basedir, 'badnell_dr_C.dat')
         self.fname_dr_E = os.path.join(basedir, 'badnell_dr_E.dat')
         self.fname_rr = os.path.join(basedir, 'badnell_rr.dat')
-        
+
         # Read dielectronic recombination rate data
         with open(self.fname_dr_C, 'r') as fp:
             lines1 = fp.readlines()
-            
+
         with open(self.fname_dr_E, 'r') as fp:
             lines2 = fp.readlines()
 
@@ -38,7 +38,7 @@ class RecRate(object):
             print('Check data file (lines1, lines2) = {0:d}, {1:d}',
                   len(lines1), len(lines2))
             raise
-        
+
         self.Zd = np.zeros(nline, dtype='uint8')
         self.Nd = np.zeros(nline, dtype='uint8')
         self.Md = np.zeros(nline, dtype='uint8')
@@ -46,7 +46,7 @@ class RecRate(object):
         self.Cd = np.zeros((nline, 9))
         self.Ed = np.zeros((nline, 9))
         self.nd = np.zeros(nline, dtype='uint8')
-        
+
         for i, (l1, l2) in enumerate(zip(lines1[i0:i0 + nline],
                                          lines2[i0:i0 + nline])):
             l1 = l1.split()
@@ -68,7 +68,7 @@ class RecRate(object):
             else:
                 print("Columns do not match!")
                 raise
-        
+
         del lines1, lines2
 
         # Read radiative recombination rate data
@@ -77,7 +77,7 @@ class RecRate(object):
 
         i0 = 4
         nline = len(lines) - i0
-        
+
         self.Zr = np.zeros(nline, dtype='uint8')
         self.Nr = np.zeros(nline, dtype='uint8')
         self.Mr = np.zeros(nline, dtype='uint8')
@@ -129,7 +129,7 @@ class RecRate(object):
         rr: array of floats
             Radiative recombination coefficients [cm^3 s^-1]
         """
-        
+
         c1 = self.Zr == Z
         c2 = self.Nr == N
         c3 = self.Mr == M
@@ -146,7 +146,7 @@ class RecRate(object):
             (1.0 + sqrtTT1)**(1.0 + B))
 
         return rr
-            
+
     def get_dr_rate(self, Z, N, T, M=1):
         """
         Calculate dielectronic recombination rate coefficient
@@ -172,14 +172,14 @@ class RecRate(object):
         c1 = self.Zd == Z
         c2 = self.Nd == N
         c3 = self.Md == M
-        
+
         idx = np.where(c1 & c2 & c3)
 
         i = idx[0][0]
         dr = 0.0
         for m in range(self.nd[i]):
             dr += self.Cd[i, m]*np.exp(-self.Ed[i, m]/T)
-            
+
         dr *= T**(-1.5)
         return dr
 
@@ -199,7 +199,7 @@ class RecRate(object):
             Initial metastable levels (M=1 for the ground state) of the ground
             and metastable terms. The defualt value is 1.
         kind : str
-            Set to 'badnell' to use fits Badnell fits or 'dr11' to use 
+            Set to 'badnell' to use fits Badnell fits or 'dr11' to use
             Draine (2011)'s formula.
 
         Returns
@@ -247,7 +247,7 @@ class RecRate(object):
         cc = 115188.0*Tinv
         dd = 1.0 + np.power(cc, 0.407)
         return 2.753e-14*np.power(bb, 1.5)*np.power(dd, -2.242)
-    
+
     @staticmethod
     def get_alpha_gr(T, psi, Z):
 
@@ -260,7 +260,7 @@ class RecRate(object):
         C['Mg']= np.array([2.510, 8.116e-8, 1.864, 6.170e4, 2.169e-6, 0.9605, 7.232e-5])
         C['S'] = np.array([3.064, 7.769e-5, 1.319, 1.087e2, 3.475e-1, 0.4790, 4.689e-2])
         C['Ca']= np.array([1.636, 8.208e-9, 2.289, 1.254e5, 1.349e-9, 1.1506, 7.204e-4])
-    
+
         if Z == 1:
             e = 'H'
         elif Z == 2:
@@ -276,16 +276,16 @@ class RecRate(object):
 
         return 1e-14*C[e][0]/(1.0 + C[e][1]*psi**C[e][2]*\
                 (1.0 + C[e][3]*T**C[e][4]*psi**(-C[e][5]-C[e][6]*np.log(T))))
-            
+
     @staticmethod
     def get_rec_rate_grain(ne, G0, T, Z):
         """Compute grain assisted recombination coefficient
         Ch 14.8 in Draine (2011)
         """
-        
+
         psi = G0*T**0.5/ne
         return RecRate.get_alpha_gr(T, psi, Z)
-    
+
     def plt_rec_rate(self, Z, N, M=1):
 
         T = np.logspace(3, 6)

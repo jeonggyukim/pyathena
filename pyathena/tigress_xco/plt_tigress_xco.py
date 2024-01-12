@@ -39,7 +39,7 @@ def read_data(sa, model, num,
     # Mask where taueff = inf with tau_eff_max
     # taueff_max = 10.0
     # dat['taueff'] = xr.where(dat['taueff'] == np.inf, taueff_max, dat['taueff'])
-    
+
     return s, ds, dat
 
 def plt_pdf_density_CRIR(sa, model, num, dat=None, gs=None, savfig=True):
@@ -49,7 +49,7 @@ def plt_pdf_density_CRIR(sa, model, num, dat=None, gs=None, savfig=True):
 
     s = sa.set_model(model)
     ds = s.load_vtk(num=num)
-        
+
     x = dat['density'].values.flatten()
     y = dat['CR_ionization_rate'].values.flatten()
     hexbin_args = dict(xscale='log', yscale='log', mincnt=1, gridsize=30)
@@ -67,20 +67,20 @@ def plt_pdf_density_CRIR(sa, model, num, dat=None, gs=None, savfig=True):
     #ax1.set_ylim(3e-17, 1e-15)
     #ax3.set_ylim(3e-17, 1e-15)
     plt.suptitle('{0:s}, time: {1:.1f}'.format(s.basename, ds.domain['time']))
-    
+
     if savfig:
         savdir = osp.join('./figures-pdf')
         if not os.path.exists(savdir):
             os.makedirs(savdir)
         plt.savefig(osp.join(savdir, 'pdf-density-CRIR.{0:s}.{1:04d}.png'.format(model, ds.num)))
-    
+
     return plt.gcf()
 
 def plt_pdf_density_xH2(sa, model, num, dat=None, gs=None, savfig=True):
 
     if dat is None:
         s, ds, dat = read_data(sa, model, num)
-        
+
     s = sa.set_model(model)
     ds = s.load_vtk(num=num)
 
@@ -95,34 +95,34 @@ def plt_pdf_density_xH2(sa, model, num, dat=None, gs=None, savfig=True):
     ax2.set_xlim(1e-3, 1e4)
     ax1.set_ylim(0, 0.55)
     ax3.set_ylim(0, 0.55)
-    
+
     def calc_xH2_equil(n, xi_H=2.0e-16, R_gr=3.0e-17, zeta=5.7e-11):
         a = 2.31*xi_H
         b = -2.0*R_gr*n - 4.95*xi_H - zeta
         c = n*R_gr
         return (-b - np.sqrt(b*b - 4.0*a*c))/(2.0*a)
-    
+
     n = np.logspace(-3, 4)
     h = s.read_hst()
     xH2eq = calc_xH2_equil(n, h.xi_CR0.iloc[num-1], # num-1 because the first row is delted
                            R_gr=3.0e-17*s.par['problem']['R_gr_amp'], zeta=0.0)
-    
+
     ax1.semilogx(n, xH2eq, 'r--')
     plt.suptitle('{0:s}, time: {1:.1f}'.format(s.basename,ds.domain['time']))
-    
+
     if savfig:
         savdir = osp.join('./figures-pdf')
         if not os.path.exists(savdir):
             os.makedirs(savdir)
         plt.savefig(osp.join(savdir, 'pdf-density-xH2.{0:s}.{1:04d}.png'.format(model, ds.num)))
-        
+
     return plt.gcf()
 
 
 def plt_hst_mass(mhd_model='R2_2pc'):
 
     sa = LoadSimTIGRESSXCOAll()
-    
+
     fig, axes = plt.subplots(3, 1, figsize=(12, 15),
                              sharex=True)
 
@@ -130,7 +130,7 @@ def plt_hst_mass(mhd_model='R2_2pc'):
     for mdl in sa.models:
         if not mdl.startswith(mhd_model):
             continue
-        
+
         s = sa.set_model(mdl, verbose=False)
         h = s.read_hst(merge_mhd=True, force_override=True)
         hmhd = s.read_hst_mhd()
@@ -145,7 +145,7 @@ def plt_hst_mass(mhd_model='R2_2pc'):
         plt.plot(h.time, h.Sigma_H2/h.Sigma_H, 'o-', label=mdl)
         plt.sca(axes[2])
         plt.plot(h.time, h.xi_CR0, 'o-')
-        
+
         i += 1
 
     plt.sca(axes[0])
@@ -176,12 +176,12 @@ def plt_hst_mass(mhd_model='R2_2pc'):
     plt.grid()
     plt.gca().grid(which='minor', alpha=0.2)
     plt.gca().grid(which='major', alpha=0.5)
-    
+
     dtime = h.time.iloc[-1] - h.time.iloc[0]
     plt.xlim(h.time.iloc[0]*0.9, h.time.iloc[-1] + 0.8*dtime)
-    
+
     return fig
-    
+
 def plt_two_joint_pdfs(sa, model, num, savfig=True):
 
     fig = plt.figure(figsize=(14, 6))
@@ -196,7 +196,7 @@ def plt_two_joint_pdfs(sa, model, num, savfig=True):
         plt.close(fig)
     else:
         return fig
-    
+
 if __name__ == '__main__':
 
     COMM = MPI.COMM_WORLD
@@ -211,13 +211,13 @@ if __name__ == '__main__':
             continue
         s = sa.set_model(model, verbose=False)
         nums = s.nums
-        
+
         if COMM.rank == 0:
             print('model, nums', model, nums)
             nums = split_container(nums, COMM.size)
         else:
             nums = None
-        
+
         mynums = COMM.scatter(nums, root=0)
         print('[rank, mynums]:', COMM.rank, mynums)
 
@@ -225,7 +225,7 @@ if __name__ == '__main__':
             print(num, end=' ')
             plt_two_joint_pdfs(sa, model, num)
             # break
-        
+
         COMM.barrier()
         if COMM.rank == 0:
             print('')

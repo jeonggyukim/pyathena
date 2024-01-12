@@ -12,14 +12,14 @@ def static_vars(**kwargs):
     return decorate
 
 def add_fields(ds, IXN=3,
-               kappa_dust=500.0*yu.cm**2/yu.g, 
+               kappa_dust=500.0*yu.cm**2/yu.g,
                sigma_ph=3.0e-18*yu.cm**2,
                muH=1.4272,
                y=0.0,
                units='LT'):
     """
     Function to add derived fields to yt dataset.
-    
+
     Parameters
     ----------
        ds: yt dataset
@@ -35,7 +35,7 @@ def add_fields(ds, IXN=3,
            Contribution to electron density from all heavy elements
            ne = (1 - xn + y)*nH
     """
-    
+
     # Set code units
     if units == 'LT':
         lunit = yu.pc
@@ -49,13 +49,13 @@ def add_fields(ds, IXN=3,
         lunit = yu.cm
         tunit = yu.s
         munit = yu.g
-        
+
     vunit = lunit/tunit
     Eunit = munit/(lunit*tunit**2)       # energy density
     Funit = (Eunit*lunit/tunit).in_cgs() # flux
 
     field_xn = "specific_scalar[{0:d}]".format(IXN)
-    
+
     # Number density of H, HI and H neutral fraction
     def _nH(field, data):
         return data["density"]/(muH*phyc.mass_hydrogen_cgs)
@@ -68,7 +68,7 @@ def add_fields(ds, IXN=3,
                  take_log=False, display_name=r'$x_{\rm n}$')
     def _nHI(field, data):
         return data[("athena","xn")]*data[("athena","nH")]
-    ds.add_field(("athena","nHI"), sampling_type="cell", 
+    ds.add_field(("athena","nHI"), sampling_type="cell",
                  function=_nHI,units="cm**-3", take_log=True,
                  display_name=r'$n_{\rm HI}$')
 
@@ -92,11 +92,11 @@ def add_fields(ds, IXN=3,
     ds.add_field("Temperature", sampling_type="cell",
                  function=_Temperature, units="K", take_log=True,
                  display_name=r'$T$')
-    
+
     def _density_ion(field, data):
         return (1.0 - data[("athena",field_xn)])*data[("athena","density")]
     ds.add_field(("athena","density_ion"), sampling_type="cell",
-                 function=_density_ion, units="g*cm**-3", take_log=True, 
+                 function=_density_ion, units="g*cm**-3", take_log=True,
                  display_name=r'$\rho_{\rm i}$')
     def _density_neu(field, data):
         return data[("athena", field_xn)]*data[("athena", "density")]
@@ -121,7 +121,7 @@ def add_fields(ds, IXN=3,
     ds.add_field("G0prime0", sampling_type="cell",
                  function=_G0prime0, units="dimensionless", take_log=True,
                  display_name=r'$G_{0,{\rm EUV}}^{\prime}$')
-    
+
     def _Erad1(field, data):
         return data[("athena","rad_energy_density1")]*Eunit
     ds.add_field(("gas","Erad1"), sampling_type="cell",
@@ -134,7 +134,7 @@ def add_fields(ds, IXN=3,
                  display_name=r'$J_{\rm FUV}$')
     def _G0prime1(field, data):
         return data["Jrad1"]/(2.1e-4*yu.erg/yu.cm**2/yu.s/yu.sr)
-    ds.add_field("G0prime1", sampling_type="cell", 
+    ds.add_field("G0prime1", sampling_type="cell",
                  function=_G0prime1, units="dimensionless", take_log=True,
                  display_name=r'$G_{0,{\rm FUV}}^{\prime}$')
 
@@ -142,7 +142,7 @@ def add_fields(ds, IXN=3,
     @static_vars(kappa_dust=kappa_dust)
     def _chi_nion(field, data):
         return _chi_nion.kappa_dust*data["density"]
-    ds.add_field("chi_nion", sampling_type="cell", 
+    ds.add_field("chi_nion", sampling_type="cell",
                  function=_chi_nion, units="1/cm", take_log=True,
                  display_name=r'$\chi_{\rm FUV}$')
 
@@ -160,4 +160,3 @@ def add_fields(ds, IXN=3,
     ds.coordinates.x_axis['y'] = 0
     ds.coordinates.y_axis[1] = 2
     ds.coordinates.y_axis['y'] = 2
-

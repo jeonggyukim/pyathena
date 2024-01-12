@@ -39,7 +39,7 @@ def scatter_sp(sp, ax, axis=0, thickness=10.0, norm_factor=4.,
     """
     Function to scatter plot star particles
     """
-    
+
     unit = set_units(muH=1.4271)
     Msun = unit['mass'].to('Msun').value
     Myr = unit['time'].to('Myr').value
@@ -76,7 +76,7 @@ def scatter_sp(sp, ax, axis=0, thickness=10.0, norm_factor=4.,
                 islab=np.where(abs(spz) < thickness)
 
             ax.scatter(spx, spy, marker='*', color='r', alpha=1.0, s=10.0/norm_factor)
-        
+
 
         if len(sp_cl) > 0:
             spx, spy, spz = projection(sp_cl, axis)
@@ -99,5 +99,3 @@ def scatter_sp(sp, ax, axis=0, thickness=10.0, norm_factor=4.,
             ax.scatter(spx.iloc[iyoung], spy.iloc[iyoung], marker='o',
                        s=spm.iloc[iyoung], c=spa.iloc[iyoung],
                        vmin=0, vmax=agemax, cmap=plt.cm.cool_r, alpha=0.7)
-
-            

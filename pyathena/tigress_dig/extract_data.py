@@ -14,15 +14,15 @@ class ExtractData:
 
     @LoadSim.Decorators.check_pickle
     def read_VFF_Peters17(self, num, savdir=None, force_override=False):
-            
+
         r = dict()
-        
+
         ds = self.load_vtk(num, load_method='pyathena_classic')
         x1d, y1d, z1d = cc_arr(ds.domain)
         z, _, _ = np.meshgrid(z1d, y1d, x1d, indexing='ij')
         idx_z = np.abs(z) < 100.0
         tot = idx_z.sum()
-        
+
         T = ds.read_all_data('temperature')
         xn = ds.read_all_data('xn')
         idx_c = (T[idx_z] <= 300.0)
@@ -39,9 +39,9 @@ class ExtractData:
         r['f_whi'] = idx_whi.sum()/tot
         r['f_whn'] = idx_whn.sum()/tot
         r['f_h'] = idx_h.sum()/tot
-    
+
         return r
-    
+
     @LoadSim.Decorators.check_pickle
     def read_EM_pdf(self, num, savdir=None, force_override=False):
 
@@ -51,12 +51,12 @@ class ExtractData:
         nesq = ((1.0 - xn)*nH)**2
 
         z2 = 200.0
-        
+
         bins = np.linspace(-8, 5, 100)
         dz = ds.domain['dx'][0]
         id0 = 0
         id1 = ds.domain['Nx'][2] // 2
-        
+
         # Calculate EM integrated from z = 200pc
         id2 = id1 + int(z2/dz)
 
@@ -82,13 +82,13 @@ class ExtractData:
         hnu = s.par['radps']['hnu[{0:1d}]'.format(ifreq_ion)]*((1.0*au.eV).cgs.value)
 
         ds = s.load_vtk(num=num, load_method='pyathena_classic')
-        
+
         #print(ds.domain)
         bins_nH = np.linspace(-5, 4, 61)
         bins_U = np.linspace(-6, 1, 61)
         bins_z = np.linspace(ds.domain['left_edge'][2], ds.domain['right_edge'][2], ds.domain['Nx'][2]//16 + 1)
         #print(bins_nH, bins_U, bins_z)
-        
+
         nH = ds.read_all_data('density').flatten()
         Erad0 = ds.read_all_data('Erad0').flatten() # cgs unit
         xn = ds.read_all_data('xn').flatten()
@@ -124,19 +124,19 @@ class ExtractData:
         # nH_warm PDF weighted by ph_rate or di_rate (all, at |z| < 200pc, above 200 pc)
         hdi, bedi, _ = plt.hist(np.log10(nHw[~ma]), bins=bins_nH, weights=di_rate[~ma], alpha=0.3, color='C0');
         hph, beph, _ = plt.hist(np.log10(nHw[~ma]), bins=bins_nH, weights=ph_rate[~ma], color='green', histtype='step');
-        hdi_lz, bedi_lz, _ = plt.hist(np.log10(nHw[wlz]), bins=bins_nH, 
+        hdi_lz, bedi_lz, _ = plt.hist(np.log10(nHw[wlz]), bins=bins_nH,
                                       weights=di_rate[wlz], alpha=0.3, color='C0');
-        hph_lz, beph_lz, _ = plt.hist(np.log10(nHw[wlz]), bins=bins_nH, 
+        hph_lz, beph_lz, _ = plt.hist(np.log10(nHw[wlz]), bins=bins_nH,
                                       weights=ph_rate[wlz], color='C0', histtype='step');
-        hdi_hz, bedi_hz, _ = plt.hist(np.log10(nHw[~wlz]), bins=bins_nH, 
+        hdi_hz, bedi_hz, _ = plt.hist(np.log10(nHw[~wlz]), bins=bins_nH,
                                           weights=di_rate[~wlz], alpha=0.3, color='C1');
-        hph_hz, beph_hz, _ = plt.hist(np.log10(nHw[~wlz]), bins=bins_nH, 
+        hph_hz, beph_hz, _ = plt.hist(np.log10(nHw[~wlz]), bins=bins_nH,
                                           weights=ph_rate[~wlz], color='C1', histtype='step');
 
         # Ionization parameter PDF weighted by ph_rate or di_rate (all, at |z| < 200pc, above 200 pc)
         hU, beU, _ = plt.hist(np.log10(Uw), bins=bins_U,
                               weights=nesqw, alpha=0.3, color='C0');
-        hU_lz, beU_lz, _ = plt.hist(np.log10(Uw[wlz]), bins=bins_U, 
+        hU_lz, beU_lz, _ = plt.hist(np.log10(Uw[wlz]), bins=bins_U,
                                     weights=nesqw[wlz], alpha=0.3, color='C1');
         hU_hz, beU_hz, _ = plt.hist(np.log10(Uw[~wlz]), bins=bins_U,
                                     weights=nesqw[~wlz], alpha=0.3, color='C2');
@@ -146,7 +146,7 @@ class ExtractData:
         bczqx = 0.5*(bezqx[1:] + bezqx[:-1])
         bczqy = 0.5*(bezqy[1:] + bezqy[:-1])
         qavg = np.empty_like(bczqx)
-        
+
         for i in range(hzq.shape[0]):
             try:
                 qavg[i] = np.average(10.0**bczqy, weights=hzq[i,:])
@@ -157,7 +157,7 @@ class ExtractData:
         di_rate_zprof_all = (nH*c*sigmad*Erad0ph*dvol).reshape(np.flip(ds.domain['Nx']))
         ph_rate_zprof = np.ma.sum(np.ma.masked_array(ph_rate_zprof_all, ((T < 5e3) | (T > 2e4))), axis=(1,2))
         di_rate_zprof = np.ma.sum(np.ma.masked_array(di_rate_zprof_all, ((T < 5e3) | (T > 2e4))), axis=(1,2))
-        
+
         res = dict(bins_nH=bins_nH, bins_U=bins_U, bins_z=bins_z,
                    hdi=hdi, bedi=bedi,
                    hph=hph, beph=beph,
@@ -167,9 +167,9 @@ class ExtractData:
                    hph_hz=hph_hz, beph_hz=beph_hz,
                    hU=hU, beU=beU,
                    hU_lz=hU_lz, beU_lz=beU_lz,
-                   hU_hz=hU_hz, beU_hz=beU_hz,                   
+                   hU_hz=hU_hz, beU_hz=beU_hz,
                    hzq=hzq, bezqx=bezqx, bezqy=bezqy, bczqx=bczqx, bczqy=bczqy,
                    qavg=qavg,
                    z1d=z1d, ph_rate_zprof=ph_rate_zprof, di_rate_zprof=di_rate_zprof)
-        
+
         return res

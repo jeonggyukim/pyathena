@@ -21,9 +21,9 @@ class Fields():
         for f in freq:
             sigmad[f] = par['opacity']['sigma_dust_{0:s}0'.format(f)]*\
                         s.par['problem']['Z_dust']
-            
+
         dd = ds.get_field(fields)
-        
+
         chi_ext = dict()
         dims = ['x','y','z']
         dtoi = dict(x=0,y=1,z=2)
@@ -35,7 +35,7 @@ class Fields():
                 chi0p = s.par['sixray'][r'chi_x{0:d}p'.format(dtoi[dim]+1)]
                 chi0m = s.par['sixray'][r'chi_x{0:d}m'.format(dtoi[dim]+1)]
                 # print(dim, chi0p, chi0m, end=' ')
-                
+
                 dd['dtau'] = (dd['nH']*sigmad[f]*dx_cgs)
                 dd['taup'] = dd['nH'].cumsum(dim=dim)*sigmad[f]*dx_cgs
                 dd['taum'] = dd.sel(**{dim:dd[dim].max()})['taup'] - dd['taup']
@@ -45,9 +45,9 @@ class Fields():
 
             chi_ext[f] = tmp['x'] + tmp['y'] + tmp['z']
             dd[f'chi_{f}_ext'] = chi_ext[f]
-            
+
         dd = dd.drop(['dtau','taup','taum'])
-        
+
         if 'LW' in freq and 'PE' in freq:
             Erad_PE0 = s.par['cooling']['Erad_PE0']
             Erad_LW0 = s.par['cooling']['Erad_LW0']
@@ -56,5 +56,5 @@ class Fields():
             if self.par['radps']['irayt']:
                 dd['chi_FUV'] = (Erad_PE0*dd['chi_PE'] +
                                  Erad_LW0*dd['chi_LW'])/(Erad_PE0 + Erad_LW0)
-            
+
         return dd

@@ -1,4 +1,3 @@
-
 import glob
 import os
 import string
@@ -51,16 +50,16 @@ def slice(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
             ax=plt.subplot(gs[i,j])
             im=ax.imshow(data,origin='lower')
             if aux.has_key(f):
-                if aux[f].has_key('norm'): im.set_norm(aux[f]['norm']) 
-                if aux[f].has_key('cmap'): im.set_cmap(aux[f]['cmap']) 
-                if aux[f].has_key('clim'): im.set_clim(aux[f]['clim']) 
+                if aux[f].has_key('norm'): im.set_norm(aux[f]['norm'])
+                if aux[f].has_key('cmap'): im.set_cmap(aux[f]['cmap'])
+                if aux[f].has_key('clim'): im.set_clim(aux[f]['clim'])
             extent=slc_data[axis+'extent']
             im.set_extent(extent)
             images.append(im)
             if stars:
-                if j == 0: 
+                if j == 0:
                     scatter_sp(sp,ax,axis=axis,runaway=False,norm_factor=norm_factor)
-                elif j == 1: 
+                elif j == 1:
                     scatter_sp(sp,ax,axis=axis,norm_factor=norm_factor)
             ax.set_xlim(extent[0],extent[1])
             ax.set_ylim(extent[2],extent[3])
@@ -77,12 +76,12 @@ def slice(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
     if stars:
         cax=plt.subplot(gs2[0])
         cbar = colorbar.ColorbarBase(cax, ticks=[0,20,40],
-             cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40), 
+             cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40),
              orientation='vertical')
         cbar.set_label(r'${\rm age [Myr]}$')
 
     axes=fig.axes[:2*nf]
-    if field_label: 
+    if field_label:
       for ax,f in zip(axes[:nf],fields_to_draw):
         if aux.has_key(f):
             if 'label' in aux[f]:
@@ -90,8 +89,8 @@ def slice(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
                 label=lab[:lab.rfind(r'\;')]+'$'
                 ax.text(0.5,0.95,label,size=20,horizontalalignment='center',
                         transform = ax.transAxes,**(texteffect()))
- 
-    if stars: 
+
+    if stars:
         s1=ax.scatter(Lx*2,Lz*2,
           s=np.sqrt(1.e3)/norm_factor,color='k',
           alpha=.8,label=r'$10^3 M_\odot$')
@@ -101,10 +100,10 @@ def slice(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
         s3=ax.scatter(Lx*2,Lz*2,
           s=np.sqrt(1.e5)/norm_factor,
           color='k',alpha=.8,label=r'$10^5 M_\odot$')
- 
+
         ax.set_xlim(x0,x0+Lx)
         ax.set_ylim(y0,y0+Lz);
-        legend=ax.legend((s1,s2,s3),(r'$10^3 M_\odot$',r'$10^4 M_\odot$',r'$10^5 M_\odot$'), 
+        legend=ax.legend((s1,s2,s3),(r'$10^3 M_\odot$',r'$10^4 M_\odot$',r'$10^5 M_\odot$'),
                          scatterpoints = 1, loc='lower left',fontsize='medium',frameon=True)
 
     plt.setp([ax.get_xticklabels() for ax in axes[:2*nf]],visible=False)
@@ -113,7 +112,7 @@ def slice(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
 
     plt.setp(axes[nf:2*nf],'xlabel','x [kpc]')
     plt.setp(axes[0],'ylabel','z [kpc]')
-    if tstamp: 
+    if tstamp:
         plt.setp(axes[0],'title','t=%3d Myr' % tMyr)
     plt.setp(axes[nf],'ylabel','y [kpc]')
     plt.setp([ax.get_xticklabels() for ax in axes[nf:]], visible=True)
@@ -160,12 +159,12 @@ def slice2(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
     for i,axis in enumerate(['y','z']):
         for j,f in enumerate(fields_to_draw):
             ax=plt.subplot(gs[i,j])
-            if f == 'star_particles': 
+            if f == 'star_particles':
                 scatter_sp(sp,ax,axis=axis,norm_factor=norm_factor,type='surf')
-                if axis == 'y': 
+                if axis == 'y':
                     ax.set_xlim(x0,x0+Lx)
                     ax.set_ylim(y0,y0+Lz);
-                if axis == 'z': 
+                if axis == 'z':
                     ax.set_xlim(x0,x0+Lx)
                     ax.set_ylim(x0,x0+Lx)
                 ax.set_aspect(1.0)
@@ -173,9 +172,9 @@ def slice2(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
                 data=slc_data[axis][f]
                 im=ax.imshow(data,origin='lower',interpolation='bilinear')
                 if aux.has_key(f):
-                    if aux[f].has_key('norm'): im.set_norm(aux[f]['norm']) 
-                    if aux[f].has_key('cmap'): im.set_cmap(aux[f]['cmap']) 
-                    if aux[f].has_key('clim'): im.set_clim(aux[f]['clim']) 
+                    if aux[f].has_key('norm'): im.set_norm(aux[f]['norm'])
+                    if aux[f].has_key('cmap'): im.set_cmap(aux[f]['cmap'])
+                    if aux[f].has_key('clim'): im.set_clim(aux[f]['clim'])
 
                 extent=slc_data[axis+'extent']
                 im.set_extent(extent)
@@ -186,7 +185,7 @@ def slice2(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
     for j,(im,f) in enumerate(zip(images,fields_to_draw[1:])):
         ax=plt.subplot(gs[0,j+1])
         divider = make_axes_locatable(ax)
-        cax = divider.append_axes("top", "3%", pad="1%") 
+        cax = divider.append_axes("top", "3%", pad="1%")
         cbar = fig.colorbar(im,cax=cax,orientation='horizontal')
         if aux.has_key(f):
             if 'label' in aux[f]: cbar.set_label(aux[f]['label'])
@@ -196,9 +195,9 @@ def slice2(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
 
     ax=plt.subplot(gs[0,0])
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("top", "3%", pad="1%") 
+    cax = divider.append_axes("top", "3%", pad="1%")
     cbar = colorbar.ColorbarBase(cax, ticks=[0,20,40],
-           cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40), 
+           cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40),
            orientation='horizontal')
     cax.xaxis.tick_top()
     cax.xaxis.set_label_position('top')
@@ -216,7 +215,7 @@ def slice2(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
 
     ax.set_xlim(x0,x0+Lx)
     ax.set_ylim(y0,y0+Lz);
-    legend=ax.legend((s1,s2,s3),(r'$10^3 M_\odot$',r'$10^4 M_\odot$',r'$10^5 M_\odot$'), 
+    legend=ax.legend((s1,s2,s3),(r'$10^3 M_\odot$',r'$10^4 M_\odot$',r'$10^5 M_\odot$'),
                      scatterpoints = 1, loc='lower left',fontsize='medium',frameon=True)
 
     axes=fig.axes
@@ -226,7 +225,7 @@ def slice2(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
 
     plt.setp(axes[nf:2*nf],'xlabel','x [kpc]')
     plt.setp(axes[0],'ylabel','z [kpc]')
-    if tstamp: 
+    if tstamp:
         ax=axes[0]
         ax.text(0.5,0.95,'t=%3d Myr' % tMyr,size=16,horizontalalignment='center',
                 transform = ax.transAxes,**(texteffect()))

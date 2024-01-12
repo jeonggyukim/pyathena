@@ -28,12 +28,12 @@ def get_SFR_mean(df, h, t0_SF=0.0, t1_SF=90.0):
         t0 = h['time'][idx_SF0[0]-1]
     else:
         t0 = h['time'][h['M_sp'] > 1e-2*t0_SF*Mstar_final].values[0]
-        
+
     t1 = h['time'][h['M_sp'] > 1e-2*t1_SF*Mstar_final].values[0]
     print(t0,t1)
     M_sp_t0 = h.loc[h['time'] == t0, 'M_sp'].values
     M_sp_t1 = h.loc[h['time'] == t1, 'M_sp'].values
-    
+
     h_ = h[(h['time'] >= t0) & (h['time'] <= t1)]
     xdata = h_['time'].values - t0
     ydata = h_['M_sp'].values
@@ -56,7 +56,5 @@ def get_SFR_mean(df, h, t0_SF=0.0, t1_SF=90.0):
     res['tdyn'] = df['tdyn']
     res['alpha_vir'] = df['alpha_vir']
     res['eps_ff'] = df['tff']/(df['M']/popt[0])
-    
-    return res
 
-    
+    return res

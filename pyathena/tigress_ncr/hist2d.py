@@ -107,14 +107,14 @@ class Hist2d:
         -------
         Dictionary containing bins, histograms, and time_code.
         """
-        
+
         # Check if bin_fields is not nested
         if not any(isinstance(i, tuple) or isinstance(i, list) for i in bin_fields):
             bin_fields = [bin_fields]
         # Check if weights is not a sequence
         if not (isinstance(weights, tuple) or isinstance(weights, list)):
             weights = [weights]
-            
+
         if bins is None:
             bins = bins_def
 
