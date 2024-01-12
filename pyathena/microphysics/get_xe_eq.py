@@ -2,7 +2,7 @@ from scipy.optimize import brentq
 from .cool import get_xCII, coeff_kcoll_H, coeff_alpha_rr_H, coeff_alpha_gr_H, coolLya, coolRec, coolCII, coolOI
 import numpy as np
 
-                      
+
 def get_xHII(nH, xe, xH2, xeM, T, xi_CR, G_PE, Z_d, zeta_pi, gr_rec):
     """Equilibrium HII fraction assuming xH2=0.0
 
@@ -11,7 +11,7 @@ def get_xHII(nH, xe, xH2, xeM, T, xi_CR, G_PE, Z_d, zeta_pi, gr_rec):
     xi_CR : primary CR ionization rate
     gr_rec : include grain-assisted recombination
     """
-        
+
     kcoll = coeff_kcoll_H(T)
     kcr = (1.5 + 2.3*xH2)*xi_CR
     alpha_rr = coeff_alpha_rr_H(T)
@@ -23,9 +23,9 @@ def get_xHII(nH, xe, xH2, xeM, T, xi_CR, G_PE, Z_d, zeta_pi, gr_rec):
     a = 1.0 + kcoll/alpha_rr
     b = (kcr + zeta_pi - kcoll*nH*(1.0 - xeM))/(alpha_rr*nH) + xeM + alpha_gr/alpha_rr
     c = -(kcr + zeta_pi + xeM*nH*kcoll)/(alpha_rr*nH)
-    
+
     xHII_eq = (-b + np.sqrt(b**2 - 4*a*c))/(2.0*a)
-    
+
     return xHII_eq
 
 def get_xe(xe, xH2, nH, T, xi_CR, G_PE, G_CI, Z_d, Z_g, zeta_pi, gr_rec):
@@ -50,9 +50,8 @@ def get_xe_arr(nH, T, xH2, xeM, xi_CR, G_PE, G_CI, Z_d, Z_g, zeta_pi, gr_rec):
         xCII_ = get_xCII(nH_, xe, xH2, T_, Z_d, Z_g, xi_CR, G_PE, G_CI, 1.6e-4, gr_rec)
         xHII.append(xHII_)
         xCII.append(xCII_)
-    
+
     xHII = np.array(xHII)
     xCII = np.array(xCII)
     xe = xHII + xCII
     return xe, xHII, xCII
-

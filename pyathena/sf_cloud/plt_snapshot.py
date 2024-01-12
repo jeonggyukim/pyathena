@@ -1,4 +1,3 @@
-
 import os.path as osp
 import numpy as np
 import matplotlib.pyplot as plt
@@ -19,7 +18,7 @@ from .load_sim_sf_cloud import load_all_alphabeta
 from .slc_prj import SliceProj
 
 cm_parula = get_cmap_parula()
-cmap = dict(Sigma=cm_parula, Sigma_HI=cm_parula, Sigma_H2=cm_parula, 
+cmap = dict(Sigma=cm_parula, Sigma_HI=cm_parula, Sigma_H2=cm_parula,
             EM='plasma',
             nHn=cmap_apply_alpha('Blues'),
             nH2=cmap_apply_alpha('Blues'),
@@ -45,7 +44,7 @@ label = dict(Sigma=r'$\Sigma\;[M_{\odot}\,{\rm pc}^{-2}]$',
              )
 
 norm = dict(Sigma=LogNorm(1e0,2e3),Sigma_HI=LogNorm(1e0,2e3),
-            Sigma_H2=LogNorm(1e0,2e3), EM=LogNorm(3e1,3e5), 
+            Sigma_H2=LogNorm(1e0,2e3), EM=LogNorm(3e1,3e5),
             nHn=LogNorm(1e-2,3e3),
             nHI=LogNorm(1e-2,3e3),
             nHII=LogNorm(1e-2,3e3),
@@ -57,12 +56,12 @@ norm = dict(Sigma=LogNorm(1e0,2e3),Sigma_HI=LogNorm(1e0,2e3),
 
 class PltSnapshot(object):
     def __init__(self, norm_factor=1.0, agemax_sp=10.0, cmap_sp=plt.cm.OrRd_r):
-        
+
         self.sa, self.r = load_all_alphabeta(force_override=False)
         self.norm_factor = norm_factor
         self.agemax_sp = agemax_sp
         self.cmap_sp = cmap_sp
-    
+
     def plt_models(self, models, labels=None,
                    dt_Myr=[1.0,2.0,4.0,8.0], nums=None, dim='y',
                    field='Sigma', vtk_type='vtk_2d', title=None,
@@ -102,12 +101,12 @@ class PltSnapshot(object):
 
         # print(nums)
         # print(nums_sp)
-        
+
         plt.rcParams['xtick.bottom'] = True
         plt.rcParams['ytick.left'] = True
         plt.rcParams['xtick.top'] = True
         plt.rcParams['ytick.right'] = True
-        
+
         # Create axes
         nr = len(models)
         nc = len(list(nums.values())[0])
@@ -140,12 +139,12 @@ class PltSnapshot(object):
                 if not sp.empty:
                     scatter_sp(sp, ax, dim=dim, kind='prj', cmap=self.cmap_sp,
                                norm_factor=self.norm_factor, agemax=self.agemax_sp)
-        
+
         #self.set_ticks_and_labels(g1[nc*(nr-1)], dim, extent[dim])
         # toggle_xticks(g1[nc*(nr-1)], visible=False)
         # toggle_yticks(g1[nc*(nr-1)], visible=False)
         # self.set_ticks_and_labels(g1[-1], dim, extent[dim], right=True)
-        
+
         for ax in g1:
             ax.xaxis.tick_bottom()
             ax.yaxis.tick_right()
@@ -168,7 +167,7 @@ class PltSnapshot(object):
                                        norm=norm['Sigma'], orientation='vertical')
 
         cb.set_label(r'$\Sigma\;[M_{\odot}\,{\rm pc^{-2}}]$', fontsize=14)
-                
+
         # Add starpar colorbar and legend
         norm_sp = Normalize(vmin=0., vmax=self.agemax_sp)
         bb = g1[2*nc-1].get_position(original=False)
@@ -196,13 +195,13 @@ class PltSnapshot(object):
 
         if title is not None:
             plt.suptitle(title, 0.5, 1.05, ha='center', va='bottom')
-        
+
         self.savefig(name='snapshot-{0:s}-{1:s}-{2:s}.png'.format('-'.join(models), dim, suffix))
 
-        
+
     def plt_model(self, model='B2S4', dt_Myr=[1.0,2.0,4.0,8.0], nums=None, dim='y',
-                  fields=['Sigma','Sigma_HI','Sigma_H2','EM'], 
-                  prj=[True, True, True, True], 
+                  fields=['Sigma','Sigma_HI','Sigma_H2','EM'],
+                  prj=[True, True, True, True],
                   plt_sp=[True, True, True, True], norm_factor=1.0,
                   agemax_sp=10.0, cmap_sp=plt.cm.OrRd_r,
                   force_override=False):
@@ -213,7 +212,7 @@ class PltSnapshot(object):
         dt_Myr : array-like
             (time - time of first SF) of snapshots in Myr
         """
-    
+
         s = self.sa.set_model(model)
         self.rr = self.r.loc[model]
 
@@ -232,7 +231,7 @@ class PltSnapshot(object):
                        axes_pad=0.04, aspect=True, share_all=False, label_mode='1',
                        cbar_mode='edge', cbar_size='4%', cbar_pad='1%')
         self.cbar = []
-        
+
         for ic,num in enumerate(nums): # varying column
             print(num, end=' ')
             # Read data
@@ -297,7 +296,7 @@ class PltSnapshot(object):
             g1[ic].annotate(r'$t=t_{*,0}+$' + r'{0:.1f}'.format(dt_) + r'Myr',
                             (0.05, 0.9), ha='left', xycoords='axes fraction',
                             **texteffect(fontsize=20))
-            
+
         self.set_ticks_and_labels(g1[nc*(nr-1)], dim, dat[kind]['extent'][dim])
         self.savefig(name='snapshot-{0:s}-{1:s}.png'.format(model, dim))
 

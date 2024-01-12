@@ -68,7 +68,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
     def calc_deltay(self, time):
         """
         Function to calculate the y-offset at radial edges of the domain
-        
+
         Parameters
         ----------
         time : float
@@ -78,7 +78,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
         -------
         Delta y = (q*Omega0*Lx*t) mod (Ly)
         """
-        
+
         par = self.par
         domain = self.domain
         u = self.u

@@ -8,7 +8,7 @@ from ..io.read_vtk import read_vtk
 from ..plt_tools.plt_starpar import scatter_sp, colorbar_sp, legend_sp
 
 class PltSnapshot2Panel:
-    
+
     def plt_snapshot_2panel(self, num, name=None, dim='y', agemax_sp=8.0,
                             savdir=None, savfig=True):
 
@@ -61,7 +61,7 @@ class PltSnapshot2Panel:
                                         cbar_kwargs=dict(label=r'${\rm EM}\;[{\rm cm^{-6}\,{\rm pc}}]$'))
         except UnboundLocalError:
             pass
-        
+
         for ax in axes:
             ax.set_aspect('equal')
 

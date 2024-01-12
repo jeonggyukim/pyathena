@@ -115,4 +115,3 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
         return par
     else:
         return o
-

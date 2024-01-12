@@ -63,7 +63,7 @@ class ReadObs():
         # Virial parameter
         df['avir'] = (5.0*(df['sigmav'].values*au.km/au.s)**2\
                       *(df['R'].values*au.pc)/(ac.G*df['M'].values*au.M_sun)).to('')
-        
+
         return df
 
     def get_MD17(self):
@@ -100,7 +100,7 @@ class ReadObs():
 
     def get_Sun18_main_sample(self):
         return self.df['Sun18'].query('Name != "M31" and Name != "M33" and Name != "Antenna"')
-    
+
     def _read_Sun20a(self):
         df = pd.read_fwf(self.files['Sun20a'], skiprows=27,
                          names=['Galaxy','inDisk','fCO120pc','Pturb120pc','PDE120pc',
@@ -119,7 +119,7 @@ class ReadObs():
 
     def get_Sun20a(self):
         return self.df['Sun20a']
-    
+
     def get_Sun20b(self):
         return self.df['Sun20bTA'],self.df['Sun20bTB']
 

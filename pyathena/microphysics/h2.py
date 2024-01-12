@@ -2,7 +2,7 @@ import numpy as np
 
 def calc_xH2eq(nH, xi_H=2.0e-16, k_gr=3.0e-17, zeta_LW=0.0):
     """Calculate equilibrium H2 fraction xH2_eq (Gong et al. 2018)
-    
+
     Parameters
     ----------
     nH : floats
@@ -19,7 +19,7 @@ def calc_xH2eq(nH, xi_H=2.0e-16, k_gr=3.0e-17, zeta_LW=0.0):
     -------
     Equilibrium H2 fraction
     """
-    
+
     a = 2.31*xi_H
     b = -2.0*k_gr*nH - 4.95*xi_H - zeta_LW
     c = nH*k_gr
@@ -28,5 +28,5 @@ def calc_xH2eq(nH, xi_H=2.0e-16, k_gr=3.0e-17, zeta_LW=0.0):
     one_minus_sqrt = np.where((4.0*a*c)/b**2 < 1e-6,
                               (2.0*a*c)/b**2,
                               1.0 - np.sqrt(1 - (4.0*a*c)/b**2))
-    
+
     return -b/(2.0*a)*one_minus_sqrt

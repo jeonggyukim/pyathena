@@ -41,7 +41,7 @@ def parse_par(rstfile):
         if fp.tell() == eof: break
         sp=line.split('=')
         if len(sp) >= 2:
-            
+
             field=sp[0].strip()
             sp2="=".join(sp[1:]).split('#')
             value=sp2[0].strip()

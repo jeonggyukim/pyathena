@@ -45,7 +45,7 @@ def plot_projection(surfname,starfname,field='rho',
     y0=extent[2]
     Lx=extent[1]-extent[0]
     Lz=extent[3]-extent[2]
- 
+
     ax=plt.subplot(gs[:,0])
     im=ax.imshow(frb[field],origin='lower')
     im.set_extent(extent)
@@ -69,7 +69,7 @@ def plot_projection(surfname,starfname,field='rho',
              cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40),
              orientation='vertical')
       cbar.set_label(r'${\rm age [Myr]}$')
- 
+
       s1=ax.scatter(Lx*2,Lz*2,
         s=np.sqrt(1.e3)/norm_factor,color='k',
         alpha=.8,label=r'$10^3 M_\odot$')
@@ -82,7 +82,7 @@ def plot_projection(surfname,starfname,field='rho',
 
       ax.set_xlim(x0,x0+Lx)
       ax.set_ylim(y0,y0+Lz);
-      legend=ax.legend((s1,s2,s3),(r'$10^3 M_\odot$',r'$10^4 M_\odot$',r'$10^5 M_\odot$'), 
+      legend=ax.legend((s1,s2,s3),(r'$10^3 M_\odot$',r'$10^4 M_\odot$',r'$10^5 M_\odot$'),
                         loc=2,ncol=3,bbox_to_anchor=(0.0, 1.15),
                         fontsize='medium',frameon=True)
 
@@ -144,10 +144,10 @@ def plot_projection_Z(surfname,starfname,stars=True,writefile=True,runaway=True,
     if stars:
       cax=plt.subplot(gs[1,2])
       cbar = colorbar.ColorbarBase(cax, ticks=[0,20,40],
-             cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40), 
+             cmap=plt.cm.cool_r, norm=Normalize(vmin=0,vmax=40),
              orientation='vertical')
       cbar.set_label(r'${\rm age [Myr]}$')
- 
+
       s1=ax1.scatter(Lx*2,Lz*2,
         s=np.sqrt(1.e3)/norm_factor,color='k',
         alpha=.8,label=r'$10^3 M_\odot$')

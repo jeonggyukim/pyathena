@@ -1,4 +1,3 @@
-
 from astropy.convolution import convolve, convolve_fft
 from astropy.convolution import Gaussian1DKernel, Gaussian2DKernel
 import numpy as np

@@ -14,7 +14,7 @@ class DustPol:
     """
     Methods to calculate dust polarization map projected onto x-y, y-z, x-z planes
     """
-        
+
     @LoadSim.Decorators.check_pickle
     def read_IQU(self, num, los=('x','y','z'),
                  prefix='dust_pol', savdir=None, force_override=False):
@@ -22,21 +22,21 @@ class DustPol:
         ds, dd = self.get_field_dust_pol(num)
 
         return self.calc_IQU(ds, dd, los=los)
-    
+
     def get_field_dust_pol(self, num):
         self.logger.info('[DustPol.get_field]: reading vtk data..')
         ds = self.load_vtk(num)
         dd = self.ds.get_field(field=['nH', 'Bx', 'By', 'Bz'])
-        
+
         return ds, dd
-   
+
     def calc_IQU(self, ds, dd, los,
                  Td=18.0*au.K, p0=0.2,
                  sigmad=1e-26*au.cm**2, nu=353*au.GHz):
         """
         Td : Dust temperature
         p0 : intrisic polarization fraction
-        sigmad: Dust opacity tau_353/NH ~ 1.2e-26 cm^2 
+        sigmad: Dust opacity tau_353/NH ~ 1.2e-26 cm^2
             (from Planck XX, DOI: 10.1051/0004-6361/201424086)
         """
 
@@ -49,21 +49,21 @@ class DustPol:
         from astropy.modeling import models
         bb = models.BlackBody(temperature=Td)
         Bnu = bb(nu)
-        
+
         I = dict()
         Q = dict()
         U = dict()
         NH = dict()
         B1proj = dict()
         B2proj = dict()
-        
+
         for dim in los:
             dx_cgs = ds.domain['dx'][axis_idx[dim]]*self.u.length.cgs.value
             B1 = dd[los[dim]['B1']]
             B2 = dd[los[dim]['B2']]
             B3 = dd[los[dim]['B3']]
 
-            # Bperp_sq = B1*B1 + B2*B2 
+            # Bperp_sq = B1*B1 + B2*B2
             # cos(2phi) = (B2*B2 - B1*B1)/Bperp_sq
             # sin(2phi) = -2.0*B1*B2/Bperp_sq
             Bperp_sq = B1**2 + B2**2
@@ -125,7 +125,7 @@ class DustPol:
             if polvec:
                 plt.quiver(x[::Nskip], y[::Nskip],
                            np.cos(ang)[::Nskip,::Nskip], np.sin(ang)[::Nskip,::Nskip],
-                           headwidth=0, headlength=0, headaxislength=0, 
+                           headwidth=0, headlength=0, headaxislength=0,
                            pivot='mid', color='r', scale=20, width=0.0075)
 
             plt.xlim(domain['le'][0], domain['re'][0])
@@ -136,7 +136,7 @@ class DustPol:
         plt.tight_layout()
         plt.subplots_adjust(wspace=None, hspace=None)
         plt.suptitle(self.basename + '  t={0:4.1f}'.format(sp.time))
-        
+
         if savefig:
             savdir = osp.join(self.savdir, 'dust_pol')
             if not osp.exists(savdir):
@@ -162,19 +162,19 @@ class DustPol:
             hdr['dx'] = (domain['dx'][0]*pc, 'pc')
             hdr['dy'] = (domain['dx'][1]*pc, 'pc')
             hdr['dz'] = (domain['dx'][2]*pc, 'pc')
-            
+
             hdr['time'] = (r['time']*self.u.Myr, 'Myr')
             hdr['nu'] = (r['nu'], 'GHz')
             hdr['Td'] = (r['Td'], 'K')
             hdr['sigmad'] = (r['sigmad'], 'cm^2/H')
-            
+
             hdu = fits.PrimaryHDU(header=hdr)
 
             return hdu
 
         r = self.read_IQU(num)
 
-        fitsname = osp.join(self.savdir, 'dust_pol', 
+        fitsname = osp.join(self.savdir, 'dust_pol',
                             self.problem_id + '.{0:04}.fits'.format(num))
         self.logger.info('Save fits file to {0:s}'.format(fitsname))
         hdul = fits.HDUList()

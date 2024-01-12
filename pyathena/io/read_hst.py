@@ -72,8 +72,8 @@ def _get_hst_var(filename):
         h = f.readline()
         h = f.readline()
 
-    vlist = re.split("\[\d+]\=|\n", h)
+    vlist = re.split(r"\[\d+]\=|\n", h)
     for i in range(len(vlist)):
-        vlist[i] = re.sub("\s|\W", "", vlist[i])
+        vlist[i] = re.sub(r"\s|\W", "", vlist[i])
 
     return vlist[1:-1]

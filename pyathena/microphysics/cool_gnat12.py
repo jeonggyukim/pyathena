@@ -4,7 +4,7 @@
 import os
 import os.path as osp
 import periodictable as ptbl
-import pathlib 
+import pathlib
 import re
 import numpy as np
 import pandas as pd
@@ -22,12 +22,12 @@ class CoolGnat12(object):
         temp : float array
             tempreature array (10^4 K to 10^8 K)
         cool_cie : float array
-            cooling 
+            cooling
         ion_frac : float array
-            cooling 
+            cooling
     """
     def __init__(self, abundance='Asplund09', read_all=True):
-        
+
         # Directory where Gnat & Ferland (2012) Table 2 and CIE ion fraction
         # table in Gnat & Sternberg (2007) is located
         self.basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
@@ -40,7 +40,7 @@ class CoolGnat12(object):
         except FileNotFoundError:
             print('Download tables with download_data() method')
             raise
-        
+
         self.temp = self.ion_frac['temp']
         self.cool_cie = {}
         self.cool_cie_per_ion = {}
@@ -56,11 +56,11 @@ class CoolGnat12(object):
 
         # self.cool_cie_tot = self.get_cool_cie_total()
         self.get_cool_cie_total()
-        
+
     def _read_ion_frac_table(self):
         """Read Gnat & Sternberg (2007) CIE ion fractions
         """
-        
+
         fname = osp.join(self.basedir, 'Gnat_Sternberg07_cie_ion_frac.txt')
         fp = open(fname,'r')
         lines = fp.readlines()
@@ -77,20 +77,20 @@ class CoolGnat12(object):
 
         for f in fields:
             ion_frac[f] = np.empty(nlines)
-            
+
         for iline,l in enumerate(lines[125:]):
             sp = l.split()
             nfields = len(sp)
             if nfields == len(fields):
                 for ifield in range(nfields):
                     ion_frac[fields[ifield]][iline] = sp[ifield]
-                    
+
         return pd.DataFrame(ion_frac)
 
     def _read_table2(self):
         """Read Gnat & Ferland (2012) Table 2
         """
-        
+
         fname = osp.join(self.basedir, 'Gnat_Ferland12_Table2.txt')
         fp = open(fname,'r')
 
@@ -129,12 +129,12 @@ class CoolGnat12(object):
         for e in elements:
             nstate = self.info.loc[e]['number'] + 1
             A = self.info.loc[e]['abd']
-            
+
             for i in range(nstate):
                 xe[e] += A*i*self.ion_frac[e + str(i)].values
                 cool[e] += A*self.ion_frac[e + str(i)].values*self.cool_cie_per_ion[e][:,i]
 
-            
+
         for e in elements:
             xe_tot += xe[e]
             cool_tot += cool[e]
@@ -151,15 +151,15 @@ class CoolGnat12(object):
         element : str
             Name of ion (e.g., )
         """
-        
+
         nstate = self.info.loc[element]['number'] + 1
         if not element in self.cool_cie:
             cool_cie_ion, cool_cie = self._read_cool_cie_table(element)
             self.cool_cie[element] = cool_cie
             self.cool_cie_per_ion[element] = cool_cie_ion
-            
+
         return self.cool_cie[element]
-    
+
     def _read_cool_cie_table(self, element):
         element = self.info.loc[element]
         nstate = element['number'] + 1
@@ -179,19 +179,19 @@ class CoolGnat12(object):
         for i in range(nstate):
             cie_new[:,i] = np.interp(temp,cie[:,0],cie[:,i+1])
         cool_tot_new = np.interp(temp,cie[:,0],cie[:,-1])
-        
+
         return cie_new,cool_tot_new
-        
+
     def download_data(self, url='http://wise-obs.tau.ac.il/~orlyg/ion_by_ion/'):
         """Download ion-by-ion cooling efficiency tables
         """
-        
+
         import bs4
         import requests
         datadir = osp.join(self.basedir, 'Gnat_Ferland12_tables')
         if not osp.isdir(datadir):
             os.mkdir(datadir)
-        
+
         r = requests.get(url)
         data = bs4.BeautifulSoup(r.text, "html.parser")
         for l in data.find_all("a"):
@@ -203,7 +203,7 @@ class CoolGnat12(object):
                     with open(filename, 'wb') as f:
                         f.write(r.content)
                         print('Downloading... {} to {}'.format(l['href'], filename))
-                        
+
         os.rename(osp.join(datadir,'Aluminium.txt'),
                   osp.join(datadir,'Aluminum.txt'))
 
@@ -223,13 +223,13 @@ class CoolGnat12(object):
             count = int(n/ints[i])
             res.append(nums[i]*count)
             n -= ints[i] * count
-            
+
         return ''.join(res)
 
     def plt_ion_frac(self, element, ax=None, **plt_kwargs):
         if ax is None:
             ax = plt.gca()
-        
+
         for i in range(self.info.loc[element]['number'] +1 ):
             ax.loglog(self.ion_frac['temp'], self.ion_frac['{}{}'.format(element,i)],
                        label='{}{}'.format(element, self.num_to_roman(i+1)), **plt_kwargs)
@@ -249,7 +249,7 @@ class CoolGnat12(object):
                     cool_cie_ion = A*self.cool_cie_per_ion[element][:,i]*\
                                   self.ion_frac['{}{}'.format(element, i)]
                     plt.loglog(self.temp, cool_cie_ion, c=l.get_color(), ls=':')
-                    
+
         return cool_tot*A
 
     def plt_cool_cie_ion(self, element, ion_by_ion=True, noplt=False):
@@ -264,20 +264,20 @@ class CoolGnat12(object):
                     cool_cie_ion = A*self.cool_cie_per_ion[element][:,i]*\
                                   self.ion_frac['{}{}'.format(element, i)]
                     plt.loglog(self.temp, cool_cie_ion, c=l.get_color(), ls=':')
-                    
+
         return cool_tot*A
 
 
-    
+
     # def plt_cool_cie(self,
     #                  elements=['H','He','C','N','O','Ne','Mg','Si','S','Fe'],
     #                  ax=None, ion_by_ion=True, no_plt=False, **plt_kwargs):
     #     if ax is None:
     #         ax = plt.gca()
-            
+
     #     cool_tot = np.zeros_like(self.temp)
     #     for element in elements:
-    #         cool_tot += plt_cool_cie_ion(tbl, element, 
+    #         cool_tot += plt_cool_cie_ion(tbl, element,
     #                                               ion_by_ion=ion_by_ion, noplt=noplt)
     #     plt.plot(tbl.temp, cool_tot, '-', c='grey', lw=2, **plt_kwargs)
     #     plt.ylim(bottom=1e-25)
@@ -285,5 +285,3 @@ class CoolGnat12(object):
     #         plt.legend()
 
     #     return cool_tot
-
-        

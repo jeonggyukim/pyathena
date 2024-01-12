@@ -67,7 +67,7 @@ class PDF:
                     rr[k]['H'] += r[k]['H']
                     rr[k]['Hw'] += r[k]['Hw']
 
-        return rr    
+        return rr
 
     @LoadSim.Decorators.check_pickle
     def read_pdf2d(self, num,
@@ -75,7 +75,7 @@ class PDF:
                    weight_fields=None,
                    bins=None, prefix='pdf2d',
                    savdir=None, force_override=False):
-        
+
         bin_fields_def = [['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'], ['nH', 'pok'],
                           ['nH', 'T']]
         weight_fields_def = ['nH', '2nH2', 'nHI', 'nHII',
@@ -144,7 +144,7 @@ class PDF:
         # res[k]['MHII'] = Hw
 
         res['time_code'] = ds.domain['time']
-        
+
         return res
 
     def plt_pdf2d(self, ax, dat, bf='nH-pok',

@@ -1,4 +1,4 @@
-import os 
+import os
 import os.path as osp
 import astropy.units as au
 import astropy.constants as ac
@@ -39,7 +39,7 @@ class CloudEvol(Cloud):
         self.phot = phot
 
         self.selfg_shell = selfg_shell
-        
+
         # initial value of ycrit
         self.ycrit_M = -np.inf
         self.ycrit_A = -np.inf
@@ -62,7 +62,7 @@ class CloudEvol(Cloud):
         R = 0.5*(3.0 - alpha)/(2.0 - alpha)*\
             (1.0 - Mach**(2.0*(2.0 - alpha)))/(1.0 - Mach**(2.0*(3.0 - alpha)))
         return np.sqrt(np.log(1.0 + R*Mach**2/4.0))
-    
+
     def get_ycrit(self):
         if self.SFE > 0.0:
             # Mean value of (circum-cluster) surface density
@@ -108,7 +108,7 @@ class CloudEvol(Cloud):
             self.Phi=(self.Qi/(4.0*np.pi*self.R**2)).to('cm**(-2)/s')
             self.nHII=np.sqrt(self.Phi/(self.alphaB*self.Lrec)).to('cm**(-3)')
             self.rhoII=self.muH*self.nHII
-            
+
     @staticmethod
     def ODE(t,y,p):
         cl=p['cl']
@@ -127,11 +127,11 @@ class CloudEvol(Cloud):
             Mdot_star=M_gas*cl.eps_ff/tff0
             Mdot_gas=-Mdot_star-Mdot_evap
             dydt=[Mdot_gas,Mdot_star,Mdot_evap]
-            
+
         cl.update_state(M_gas,M_star,M_of)
         #print cl.ycrit_M,(1.0 - 0.5*(1.0 + erf(cl.ycrit_M)))
         return dydt
-    
+
     def evol_ODE(self):
         """
         rad pressure only
@@ -160,20 +160,20 @@ class CloudEvol(Cloud):
         solver.set_integrator('dopri5',rtol=5e-3,verbosity=1)
         solver.set_initial_value(y0,t0)
         solver.set_f_params(p)
-        
+
         # Repeatedly call the `integrate` method to advance the
         # solution to time t[k], and save the solution in sol[k].
         k=1
         while solver.successful() and solver.t < t[-1]:
             solver.integrate(t[k])
             sol[k]=solver.y
-            
+
             ycrit_M[k]=self.ycrit_M
             # quit if gas fraction is less than 0.5%
             if sol[k][0]/self.M.value < 5e-3:
                 break
             k+=1
-        
+
         if self.radp and not self.phot:
             self.hst=pd.DataFrame([t[0:k],tau[0:k],sol[0:k,0],sol[0:k,1],sol[0:k,2],
                                   ycrit_M[0:k]],
@@ -194,10 +194,10 @@ class CloudEvol(Cloud):
             plt.plot(hst.tau,hst.M_of/M,'r-')
         if self.phot:
             plt.plot(hst.tau,hst.M_evap/M,'r-')
-       
+
         plt.ylim(bottom=0.0)
-        
-        
+
+
 def calc_cloud_evol(radp=True, eps_ff=0.2, p=0.0,
                     sigma_lnSigma=1.0,M=1e5,eta=0.2,Mach=None,
                     selfg_shell=True, force_override=False, verbose=False):
@@ -230,11 +230,11 @@ def calc_cloud_evol(radp=True, eps_ff=0.2, p=0.0,
 
     if not shell_selfgrav:
         fpkl += '-no-selfgrav'
-        
+
     if phot:
         fpkl += '-eta{0:4.2f}'.format(eta)
     fpkl += '.p'
-    
+
     print fpkl
     if not force_override and osp.isfile(fpkl):
         dat=pickle.load(open(fpkl,'rb'))
@@ -255,7 +255,7 @@ def calc_cloud_evol(radp=True, eps_ff=0.2, p=0.0,
 
     if Mach is not None:
         dat['sigma_lnSigma']=Cloud_evol.calc_sigma_lnSigma(Mach)
-    
+
     print 'M',M,'Sigma',
     for S in Sigma:
         print S,
@@ -267,6 +267,6 @@ def calc_cloud_evol(radp=True, eps_ff=0.2, p=0.0,
     for cl in dat['cl']:
         dat['SFE_final'].append(cl.SFE_final)
     dat['SFE_final']=np.array(dat['SFE_final'])
-    
+
     pickle.dump(dat,open(fpkl,'wb'),pickle.HIGHEST_PROTOCOL)
     return dat

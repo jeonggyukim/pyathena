@@ -4,7 +4,7 @@ import numpy as np
 # interp2d doesn't extrapolate as per documentation,
 # instead uses nearest-neighbor
 # https://github.com/scipy/scipy/issues/8099
-    
+
 class GlobalSpline2D(interpolate.interp2d):
     def __init__(self, x, y, z, kind='linear'):
         if kind == 'linear':
@@ -59,7 +59,7 @@ class GlobalSpline2D(interpolate.interp2d):
             return (self.extrap_fd_based_ys if extrap_p > self.y_max else
                     self.extrap_bd_based_ys if extrap_p < self.y_min else [])
         assert False, 'axis unknown'
-        
+
     def __call__(self, x_, y_, **kwargs):
         xs = np.atleast_1d(x_)
         ys = np.atleast_1d(y_)

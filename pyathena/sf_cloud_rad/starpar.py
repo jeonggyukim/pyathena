@@ -27,18 +27,18 @@ class StarPar():
 
         rr = pd.DataFrame(rr)
         return rr
-    
+
     @LoadSim.Decorators.check_pickle
     def read_starpar(self, num, savdir=None, force_override=False):
 
         sp = self.load_starpar_vtk(num)
         if sp.empty:
             return None
-        
+
         u = self.u
         domain = self.domain
         par = self.par
-        
+
         try:
             agemax = par['radps']['agemax_rad']
         except KeyError:
@@ -48,7 +48,7 @@ class StarPar():
         sp['age'] *= u.Myr
         sp['mage'] *= u.Myr
         sp['mass'] *= u.Msun
-        
+
         # Select non-runaway starpar particles with mass-weighted age < agemax_rad
         isrc = np.logical_and(sp['mage'] < agemax,
                               sp['mass'] != 0.0)
@@ -64,5 +64,5 @@ class StarPar():
         r['nstars'] = sp.nstars
         r['isrc'] = isrc
         r['nsrc'] = np.sum(isrc)
-                
+
         return r

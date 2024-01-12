@@ -26,7 +26,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
     """
     Draw slices and projections
     """
-    
+
     plt.rc('font', size=13)
     plt.rc('xtick', labelsize=14)
     plt.rc('ytick', labelsize=14)
@@ -46,14 +46,14 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
     Ly = slc_data['zextent'][1] - slc_data['zextent'][0]
     Lz = slc_data['yextent'][3] - slc_data['yextent'][2]
     # print('x0,y0,Lx,Ly,Lz:', x0, y0, Lx, Ly, Lz)
-    
+
     # Set figure size in inches and margins
     Lz = Lz/zoom
     xsize = 3.0
     zsize = xsize*Lz/Lx
     nf = len(fields_to_draw)
     # print('xsize,zsize', xsize,zsize)
-    
+
     # Need to adjust zmargin depending on number of fields and aspect_ratio
     zfactor = 1.0 + fig_zmargin
     fig = plt.figure(1, figsize=(xsize*nf, zsize + xsize*zfactor))
@@ -71,12 +71,12 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
     if np.abs(slc_data['time']/(time_sp*to_Myr) - 1.0) > 1e-7:
         print('[plot_slice_proj]: Check time time_slc, time_sp', tMyr, time_sp*to_Myr)
         #raise
-    
+
     images = []
     for i, axis in enumerate(['y', 'z']):
         for j, f in enumerate(fields_to_draw):
             ax = plt.subplot(gs[i, j])
-            if f == 'star_particles': 
+            if f == 'star_particles':
                 scatter_sp(sp, ax, axis=axis, norm_factor=sp_norm_factor,
                            type='surf')
                 # if axis == 'y':
@@ -104,7 +104,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
                     #         data /= (1.0*au.pc).cgs.value*(Lz*1e3)
                 else:
                     data = slc_data[axis][f]
-                    
+
                 im = ax.imshow(data, origin='lower', interpolation='bilinear')
                 if f in aux:
                     if 'norm' in aux[f]:
@@ -149,7 +149,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
 
     ax = plt.subplot(gs[0,0])
     divider = make_axes_locatable(ax)
-    cax = divider.append_axes("top", "3%", pad="1%") 
+    cax = divider.append_axes("top", "3%", pad="1%")
     cbar = colorbar.ColorbarBase(cax, ticks=[0,20,40],
                                  cmap=plt.cm.cool_r,
                                  norm=Normalize(vmin=0, vmax=40),
@@ -182,7 +182,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
 
     plt.setp(axes[nf:2*nf],'xlabel', 'x [kpc]')
     plt.setp(axes[0],'ylabel', 'z [kpc]')
-    if time_stamp: 
+    if time_stamp:
         ax=axes[0]
         ax.text(0.5, 0.95, 't={0:3d} Myr'.format(int(tMyr)), size=16,
                 horizontalalignment='center',
@@ -192,7 +192,7 @@ def plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_to_draw,
     plt.setp([ax.get_yticklabels() for ax in axes[:2*nf:nf]], visible=True)
     plt.setp([ax.xaxis.get_majorticklabels() for ax in axes[nf:2*nf]], rotation=45)
 
-    
+
     #pngfname=fname_slc+'ng'
     #canvas = mpl.backends.backend_agg.FigureCanvasAgg(fig)
     #canvas.print_figure(pngfname,num=1,dpi=150,bbox_inches='tight')

@@ -16,7 +16,7 @@ def static_vars(**kwargs):
         for k in kwargs:
             setattr(func, k, kwargs[k])
         return func
-    
+
     return decorate
 
 
@@ -58,16 +58,16 @@ def plt_avir_compare(models=['B8S4', 'B2S4', 'B1S4', 'B05S4']):
     return fig
 
 class Virial:
-        
+
     def get_num_max_virial(self):
         """Maximum snapshot number for which virial analysis will be performed
         """
         h = self.read_hst()
         Mstar_final = max(h['Mstar'].values)
-        
+
         # time at which 90% of star formation occurred
         t_90 = h['time'][h['Mstar'] > 0.9*Mstar_final].values[0]
-        
+
         return int(t_90/self.par['output1']['dt']) + 1
 
     @LoadSim.Decorators.check_pickle
@@ -81,7 +81,7 @@ class Virial:
             print('Max step: ', nummax, end=' ')
 
         #print(int(self.par['problem']['rseed'],self.par['problem']['muB'] == 2.0))
-        
+
         # if (int(np.abs(self.par['problem']['rseed'])) == 5) and \
         #    (self.par['problem']['muB'] == 2.0):
         #     return None
@@ -146,7 +146,7 @@ class Virial:
                                              rr['vrms_z_neu_cl'].values**2)*(au.km/au.s)**2)*\
                                (fac*rr['R50'].values*au.pc))/\
                               (ac.G*rr['Mgas_neu_cl'].values*au.Msun)).to('')
-        
+
         # alpha_vir using velocity dispersion within half mass radius
         rr['avir_obs_x_50'] = ((5.0*(rr['vrms_x_neu_cl_50'].values*au.km/au.s)**2*\
                                 (fac*rr['R50'].values*au.pc))/\
@@ -172,14 +172,14 @@ class Virial:
 
         rr['W_neu_cl_obs_alt'] = (3.0*ac.G*rr['Mgas_neu_cl'].values**2*au.M_sun**2/
                                   (5.0*rr['R_rms_neu_cl'].values*au.pc)).to('erg')
-        
+
         return rr
 
     @staticmethod
     def add_fields_virial(ds, mhd, x0, xCM_neu_cl):
 
         four_PI_inv = 1/(4.0*np.pi)
-        
+
         @static_vars(x0=x0)
         def _dist(field, data):
             return np.sqrt((data["x"] - _dist.x0[0])**2 +
@@ -200,7 +200,7 @@ class Virial:
 
         def _rdotPi_thm_z(field, data):
             return data['z']*data['pressure']
-        
+
         def _rdotPi_x(field, data):
             return data['x']*(data['pressure'] + data['density']*data['velocity_x']**2) +\
                    data['y']*(data['density']*data['velocity_y']*data['velocity_x']) +\
@@ -253,11 +253,11 @@ class Virial:
         def _rho_rsq(field, data):
             return data['density']*data['dist']**2
 
-        
+
         ds.add_field("dist", function=_dist, units="pc", sampling_type='cell',
                      force_override=True)
         ds.add_field("dist_neu_cl", function=_dist_neu_cl, units="pc",
-                     sampling_type='cell', force_override=True)        
+                     sampling_type='cell', force_override=True)
 
         ds.add_field("rdotPi_thm_x", function=_rdotPi_thm_x, units="erg/cm**2",
                      sampling_type='cell', force_override=True)
@@ -291,23 +291,23 @@ class Virial:
         ds.add_gradient_fields(("athena","gravitational_potential"))
 
         return ds
-    
+
     @LoadSim.Decorators.check_pickle
     def read_virial(self, num, Rsph_over_Rcl=1.95,
                     prefix='virial', savdir=None, force_override=False):
         """
-        Function to calculate volume integral of various thermal/magnetic/gravitational 
+        Function to calculate volume integral of various thermal/magnetic/gravitational
         energy terms in virial theorem
         Also calculates center of mass, half mass radius of neutral gas etc.
         """
-        
+
         # Print no log messages
         from yt.funcs import mylog
         mylog.setLevel(50)
-        
+
         ds = self.load_vtk(num, load_method='yt')
         da = ds.all_data()
-        
+
         # Set threshold
         xCL = 'specific_scalar_CL'
         xCL_min = 1e-2     # Cloud gas if xCL > xCL_min
@@ -325,7 +325,7 @@ class Virial:
         idx_neu_cl = (da['xHI'] + 2.0*da['xH2'] > xneu_min) & (da[xCL] > xCL_min)
         idx_ion_cl = (da['xHI'] + 2.0*da['xH2'] <= xneu_min) & (da[xCL] > xCL_min)
         idx_H2_cl = (2.0*da['xH2'] > xH2_min) & (da[xCL] > xCL_min)
-        
+
         # Calculate initial magnetic field
         if self.par['configure']['gas'] == 'hydro':
             mhd = False
@@ -345,7 +345,7 @@ class Virial:
                                np.sin(thetaB)*np.sin(phiB),
                                np.cos(thetaB)])
         print('B0',B0)
-        
+
         # Save results to a dictionary
         r = dict()
 
@@ -420,7 +420,7 @@ class Virial:
             sph_p = ds.sphere(r['xCM_neu_cl'],
                               (r['R{0:d}'.format(p)].value.item(), "pc"))
             idx_p = (sph_p['xHI'] + 2.0*sph_p['xH2'] > xneu_min) & (sph_p[xCL] > xCL_min)
-            
+
             for ax in ('x','y','z'):
                 r[f'vmean_{ax}_neu_cl_{p}'] = \
                     ((sph_p['density']*sph_p[f'velocity_{ax}'])[idx_p].sum()/
@@ -430,7 +430,7 @@ class Virial:
                         r[f'vmean_{ax}_neu_cl_{p}'])**2).sum()/\
                         (sph_p['density'][idx_p].sum())
                 r[f'vrms_{ax}_neu_cl_{p}'] = np.sqrt(r[f'vrms_{ax}_neu_cl_{p}']).to('km/s')
-        
+
         for ax in ('x','y','z'):
             r[f'vmean_{ax}_neu_cl'] = ((da['density']*da[f'velocity_{ax}'])[idx_neu_cl].sum()/
                                        (da['density'][idx_neu_cl]).sum()).to('km/s')
@@ -439,7 +439,7 @@ class Virial:
                                             r[f'vmean_{ax}_neu_cl'])**2).sum()/\
                 (da['density'][idx_neu_cl].sum())
             r[f'vrms_{ax}_neu_cl'] = np.sqrt(r[f'vrms_{ax}_neu_cl']).to('km/s')
-            
+
         Rcl = self.par['problem']['R_cloud']
         sph_ = ds.sphere(x0, (1.99*Rcl, "pc"))
         surf = ds.surface(sph_, "dist", (Rsph_over_Rcl*Rcl, "pc"))
@@ -456,10 +456,10 @@ class Virial:
         vector_area = np.cross(w1, w2)/2*(yu.pc**2).to('cm**2')
         scalar_area = np.linalg.norm(vector_area, axis=1)
         surf_area = scalar_area.sum()
-        
+
         # idx for neutral cloud within sphere
         idx = (sph['xHI'] + 2.0*sph['xH2'] > xneu_min) & (sph[xCL] > xCL_min)
-        
+
         # Surface integral
         if mhd:
             rdotTM = np.column_stack([surf['rdotTM_{0:s}'.format(x)] \
@@ -480,10 +480,10 @@ class Virial:
         # Effective radius # Incorrect
         r['R_rms'] = np.sqrt(5.0/3.0*r['I_E']/r['Mgas_sph']).to('pc')
         r['R_rms_neu_cl'] = np.sqrt(5.0/3.0*r['I_E_neu_cl']/r['Mgas_neu_cl_sph']).to('pc')
-        
+
         # Flux of momentum of inertia
         r['S_surf_sph'] = 0.5*np.sum(vector_area*rhovrsq)
-        
+
         # Surface integral of Reynolds stress
         r['T_surf_sph'] = 0.5*np.sum(vector_area*rdotPi)
         # Surface integral of Reynolds stress (only themal pressure term)
@@ -503,7 +503,7 @@ class Virial:
         r['T_thm_neu_cl'] = 1.5*((da['cell_volume'][idx_neu_cl]*da['pressure'][idx_neu_cl]).sum()).to('erg')
         r['T_kin_neu_cl'] = 0.5*((da['cell_volume'][idx_neu_cl]*da['density'][idx_neu_cl]*
                                       da['velocity_magnitude'][idx_neu_cl]**2).sum()).to('erg')
-        
+
         # Surface integral of Maxwell stress
         if mhd:
             r['M_surf_sph'] = np.sum(vector_area*rdotTM)
@@ -530,7 +530,7 @@ class Virial:
                                    sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)
             # This will be our fiducial choice
             r['M_neu_cl_sph'] = (((sph['magnetic_field_magnitude'][idx]**2 - r['B_surf_avg_mag']**2)*
-                                   sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)        
+                                   sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)
             # Alternative
             r['M_neu_cl_sph_alt'] = (((sph['magnetic_field_magnitude'][idx]**2 - r['B_surf_avg_mag_alt']**2)*
                                    sph['cell_volume'][idx]).sum()).to('erg') / (8.0*np.pi)
@@ -564,7 +564,7 @@ class Virial:
                        sph['y']*sph['gravitational_potential_gradient_y'] +\
                        sph['z']*sph['gravitational_potential_gradient_z'])*
                       sph['cell_volume']).sum().to('erg')
-        
+
         r['W_neu_cl_sph'] = (sph['density'][idx]*\
                              (sph['x'][idx]*sph['gravitational_potential_gradient_x'][idx] +\
                               sph['y'][idx]*sph['gravitational_potential_gradient_y'][idx] +\
@@ -576,11 +576,11 @@ class Virial:
                        da['y']*da['gravitational_potential_gradient_y'] +\
                        da['z']*da['gravitational_potential_gradient_z'])*
                       da['cell_volume']).sum().to('erg')
-        
+
         r['W_neu_cl'] = (da['density'][idx_neu_cl]*\
                          (da['x'][idx_neu_cl]*da['gravitational_potential_gradient_x'][idx_neu_cl] +\
                           da['y'][idx_neu_cl]*da['gravitational_potential_gradient_y'][idx_neu_cl] +\
                           da['z'][idx_neu_cl]*da['gravitational_potential_gradient_z'][idx_neu_cl])*
                          da['cell_volume'][idx_neu_cl]).sum().to('erg')
-        
-        return r        
+
+        return r

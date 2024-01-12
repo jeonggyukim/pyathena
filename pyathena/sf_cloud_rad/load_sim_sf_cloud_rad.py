@@ -373,7 +373,7 @@ class LoadSimSFCloudRadAll(Compare):
 
 
 def load_all_sf_cloud_rad(force_override=False):
-    
+
     models = dict(
         # A series (B=2)
         # A1
@@ -396,7 +396,7 @@ def load_all_sf_cloud_rad(force_override=False):
         A3S3='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S3.N256',
         A3S4='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S4.N256',
         A3S5='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A3.S5.N256',
-        
+
         # A4
         A4S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S1.N256',
         A4S2='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A4.S2.N256',
@@ -469,11 +469,11 @@ def load_all_sf_cloud_rad(force_override=False):
 
         # High resolution
         B2S4_N512='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B2.A2.S4.N512',
-        
+
         # B16
         # B16S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B16.A2.S1.N256.old',
         )
-    
+
     sa = LoadSimSFCloudRadAll(models)
 
     markers = ['o','v','^','s','*']

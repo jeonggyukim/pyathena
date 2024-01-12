@@ -16,7 +16,7 @@ def epsff_KM05(avir, Mach, b=0.5, phi=1, eps=1, beta=np.inf, phix=1.12, multiff=
                 (1.0 + erf((sigma**2 - scrit)/np.sqrt(2.0*sigma**2)))
     else:
         epsff = eps/(2.0*phi)*(1.0 + erf((sigma**2 - 2*scrit)/np.sqrt(8.0*sigma**2)))
-        
+
     return epsff
 
 def epsff_HC11(avir, Mach, b=0.5, phi=1, eps=1, beta=np.inf, ycut=0.1, multiff=True):
@@ -31,7 +31,7 @@ def epsff_HC11(avir, Mach, b=0.5, phi=1, eps=1, beta=np.inf, ycut=0.1, multiff=T
     else:
         scrit_turb = np.pi**2/15.0/ycut*avir
     scrit = np.log(scrit_th + scrit_turb)
-    
+
     return eps/(2.0*phi)*np.exp(3.0/8.0*sigma**2)*\
         (1.0 + erf((sigma**2 - scrit)/np.sqrt(2.0*sigma**2)))
 

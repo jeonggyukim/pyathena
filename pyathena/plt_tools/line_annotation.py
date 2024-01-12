@@ -61,7 +61,7 @@ class LineAnnotation(Annotation):
             xs = xs.value
         if type(ys) == au.quantity.Quantity:
             ys = ys.value
-            
+
         def neighbours(x, xs, ys, try_invert=True):
             inds, = np.where((xs <= x)[:-1] & (xs > x)[1:])
             if len(inds) == 0:
@@ -70,9 +70,9 @@ class LineAnnotation(Annotation):
 
             i = inds[0]
             return np.asarray([(xs[i], ys[i]), (xs[i+1], ys[i+1])])
-        
+
         self.neighbours = n1, n2 = neighbours(x, xs, ys)
-        
+
         # Calculate y by interpolating neighbouring points
         y = n1[1] + ((x - n1[0]) * (n2[1] - n1[1]) / (n2[0] - n1[0]))
 

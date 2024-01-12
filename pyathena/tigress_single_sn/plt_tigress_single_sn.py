@@ -20,15 +20,15 @@ def plt_rprofiles(ds0, ds1, dat0, dat1, r1d=None, j=100):
     # import pyathena as pa
     u = Units()
     cf = coolftn()
-    
+
     muH = 1.4271
     nHeq = cf.heat/cf.cool
     Peq = cf.T1*nHeq*muH
 
-    fig, axes = plt.subplots(2, 3, figsize=(18, 10), 
+    fig, axes = plt.subplots(2, 3, figsize=(18, 10),
                              gridspec_kw=dict(hspace=0.1), constrained_layout=True)
     axes = axes.flatten()
-    
+
     for dat in (dat0, dat1):
         if r1d is None:
             x = np.tile(dat0.x.data[:, None, None], (1, ds0.domain['Nx'][1], ds0.domain['Nx'][2]))
@@ -36,22 +36,22 @@ def plt_rprofiles(ds0, ds1, dat0, dat1, r1d=None, j=100):
             z = np.tile(dat0.z.data[None, None, :], (ds0.domain['Nx'][0], ds0.domain['Nx'][1], 1))
             r3d = np.sqrt(x**2 + y**2 + z**2)
             r1d = r3d.flatten()
-            
+
         d = dat['density'].data.flatten()
         p = dat['pressure'].data.flatten()*u.pok
         c = dat['cool_rate'].data.flatten()
         T = dat['temperature'].data.flatten()
-        
+
         plt_sty = dict(s=2.0, alpha=0.2)
         plt.sca(axes[0])
         plt.scatter(r1d[::j], d[::j], marker='o', **plt_sty)
-        
+
         plt.sca(axes[1])
         plt.scatter(r1d[::j], p[::j], marker='o', **plt_sty)
 
         plt.sca(axes[2])
         plt.scatter(d[::j], p[::j], marker='o', **plt_sty)
-        
+
         plt.sca(axes[3])
         plt.scatter(r1d[::j], c[::j]/d[::j]**2, marker='o', **plt_sty)
 
@@ -60,18 +60,18 @@ def plt_rprofiles(ds0, ds1, dat0, dat1, r1d=None, j=100):
 
         plt.sca(axes[5])
         plt.scatter(T[::j], c[::j]/d[::j]**2, marker='o', **plt_sty)
-    
+
     for ax in (axes[0],axes[1],axes[3],axes[4]):
         plt.sca(ax)
         plt.xlabel(r'$r\;[{\rm pc}]$')
         plt.xscale('linear')
         plt.yscale('log')
         plt.xlim(0, ds0.domain['Lx'][0]/2.5)
-        
+
     plt.sca(axes[0])
     plt.ylim(5e-4, 2e1)
     plt.ylabel(r'$n_{\rm H}$')
-    
+
     plt.sca(axes[1])
     plt.ylim(1e1, 5e7)
     plt.ylabel(r'$P/k_{\rm B}\;[{\rm cm}^{-3}\,{\rm K}]$')
@@ -101,7 +101,7 @@ def plt_rprofiles(ds0, ds1, dat0, dat1, r1d=None, j=100):
     plt.xlabel(r'$T\;[{\rm K}]$')
     plt.ylabel(r'$\Lambda(T)\;[{\rm cm^3\,s^{-1}}]$')
     plt.plot(nHeq, Peq, c='grey', alpha=0.7)
-    
+
     plt.tight_layout()
     plt.suptitle('{0:s} {1:s} time:{2:5.3f}'.format(s0.basename, s1.basename,
                                                     ds0.domain['time']))
@@ -157,5 +157,3 @@ if __name__ == '__main__':
         print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
         print('################################################')
         print('')
-
-        

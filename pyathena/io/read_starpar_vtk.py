@@ -73,13 +73,13 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
         Name of the file to open, including extension
     force_override : bool
         Flag to force read of hst file even when pickle exists
-    
+
     Returns
     -------
     df : dict
         Pandas DataFrame object
     """
-    
+
     fpkl = filename + '.p'
     if not force_override and os.path.exists(fpkl) and \
        os.path.getmtime(fpkl) > os.path.getmtime(filename):
@@ -89,7 +89,7 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
     else:
         if verbose:
             print('[read_starpar_vtk]: pickle does not exist or starpar file updated.' + \
-                      ' Reading {0:s}'.format(filename))    
+                      ' Reading {0:s}'.format(filename))
 
     # Check for existance of file
     if not os.path.isfile(filename):
@@ -161,7 +161,7 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
     star['v3'] = star['v'][:,2]
     star.pop('x')
     star.pop('v')
-    
+
     # Sort id in an ascending order (or age in an descending order)
     if nstars > 1:
         idsrt = star['id'].argsort()
@@ -173,12 +173,12 @@ def read_starpar_vtk(filename, force_override=False, verbose=False):
         df = pd.DataFrame(star)
     except:
         df = pd.DataFrame(index=star.keys())
-        
+
     df.time = time
     df.nstars = nstars
     try:
         df.to_pickle(fpkl)
     except IOError:
         pass
-    
+
     return df

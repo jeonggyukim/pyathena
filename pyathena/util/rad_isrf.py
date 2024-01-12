@@ -17,7 +17,7 @@ def F_E_Dr78(E):
     F(E) : array of floats
         Angle-averaged photon flux [photons / cm^2 / s / sr / eV]
     """
-    
+
     if E is not None and not isinstance(E, au.quantity.Quantity):
         E = (E*au.eV).to(au.eV)
 
@@ -40,9 +40,9 @@ def Jnu_vD82(wav):
     -------
     Jnu : array of float
          Mean intensity Jnu in cgs units
-    
+
     """
-    
+
     if wav is not None and not isinstance(wav, au.quantity.Quantity):
         wav = (wav*au.angstrom).to(au.angstrom)
     else:
@@ -70,18 +70,18 @@ def Jlambda_MMP83(wav):
     # Note that there is a typo at w=3.4 micron
     four_pi_Jlambda = np.array([1.07,1.47,2.04,2.05,1.82,1.24,1.04,0.961,0.917,0.825,0.727,1.3,1.5,1.57,1.53,1.32,
                                 0.926,0.406,0.241,0.189,0.0649,0.0379,0.0176,0.00921,0.00322])*1e-2*unit
-    
+
     #Jnu = (four_pi_Jlambda/(4.0*np.pi*au.sr)*(w**2/ac.c)).to('erg cm-2 s-1 Hz-1 sr-1')
     Jlambda = (four_pi_Jlambda/(4.0*np.pi*au.sr)).to('erg cm-2 s-1 angstrom-1 sr-1')
     #nu = (ac.c/w).to('Hz')
     #f_Jnu = interp1d(w, Jnu, bounds_error=False, fill_value=np.nan)
     f_Jlambda = interp1d(w, Jlambda, bounds_error=False, fill_value=np.nan)
-    
+
     #return f_Jnu(wav)
     return f_Jlambda(wav)
 
 # def Jnu_MMP83(wav):
-    
+
 #     if wav is not None and not isinstance(wav, au.quantity.Quantity):
 #         wav = (wav*au.angstrom).to(au.angstrom)
 #     else:
@@ -95,4 +95,3 @@ def Jlambda_MMP83(wav):
 #              np.where(np.logical_and(wav.value < 1100.0, wav.value >= 912.0),
 #                       1.287e-9*(w*1e-4)**(4.4172), 0.0)
 #     return u_nu*((ac.c/(4.0*np.pi))).cgs.value
-

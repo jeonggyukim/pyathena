@@ -1,4 +1,3 @@
-
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.colors import Normalize, LogNorm
@@ -27,7 +26,7 @@ class Compare(object):
         nc = len(models)
         fig, axes = plt.subplots(nr, nc, figsize=(4.0*nc, 12.5),
                                  gridspec_kw=dict(hspace=0.0, wspace=0.0))
-        
+
         for ic, mdl in enumerate(models):
             s = self.set_model(mdl)
             try:
@@ -53,7 +52,7 @@ class Compare(object):
             except OSError:
                 print('File not found for model {0:s} and num {1:04d}. Skipping'.\
                       format(mdl, num))
-                        
+
         bbox0 = axes[0,0].get_position()
         cax = fig.add_axes([bbox0.x0+0.01, bbox0.y1+0.01,
                             bbox0.x1-bbox0.x0-0.02, 0.02])
@@ -88,12 +87,12 @@ class Compare(object):
                                                       right=(bbox2.x1-0.04, bbox2.y1+0.06)))
         except IndexError:
             pass
-        
+
         plt.subplots_adjust(wspace=None, hspace=None)
         plt.suptitle('time={0:5.2f} '.format(sp.time) + prefix,
                      x=0.7, y=bbox1.y1+0.05,
                      verticalalignment='bottom')
-        
+
         if savefig:
             if prefix is None:
                 prefix = '-'.join(models)
@@ -104,6 +103,5 @@ class Compare(object):
 
             savname = osp.join(savdir, '{0:s}_{1:04d}.png'.format(prefix, num))
             plt.savefig(savname, dpi=200, bbox_inches='tight')
-            
+
         return fig
-    

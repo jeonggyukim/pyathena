@@ -19,7 +19,7 @@ def y_E(Sigma_cl, SFE, x, sigma, Psi):
     """
     Sigma_E_ = Sigma_E(SFE,Psi)
     muM_ = mu_M(Sigma_cl, SFE, x, sigma)
-    
+
     return (np.log(Sigma_E_) - muM_)/(np.sqrt(2.0)*sigma)
 
 def argmax_eps_of(Sigmacl, Psi=2000.0, sigma=1.0, x=1.0):
@@ -37,7 +37,7 @@ def eps_min_max(Sigmacl, Psi=2000.0, sigma=1.0, x=1.0):
             Sigmacl = np.asarray([Sigmacl])
         else:
             Sigmacl = np.asarray(Sigmacl)
-    
+
     eps_min = np.zeros_like(Sigmacl)
     eps_max = np.zeros_like(Sigmacl)
     for i, Sigmacl_ in enumerate(Sigmacl):

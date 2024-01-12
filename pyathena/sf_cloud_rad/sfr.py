@@ -19,9 +19,9 @@ def get_SFR_mean(h, t0_SF=0.0, t1_SF=90.0):
         t0 = h['time'][idx_SF0[0]-1]
     else:
         t0 = h['time'][h.Mstar > 1e-2*t0_SF*Mstar_final].values[0]
-        
+
     t1 = h['time'][h.Mstar > 1e-2*t1_SF*Mstar_final].values[0]
-    
+
     h_ = h[(h['time'] >= t0) & (h['time'] <= t1)]
     xdata = h_['time'].values - t0
     ydata = h_['Mstar'].values
@@ -36,7 +36,5 @@ def get_SFR_mean(h, t0_SF=0.0, t1_SF=90.0):
     res['t1'] = t1
     res['SFR_mean'] = SFR_mean[0]
     res['h'] = h_
-    
-    return res
 
-    
+    return res

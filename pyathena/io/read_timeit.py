@@ -11,7 +11,7 @@ import pandas as pd
 
 def read_timeit(filename, force_override=False, verbose=False):
     """ Function to read timeit log file and pickle
-    
+
     Parameters
     ----------
     filename : string
@@ -51,7 +51,7 @@ def read_timeit(filename, force_override=False, verbose=False):
 
     return tmit
 
-      
+
 def _get_timeit_var(filename):
     """Read variable names from timeit log file
 

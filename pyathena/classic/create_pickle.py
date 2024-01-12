@@ -40,7 +40,7 @@ def create_surface_density(ds,surf_fname):
     '''
         specific function to create pickle file containing surface density
     '''
-    
+
     time = ds.domain['time']*to_Myr
     dx=ds.domain['dx']
 
@@ -54,12 +54,12 @@ def create_surface_density(ds,surf_fname):
     bounds = np.array([le[0],re[0],le[1],re[1]])
     surf_data={'time':time,'data':proj,'bounds':bounds}
     pickle.dump(surf_data,open(surf_fname,'wb'),pickle.HIGHEST_PROTOCOL)
-    
+
 def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
                        force_recal=False, verbose=False):
     """
     Generic function to create pickle file containing projections of field along all axes
-    
+
     Parameters
     ----------
        ds: AthenaDataset
@@ -76,7 +76,7 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
        verbose: bool
           If True, print verbose messages
     """
-    
+
     time = ds.domain['time']*to_Myr
     dx = ds.domain['dx']
 
@@ -85,12 +85,12 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
 
     if aux is None:
         aux = set_aux()
-        
+
     for f in fields:
         fp = f + '_proj'
         if fp in aux and 'weight_field' in aux[fp]:
             weight_fields[f] = aux[fp]['weight_field']
-        
+
     import copy
     field_to_proj = copy.copy(fields)
     # Check if pickle exists and remove existing fields from field_to_proj
@@ -141,7 +141,7 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
             except KeyError:
                 #print('proj field {}: multiplication factor not available in aux.'.format(f))
                 pass
-                
+
             proj_data[axis][f] = proj
         try:
             del pdata
@@ -151,26 +151,26 @@ def create_projections(ds, fname, fields, weight_fields=dict(), aux=None,
 
     if verbose:
         print('')
-    
+
     pickle.dump(proj_data, open(fname, 'wb'), pickle.HIGHEST_PROTOCOL)
-    
+
     return proj_data
 
 def create_slices(ds, fname, fields, force_recal=False, factors={}, verbose=False):
     '''
         generic function to create pickle file containing slices of fields
-    
+
         fields: list of field names to be sliced
-        
+
         factors: multiplication factors for unit conversion
     '''
- 
+
     time = ds.domain['time']*to_Myr
     dx = ds.domain['dx']
     c = ds.domain['center']
     le = ds.domain['left_edge']
     re = ds.domain['right_edge']
-    cidx = pa.cc_idx(ds.domain,ds.domain['center']).astype('int') 
+    cidx = pa.cc_idx(ds.domain,ds.domain['center']).astype('int')
 
     import copy
     field_to_slice = copy.copy(fields)
@@ -178,13 +178,13 @@ def create_slices(ds, fname, fields, force_recal=False, factors={}, verbose=Fals
         slc_data = pickle.load(open(fname,'rb'))
         existing_fields = slc_data['z'].keys()
         for f in existing_fields:
-            if f in field_to_slice: 
+            if f in field_to_slice:
                 #print('Pickle for {} exists'.format(f))
                 field_to_slice.remove(f)
     else:
         slc_data={}
         slc_data['time']=time
-       
+
         for i,axis in enumerate(['x','y','z']):
             bounds = np.array([le[domain_axis[proj_axis[axis][0]]],
                                re[domain_axis[proj_axis[axis][0]]],
@@ -195,7 +195,7 @@ def create_slices(ds, fname, fields, force_recal=False, factors={}, verbose=Fals
 
     if verbose:
         print('making slices...', end='')
-        
+
     for f in field_to_slice:
         if verbose:
             print('{}...'.format(f), end='')
@@ -241,7 +241,7 @@ def create_slices(ds, fname, fields, force_recal=False, factors={}, verbose=Fals
         print('')
 
     pickle.dump(slc_data, open(fname, 'wb'), pickle.HIGHEST_PROTOCOL)
-    
+
     return slc_data
 
 def create_all_pickles_mhd(force_recal=False, force_redraw=False, verbose=True, **kwargs):
@@ -299,8 +299,8 @@ def create_all_pickles_mhd(force_recal=False, force_redraw=False, verbose=True, 
         }
 
         do_task=(tasks['slice'] or tasks['surf'])
-        
-        if verbose: 
+
+        if verbose:
             print('file number: {} -- Tasks to be done ['.format(i),end='')
             for k in tasks: print('{}:{} '.format(k,tasks[k]),end='')
             print(']')
@@ -364,24 +364,24 @@ def create_all_pickles(
        force_redraw: bool
           If True, override existing figures.
        no_save: bool
-          If True, returns a list of matplotlib figure objects instead of 
+          If True, returns a list of matplotlib figure objects instead of
           saving them.
        savdir: str
           Directory to save snapshot. If None, saves in snapshot subdirectory under datadir.
           Default value is None.
        verbose: bool
           Print verbose message
-    
+
     Returns
     -------
        fig: figures
           Returns lists of figure if no_save is True.
     """
-    
+
     aux = set_aux(problem_id)
     _plt_args = dict(zoom=1.0)
     _plt_args.update(**plt_args)
-    
+
     fglob = os.path.join(datadir, problem_id + '.????.vtk')
     fname = sorted(glob.glob(fglob))
     if not fname:
@@ -398,7 +398,7 @@ def create_all_pickles(
     if not fname:
         print('No vtk files are found in {0:s}'.format(datadir))
         raise
-    
+
     if nums is None:
         nums = [int(f[-8:-4]) for f in fname]
         if nums[0] == 0: # remove the zeroth snapshot
@@ -406,14 +406,14 @@ def create_all_pickles(
             del nums[0]
         else:
             start = 0
-            
+
         end = len(fname)
         fskip = 1
         fname = fname[start:end:fskip]
     else:
         nums = np.atleast_1d(nums)
         fname = [fname[i] for i in nums]
-        
+
     #ngrids = len(glob.glob(datadir+'id*/' + id + '*' + fname[0][-8:]))
 
     ds = pa.AthenaDataSet(fname[0])
@@ -431,7 +431,7 @@ def create_all_pickles(
     print('slc: {0:s}'.format(' '.join(fields_slc)))
     print('proj: {0:s}'.format(' '.join(fields_proj)))
     print('draw: {0:s}'.format(' '.join(fields_draw)))
-    
+
     if mhd:
         slc_fields.append('magnetic_field_strength')
         slc_fields.append('mag_pok')
@@ -449,7 +449,7 @@ def create_all_pickles(
 
     print('\n*** Extract slices and projections ***')
     print('- num: ',end='')
-    
+
     for i, f in enumerate(fname):
         print('{}'.format(int(f.split('.')[-2])), end=' ')
         fname_slc = os.path.join(datadir, 'slice', problem_id + f[-9:-4] + '.slice.p')
@@ -470,7 +470,7 @@ def create_all_pickles(
             del ds
             gc.collect()
         #print(fname)
-        
+
     print('')
     print('*** Draw snapshots (zoom {0:.1f}) ***'.format(_plt_args['zoom']))
     print('num: ',end='')
@@ -483,7 +483,7 @@ def create_all_pickles(
 
     if not os.path.isdir(savdir):
         os.mkdir(savdir)
-        
+
     print('savdir:', savdir)
     for i,f in enumerate(fname):
         num = f.split('.')[-2]
@@ -509,7 +509,7 @@ def create_all_pickles(
 
         tasks = dict(slc_proj=(not compare_files(f, savname)) or force_redraw,
                      proj=(not compare_files(f, fname_proj+'ng')) or force_redraw)
-        
+
         do_task = (tasks['slc_proj'] and tasks['proj'])
         if tasks['proj']:
             plot_projection(fname_proj, fname_sp, 'rho', runaway=True,
@@ -523,7 +523,7 @@ def create_all_pickles(
             else:
                 plot_slice_proj(fname_slc, fname_proj, fname_sp, fields_draw,
                                 savname, aux=aux, **_plt_args)
-            
+
     print('')
     print('*** Done! ***')
 

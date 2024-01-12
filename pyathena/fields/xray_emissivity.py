@@ -63,9 +63,9 @@ class XrayEmissivityIntegrator(object):
     table_type : string
         The type of data to use when computing the emissivity values. If "cloudy",
         a file called "cloudy_emissivity.h5" is used, for photoionized
-        plasmas. If, "apec", a file called "apec_emissivity.h5" is used for 
-        collisionally ionized plasmas. These files contain emissivity tables 
-        for primordial elements and for metals at solar metallicity for the 
+        plasmas. If, "apec", a file called "apec_emissivity.h5" is used for
+        collisionally ionized plasmas. These files contain emissivity tables
+        for primordial elements and for metals at solar metallicity for the
         energy range 0.1 to 100 keV.
     redshift : float, optional
         The cosmological redshift of the source of the field. Default: 0.0.
@@ -140,7 +140,7 @@ def get_xray_emissivity(T, Z=1.0, emin=0.5, emax=7.0, table_type='apec', energy=
     x = XrayEmissivityIntegrator(table_type, data_dir=data_dir)
     log_em_0 = x.get_interpolator('primordial', emin, emax, energy=energy)
     log_em_z = x.get_interpolator('metals', emin, emax, energy=energy)
-    
+
     dd = dict(log_nH=0.0, log_T=np.log10(T))
     em_tot = 10.0**log_em_0(dd) + Z*10.0**log_em_z(dd)
     return em_tot

@@ -7,7 +7,7 @@ import astropy.units as au
 def get_fion_P72(Qn, T, sigmad):
     """Function to compute the fraction of ionizing photons absorbed by dust (Petrosian 1972)
     """
-    
+
     alpha = coeff_alpha_rr_H(T)
     taud = (3.0/(4.0*np.pi*alpha))**(1.0/3.0)*Qn**(1.0/3.0)*sigmad
     taud = np.atleast_1d(taud)
@@ -32,20 +32,20 @@ def get_fion_P72(Qn, T, sigmad):
     # fion_P72_alt = y0**3
     if len(fion_P72) == 1:
         fion_P72 = fion_P72[0]
-        
+
     return fion_P72
 
 def get_rIF0(Q, n, T, sigmad, fion=None):
-    """Function to compute initial Stromgren radius for a dusty HII region. 
+    """Function to compute initial Stromgren radius for a dusty HII region.
     If fion is not provided, use P72 formula.
     """
-    
+
     Qn = Q*n
     if fion is None:
         fion = get_fion_P72(Qn, T, sigmad)
-    
+
     print('fion','fion^1/3', fion, fion**(1.0/3.0))
-    
+
     return ((3.0*fion*Q)/(4.0*np.pi*coeff_alpha_rr_H(T)*n**2))**(1.0/3.0)
 
 def get_rIF_D(t, rIF0, T, solution='Hosokawa'):
@@ -55,7 +55,7 @@ def get_rIF_D(t, rIF0, T, solution='Hosokawa'):
     rIF0 in pc
     T in Kel
     """
-    
+
     u = Units()
     cs_ion = (np.sqrt(2.1*ac.k_B*T*au.K/(u.muH*1.008*ac.u))).to('km/s').value
     # print(cs_ion)
@@ -75,11 +75,11 @@ def get_Mion(t, rIF0, T, solution='Hosokawa'):
         rIF = rIF0*(1.0 + 7.0/4.0*cs_ion*t*u.Myr/rIF0)**(4.0/7.0) # Spitzer
     else:
         raise ValueError('Unrecognized solution {0:s}'.format(solution))
-    
+
 def get_Rsh(s, num):
     """Function to calculate shell radius using density peak
     """
-    
+
     r = s.get_profile1d(num, fields_y=['nH'], field_x='r', bins=200, statistic=['mean','median'],
                         force_override=False)
     # print(r.keys())
@@ -95,7 +95,7 @@ def get_Rsh(s, num):
     Rsh1 = x[idx1]
     Rsh2 = x[idx2]
     time = r['time'] # time in Myr
-    
+
     return Rsh1, Rsh2, time
 
 def get_Rsh_all(s):
@@ -114,4 +114,3 @@ def get_Rsh_all(s):
         res['time'].append(time)
 
     return res
-

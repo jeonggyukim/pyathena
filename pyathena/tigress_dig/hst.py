@@ -14,7 +14,7 @@ class Hst:
         # Create savdir if it doesn't exist
         if savdir is None:
             savdir = os.path.join(self.savdir, 'hst')
-            
+
         if not os.path.exists(savdir):
             os.makedirs(savdir)
             force_override = True
@@ -62,7 +62,7 @@ class Hst:
         hst['Sigma_gas'] = hst['mass']/LxLy
 
         if self.par['configure']['ionrad'] == 'ON':
-            # Neutral gas mass in Msun 
+            # Neutral gas mass in Msun
             #hst['Mneu'] = hst['scalar{:d}'.format(domain['IHI'])]*vol*u.Msun
             hst['Mneu'] = hst['scalar0']*vol*u.Msun
 
@@ -113,7 +113,7 @@ class Hst:
 
 
         if self.par['configure']['ionrad'] == 'ON':
-        
+
             # Scale heights of [warm] ionized gas, nesq
             # Check if columns exist
 
@@ -127,7 +127,7 @@ class Hst:
                 hst['H_wnesq'] = np.sqrt(hst['H2wnesq'] / hst['wnesq'])
                 hst.drop(columns=['H2wnesq', 'wnesq'], inplace=True)
 
-            # For warm medium, 
+            # For warm medium,
             # append _ to distinguish from mhd history variable
             if 'H2w' in hst.columns and 'massw' in hst.columns:
                 hst['H_w_'] = np.sqrt(hst['H2w'] / hst['massw'])
@@ -168,7 +168,7 @@ class Hst:
 
         hst.index = hst['time_code']
         #hst.index.name = 'index'
-        
+
         # Merge with mhd history dump
         if merge_mhd:
             hst_mhd = self.read_hst_mhd()
@@ -250,7 +250,7 @@ class Hst:
                     np.sqrt(2*hst['x{}ME'.format(ax)]/hst['mass'])
             h['v{}_2p'.format(ax)] = \
                 np.sqrt(2*hst['x{}KE_2p'.format(ax)]/hst['mass']/h['mf_2p'])
-            
+
         h['cs'] = np.sqrt(hst['P']/hst['mass'])
         h['Pth_mid'] = hst['Pth']*u.pok
         h['Pth_mid_2p'] = hst['Pth_2p']*u.pok/hst['Vmid_2p']
@@ -268,10 +268,10 @@ class Hst:
 
         h.index = h['time_code']
         #h.index.name = 'index'
-        
+
         self.hst_mhd = h
 
         return self.hst_mhd
-    
+
         # return pd.read_pickle(
         #     '/tigress/changgoo/{0:s}/hst/{0:s}.hst_cal.p'.format(self.problem_id))

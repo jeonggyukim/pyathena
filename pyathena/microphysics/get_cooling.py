@@ -23,7 +23,7 @@ def get_cooling_heating(s, ds):
         field_to_read += ['rad_energy_density_LW_ext',
                           'rad_energy_density_PE_ext',
                           'rad_energy_density_LW_diss_ext']
-    
+
     dd = ds.get_field(field_to_read)
 
     # set metallicities
@@ -74,7 +74,7 @@ def get_heating(s,dd):
         Erad_PE += dd['rad_energy_density_PE_ext']
         Erad_LW += dd['rad_energy_density_LW_ext']
         Erad_LW_diss += dd['rad_energy_density_LW_diss_ext']
-    
+
     # normalization factors
     Erad_PE0 = s.par['cooling']['Erad_PE0']/s.u.energy_density.cgs.value
     Erad_LW0 = s.par['cooling']['Erad_LW0']/s.u.energy_density.cgs.value
@@ -93,7 +93,7 @@ def get_heating(s,dd):
         # no H2 photoionization heating was applied before;
         # Makes no practical difference because H2 photoionization is negligible
         dhnu_H2_PH = 0.0
-        
+
     sigma_HI_PH = s.par['opacity']['sigma_HI_PH']
     sigma_H2_PH = s.par['opacity']['sigma_H2_PH']
     hnu_PH = s.par['radps']['hnu_PH']*eV_
