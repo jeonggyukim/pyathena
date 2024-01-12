@@ -95,7 +95,7 @@ class SB99(object):
                  'Edot_SN_IB','Einj_SN_IB', 'Mpgen_typ', 'Mpgen_min',
                  'Edot_tot', 'Einj_tot']
 
-        df = pd.read_csv(self.files['snr'], names=names, skiprows=7, delimiter='\s+')
+        df = pd.read_csv(self.files['snr'], names=names, skiprows=7, delimiter=r'\s+')
         for c in df.columns:
             if c == 'time' or c.startswith('Mpgen'):
                 continue
@@ -117,7 +117,7 @@ class SB99(object):
                  'Mdot_O','Mdot_Mg','Mdot_Si','Mdot_S','Mdot_Fe',
                  'Mdot_wind','Mdot_sn','Mdot_wind_sn','M_tot']
         df = pd.read_csv(self.files['yield'], names=names,
-                         skiprows=7, delimiter='\s+')
+                         skiprows=7, delimiter=r'\s+')
 
         # Normalize by cluster mass
         for c in df.columns:
@@ -137,7 +137,7 @@ class SB99(object):
 
         names = ['time','Edot_all','Edot_OB','Edot_RSG','Edot_LBV','Edot_WR','Einj_all',
                  'pdot_all','pdot_OB','pdot_RSG','pdot_LBV','pdot_WR']
-        df = pd.read_csv(self.files['power'], names=names, skiprows=7, delimiter='\s+')
+        df = pd.read_csv(self.files['power'], names=names, skiprows=7, delimiter=r'\s+')
 
         # Normalize by cluster mass
         for c in df.columns:
@@ -198,7 +198,7 @@ class SB99(object):
                           np.log10(df_dust['Cext']*(1.0 - df_dust['albedo']) + \
                                    (1.0 - df_dust['cos'])*df_dust['Cext']*df_dust['albedo']))
 
-        df = pd.read_csv(self.files['spectrum'], skiprows=6, sep='\s+',
+        df = pd.read_csv(self.files['spectrum'], skiprows=6, sep=r'\s+',
                          names=['time', 'wav', 'logf', 'logfstar', 'logfneb'])
         df = df.rename(columns={'time': 'time_yr'})
         df['time_Myr'] = df['time_yr']*1e-6
@@ -431,7 +431,7 @@ class SB99(object):
         """
         names = ['time_yr', 'Q_HI', 'Lfrac_HI', 'Q_HeI', 'Lfrac_HeI',
                  'Q_HeII', 'Lfrac_HeII', 'logL']
-        df = pd.read_csv(self.files['quanta'], names=names, skiprows=7, delimiter='\s+')
+        df = pd.read_csv(self.files['quanta'], names=names, skiprows=7, delimiter=r'\s+')
         df['time_Myr'] = df['time_yr']*1e-6
 
         # Normalize by cluster mass
@@ -822,7 +822,7 @@ def print_lum_weighted_avg_quantities(rr, tmax=50.0):
     L_LW = rr['L']['LW']
     L_OPT = rr['L']['OPT']
     time = rr['time_yr']
-    print('Luminosity-weighted timescale \int t*L dt/\int L dt:',rr['tdecay_lum'])
+    print('Luminosity-weighted timescale int t*L dt/int L dt:',rr['tdecay_lum'])
     print('Bolometric at t=0:', L_tot[0], L_tot.max(), time[L_tot==L_tot.max()][0]/1e6)
     print('Bolometric at maximum:', L_tot.max())
     print('Time at maximum of Bolometric:', time[L_tot==L_tot.max()][0]/1e6)

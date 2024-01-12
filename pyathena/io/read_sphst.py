@@ -15,7 +15,7 @@ def read_sphst(filename,
                       'metal2', 'metal3', 'metal4', 'metal5', 'metal6'],
                force_override=False, verbose=False):
     """ Function to read athena history file and pickle
-    
+
     Parameters
     ----------
     filename : string
@@ -56,7 +56,7 @@ def read_sphst(filename,
 
     return hst
 
-      
+
 def _get_hst_var(filename):
     """Read variable names from history file
 
@@ -79,8 +79,8 @@ def _get_hst_var(filename):
         h = f.readline()
         h = f.readline()
 
-    vlist = re.split("\[\d+]\=|\n", h)
+    vlist = re.split(r"\[\d+]\=|\n", h)
     for i in range(len(vlist)):
-        vlist[i] = re.sub("\s|\W", "", vlist[i])
+        vlist[i] = re.sub(r"\s|\W", "", vlist[i])
 
     return vlist[1:-1]

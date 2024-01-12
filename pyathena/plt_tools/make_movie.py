@@ -6,7 +6,7 @@ from IPython.display import HTML
 def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
     """(wrapper) function to create an mp4 movie from files matching a glob
     pattern.
-    
+
     Parameters
     ----------
     fname_glob : string (glob)
@@ -14,7 +14,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
     fname_out : string
         Name of mp4 output file
     fps_in : int
-        Frames per second for input 
+        Frames per second for input
     fps_output : int
         Frames per second for output
 
@@ -36,7 +36,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
            '-r', str(fps_out),
            '-pix_fmt', 'yuv420p',
            '-vcodec', 'libx264',
-           '-vf', 'scale=trunc\(iw/2\)*2:trunc\(ih/2\)*2',
+           '-vf', r'scale=trunc\(iw/2\)*2:trunc\(ih/2\)*2',
            '-f', 'mp4', fname_out]
 
     print('[make_movie]: ffmpeg command:')
@@ -56,7 +56,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
         print("\x1b[31m[make_movie]: subprocess.check_output returned:\x1b[0m")
         print(str(e.output, "utf-8"))
         return False
-    
+
 
 def display_movie(filename):
 
