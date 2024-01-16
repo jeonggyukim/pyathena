@@ -5,6 +5,7 @@ import numpy as np
 import pathlib
 import pickle
 import logging
+from scipy.interpolate import interp1d
 
 from pyathena.load_sim import LoadSim
 from pyathena.util.units import Units
@@ -289,6 +290,20 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             # Calculate freefall time at t_coll
             ncoll = cores.attrs['numcoll']
             cores.attrs['tff_coll'] = tools.tfreefall(cores.loc[ncoll].mean_density, self.gconst)
+
+            # Calculate FWHM and mean densities
+            rmax = cores.attrs['rcore']
+            if np.isfinite(rmax):
+                prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+                robs, rhoobs = [], []
+                for num, core in prestellar_cores.iterrows():
+                    rprf = rprofs.sel(num=num)
+                    frho = interp1d(rprf.r.data, rprf.rho.data)
+                    fwhm = tools.fwhm(self, frho, rmax=rmax)
+                    robs.append(fwhm)
+                    rhoobs.append(rprf.menc.interp(r=fwhm).data[()] / (4*np.pi*fwhm**3/3))
+                cores['radius_obs'] = pd.Series(robs, index=prestellar_cores.index)
+                cores['mean_density_obs'] = pd.Series(rhoobs, index=prestellar_cores.index)
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
