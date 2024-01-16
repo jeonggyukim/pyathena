@@ -4,6 +4,7 @@ import pandas as pd
 from scipy.special import erfcinv
 from scipy import odr
 from scipy.optimize import brentq
+from scipy.integrate import quad
 import pathlib
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
@@ -721,6 +722,61 @@ def calculate_accelerations(rprf):
     acc['Fani'] = (dm*acc.ani).cumulative_integrate('r')
 
     return acc
+
+
+def column_density(s, rcyl, frho, rmax=None):
+    """Calculate column density
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+    rcyl : float
+        Cylindrical radius at which the column density is computed
+    frho : function
+        The function rho(r) that returns the volume density at a given
+        spherical radius.
+    rmax : float, optional
+        The maximum radius to integrate out.
+
+    Returns
+    -------
+    dcol : float
+        Column density.
+    """
+    def func(z, rcyl):
+        r = np.sqrt(rcyl**2 + z**2)
+        return frho(r)
+    if rmax is None:
+        rmax = s.Lbox/2
+    zmax = np.sqrt(rmax**2 - rcyl**2)
+    res, _ = quad(func, 0, zmax, args=(rcyl,), epsrel=1e-3)
+    dcol = 2*res
+    return dcol
+
+
+def fwhm(s, frho, rmax=None):
+    """Calculate the FWHM of the column density profile
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+    frho : function
+        The function rho(r) that returns the volume density at a given
+        spherical radius.
+    rmax : float, optional
+        The maximum radius to integrate out.
+
+    Returns
+    -------
+    fwhm : float
+        The FWHM of the column density profile.
+    """
+    if rmax is None:
+        rmax = s.Lbox/2
+    n0 = column_density(s, 0, frho, rmax=rmax)
+    fwhm = 2*brentq(lambda x: column_density(s, x, frho, rmax=rmax) - 0.5*n0,
+                    0, rmax)
+    return fwhm
 
 
 def critical_time(s, pid):
