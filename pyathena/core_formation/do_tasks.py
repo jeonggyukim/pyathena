@@ -12,6 +12,19 @@ if __name__ == "__main__":
     m2 = {f"M10J4P{iseed}N1024": f"/scratch/gpfs/sm69/cores/M10.J4.P{iseed}.N1024" for iseed in range(0, 7)}
     m3 = {f"M5J2P{iseed}N256": f"/scratch/gpfs/sm69/cores/M5.J2.P{iseed}.N256" for iseed in range(0, 1)}
     models = {**m1, **m2, **m3}
+
+    # MHD models
+    for iseed in [1,]:
+        models[f"M5J2P{iseed}N512m"] = f"/scratch/gpfs/sm69/cores/mhd.M5.J2.P{iseed}.N512"
+
+    # Experimental
+    models['M5J2P0N256bug'] = "/scratch/gpfs/sm69/cores/debug-OTL/M5.J2.P0.N256.bug"
+    models['M5J2P0N256fix'] = "/scratch/gpfs/sm69/cores/debug-OTL/M5.J2.P0.N256.fix"
+    models['M3J4P1N1024'] = "/tigress/sm69/M3.J4.P1.N1024"
+    models['M30J4P1N1024'] = "/tigress/sm69/M30.J4.P1.N1024"
+    models['M10J2P1N512'] = "/scratch/gpfs/sm69/cores/M10.J2.P1.N512"
+    models['M15J2P1N512'] = "/scratch/gpfs/sm69/cores/M15.J2.P1.N512"
+    models['M15J2P1N1024'] = "/scratch/gpfs/sm69/cores/M15.J2.P1.N1024"
     sa = pa.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
@@ -199,7 +212,7 @@ if __name__ == "__main__":
             srcdir = Path(s.savdir, "figures")
             plot_prefix = [
 #                    config.PLOT_PREFIX_PDF_PSPEC,
-#                    config.PLOT_PREFIX_SINK_HISTORY,
+                    config.PLOT_PREFIX_SINK_HISTORY,
                           ]
             for prefix in plot_prefix:
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
