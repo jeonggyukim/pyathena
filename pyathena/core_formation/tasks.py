@@ -413,7 +413,7 @@ def plot_sink_history(s, num, overwrite=False):
     if fname.exists() and not overwrite:
         print('[plot_sink_history] file already exists. Skipping...')
         return
-    ds = s.load_hdf5(num, load_method='yt')
+    ds = s.load_hdf5(num, quantities=['dens',], load_method='pyathena')
     pds = s.load_partab(num)
     fig = plots.plot_sinkhistory(s, ds, pds)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
