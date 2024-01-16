@@ -749,7 +749,7 @@ def column_density(s, rcyl, frho, rmax=None):
     if rmax is None:
         rmax = s.Lbox/2
     zmax = np.sqrt(rmax**2 - rcyl**2)
-    res, _ = quad(func, 0, zmax, args=(rcyl,), epsrel=1e-3)
+    res, _ = quad(func, 0, zmax, args=(rcyl,), epsrel=1e-2, limit=200)
     dcol = 2*res
     return dcol
 
