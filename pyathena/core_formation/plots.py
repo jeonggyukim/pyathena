@@ -796,9 +796,9 @@ def plot_sinkhistory(s, ds, pds):
         phst = s.load_parhst(pid)
         time = phst.time
         mass = phst.mass
-        tslc = time < ds.current_time
+        tslc = time < ds.Time
         plt.plot(time[tslc], mass[tslc])
-    plt.axvline(ds.current_time, linestyle=':', color='k', linewidth=0.5)
+    plt.axvline(ds.Time, linestyle=':', color='k', linewidth=0.5)
     if len(s.tcoll_cores) > 0:
         plt.xlim(s.tcoll_cores.time.iloc[0], tend)
     plt.ylim(1e-2, 1e1)
