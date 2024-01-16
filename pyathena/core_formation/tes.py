@@ -481,7 +481,7 @@ class TESc:
                 return sigv
 
             self.xi_s = brentq(lambda x: get_sigv(x, p)-sigma_r,
-                               self.get_min_xi_s(), 999)
+                               self.get_min_xi_s(), 1e5)
 
     def solve(self, xi):
         """Solve equilibrium equation
@@ -653,7 +653,7 @@ class TESc:
         return sigv
 
     def get_min_xi_s(self, atol=1e-4):
-        a = 0.01
+        a = 1e-3
         b = 999
 
         def f(x):
@@ -1096,69 +1096,54 @@ if __name__ == "__main__":
     central density, for different sonic radii.
     """
 
-#    for pindex in [0.01, 0.3, 0.5, 0.7, 0.99]:
-#        critical_mass, critical_radius, critical_density = [], [], []
-#        velocity_dispersion = []
-#        tsc = TESc(p=pindex)
-#        rsonic_min = tsc.get_min_xi_s()
-#        rsonic = np.logspace(np.log10(rsonic_min), 4, 4096)
-#        for xi_s in rsonic:
-#            tsc = TESc(xi_s=xi_s, p=pindex)
-#            rcrit = tsc.get_rcrit('tot')
-#            if np.isnan(rcrit):
-#                dcrit = np.nan
-#                mcrit = np.nan
-#                sigv = np.nan
-#            elif np.isinf(rcrit):
-#                dcrit = 0
-#                mcrit = np.infty
-#                sigv = np.infty
-#            else:
-#                u, du = tsc.solve(rcrit)
-#                dcrit = np.exp(u)
-#                mcrit = tsc.get_mass(rcrit)
-#                sigv = tsc.get_sigma()
-#
-#            critical_density.append(dcrit)
-#            critical_radius.append(rcrit)
-#            critical_mass.append(mcrit)
-#            velocity_dispersion.append(sigv)
-#
-#        critical_density = np.array(critical_density)
-#        critical_radius = np.array(critical_radius)
-#        critical_mass = np.array(critical_mass)
-#        velocity_dispersion = np.array(velocity_dispersion)
-#        res = dict(rsonic=rsonic,
-#                   dcrit=critical_density,
-#                   rcrit=critical_radius,
-#                   mcrit=critical_mass,
-#                   sigv=velocity_dispersion)
-#        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_p{}.p".format(pindex)
-#        with open(fname, "wb") as handle:
-#            pickle.dump(res, handle)
-
     for pindex in [0.3, 0.5, 0.7]:
-        print(f"Processing pindex {pindex}")
-        sonic_radius, critical_contrast, critical_radius, critical_mass = [], [], [], []
-        velocity_dispersion = np.logspace(-1, 2, 256)
-        for sigma_r in velocity_dispersion:
-            tse = TESe(p=pindex, sigma_r=sigma_r)
-            uc, rc, mc = tse.get_crit()
-            fe = 1 + (rc/tse.xi_s)**(2*tse.p)
-            sonic_radius.append(tse.xi_s)
-            critical_contrast.append(fe*np.exp(uc))
-            critical_radius.append(rc/np.sqrt(fe))
-            critical_mass.append(mc/np.sqrt(fe))
-        sonic_radius = np.array(sonic_radius)
-        critical_contrast = np.array(critical_contrast)
-        critical_radius = np.array(critical_radius)
-        critical_mass = np.array(critical_mass)
-
-        res = dict(dcrit=critical_contrast,
-                   rcrit=critical_radius,
-                   mcrit=critical_mass,
-                   rsonic=sonic_radius,
-                   sigv=velocity_dispersion)
-        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_TESe_p{}.p".format(pindex)
+        contrast, radius, mass, rsonic = [], [], [], []
+        velocity_dispersions = np.logspace(np.log10(0.1), np.log10(20), 100)
+        for sigma in velocity_dispersions:
+            print(f"p={pindex}, sigma={sigma}")
+            tsc = TESc(p=pindex, sigma_r=sigma)
+            rcrit = tsc.get_rcrit('tot')
+            mcrit = tsc.get_mass(rcrit)
+            u, du = tsc.solve(rcrit)
+            contrast.append(-u)
+            radius.append(rcrit*2*np.pi)
+            mass.append(mcrit*np.pi**1.5)
+            rsonic.append(tsc.xi_s*2*np.pi)
+        contrast = np.array(contrast)
+        radius = np.array(radius)
+        mass = np.array(mass)
+        rsonic = np.array(rsonic)
+        res = dict(ucrit=contrast,
+                   rcrit=radius,
+                   mcrit=mass,
+                   rsonic=rsonic,
+                   sigma=velocity_dispersions)
+        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_p{}.p".format(pindex)
         with open(fname, "wb") as handle:
             pickle.dump(res, handle)
+
+#    for pindex in [0.3, 0.5, 0.7]:
+#        print(f"Processing pindex {pindex}")
+#        sonic_radius, critical_contrast, critical_radius, critical_mass = [], [], [], []
+#        velocity_dispersion = np.logspace(-1, 2, 256)
+#        for sigma_r in velocity_dispersion:
+#            tse = TESe(p=pindex, sigma_r=sigma_r)
+#            uc, rc, mc = tse.get_crit()
+#            fe = 1 + (rc/tse.xi_s)**(2*tse.p)
+#            sonic_radius.append(tse.xi_s)
+#            critical_contrast.append(fe*np.exp(uc))
+#            critical_radius.append(rc/np.sqrt(fe))
+#            critical_mass.append(mc/np.sqrt(fe))
+#        sonic_radius = np.array(sonic_radius)
+#        critical_contrast = np.array(critical_contrast)
+#        critical_radius = np.array(critical_radius)
+#        critical_mass = np.array(critical_mass)
+#
+#        res = dict(dcrit=critical_contrast,
+#                   rcrit=critical_radius,
+#                   mcrit=critical_mass,
+#                   rsonic=sonic_radius,
+#                   sigv=velocity_dispersion)
+#        fname = "/home/sm69/pyathena/pyathena/core_formation/critical_TESe_p{}.p".format(pindex)
+#        with open(fname, "wb") as handle:
+#            pickle.dump(res, handle)
