@@ -1250,14 +1250,16 @@ class LoadSim(object):
 
                 if not force_override and osp.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
-                    res = pickle.load(open(fpkl, 'rb'))
+                    with open(fpkl, 'rb') as fb:
+                        res = pickle.load(fb)
                     return res
                 else:
                     cls.logger.info('[check_pickle]: Read original dump.')
                     # If we are here, force_override is True or history file is updated.
                     res = read_func(cls, **kwargs)
                     try:
-                        pickle.dump(res, open(fpkl, 'wb'))
+                        with open(fpkl, 'wb') as fb:
+                            pickle.dump(res, fb)
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not pickle to {0:s}.'.format(fpkl))
                     return res
