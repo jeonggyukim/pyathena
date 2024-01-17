@@ -131,9 +131,12 @@ class LoadSim(object):
 
         # Get config time
         try:
-            self.config_time = pd.to_datetime(self.par['configure']['config_date'])
-            if 'PDT' in self.par['configure']['config_date']:
-                self.config_time = self.config_time.tz_localize('US/Pacific')
+            config_time = self.par['configure']['config_date']
+            # Avoid un-recognized timezone FutureWarning
+            config_time = config_time.replace('PDT ', '')
+            config_time = config_time.replace('EDT ', '')
+            self.config_time = pd.to_datetime(config_time).tz_localize('US/Pacific')
+            #self.config_time = self.config_time
         except:
             try:
                 # set it using hst file creation time
