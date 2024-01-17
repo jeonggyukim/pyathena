@@ -645,13 +645,13 @@ class LoadSim(object):
 
         athinput_patterns = [
             ('athinput.runtime',),
-            ('athinput.*',),
             ('out.txt',),
             ('out*.txt',),
             ('stdout.txt',),
             ('log.txt',),
             ('*.par',),
             ('*.out',),
+            ('athinput.*',),
             ('slurm-*',)]
 
         hst_patterns = [('id0', '*.hst'),
