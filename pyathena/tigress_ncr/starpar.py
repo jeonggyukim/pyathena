@@ -15,14 +15,17 @@ from ..util.mass_to_lum import mass_to_lum
 class StarPar():
 
     @LoadSim.Decorators.check_pickle
-    def read_starpar_all(self, prefix='starpar_all',
+    def read_starpar_all(self, nums=None, prefix='starpar_all',
                          savdir=None, force_override=False):
         """Function to read all post-processed starpar dump
         """
+        if nums is None:
+            nums = self.nums_starpar
+
         rr = dict()
-        for i in self.nums_starpar:
-            print(i, end=' ')
-            r = self.read_starpar(num=i, force_override=False)
+        for i,num in enumerate(nums):
+            # print(num, end=' ')
+            r = self.read_starpar(num=num, force_override=True)
             if i == 0:
                 for k in r.keys():
                     rr[k] = []
@@ -67,7 +70,6 @@ class StarPar():
         # Center of mass, luminosity, standard deviation of z-position
         # Summary
         r = dict()
-        r['sp'] = sp
         r['time'] = sp.time
         r['nstars'] = sp.nstars
         r['isrc'] = isrc
@@ -107,6 +109,8 @@ class StarPar():
         r['Phi_i'] = r['Qi_tot']/LxLy
         # FUV luminosity per unit area
         r['Sigma_FUV'] = r['L_FUV_tot']/LxLy
+
+        r['sp'] = sp
 
         return r
 

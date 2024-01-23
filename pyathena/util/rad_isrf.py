@@ -79,19 +79,3 @@ def Jlambda_MMP83(wav):
 
     #return f_Jnu(wav)
     return f_Jlambda(wav)
-
-# def Jnu_MMP83(wav):
-
-#     if wav is not None and not isinstance(wav, au.quantity.Quantity):
-#         wav = (wav*au.angstrom).to(au.angstrom)
-#     else:
-#         wav = wav.to(au.angstrom)
-
-#     w = wav.value
-#     u_nu = np.where(np.logical_and(w < 2460.0, w >= 1340.0),
-#                       2.373e-14*(w*1e-4)**(-0.6678),0.0) + \
-#              np.where(np.logical_and(wav.value < 1340.0, wav.value >= 1100.0),
-#                       6.825e-13*(w*1e-4), 0.0) + \
-#              np.where(np.logical_and(wav.value < 1100.0, wav.value >= 912.0),
-#                       1.287e-9*(w*1e-4)**(4.4172), 0.0)
-#     return u_nu*((ac.c/(4.0*np.pi))).cgs.value

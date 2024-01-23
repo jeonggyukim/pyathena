@@ -201,7 +201,7 @@ class Zprof(ReadZprofBase):
 
         return r
 
-    def get_zprof_partially_ionzied_all(self, nums,
+    def get_zprof_partially_ionized_all(self, nums,
                                         savdir, force_override=False):
 
         rr = dict()
