@@ -152,7 +152,7 @@ class RadiationAndPartiallyIonized:
         NxNy = ds.domain['Nx'][0]*ds.domain['Nx'][1]
 
         # Bin by xHII
-        # nbins = 11
+        nbins = 11
         bins = np.linspace(0, 1, num=nbins)
         #bins = np.array([0.0, 0.1, 0.2, 0.5, 0.8, 0.9, 1.0])
         #bins = np.array([0.0, 0.1, 0.5, 0.9, 1.0])
