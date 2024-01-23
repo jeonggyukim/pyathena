@@ -121,7 +121,9 @@ class Zprof(ReadZprofBase):
         dm=self.domain
         u=self.u
         flux=xr.Dataset()
-        flux['mass']=(zp['pFzd']*u.mass_flux)
+        flux['mass_net']=((zp['pFzd']-zp['mFzd'])*u.mass_flux)
+        flux['massp']=(zp['pFzd']*u.mass_flux)
+        flux['massm']=(zp['mFzd']*u.mass_flux)
         flux['mom_kin']=(zp['pFzM3']*u.momentum_flux)
         try:
             flux['mom_th']=(zp['pP']*u.momentum_flux)
@@ -181,133 +183,6 @@ class Zprof(ReadZprofBase):
             return zpth
         else:
             return zpth, zpch
-
-    @LoadSim.Decorators.check_pickle
-    def read_zprof_partially_ionized(self, num, prefix='pionized',
-                                     savdir=None, force_override=False):
-        """
-        Compute z-profile of gas binned by xHII
-        """
-
-        ds = self.load_vtk(num)
-        dd = ds.get_field(['nH','T','xHII','ne','nesq'])
-
-        NxNy = ds.domain['Nx'][0]*ds.domain['Nx'][1]
-        nbins = 11
-        bins = np.linspace(0, 1, num=nbins)
-
-        idx = []
-        ne_ma = []
-        nesq_ma = []
-        area = []
-        ne = []
-        nesq = []
-
-        idx_w1 = []
-        ne_ma_w1 = []
-        nesq_ma_w1 = []
-        area_w1 = []
-        ne_w1 = []
-        nesq_w1 = []
-
-        idx_w2 = []
-        ne_ma_w2 = []
-        nesq_ma_w2 = []
-        area_w2 = []
-        ne_w2 = []
-        nesq_w2 = []
-
-        for i in range(nbins-1):
-            print(bins[i+1], end=' ')
-            if i == 0:
-                idx.append((bins[i] <= dd['xHII']) & (dd['xHII'] <= bins[i+1]))
-                idx_w1.append((bins[i] <= dd['xHII']) & (dd['xHII'] <= bins[i+1]) &
-                              (dd['T'] >= 6.0e3) & (dd['T'] < 1.5e4))
-                idx_w2.append((bins[i] <= dd['xHII']) & (dd['xHII'] <= bins[i+1]) &
-                              (dd['T'] >= 1.5e4) & (dd['T'] < 3.5e4))
-            else:
-                idx.append((bins[i] < dd['xHII']) & (dd['xHII'] <= bins[i+1]))
-                idx_w1.append((bins[i] < dd['xHII']) & (dd['xHII'] <= bins[i+1]) &
-                              (dd['T'] >= 6.0e3) & (dd['T'] < 1.5e4))
-                idx_w2.append((bins[i] < dd['xHII']) & (dd['xHII'] <= bins[i+1]) &
-                              (dd['T'] >= 1.5e4) & (dd['T'] < 3.5e4))
-
-            ne_ma.append(np.ma.masked_invalid(dd.where(idx[i])['ne'].data))
-            nesq_ma.append(np.ma.masked_invalid(dd.where(idx[i])['nesq'].data))
-
-            ne_ma_w1.append(np.ma.masked_invalid(dd.where(idx_w1[i])['ne'].data))
-            nesq_ma_w1.append(np.ma.masked_invalid(dd.where(idx_w1[i])['nesq'].data))
-            ne_ma_w2.append(np.ma.masked_invalid(dd.where(idx_w2[i])['ne'].data))
-            nesq_ma_w2.append(np.ma.masked_invalid(dd.where(idx_w2[i])['nesq'].data))
-
-            area_tot = ds.domain['Lx'][0]*ds.domain['Lx'][1]
-            dx = ds.domain['dx'][0]
-            area.append(ne_ma[i].count(axis=(1,2))*dx**2)
-            ne.append(ne_ma[i].sum(axis=(1,2)))
-            nesq.append(nesq_ma[i].sum(axis=(1,2)))
-
-            area_w1.append(ne_ma_w1[i].count(axis=(1,2))*dx**2)
-            ne_w1.append(ne_ma_w1[i].sum(axis=(1,2)))
-            nesq_w1.append(nesq_ma_w1[i].sum(axis=(1,2)))
-            area_w2.append(ne_ma_w2[i].count(axis=(1,2))*dx**2)
-            ne_w2.append(ne_ma_w2[i].sum(axis=(1,2)))
-            nesq_w2.append(nesq_ma_w2[i].sum(axis=(1,2)))
-
-        area = np.array(area)
-        ne = np.array(ne) / NxNy
-        nesq = np.array(nesq) / NxNy
-        f_area = area / area.sum(axis=0)
-
-        area_w1 = np.array(area_w1)
-        ne_w1 = np.array(ne_w1) / NxNy
-        nesq_w1 = np.array(nesq_w1) / NxNy
-        f_area_w1 = area_w1 / area.sum(axis=0)
-
-        area_w2 = np.array(area_w2)
-        ne_w2 = np.array(ne_w1) / NxNy
-        nesq_w2 = np.array(nesq_w1) / NxNy
-        f_area_w2 = area_w2 / area.sum(axis=0)
-
-        r = dict(area=area, area_w1=area_w1, area_w2=area_w2,
-                 f_area=f_area, f_area_w1=f_area_w1, f_area_w2=f_area_w2,
-                 ne=ne, ne_w1=ne_w1, ne_w2=ne_w2,
-                 nesq=nesq, nesq_w1=nesq_w1, nesq_w2=nesq_w2,
-                 bins=bins, nbins=nbins, NxNy=NxNy,
-                 time=ds.domain['time'],
-                 domain=ds.domain)
-
-        return r
-
-    def get_zprof_partially_ionzied_all(self, nums,
-                                        savdir, force_override=False):
-
-        rr = dict()
-        for i,num in enumerate(nums):
-            print(num, end=' ')
-            r = self.read_zprof_partially_ionized(num,
-                        savdir=savdir, force_override=False)
-            if i == 0:
-                for k in r.keys():
-                    if k == 'time':
-                        rr[k] = []
-                    else:
-                        rr[k] = []
-
-            for k in r.keys():
-                if k == 'time':
-                    rr[k].append(r['time'])
-                elif k == 'nbins' or k=='NxNy' or k == 'bins' or k == 'domain':
-                    rr[k] = r[k]
-                else:
-                    rr[k].append(r[k])
-
-        for k in rr.keys():
-            if k == 'time' or k == 'nbins' or k == 'NxNy' or k == 'bins' or k == 'domain':
-                continue
-            else:
-                rr[k] = np.stack(rr[k], axis=0)
-
-        return rr
 
 
 def plt_zprof_compare(sa, models=None, phase=['c','u','w','h1','h2'], field='d',
