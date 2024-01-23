@@ -14,9 +14,11 @@ from .slc_prj import SliceProj
 from .starpar import StarPar
 from .snapshot_HIH2EM import Snapshot_HIH2EM
 from .profile_1d import Profile1D
+from .rad_and_pionized import RadiationAndPartiallyIonized
 
 class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
-                        StarPar, PDF, Hist2d, H2, Profile1D, Snapshot_HIH2EM):
+                        StarPar, PDF, Hist2d, H2, Profile1D, Snapshot_HIH2EM,
+                        RadiationAndPartiallyIonized):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
 
@@ -68,7 +70,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
     def calc_deltay(self, time):
         """
         Function to calculate the y-offset at radial edges of the domain
-        
+
         Parameters
         ----------
         time : float
@@ -78,7 +80,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
         -------
         Delta y = (q*Omega0*Lx*t) mod (Ly)
         """
-        
+
         par = self.par
         domain = self.domain
         u = self.u
