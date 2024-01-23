@@ -6,14 +6,14 @@ def get_nums_starpar(s, tMyr_range=np.array([250, 451])):
     Time range hardcoded
     """
 
-    tMyr_range_def = {'R8-4pc': np.array([250, 451])/s.u.Myr/dt_starpar,
-                      'LGR4-2pc': np.array([250, 351])/s.u.Myr/dt_starpar,
-                      }
-
     if s.par['output3']['out_fmt'] == 'starpar_vtk':
         dt_starpar = s.par['output3']['dt']
     else:
         raise ValueError('Cannot find starpar_vtk output dt')
+
+    tMyr_range_def = {'R8-4pc': np.array([250, 451])/s.u.Myr/dt_starpar,
+                      'LGR4-2pc': np.array([250, 351])/s.u.Myr/dt_starpar,
+                      }
 
     if s.basename.startswith('R8_4pc_NCR.full.xy2048.eps0.np768.has'):
         tMyr_range = tMyr_range_def['R8-4pc']
