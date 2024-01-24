@@ -925,6 +925,17 @@ def set_derived_fields_rad(par, x0):
         vminmax[f] = (1e-5,1e2)
         take_log[f] = True
 
+        f = 'Erad_LyC_mask'
+        field_dep[f] = set(['rad_energy_density_PH'])
+        def _Erad_LyC_mask(d, u):
+            return d['rad_energy_density_PH'] > 0.0
+        func[f] = _Erad_LyC_mask
+        label[f] = r'$\mathcal{E}_{\rm LyC,mask}'
+        # Can use norm = mpl.colors.BoundaryNorm([0,0.5,1], 2)
+        cmap[f] = mpl.colors.ListedColormap(['white', 'red'])
+        vminmax[f] = (0.0,1.0)
+        take_log[f] = False
+
     # Halpha emissivity [erg/s/cm^-3/sr]
     # Caution: Draine (2011)'s alpha_eff_Halpha valid for ~1000 K < T < ~30000 K
     # Better to use this for warm gas only
