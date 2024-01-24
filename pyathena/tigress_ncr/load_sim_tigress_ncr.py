@@ -16,7 +16,9 @@ from .snapshot_HIH2EM import Snapshot_HIH2EM
 from .profile_1d import Profile1D
 from .rad_and_pionized import RadiationAndPartiallyIonized
 
-class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
+from .zprof_from_vtk import ZprofFromVTK
+
+class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
                         StarPar, PDF, Hist2d, H2, Profile1D, Snapshot_HIH2EM,
                         RadiationAndPartiallyIonized):
     """LoadSim class for analyzing TIGRESS-RT simulations.
