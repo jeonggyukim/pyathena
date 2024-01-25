@@ -858,6 +858,17 @@ def set_derived_fields_rad(par, x0):
     vminmax[f] = (1e-4,1e4)
     take_log[f] = True
 
+    # PE radiation energy density in cgs units
+    f = 'Erad_PE'
+    field_dep[f] = set(['rad_energy_density_PE'])
+    def _Erad_PE(d, u):
+        return d['rad_energy_density_PE']*u.energy_density.cgs.value
+    func[f] = _Erad_PE
+    label[f] = r'$\mathcal{E}_{\rm PE}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-17,1e-11)
+    take_log[f] = True
+
     # Normalized LW radiation field strength (Draine field unit)
     f = 'chi_LW'
     field_dep[f] = set(['rad_energy_density_LW'])
@@ -867,6 +878,17 @@ def set_derived_fields_rad(par, x0):
     label[f] = r'$\chi_{\rm LW}$'
     cmap[f] = 'viridis'
     vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # LW radiation energy density in cgs units
+    f = 'Erad_LW'
+    field_dep[f] = set(['rad_energy_density_LW'])
+    def _Erad_LW(d, u):
+        return d['rad_energy_density_LW']*u.energy_density.cgs.value
+    func[f] = _Erad_LW
+    label[f] = r'$\mathcal{E}_{\rm LW}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-17,1e-11)
     take_log[f] = True
 
     # Normalized FUV radiation field strength (Draine field unit)
