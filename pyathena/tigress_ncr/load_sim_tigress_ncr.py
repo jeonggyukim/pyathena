@@ -15,7 +15,7 @@ from .starpar import StarPar
 from .snapshot_HIH2EM import Snapshot_HIH2EM
 from .profile_1d import Profile1D
 from .rad_and_pionized import RadiationAndPartiallyIonized
-
+from .phase_set import Phase, PhaseSet, create_phase_set_with_LyC_mask
 from .zprof_from_vtk import ZprofFromVTK
 
 class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
@@ -58,6 +58,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
         self.muH = muH
         self.u = Units(muH=muH)
         self.domain = self._get_domain_from_par(self.par)
+        self.phs = self._get_phase_sets()
 
     def test_newcool(self):
         try:
@@ -94,6 +95,37 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
 
         return deltay
 
+    def _get_phase_sets(self):
+        # Used in NCR radiation paper
+        phs0 = PhaseSet('ncrrad',
+                        [Phase('CpU', 1, [['T', np.less, 6e3]]),
+                         Phase('WIM', 2, [['xHII', np.greater_equal, 0.5],
+                                          ['T', np.greater_equal, 6e3],
+                                          ['T', np.less, 3.5e4]]),
+                         Phase('WNM', 3, [['xHII', np.less, 0.5],
+                                          ['T', np.greater_equal, 6e3],
+                                          ['T', np.less, 3.5e4]]),
+                         Phase('hot', 4, [['T', np.greater_equal, 3.5e4]])])
+
+        # Used to characterize partially ionized gas
+        phs1 = PhaseSet('ncrrad_pion',
+                        [Phase('cold', 1, [['T', np.less, 3e3]]),
+                         Phase('wneu', 4, [['xHII', np.less, 0.1],
+                                           ['T', np.greater_equal, 3e3],
+                                           ['T', np.less, 3.5e4]]),
+                         Phase('wion', 3, [['xHII', np.greater_equal, 0.9],
+                                           ['T', np.greater_equal, 3e3],
+                                           ['T', np.less, 3.5e4]]),
+                         Phase('wpion', 2, [['xHII', np.greater_equal, 0.1],
+                                            ['xHII', np.less, 0.9],
+                                            ['T', np.greater_equal, 3e3],
+                                            ['T', np.less, 3.5e4]]),
+                         Phase('hot', 5, [['T', np.greater_equal, 3.5e4]])])
+
+        # Used to characterize partially ionized gas & gas exposed to LyC radiation
+        phs2 = create_phase_set_with_LyC_mask(phs1)
+
+        return {phs.name: phs for phs in (phs0, phs1, phs2)}
 
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""

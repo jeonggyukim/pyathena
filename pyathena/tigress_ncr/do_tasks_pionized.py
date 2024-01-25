@@ -17,8 +17,13 @@ from pyathena.util.split_container import split_container
 if __name__ == '__main__':
     COMM = MPI.COMM_WORLD
 
-    basedir_def = '/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR.full.xy2048.eps0.np768.has'
-    savdir = '/tigress/jk11/NCR-RAD/R8_4pc_NCR.full.xy2048.eps0.np768.has/'
+    # R8_4pc
+    # basedir_def = '/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR.full.xy2048.eps0.np768.has'
+    # savdir = '/tigress/jk11/NCR-RAD-LOWZ/R8_4pc_NCR.full.xy2048.eps0.np768.has/'
+
+    # LGR4 2pc
+    basedir_def = '/tigress/changgoo/TIGRESS-NCR/LGR4_2pc_NCR.full'
+    savdir = '/tigress/jk11/NCR-RAD-LOWZ/LGR4_2pc_NCR.full'
 
     # basedir = '/projects/EOSTRIKE/TIGRESS-NCR/'
     # for p in next(os.walk(basedir))[1]:
@@ -38,7 +43,8 @@ if __name__ == '__main__':
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, savdir=savdir, verbose=False)
-    nums = [num for num in range(255,459)]
+    # nums = [num for num in range(255,460)] # R8_4pc
+    nums = [num for num in range(511,715)]  # LGR4_2pc
     force_override = True
 
     if COMM.rank == 0:
@@ -51,14 +57,15 @@ if __name__ == '__main__':
     print('[rank, mynums]:', COMM.rank, mynums)
 
     time0 = time.time()
-    for num in mynums:
-        print(num, end=' ')
-        rr = s.read_zprof_Erad_LyC(num, force_override=force_override)
-        rr2 = s.read_zprof_partially_ionized(num, force_override=force_override)
-        n = gc.collect()
-        print('Unreachable objects:', n, end=' ')
-        print('Remaining Garbage:', end=' ')
-        pprint.pprint(gc.garbage)
+    for phase_set_name in s.phs.keys():
+        for num in mynums:
+            print(num, end=' ')
+            rr = s.read_zprof_from_vtk(num, phase_set_name=phase_set_name,
+                                       force_override=force_override)
+            n = gc.collect()
+            print('Unreachable objects:', n, end=' ')
+            print('Remaining Garbage:', end=' ')
+            pprint.pprint(gc.garbage)
 
     COMM.barrier()
     if COMM.rank == 0:

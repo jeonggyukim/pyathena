@@ -3,144 +3,109 @@ import numpy as np
 import xarray as xr
 from functools import reduce
 
-from .decorator import check_netcdf_zprof_vtk
+from ..decorators import check_netcdf_zprof_vtk
 
 class ZprofFromVTK:
-    def _get_phase_info(self, phase_set=0):
-        info0 = dict()
-        info0['whole'] = dict(ph_id=0, cond=[])
-        info0['CpU'] = dict(ph_id=1, cond=[['T', np.less, 6e3]])
-        info0['WIM'] = dict(ph_id=2,
-                             cond=[['xHII', np.greater_equal, 0.5],
-                                   ['T', np.greater_equal, 6e3], ['T', np.less, 3.5e4]])
-        info0['WNM'] = dict(ph_id=3,
-                             cond=[['xHII', np.less, 0.5],
-                                   ['T', np.greater_equal, 6e3], ['T', np.less, 3.5e4]])
-        info0['hot'] = dict(ph_id=4, cond=[['T', np.greater_equal, 3.5e4]])
-
-        info1 = dict()
-        info1['whole'] = dict(ph_id=0, cond=[])
-        info1['cold'] = dict(ph_id=1, cond=[['T', np.less, 3e3]])
-        info1['wpion'] = dict(ph_id=2,
-                              cond=[['xHII', np.greater_equal, 0.1], ['xHII', np.less, 0.9],
-                                    ['T', np.greater_equal, 3e3], ['T', np.less, 3.5e4]])
-        info1['wion'] = dict(ph_id=3,
-                             cond=[['xHII', np.greater_equal, 0.9],
-                                   ['T', np.greater_equal, 3e3], ['T', np.less, 3.5e4]])
-        info1['wneu'] = dict(ph_id=4,
-                             cond=[['xHII', np.less, 0.1],
-                                   ['T', np.greater_equal, 3e3], ['T', np.less, 3.5e4]])
-        info1['hot'] = dict(ph_id=5, cond=[['T', np.greater_equal, 3.5e4]])
-
-        def _make_info_with_LyC_mask(info_in):
-            info = copy.deepcopy(info_in)
-            phases = list(info.keys())
-            phases.remove('whole') # exclude whole
-            nphase = len(phases)
-            for ph in phases:
-                info[ph + '_LyC'] = copy.deepcopy(info[ph])
-                info[ph + '_LyC']['cond'].append(['Erad_LyC_mask', np.equal, 1.0])
-                info[ph + '_noLyC'] = info.pop(ph)
-                info[ph + '_noLyC']['cond'].append(['Erad_LyC_mask', np.equal, 0.0])
-                info[ph + '_noLyC']['ph_id'] += nphase
-
-            return info
-
-        if phase_set == 0:
-            return info0
-        if phase_set == 1:
-            return info1
-        elif phase_set == 2:
-            return _make_info_with_LyC_mask(info1)
 
     @check_netcdf_zprof_vtk
     def read_zprof_from_vtk(self, num,
                             fields=['nH','ne','nesq','xHII','xe',
-                                    'T','Uion','Erad_LyC'],
-                            phase_set=0,
-                            prefix='zprof_vtk', weights=['nH','ne','nesq'],
-                            savdir=None, force_override=False):
+                                    'T','Uion','Erad_LyC','Erad_PE','Erad_LW'],
+                            weights=['nH','ne','nesq'], phase_set_name='ncrrad',
+                            prefix='zprof_vtk', savdir=None, force_override=False):
 
-        if phase_set == 2 and not 'Erad_LyC_mask' in fields:
+        if 'LyC_ma' in phase_set_name and not 'Erad_LyC_mask' in fields:
             fields.append('Erad_LyC_mask')
 
         ds = self.load_vtk(num)
         dd = ds.get_field(fields)
-        v = list(dd.variables)[0]
+        v = fields[0]
+        # Set phase id and fraction
         dd = dd.assign(ph_id=(('z','y','x'), np.zeros_like(dd[v], dtype=int)))
-        dd = dd.assign(fV=(('z','y','x'), np.ones_like(dd[v])))
+        dd = dd.assign(frac=(('z','y','x'), np.ones_like(dd[v])))
 
-        ph_info = self._get_phase_info(phase_set)
+        phs = self.phs[phase_set_name]
         f_cond = lambda dd, f, op, v: op(dd[f], v)
-        for ph in ph_info.keys():
-            dd['ph_id'] += ph_info[ph]['ph_id']*\
+        for ph in phs.phases:
+            dd['ph_id'] += ph.id*\
                 reduce(np.logical_and,
-                       [f_cond(dd, *cond_) for cond_ in ph_info[ph]['cond']], 1)
+                       [f_cond(dd, *cond_) for cond_ in ph.cond], 1)
 
         zp = dict()
-        NxNy = dd['fV'].sum(dim=('x','y'))
+        NxNy_inv = 1.0/dd['frac'].sum(dim=('x','y'))
         # z-profile of all gas
-        zp['whole'] = dd.sum(dim=('x','y'), keep_attrs=True) / NxNy
-        for ph in ph_info.keys():
-            idx = (dd['ph_id'] == ph_info[ph]['ph_id'])
-            zp[ph] = dd.where(idx).sum(dim=('x','y'), keep_attrs=True)
-            zp[ph] /= NxNy
+        zp['whole'] = dd.sum(dim=('x','y'), keep_attrs=True) * NxNy_inv
+        for ph in phs.phases:
+            idx = (dd['ph_id'] == ph.id)
+            zp[ph.name] = dd.where(idx).sum(dim=('x','y'), keep_attrs=True)
+            zp[ph.name] *= NxNy_inv
 
         if weights is not None:
             for w in np.atleast_1d(weights):
                 zpw = dict()
                 dw = (dd*dd[w])
-                denom = dw['fV'].sum(dim=('x','y'))
+                denom_inv = 1.0/dw['frac'].sum(dim=('x','y'))
                 rename_dict = {v: v + '_w_' + w for v in list(dd.keys())}
                 dw = dw.rename(rename_dict)
-                zpw['whole'] = dw.sum(dim=('x','y'), keep_attrs=True) / denom
-                for ph in ph_info.keys():
-                    idx = (dd['ph_id'] == ph_info[ph]['ph_id'])
-                    zpw[ph] = dw.where(idx).sum(dim=('x','y'), keep_attrs=True)
-                    zpw[ph] /= denom
+                zpw['whole'] = dw.sum(dim=('x','y'), keep_attrs=True) * denom_inv
+                for ph in phs.phases:
+                    idx = (dd['ph_id'] == ph.id)
+                    zpw[ph.name] = dw.where(idx).sum(dim=('x','y'), keep_attrs=True)
+                    zpw[ph.name] *= denom_inv
 
-                for ph in ph_info.keys():
-                    zp[ph] = xr.merge((zp[ph], zpw[ph]))
+                for name in phs.phase_names:
+                    zp[name] = xr.merge((zp[name], zpw[name]))
 
                 del dw
 
         # Merge and create phase as new dimension
         zplist = []
-        for ph in ph_info.keys():
-            zplist.append(zp[ph].expand_dims('phase').assign_coords(phase=[ph]))
+        all_phase_names = ['whole'] + list(phs.phase_names)
+        for name in all_phase_names:
+            zplist.append(zp[name].expand_dims('phase').assign_coords(phase=[name]))
 
         zpa = xr.concat(zplist, dim='phase')
         zpa = zpa.to_array().to_dataset('phase')
         zpa = zpa.to_array('phase').to_dataset('variable')
         zpa = zpa.drop_vars('ph_id')
 
-        def _check_fV(zp):
-            fV = 0.0
+        def _check_frac(zp):
+            f = 0.0
             for ph in zp.phase.data:
                 if ph != 'whole':
-                    zp = zpa.sel(phase=ph)
-                    fV += zp['fV']
+                    zp_ = zpa.sel(phase=ph)
+                    f += zp_['frac']
 
-            return np.allclose(fV.data, 1.0, rtol=1/NxNy, atol=1/NxNy)
+            return np.allclose(f.data, 1.0, rtol=NxNy_inv, atol=NxNy_inv)
 
-        if not _check_fV(zpa):
+        if not _check_frac(zpa):
             self.logger.warning(
                     "Volume fractions of all phases don't add up to 1")
 
-        zpa = zpa.expand_dims(time=np.atleast_1d(dd.attrs['time']))
+        zpa = zpa.assign_attrs(time=dd.attrs['time'])
 
         return zpa
 
     @check_netcdf_zprof_vtk
-    def read_zprof_from_vtk_all(self, nums, prefix='zprof_vtk_all',
+    def read_zprof_from_vtk_all(self, nums, phase_set_name='ncrrad',
+                                prefix='zprof_vtk_all',
                                 force_override=False,
                                 read_zprof_from_vtk_kwargs=None):
         if read_zprof_from_vtk_kwargs is None:
-            read_zprof_from_vtk_kwargs = dict(force_override=False)
+            read_zprof_from_vtk_kwargs = dict(phase_set_name=phase_set_name,
+                                              force_override=False)
+        else:
+            if 'phase_set_name' in read_zprof_from_vtk_kwargs:
+                if phase_set_name != read_zprof_from_vtk_kwargs['phase_set_name']:
+                    raise ValueError(
+                        "phase_set_name in keyword argements different!")
+            else:
+                read_zprof_from_vtk_kwargs['phase_set_name'] = phase_set_name
 
         zplist = []
         for num in nums:
             print(num, end=' ')
-            zplist.append(self.read_zprof_from_vtk(num, **read_zprof_from_vtk_kwargs))
+            zpa = self.read_zprof_from_vtk(num, **read_zprof_from_vtk_kwargs)
+            zplist.append(zpa.expand_dims(time=np.atleast_1d(zpa.attrs['time'])))
 
         return xr.merge(zplist)

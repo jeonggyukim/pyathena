@@ -32,16 +32,20 @@ def check_netcdf_zprof_vtk(_read_zprof_vtk):
 
         # Create savdir if it doesn't exist
         if not osp.exists(savdir):
-            os.makedirs(savdir)
+            try:
+                os.makedirs(savdir)
+            except FileExistsError:
+                pass
             force_override = True
 
         if 'num' in kwargs:
             fnetcdf = '{0:s}.{1:s}.{2:s}.{3:04d}.nc'.\
                 format(cls.problem_id, cls.basename,
-                       kwargs['prefix'], kwargs['num'])
+                       kwargs['phase_set_name'], kwargs['num'])
         else:
             fnetcdf = '{0:s}.{1:s}.{2:s}.all.nc'.\
-                format(cls.problem_id, cls.basename, kwargs['prefix'])
+                format(cls.problem_id, cls.basename,
+                       kwargs['phase_set_name'])
 
         fnetcdf = osp.join(savdir, fnetcdf)
 
