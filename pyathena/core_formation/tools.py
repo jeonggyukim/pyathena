@@ -724,18 +724,17 @@ def calculate_accelerations(rprf):
     return acc
 
 
-def column_density(s, rcyl, frho, rmax=None):
+def column_density(rcyl, frho, rmax):
     """Calculate column density
 
     Parameters
     ----------
-    s : LoadSimCoreFormation
     rcyl : float
         Cylindrical radius at which the column density is computed
     frho : function
         The function rho(r) that returns the volume density at a given
         spherical radius.
-    rmax : float, optional
+    rmax : float
         The maximum radius to integrate out.
 
     Returns
@@ -746,24 +745,21 @@ def column_density(s, rcyl, frho, rmax=None):
     def func(z, rcyl):
         r = np.sqrt(rcyl**2 + z**2)
         return frho(r)
-    if rmax is None:
-        rmax = s.Lbox/2
     zmax = np.sqrt(rmax**2 - rcyl**2)
     res, _ = quad(func, 0, zmax, args=(rcyl,), epsrel=1e-2, limit=200)
     dcol = 2*res
     return dcol
 
 
-def fwhm(s, frho, rmax=None):
+def fwhm(frho, rmax):
     """Calculate the FWHM of the column density profile
 
     Parameters
     ----------
-    s : LoadSimCoreFormation
     frho : function
         The function rho(r) that returns the volume density at a given
         spherical radius.
-    rmax : float, optional
+    rmax : float
         The maximum radius to integrate out.
 
     Returns
@@ -771,10 +767,8 @@ def fwhm(s, frho, rmax=None):
     fwhm : float
         The FWHM of the column density profile.
     """
-    if rmax is None:
-        rmax = s.Lbox/2
-    n0 = column_density(s, 0, frho, rmax=rmax)
-    fwhm = 2*brentq(lambda x: column_density(s, x, frho, rmax=rmax) - 0.5*n0,
+    n0 = column_density(0, frho, rmax)
+    fwhm = 2*brentq(lambda x: column_density(x, frho, rmax) - 0.5*n0,
                     0, rmax)
     return fwhm
 
