@@ -87,7 +87,7 @@ class ZprofFromVTK:
         return zpa
 
     @check_netcdf_zprof_vtk
-    def read_zprof_from_vtk_all(self, nums, phase_set_name='ncrrad',
+    def read_zprof_from_vtk_all(self, nums=None, phase_set_name='ncrrad',
                                 prefix='zprof_vtk_all',
                                 force_override=False,
                                 read_zprof_from_vtk_kwargs=None):
@@ -108,4 +108,9 @@ class ZprofFromVTK:
             zpa = self.read_zprof_from_vtk(num, **read_zprof_from_vtk_kwargs)
             zplist.append(zpa.expand_dims(time=np.atleast_1d(zpa.attrs['time'])))
 
-        return xr.merge(zplist)
+        self.logger.info(
+            '[read_zprof_vtk] Concatenating {0:d} xarray datasets.'.format(len(zplist)))
+
+        # Use concat.
+        # Merge is much slower and uses more memory leading to crash.
+        return xr.concat(zplist, dim='time')
