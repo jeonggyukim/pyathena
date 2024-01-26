@@ -971,7 +971,7 @@ class LoadSim(object):
                     self.nums_partab[partag] = [int(f[-14:-9])
                                                  for f in self.files['partab'][partag]]
                     self.logger.info('partab ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        v, osp.dirname(self.files['partab'][partag][0]),
+                        partag, osp.dirname(self.files['partab'][partag][0]),
                         self.nums_partab[partag][0], self.nums_partab[partag][-1]))
 
         # Find parhst files
