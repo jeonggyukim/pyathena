@@ -13,6 +13,11 @@ def check_netcdf_zprof_vtk(_read_zprof_vtk):
         call_args.pop('self')
         kwargs = call_args
 
+        if 'num' in kwargs:
+            read_all = False
+        else:
+            read_all = True
+
         try:
             prefix = kwargs['prefix']
         except KeyError:
@@ -38,20 +43,23 @@ def check_netcdf_zprof_vtk(_read_zprof_vtk):
                 pass
             force_override = True
 
-        if 'num' in kwargs:
+        if not read_all:
             fnetcdf = '{0:s}.{1:s}.{2:s}.{3:04d}.nc'.\
                 format(cls.problem_id, cls.basename,
                        kwargs['phase_set_name'], kwargs['num'])
         else:
+            read_all = True
             fnetcdf = '{0:s}.{1:s}.{2:s}.all.nc'.\
                 format(cls.problem_id, cls.basename,
                        kwargs['phase_set_name'])
 
         fnetcdf = osp.join(savdir, fnetcdf)
-
         if not force_override and osp.exists(fnetcdf):
-            cls.logger.info('[read_zprof_vtk]: Read' + \
-                            ' zprof_vtk from existing NetCDF dump.')
+            if read_all:
+                cls.logger.info(
+                    '[read_zprof_vtk]: Read zprof_from_vtk from existing NetCDF dump.' +\
+                    ' Set force_override to True if time range should be updated.')
+
             ds = xr.open_dataset(fnetcdf)
             return ds
         else:
@@ -66,7 +74,7 @@ def check_netcdf_zprof_vtk(_read_zprof_vtk):
             try:
                 ds.to_netcdf(fnetcdf, mode='w')
             except (IOError, PermissionError) as e:
-                cls.logger.warning('[read_zprof-vtk]: Could not netcdf to {0:s}.'\
+                cls.logger.warning('[read_zprof_vtk]: Could not netcdf to {0:s}.'\
                                    .format(fnetcdf))
 
             return ds
