@@ -299,7 +299,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 for num, core in prestellar_cores.iterrows():
                     rprf = rprofs.sel(num=num)
                     frho = interp1d(rprf.r.data, rprf.rho.data)
-                    fwhm = tools.fwhm(self, frho, rmax=rmax)
+                    fwhm = tools.fwhm(frho, rmax)
                     robs.append(fwhm)
                     rhoobs.append(rprf.menc.interp(r=fwhm).data[()] / (4*np.pi*fwhm**3/3))
                 cores['radius_obs'] = pd.Series(robs, index=prestellar_cores.index)
