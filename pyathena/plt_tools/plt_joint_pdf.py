@@ -50,7 +50,7 @@ def plt_joint_pdf(x, y, hexbin_args=dict(), bins=30,
         h, bine = np.histogram(x, weights=weights, bins=bins, density=True)
         axx.step(bine[1:], h, 'k-')
         axx.set_xlim(_hexbin_args['extent'][0], _hexbin_args['extent'][1])
-        
+
     if _hexbin_args['yscale'] == 'log':
         h, bine = np.histogram(np.log10(y), weights=weights, bins=bins, density=True)
         axy.step(h, 10.0**bine[1:], 'k-')
@@ -60,7 +60,7 @@ def plt_joint_pdf(x, y, hexbin_args=dict(), bins=30,
         h, bine = np.histogram(y, weights=weights, bins=bins, density=True)
         axy.step(h, bine[1:], 'k-')
         axy.set_ylim(_hexbin_args['extent'][2], _hexbin_args['extent'][3])
-    
+
     # Turn off tick labels on marginals
     plt.setp(axx.get_xticklabels(), visible=False)
     plt.setp(axy.get_yticklabels(), visible=False)
