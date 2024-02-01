@@ -420,12 +420,18 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 rprofs = None
             else:
                 rprofs, nums = [], []
+                min_nr = None
                 for num in cores.index:
                     try:
                         fname = pathlib.Path(self.savdir, 'radial_profile',
                                              'radial_profile.par{}.{:05d}.nc'
                                              .format(pid, num))
-                        rprofs.append(xr.open_dataset(fname))
+                        rprf = xr.open_dataset(fname)
+                        if min_nr is None:
+                            min_nr = rprf.dims['r']
+                        else:
+                            min_nr = min(min_nr, rprf.dims['r'])
+                        rprofs.append(rprf)
                         nums.append(num)
                     except FileNotFoundError:
                         pids_not_found.append(pid)
@@ -433,6 +439,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 if len(rprofs) > 0:
                     rprofs = xr.concat(rprofs, 't')
                     rprofs = rprofs.assign_coords(dict(num=('t', nums)))
+                    # Slice data to common range in r.
+                    rprofs = rprofs.isel(r=slice(0, min_nr))
                     for axis in [1, 2, 3]:
                         rprofs[f'dvel{axis}_sq_mw'] = (rprofs[f'vel{axis}_sq_mw']
                                                      - rprofs[f'vel{axis}_mw']**2)
