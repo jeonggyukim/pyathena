@@ -558,7 +558,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
     if np.isnan(ncrit):
         tcrit = rcore = mcore = mean_density = np.nan
         radius = tff_crit = menc = rhoe = rhoavg = np.nan
-        vinfall = np.nan
+        vinfall = sigma_mw = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
         tcrit = cores.loc[ncrit].time
@@ -568,7 +568,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
         tff_crit = tfreefall(mean_density, s.gconst)
 
         radius, menc, rhoe, rhoavg = [], [], [], []
-        vinfall = []
+        vinfall, sigma_mw = [], []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
         for num, core in cores.iterrows():
             rprof = rprofs.sel(num=num)
@@ -588,10 +588,16 @@ def calculate_lagrangian_props(s, cores, rprofs):
             else:
                 menc.append(rprof.menc.interp(r=core.critical_radius).data[()])
 
+
             # Mass-weighted infall speed
             rprf = rprof.sel(r=slice(0, r_M))
             vin = rprf.vel1_mw.weighted(rprf.r**2*rprf.rho).mean().data[()]
             vinfall.append(vin)
+
+            # Mass-weighted velocity dispersion
+            rprf = rprof.sel(r=slice(0, r_M))
+            sigmw = np.sqrt(rprf.dvel1_sq_mw.weighted(rprf.r**2*rprf.rho).mean().data[()])
+            sigma_mw.append(sigmw)
 
             # select r = r_M
             rprf = rprof.interp(r=r_M)
@@ -603,7 +609,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
             Fani.append(rprf.Fani.data[()])
             Fgrv.append(rprf.Fgrv.data[()])
     lprops = pd.DataFrame(data = dict(radius=radius, menc=menc, edge_density=rhoe, mean_density=rhoavg,
-                                      vinfall=vinfall,
+                                      vinfall=vinfall, sigma_mw=sigma_mw,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
     lprops.attrs['rcore'] = rcore
