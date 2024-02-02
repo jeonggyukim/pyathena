@@ -2,7 +2,7 @@ import os.path as osp
 import pandas as pd
 import xarray as xr
 import numpy as np
-import pathlib
+from pathlib import Path
 import pickle
 import logging
 from scipy.interpolate import interp1d
@@ -82,7 +82,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         self.gconst = np.pi
         self.tff0 = tools.tfreefall(self.rho0, self.gconst)
 
-        if isinstance(basedir_or_Mach, (pathlib.PosixPath, str)):
+        if isinstance(basedir_or_Mach, (Path, str)):
             basedir = basedir_or_Mach
             super().__init__(basedir, savdir=savdir, load_method=load_method,
                              units=Units('code'), verbose=verbose)
@@ -145,11 +145,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             If true, load the pruned dendrogram
         """
         if pruned:
-            fname = pathlib.Path(self.savdir, 'GRID',
-                                 'dendrogram.pruned.{:05d}.p'.format(num))
+            fname = Path(self.savdir, 'GRID',
+                         'dendrogram.pruned.{:05d}.p'.format(num))
         else:
-            fname = pathlib.Path(self.savdir, 'GRID',
-                                 'dendrogram.{:05d}.p'.format(num))
+            fname = Path(self.savdir, 'GRID',
+                         'dendrogram.{:05d}.p'.format(num))
 
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
@@ -347,7 +347,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
         # Try reading the go15 mass
         try:
-            fname = pathlib.Path(self.savdir) / 'mcore_go15.p'
+            fname = Path(self.savdir) / 'mcore_go15.p'
             with open(fname, 'rb') as f:
                 mcore_go15 = pickle.load(f)
             mcore_go15_found = True
@@ -356,7 +356,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
 
         for pid in self.pids:
-            fname = pathlib.Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
+            fname = Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             cores = pd.read_pickle(fname).sort_index()
 
             if cores.attrs['tcoll_resolved']:
@@ -366,9 +366,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 tes_crit = []
                 for num in cores.index:
                     try:
-                        fname = pathlib.Path(self.savdir, 'critical_tes',
-                                             'critical_tes.par{}.{:05d}.p'
-                                             .format(pid, num))
+                        fname = Path(self.savdir, 'critical_tes',
+                                     'critical_tes.par{}.{:05d}.p'
+                                     .format(pid, num))
                         tes_crit.append(pd.read_pickle(fname))
                     except FileNotFoundError:
                         pids_not_found.append(pid)
@@ -417,9 +417,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 min_nr = None
                 for num in cores.index:
                     try:
-                        fname = pathlib.Path(self.savdir, 'radial_profile',
-                                             'radial_profile.par{}.{:05d}.nc'
-                                             .format(pid, num))
+                        fname = Path(self.savdir, 'radial_profile',
+                                     'radial_profile.par{}.{:05d}.nc'
+                                     .format(pid, num))
                         rprf = xr.open_dataset(fname)
                         if min_nr is None:
                             min_nr = rprf.sizes['r']
