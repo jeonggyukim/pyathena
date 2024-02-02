@@ -286,8 +286,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             # Free-fall time at t_coll
             cores.attrs['tff_coll'] = tools.tfreefall(cores.loc[ncoll].mean_density, self.gconst)
 
-            if np.isfinite(cores.attrs['rcore']):
-                cores = tools.calculate_observables(cores, rprofs, cores.attrs['rcore'])
+            # TODO(SMOON) resolve issues with r > r_max
+#            if np.isfinite(cores.attrs['rcore']):
+#                cores = tools.calculate_observables(cores, rprofs, cores.attrs['rcore'])
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
@@ -412,9 +413,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                                              .format(pid, num))
                         rprf = xr.open_dataset(fname)
                         if min_nr is None:
-                            min_nr = rprf.dims['r']
+                            min_nr = rprf.sizes['r']
                         else:
-                            min_nr = min(min_nr, rprf.dims['r'])
+                            min_nr = min(min_nr, rprf.sizes['r'])
                         rprofs.append(rprf)
                         nums.append(num)
                     except FileNotFoundError:
