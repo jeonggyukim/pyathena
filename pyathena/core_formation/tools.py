@@ -751,9 +751,17 @@ def column_density(rcyl, frho, rmax):
     def func(z, rcyl):
         r = np.sqrt(rcyl**2 + z**2)
         return frho(r)
-    zmax = np.sqrt(rmax**2 - rcyl**2)
-    res, _ = quad(func, 0, zmax, args=(rcyl,), epsrel=1e-2, limit=200)
-    dcol = 2*res
+    if isinstance(rcyl, np.ndarray):
+        dcol = []
+        for R in rcyl:
+            zmax = np.sqrt(rmax**2 - R**2)
+            res, _ = quad(func, 0, zmax, args=(R,), epsrel=1e-2, limit=200)
+            dcol.append(2*res)
+        dcol = np.array(dcol)
+    else:
+        zmax = np.sqrt(rmax**2 - rcyl**2)
+        res, _ = quad(func, 0, zmax, args=(rcyl,), epsrel=1e-2, limit=200)
+        dcol = 2*res
     return dcol
 
 
