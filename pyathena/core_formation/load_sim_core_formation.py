@@ -250,13 +250,12 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                          (cores.time - cores.attrs['tcrit'])
                           / (cores.attrs['tcoll'] - cores.attrs['tcrit']))
 
-            # Evolutionary timescales
             mcore = cores.attrs['mcore']
             rcore = cores.attrs['rcore']
             ncrit = cores.attrs['numcrit']
+            ncoll = cores.attrs['numcoll']
 
             # Building time
-            # TODO Why ncrit is nan after all???
             if np.isnan(ncrit):
                 cores.attrs['dt_build'] = np.nan
             else:
@@ -277,33 +276,18 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['tinfall_end'] = tf
             cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
-            # Calculate velocity dispersion
+            # Velocity dispersion at t_crit
             if np.isnan(ncrit):
                 sigma_r = np.nan
             else:
-                rprf = rprofs.sel(num=ncrit)
-                rprf = rprf.sel(r=slice(0, rcore))
-                sigma_r = np.sqrt(rprf.dvel1_sq_mw.weighted(
-                    rprf.r**2*rprf.rho).mean().data[()])
+                sigma_r = cores.loc[ncrit].sigma_mw
             cores.attrs['sigma_r'] = sigma_r
 
-            # Calculate freefall time at t_coll
-            ncoll = cores.attrs['numcoll']
+            # Free-fall time at t_coll
             cores.attrs['tff_coll'] = tools.tfreefall(cores.loc[ncoll].mean_density, self.gconst)
 
-            # Calculate FWHM and mean densities
-            rmax = cores.attrs['rcore']
-            if np.isfinite(rmax):
-                prestellar_cores = cores.loc[:cores.attrs['numcoll']]
-                robs, rhoobs = [], []
-                for num, core in prestellar_cores.iterrows():
-                    rprf = rprofs.sel(num=num)
-                    frho = interp1d(rprf.r.data, rprf.rho.data)
-                    fwhm = tools.fwhm(frho, rmax)
-                    robs.append(fwhm)
-                    rhoobs.append(rprf.menc.interp(r=fwhm).data[()] / (4*np.pi*fwhm**3/3))
-                cores['radius_obs'] = pd.Series(robs, index=prestellar_cores.index)
-                cores['mean_density_obs'] = pd.Series(rhoobs, index=prestellar_cores.index)
+            if np.isfinite(cores.attrs['rcore']):
+                cores = tools.calculate_observables(cores, rprofs, cores.attrs['rcore'])
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
