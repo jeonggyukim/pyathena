@@ -1002,7 +1002,7 @@ def recenter_dataset(ds, center):
         closest, but not exactly the same, to (0, 0, 0).
     """
     if isinstance(ds, xr.Dataset):
-        shape = np.array(list(ds.dims.values()), dtype=int)
+        shape = np.array(list(ds.sizes.values()), dtype=int)
     elif isinstance(ds, xr.DataArray):
         shape = np.array(ds.shape, dtype=int)
     else:
