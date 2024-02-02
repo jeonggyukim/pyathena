@@ -548,13 +548,12 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
 
 
 def calculate_lagrangian_props(s, cores, rprofs):
-    # Find critical time
-    ncrit = critical_time(s, cores.attrs['pid'])
     tcoll = s.tcoll_cores.loc[cores.attrs['pid']].time
 
     # Slice cores that have corresponding radial profiles
     common_indices = sorted(set(cores.index) & set(rprofs.num.data))
     cores = cores.loc[common_indices]
+    ncrit = cores.attrs['numcrit']
 
     if np.isnan(ncrit):
         tcrit = rcore = mcore = mean_density = np.nan
@@ -618,7 +617,6 @@ def calculate_lagrangian_props(s, cores, rprofs):
     lprops.attrs['mean_density'] = mean_density
     lprops.attrs['tff_crit'] = tff_crit
     lprops.attrs['tcrit'] = tcrit
-    lprops.attrs['numcrit'] = ncrit
     lprops.attrs['tcoll'] = tcoll
 
     return lprops
@@ -737,20 +735,29 @@ def calculate_observables(cores, rprofs, rmax):
     for num, core in prestellar_cores.iterrows():
         rprf = rprofs.sel(num=num)
 
-        frho = interp1d(rprf.r.data, rprf.rho.data)
-        fdvsq = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
+        # Create interpolation functions
+        rho_itp = interp1d(rprf.r.data, rprf.rho.data)
+        dvel_sq_itp = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
 
-        r_obs = fwhm(frho, rmax)
-        def integrand_numerator(R):
-            return column_density(R, lambda x: frho(x)*fdvsq(x), rmax)
-        def integrand_denominator(R):
-            return column_density(R, frho, rmax)
-        numer, _ = quad(integrand_numerator, 0, r_obs, epsrel=1e-2, limit=200)
-        denom, _ = quad(integrand_denominator, 0, r_obs, epsrel=1e-2, limit=200)
-        sigma_obs = np.sqrt(numer / denom)
-
+        r_obs = fwhm(rho_itp, rmax)
+        if r_obs > rprf.r.max().data[()]:
+            # Because r_obs is found by multiplying two to the HMHW,
+            # it can sometimes exceed the maximum radius of the radial profiles.
+            # If that happens, we cannot solve for the properties within the
+            # FWHM radius.
+            rhoavg_obs = np.nan
+            sigma_obs = np.nan
+        else:
+            rhoavg_obs = rprf.menc.interp(r=r_obs).data[()] / (4*np.pi*r_obs**3/3)
+            def integrand_numerator(R):
+                return column_density(R, lambda x: rho_itp(x)*dvel_sq_itp(x), rmax)
+            def integrand_denominator(R):
+                return column_density(R, rho_itp, rmax)
+            numer, _ = quad(integrand_numerator, 0, r_obs, epsrel=1e-2, limit=200)
+            denom, _ = quad(integrand_denominator, 0, r_obs, epsrel=1e-2, limit=200)
+            sigma_obs = np.sqrt(numer / denom)
         radius.append(r_obs)
-        mean_density.append(rprf.menc.interp(r=r_obs).data[()] / (4*np.pi*r_obs**3/3))
+        mean_density.append(rhoavg_obs)
         velocity_dispersion.append(sigma_obs)
     cores['radius_obs'] = pd.Series(radius, index=prestellar_cores.index)
     cores['mean_density_obs'] = pd.Series(mean_density, index=prestellar_cores.index)
@@ -1045,10 +1052,8 @@ def rounddown(a, decimal):
 def test_resolved_core(s, pid, ncells_min):
     """Test if the given core is sufficiently resolved.
 
-    Need to be resolved at the time of collapse and at the time of instability,
-    where former and latter are estimated to be t_coll and t_coll - f*tff.
-    The additional requirement that the core must be resolved also at t_coll
-    is to filter out such cores that form from unresolved fragmentation.
+    Returns True if the critical radius at t_crit is greater than
+    ncells_min*dx.
 
     Parameters
     ----------
@@ -1057,7 +1062,7 @@ def test_resolved_core(s, pid, ncells_min):
     pid : int
         Particle ID.
     ncells_min : int
-        Minimum grid distance between a core and a particle.
+        Minimum number of cells to be considered resolved.
 
     Returns
     -------
@@ -1065,10 +1070,10 @@ def test_resolved_core(s, pid, ncells_min):
         True if a core is resolved, false otherwise.
     """
     cores = s.cores[pid]
-    num = cores.attrs['numcrit']
-    if np.isnan(num):
+    ncrit = cores.attrs['numcrit']
+    if np.isnan(ncrit):
         return False
-    ncells = cores.loc[num].radius / s.dx
+    ncells = cores.loc[ncrit].critical_radius / s.dx
     if ncells >= ncells_min:
         return True
     else:
@@ -1094,12 +1099,12 @@ def test_isolated_core(s, pid):
         True if a core is isolated, false otherwise.
     """
     cores = s.cores[pid]
-    num = cores.attrs['numcrit']
-    if np.isnan(num):
+    ncrit = cores.attrs['numcrit']
+    if np.isnan(ncrit):
         return False
-    pds = s.load_partab(num)
+    pds = s.load_partab(ncrit)
     pstar = pds[['x1', 'x2', 'x3']]
-    core = cores.loc[num]
+    core = cores.loc[ncrit]
 
     nd = core.leaf_id
     pcore = get_coords_node(s, nd)

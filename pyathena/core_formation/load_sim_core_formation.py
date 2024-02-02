@@ -214,6 +214,25 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores = self.cores[pid]  # shallow copy
             if 'critical_radius' not in cores:
                 continue
+
+            # Find critical time
+            ncrit = tools.critical_time(self, pid)
+            cores.attrs['numcrit'] = ncrit
+
+            # Test resolvedness and isolatedness
+            if tools.test_isolated_core(self, pid):
+                cores.attrs['isolated'] = True
+            else:
+                cores.attrs['isolated'] = False
+            if tools.test_resolved_core(self, pid, ncells_min):
+                cores.attrs['resolved'] = True
+            else:
+                cores.attrs['resolved'] = False
+
+            if not (cores.attrs['resolved'] and cores.attrs['isolated']):
+                continue
+            # Lines below are executed only for resolved and isolated cores.
+
             rprofs = self.rprofs[pid]
             lprops = tools.calculate_lagrangian_props(self, cores, rprofs)
             if set(lprops.columns).issubset(cores.columns):
@@ -233,15 +252,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             # Workaround to use pid as an argument in the function calls below
             self.cores[pid] = cores
 
-            # Test resolvedness and isolatedness
-            if tools.test_isolated_core(self, pid):
-                cores.attrs['isolated'] = True
-            else:
-                cores.attrs['isolated'] = False
-            if tools.test_resolved_core(self, pid, ncells_min):
-                cores.attrs['resolved'] = True
-            else:
-                cores.attrs['resolved'] = False
 
             cores.insert(1, 'tnorm1',
                          (cores.time - cores.attrs['tcoll'])
@@ -252,7 +262,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             mcore = cores.attrs['mcore']
             rcore = cores.attrs['rcore']
-            ncrit = cores.attrs['numcrit']
             ncoll = cores.attrs['numcoll']
 
             # Building time
