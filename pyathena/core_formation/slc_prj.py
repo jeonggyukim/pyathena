@@ -39,9 +39,8 @@ class SliceProj:
     @LoadSim.Decorators.check_pickle
     def read_prj(self, num, axes=['x', 'y', 'z'], prefix='prj',
                  savdir=None, force_override=False):
-
         axtoi = dict(x=0, y=1, z=2)
-        fields = ['dens']
+        fields = ['dens', 'mom1', 'mom2', 'mom3']
         axes = np.atleast_1d(axes)
 
         ds = self.load_hdf5(num=num, quantities=fields)
@@ -52,9 +51,15 @@ class SliceProj:
         for ax in axes:
             i = axtoi[ax]
             dx = self.domain['dx'][i]
+            mom_los = ds[f'mom{i+1}']
 
             res[ax] = dict()
-            res[ax]['Sigma_gas'] = (ds.dens*dx).sum(ax).data
+            dcol = (ds.dens*dx).sum(ax)
+            res[ax]['Sigma_gas'] = dcol
+            vel = (mom_los*dx).sum(ax) / dcol
+            res[ax][f'vel'] = vel
+            vel_sq = (mom_los**2/ds.dens*dx).sum(ax) / dcol
+            res[ax][f'veldisp'] = np.sqrt(vel_sq - vel**2)
 
         return res
 
