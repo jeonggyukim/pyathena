@@ -5,6 +5,7 @@ from scipy.special import erfcinv
 from scipy import odr
 from scipy.optimize import brentq
 from scipy.integrate import quad
+from scipy.interpolate import interp1d
 import pathlib
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
@@ -728,6 +729,33 @@ def calculate_accelerations(rprf):
     acc['Fani'] = (dm*acc.ani).cumulative_integrate('r')
 
     return acc
+
+
+def calculate_observables(cores, rprofs, rmax):
+    prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+    radius, mean_density, velocity_dispersion = [], [], []
+    for num, core in prestellar_cores.iterrows():
+        rprf = rprofs.sel(num=num)
+
+        frho = interp1d(rprf.r.data, rprf.rho.data)
+        fdvsq = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
+
+        r_obs = fwhm(frho, rmax)
+        def integrand_numerator(R):
+            return column_density(R, lambda x: frho(x)*fdvsq(x), rmax)
+        def integrand_denominator(R):
+            return column_density(R, frho, rmax)
+        numer, _ = quad(integrand_numerator, 0, r_obs, epsrel=1e-2, limit=200)
+        denom, _ = quad(integrand_denominator, 0, r_obs, epsrel=1e-2, limit=200)
+        sigma_obs = np.sqrt(numer / denom)
+
+        radius.append(r_obs)
+        mean_density.append(rprf.menc.interp(r=r_obs).data[()] / (4*np.pi*r_obs**3/3))
+        velocity_dispersion.append(sigma_obs)
+    cores['radius_obs'] = pd.Series(radius, index=prestellar_cores.index)
+    cores['mean_density_obs'] = pd.Series(mean_density, index=prestellar_cores.index)
+    cores['sigma_obs'] = pd.Series(velocity_dispersion, index=prestellar_cores.index)
+    return cores
 
 
 def column_density(rcyl, frho, rmax):
