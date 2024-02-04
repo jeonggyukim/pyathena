@@ -95,6 +95,58 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
 
         return deltay
 
+    def get_output_nums(self, tMyr_range=[250,450], out_fmt='vtk', verbose=False):
+        """
+        Returns an output number array corresponding to time [range] in Myr.
+        No guarantee that the snapshots in the requested time range exist.
+
+        Parameters
+        ----------
+        tMyr_range : float or two floats
+            time range in Myr
+        out_fmt : str
+            Output format (vtk, starpar_vtk, zprof, rst)
+        verbose : bool
+            Print summary of results. Default is False.
+
+        Returns
+        -------
+        nums : list of int
+            Snapshot numbers
+        """
+        u = self.u
+        par = self.par
+        for k in [k for k in par.keys() if 'output' in k]:
+            if par[k]['out_fmt'] == out_fmt:
+                dt_out = par[k]['dt']
+
+        num_range_real = np.atleast_1d(tMyr_range)/u.Myr/dt_out
+        num_range = [int(np.round(num)) for num in num_range_real]
+        nums = [num for num in range(num_range[0], num_range[-1]+1)]
+        if verbose:
+            print('Model: ', self.basename)
+            print('Output format: ', out_fmt)
+            print('tMyr range: ', tMyr_range)
+            print('num range: ', num_range)
+            for num in sorted(set((nums[0], nums[-1]))):
+                if out_fmt == 'vtk':
+                    try:
+                        ds = self.load_vtk(num)
+                        print('num time time_Myr',
+                              num, ds.domain['time'], ds.domain['time']*u.Myr)
+                    except Exception as e:
+                        print(e)
+                        print('Error..some snapshots may not exist.')
+                        continue
+                else:
+                    # Implementation of starpar_vtk, zprof..
+                    continue
+
+        if len(nums) == 1:
+            return nums[0]
+        else:
+            return nums
+
     def _get_phase_sets(self):
         # Used in NCR radiation paper
         phs0 = PhaseSet('ncrrad',
