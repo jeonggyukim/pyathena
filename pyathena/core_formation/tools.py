@@ -739,9 +739,9 @@ def calculate_observables(core, rprf, rmax):
     try:
         rhoavg_obs = rprf.menc.interp(r=r_obs).data[()] / (4*np.pi*r_obs**3/3)
         def integrand_numerator(R):
-            return column_density(R, lambda x: rho_itp(x)*dvel_sq_itp(x), rmax)
+            return column_density(R, lambda x: rho_itp(x)*dvel_sq_itp(x), rmax)*R
         def integrand_denominator(R):
-            return column_density(R, rho_itp, rmax)
+            return column_density(R, rho_itp, rmax)*R
         numer, _ = quad(integrand_numerator, 0, r_obs, epsrel=1e-2, limit=200)
         denom, _ = quad(integrand_denominator, 0, r_obs, epsrel=1e-2, limit=200)
         sigma_obs = np.sqrt(numer / denom)
@@ -1041,7 +1041,7 @@ def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
 
 
-def test_resolved_core(s, pid, ncells_min):
+def test_resolved_core(s, cores, ncells_min):
     """Test if the given core is sufficiently resolved.
 
     Returns True if the critical radius at t_crit is greater than
@@ -1061,7 +1061,6 @@ def test_resolved_core(s, pid, ncells_min):
     bool
         True if a core is resolved, false otherwise.
     """
-    cores = s.cores[pid]
     ncrit = cores.attrs['numcrit']
     if np.isnan(ncrit):
         return False
@@ -1072,7 +1071,7 @@ def test_resolved_core(s, pid, ncells_min):
         return False
 
 
-def test_isolated_core(s, pid):
+def test_isolated_core(s, cores):
     """Test if the given core is isolated.
 
     Criterion for an isolated core is that the core must not contain
@@ -1090,7 +1089,6 @@ def test_isolated_core(s, pid):
     bool
         True if a core is isolated, false otherwise.
     """
-    cores = s.cores[pid]
     ncrit = cores.attrs['numcrit']
     if np.isnan(ncrit):
         return False
