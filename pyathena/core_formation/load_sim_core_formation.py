@@ -220,11 +220,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['numcrit'] = ncrit
 
             # Test resolvedness and isolatedness
-            if tools.test_isolated_core(self, pid):
+            if tools.test_isolated_core(self, cores):
                 cores.attrs['isolated'] = True
             else:
                 cores.attrs['isolated'] = False
-            if tools.test_resolved_core(self, pid, ncells_min):
+            if tools.test_resolved_core(self, cores, ncells_min):
                 cores.attrs['resolved'] = True
             else:
                 cores.attrs['resolved'] = False
@@ -245,14 +245,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             attrs = cores.attrs.copy()
             attrs.update(lprops.attrs)
             cores = cores.join(lprops)
-
             # Reattach attributes
             cores.attrs = attrs
 
-            # Workaround to use pid as an argument in the function calls below
-            self.cores[pid] = cores
-
-
+            # Calculate normalized times
             cores.insert(1, 'tnorm1',
                          (cores.time - cores.attrs['tcoll'])
                           / cores.attrs['tff_crit'])
@@ -295,9 +291,25 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             # Free-fall time at t_coll
             cores.attrs['tff_coll'] = tools.tfreefall(cores.loc[ncoll].mean_density, self.gconst)
 
-            # TODO(SMOON) resolve issues with r > r_max
-#            if np.isfinite(cores.attrs['rcore']):
-#                cores = tools.calculate_observables(cores, rprofs, cores.attrs['rcore'])
+            # Calculate some observable properties
+            r_obs, rhoavg_obs, sigma_obs = [], [], []
+            prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+            for num, core in prestellar_cores.iterrows():
+                rprf = rprofs.sel(num=num)
+                res = tools.calculate_observables(core, rprf, cores.attrs['rcore'])
+                r_obs.append(res['r_obs'])
+                rhoavg_obs.append(res['rhoavg_obs'])
+                sigma_obs.append(res['sigma_obs'])
+            obsprops = pd.DataFrame(dict(r_obs=r_obs,
+                                         rhoavg_obs=rhoavg_obs,
+                                         sigma_obs=sigma_obs),
+                                    index=prestellar_cores.index)
+            # Save attributes before performing join, which will drop them.
+            attrs = cores.attrs.copy()
+            attrs.update(obsprops.attrs)
+            cores = cores.join(obsprops)
+            # Reattach attributes
+            cores.attrs = attrs
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
