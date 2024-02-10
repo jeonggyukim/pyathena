@@ -296,7 +296,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             prestellar_cores = cores.loc[:cores.attrs['numcoll']]
             for num, core in prestellar_cores.iterrows():
                 rprf = rprofs.sel(num=num)
-                res = tools.calculate_observables(core, rprf, cores.attrs['rcore'])
+                res = tools.calculate_observables(core, rprf, rprf.r.max())
                 r_obs.append(res['r_obs'])
                 rhoavg_obs.append(res['rhoavg_obs'])
                 sigma_obs.append(res['sigma_obs'])
