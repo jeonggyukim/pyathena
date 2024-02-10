@@ -7,11 +7,11 @@ from scipy.optimize import brentq
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 from pathlib import Path
-import tes as tes_new
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
-from pyathena.core_formation import tes
+from pyathena.core_formation.tes import TESc, get_critical_tes
 from pyathena.core_formation import config
+import tes
 
 
 class LognormalPDF:
@@ -442,7 +442,7 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
     
             # Find critical TES at the central density
             xi_s = rs / LJ_c
-            tsc = tes.TESc(p=p, xi_s=xi_s)
+            tsc = TESc(p=p, xi_s=xi_s)
             try:
                 xi_crit = tsc.get_rcrit(mode=mode)
                 u, du = tsc.solve(xi_crit)
@@ -463,7 +463,7 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
 
 
 def calculate_critical_radius(s, rprf, core):
-    ts = tes_new.TES('crit', p=core.pindex)
+    ts = tes.TES('crit', p=core.pindex)
     ts.set_sonic_radius_floor()
     rs_floor = ts._rs_floor
     rs_ceil = ts._rs_max
@@ -472,10 +472,10 @@ def calculate_critical_radius(s, rprf, core):
     for rmax, menc in zip(rprf.r.data[1:], rprf.menc.data[1:]):
         # Find a TES that has the critical radius = rmax
         def fx(xi_s):
-            ts = tes_new.TES('crit', p=core.pindex, rs=xi_s)
+            ts = tes.TES('crit', p=core.pindex, rs=xi_s)
             return xi_s*rmax/ts.rmax - rs
         xi_s = brentq(fx, rs_floor, rs_ceil)
-        ts = tes_new.TES('crit', p=core.pindex, rs=xi_s)
+        ts = tes.TES('crit', p=core.pindex, rs=xi_s)
         pext = s.cs**4/s.gconst * (xi_s / rs)**2
         mcrit = s.cs**4/s.gconst**1.5/np.sqrt(pext)*ts.menc(ts.rmax)
         if menc > mcrit:
@@ -969,8 +969,8 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
     rsonic = get_sonic(Mach, Lbox)
     if rho_amb is None:
         rho_amb = s.get_contrast(mfrac)
-    rhoc_BE, R_BE, M_BE = tes.get_critical_tes(rhoe=rho_amb, rsonic=np.inf, pindex=0.5)
-    rhoc_TES, R_TES, M_TES = tes.get_critical_tes(rhoe=rho_amb, rsonic=rsonic, pindex=0.5)
+    rhoc_BE, R_BE, M_BE = get_critical_tes(rhoe=rho_amb, rsonic=np.inf, pindex=0.5)
+    rhoc_TES, R_TES, M_TES = get_critical_tes(rhoe=rho_amb, rsonic=rsonic, pindex=0.5)
     R_LP_BE = lpradius(M_BE, s.cs, s.gconst)
     R_LP_TES = lpradius(M_TES, s.cs, s.gconst)
     dx_req_LP = R_LP_BE/ncells_min
