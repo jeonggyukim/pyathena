@@ -212,7 +212,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         """
         for pid in self.pids:
             cores = self.cores[pid]  # shallow copy
-            if 'critical_radius' not in cores:
+            rprofs = self.rprofs[pid]
+
+            if not cores.attrs['tcoll_resolved']:
                 continue
 
             # Find collapse time
@@ -229,7 +231,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 cores.attrs['tff_crit'] = np.nan
             else:
                 core = cores.loc[ncrit]
-                rprf = self.rprofs[pid].sel(num=ncrit)
+                rprf = rprofs.sel(num=ncrit)
                 rcore = core.critical_radius
                 mcore = rprf.menc.interp(r=rcore).data[()]
                 mean_density = mcore / (4*np.pi*rcore**3/3)
@@ -253,9 +255,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             if not (cores.attrs['resolved'] and cores.attrs['isolated']):
                 continue
             # Lines below are executed only for resolved and isolated cores.
-
-            rprofs = self.rprofs[pid]
-            lprops = tools.calculate_lagrangian_props(self, cores, rprofs)
+            fname = Path(self.savdir, 'cores', 'lprops.par{}.p'.format(pid))
+            lprops = pd.read_pickle(fname).sort_index()
             if set(lprops.columns).issubset(cores.columns):
                 msg = ("Lagrangian core properties are already included in "
                        "cores attributes, even before computing them. "
@@ -279,7 +280,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             mcore = cores.attrs['mcore']
             rcore = cores.attrs['rcore']
-            ncoll = cores.attrs['numcoll']
 
             # Building time
             if np.isnan(ncrit):
@@ -302,15 +302,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['tinfall_end'] = tf
             cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
-            # Velocity dispersion at t_crit
-            if np.isnan(ncrit):
-                sigma_r = np.nan
-            else:
-                sigma_r = cores.loc[ncrit].sigma_mw
-            cores.attrs['sigma_r'] = sigma_r
-
-            # Free-fall time at t_coll
-            cores.attrs['tff_coll'] = tools.tfreefall(cores.loc[ncoll].mean_density, self.gconst)
 
 #            # Calculate some observable properties
 #            r_obs, rhoavg_obs, sigma_obs = [], [], []

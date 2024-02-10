@@ -577,6 +577,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
     common_indices = sorted(set(cores.index) & set(rprofs.num.data))
     cores = cores.loc[common_indices]
     ncrit = cores.attrs['numcrit']
+    ncoll = cores.attrs['numcoll']
     rcore = cores.attrs['rcore']
     mcore = cores.attrs['mcore']
 
@@ -630,6 +631,18 @@ def calculate_lagrangian_props(s, cores, rprofs):
                                       vinfall=vinfall, sigma_mw=sigma_mw,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
+
+    # Attach some attributes
+    # Velocity dispersion at t_crit
+    if np.isnan(ncrit):
+        sigma_r = np.nan
+    else:
+        sigma_r = lprops.loc[ncrit].sigma_mw
+    lprops.attrs['sigma_r'] = sigma_r
+
+    # Free-fall time at t_coll
+    lprops.attrs['tff_coll'] = tfreefall(lprops.loc[ncoll].mean_density, s.gconst)
+
     return lprops
 
 
