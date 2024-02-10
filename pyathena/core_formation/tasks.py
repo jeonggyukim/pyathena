@@ -277,6 +277,22 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
         rprf.to_netcdf(ofname)
 
 
+def lagrangian_props(s, pid, overwrite=False):
+    # Check if file exists
+    ofname = Path(s.savdir, 'cores', 'lprops.par{}.p'.format(pid))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[lagrangian_props] file already exists. Skipping...')
+        return
+
+    cores = s.cores[pid]
+    rprofs = s.rprofs[pid]
+    if not cores.attrs['tcoll_resolved']:
+        return
+    lprops = tools.calculate_lagrangian_props(s, cores, rprofs)
+    lprops.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
+
+
 def run_grid(s, num, overwrite=False):
     """Run GRID-dendro
 

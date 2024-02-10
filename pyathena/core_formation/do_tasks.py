@@ -46,6 +46,8 @@ if __name__ == "__main__":
                         help="Calculate radial profiles of each cores")
     parser.add_argument("-t", "--critical-tes", action="store_true",
                         help="Calculate critical TES of each cores")
+    parser.add_argument("--lagrangian-props", action="store_true",
+                        help="Calculate Lagrangian properties of cores")
     parser.add_argument("--linewidth-size", action="store_true",
                         help="Calculate linewidth-size relation")
     parser.add_argument("-o", "--overwrite", action="store_true",
@@ -142,6 +144,14 @@ if __name__ == "__main__":
                     tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
                     p.map(wrapper, cores.index)
+
+        # Calculate Lagrangian properties
+        if args.lagrangian_props:
+            def wrapper(pid):
+                tasks.lagrangian_props(s, pid, overwrite=args.overwrite)
+            print(f"Calculate Lagrangian properties for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, pids)
 
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}")
