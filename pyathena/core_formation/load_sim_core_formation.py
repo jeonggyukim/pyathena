@@ -256,19 +256,20 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 continue
             # Lines below are executed only for resolved and isolated cores.
             fname = Path(self.savdir, 'cores', 'lprops.par{}.p'.format(pid))
-            lprops = pd.read_pickle(fname).sort_index()
-            if set(lprops.columns).issubset(cores.columns):
-                msg = ("Lagrangian core properties are already included in "
-                       "cores attributes, even before computing them. "
-                       "The pickle might be currupted.")
-                raise ValueError(msg)
+            if fname.exists():
+                lprops = pd.read_pickle(fname).sort_index()
+                if set(lprops.columns).issubset(cores.columns):
+                    msg = ("Lagrangian core properties are already included in "
+                           "cores attributes, even before computing them. "
+                           "The pickle might be currupted.")
+                    raise ValueError(msg)
 
-            # Save attributes before performing join, which will drop them.
-            attrs = cores.attrs.copy()
-            attrs.update(lprops.attrs)
-            cores = cores.join(lprops)
-            # Reattach attributes
-            cores.attrs = attrs
+                # Save attributes before performing join, which will drop them.
+                attrs = cores.attrs.copy()
+                attrs.update(lprops.attrs)
+                cores = cores.join(lprops)
+                # Reattach attributes
+                cores.attrs = attrs
 
             # Calculate normalized times
             cores.insert(1, 'tnorm1',
