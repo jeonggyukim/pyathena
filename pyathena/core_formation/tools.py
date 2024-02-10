@@ -7,6 +7,7 @@ from scipy.optimize import brentq
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
 from pathlib import Path
+import tes as tes_new
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import tes
@@ -451,11 +452,35 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
             except ValueError:
                 dcrit = rcrit = mcrit = np.nan
 
+    # Calculate alternative critical radius (experimental)
+    rsupcrit = calculate_critical_radius(s, rprf, core)
+
     res = dict(tidal_mass=mtidal, center_density=rhoc,
                mean_tidal_density=mean_tidal_density, sonic_radius=rs, pindex=p,
                critical_contrast=dcrit, critical_radius=rcrit,
-               critical_mass=mcrit)
+               critical_mass=mcrit, critical_radius_alt=rsupcrit)
     return res
+
+
+def calculate_critical_radius(s, rprf, core):
+    ts = tes_new.TES('crit', p=core.pindex)
+    ts.set_sonic_radius_floor()
+    rs_floor = ts._rs_floor
+    rs_ceil = ts._rs_max
+
+    rs = core.sonic_radius
+    for rmax, menc in zip(rprf.r.data[1:], rprf.menc.data[1:]):
+        # Find a TES that has the critical radius = rmax
+        def fx(xi_s):
+            ts = tes_new.TES('crit', p=core.pindex, rs=xi_s)
+            return xi_s*rmax/ts.rmax - rs
+        xi_s = brentq(fx, rs_floor, rs_ceil)
+        ts = tes_new.TES('crit', p=core.pindex, rs=xi_s)
+        pext = s.cs**4/s.gconst * (xi_s / rs)**2
+        mcrit = s.cs**4/s.gconst**1.5/np.sqrt(pext)*ts.menc(ts.rmax)
+        if menc > mcrit:
+            return rmax
+    return np.nan
 
 
 def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
