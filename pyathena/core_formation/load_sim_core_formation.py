@@ -215,9 +215,30 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             if 'critical_radius' not in cores:
                 continue
 
+            # Find collapse time
+            cores.attrs['tcoll'] = self.tcoll_cores.loc[pid].time
+
             # Find critical time
             ncrit = tools.critical_time(self, pid)
             cores.attrs['numcrit'] = ncrit
+            if np.isnan(ncrit):
+                cores.attrs['tcrit'] = np.nan
+                cores.attrs['rcore'] = np.nan
+                cores.attrs['mcore'] = np.nan
+                cores.attrs['mean_density'] = np.nan
+                cores.attrs['tff_crit'] = np.nan
+            else:
+                core = cores.loc[ncrit]
+                rprf = self.rprofs[pid].sel(num=ncrit)
+                rcore = core.critical_radius
+                mcore = rprf.menc.interp(r=rcore).data[()]
+                mean_density = mcore / (4*np.pi*rcore**3/3)
+                tff_crit = tools.tfreefall(mean_density, self.gconst)
+                cores.attrs['tcrit'] = core.time
+                cores.attrs['rcore'] = rcore
+                cores.attrs['mcore'] = mcore
+                cores.attrs['mean_density'] = mean_density
+                cores.attrs['tff_crit'] = tff_crit
 
             # Test resolvedness and isolatedness
             if tools.test_isolated_core(self, cores):
@@ -291,25 +312,25 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             # Free-fall time at t_coll
             cores.attrs['tff_coll'] = tools.tfreefall(cores.loc[ncoll].mean_density, self.gconst)
 
-            # Calculate some observable properties
-            r_obs, rhoavg_obs, sigma_obs = [], [], []
-            prestellar_cores = cores.loc[:cores.attrs['numcoll']]
-            for num, core in prestellar_cores.iterrows():
-                rprf = rprofs.sel(num=num)
-                res = tools.calculate_observables(core, rprf, rprf.r.max())
-                r_obs.append(res['r_obs'])
-                rhoavg_obs.append(res['rhoavg_obs'])
-                sigma_obs.append(res['sigma_obs'])
-            obsprops = pd.DataFrame(dict(r_obs=r_obs,
-                                         rhoavg_obs=rhoavg_obs,
-                                         sigma_obs=sigma_obs),
-                                    index=prestellar_cores.index)
-            # Save attributes before performing join, which will drop them.
-            attrs = cores.attrs.copy()
-            attrs.update(obsprops.attrs)
-            cores = cores.join(obsprops)
-            # Reattach attributes
-            cores.attrs = attrs
+#            # Calculate some observable properties
+#            r_obs, rhoavg_obs, sigma_obs = [], [], []
+#            prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+#            for num, core in prestellar_cores.iterrows():
+#                rprf = rprofs.sel(num=num)
+#                res = tools.calculate_observables(core, rprf, rprf.r.max())
+#                r_obs.append(res['r_obs'])
+#                rhoavg_obs.append(res['rhoavg_obs'])
+#                sigma_obs.append(res['sigma_obs'])
+#            obsprops = pd.DataFrame(dict(r_obs=r_obs,
+#                                         rhoavg_obs=rhoavg_obs,
+#                                         sigma_obs=sigma_obs),
+#                                    index=prestellar_cores.index)
+#            # Save attributes before performing join, which will drop them.
+#            attrs = cores.attrs.copy()
+#            attrs.update(obsprops.attrs)
+#            cores = cores.join(obsprops)
+#            # Reattach attributes
+#            cores.attrs = attrs
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}

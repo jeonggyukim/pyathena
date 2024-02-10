@@ -11,7 +11,7 @@ from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation.tes import TESc, get_critical_tes
 from pyathena.core_formation import config
-import tes
+import turb_sphere as tes
 
 
 class LognormalPDF:
@@ -573,25 +573,18 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
 
 
 def calculate_lagrangian_props(s, cores, rprofs):
-    tcoll = s.tcoll_cores.loc[cores.attrs['pid']].time
-
     # Slice cores that have corresponding radial profiles
     common_indices = sorted(set(cores.index) & set(rprofs.num.data))
     cores = cores.loc[common_indices]
     ncrit = cores.attrs['numcrit']
+    rcore = cores.attrs['rcore']
+    mcore = cores.attrs['mcore']
 
     if np.isnan(ncrit):
-        tcrit = rcore = mcore = mean_density = np.nan
-        radius = tff_crit = menc = rhoe = rhoavg = np.nan
+        radius = menc = rhoe = rhoavg = np.nan
         vinfall = sigma_mw = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
-        tcrit = cores.loc[ncrit].time
-        rcore = cores.loc[ncrit].critical_radius
-        mcore = rprofs.sel(num=ncrit).menc.interp(r=rcore).data[()]
-        mean_density = mcore / (4*np.pi*rcore**3/3)
-        tff_crit = tfreefall(mean_density, s.gconst)
-
         radius, menc, rhoe, rhoavg = [], [], [], []
         vinfall, sigma_mw = [], []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
@@ -637,13 +630,6 @@ def calculate_lagrangian_props(s, cores, rprofs):
                                       vinfall=vinfall, sigma_mw=sigma_mw,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
-    lprops.attrs['rcore'] = rcore
-    lprops.attrs['mcore'] = mcore
-    lprops.attrs['mean_density'] = mean_density
-    lprops.attrs['tff_crit'] = tff_crit
-    lprops.attrs['tcrit'] = tcrit
-    lprops.attrs['tcoll'] = tcoll
-
     return lprops
 
 
