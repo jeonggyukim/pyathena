@@ -453,7 +453,7 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
                 dcrit = rcrit = mcrit = np.nan
 
     # Calculate alternative critical radius (experimental)
-    rsupcrit = calculate_critical_radius(s, rprf, core)
+    rsupcrit = calculate_critical_radius(s, core, rprf)
 
     res = dict(tidal_mass=mtidal, center_density=rhoc,
                mean_tidal_density=mean_tidal_density, sonic_radius=rs, pindex=p,
@@ -462,7 +462,7 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
     return res
 
 
-def calculate_critical_radius(s, rprf, core):
+def calculate_critical_radius(s, core, rprf):
     ts = tes.TES('crit', p=core.pindex)
     ts.set_sonic_radius_floor()
     rs_floor = ts._rs_floor
@@ -474,13 +474,17 @@ def calculate_critical_radius(s, rprf, core):
         def fx(xi_s):
             ts = tes.TES('crit', p=core.pindex, rs=xi_s)
             return xi_s*rmax/ts.rmax - rs
-        xi_s = brentq(fx, rs_floor, rs_ceil)
+        # Sometime, when p and rs is extremely small, ValueError occurs.
+        try:
+            xi_s = brentq(fx, rs_floor, rs_ceil)
+        except ValueError:
+            return np.nan
         ts = tes.TES('crit', p=core.pindex, rs=xi_s)
         pext = s.cs**4/s.gconst * (xi_s / rs)**2
         mcrit = s.cs**4/s.gconst**1.5/np.sqrt(pext)*ts.menc(ts.rmax)
         if menc > mcrit:
             return rmax
-    return np.nan
+    return np.inf
 
 
 def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
