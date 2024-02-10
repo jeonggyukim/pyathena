@@ -463,25 +463,24 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
 
 
 def calculate_critical_radius(s, core, rprf):
-    ts = tes.TES('crit', p=core.pindex)
-    ts.set_sonic_radius_floor()
-    rs_floor = ts._rs_floor
-    rs_ceil = ts._rs_max
+    tsc = TESc(p=core.pindex)
+    rs_floor = tsc.get_min_xi_s()
+    rs_ceil = tsc._rs_max
 
     rs = core.sonic_radius
     for rmax, menc in zip(rprf.r.data[1:], rprf.menc.data[1:]):
         # Find a TES that has the critical radius = rmax
         def fx(xi_s):
-            ts = tes.TES('crit', p=core.pindex, rs=xi_s)
-            return xi_s*rmax/ts.rmax - rs
+            tsc = TESc(p=core.pindex, xi_s=xi_s)
+            return xi_s*rmax/tsc.get_rcrit() - rs
         # Sometime, when p and rs is extremely small, ValueError occurs.
         try:
             xi_s = brentq(fx, rs_floor, rs_ceil)
         except ValueError:
             return np.nan
-        ts = tes.TES('crit', p=core.pindex, rs=xi_s)
-        pext = s.cs**4/s.gconst * (xi_s / rs)**2
-        mcrit = s.cs**4/s.gconst**1.5/np.sqrt(pext)*ts.menc(ts.rmax)
+        tsc = TESc(p=core.pindex, xi_s=xi_s)
+        conv = rs/xi_s
+        mcrit = conv*tsc.get_mass(tsc.get_rcrit())
         if menc > mcrit:
             return rmax
     return np.inf
