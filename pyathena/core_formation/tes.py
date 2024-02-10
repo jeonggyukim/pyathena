@@ -471,6 +471,7 @@ class TESc:
     def __init__(self, p=0.5, xi_s=np.inf, sigma=None):
         self._xi_min = 1e-5
         self._xi_max = 1e3
+        self._rs_max = 1e5
         self.p = p
         if sigma is None:
             self.xi_s = xi_s
@@ -481,7 +482,7 @@ class TESc:
                 return sigv
 
             self.xi_s = brentq(lambda x: get_sigv(x, p)-sigma,
-                               self.get_min_xi_s(), 1e5)
+                               self.get_min_xi_s(), self._rs_max)
 
     def solve(self, xi):
         """Solve equilibrium equation
