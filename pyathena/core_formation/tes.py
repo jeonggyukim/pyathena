@@ -54,7 +54,7 @@ class TESe:
     >>> # plot density profile
     >>> plt.loglog(r, np.exp(u))
     """
-    def __init__(self, p=0.5, xi_s=np.inf, sigma_r=None, mode='tot'):
+    def __init__(self, p=0.5, xi_s=np.inf, sigma=None, mode='tot'):
         if mode not in {'thm', 'tot'}:
             raise ValueError("mode should be either thm or tot")
         self.mode = mode
@@ -62,7 +62,7 @@ class TESe:
         self._xi_min = 1e-5
         self._xi_max = 1e20
         self.p = p
-        if sigma_r is None:
+        if sigma is None:
             self.xi_s = xi_s
         else:
             def get_sigv(xi_s, p):
@@ -71,7 +71,7 @@ class TESe:
                 return sigv
 
             min_xi_s = self.get_min_xi_s()
-            self.xi_s = 10**brentq(lambda x: get_sigv(10**x, p)-sigma_r,
+            self.xi_s = 10**brentq(lambda x: get_sigv(10**x, p)-sigma,
                                    np.log10(min_xi_s), 3)
 
 
@@ -468,11 +468,11 @@ class TESc:
     xi_s : float
         dimensionless sonic radius.
     """
-    def __init__(self, p=0.5, xi_s=np.inf, sigma_r=None):
+    def __init__(self, p=0.5, xi_s=np.inf, sigma=None):
         self._xi_min = 1e-5
         self._xi_max = 1e3
         self.p = p
-        if sigma_r is None:
+        if sigma is None:
             self.xi_s = xi_s
         else:
             def get_sigv(xi_s, p):
@@ -480,7 +480,7 @@ class TESc:
                 sigv = tsc.get_sigma()
                 return sigv
 
-            self.xi_s = brentq(lambda x: get_sigv(x, p)-sigma_r,
+            self.xi_s = brentq(lambda x: get_sigv(x, p)-sigma,
                                self.get_min_xi_s(), 1e5)
 
     def solve(self, xi):
@@ -1101,7 +1101,7 @@ if __name__ == "__main__":
         velocity_dispersions = np.logspace(np.log10(0.1), np.log10(20), 100)
         for sigma in velocity_dispersions:
             print(f"p={pindex}, sigma={sigma}")
-            tsc = TESc(p=pindex, sigma_r=sigma)
+            tsc = TESc(p=pindex, sigma=sigma)
             rcrit = tsc.get_rcrit('tot')
             mcrit = tsc.get_mass(rcrit)
             u, du = tsc.solve(rcrit)
@@ -1127,7 +1127,7 @@ if __name__ == "__main__":
 #        sonic_radius, critical_contrast, critical_radius, critical_mass = [], [], [], []
 #        velocity_dispersion = np.logspace(-1, 2, 256)
 #        for sigma_r in velocity_dispersion:
-#            tse = TESe(p=pindex, sigma_r=sigma_r)
+#            tse = TESe(p=pindex, sigma=sigma_r)
 #            uc, rc, mc = tse.get_crit()
 #            fe = 1 + (rc/tse.xi_s)**(2*tse.p)
 #            sonic_radius.append(tse.xi_s)
