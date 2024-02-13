@@ -170,7 +170,7 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
     xmin, xmax = coords['x'].min(), coords['x'].max()
     ymin, ymax = coords['y'].min(), coords['y'].max()
     zmin, zmax = coords['z'].min(), coords['z'].max()
-    dims = coords.dims
+    sizes = coords.sizes
     extent = dict(zip(('x', 'y', 'z'), ((ymin, ymax, zmin, zmax),
                                         (zmin, zmax, xmin, xmax),
                                         (xmin, xmax, ymin, ymax))))
@@ -179,7 +179,7 @@ def plot_grid_dendro_contours(s, gd, nodes, coords, axis='z', color='k',
     if isinstance(nodes, (int, np.int32, np.int64)):
         nodes = [nodes,]
     for nd in nodes:
-        mask = xr.DataArray(np.ones([dims['z'], dims['y'], dims['x']],
+        mask = xr.DataArray(np.ones([sizes['z'], sizes['y'], sizes['x']],
                                     dtype=bool), coords=coords)
         mask = gd.filter_data(mask, nd, fill_value=0)
         if recenter is not None:
@@ -472,7 +472,7 @@ def plot_core_evolution(s, pid, num, rmax=None):
         LJ_c = 1.0/np.sqrt(core.center_density)
         xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
         if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
-            ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
+            ts = tes.TESc(p=core.pindex, rs=core.sonic_radius/LJ_c)
             xi = np.logspace(np.log10(ts._rfloor), np.log10(xi_max))
             u, du = ts.solve(xi)
             for ax in axs['rho']:
@@ -654,7 +654,7 @@ def core_structure(s, pid, num, rmax=None):
         xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
         xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
         if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
-            ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
+            ts = tes.TESc(p=core.pindex, rs=core.sonic_radius/LJ_c)
             u, du = ts.solve(xi)
             plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
 
@@ -743,7 +743,7 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     plt.plot(rprf.r/r0, rprf.rho/core.center_density, ls='-', marker='+', color='k', lw=lw)
 
     # Overplot critical TES
-    tsc = tes.TESc(p=core.pindex, xi_s=core.sonic_radius*np.sqrt(core.center_density))
+    tsc = tes.TESc(p=core.pindex, rs=core.sonic_radius*np.sqrt(core.center_density))
     xi_min = tsc._rfloor*np.sqrt(core.center_density)
     xi_max = r0*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
