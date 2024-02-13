@@ -468,21 +468,20 @@ class TESc:
     xi_s : float
         dimensionless sonic radius.
     """
-    def __init__(self, p=0.5, xi_s=np.inf, sigma=None):
-        self._xi_min = 1e-5
-        self._xi_max = 1e3
-        self._rs_max = 1e5
+    def __init__(self, p=0.5, rs=np.inf, sigma=None):
+        self._rfloor = 1e-5
+        self._rs_ceil = 1e5
         self.p = p
         if sigma is None:
-            self.xi_s = xi_s
+            self.rs = rs
         else:
-            def get_sigv(xi_s, p):
-                tsc = TESc(p=p, xi_s=xi_s)
-                sigv = tsc.get_sigma()
+            def get_sigv(rs, p):
+                tsc = TESc(p=p, rs=rs)
+                sigv = tsc.sigma()
                 return sigv
-
-            self.xi_s = brentq(lambda x: get_sigv(x, p)-sigma,
-                               self.get_min_xi_s(), self._rs_max)
+            self._rs_floor = self.sonic_radius_floor()
+            self.rs = brentq(lambda x: get_sigv(x, p) - sigma,
+                             self._rs_floor, self._rs_ceil)
 
     def solve(self, xi):
         """Solve equilibrium equation
@@ -506,12 +505,12 @@ class TESc:
 
         xi = np.array(xi, dtype='float64')
         y0 = np.array([0, 0])
-        if xi.min() > self._xi_min:
-            xi = np.insert(xi, 0, self._xi_min)
+        if xi.min() > self._rfloor:
+            xi = np.insert(xi, 0, self._rfloor)
             istart = 1
         else:
             istart = 0
-        if np.all(xi <= self._xi_min):
+        if np.all(xi <= self._rfloor):
             u = y0[0]*np.ones(xi.size)
             du = y0[1]*np.ones(xi.size)/xi
         else:
@@ -566,7 +565,7 @@ class TESc:
             logrmax = np.nan
         return 10**logrmax
 
-    def get_mass(self, xi0):
+    def menc(self, xi0):
         """Calculates dimensionless enclosed mass.
 
         The dimensionless mass enclosed within the dimensionless radius xi
@@ -591,7 +590,7 @@ class TESc:
         else:
             mask = np.isinf(xi0)
         u, du = self.solve(xi0)
-        f = 1 + (xi0/self.xi_s)**(2*self.p)
+        f = 1 + (xi0/self.rs)**(2*self.p)
         m = -(xi0**2*f*du + 2*self.p*(f-1)*xi0)/np.pi
         if not isinstance(xi0, float):
             m[mask] = np.inf
@@ -602,8 +601,8 @@ class TESc:
         # Perturbation with the fixed turbulent velocity field
         # i.e., p = r_s = const.
         u, du = self.solve(xi)
-        m = self.get_mass(xi)
-        f = 1 + (xi / self.xi_s)**(2*self.p)
+        m = self.menc(xi)
+        f = 1 + (xi / self.rs)**(2*self.p)
         dsu, dslogm = self._get_sonic_radius_derivatives(xi)
         dslogxi = m / (4*np.pi*xi**3*np.exp(u)) * (1 - dslogm)
         dslogf = -2*self.p*(1 - 1/f)
@@ -616,8 +615,8 @@ class TESc:
         # ======= EXPERIMENTAL ========
         # Perturbation at fixed dv_r at the boundary.
 #        u, du = self.solve(xi)
-#        m = self.get_mass(xi)
-#        f = 1 + (xi / self.xi_s)**(2*self.p)
+#        m = self.menc(xi)
+#        f = 1 + (xi / self.rs)**(2*self.p)
 #        dsu, dslogm = self._get_sonic_radius_derivatives(xi)
 #        pov = m / (4*np.pi*xi**3*np.exp(u))
 #        dslogf = -2*self.p*(1 - 1/f)
@@ -628,7 +627,7 @@ class TESc:
 
         return kappa_thm, kappa_tot
 
-    def get_sigma(self):
+    def sigma(self):
         """Calculate mass-weighted mean velocity dispersion within rcrit
 
         Returns
@@ -640,25 +639,25 @@ class TESc:
         def func(xi):
             u, _ = self.solve(xi)
             dm = xi**2*np.exp(u)
-            dv2 = (xi / self.xi_s)**(2*self.p)
+            dv2 = (xi / self.rs)**(2*self.p)
             return dm*dv2
-        num, _ = quad(func, self._xi_min, rc)
+        num, _ = quad(func, self._rfloor, rc)
 
         def func(xi):
             u, _ = self.solve(xi)
             dm = xi**2*np.exp(u)
             return dm
-        den, _ = quad(func, self._xi_min, rc)
+        den, _ = quad(func, self._rfloor, rc)
 
         sigv = np.sqrt(num/den)
         return sigv
 
-    def get_min_xi_s(self, atol=1e-4):
+    def sonic_radius_floor(self, atol=1e-4):
         a = 1e-3
         b = 999
 
         def f(x):
-            tsc = TESc(p=self.p, xi_s=x)
+            tsc = TESc(p=self.p, rs=x)
             return tsc.get_rcrit()
 
         while (b - a > atol):
@@ -686,7 +685,7 @@ class TESc:
         """
         y1, y2 = y
         dy1 = y2
-        f = 1 + (np.exp(x)/self.xi_s)**(2*self.p)
+        f = 1 + (np.exp(x)/self.rs)**(2*self.p)
         a = f
         b = (2*self.p + 1)*f - 2*self.p
         c = 2*self.p*(2*self.p+1)*(f-1) + 4*np.pi**2*np.exp(2*x+y1)
@@ -694,13 +693,13 @@ class TESc:
         return np.array([dy1, dy2])
 
     def _get_sonic_radius_derivatives(self, xi, dlog_xi_s=1e-3):
-        log_xi_s = np.log(self.xi_s)
+        log_xi_s = np.log(self.rs)
 
-        xi_s = [np.exp(log_xi_s - dlog_xi_s),
+        rs = [np.exp(log_xi_s - dlog_xi_s),
                 np.exp(log_xi_s + dlog_xi_s)]
-        tsc = [TESc(p=self.p, xi_s=xi_s[0]), TESc(p=self.p, xi_s=xi_s[1])]
+        tsc = [TESc(p=self.p, rs=rs[0]), TESc(p=self.p, rs=rs[1])]
         u = [tsc[0].solve(xi)[0], tsc[1].solve(xi)[0]]
-        m = [tsc[0].get_mass(xi), tsc[1].get_mass(xi)]
+        m = [tsc[0].menc(xi), tsc[1].menc(xi)]
         du = (u[1] - u[0]) / (2*dlog_xi_s)
         dlogm = (np.log(m[1]) - np.log(m[0])) / (2*dlog_xi_s)
 
@@ -756,8 +755,8 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     """
     fig, axs = plt.subplots(2, 2, figsize=(14, 10))
 
-    ts = TESc(xi_s=rsonic0)
-    menc0 = ts.get_mass(rmax0)
+    ts = TESc(rs=rsonic0)
+    menc0 = ts.menc(rmax0)
 
     # Plot the density profile
     plt.sca(axs[0, 0])
@@ -777,10 +776,10 @@ def plot_pv_diagram_for_fixed_rhoc(rmax0, rsonic0):
     rmax_arr = np.logspace(-1, 2)
     u, du = ts.solve(rmax_arr)
     rho_e = np.exp(u)
-    M = ts.get_mass(rmax_arr)
+    M = ts.menc(rmax_arr)
     plt.loglog(rmax_arr, M, label=r'$M/M_{J,c}$')
     plt.loglog(rmax_arr, M*np.sqrt(rho_e), label=r'$M/M_{J,e}$')
-    M = ts.get_mass(rmax0)
+    M = ts.menc(rmax0)
     u, du = ts.solve(rmax0)
     rho_e = np.exp(u[0])
     plt.plot(rmax0, M, 'r+', mew=2, ms=10)
@@ -951,11 +950,11 @@ def _get_critical_tes_at_fixed_rhoc(xi_s):
     mcrit : float
         Critical mass.
     """
-    tsc = TESc(xi_s=xi_s)
+    tsc = TESc(rs=xi_s)
     rcrit = tsc.get_rcrit()
     u, du = tsc.solve(rcrit)
     dcrit = np.exp(u[0])
-    mcrit = tsc.get_mass(rcrit)
+    mcrit = tsc.menc(rcrit)
     return dcrit, rcrit, mcrit
 
 
@@ -984,7 +983,7 @@ def _get_critical_tes_at_fixed_rhoe(rhoe, rsonic, p):
     def get_rhoe(rhoc, rs, p):
         LJ_c = 1/np.sqrt(rhoc)
         xi_s = rs/LJ_c
-        tsc = TESc(p=p, xi_s=xi_s)
+        tsc = TESc(p=p, rs=xi_s)
         rcrit = tsc.get_rcrit()
         u, _ = tsc.solve(rcrit)
         return rhoc*np.exp(u)
@@ -992,9 +991,9 @@ def _get_critical_tes_at_fixed_rhoe(rhoe, rsonic, p):
     rhoc = 10**brentq(lambda x: get_rhoe(10**x, rsonic, p) - rhoe, 0, 5)
     LJ_c = MJ_c = 1/np.sqrt(rhoc)
     xi_s = rsonic/LJ_c
-    tsc = TESc(p=p, xi_s=xi_s)
+    tsc = TESc(p=p, rs=xi_s)
     rcrit = tsc.get_rcrit()
-    mcrit = tsc.get_mass(rcrit)
+    mcrit = tsc.menc(rcrit)
 
     return rhoc, rcrit*LJ_c, mcrit*MJ_c
 
@@ -1104,12 +1103,12 @@ if __name__ == "__main__":
             print(f"p={pindex}, sigma={sigma}")
             tsc = TESc(p=pindex, sigma=sigma)
             rcrit = tsc.get_rcrit('tot')
-            mcrit = tsc.get_mass(rcrit)
+            mcrit = tsc.menc(rcrit)
             u, du = tsc.solve(rcrit)
             contrast.append(-u)
             radius.append(rcrit*2*np.pi)
             mass.append(mcrit*np.pi**1.5)
-            rsonic.append(tsc.xi_s*2*np.pi)
+            rsonic.append(tsc.rs*2*np.pi)
         contrast = np.array(contrast)
         radius = np.array(radius)
         mass = np.array(mass)

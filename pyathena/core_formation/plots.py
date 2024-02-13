@@ -473,14 +473,14 @@ def plot_core_evolution(s, pid, num, rmax=None):
         xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
         if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
             ts = tes.TESc(p=core.pindex, xi_s=core.sonic_radius/LJ_c)
-            xi = np.logspace(np.log10(ts._xi_min), np.log10(xi_max))
+            xi = np.logspace(np.log10(ts._rfloor), np.log10(xi_max))
             u, du = ts.solve(xi)
             for ax in axs['rho']:
                 ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
 
         # overplot critical BE
         ts = tes.TESc()
-        xi = np.logspace(np.log10(ts._xi_min), np.log10(xi_max))
+        xi = np.logspace(np.log10(ts._rfloor), np.log10(xi_max))
         u, du = ts.solve(xi)
         for ax in axs['rho']:
             ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
@@ -744,7 +744,7 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
 
     # Overplot critical TES
     tsc = tes.TESc(p=core.pindex, xi_s=core.sonic_radius*np.sqrt(core.center_density))
-    xi_min = tsc._xi_min*np.sqrt(core.center_density)
+    xi_min = tsc._rfloor*np.sqrt(core.center_density)
     xi_max = r0*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
@@ -752,7 +752,7 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
 
     # Overplot critical BE
     tsc = tes.TESc()
-    xi_min = tsc._xi_min*np.sqrt(core.center_density)
+    xi_min = tsc._rfloor*np.sqrt(core.center_density)
     xi_max = r0*np.sqrt(core.center_density)
     xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
     u, _ = tsc.solve(xi)
