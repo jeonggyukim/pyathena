@@ -29,7 +29,7 @@ def plot_projection(s, ds, field='dens', axis='z', op='sum',
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata.
-    ds : yt.frontends.athena_pp.AthenaPPDataset or xarray.Dataset
+    ds : yt.frontends.athena_pp.data_structures.AthenaPPDataset or xarray.Dataset
         Object containing fluid variables.
     field : str, optional
         Variable to plot.
@@ -78,7 +78,7 @@ def plot_projection(s, ds, field='dens', axis='z', op='sum',
     field_dict_yt = dict(dens=('athena_pp', 'dens'))
     field_dict_pyathena = dict(dens='dens', mask='mask')
 
-    if isinstance(ds, yt.frontends.athena_pp.AthenaPPDataset):
+    if isinstance(ds, yt.frontends.athena_pp.data_structures.AthenaPPDataset):
         # create projection using yt
         fld = field_dict_yt[field]
         prj = ds.proj(fld, axis)
