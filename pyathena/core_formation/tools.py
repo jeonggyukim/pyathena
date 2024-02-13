@@ -442,13 +442,13 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
     
             # Find critical TES at the central density
             xi_s = rs / LJ_c
-            tsc = TESc(p=p, xi_s=xi_s)
+            tsc = TESc(p=p, rs=xi_s)
             try:
                 xi_crit = tsc.get_rcrit(mode=mode)
                 u, du = tsc.solve(xi_crit)
                 dcrit = np.exp(-u)
                 rcrit = xi_crit*LJ_c
-                mcrit = tsc.get_mass(xi_crit)*MJ_c
+                mcrit = tsc.menc(xi_crit)*MJ_c
             except ValueError:
                 dcrit = rcrit = mcrit = np.nan
 
@@ -464,23 +464,23 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
 
 def calculate_critical_radius(s, core, rprf):
     tsc = TESc(p=core.pindex)
-    rs_floor = tsc.get_min_xi_s()
-    rs_ceil = tsc._rs_max
+    rs_floor = tsc.sonic_radius_floor()
+    rs_ceil = tsc._rs_ceil
 
     rs = core.sonic_radius
     for rmax, menc in zip(rprf.r.data[1:], rprf.menc.data[1:]):
         # Find a TES that has the critical radius = rmax
         def fx(xi_s):
-            tsc = TESc(p=core.pindex, xi_s=xi_s)
+            tsc = TESc(p=core.pindex, rs=xi_s)
             return xi_s*rmax/tsc.get_rcrit() - rs
         # Sometime, when p and rs is extremely small, ValueError occurs.
         try:
             xi_s = brentq(fx, rs_floor, rs_ceil)
         except ValueError:
             return np.nan
-        tsc = TESc(p=core.pindex, xi_s=xi_s)
+        tsc = TESc(p=core.pindex, rs=xi_s)
         conv = rs/xi_s
-        mcrit = conv*tsc.get_mass(tsc.get_rcrit())
+        mcrit = conv*tsc.menc(tsc.get_rcrit())
         if menc > mcrit:
             return rmax
     return np.inf
