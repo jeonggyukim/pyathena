@@ -304,25 +304,29 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
 
-#            # Calculate some observable properties
-#            r_obs, rhoavg_obs, sigma_obs = [], [], []
-#            prestellar_cores = cores.loc[:cores.attrs['numcoll']]
-#            for num, core in prestellar_cores.iterrows():
-#                rprf = rprofs.sel(num=num)
-#                res = tools.calculate_observables(core, rprf, rprf.r.max())
-#                r_obs.append(res['r_obs'])
-#                rhoavg_obs.append(res['rhoavg_obs'])
-#                sigma_obs.append(res['sigma_obs'])
-#            obsprops = pd.DataFrame(dict(r_obs=r_obs,
-#                                         rhoavg_obs=rhoavg_obs,
-#                                         sigma_obs=sigma_obs),
-#                                    index=prestellar_cores.index)
-#            # Save attributes before performing join, which will drop them.
-#            attrs = cores.attrs.copy()
-#            attrs.update(obsprops.attrs)
-#            cores = cores.join(obsprops)
-#            # Reattach attributes
-#            cores.attrs = attrs
+            # Calculate some observable properties
+            r_obs, m_obs, rhoavg_obs, sigma_obs, mcrit_at_robs = [], [], [], [], []
+            prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+            for num, core in prestellar_cores.iterrows():
+                rprf = rprofs.sel(num=num)
+                res = tools.calculate_observables(self, core, rprf, core.tidal_radius)
+                r_obs.append(res['r_obs'])
+                m_obs.append(res['m_obs'])
+                rhoavg_obs.append(res['rhoavg_obs'])
+                sigma_obs.append(res['sigma_obs'])
+                mcrit_at_robs.append(res['mcrit_at_robs'])
+            obsprops = pd.DataFrame(dict(r_obs=r_obs,
+                                         m_obs=m_obs,
+                                         rhoavg_obs=rhoavg_obs,
+                                         sigma_obs=sigma_obs,
+                                         mcrit_at_robs=mcrit_at_robs),
+                                    index=prestellar_cores.index)
+            # Save attributes before performing join, which will drop them.
+            attrs = cores.attrs.copy()
+            attrs.update(obsprops.attrs)
+            cores = cores.join(obsprops)
+            # Reattach attributes
+            cores.attrs = attrs
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
