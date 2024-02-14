@@ -756,30 +756,34 @@ def calculate_accelerations(rprf):
     return acc
 
 
-def calculate_observables(core, rprf, rmax):
+def calculate_observables(s, core, rprf, rmax):
     """Calculate observable properties of a core"""
     # Create interpolation functions
     rho_itp = interp1d(rprf.r.data, rprf.rho.data)
-    dvel_sq_itp = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
-
     r_obs = fwhm(rho_itp, rmax)
     try:
-        rhoavg_obs = rprf.menc.interp(r=r_obs).data[()] / (4*np.pi*r_obs**3/3)
-        def integrand_numerator(R):
-            return column_density(R, lambda x: rho_itp(x)*dvel_sq_itp(x), rmax)*R
-        def integrand_denominator(R):
-            return column_density(R, rho_itp, rmax)*R
-        numer, _ = quad(integrand_numerator, 0, r_obs, epsrel=1e-2, limit=200)
-        denom, _ = quad(integrand_denominator, 0, r_obs, epsrel=1e-2, limit=200)
-        sigma_obs = np.sqrt(numer / denom)
+        m_obs = rprf.menc.interp(r=r_obs).data[()]
+        rhoavg_obs = m_obs / (4*np.pi*r_obs**3/3)
+
+        dv2 = rprf.dvel1_sq_mw.sel(r=slice(0, rmax))
+        rho = rprf.rho.sel(r=slice(0, rmax))
+        sigma_obs = np.sqrt(dv2.weighted(rho).mean('r').data[()])
+
+        tsc = TESc(sigma=sigma_obs)
+        xi_fwhm = fwhm(tsc.rho, tsc.get_rcrit())
+        m_over_xi = tsc.menc(xi_fwhm) / xi_fwhm
+        mcrit = np.pi*s.cs**2/s.gconst*m_over_xi*r_obs
     except ValueError:
         # Because r_obs is found by multiplying two to the HMHW,
         # it can sometimes exceed the maximum radius of the radial profiles.
         # If that happens, we cannot solve for the properties within the
         # FWHM radius.
+        m_obs = np.nan
         rhoavg_obs = np.nan
         sigma_obs = np.nan
-    res = dict(r_obs=r_obs, rhoavg_obs=rhoavg_obs, sigma_obs=sigma_obs)
+        mcrit = np.nan
+    res = dict(r_obs=r_obs, m_obs=m_obs, rhoavg_obs=rhoavg_obs, sigma_obs=sigma_obs,
+               mcrit_at_robs=mcrit)
 
     return res
 
