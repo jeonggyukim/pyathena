@@ -48,6 +48,8 @@ if __name__ == "__main__":
                         help="Calculate critical TES of each cores")
     parser.add_argument("--lagrangian-props", action="store_true",
                         help="Calculate Lagrangian properties of cores")
+    parser.add_argument("--observables", action="store_true",
+                        help="Calculate observable properties of cores")
     parser.add_argument("--linewidth-size", action="store_true",
                         help="Calculate linewidth-size relation")
     parser.add_argument("-o", "--overwrite", action="store_true",
@@ -135,7 +137,7 @@ if __name__ == "__main__":
 
         # Find critical tes
         if args.critical_tes:
-            print(f"find critical tes for t_coll cores for model {mdl}")
+            print(f"find critical tes for cores for model {mdl}")
             for pid in pids:
                 cores = s.cores[pid]
                 if not cores.attrs['tcoll_resolved']:
@@ -148,10 +150,26 @@ if __name__ == "__main__":
         # Calculate Lagrangian properties
         if args.lagrangian_props:
             def wrapper(pid):
+                if not s.cores[pid].attrs['tcoll_resolved']:
+                    return
                 tasks.lagrangian_props(s, pid, overwrite=args.overwrite)
             print(f"Calculate Lagrangian properties for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, pids)
+
+        # Find observables
+        if args.observables:
+            print(f"Calculate observable core properties for model {mdl}")
+            for pid in pids:
+                cores = s.cores[pid]
+                if not cores.attrs['tcoll_resolved']:
+                    continue
+                cores = cores.loc[:cores.attrs['numcoll']]
+                def wrapper(num):
+                    tasks.observables(s, pid, num, overwrite=args.overwrite)
+                with Pool(args.np) as p:
+                    p.map(wrapper, cores.index)
+
 
         # Resample AMR data into uniform grid
 #        print(f"resample AMR to uniform for model {mdl}")
