@@ -483,6 +483,16 @@ class TESc:
             self.rs = brentq(lambda x: get_sigv(x, p) - sigma,
                              self._rs_floor, self._rs_ceil)
 
+    def rho(self, r):
+        """Calculate normalized density.
+
+        Notes
+        -----
+        rho = rho_c * e^u
+        """
+        u, _ = self.solve(r)
+        return np.exp(u)
+
     def solve(self, xi):
         """Solve equilibrium equation
 
