@@ -468,13 +468,11 @@ class TESc:
     xi_s : float
         dimensionless sonic radius.
     """
-    def __init__(self, p=0.5, rs=np.inf, sigma=None):
+    def __init__(self, p=0.5, rs=np.inf, sigma=0):
         self._rfloor = 1e-5
         self._rs_ceil = 1e5
         self.p = p
-        if sigma is None:
-            self.rs = rs
-        else:
+        if sigma > 0:
             def get_sigv(rs, p):
                 tsc = TESc(p=p, rs=rs)
                 sigv = tsc.sigma()
@@ -486,6 +484,8 @@ class TESc:
                                  " the steep dependence of xi_crit on xi_s")
             self.rs = brentq(lambda x: get_sigv(x, p) - sigma,
                              self._rs_floor, self._rs_ceil)
+        else:
+            self.rs = rs
 
     def rho(self, r):
         """Calculate normalized density.
