@@ -480,6 +480,10 @@ class TESc:
                 sigv = tsc.sigma()
                 return sigv
             self._rs_floor = self.sonic_radius_floor()
+            tsc = TESc(p=p, rs=self._rs_floor)
+            if tsc.sigma() < sigma:
+                raise ValueError(f"sigma = {sigma:.2f} is too large. Cannot find xi_crit due to"
+                                 " the steep dependence of xi_crit on xi_s")
             self.rs = brentq(lambda x: get_sigv(x, p) - sigma,
                              self._rs_floor, self._rs_ceil)
 
@@ -1106,27 +1110,50 @@ if __name__ == "__main__":
     central density, for different sonic radii.
     """
 
+    # Conversion factors from LJ_c normalization to BE normalization
+    m0 = np.pi**1.5
+    r0 = 2*np.pi
     for pindex in [0.3, 0.5, 0.7]:
-        contrast, radius, mass, rsonic = [], [], [], []
+        contrast, radius, mass, rsonic, robs, mobs = [], [], [], [], [], []
         velocity_dispersions = np.logspace(np.log10(0.1), np.log10(20), 100)
         for sigma in velocity_dispersions:
             print(f"p={pindex}, sigma={sigma}")
-            tsc = TESc(p=pindex, sigma=sigma)
-            rcrit = tsc.get_rcrit('tot')
-            mcrit = tsc.menc(rcrit)
-            u, du = tsc.solve(rcrit)
-            contrast.append(-u)
-            radius.append(rcrit*2*np.pi)
-            mass.append(mcrit*np.pi**1.5)
-            rsonic.append(tsc.rs*2*np.pi)
+            try:
+                tsc = TESc(p=pindex, sigma=sigma)
+                rcrit = tsc.get_rcrit('tot')
+                mcrit = tsc.menc(rcrit)
+                u, _ = tsc.solve(rcrit)
+
+                # Intrinsic quantities
+                contrast.append(-u)
+                radius.append(rcrit*r0)
+                mass.append(mcrit*m0)
+                rsonic.append(tsc.rs*r0)
+
+                # Observed quantities
+                fwhm = tools.fwhm(tsc.rho, rcrit)
+                robs.append(fwhm*r0)
+                mobs.append(tsc.menc(fwhm)*m0)
+            except ValueError:
+                contrast.append(np.nan)
+                radius.append(np.nan)
+                mass.append(np.nan)
+                rsonic.append(np.nan)
+                robs.append(np.nan)
+                mobs.append(np.nan)
+
         contrast = np.array(contrast)
         radius = np.array(radius)
         mass = np.array(mass)
         rsonic = np.array(rsonic)
+        robs = np.array(robs)
+        mobs = np.array(mobs)
         res = dict(ucrit=contrast,
                    rcrit=radius,
                    mcrit=mass,
                    rsonic=rsonic,
+                   robs=robs,
+                   mobs=mobs,
                    sigma=velocity_dispersions)
         fname = "/home/sm69/pyathena/pyathena/core_formation/critical_tes_p{}.p".format(pindex)
         with open(fname, "wb") as handle:
