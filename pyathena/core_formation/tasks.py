@@ -287,10 +287,41 @@ def lagrangian_props(s, pid, overwrite=False):
 
     cores = s.cores[pid]
     rprofs = s.rprofs[pid]
-    if not cores.attrs['tcoll_resolved']:
-        return
     lprops = tools.calculate_lagrangian_props(s, cores, rprofs)
     lprops.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
+
+
+def observables(s, pid, num, overwrite=False):
+    # Check if file exists
+    ofname = Path(s.savdir, 'cores',
+                  'observables.par{}.{:05d}.p'.format(pid, num))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[observables] file already exists. Skipping...')
+        return
+
+    if num not in s.rprofs[pid].num:
+        msg = (f"Radial profile for num={num} does not exist. "
+                "Cannot calculate observables. Skipping...")
+        logging.warning(msg)
+        return
+
+    msg = '[observables] processing model {} pid {} num {}'
+    print(msg.format(s.basename, pid, num))
+
+    # Load the radial profile
+    rprf = s.rprofs[pid].sel(num=num)
+    core = s.cores[pid].loc[num]
+
+    # Calculate observables
+    observables = tools.calculate_observables(s, core, rprf, core.tidal_radius)
+    observables['num'] = num
+
+    # write to file
+    if ofname.exists():
+        ofname.unlink()
+    with open(ofname, 'wb') as handle:
+        pickle.dump(observables, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def run_grid(s, num, overwrite=False):
