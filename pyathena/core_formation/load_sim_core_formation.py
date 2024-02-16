@@ -122,12 +122,12 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 pass
 
             try:
-                self.cores1 = self.update_core_props(force_override=force_override, ver=1)
+                self.cores1 = self.update_core_props(ver=1)
             except (AttributeError, KeyError):
                 logging.warning("Failed to update core properties")
 
             try:
-                self.cores2 = self.update_core_props(force_override=force_override, ver=2)
+                self.cores2 = self.update_core_props(ver=2)
             except (AttributeError, KeyError):
                 logging.warning("Failed to update core properties with empirical tcrit")
 
@@ -237,6 +237,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 core = cores.loc[ncrit]
                 rprf = rprofs.sel(num=ncrit)
                 rcore = core.critical_radius
+                if rcore > rprf.r.max()[()]:
+                    # TODO for ver=2, this can happen; later, we need to calculate
+                    # radial profiles to larger radius
+                    continue
                 mcore = rprf.menc.interp(r=rcore).data[()]
                 mean_density = mcore / (4*np.pi*rcore**3/3)
                 tff_crit = tools.tfreefall(mean_density, self.gconst)
