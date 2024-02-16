@@ -159,6 +159,22 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
+    def good_cores(self, ver=1):
+        """List of resolved and isolated cores"""
+        good_cores = []
+        match ver:
+            case 1:
+                cores_dict = self.cores1
+            case 2:
+                cores_dict = self.cores2
+        for pid in self.pids:
+            if not self.cores[pid].attrs['tcoll_resolved']:
+                continue
+            cores = cores_dict[pid]
+            if cores.attrs['isolated'] and cores.attrs['resolved']:
+                good_cores.append(pid)
+        return good_cores
+
     def update_core_props(self, ncells_min=8, ver=1):
         """Update core properties
 
@@ -183,9 +199,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             if not cores.attrs['tcoll_resolved']:
                 continue
-
-            # Find collapse time
-            cores.attrs['tcoll'] = self.tcoll_cores.loc[pid].time
 
             # Find critical time
             ncrit = tools.critical_time(self, pid, ver)
@@ -223,75 +236,74 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             else:
                 cores.attrs['resolved'] = False
 
-            if not (cores.attrs['resolved'] and cores.attrs['isolated']):
-                continue
-            # Lines below are executed only for resolved and isolated cores.
-            fname = Path(self.savdir, 'cores', f'lprops_ver{ver}.par{pid}.p')
-            if fname.exists():
-                lprops = pd.read_pickle(fname).sort_index()
-                if set(lprops.columns).issubset(cores.columns):
-                    cores = cores.drop(lprops.columns, axis=1)
+            if cores.attrs['resolved'] and cores.attrs['isolated']:
+                # Lines below are executed only for resolved and isolated cores.
+                fname = Path(self.savdir, 'cores', f'lprops_ver{ver}.par{pid}.p')
+                if fname.exists():
+                    lprops = pd.read_pickle(fname).sort_index()
+                    if set(lprops.columns).issubset(cores.columns):
+                        cores = cores.drop(lprops.columns, axis=1)
 
-                # Save attributes before performing join, which will drop them.
-                attrs = cores.attrs.copy()
-                attrs.update(lprops.attrs)
-                cores = cores.join(lprops)
-                # Reattach attributes
-                cores.attrs = attrs
+                    # Save attributes before performing join, which will drop them.
+                    attrs = cores.attrs.copy()
+                    attrs.update(lprops.attrs)
+                    cores = cores.join(lprops)
+                    # Reattach attributes
+                    cores.attrs = attrs
 
-            # Calculate normalized times
-            cores.insert(1, 'tnorm1',
-                         (cores.time - cores.attrs['tcoll'])
-                          / cores.attrs['tff_crit'])
-            cores.insert(2, 'tnorm2',
-                         (cores.time - cores.attrs['tcrit'])
-                          / (cores.attrs['tcoll'] - cores.attrs['tcrit']))
+                # Calculate normalized times
+                cores.insert(1, 'tnorm1',
+                             (cores.time - cores.attrs['tcoll'])
+                              / cores.attrs['tff_crit'])
+                cores.insert(2, 'tnorm2',
+                             (cores.time - cores.attrs['tcrit'])
+                              / (cores.attrs['tcoll'] - cores.attrs['tcrit']))
 
-            mcore = cores.attrs['mcore']
-            rcore = cores.attrs['rcore']
+                mcore = cores.attrs['mcore']
+                rcore = cores.attrs['rcore']
 
-            # Building time
-            if np.isnan(ncrit):
-                cores.attrs['dt_build'] = np.nan
-            else:
-                rprf = rprofs.sel(num=ncrit)
-                mdot = (-4*np.pi*rcore**2*rprf.rho*rprf.vel1_mw).interp(r=rcore).data[()]
-                cores.attrs['dt_build'] = mcore / mdot
+                # Building time
+                if np.isnan(ncrit):
+                    cores.attrs['dt_build'] = np.nan
+                else:
+                    rprf = rprofs.sel(num=ncrit)
+                    mdot = (-4*np.pi*rcore**2*rprf.rho*rprf.vel1_mw).interp(r=rcore).data[()]
+                    cores.attrs['dt_build'] = mcore / mdot
 
-            # Collapse time
-            cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
+                # Collapse time
+                cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
 
-            # Infall time
-            if np.isnan(mcore):
-                tf = np.nan
-            else:
-                phst = self.load_parhst(pid)
-                idx = phst.mass.sub(mcore).abs().argmin()
-                if idx == phst.index[-1]:
+                # Infall time
+                if np.isnan(mcore):
                     tf = np.nan
                 else:
-                    tf = phst.loc[idx].time
-            cores.attrs['tinfall_end'] = tf
-            cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
+                    phst = self.load_parhst(pid)
+                    idx = phst.mass.sub(mcore).abs().argmin()
+                    if idx == phst.index[-1]:
+                        tf = np.nan
+                    else:
+                        tf = phst.loc[idx].time
+                cores.attrs['tinfall_end'] = tf
+                cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
 
-            prestellar_cores = cores.loc[:cores.attrs['numcoll']]
-            oprops = []
-            for num, core in prestellar_cores.iterrows():
-                fname = Path(self.savdir, 'cores',
-                             'observables.par{}.{:05d}.p'
-                             .format(pid, num))
-                if fname.exists():
-                    oprops.append(pd.read_pickle(fname))
-            if len(oprops) > 0:
-                oprops = pd.DataFrame(oprops).set_index('num').sort_index()
+                prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+                oprops = []
+                for num, core in prestellar_cores.iterrows():
+                    fname = Path(self.savdir, 'cores',
+                                 'observables.par{}.{:05d}.p'
+                                 .format(pid, num))
+                    if fname.exists():
+                        oprops.append(pd.read_pickle(fname))
+                if len(oprops) > 0:
+                    oprops = pd.DataFrame(oprops).set_index('num').sort_index()
 
-                # Save attributes before performing join, which will drop them.
-                attrs = cores.attrs.copy()
-                attrs.update(oprops.attrs)
-                cores = cores.join(oprops)
-                # Reattach attributes
-                cores.attrs = attrs
+                    # Save attributes before performing join, which will drop them.
+                    attrs = cores.attrs.copy()
+                    attrs.update(oprops.attrs)
+                    cores = cores.join(oprops)
+                    # Reattach attributes
+                    cores.attrs = attrs
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
@@ -380,10 +392,15 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 if mcore_go15_found:
                     cores.attrs['mcore_go15'] = mcore_go15[pid]
 
+            # Find collapse time
+            cores.attrs['tcoll'] = self.tcoll_cores.loc[pid].time
+
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
 
             cores_dict[pid] = cores
+
+
 
         if len(pids_not_found) > 0:
             msg = f"Some critical TES files are missing for pid {pids_not_found}"
