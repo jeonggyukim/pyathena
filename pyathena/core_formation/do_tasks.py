@@ -151,9 +151,10 @@ if __name__ == "__main__":
         # Calculate Lagrangian properties
         if args.lagrangian_props:
             def wrapper(pid):
-                if not s.cores[pid].attrs['tcoll_resolved']:
-                    return
-                tasks.lagrangian_props(s, pid, overwrite=args.overwrite)
+                if pid in s.cores1:
+                    tasks.lagrangian_props(s, pid, ver=1, overwrite=args.overwrite)
+                if pid in s.cores2:
+                    tasks.lagrangian_props(s, pid, ver=2, overwrite=args.overwrite)
             print(f"Calculate Lagrangian properties for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, pids)

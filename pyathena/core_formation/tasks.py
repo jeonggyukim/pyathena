@@ -285,7 +285,11 @@ def lagrangian_props(s, pid, ver=1, overwrite=False):
         print('[lagrangian_props] file already exists. Skipping...')
         return
 
-    cores = s.cores[pid]
+    match ver:
+        case 1:
+            cores = s.cores1[pid]
+        case 2:
+            cores = s.cores2[pid]
     rprofs = s.rprofs[pid]
     lprops = tools.calculate_lagrangian_props(s, cores, rprofs)
     lprops.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
