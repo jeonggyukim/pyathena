@@ -886,7 +886,7 @@ def critical_time(s, pid, ver=1):
                 fnet = fnet.interp(r=rmax).data[()]
             else:
                 fnet = np.nan
-            if fnet > 0:
+            if not fnet < 0:
                 ncrit = num + 1
                 break
     if ncrit is None or ncrit == cores.index[-1] + 1:
