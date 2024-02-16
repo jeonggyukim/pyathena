@@ -16,6 +16,7 @@ if __name__ == "__main__":
     # MHD models
     for iseed in [1,]:
         models[f"M5J2B2P{iseed}N512"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B2.P{iseed}.N512"
+        models[f"M10J4B2P{iseed}N1024"] = f"/scratch/gpfs/sm69/cores/mhd/M10.J4.B2.P{iseed}.N1024"
 
     # Experimental
     models['M3J4P1N1024'] = "/tigress/sm69/cores/hydro/M3.J4.P1.N1024"

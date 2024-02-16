@@ -277,9 +277,9 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
         rprf.to_netcdf(ofname)
 
 
-def lagrangian_props(s, pid, overwrite=False):
+def lagrangian_props(s, pid, ver=1, overwrite=False):
     # Check if file exists
-    ofname = Path(s.savdir, 'cores', 'lprops.par{}.p'.format(pid))
+    ofname = Path(s.savdir, 'cores', f'lprops_ver{ver}.par{pid}.p')
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[lagrangian_props] file already exists. Skipping...')
