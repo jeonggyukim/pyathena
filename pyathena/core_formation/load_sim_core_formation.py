@@ -122,9 +122,14 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 pass
 
             try:
-                self.cores = self.update_core_props(force_override=force_override)
+                self.cores1 = self.update_core_props(force_override=force_override, ver=1)
             except (AttributeError, KeyError):
                 logging.warning("Failed to update core properties")
+
+            try:
+                self.cores2 = self.update_core_props(force_override=force_override, ver=2)
+            except (AttributeError, KeyError):
+                logging.warning("Failed to update core properties with empirical tcrit")
 
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
@@ -191,9 +196,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 isolated_cores.append(pid)
         return isolated_cores
 
-    @LoadSim.Decorators.check_pickle
-    def update_core_props(self, ncells_min=8, prefix='cores',
-                          savdir=None, force_override=False):
+    def update_core_props(self, ncells_min=8, ver=1):
         """Update core properties
 
         Calculate lagrangian core properties using the radial profiles
@@ -210,8 +213,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         pandas.DataFrame
             Updated core dataframe.
         """
+        core_dict = {}
         for pid in self.pids:
-            cores = self.cores[pid]  # shallow copy
+            cores = self.cores[pid].copy()
             rprofs = self.rprofs[pid]
 
             if not cores.attrs['tcoll_resolved']:
@@ -221,7 +225,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['tcoll'] = self.tcoll_cores.loc[pid].time
 
             # Find critical time
-            ncrit = tools.critical_time(self, pid)
+            ncrit = tools.critical_time(self, pid, ver)
             cores.attrs['numcrit'] = ncrit
             if np.isnan(ncrit):
                 cores.attrs['tcrit'] = np.nan
@@ -255,14 +259,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             if not (cores.attrs['resolved'] and cores.attrs['isolated']):
                 continue
             # Lines below are executed only for resolved and isolated cores.
-            fname = Path(self.savdir, 'cores', 'lprops.par{}.p'.format(pid))
+            fname = Path(self.savdir, 'cores', f'lprops_ver{ver}.par{pid}.p')
             if fname.exists():
                 lprops = pd.read_pickle(fname).sort_index()
                 if set(lprops.columns).issubset(cores.columns):
-                    msg = ("Lagrangian core properties are already included in "
-                           "cores attributes, even before computing them. "
-                           "The pickle might be currupted.")
-                    raise ValueError(msg)
+                    cores = cores.drop(lprops.columns, axis=1)
 
                 # Save attributes before performing join, which will drop them.
                 attrs = cores.attrs.copy()
@@ -294,12 +295,15 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
 
             # Infall time
-            phst = self.load_parhst(pid)
-            idx = phst.mass.sub(mcore).abs().argmin()
-            if np.isnan(mcore) or idx == phst.index[-1]:
+            if np.isnan(mcore):
                 tf = np.nan
             else:
-                tf = phst.loc[idx].time
+                phst = self.load_parhst(pid)
+                idx = phst.mass.sub(mcore).abs().argmin()
+                if idx == phst.index[-1]:
+                    tf = np.nan
+                else:
+                    tf = phst.loc[idx].time
             cores.attrs['tinfall_end'] = tf
             cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
@@ -325,9 +329,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
 
-            self.cores[pid] = cores
+            core_dict[pid] = cores
 
-        return self.cores
+        return core_dict
 
     @LoadSim.Decorators.check_pickle
     def _load_tcoll_cores(self, prefix='tcoll_cores', savdir=None, force_override=False):

@@ -767,7 +767,7 @@ def calculate_observables(s, core, rprf, rmax):
 
         dv2 = rprf.dvel1_sq_mw.sel(r=slice(0, rmax))
         rho = rprf.rho.sel(r=slice(0, rmax))
-        sigma_obs = np.sqrt(dv2.weighted(rho).mean('r').data[()])
+        sigma_obs = np.sqrt(dv2.weighted(rprf.r**2*rho).mean('r').data[()])
 
         tsc = TESc(sigma=sigma_obs)
         xi_fwhm = fwhm(tsc.rho, tsc.get_rcrit())
@@ -855,7 +855,7 @@ def fwhm(frho, rmax, which='volume'):
     return fwhm
 
 
-def critical_time(s, pid):
+def critical_time(s, pid, ver=1):
     cores = s.cores[pid].copy()
     if len(cores) == 0:
         return np.nan
@@ -867,19 +867,32 @@ def critical_time(s, pid):
         if num == cores.index[-1] and np.isnan(core.critical_radius):
             continue
         rprf = rprofs.sel(num=num)
-        if np.isfinite(core.critical_radius):
-            menc = rprf.menc.interp(r=core.critical_radius).data[()]
-        else:
-            menc = np.nan
-        cond1 = core.tidal_radius >= core.critical_radius
-        cond2 = menc >= core.critical_mass
-        cond = cond1 and cond2
-        if not cond:
-            ncrit = num + 1
-            break
+
+        if ver==1:
+            if np.isfinite(core.critical_radius):
+                menc = rprf.menc.interp(r=core.critical_radius).data[()]
+            else:
+                menc = np.nan
+            cond1 = core.tidal_radius >= core.critical_radius
+            cond2 = menc >= core.critical_mass
+            cond = cond1 and cond2
+            if not cond:
+                ncrit = num + 1
+                break
+        elif ver==2:
+            if np.isfinite(core.critical_radius):
+                fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
+                rmax = min(rprf.r.max().data[()], core.critical_radius)
+                fnet = fnet.interp(r=rmax).data[()]
+            else:
+                fnet = np.nan
+            if fnet > 0:
+                ncrit = num + 1
+                break
     if ncrit is None or ncrit == cores.index[-1] + 1:
         # If the critical condition is satisfied for all time, or is not satisfied at t_coll,
         # set ncrit to NaN.
+        # TODO: we may not want to discard those that the critical condition is satisfied for all times.
         ncrit = np.nan
     return ncrit
 
