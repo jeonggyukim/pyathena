@@ -159,43 +159,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
-    def good_cores(self):
-        """Examine the isolatedness and resolvedness of cores
-
-        This function will examine whether the cores are isolated or
-        resolved and assign attributes to the `cores`.
-
-        Parameters
-        ----------
-        ncells_min : int, optional
-            Minimum number of cells to be considered "resolved".
-        ftff : float, optional
-            fractional free fall time before t_coll, at which the
-            resolvedness is examined.
-        """
-        good_cores = []
-        for pid in self.pids:
-            cores = self.cores[pid]
-            if not cores.attrs['tcoll_resolved']:
-                continue
-            if cores.attrs['isolated'] and cores.attrs['resolved']:
-                good_cores.append(pid)
-        return good_cores
-
-    def resolved_cores(self):
-        resolved_cores = []
-        for pid in self.pids:
-            if self.cores[pid].attrs['resolved']:
-                resolved_cores.append(pid)
-        return resolved_cores
-
-    def isolated_cores(self):
-        isolated_cores = []
-        for pid in self.pids:
-            if self.cores[pid].attrs['isolated']:
-                isolated_cores.append(pid)
-        return isolated_cores
-
     def update_core_props(self, ncells_min=8, ver=1):
         """Update core properties
 
