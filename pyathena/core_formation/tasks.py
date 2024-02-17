@@ -156,7 +156,7 @@ def core_tracking(s, pid, protostellar=False, overwrite=False):
 
     # Perform protostellar core tracking only for resolved cores
     # to save resources.
-    if protostellar and s.cores[pid].attrs['tcoll_resolved']:
+    if protostellar:
         cores = tools.track_protostellar_cores(s, pid)
     else:
         cores = tools.track_cores(s, pid)
@@ -181,9 +181,6 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
     pids_skip = []
     for pid in pids:
         cores = s.cores[pid]
-        if not cores.attrs['tcoll_resolved']:
-            pids_skip.append(pid)
-            continue
         if num not in cores.index:
             pids_skip.append(pid)
             continue
@@ -219,9 +216,6 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
     # Loop through cores
     for pid in pids_to_process:
         cores = s.cores[pid]
-        if not cores.attrs['tcoll_resolved']:
-            continue
-
         if num not in cores.index:
             # This snapshot `num` does not contain any image of the core `pid`
             # Continue to the next core.

@@ -141,8 +141,6 @@ if __name__ == "__main__":
             print(f"find critical tes for cores for model {mdl}")
             for pid in pids:
                 cores = s.cores[pid]
-                if not cores.attrs['tcoll_resolved']:
-                    continue
                 def wrapper(num):
                     tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
                 with Pool(args.np) as p:
@@ -164,8 +162,6 @@ if __name__ == "__main__":
             print(f"Calculate observable core properties for model {mdl}")
             for pid in pids:
                 cores = s.cores[pid]
-                if not cores.attrs['tcoll_resolved']:
-                    continue
                 cores = cores.loc[:cores.attrs['numcoll']]
                 def wrapper(num):
                     tasks.observables(s, pid, num, overwrite=args.overwrite)
@@ -205,8 +201,6 @@ if __name__ == "__main__":
             print(f"draw core evolution plots for model {mdl}")
             for pid in pids:
                 cores = s.cores[pid]
-                if not cores.attrs['tcoll_resolved']:
-                    continue
                 def wrapper(num):
                     tasks.plot_core_evolution(s, pid, num,
                                               overwrite=args.overwrite)
