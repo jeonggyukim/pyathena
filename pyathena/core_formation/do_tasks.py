@@ -132,7 +132,7 @@ if __name__ == "__main__":
             print(msg)
             def wrapper(num):
                 tasks.radial_profile(s, num, pids, overwrite=args.overwrite,
-                                     full_radius=True)
+                                     full_radius=False)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
