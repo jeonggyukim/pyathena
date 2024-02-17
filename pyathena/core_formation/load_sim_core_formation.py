@@ -4,7 +4,6 @@ import xarray as xr
 import numpy as np
 from pathlib import Path
 import pickle
-import logging
 from scipy.interpolate import interp1d
 
 from pyathena.load_sim import LoadSim
@@ -124,7 +123,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
 
             except FileNotFoundError:
-                logging.warning("Failed to load core information")
+                self.logger.warning("Failed to load core information")
                 pass
 
             try:
@@ -132,7 +131,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 savdir = Path(self.savdir, 'radial_profile')
                 self.rprofs = self._load_radial_profiles(savdir=savdir, force_override=force_override)
             except (AttributeError, FileNotFoundError, KeyError):
-                logging.warning("Failed to load radial profiles")
+                self.logger.warning("Failed to load radial profiles")
                 pass
 
             try:
@@ -141,7 +140,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.cores1 = self.update_core_props(ver=1, prefix='cores1',
                                                      savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
-                logging.warning("Failed to update core properties")
+                self.logger.warning("Failed to update core properties")
 
             try:
                 # Calculate derived core properties using the empirical critical time
@@ -149,7 +148,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.cores2 = self.update_core_props(ver=2, prefix='cores2',
                                                      savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
-                logging.warning("Failed to update core properties with empirical tcrit")
+                self.logger.warning("Failed to update core properties with empirical tcrit")
 
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
@@ -239,8 +238,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 if rcore > rprf.r.max()[()]:
                     # TODO for ver=2, this can happen; later, we need to calculate
                     # radial profiles to larger radius
-                    msg = f"Core radius exceeds the maximum rprof radius for {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
-                    logging.warning(msg)
+                    msg = f"Core radius exceeds the maximum rprof radius for model {self.basename}, par {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
+                    self.logger.warning(msg)
                     continue
                 mcore = rprf.menc.interp(r=rcore).data[()]
                 mean_density = mcore / (4*np.pi*rcore**3/3)
@@ -444,7 +443,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
         if len(pids_not_found) > 0:
             msg = f"Some critical TES files are missing for pid {pids_not_found}"
-            logging.warning(msg)
+            self.logger.warning(msg)
         return cores_dict
 
     @LoadSim.Decorators.check_pickle
@@ -493,7 +492,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             rprofs_dict[pid] = rprofs
         if len(pids_not_found) > 0:
             msg = f"Some radial profiles are missing for pid {pids_not_found}."
-            logging.warning(msg)
+            self.logger.warning(msg)
         return rprofs_dict
 
 
