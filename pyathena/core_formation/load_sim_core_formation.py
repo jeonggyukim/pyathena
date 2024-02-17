@@ -176,7 +176,14 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         for pid in self.pids:
             if not self.cores[pid].attrs['tcoll_resolved']:
                 continue
-            cores = cores_dict[pid]
+
+            # TODO This is temporary workaround; radial profile has to be
+            # computed for larger radius;
+            try:
+                cores = cores_dict[pid]
+            except KeyError:
+                continue
+
             if cores.attrs['isolated'] and cores.attrs['resolved']:
                 good_cores.append(pid)
         return good_cores
