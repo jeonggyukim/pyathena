@@ -113,6 +113,12 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 # Load cores
                 savdir = Path(self.savdir, 'cores')
                 self.cores = self._load_cores(savdir=savdir, force_override=force_override)
+                pids = self.pids.copy()
+                for pid in pids:
+                    if not self.cores[pid].attrs['tcoll_resolved']:
+                        self.pids.remove(pid)
+
+
             except FileNotFoundError:
                 logging.warning("Failed to load core information")
                 pass
@@ -212,9 +218,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         for pid in self.pids:
             cores = self.cores[pid].copy()
             rprofs = self.rprofs[pid]
-
-            if not cores.attrs['tcoll_resolved']:
-                continue
 
             # Find critical time
             ncrit = tools.critical_time(self, pid, ver)
@@ -452,38 +455,35 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         pids_not_found = []
         for pid in self.pids:
             cores = self.cores[pid]
-            if not cores.attrs['tcoll_resolved']:
-                rprofs = None
-            else:
-                rprofs, nums = [], []
-                min_nr = None
-                for num in cores.index:
-                    try:
-                        fname = Path(self.savdir, 'radial_profile',
-                                     'radial_profile.par{}.{:05d}.nc'
-                                     .format(pid, num))
-                        rprf = xr.open_dataset(fname)
-                        if min_nr is None:
-                            min_nr = rprf.sizes['r']
-                        else:
-                            min_nr = min(min_nr, rprf.sizes['r'])
-                        rprofs.append(rprf)
-                        nums.append(num)
-                    except FileNotFoundError:
-                        pids_not_found.append(pid)
-                        break
-                if len(rprofs) > 0:
-                    rprofs = xr.concat(rprofs, 't')
-                    rprofs = rprofs.assign_coords(dict(num=('t', nums)))
-                    # Slice data to common range in r.
-                    rprofs = rprofs.isel(r=slice(0, min_nr))
-                    for axis in [1, 2, 3]:
-                        rprofs[f'dvel{axis}_sq_mw'] = (rprofs[f'vel{axis}_sq_mw']
-                                                     - rprofs[f'vel{axis}_mw']**2)
-                    rprofs['menc'] = (4*np.pi*rprofs.r**2*rprofs.rho
-                                      ).cumulative_integrate('r')
-                    rprofs = rprofs.merge(tools.calculate_accelerations(rprofs))
-                    rprofs = rprofs.set_xindex('num')
+            rprofs, nums = [], []
+            min_nr = None
+            for num in cores.index:
+                try:
+                    fname = Path(self.savdir, 'radial_profile',
+                                 'radial_profile.par{}.{:05d}.nc'
+                                 .format(pid, num))
+                    rprf = xr.open_dataset(fname)
+                    if min_nr is None:
+                        min_nr = rprf.sizes['r']
+                    else:
+                        min_nr = min(min_nr, rprf.sizes['r'])
+                    rprofs.append(rprf)
+                    nums.append(num)
+                except FileNotFoundError:
+                    pids_not_found.append(pid)
+                    break
+            if len(rprofs) > 0:
+                rprofs = xr.concat(rprofs, 't')
+                rprofs = rprofs.assign_coords(dict(num=('t', nums)))
+                # Slice data to common range in r.
+                rprofs = rprofs.isel(r=slice(0, min_nr))
+                for axis in [1, 2, 3]:
+                    rprofs[f'dvel{axis}_sq_mw'] = (rprofs[f'vel{axis}_sq_mw']
+                                                 - rprofs[f'vel{axis}_mw']**2)
+                rprofs['menc'] = (4*np.pi*rprofs.r**2*rprofs.rho
+                                  ).cumulative_integrate('r')
+                rprofs = rprofs.merge(tools.calculate_accelerations(rprofs))
+                rprofs = rprofs.set_xindex('num')
             rprofs_dict[pid] = rprofs
         if len(pids_not_found) > 0:
             msg = f"Some radial profiles are missing for pid {pids_not_found}."
