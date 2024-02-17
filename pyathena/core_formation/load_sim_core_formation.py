@@ -108,26 +108,32 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             self.tcoll_cores = self._load_tcoll_cores(force_override=force_override)
 
             try:
-                # Load grid-dendro nodes
-                self.cores = self._load_cores(force_override=force_override)
+                # Load cores
+                savdir = Path(self.savdir, 'cores')
+                self.cores = self._load_cores(savdir=savdir, force_override=force_override)
             except FileNotFoundError:
                 logging.warning("Failed to load core information")
                 pass
 
             try:
                 # Load radial profiles
-                self.rprofs = self._load_radial_profiles(force_override=force_override)
+                savdir = Path(self.savdir, 'radial_profile')
+                self.rprofs = self._load_radial_profiles(savdir=savdir, force_override=force_override)
             except (AttributeError, FileNotFoundError, KeyError):
                 logging.warning("Failed to load radial profiles")
                 pass
 
             try:
-                self.cores1 = self.update_core_props(ver=1)
+                # Calculate derived core properties using the predicted critical time
+                savdir = Path(self.savdir, 'cores')
+                self.cores1 = self.update_core_props(prefix='cores1', savdir=savdir, ver=1)
             except (AttributeError, KeyError):
                 logging.warning("Failed to update core properties")
 
             try:
-                self.cores2 = self.update_core_props(ver=2)
+                # Calculate derived core properties using the empirical critical time
+                savdir = Path(self.savdir, 'cores')
+                self.cores2 = self.update_core_props(prefix='cores2', savdir=savdir, ver=2)
             except (AttributeError, KeyError):
                 logging.warning("Failed to update core properties with empirical tcrit")
 
@@ -175,7 +181,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 good_cores.append(pid)
         return good_cores
 
-    def update_core_props(self, ncells_min=8, ver=1):
+    @LoadSim.Decorators.check_pickle
+    def update_core_props(self, ncells_min=8, ver=1,
+                          prefix=None, savdir=None, force_override=False):
         """Update core properties
 
         Calculate lagrangian core properties using the radial profiles
