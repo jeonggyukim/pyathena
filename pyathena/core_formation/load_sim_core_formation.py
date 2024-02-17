@@ -93,6 +93,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             LognormalPDF.__init__(self, self.Mach)
             TimingReader.__init__(self, self.basedir, self.problem_id)
 
+            # Set nums dictionary (when hdf5 is stored in elsewhere for storage reasons)
+            if self.nums is None:
+                self.nums = self.nums_partab['par0']
+
             # Set domain
             self.domain = self._get_domain_from_par(self.par)
             Lbox = set(self.domain['Lx'])
@@ -235,6 +239,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 if rcore > rprf.r.max()[()]:
                     # TODO for ver=2, this can happen; later, we need to calculate
                     # radial profiles to larger radius
+                    msg = f"Core radius exceeds the maximum rprof radius for {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
+                    logging.warning(msg)
                     continue
                 mcore = rprf.menc.interp(r=rcore).data[()]
                 mean_density = mcore / (4*np.pi*rcore**3/3)
