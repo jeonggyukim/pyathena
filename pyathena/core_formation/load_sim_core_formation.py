@@ -52,7 +52,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         All preimages of t_coll cores.
     """
 
-    def __init__(self, basedir_or_Mach=None, savdir=None,
+    def __init__(self, basedir_or_Mach=None, ver=1, savdir=None,
                  load_method='pyathena', verbose=False, force_override=False):
         """The constructor for LoadSimCoreFormation class
 
@@ -61,6 +61,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         basedir_or_Mach : str or float
             Path to the directory where all data is stored;
             Alternatively, Mach number
+        ver : int
+            Which definition of t_crit to use.
         savdir : str
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
@@ -126,14 +128,16 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             try:
                 # Calculate derived core properties using the predicted critical time
                 savdir = Path(self.savdir, 'cores')
-                self.cores1 = self.update_core_props(prefix='cores1', savdir=savdir, ver=1)
+                self.cores1 = self.update_core_props(ver=1, prefix='cores1',
+                                                     savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
                 logging.warning("Failed to update core properties")
 
             try:
                 # Calculate derived core properties using the empirical critical time
                 savdir = Path(self.savdir, 'cores')
-                self.cores2 = self.update_core_props(prefix='cores2', savdir=savdir, ver=2)
+                self.cores2 = self.update_core_props(ver=2, prefix='cores2',
+                                                     savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
                 logging.warning("Failed to update core properties with empirical tcrit")
 
@@ -144,6 +148,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             pass
         else:
             raise ValueError("Unknown parameter type for basedir_or_Mach")
+
+        self.select_cores(ver)
 
     def load_dendro(self, num, pruned=True):
         """Load pickled dendrogram object
@@ -165,25 +171,20 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
-    def good_cores(self, ver=1):
-        """List of resolved and isolated cores"""
-        good_cores = []
+    def select_cores(self, ver):
         match ver:
             case 1:
-                cores_dict = self.cores1
+                self.cores = self.cores1.copy()
             case 2:
-                cores_dict = self.cores2
-        for pid in self.pids:
-            if not self.cores[pid].attrs['tcoll_resolved']:
-                continue
+                self.cores = self.cores2.copy()
 
-            # TODO This is temporary workaround; radial profile has to be
-            # computed for larger radius;
-            try:
-                cores = cores_dict[pid]
-            except KeyError:
-                continue
-
+    def good_cores(self, cores_dict=None):
+        """List of resolved and isolated cores"""
+        good_cores = []
+        if cores_dict is None:
+            cores_dict = self.cores
+        for pid in cores_dict.keys():
+            cores = cores_dict[pid]
             if cores.attrs['isolated'] and cores.attrs['resolved']:
                 good_cores.append(pid)
         return good_cores
@@ -376,9 +377,24 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             mcore_go15_found = False
 
 
+        num_start = 0
         for pid in self.pids:
             fname = Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             cores = pd.read_pickle(fname).sort_index()
+
+            prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+            for num, core in prestellar_cores.sort_index(ascending=False).iterrows():
+                if num == prestellar_cores.index[-1]:
+                    lid0 = core.leaf_id
+                    rtidal0 = core.tidal_radius
+                else:
+                    lid = core.leaf_id
+                    if tools.get_node_distance(self, lid, lid0) > rtidal0:
+                        num_start = num + 1
+                        break
+                    lid0 = lid
+                    rtidal0 = core.tidal_radius
+            cores = cores.loc[num_start:]
 
             if cores.attrs['tcoll_resolved']:
                 # Read critical TES info and concatenate to self.cores
@@ -495,12 +511,13 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None,
+    def set_model(self, model, ver=1, savdir=None,
                   load_method='pyathena', verbose=False,
                   reset=False, force_override=False):
         self.model = model
         if reset or force_override:
             self.sim = LoadSimCoreFormation(self.basedirs[model],
+                                            ver=ver,
                                             savdir=savdir,
                                             load_method=load_method,
                                             verbose=verbose,
@@ -511,6 +528,7 @@ class LoadSimCoreFormationAll(object):
                 self.sim = self.simdict[model]
             except KeyError:
                 self.sim = LoadSimCoreFormation(self.basedirs[model],
+                                                ver=ver,
                                                 savdir=savdir,
                                                 load_method=load_method,
                                                 verbose=verbose,
