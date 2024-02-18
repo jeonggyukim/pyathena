@@ -1063,7 +1063,7 @@ class LoadSim(object):
                                      osp.dirname(self.files['rst'][0]),
                                      self.nums_rst[0], self.nums_rst[-1]))
                 else:
-                    self.logger.warning(
+                    self.logger.info(
                         'rst files not found in {0:s}.'.format(self.basedir))
 
     def find_files_vtk2d(self):
