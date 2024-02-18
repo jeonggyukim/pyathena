@@ -52,7 +52,7 @@ class CoolGnat12(object):
         if abundance == 'Asplund09':
             a = AbundanceSolar(Zprime=1.0)
             for e in self.info.index:
-                self.info['abd'][e] = float(a.df[a.df['X'] == e]['NX_NH'])
+                self.info['abd'][e] = float(a.df.loc[a.df['X'] == e, 'NX_NH'].iloc[0])
 
         # self.cool_cie_tot = self.get_cool_cie_total()
         self.get_cool_cie_total()
