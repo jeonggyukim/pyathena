@@ -2,40 +2,10 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-def get_snapshot_nums_starpar(s, tMyr_range=np.array([250, 451])):
-    """Function to get starpar vtk snapshot numbers
-
-    Time range hardcoded
-    """
-
-    if s.par['output3']['out_fmt'] == 'starpar_vtk':
-        dt_starpar = s.par['output3']['dt']
-    else:
-        raise ValueError('Cannot find starpar_vtk output dt')
-
-    tMyr_range_def =\
-    {'R8-4pc': np.array([250, 451])/s.u.Myr/dt_starpar,
-     'R8-8pc': np.array([250, 451])/s.u.Myr/dt_starpar,
-     'LGR4-2pc': np.array([250, 351])/s.u.Myr/dt_starpar,
-     }
-
-    if s.basename.startswith('R8_8pc_NCR.full.xy2048.eps0.0'):
-        tMyr_range = tMyr_range_def['R8-8pc']
-    elif s.basename.startswith('R8_4pc_NCR.full.xy2048.eps0.np768.has'):
-        tMyr_range = tMyr_range_def['R8-4pc']
-    elif s.basename.startswith('LGR4_2pc_NCR.full'):
-        tMyr_range = tMyr_range_def['LGR4-2pc']
-    else:
-        raise ValueError('Cannot find matching model name')
-
-    nums_sp = [num for num in range(*tuple([int(t) for t in tMyr_range]))]
-
-    return nums_sp
-
-def get_luminosity_info(s, force_override=False):
+def get_source_info(s, nums, force_override=False):
     """Function to calculate radiation source statistics
     """
-    nums = get_snapshot_nums_starpar(s)
+
     spa = s.read_starpar_all(nums=nums, savdir=s.savdir,
                              force_override=force_override)
 
@@ -85,7 +55,7 @@ def get_luminosity_info(s, force_override=False):
 
     return r
 
-def plt_hst_source_z(s, ax=None, r=None,
+def plt_hst_source_z(s, nums, ax=None, r=None,
                      title=True, legend=True, force_override=False):
     """Plot time evolution of mean vertical position of radiation sources and stndard
     deviation
@@ -95,7 +65,7 @@ def plt_hst_source_z(s, ax=None, r=None,
         plt.sca(ax)
 
     if r is None:
-        r = get_luminosity_info(s, force_override=force_override)
+        r = get_source_info(s, nums, force_override=force_override)
 
     plt.fill_between(r['spa']['time'], r['spa']['z_min'], r['spa']['z_max'],
                      alpha=0.2, color='grey', label=r'$z_{\rm min/max}$')
@@ -118,13 +88,13 @@ def plt_hst_source_z(s, ax=None, r=None,
 
     return r
 
-def plt_luminosity_distribution(s, ax=None, r=None, title=True, label=True,
+def plt_luminosity_distribution(s, nums, ax=None, r=None, title=True, label=True,
                                 legend=True, force_override=False):
     if ax is not None:
         plt.sca(ax)
 
     if r is None:
-        r = get_luminosity_info(s, force_override=force_override)
+        r = get_source_info(s, nums, force_override=force_override)
 
     l, = plt.plot(r['time_Myr'], r['ntot_Qi'], c='C0',
                   label=r'$n_{\rm{src,tot}}$')
@@ -145,16 +115,18 @@ def plt_luminosity_distribution(s, ax=None, r=None, title=True, label=True,
 
     return r
 
-def plt_luminosity_hist(s, axes=None, r=None, c='k', legend=False, force_override=False):
+def plt_luminosity_hist(s, nums, axes=None, r=None,
+                        c='k', legend=False, force_override=False):
     """Plot histograms of Qi and L_FUV of individual sources (from all snapshots)
 
     axes : two matplotlib axes
+    r : return value of get_source_info (dict)
     """
     if axes is None:
         fig, axes = plt.subplots(1,2,figsize=(12,6), constrained_layout=True)
 
     if r is None:
-        r = get_luminosity_info(s, force_override=force_override)
+        r = get_source_info(s, nums, force_override=force_override)
 
     axes[0].hist(r['Qi'], bins=np.logspace(44, 51.5, 40),
                  histtype='step', color=c)
@@ -167,9 +139,11 @@ def plt_luminosity_hist(s, axes=None, r=None, c='k', legend=False, force_overrid
 
     plt.setp(axes, xscale='log', yscale='log')
     plt.setp(axes[0], xlim=(1e44,5e51), ylim=(0.5,5e3),
-             xlabel=r'$Q_{\rm i,sp}\;[{\rm s}^{-1}]$', ylabel=r'# of sources (all snapshots)')
+             xlabel=r'$Q_{\rm i,sp}\;[{\rm s}^{-1}]$',
+             ylabel=r'# of sources (all snapshots)')
     plt.setp(axes[1], xlim=(1e3,1e8), ylim=(0.5,5e3),
-             xlabel=r'$L_{\rm FUV,sp}\;[L_{\odot}]$', ylabel=r'# of sources (all snapshots)')
+             xlabel=r'$L_{\rm FUV,sp}\;[L_{\odot}]$',
+             ylabel=r'# of sources (all snapshots)')
 
     if legend:
         handles = [mpl.lines.Line2D([0],[0],c='k'),
