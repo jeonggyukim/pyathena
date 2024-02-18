@@ -3,26 +3,79 @@ import pandas as pd
 
 from .load_sim_tigress_ncr import LoadSimTIGRESSNCRAll
 
-num_range = dict()
-num_range['R8_8pc'] = [255,459]
-num_range['R8_4pc'] = [255,459]
-num_range['LGR4_2pc'] = [511,714]
+# Radiation paper (Linzer+)
+models1 = dict(
+    R8_8pc='/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0',
+    R8_4pc='/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR.full.xy2048.eps0.np768.has',
+    LGR4_2pc='/tigress/changgoo/TIGRESS-NCR/LGR4_2pc_NCR.full',
+)
+
+# Metallicity suite (Kim+)
+models2 = dict(
+    R8_Z1='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy2048.eps0.0',
+    R8_Z03='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.3.Zd0.3.xy4096.eps0.0',
+    R8_Z01='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy4096.eps0.0',
+    R8_Zg01_Zd0025='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.025.xy4096.eps0.0',
+    LGR4_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8',
+    LGR4_Z03='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.3.Zd0.3.xy2048.eps1.e-8',
+    LGR4_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy2048.eps1.e-8',
+    LGR4_Zg01_Zd0025='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.025.xy2048.eps1.e-8'
+)
+
+# Time range analyzed
+tMyr_range = dict()
+
+# Radiation paper (Linzer+)
+tMyr_range['R8_8pc'] = [250,450]
+tMyr_range['R8_4pc'] = [250,450]
+tMyr_range['LGR4_2pc'] = [250,350]
+
+# Metallicity suite
+tMyr_range['R8_Z1'] = [438,977]
+tMyr_range['R8_Z03'] = [438,977]
+tMyr_range['R8_Z01'] = [438,977]
+tMyr_range['R8_Zg01_Zd0025'] = [438,977]
+
+tMyr_range['LGR4_Z1'] = [204,488]
+tMyr_range['LGR4_Z03'] = [204,488]
+tMyr_range['LGR4_Z01'] = [204,488]
+tMyr_range['LGR4_Zg01_Zd0025'] = [204,488]
 
 def get_summary(s, model):
 
     df = dict()
-    df['num_range'] = num_range[model]
+    df['tMyr_range'] = tMyr_range[model]
+    df['nums'] = s.get_output_nums(df['tMyr_range'], out_fmt='vtk')
+    df['nums_range'] = [df['nums'][0], df['nums'][-1]]
+    df['nums_starpar'] = s.get_output_nums(df['tMyr_range'], out_fmt='starpar_vtk')
+    df['nums_starpar_range'] = [df['nums_starpar'][0], df['nums_starpar'][-1]]
 
     return df
 
-def load_sim_ncr_rad_all(savdir_base='/tigress/jk11/NCR-RAD',
+def load_sim_ncr_rad_all(model_set='radiation_paper',
+                         savdir_base='/tigress/jk11/NCR-RAD',
                          verbose=False):
+    """
+    Load all simulations
 
-    models = dict(
-        R8_8pc='/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0',
-        R8_4pc='/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR.full.xy2048.eps0.np768.has',
-        LGR4_2pc='/tigress/changgoo/TIGRESS-NCR/LGR4_2pc_NCR.full',
-    )
+    Parameters
+    ----------
+    model_set : str
+        'radiation_paper' or 'lowz'
+    savdir_base : str
+        Base directory for saving results
+    verbose : bool
+        Produce verbose messages.
+
+    Returns
+    -------
+    sa, df : LoadSimTIGRESSNCRAll, pandas DataFrame for summary
+    """
+
+    if model_set == 'radiation_paper':
+        models = models1
+    elif model_set == 'lowz':
+        models = models2
 
     sa = LoadSimTIGRESSNCRAll(models)
 
