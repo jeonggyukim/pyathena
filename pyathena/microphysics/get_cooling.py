@@ -5,7 +5,8 @@ import numpy as np
 def f1(T, T0=2e4, T1=3.5e4):
     '''transition function'''
     return np.where(T > T1, 1.0,
-                    np.where(T <= T0, 0.0, 1.0/(1.0 + np.exp(-10.0*(T - 0.5*(T0+T1))/(T1-T0)))))
+                    np.where(T <= T0, 0.0,
+                             1.0/(1.0 + np.exp(-10.0*(T - 0.5*(T0+T1))/(T1-T0)))))
 
 def get_cooling_heating(s, ds):
     '''read necessary fields, calculate cooling from each coolnat'''
@@ -206,7 +207,8 @@ def get_other_cooling(s, dd):
 
     # dd['dvdr'] = 1/3.*(np.abs(dvdx)+np.abs(dvdy)+np.abs(dvdz))/s.u.time.cgs.value
 
-def set_CIE_interpolator(return_xe=False, return_Lambda_e=False):
+def set_CIE_interpolator(return_xe=False, return_xe_H=False,
+                         return_Lambda_e=False, return_Lambda_hydrogen=False):
     '''CIE cooling from Gnat12
     based on /tigress/jk11/notebook/NEWCOOL/paper-fig-transition.ipynb
     '''
@@ -214,7 +216,6 @@ def set_CIE_interpolator(return_xe=False, return_Lambda_e=False):
     # CIE cooling
     from .cool_gnat12 import CoolGnat12
     cg = CoolGnat12(abundance='Asplund09')
-    elem_no_ion_frac = []
     xe = dict()
     xe_tot = np.zeros_like(cg.temp)
     cool = dict()
@@ -262,22 +263,44 @@ def set_CIE_interpolator(return_xe=False, return_Lambda_e=False):
         for e in elements:
            cool_tot += cool[e]
 
+
+    # Apply the minimum value floor for x_e,He
+    # xe['He'][xe['He'] == 0.0] = 1e-8
+
+    # Looks ugly..but for backward compatibility
+
     # Interpolation
     from scipy.interpolate import interp1d
-
     cgi_metal = interp1d(cg.temp, cool_tot - cool['He'] - cool['H'],
                          bounds_error=False, fill_value=0.0)
     cgi_He = interp1d(cg.temp, cool['He'],
                       bounds_error=False, fill_value=0.0)
+    if return_Lambda_hydrogen:
+        cgi_H = interp1d(cg.temp, cool['H'],
+                         bounds_error=False, fill_value=0.0)
     if return_xe:
         cgi_xe_mH = interp1d(cg.temp, xe_tot - xe['H'],
                              bounds_error=False, fill_value=0.0)
-        cgi_xe_mHHe = interp1d(cg.temp, xe_tot -xe['H'] - xe['He'],
+        cgi_xe_mHHe = interp1d(cg.temp, xe_tot - xe['H'] - xe['He'],
                                bounds_error=False, fill_value=0.0)
         cgi_xe_He = interp1d(cg.temp, xe['He'], bounds_error=False, fill_value=0.0)
-        return cgi_metal, cgi_He, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He
+        if return_xe_H:
+            cgi_xe_H = interp1d(cg.temp, xe['H'], bounds_error=False, fill_value=0.0)
+            if return_Lambda_hydrogen:
+                return cgi_metal, cgi_He, cgi_H, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He, cgi_xe_H
+            else:
+                return cgi_metal, cgi_He, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He, cgi_xe_H
+        else:
+            if return_Lambda_hydrogen:
+                return cgi_metal, cgi_He, cgi_H, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He
+            else:
+                return cgi_metal, cgi_He, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He
     else:
-        return cgi_metal, cgi_He
+        if return_Lambda_hydrogen:
+            return cgi_metal, cgi_He, cgi_H
+        else:
+            return cgi_metal, cgi_He
+
 
 def get_Lambda_CIE(dd):
     '''return Lambda_CIE'''
