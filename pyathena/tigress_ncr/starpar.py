@@ -44,16 +44,16 @@ class StarPar():
         """Function to read post-processed starpar dump
         """
 
-        sp = self.load_starpar_vtk(num)
+        sp = self.load_starpar_vtk(num, force_override=force_override)
         u = self.u
         domain = self.domain
         par = self.par
         LxLy = domain['Lx'][0]*domain['Lx'][1]
 
         try:
-            agemax = par['radps']['agemax_rad']
+            agemax = par['radps']['agemax_rad'] # Max source age in Myr
         except KeyError:
-            self.logger.warning('agemax_rad was not found and set to 40 Myr.')
+            self.logger.warning('agemax_rad was not found and set to 20 Myr.')
             agemax = 20.0
 
         sp['age'] *= u.Myr
@@ -63,9 +63,6 @@ class StarPar():
         # Select non-runaway starpar particles with mass-weighted age < agemax_rad
         isrc = np.logical_and(sp['mage'] < agemax,
                               sp['mass'] != 0.0)
-
-        if np.sum(isrc) == 0:
-            return None
 
         # Center of mass, luminosity, standard deviation of z-position
         # Summary
@@ -88,17 +85,28 @@ class StarPar():
         # Save source as separate DataFrame
         r['sp_src'] = sp
 
-        r['z_max'] = np.max(sp['x3'])
-        r['z_min'] = np.min(sp['x3'])
-        r['z_mean_mass'] = np.average(sp['x3'], weights=sp['mass'])
-        r['z_mean_Qi'] = np.average(sp['x3'], weights=sp['Qi'])
-        r['z_mean_LFUV'] = np.average(sp['x3'], weights=sp['L_FUV'])
-        r['stdz_mass'] = np.sqrt(np.average((sp['x3'] - r['z_mean_mass'])**2,
-                                            weights=sp['mass']))
-        r['stdz_Qi'] = np.sqrt(np.average((sp['x3'] - r['z_mean_Qi'])**2,
-                                          weights=sp['Qi']))
-        r['stdz_LFUV'] = np.sqrt(np.average((sp['x3'] - r['z_mean_LFUV'])**2,
-                                            weights=sp['L_FUV']))
+        if np.sum(isrc) > 0:
+            r['z_max'] = np.max(sp['x3'])
+            r['z_min'] = np.min(sp['x3'])
+            r['z_mean_mass'] = np.average(sp['x3'], weights=sp['mass'])
+            r['z_mean_Qi'] = np.average(sp['x3'], weights=sp['Qi'])
+            r['z_mean_LFUV'] = np.average(sp['x3'], weights=sp['L_FUV'])
+            r['stdz_mass'] = np.sqrt(np.average((sp['x3'] - r['z_mean_mass'])**2,
+                                                weights=sp['mass']))
+            r['stdz_Qi'] = np.sqrt(np.average((sp['x3'] - r['z_mean_Qi'])**2,
+                                              weights=sp['Qi']))
+            r['stdz_LFUV'] = np.sqrt(np.average((sp['x3'] - r['z_mean_LFUV'])**2,
+                                                weights=sp['L_FUV']))
+        else:
+            # No source particles
+            r['z_max'] = np.nan
+            r['z_min'] = np.nan
+            r['z_mean_mass'] = np.nan
+            r['z_mean_Qi'] = np.nan
+            r['z_mean_LFUV'] = np.nan
+            r['stdz_mass'] = np.nan
+            r['stdz_Qi'] = np.nan
+            r['stdz_LFUV'] = np.nan
 
         r['Qi_tot'] = np.sum(sp['Qi'])
         r['L_LW_tot'] = np.sum(sp['L_LW'])
