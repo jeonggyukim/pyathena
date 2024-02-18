@@ -135,6 +135,7 @@ class LoadSim(object):
             # Avoid un-recognized timezone FutureWarning
             config_time = config_time.replace('PDT ', '')
             config_time = config_time.replace('EDT ', '')
+            config_time = config_time.replace('EST ', '')
             self.config_time = pd.to_datetime(config_time).tz_localize('US/Pacific')
             #self.config_time = self.config_time
         except:
