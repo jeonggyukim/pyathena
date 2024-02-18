@@ -85,14 +85,14 @@ class RadiationAndPartiallyIonized:
             # nesq-weighted Uion
             Uion_wgt_nesq=(dd['Uion']*dd['nesq']).sum(axis=(1,2))/dd['nesq'].sum(axis=(1,2)),
             # nesq-weighted Uion for wion_LyC
-            Uion_wion_LyC_wgt_nesq=(dd['Uion_wion_LyC']*dd['nesq_wion_LyC']).sum(axis=(1,2))/\
-            dd['nesq_wion_LyC'].sum(axis=(1,2)),
+            Uion_wion_LyC_wgt_nesq=(Uion_wion_LyC*nesq_wion_LyC).sum(axis=(1,2))/\
+            nesq_wion_LyC.sum(axis=(1,2)),
             # ne-weighted Uion for wion_LyC
-            Uion_wion_LyC_wgt_ne=(dd['Uion_wion_LyC']*dd['ne_wion_LyC']).sum(axis=(1,2))/\
-            dd['ne_wion_LyC'].sum(axis=(1,2)),
+            Uion_wion_LyC_wgt_ne=(Uion_wion_LyC*ne_wion_LyC).sum(axis=(1,2))/\
+            ne_wion_LyC.sum(axis=(1,2)),
             # vol-weighted Uion for wion_LyC
-            Uion_wion_LyC=(dd['Uion_wion_LyC']*dd['ne_wion_LyC']).sum(axis=(1,2))/\
-            dd['ne_wion_LyC'].sum(axis=(1,2)),
+            Uion_wion_LyC=(Uion_wion_LyC*ne_wion_LyC).sum(axis=(1,2))/\
+            ne_wion_LyC.sum(axis=(1,2)),
             # ne-weighted Uion
             Uion_wgt_ne=(dd['Uion']*dd['ne']).sum(axis=(1,2))/dd['ne'].sum(axis=(1,2)),
             # nesq-weighted xHII
