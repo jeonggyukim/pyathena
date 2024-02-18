@@ -146,24 +146,27 @@ class LoadSim(object):
             except:
                 self.config_time = None
 
-        try:
-            muH = self.par['problem']['muH']
-            self.u = Units(kind='LV', muH=muH)
-        except KeyError:
-            try:
-                # Some old simulations run with new cooling may not have muH
-                # parameter printed out
-                if self.par['problem']['Z_gas'] != 1.0:
-                    self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
-                                        format(self.par['problem']['Z_gas']) +
-                                        'Caution with muH={0:s}'.format(muH))
-                self.u = units
-            except:
-                self.u = units
-                pass
         if not self.athena_pp:
+            try:
+                muH = self.par['problem']['muH']
+                self.u = Units(kind='LV', muH=muH)
+            except KeyError:
+                try:
+                    # Some old simulations run with new cooling may not have muH
+                    # parameter printed out
+                    if self.par['problem']['Z_gas'] != 1.0:
+                        self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
+                                            format(self.par['problem']['Z_gas']) +
+                                            'Caution with muH={0:s}'.format(muH))
+                    self.u = units
+                except:
+                    self.u = units
+                    pass
+
             # TODO(SMOON) Make DerivedFields work with athena++
             self.dfi = DerivedFields(self.par).dfi
+        else:
+            self.u = Units(kind='custom', units_dict=self.par['units'])
 
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
         """Function to read Athena vtk file using pythena or yt and
@@ -972,7 +975,7 @@ class LoadSim(object):
                     self.nums_partab[partag] = [int(f[-14:-9])
                                                  for f in self.files['partab'][partag]]
                     self.logger.info('partab ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        v, osp.dirname(self.files['partab'][partag][0]),
+                        partag, osp.dirname(self.files['partab'][partag][0]),
                         self.nums_partab[partag][0], self.nums_partab[partag][-1]))
 
         # Find parhst files
