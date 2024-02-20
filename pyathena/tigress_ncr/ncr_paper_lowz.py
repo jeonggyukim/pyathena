@@ -301,6 +301,16 @@ class LowZData(PaperData):
             Zlist.append(s.Zdust)
         return namelist,hlist,Zlist
 
+    def get_trange(self,s):
+        if s.torb_Myr <50:
+            trange = slice(s.torb_Myr*5,s.torb_Myr*15)
+        elif s.torb_Myr >300:
+            trange = slice(s.torb_Myr*1.5,s.torb_Myr*5)
+        else:
+            trange = slice(s.torb_Myr*2,s.torb_Myr*5)
+
+        return trange
+
     def collect_zpdata(self,m,trange=None,reduce=True,recal=False,silent=False,
                        func=np.mean,**func_kwargs):
         zpmid,zpwmid = self.get_PW_time_series(m,recal=recal,silent=silent)
@@ -314,12 +324,7 @@ class LowZData(PaperData):
         sfr_field='sfr40'
         if 'LGR8' in m: sfr_field = 'sfr100'
         if trange is None:
-            if s.torb_Myr <50:
-                trange = slice(s.torb_Myr*5,s.torb_Myr*15)
-            elif s.torb_Myr >300:
-                trange = slice(s.torb_Myr*1.5,s.torb_Myr*5)
-            else:
-                trange = slice(s.torb_Myr*2,s.torb_Myr*5)
+            self.get_trange(s)
             if not silent:
                 print(m,s.torb_Myr,trange,zpmid.time.data.min(),zpmid.time.data.max())
 

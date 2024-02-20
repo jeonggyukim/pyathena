@@ -188,10 +188,14 @@ class Hst:
         # hst['x2KE'] = hst['x2dke']
         for ax in ("1", "2", "3"):
             Ekf = "x{}KE".format(ax)
-            if ax == "2":
-                Ekf = "x2dke"
+
             # Mass weighted velocity dispersion??
             h["v{}".format(ax)] = np.sqrt(2 * hst[Ekf] / hst["mass"])
+
+            if ax == "2":
+                Ekf = "x2dke"
+                h["dv{}".format(ax)] = np.sqrt(2 * hst[Ekf] / hst["mass"])
+
             if mhd:
                 h["vA{}".format(ax)] = np.sqrt(
                     2 * hst["x{}ME".format(ax)] / hst["mass"]
@@ -202,8 +206,11 @@ class Hst:
                 phlist += ["W1" + tail for tail in ["MM", "IM", "NM"]]
                 phlist += ["W2" + tail for tail in ["MM", "IM", "NM"]]
                 m2p = hph["mass"].sel(phase=phlist).sum(dim="phase")
-                ke2p = hph["x{}KE".format(ax)].sel(phase=phlist).sum(dim="phase")
+                ke2p = hph[f"x{ax}KE"].sel(phase=phlist).sum(dim="phase")
                 h["v{}_2p".format(ax)] = np.sqrt(2 * ke2p / m2p)
+                if ax == "2":
+                    ke2p = hph["x2dke"].sel(phase=phlist).sum(dim="phase")
+                    h["dv{}_2p".format(ax)] = np.sqrt(2 * ke2p / m2p)
             else:
                 h["v{}_2p".format(ax)] = np.sqrt(
                     2 * hst["x{}KE_2p".format(ax)] / hst["mass"] / h["mf_2p"]

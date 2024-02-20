@@ -31,7 +31,7 @@ plt.rcParams["xtick.direction"] = "out"
 plt.rcParams["xtick.minor.visible"] = False
 
 labels = dict()
-labels["Sigma"] = r"$\Sigma_{\rm gas}\,[M_\odot\,{\rm pc^{-2}}]$"
+labels["Sigma_gas"] = r"$\Sigma_{\rm gas}\,[M_\odot\,{\rm pc^{-2}}]$"
 labels["Sigma_HI"] = r"$\Sigma_{\rm H}\,[M_\odot\,{\rm pc^{-2}}]$"
 labels["Sigma_HII"] = r"$\Sigma_{\rm H^+}\,[M_\odot\,{\rm pc^{-2}}]$"
 labels["Sigma_H2"] = r"$\Sigma_{\rm H_2}\,[M_\odot\,{\rm pc^{-2}}]$"
@@ -60,7 +60,10 @@ def do_surfmaps(s, num, outdir):
         "specific_scalar[0]",
         "specific_scalar[1]",
     ]
-    prjdata = s.read_prj(num, fields=fields, force_override=True)
+    prjdata = s.read_prj(num, fields=fields, force_override=False)
+
+    if ('Sigma_HII' not in prjdata['x']) or ('Sigma_gas' not in prjdata['x']):
+        prjdata = s.read_prj(num, fields=fields, force_override=True)
 
     prjdata = slc_to_xarray(prjdata)
     prjdata["nebar"] = (prjdata["Sigma_e"] / conv_Sigma) / s.domain["Nx"][2]

@@ -1,4 +1,5 @@
-import os,glob
+import os
+import glob
 import xarray as xr
 import numpy as np
 from pyathena.tigress_ncr.phase import assign_phase
@@ -7,10 +8,23 @@ from pyathena.tigress_ncr.get_cooling import (
     get_other_cooling,
     get_hydrogen_cooling,
 )
+from pyathena.microphysics.cool import heatCR
 import astropy.constants as ac
-import astropy.units as au
+# import astropy.units as au
 from pyathena.tigress_ncr.ncr_paper_lowz import LowZData
 from mpi4py import MPI
+
+def f1(T, T0=2e4, T1=3.5e4):
+    """transition function"""
+    return np.where(
+        T > T1,
+        1.0,
+        np.where(
+            T <= T0,
+            0.0,
+            1.0 / (1.0 + np.exp(-10.0 * (T - 0.5 * (T0 + T1)) / (T1 - T0))),
+        ),
+    )
 
 class athena_data(object):
     def __init__(self, s, data):
@@ -31,13 +45,28 @@ class athena_data(object):
         self.phase = assign_phase(self.sim, self, kind="six")
 
     def update_cooling_heating(self):
-        self.data.update(get_heating(self.sim, self))
-        self.data.update(get_other_cooling(self.sim, self))
-        self.data.update(get_hydrogen_cooling(self.sim, self))
+        w2 = f1(self["T"],
+                T0=self.sim.par["cooling"]["Thot0"],
+                T1=self.sim.par["cooling"]["Thot1"])
+        w1 = 1 - w2
+        self.data_heat = get_heating(self.sim, self)*self['nH'] * w1
+        self.data_cool = get_other_cooling(self.sim, self)*self['nH'] * w1
+        self.data_cool.update(get_hydrogen_cooling(self.sim, self)*self['nH'])
+        for var in self.data_cool:
+            if var.startswith('Lambda') or var.startswith('Gamma'):
+                continue
+            self.data_cool[f'Lambda_{var}'] = self.data_cool[var]/self['nH']**2
+            self.data_cool[f'Lambda_nH_{var}'] = self.data_cool[var]/self['nH']
+        for var in self.data_heat:
+            if var.startswith('Lambda') or var.startswith('Gamma'):
+                continue
+            self.data_heat[f'Gamma_{var}'] = self.data_heat[var]/self['nH']
 
     def __getitem__(self, field):
         if field in self.data:
             return self.data[field]
+        elif field == 'T':
+            self.data['T'] = self.data['temperature']
         elif field in self.sim.dfi:
             self.data[field] = self.sim.dfi[field]["func"](self.data, self.sim.u)
         elif field == "charging":
@@ -90,6 +119,8 @@ class athena_data(object):
             self.data["vy2"] = self["vy"]**2
         elif field == "vz2":
             self.data["vz2"] = self["vz"]**2
+        elif field == "qcr":
+            self.data["qcr"] = self.data_heat['Gamma_CR']/self['xi_CR']
         else:
             raise KeyError("{} is not available".format(field))
         return self.data[field]
@@ -102,13 +133,6 @@ class athena_data(object):
 
     def get_means(self, ph):
         flist = [
-            "PE",
-            "CR",
-            "CII",
-            "OI",
-            "grRec",
-            "HI_Lya",
-            "neb",
             "chi_FUV",
             "cool_rate",
             "heat_rate",
@@ -128,38 +152,44 @@ class athena_data(object):
             "nHII",
             "vx","vx2",
             "vy","vy2",
-            "vz","vz2"
+            "vz","vz2",
+            "xi_CR",
+            "qcr"
         ]
         for f in flist:
             self[f]
-        Nph = ph.sum(dim=["x", "y"])
         # density sum
         nsum = (self["nH"] * ph).sum(dim=["x", "y"])
         vsum = ph.sum(dim=["x", "y"])
         # volume weighted means
         v_means = (self.data[flist] * ph).sum(dim=["x", "y"]) / vsum
+        v_means_heat = (self.data_heat * ph).sum(dim=["x", "y"]) / vsum
+        v_means_cool = (self.data_cool * ph).sum(dim=["x", "y"]) / vsum
+        v_means.update(v_means_heat)
+        v_means.update(v_means_cool)
         # density weigthed means
         n_means = (self["nH"] * self.data[flist] * ph).sum(dim=["x", "y"]) / nsum
-
+        n_means_heat = (self["nH"] * self.data_heat * ph).sum(dim=["x", "y"]) / nsum
+        n_means_cool = (self["nH"] * self.data_cool * ph).sum(dim=["x", "y"]) / nsum
+        n_means.update(n_means_heat)
+        n_means.update(n_means_cool)
         return v_means, n_means
 
 
-def construct_timeseries(pdata, m, force_override=False):
-    s = pdata.sa.set_model(m)
-
+def construct_timeseries(s, m, force_override=False):
     outdir = os.path.join(s.savdir, "hst2")
     outfile = os.path.join(outdir, "PEheating.nc")
     outfile2 = os.path.join(outdir, "phase_vmeans.nc")
     outfile3 = os.path.join(outdir, "phase_nmeans.nc")
-    if os.path.isfile(outfile2) and (not force_override):
-        with xr.open_dataarray(outfile) as da:
-            da.load()
-        with xr.open_dataset(outfile2) as ds1:
-            ds1.load()
-        with xr.open_dataset(outfile3) as ds2:
-            ds2.load()
+    # if os.path.isfile(outfile2) and (not force_override):
+    #     with xr.open_dataarray(outfile) as da:
+    #         da.load()
+    #     with xr.open_dataset(outfile2) as ds1:
+    #         ds1.load()
+    #     with xr.open_dataset(outfile3) as ds2:
+    #         ds2.load()
 
-        return da, ds1, ds2
+    #     return da, ds1, ds2
 
     if not hasattr(s, "slc") or force_override:
         allslc_files = sorted(
@@ -204,6 +234,7 @@ def construct_timeseries(pdata, m, force_override=False):
     cnm = s.data.phase == 0
     cold = s.data.phase < 2
     wnm = s.data.phase == 2
+    wim = s.data.phase == 3
 
     # JFUV, ePE, charging, xe, T
     # get weighted mean
@@ -247,7 +278,7 @@ def construct_timeseries(pdata, m, force_override=False):
     # phase-separated weighted means
     vmeans = []
     nmeans = []
-    for ph, phname in zip([cnm, cold, wnm, twop], ["CNM", "Cold", "WNM", "2p"]):
+    for ph, phname in zip([cnm, cold, wnm, twop, wim], ["CNM", "Cold", "WNM", "2p", "WIM"]):
         vavg, navg = s.data.get_means(ph)
         eps = (s.data["nH"] * s.data["chi_FUV"] * s.data["eps_PE"] * ph).sum(
             dim=["x", "y"]
@@ -274,4 +305,5 @@ if __name__ == "__main__":
     print(COMM.rank, mylist)
     for m in mylist:
         print(m)
-        da,vavg,navg = construct_timeseries(pdata,m,force_override=True)
+        s = pdata.sa.set_model(m)
+        da,vavg,navg = construct_timeseries(s,m,force_override=True)

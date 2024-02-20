@@ -161,8 +161,16 @@ class PaperData(object):
 
     def set_global_history(self,m,recal=False):
         s = self.sa.set_model(m)
-        if hasattr(s,'h') and not recal: return s.h
-        else: PaperData.get_global_history(s)
+        if hasattr(s,'h'):
+            if "SKE" not in s.h:
+                recal=True
+        else:
+            recal=True
+
+        if recal:
+            PaperData.get_global_history(s)
+
+        return s.h
 
     @staticmethod
     def get_global_history(s):
@@ -226,7 +234,8 @@ class PaperData(object):
                 H=H, szeff=szeff, vz=vz,
                 tdep=tdep, tdep10=tdep10, tdep40=tdep40, tdep100=tdep100,
                 tver=tver, tMyr=tMyr, torb=time/torb, time=time)
-        if 'x1ME' in h: h1.update(dict(vA=vA))
+        if 'x1ME' in h:
+            h1.update(dict(vA=vA))
 
         # for warm/cold
         if s.test_phase_sep_hst():
@@ -282,9 +291,9 @@ class PaperData(object):
                     except:
                         print(f'no photon diagnostics for {k}')
         # injected radiation
-        SLyC = h[f'Ltot_PH']/area
-        SPE = h[f'Ltot_PE']/area
-        SLW = h[f'Ltot_LW']/area
+        SLyC = h['Ltot_PH']/area
+        SPE = h['Ltot_PE']/area
+        SLW = h['Ltot_LW']/area
         Srad=SLyC+SPE+SLW
 
         # injected SN energy

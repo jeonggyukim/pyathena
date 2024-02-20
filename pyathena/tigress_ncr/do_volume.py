@@ -13,12 +13,13 @@ import numpy as np
 
 import pyathena as pa
 from pyathena.util.split_container import split_container
-from pyathena.plt_tools.make_movie import make_movie
+# from pyathena.plt_tools.make_movie import make_movie
 
 import astropy.constants as ac
-import astropy.units as au
+# import astropy.units as au
 import yt
-from yt.visualization.volume_rendering.api import Scene, create_volume_source
+from yt.visualization.volume_rendering.api import create_volume_source
+# from yt.visualization.volume_rendering.api import Scene
 
 from pyathena.microphysics.cool import get_xCII, q10CII_
 
@@ -259,7 +260,7 @@ def add_fields(s, ds, xray=True, CII=True):
     def _total_energy_density(field,data):
         return data["gas", "specific_total_energy"]*data["gas", "density"]
     def _total_energy_flux_z(field,data):
-        return (data["gas", "specific_enthalphy"] + data["gas", "specific_kinetic_energy"])*data["gas", f"momentum_density_z"]
+        return (data["gas", "specific_enthalphy"] + data["gas", "specific_kinetic_energy"])*data["gas", "momentum_density_z"]
     def _vzout(field,data):
         return data["gas", "velocity_z"]*(data["gas","z"]/data["gas","z"])
     def _vzin(field,data):
@@ -483,7 +484,6 @@ def make_joint_pdfs(s, ds):
 
 
 def make_volume(ds):
-    from yt.visualization.volume_rendering.api import Scene, create_volume_source
 
     box = ds.box(ds.domain_left_edge, ds.domain_right_edge)
 
@@ -541,9 +541,9 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     locals().update(args)
 
-    s = pa.LoadSimTIGRESSNCR(basedir, verbose=True, load_method="yt")
+    s = pa.LoadSimTIGRESSNCR(basedir, verbose=True, load_method="yt")  # noqa
 
-    nums = s.nums[inum0:]
+    nums = s.nums[inum0:]  # noqa
 
     if COMM.rank == 0:
         print("basedir, nums", s.basedir, nums)
