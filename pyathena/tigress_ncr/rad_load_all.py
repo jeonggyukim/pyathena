@@ -16,10 +16,14 @@ models2 = dict(
     R8_Z03='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.3.Zd0.3.xy4096.eps0.0',
     R8_Z01='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy4096.eps0.0',
     R8_Zg01_Zd0025='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.025.xy4096.eps0.0',
+
     LGR4_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8',
     LGR4_Z03='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.3.Zd0.3.xy2048.eps1.e-8',
     LGR4_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy2048.eps1.e-8',
-    LGR4_Zg01_Zd0025='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.025.xy2048.eps1.e-8'
+    LGR4_Zg01_Zd0025='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.025.xy2048.eps1.e-8',
+
+    LGR8_S05_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR8_8pc_NCR_S05.full.b10.v3.iCR5.Zg1.Zd1.xy4096.eps0.0',
+    LGR8_S05_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR8_8pc_NCR_S05.full.b10.v3.iCR5.Zg0.1.Zd0.1.xy8192.eps0.0',
 )
 
 # Time range analyzed
@@ -41,6 +45,9 @@ tMyr_range['LGR4_Z03'] = [204,488]
 tMyr_range['LGR4_Z01'] = [204,488]
 tMyr_range['LGR4_Zg01_Zd0025'] = [204,488]
 
+tMyr_range['LGR8_S05_Z1'] = [614,1703]
+tMyr_range['LGR8_S05_Z01'] = [614,1830]
+
 def get_summary(s, model):
 
     df = dict()
@@ -56,12 +63,12 @@ def load_sim_ncr_rad_all(model_set='radiation_paper',
                          savdir_base='/tigress/jk11/NCR-RAD',
                          verbose=False):
     """
-    Load all simulations
+    Load all simulations for radiation analysis
 
     Parameters
     ----------
     model_set : str
-        'radiation_paper' or 'lowz'
+        'radiation_paper' or 'lowZ'
     savdir_base : str
         Base directory for saving results
     verbose : bool
@@ -74,8 +81,10 @@ def load_sim_ncr_rad_all(model_set='radiation_paper',
 
     if model_set == 'radiation_paper':
         models = models1
-    elif model_set == 'lowz':
+    elif model_set == 'lowZ':
         models = models2
+    else:
+        raise ValueError
 
     sa = LoadSimTIGRESSNCRAll(models)
 
@@ -91,6 +100,37 @@ def load_sim_ncr_rad_all(model_set='radiation_paper',
 
     return sa, df
 
+def load_zprof_new(s):
+    """Load zprof that has new phase definitions.
+
+    https://github.com/PrincetonUniversity/Athena-TIGRESS/wiki/Phase-definition#ncr-new-phase-sep-history-branch
+    """
+    if s.config_time < pd.to_datetime('2022-03-15 00:00:00 -04:00'):
+        raise RuntimeError('config_time {0:s} indicates that this simulation has old phase definitions. Do not use this funtion.'.format(str(s.config_time)))
+
+    zp = dict()
+    phases = ['c','u','w1','w2','h1','h2', # based on temperature only
+              # Temperature and abundances molecular (xH2 > 0.25)
+              'CUMM',
+              # Ionized (xHII > 0.5)
+              'CUIM','WPIM','WCIM',
+              # Neither molecular nor ionized (say neutral)
+              'CNM','UNM','WNM']
+    for j in range(13):
+        ph = 'phase{}'.format(j + 1)
+        zp_ =  s._read_zprof(phase=ph)
+        zp[phases[j]] = zp_
+
+    zp['cu'] = zp['c'] + zp['u']
+    zp['w'] = zp['w1'] + zp['w2']
+    zp['h'] = zp['h1'] + zp['h2']
+    zp['WIM'] = zp['WPIM'] + zp['WCIM']
+    zp['2p'] = zp['cu'] + zp['w']
+    zp['pi'] = zp['WPIM'] + zp['WCIM']
+    zp['whole'] = zp['cu'] + zp['w'] + zp['h']
+
+    return zp
+
 if __name__ == '__main__':
     sa, df = load_sim_ncr_rad_all(verbose=True)
 
@@ -99,6 +139,6 @@ if __name__ == '__main__':
         s = sa.set_model(mdl, verbose='INFO')
         print(s.savdir)
         nums = [n for n in range(*df.loc[mdl]['num_range'])]
-        for k in s.phs.keys():
+        for k in s.phase_set.keys():
             print(k)
             zp = s.read_zprof_from_vtk_all(nums, phase_set_name=k, force_override=False)

@@ -11,67 +11,53 @@ import argparse
 import sys
 import pickle
 
-import pyathena as pa
 from pyathena.util.split_container import split_container
+from pyathena.tigress_ncr.rad_load_all import load_sim_ncr_rad_all
 
 if __name__ == '__main__':
     COMM = MPI.COMM_WORLD
 
-    # R8_4pc
-    # basedir_def = '/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR.full.xy2048.eps0.np768.has'
-    # savdir = '/tigress/jk11/NCR-RAD-LOWZ/R8_4pc_NCR.full.xy2048.eps0.np768.has/'
+    sa, df = load_sim_ncr_rad_all(model_set='lowZ', verbose=False)
 
-    # LGR4 2pc
-    basedir_def = '/tigress/changgoo/TIGRESS-NCR/LGR4_2pc_NCR.full'
-    savdir = '/tigress/jk11/NCR-RAD-LOWZ/LGR4_2pc_NCR.full'
+    models = ['R8_Z1']
+    # mdl = 'LGR8_S05_Z1'
+    # mdl = 'LGR8_S05_Z01'
 
-    # basedir = '/projects/EOSTRIKE/TIGRESS-NCR/'
-    # for p in next(os.walk(basedir))[1]:
-    #     print(p)
+    # sa, df = load_sim_ncr_rad_all(model_set='radiation_paper', verbose=False)
+    # mdl = 'R8_4pc'
 
-    # Low metallicity models
-    # Z01_Zd0025_b1 = 'R8_8pc_NCR.full.b10.v3.iCR4.Zg0.1.Zd0.025.xy4096.eps0.0'
-    # Z01 = 'R8_8pc_NCR.full.b10.v3.iCR4.Zg0.1.Zd0.1.xy4096.eps0.0'
-    # Z03 = 'R8_8pc_NCR.full.b10.v3.iCR4.Zg0.3.Zd0.3.xy4096.eps0.0'
-    # basedir_def = osp.join('/tigress/changgoo/TIGRESS-NCR', model)
-    # savdir = osp.join('/tigress/jk11/NCR-RAD-LOWZ', model)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument('-b', '--basedir', type=str,
-                        default=basedir_def, help='Name of the basedir.')
-    args = vars(parser.parse_args())
-    locals().update(args)
-
-    s = pa.LoadSimTIGRESSNCR(basedir, savdir=savdir, verbose=False)
-    # nums = [num for num in range(255,460)] # R8_4pc
-    nums = [num for num in range(511,715)]  # LGR4_2pc
     force_override = True
 
-    if COMM.rank == 0:
-        print('basedir, nums', s.basedir, nums)
-        nums = split_container(nums, COMM.size)
-    else:
-        nums = None
+    for mdl in models:
+        nums = df.loc[mdl]['nums']
+        s = sa.simdict[mdl]
 
-    mynums = COMM.scatter(nums, root=0)
-    print('[rank, mynums]:', COMM.rank, mynums)
+        if COMM.rank == 0:
+            print('basedir, nums', s.basedir, nums)
+            nums = split_container(nums, COMM.size)
+        else:
+            nums = None
 
-    time0 = time.time()
-    for phase_set_name in s.phs.keys():
-        for num in mynums:
-            print(num, end=' ')
-            rr = s.read_zprof_from_vtk(num, phase_set_name=phase_set_name,
-                                       force_override=force_override)
-            n = gc.collect()
-            print('Unreachable objects:', n, end=' ')
-            print('Remaining Garbage:', end=' ')
-            pprint.pprint(gc.garbage)
+        mynums = COMM.scatter(nums, root=0)
+        print('[rank, mynums]:', COMM.rank, mynums)
 
-    COMM.barrier()
-    if COMM.rank == 0:
-        print('')
-        print('################################################')
-        print('# Do tasks')
-        print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
-        print('################################################')
-        print('')
+        time0 = time.time()
+        #for phase_set_name in s.phase_set.keys():
+        for phase_set_name in ['warm_eq']:
+            for num in mynums:
+                print(num, end=' ')
+                rr = s.read_zprof_from_vtk(num, phase_set_name=phase_set_name,
+                                           force_override=force_override)
+                n = gc.collect()
+                print('Unreachable objects:', n, end=' ')
+                print('Remaining Garbage:', end=' ')
+                pprint.pprint(gc.garbage)
+
+        COMM.barrier()
+        if COMM.rank == 0:
+            print('')
+            print('################################################')
+            print('# Do tasks')
+            print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
+            print('################################################')
+            print('')

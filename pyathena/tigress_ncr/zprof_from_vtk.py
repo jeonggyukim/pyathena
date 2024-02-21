@@ -14,29 +14,39 @@ class ZprofFromVTK:
                             weights=['nH','ne','nesq'], phase_set_name='ncrrad',
                             prefix='zprof_vtk', savdir=None, force_override=False):
 
-        if 'LyC_ma' in phase_set_name and not 'Erad_LyC_mask' in fields:
-            fields.append('Erad_LyC_mask')
+        if 'LyC_ma' in phase_set_name:
+            if not 'Erad_LyC_mask' in fields:
+                fields.append('Erad_LyC_mask')
+            if not 'Uion' in fields:
+                fields.append('Uion')
+            if not 'Uion_pi' in fields:
+                fields.append('Uion_pi')
+
+        if 'eq' in phase_set_name:
+            if not 'xHII_eq' in fields:
+                fields.append('xHII_eq')
 
         ds = self.load_vtk(num)
         dd = ds.get_field(fields)
         v = fields[0]
         # Set phase id and fraction
-        dd = dd.assign(ph_id=(('z','y','x'), np.zeros_like(dd[v], dtype=int)))
+        dd = dd.assign(ph_mask=(('z','y','x'), np.zeros_like(dd[v], dtype=int)))
         dd = dd.assign(frac=(('z','y','x'), np.ones_like(dd[v])))
 
-        phs = self.phs[phase_set_name]
-        f_cond = lambda dd, f, op, v: op(dd[f], v)
+        phs = self.phase_set[phase_set_name]
         for ph in phs.phases:
-            dd['ph_id'] += ph.id*\
-                reduce(np.logical_and,
-                       [f_cond(dd, *cond_) for cond_ in ph.cond], 1)
+            all_cond = []
+            for cond_ in ph.cond:
+                all_cond.append((cond_[0])(dd, *(cond_[1:])))
+
+            dd['ph_mask'] += ph.mask*reduce(np.logical_and, all_cond, 1)
 
         zp = dict()
         NxNy_inv = 1.0/dd['frac'].sum(dim=('x','y'))
         # z-profile of all gas
         zp['whole'] = dd.sum(dim=('x','y'), keep_attrs=True) * NxNy_inv
         for ph in phs.phases:
-            idx = (dd['ph_id'] == ph.id)
+            idx = (dd['ph_mask'] == ph.mask)
             zp[ph.name] = dd.where(idx).sum(dim=('x','y'), keep_attrs=True)
             zp[ph.name] *= NxNy_inv
 
@@ -49,7 +59,7 @@ class ZprofFromVTK:
                 dw = dw.rename(rename_dict)
                 zpw['whole'] = dw.sum(dim=('x','y'), keep_attrs=True) * denom_inv
                 for ph in phs.phases:
-                    idx = (dd['ph_id'] == ph.id)
+                    idx = (dd['ph_mask'] == ph.mask)
                     zpw[ph.name] = dw.where(idx).sum(dim=('x','y'), keep_attrs=True)
                     zpw[ph.name] *= denom_inv
 
@@ -67,7 +77,7 @@ class ZprofFromVTK:
         zpa = xr.concat(zplist, dim='phase')
         zpa = zpa.to_array().to_dataset('phase')
         zpa = zpa.to_array('phase').to_dataset('variable')
-        zpa = zpa.drop_vars('ph_id')
+        zpa = zpa.drop_vars('ph_mask')
 
         def _check_frac(zp):
             f = 0.0
