@@ -9,7 +9,8 @@ import astropy.units as au
 from matplotlib.colors import Normalize, LogNorm
 
 from ..plt_tools.cmap import cmap_apply_alpha,cmap_shift
-from ..microphysics.cool import get_xe_mol
+from ..microphysics.cool import get_xe_mol, get_xn_eq, coeff_alpha_rr_H
+
 from .xray_emissivity import get_xray_emissivity
 
 def static_vars(**kwargs):
@@ -579,6 +580,43 @@ def set_derived_fields_newcool(par, x0):
     vminmax[f] = (0.0, 1.0)
     take_log[f] = False
 
+    # xHII_eq: Equilibrium xHII accounting for photoionization, radiative recombination,
+    # collisional ionization, and local CR ionization rate, but not grain-assisted
+    # recombination
+    f = 'xHII_eq'
+    field_dep[f] = set(['density','CR_ionization_rate','rad_energy_density_PH',
+                        'pressure','xe','xH2'])
+    def _xHII_eq(d, u):
+        d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+            (ac.k_B/u.energy_density).cgs.value
+        hnu_LyC = (par['radps']['hnu_PH']*au.eV).cgs.value
+        zeta_pi = par['opacity']['sigma_HI_PH']*\
+            d['rad_energy_density_PH']*u.energy_density.cgs.value/\
+            hnu_LyC*ac.c.cgs.value
+        return (1.0 - get_xn_eq(d['T'], d['density'], zeta_pi=zeta_pi,
+                                zeta_cr=d['CR_ionization_rate'], coll_ion=True))
+    func[f] = _xHII_eq
+    label[f] = r'$x_{\rm H^+,eq}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1.0)
+    take_log[f] = True
+
+    # xHII_eq: Equilibrium xHII accounting for photoionization, radiative recombination,
+    # collisional ionization, and local CR ionization rate, but not and grain-assisted
+    # recombination
+    f = 'xHII_eq_nopi'
+    field_dep[f] = set(['density','CR_ionization_rate','pressure','xe','xH2'])
+    def _xHII_eq_nopi(d, u):
+        d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+            (ac.k_B/u.energy_density).cgs.value
+        return  (1.0 - get_xn_eq(d['T'], d['density'], zeta_pi=0.0,
+                                 zeta_cr=d['CR_ionization_rate'], coll_ion=True))
+    func[f] = _xHII_eq_nopi
+    label[f] = r'$x_{\rm H^+,eq}^{\rm (no\,pi)}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1.0)
+    take_log[f] = True
+
     # nHn [cm^-3]
     f = 'nHn'
     field_dep[f] = set(['density', 'xHI', 'xH2'])
@@ -945,6 +983,19 @@ def set_derived_fields_rad(par, x0):
         label[f] = r'$\mathcal{U}_{\rm ion}$'
         cmap[f] = 'cubehelix'
         vminmax[f] = (1e-5,1e2)
+        take_log[f] = True
+
+        f = 'Uion_pi'
+        field_dep[f] = set(['density','pressure','xe','xH2'])
+        def _Uion_pi(d, u):
+            d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+                (ac.k_B/u.energy_density).cgs.value
+            return coeff_alpha_rr_H(d['T'])/\
+                (ac.c.cgs.value*par['opacity']['sigma_HI_PH'])
+        func[f] = _Uion_pi
+        label[f] = r'$\mathcal{U}_{\rm ion,pi}$'
+        cmap[f] = 'cubehelix'
+        vminmax[f] = (1e-7,1e-4)
         take_log[f] = True
 
         f = 'Erad_LyC_mask'
