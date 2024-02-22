@@ -132,7 +132,7 @@ if __name__ == "__main__":
             print(msg)
             def wrapper(num):
                 tasks.radial_profile(s, num, pids, overwrite=args.overwrite,
-                                     full_radius=False)
+                                     full_radius=False, days_overwrite=0)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
@@ -153,6 +153,8 @@ if __name__ == "__main__":
                     tasks.lagrangian_props(s, pid, ver=1, overwrite=args.overwrite)
                 if pid in s.cores2:
                     tasks.lagrangian_props(s, pid, ver=2, overwrite=args.overwrite)
+                if pid in s.cores3:
+                    tasks.lagrangian_props(s, pid, ver=3, overwrite=args.overwrite)
             print(f"Calculate Lagrangian properties for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, pids)
