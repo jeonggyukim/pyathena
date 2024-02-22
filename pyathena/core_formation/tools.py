@@ -855,7 +855,7 @@ def fwhm(frho, rmax, which='volume'):
     return fwhm
 
 
-def critical_time(s, pid, ver=1):
+def critical_time(s, pid, method=1):
     cores = s.cores[pid].copy()
     if len(cores) == 0:
         return np.nan
@@ -865,21 +865,23 @@ def critical_time(s, pid, ver=1):
     ncrit = None
     for num, core in cores.sort_index(ascending=False).iterrows():
         if num in cores.index[-2:]:
-            if ver in {1, 2} and np.isnan(core.critical_radius):
+            if method in {1, 2} and np.isnan(core.critical_radius):
                 msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
-                msg += f" is NaN for par {pid}, ver {ver}."
+                msg += f" is NaN for par {pid}, method {method}."
                 msg += f" This may have been caused by negative pindex. Continuing"
                 s.logger.warning(msg)
                 continue
-            elif ver == 3 and np.isnan(core.critical_radius_alt):
+            elif method == 3 and np.isnan(core.critical_radius_alt):
                 msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
-                msg += f" is NaN for par {pid}, ver {ver}."
+                msg += f" is NaN for par {pid}, method {method}."
                 msg += f" This may have been caused by negative pindex. Continuing"
                 s.logger.warning(msg)
                 continue
         rprf = rprofs.sel(num=num)
 
-        if ver == 1:
+        if method == 1:
+            # Critical conditions are satisfied after critical time,
+            # throughout the collapse.
             if np.isfinite(core.critical_radius):
                 menc = rprf.menc.interp(r=core.critical_radius).data[()]
             else:
@@ -890,7 +892,9 @@ def critical_time(s, pid, ver=1):
             if not cond:
                 ncrit = num + 1
                 break
-        elif ver == 2:
+        elif method == 2:
+            # Net force at the critical radius is negative after the critical time,
+            # throughout the collapse.
             if np.isfinite(core.critical_radius):
                 fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
                 fnet = fnet.interp(r=core.critical_radius).data[()]
@@ -899,7 +903,8 @@ def critical_time(s, pid, ver=1):
             if not fnet < 0:
                 ncrit = num + 1
                 break
-        elif ver == 3:
+        elif method == 3:
+            # Similar to method 2, but using alternative critical radius
             if np.isfinite(core.critical_radius_alt):
                 fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
                 fnet = fnet.interp(r=core.critical_radius_alt).data[()]
