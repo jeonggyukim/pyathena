@@ -51,7 +51,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         All preimages of t_coll cores.
     """
 
-    def __init__(self, basedir_or_Mach=None, ver=1, savdir=None,
+    def __init__(self, basedir_or_Mach=None, method=1, savdir=None,
                  load_method='pyathena', verbose=False, force_override=False):
         """The constructor for LoadSimCoreFormation class
 
@@ -60,7 +60,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         basedir_or_Mach : str or float
             Path to the directory where all data is stored;
             Alternatively, Mach number
-        ver : int
+        method : int
             Which definition of t_crit to use.
         savdir : str
             Name of the directory where pickled data and figures will be saved.
@@ -91,7 +91,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             LognormalPDF.__init__(self, self.Mach)
             TimingReader.__init__(self, self.basedir, self.problem_id)
-            self.ver = ver
 
             # Set nums dictionary (when hdf5 is stored in elsewhere for storage reasons)
             if self.nums is None:
@@ -137,7 +136,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             try:
                 # Calculate derived core properties using the predicted critical time
                 savdir = Path(self.savdir, 'cores')
-                self.cores1 = self.update_core_props(ver=1, prefix='cores1',
+                self.cores1 = self.update_core_props(method=1, prefix='cores1',
                                                      savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
                 self.logger.warning("Failed to update core properties")
@@ -145,7 +144,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             try:
                 # Calculate derived core properties using the empirical critical time
                 savdir = Path(self.savdir, 'cores')
-                self.cores2 = self.update_core_props(ver=2, prefix='cores2',
+                self.cores2 = self.update_core_props(method=2, prefix='cores2',
                                                      savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
                 self.logger.warning("Failed to update core properties with empirical tcrit")
@@ -153,7 +152,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             try:
                 # Calculate derived core properties using the empirical critical time
                 savdir = Path(self.savdir, 'cores')
-                self.cores3 = self.update_core_props(ver=3, prefix='cores3',
+                self.cores3 = self.update_core_props(method=3, prefix='cores3',
                                                      savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
                 self.logger.warning("Failed to update core properties with empirical tcrit with r_crit_alt")
@@ -166,7 +165,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         else:
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
-        self.select_cores(ver)
+        self.select_cores(method)
 
     def load_dendro(self, num, pruned=True):
         """Load pickled dendrogram object
@@ -188,8 +187,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
 
-    def select_cores(self, ver):
-        match ver:
+    def select_cores(self, method):
+        match method:
             case 1:
                 self.cores = self.cores1.copy()
             case 2:
@@ -209,7 +208,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         return good_cores
 
     @LoadSim.Decorators.check_pickle
-    def update_core_props(self, ncells_min=8, ver=1,
+    def update_core_props(self, ncells_min=8, method=1,
                           prefix=None, savdir=None, force_override=False):
         """Update core properties
 
@@ -233,14 +232,14 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             rprofs = self.rprofs[pid]
 
             # Select which critical radius to use
-            if ver == 3:
+            if method == 3:
                 cores.critical_radius = cores.critical_radius_alt
                 cores = cores.drop('critical_radius_alt', axis=1)
             else:
                 cores = cores.drop('critical_radius_alt', axis=1)
 
             # Find critical time
-            ncrit = tools.critical_time(self, pid, ver)
+            ncrit = tools.critical_time(self, pid, method)
             cores.attrs['numcrit'] = ncrit
             if np.isnan(ncrit):
                 cores.attrs['tcrit'] = np.nan
@@ -253,7 +252,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 rprf = rprofs.sel(num=ncrit)
                 rcore = core.critical_radius
                 if rcore > rprf.r.max()[()]:
-                    # TODO for ver=2 or 3, this can happen; later, we need to calculate
+                    # TODO for method=2 or 3, this can happen; later, we need to calculate
                     # radial profiles to larger radius
                     msg = f"Core radius exceeds the maximum rprof radius for model {self.basename}, par {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
                     self.logger.warning(msg)
@@ -279,7 +278,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             if cores.attrs['resolved'] and cores.attrs['isolated']:
                 # Lines below are executed only for resolved and isolated cores.
-                fname = Path(self.savdir, 'cores', f'lprops_ver{ver}.par{pid}.p')
+                fname = Path(self.savdir, 'cores', f'lprops_ver{method}.par{pid}.p')
                 if fname.exists():
                     lprops = pd.read_pickle(fname).sort_index()
                     if set(lprops.columns).issubset(cores.columns):
@@ -533,13 +532,13 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, ver=1, savdir=None,
+    def set_model(self, model, method=1, savdir=None,
                   load_method='pyathena', verbose=False,
                   reset=False, force_override=False):
         self.model = model
         if reset or force_override:
             self.sim = LoadSimCoreFormation(self.basedirs[model],
-                                            ver=ver,
+                                            method=method,
                                             savdir=savdir,
                                             load_method=load_method,
                                             verbose=verbose,
@@ -550,7 +549,7 @@ class LoadSimCoreFormationAll(object):
                 self.sim = self.simdict[model]
             except KeyError:
                 self.sim = LoadSimCoreFormation(self.basedirs[model],
-                                                ver=ver,
+                                                method=method,
                                                 savdir=savdir,
                                                 load_method=load_method,
                                                 verbose=verbose,
