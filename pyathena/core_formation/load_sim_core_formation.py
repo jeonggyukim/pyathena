@@ -117,12 +117,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 # Load cores
                 savdir = Path(self.savdir, 'cores')
                 self.cores = self._load_cores(savdir=savdir, force_override=force_override)
+                # Remove bud nodes
                 pids = self.pids.copy()
                 for pid in pids:
                     if not self.cores[pid].attrs['tcoll_resolved']:
                         self.pids.remove(pid)
-
-
             except FileNotFoundError:
                 self.logger.warning("Failed to load core information")
                 pass
@@ -232,6 +231,13 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         for pid in self.pids:
             cores = self.cores[pid].copy()
             rprofs = self.rprofs[pid]
+
+            # Select which critical radius to use
+            if ver == 3:
+                cores.critical_radius = cores.critical_radius_alt
+                cores = cores.drop('critical_radius_alt', axis=1)
+            else:
+                cores = cores.drop('critical_radius_alt', axis=1)
 
             # Find critical time
             ncrit = tools.critical_time(self, pid, ver)
@@ -431,12 +437,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                         break
                 if len(tes_crit) > 0:
                     tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_index()
-                    # Select which critical radius to use
-                    if self.ver == 3:
-                        tes_crit.critical_radius = tes_crit.critical_radius_alt
-                        tes_crit = tes_crit.drop('critical_radius_alt', axis=1)
-                    else:
-                        tes_crit = tes_crit.drop('critical_radius_alt', axis=1)
 
                     # Save attributes before performing join, which will drop them.
                     attrs = cores.attrs.copy()

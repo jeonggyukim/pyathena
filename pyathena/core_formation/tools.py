@@ -864,11 +864,22 @@ def critical_time(s, pid, ver=1):
 
     ncrit = None
     for num, core in cores.sort_index(ascending=False).iterrows():
-        if num == cores.index[-1] and np.isnan(core.critical_radius):
-            continue
+        if num in cores.index[-2:]:
+            if ver in {1, 2} and np.isnan(core.critical_radius):
+                msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
+                msg += f" is NaN for par {pid}."
+                msg += f" This may have been caused by negative pindex. Continuing"
+                s.logger.warning(msg)
+                continue
+            elif ver == 3 and np.isnan(core.critical_radius_alt):
+                msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
+                msg += f" is NaN for par {pid}."
+                msg += f" This may have been caused by negative pindex. Continuing"
+                s.logger.warning(msg)
+                continue
         rprf = rprofs.sel(num=num)
 
-        if ver==1:
+        if ver == 1:
             if np.isfinite(core.critical_radius):
                 menc = rprf.menc.interp(r=core.critical_radius).data[()]
             else:
@@ -879,10 +890,19 @@ def critical_time(s, pid, ver=1):
             if not cond:
                 ncrit = num + 1
                 break
-        elif ver==2 or ver==3:
+        elif ver == 2:
             if np.isfinite(core.critical_radius):
                 fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
                 fnet = fnet.interp(r=core.critical_radius).data[()]
+            else:
+                fnet = np.nan
+            if not fnet < 0:
+                ncrit = num + 1
+                break
+        elif ver == 3:
+            if np.isfinite(core.critical_radius_alt):
+                fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
+                fnet = fnet.interp(r=core.critical_radius_alt).data[()]
             else:
                 fnet = np.nan
             if not fnet < 0:
