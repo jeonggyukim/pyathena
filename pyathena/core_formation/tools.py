@@ -879,11 +879,10 @@ def critical_time(s, pid, ver=1):
             if not cond:
                 ncrit = num + 1
                 break
-        elif ver==2:
+        elif ver==2 or ver==3:
             if np.isfinite(core.critical_radius):
                 fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
-                rmax = min(rprf.r.max().data[()], core.critical_radius)
-                fnet = fnet.interp(r=rmax).data[()]
+                fnet = fnet.interp(r=core.critical_radius).data[()]
             else:
                 fnet = np.nan
             if not fnet < 0:

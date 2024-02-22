@@ -150,6 +150,14 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             except (AttributeError, KeyError):
                 self.logger.warning("Failed to update core properties with empirical tcrit")
 
+            try:
+                # Calculate derived core properties using the empirical critical time
+                savdir = Path(self.savdir, 'cores')
+                self.cores3 = self.update_core_props(ver=3, prefix='cores3',
+                                                     savdir=savdir, force_override=force_override)
+            except (AttributeError, KeyError):
+                self.logger.warning("Failed to update core properties with empirical tcrit with r_crit_alt")
+
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
             LognormalPDF.__init__(self, self.Mach)
@@ -186,6 +194,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.cores = self.cores1.copy()
             case 2:
                 self.cores = self.cores2.copy()
+            case 3:
+                self.cores = self.cores3.copy()
 
     def good_cores(self, cores_dict=None):
         """List of resolved and isolated cores"""
@@ -220,6 +230,12 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         core_dict = {}
         for pid in self.pids:
             cores = self.cores[pid].copy()
+            # Select which critical radius to use
+            if ver == 3:
+                cores.critical_radius = cores.critical_radius_alt
+                cores = cores.drop('critical_radius_alt', axis=1)
+            else:
+                cores = cores.drop('critical_radius_alt', axis=1)
             rprofs = self.rprofs[pid]
 
             # Find critical time
@@ -236,7 +252,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 rprf = rprofs.sel(num=ncrit)
                 rcore = core.critical_radius
                 if rcore > rprf.r.max()[()]:
-                    # TODO for ver=2, this can happen; later, we need to calculate
+                    # TODO for ver=2 or 3, this can happen; later, we need to calculate
                     # radial profiles to larger radius
                     msg = f"Core radius exceeds the maximum rprof radius for model {self.basename}, par {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
                     self.logger.warning(msg)
