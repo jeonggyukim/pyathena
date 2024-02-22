@@ -139,7 +139,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.cores1 = self.update_core_props(method=1, prefix='cores1',
                                                      savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
-                self.logger.warning("Failed to update core properties")
+                self.logger.warning(f"Failed to update core properties for model {self.basename}")
 
             try:
                 # Calculate derived core properties using the empirical critical time
@@ -147,7 +147,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.cores2 = self.update_core_props(method=2, prefix='cores2',
                                                      savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
-                self.logger.warning("Failed to update core properties with empirical tcrit")
+                self.logger.warning(f"Failed to update core properties with empirical tcrit for model {self.basename}")
 
             try:
                 # Calculate derived core properties using the empirical critical time
@@ -155,7 +155,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.cores3 = self.update_core_props(method=3, prefix='cores3',
                                                      savdir=savdir, force_override=force_override)
             except (AttributeError, KeyError):
-                self.logger.warning("Failed to update core properties with empirical tcrit with r_crit_alt")
+                self.logger.warning(f"Failed to update core properties with empirical tcrit with r_crit_alt for model {self.basename}")
 
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
@@ -165,7 +165,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         else:
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
-        self.select_cores(method)
+        try:
+            self.select_cores(method)
+        except AttributeError:
+            self.logger.warning(f"Failed to select core with method {method} for model {self.basename}")
 
     def load_dendro(self, num, pruned=True):
         """Load pickled dendrogram object
