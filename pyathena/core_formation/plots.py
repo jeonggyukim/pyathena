@@ -11,8 +11,7 @@ from matplotlib.colors import LogNorm
 from matplotlib.markers import MarkerStyle
 import numpy as np
 import xarray as xr
-import yt
-
+from yt.frontends.athena_pp.data_structures import AthenaPPDataset
 # pythena modules
 from pyathena.core_formation import tools
 from pyathena.core_formation import tes
@@ -29,7 +28,7 @@ def plot_projection(s, ds, field='dens', axis='z', op='sum',
     ----------
     s : LoadSimCoreFormation
         Object containing simulation metadata.
-    ds : yt.frontends.athena_pp.data_structures.AthenaPPDataset or xarray.Dataset
+    ds : AthenaPPDataset or xarray.Dataset
         Object containing fluid variables.
     field : str, optional
         Variable to plot.
@@ -78,7 +77,7 @@ def plot_projection(s, ds, field='dens', axis='z', op='sum',
     field_dict_yt = dict(dens=('athena_pp', 'dens'))
     field_dict_pyathena = dict(dens='dens', mask='mask')
 
-    if isinstance(ds, yt.frontends.athena_pp.data_structures.AthenaPPDataset):
+    if isinstance(ds, AthenaPPDataset):
         # create projection using yt
         fld = field_dict_yt[field]
         prj = ds.proj(fld, axis)
