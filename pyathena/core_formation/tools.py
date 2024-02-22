@@ -867,13 +867,13 @@ def critical_time(s, pid, ver=1):
         if num in cores.index[-2:]:
             if ver in {1, 2} and np.isnan(core.critical_radius):
                 msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
-                msg += f" is NaN for par {pid}."
+                msg += f" is NaN for par {pid}, ver {ver}."
                 msg += f" This may have been caused by negative pindex. Continuing"
                 s.logger.warning(msg)
                 continue
             elif ver == 3 and np.isnan(core.critical_radius_alt):
                 msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
-                msg += f" is NaN for par {pid}."
+                msg += f" is NaN for par {pid}, ver {ver}."
                 msg += f" This may have been caused by negative pindex. Continuing"
                 s.logger.warning(msg)
                 continue
