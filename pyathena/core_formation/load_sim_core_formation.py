@@ -91,6 +91,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             LognormalPDF.__init__(self, self.Mach)
             TimingReader.__init__(self, self.basedir, self.problem_id)
+            self.ver = ver
 
             # Set nums dictionary (when hdf5 is stored in elsewhere for storage reasons)
             if self.nums is None:
@@ -230,12 +231,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         core_dict = {}
         for pid in self.pids:
             cores = self.cores[pid].copy()
-            # Select which critical radius to use
-            if ver == 3:
-                cores.critical_radius = cores.critical_radius_alt
-                cores = cores.drop('critical_radius_alt', axis=1)
-            else:
-                cores = cores.drop('critical_radius_alt', axis=1)
             rprofs = self.rprofs[pid]
 
             # Find critical time
@@ -436,6 +431,12 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                         break
                 if len(tes_crit) > 0:
                     tes_crit = pd.DataFrame(tes_crit).set_index('num').sort_index()
+                    # Select which critical radius to use
+                    if self.ver == 3:
+                        tes_crit.critical_radius = tes_crit.critical_radius_alt
+                        tes_crit = tes_crit.drop('critical_radius_alt', axis=1)
+                    else:
+                        tes_crit = tes_crit.drop('critical_radius_alt', axis=1)
 
                     # Save attributes before performing join, which will drop them.
                     attrs = cores.attrs.copy()
