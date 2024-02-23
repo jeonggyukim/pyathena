@@ -202,12 +202,16 @@ if __name__ == "__main__":
         if args.plot_core_evolution:
             print(f"draw core evolution plots for model {mdl}")
             for pid in pids:
-                cores = s.cores[pid]
-                def wrapper(num):
-                    tasks.plot_core_evolution(s, pid, num,
-                                              overwrite=args.overwrite)
-                with Pool(args.np) as p:
-                    p.map(wrapper, cores.index)
+                for method in [1, 2]:
+                    s.select_cores(method)
+                    if pid not in s.good_cores():
+                        continue
+                    cores = s.cores[pid]
+                    def wrapper(num):
+                        tasks.plot_core_evolution(s, pid, num, method=method,
+                                                  overwrite=args.overwrite)
+                    with Pool(args.np) as p:
+                        p.map(wrapper, cores.index)
 
         if args.plot_sink_history:
             def wrapper(num):
