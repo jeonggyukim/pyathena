@@ -359,6 +359,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
         ax.grid()
     return fig
 
+
 def plot_core_evolution(s, pid, num, rmax=None):
     if rmax is None:
         if np.isfinite(s.cores[pid].attrs['rcore']):
@@ -371,6 +372,8 @@ def plot_core_evolution(s, pid, num, rmax=None):
     ds = s.load_hdf5(num, quantities=['dens'], load_method='pyathena')
     gd = s.load_dendro(num)
     core = s.cores[pid].loc[num]
+    core1 = s.cores1[pid].loc[num]
+    core2 = s.cores2[pid].loc[num]
     rprf = s.rprofs[pid].sel(num=num)
 
     # Find the location of the core
@@ -566,10 +569,18 @@ def plot_core_evolution(s, pid, num, rmax=None):
     plt.sca(axs['rho'][0])
     plt.text(0.6, 0.9, r'$t={:.3f}$'.format(ds.Time)+r'$\,t_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
-    plt.text(0.48, 0.8, r'$t-t_\mathrm{crit}=$'+r'${:.2f}$'.format(core.tnorm2)
-             + r'$\,\Delta t_\mathrm{coll}$', transform=plt.gca().transAxes,
-             backgroundcolor='w')
-    plt.text(0.6, 0.7, r'$R={:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
+    plt.text(0.6, 0.8, r'$\tau_\mathrm{coll}=$'+r'${:.2f}$'.format(core1.tnorm2),
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.6, 0.7, r'$\tau_\mathrm{emph}=$'+r'${:.2f}$'.format(core2.tnorm2),
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.6, 0.6, f'n={num}',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+
+    plt.text(0.05, 0.05, r'$r_M={:.2f}$'.format(core.radius)+r'$\,L_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.05, 0.15, r'$R_\mathrm{crit}=$'+r'${:.2f}$'.format(core.critical_radius)+r'$\,L_{J,0}$',
+             transform=plt.gca().transAxes, backgroundcolor='w')
+    plt.text(0.05, 0.25, r'$R_\mathrm{tidal}=$'+r'${:.2f}$'.format(core.tidal_radius)+r'$\,L_{J,0}$',
              transform=plt.gca().transAxes, backgroundcolor='w')
 
     for ax in (axs['rho'][0], axs['rho'][1], axs['force'][0], axs['force'][1],
