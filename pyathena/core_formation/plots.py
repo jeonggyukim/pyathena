@@ -359,7 +359,6 @@ def plot_diagnostics(s, pid, normalize_time=True):
         ax.grid()
     return fig
 
-# TODO Fix bug in the star particle wrapping
 def plot_core_evolution(s, pid, num, rmax=None):
     if rmax is None:
         if np.isfinite(s.cores[pid].attrs['rcore']):
@@ -384,6 +383,10 @@ def plot_core_evolution(s, pid, num, rmax=None):
              & (pds.x3 > zc - hw) & (pds.x3 < zc + hw))]
     pds = pds.copy()
     pds.loc[:, ('x1', 'x2', 'x3')] -= np.array([xc, yc, zc])
+    for pos, idx in zip(['x1', 'x2', 'x3'], [0, 1, 2]):
+        pds.loc[:, pos] = tools.sawtooth(pds[pos],
+                                         s.domain['le'][idx], s.domain['re'][idx],
+                                         s.domain['le'][idx], s.domain['re'][idx])
 
     # Create figure
     fig = plt.figure(figsize=(35, 21))
