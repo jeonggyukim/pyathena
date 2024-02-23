@@ -1295,3 +1295,15 @@ def reff_sph(vol):
     """
     fac = 0.6203504908994000865973817
     return fac*vol**(1/3)
+
+
+def sawtooth(x, xmin, xmax, ymin, ymax):
+    """Sawtooth curve
+
+    Linear from [xmin, ymin] to [xmax, ymax] and then periodic elsewhere
+    """
+    t = ((x - xmax) + (x - xmin)) / (xmax - xmin)
+    p = 2
+    u = 2*(t / p - np.floor(0.5 + t / p))
+    y = 0.5*(ymax - ymin)*u + 0.5*(ymax + ymin)
+    return y
