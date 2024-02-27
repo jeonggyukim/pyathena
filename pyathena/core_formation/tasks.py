@@ -240,7 +240,7 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
         if full_radius:
             rmax = 0.5*s.Lbox
         else:
-            rmax = min(0.5*s.Lbox, 2*cores.loc[:cores.attrs['numcoll']].tidal_radius.max())
+            rmax = min(0.5*s.Lbox, 3*cores.loc[:cores.attrs['numcoll']].tidal_radius.max())
 
         # Find the location of the core
         center = tools.get_coords_node(s, core.leaf_id)
