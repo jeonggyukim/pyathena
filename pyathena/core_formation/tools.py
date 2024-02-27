@@ -147,6 +147,7 @@ def track_cores(s, pid, sub_frac=0.2):
         envelop_id = [np.nan,]
         envelop_radius = [np.nan,]
         tidal_radius = [np.nan,]
+        tidal_radius_uncorrected = [np.nan,]
         tcoll_resolved = False
     else:
         tcoll_resolved = True
@@ -161,6 +162,7 @@ def track_cores(s, pid, sub_frac=0.2):
 
         # Calculate tidal radius
         rtidal = calculate_tidal_radius(s, gd, eid, lid)
+        rtidal0 = calculate_tidal_radius(s, gd, lid, lid)
 
         nums_track = [num,]
         time = [ds['Time'],]
@@ -169,6 +171,8 @@ def track_cores(s, pid, sub_frac=0.2):
         envelop_id = [eid,]
         envelop_radius = [renv,]
         tidal_radius = [rtidal,]
+        tidal_radius_uncorrected = [rtidal0,]
+        flag_stop = False  # True if rtidal0-based tracking should be stopped
 
         for num in nums[1:]:
             msg = '[track_cores] processing model {} pid {} num {}'
@@ -200,6 +204,17 @@ def track_cores(s, pid, sub_frac=0.2):
 
             # Calculate tidal radius
             rtidal = calculate_tidal_radius(s, gd, eid, lid)
+            rtidal0 = calculate_tidal_radius(s, gd, lid, lid)
+
+            # This is ugly, but simple fix. Because the core tracking ends based on the corrected
+            # tidal radius, it will keep going even when it should be stopped based on the
+            # uncorrected tidal radius. So, when it should be stop based on the uncorrected
+            # tidal radius, we set rtidal0 = NaN
+            fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal0, tidal_radius_uncorrected[-1])
+            if fdst > 1:
+                flag_stop = True
+            if flag_stop:
+                rtidal0 = np.nan
 
             # If the center moved more than the tidal radius, stop tracking.
             fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal, tidal_radius[-1])
@@ -213,6 +228,7 @@ def track_cores(s, pid, sub_frac=0.2):
             envelop_id.append(eid)
             envelop_radius.append(renv)
             tidal_radius.append(rtidal)
+            tidal_radius_uncorrected.append(rtidal0)
 
     # SMOON: Using dtype=object is to prevent automatic upcasting from int to float
     # when indexing a single row. Maybe there is a better approach.
@@ -221,7 +237,8 @@ def track_cores(s, pid, sub_frac=0.2):
                               leaf_radius=leaf_radius,
                               envelop_id=envelop_id,
                               envelop_radius=envelop_radius,
-                              tidal_radius=tidal_radius),
+                              tidal_radius=tidal_radius,
+                              tidal_radius0=tidal_radius_uncorrected),
                          index=nums_track, dtype=object).sort_index()
 
     # Set attributes
@@ -270,6 +287,7 @@ def track_protostellar_cores(s, pid, sub_frac=0.2):
     envelop_id = []
     envelop_radius = []
     tidal_radius  = []
+    tidal_radius_uncorrected = []
     for num in nums:
         msg = '[track_protostellar_cores] processing model {} pid {} num {}'
         print(msg.format(s.basename, pid, num))
@@ -294,6 +312,7 @@ def track_protostellar_cores(s, pid, sub_frac=0.2):
 
         # Calculate tidal radius
         rtidal = calculate_tidal_radius(s, gd, eid, lid)
+        rtidal0 = calculate_tidal_radius(s, gd, lid, lid)
 
         nums_track.append(num)
         time.append(ds['Time'])
@@ -302,13 +321,15 @@ def track_protostellar_cores(s, pid, sub_frac=0.2):
         envelop_id.append(eid)
         envelop_radius.append(renv)
         tidal_radius.append(rtidal)
+        tidal_radius_uncorrected.append(rtidal0)
 
     tmp = pd.DataFrame(dict(time=time,
                             leaf_id=leaf_id,
                             leaf_radius=leaf_radius,
                             envelop_id=envelop_id,
                             envelop_radius=envelop_radius,
-                            tidal_radius=tidal_radius),
+                            tidal_radius=tidal_radius,
+                            tidal_radius0=tidal_radius_uncorrected),
                        index=nums_track, dtype=object).sort_index()
     tmp.attrs = cores.attrs
 
