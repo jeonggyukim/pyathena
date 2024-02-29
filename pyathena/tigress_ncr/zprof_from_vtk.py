@@ -1,8 +1,16 @@
 import copy
+import pickle
+import os.path as osp
 import numpy as np
 import xarray as xr
 from functools import reduce
 
+from pyathena.classic.utils import cc_arr
+from pyathena.classic.vtk_reader import AthenaDataSet
+from ..classic.utils import cc_arr
+from ..classic.vtk_reader import AthenaDataSet
+
+from ..load_sim import LoadSim
 from ..decorators import check_netcdf_zprof_vtk
 
 class ZprofFromVTK:
@@ -124,3 +132,37 @@ class ZprofFromVTK:
         # Use concat.
         # Merge is much slower and uses more memory leading to crash.
         return xr.concat(zplist, dim='time')
+
+def get_zprof_classic(basedir='/projects/EOSTRIKE/TIGRESS-classic/R8_8pc_newacc',
+                      savdir='/tigress/jk11/NCR-RAD/TIGRESS-classic',
+                      force_override=False):
+
+    s = LoadSim(basedir)
+    fname = osp.join(savdir, '{0:s}-zprof-Twarm.p'.format(s.basename))
+    if not force_override and osp.exists(fname):
+        print('Read from pickle {0:s}'.format(fname))
+        r = pickle.load(open(fname, 'rb'))
+        return r
+
+    time = []
+    Tmean = []
+
+    for fname in s.files['vtk_id0'][0:3]:
+        print(fname)
+        ds = AthenaDataSet(fname)
+        T = ds.read_all_data('temperature')
+        ma_w = (T < 1.5e4) & (T > 6e3)
+        Tw = np.ma.array(T, mask=~ma_w)
+        Tmean.append(np.ma.mean(Tw, axis=(1,2)))
+        time.append(ds.domain['time'])
+
+    x, y, z = cc_arr(ds.domain)
+    r = dict(time=np.array(time),
+             Tw_mean=Tmean, Tbdry=[6e3, 1.5e4],
+             basedir=s.basedir, z=z,
+             domain=s.domain)
+
+    pickle.dump(r, open(fname, 'wb'))
+    print('Result dumped to {0:s}'.format(fname))
+
+    return r
