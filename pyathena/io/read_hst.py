@@ -9,7 +9,7 @@ import re
 import numpy as np
 import pandas as pd
 
-def read_hst(filename, force_override=False, verbose=False):
+def read_hst(filename, force_override=False, verbose=False, incremental=True):
     """ Function to read athena history file and pickle
 
     Parameters
@@ -47,6 +47,9 @@ def read_hst(filename, force_override=False, verbose=False):
         except IOError:
             pass
 
+    if incremental:
+        hst = correct_restart_hst(hst, verbose=verbose)
+
     return hst
 
 
@@ -77,3 +80,24 @@ def _get_hst_var(filename):
         vlist[i] = re.sub(r"\s|\W", "", vlist[i])
 
     return vlist[1:-1]
+
+
+def correct_restart_hst(h, verbose=True):
+    idx = np.where(h.time.diff() < 0)[0]
+    n_discont = len(idx)
+    if verbose and n_discont > 0:
+        print('[read_hst]: found {:d} overlapped time ranges'.format(n_discont))
+        print('[read_hst]: cut out overlapped time ranges and make the history ' +\
+              'incremental')
+
+    while n_discont > 0:
+        i = idx[0]
+        t0 = h.iloc[i].time
+        h_good1 = h.iloc[np.where(h.iloc[:i-1].time < t0)[0]]
+        h_good2 = h.iloc[i:]
+        h_good = pd.concat([h_good1, h_good2], ignore_index=True)
+        h = h_good
+        idx = np.where(h.time.diff()< 0)[0]
+        n_discont = len(idx)
+
+    return h
