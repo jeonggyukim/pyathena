@@ -18,16 +18,16 @@ if __name__ == '__main__':
     COMM = MPI.COMM_WORLD
 
     sa, df = load_sim_ncr_rad_all(model_set='lowZ', verbose=False)
+    models = sa.models
 
-    models = ['R8_Z1']
+    # models = ['R8_Z1']
     # mdl = 'LGR8_S05_Z1'
     # mdl = 'LGR8_S05_Z01'
 
     # sa, df = load_sim_ncr_rad_all(model_set='radiation_paper', verbose=False)
-    # mdl = 'R8_4pc'
+    # models = ['R8_4pc']
 
     force_override = True
-
     for mdl in models:
         nums = df.loc[mdl]['nums']
         s = sa.simdict[mdl]
@@ -42,8 +42,8 @@ if __name__ == '__main__':
         print('[rank, mynums]:', COMM.rank, mynums)
 
         time0 = time.time()
-        #for phase_set_name in s.phase_set.keys():
-        for phase_set_name in ['warm_eq']:
+        for phase_set_name in s.phase_set.keys():
+        # for phase_set_name in ['default_rad', 'warm_eq_LyC_ma']:
             for num in mynums:
                 print(num, end=' ')
                 rr = s.read_zprof_from_vtk(num, phase_set_name=phase_set_name,

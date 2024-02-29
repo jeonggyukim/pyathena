@@ -100,6 +100,7 @@ def get_summary(s, model):
     df['nums_range'] = [df['nums'][0], df['nums'][-1]]
     df['nums_starpar'] = s.get_output_nums(df['tMyr_range'], out_fmt='starpar_vtk')
     df['nums_starpar_range'] = [df['nums_starpar'][0], df['nums_starpar'][-1]]
+    df['beta'] = s.par['problem']['beta']
 
     return df
 
@@ -133,7 +134,9 @@ def load_sim_ncr_rad_all(model_set='radiation_paper',
     sa = LoadSimTIGRESSNCRAll(models)
 
     df_list = []
+    print('[load_sim_ncr_rad_all]:', end=' ')
     for mdl in sa.models:
+        print(mdl, end=' ')
         savdir = str(Path(savdir_base,
                           Path(sa.basedirs[mdl]).name))
         s = sa.set_model(mdl, savdir=savdir, verbose=verbose)
@@ -145,12 +148,13 @@ def load_sim_ncr_rad_all(model_set='radiation_paper',
     return sa, df
 
 def load_zprof_new(s):
-    """Load zprof that has new phase definitions.
-
+    """Load zprof that has new phase definitions. LGR4_2pc has old definitions, see
     https://github.com/PrincetonUniversity/Athena-TIGRESS/wiki/Phase-definition#ncr-new-phase-sep-history-branch
     """
     if s.config_time < pd.to_datetime('2022-03-15 00:00:00 -04:00'):
-        raise RuntimeError('config_time {0:s} indicates that this simulation has old phase definitions. Do not use this funtion.'.format(str(s.config_time)))
+        raise RuntimeError('config_time {0:s} indicates that this simulation has '+\
+                           'old phase definitions. Do not use this funtion.'.\
+                           format(str(s.config_time)))
 
     zp = dict()
     phases = ['c','u','w1','w2','h1','h2', # based on temperature only
