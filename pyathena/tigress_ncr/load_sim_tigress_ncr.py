@@ -27,7 +27,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
-                 muH = 1.4271, verbose=False):
+                 muH=1.4271, verbose=False):
         """The constructor for LoadSimTIGRESSNCR class
 
         Parameters
@@ -60,7 +60,7 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
         self.muH = muH
         self.u = Units(muH=muH)
         self.domain = self._get_domain_from_par(self.par)
-        self.phase_set = self._get_phase_sets()
+        self.phase_set = self.get_phase_sets()
 
     def test_newcool(self):
         try:
@@ -149,12 +149,16 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
         else:
             return nums
 
-    def _get_phase_sets(self):
+    def get_phase_sets(self):
         f1 = lambda dd, v, op, c: op(dd[v], c)
         f2 = lambda dd, v, op, c, v2: op(dd[v], c*dd[v2])
         f3 = lambda dd, v, op, c, v2: op(dd[v], c+dd[v2])
-        # Used in NCR radiation paper
-        phs0 = PhaseSet('default',
+
+        # Conditions used to select a phase in each PhaseSet need to be mutually exclusive
+        # PhaseSet need not be all inclusive (e.g., can select warm gas only and subdivide)
+
+        # Default used in NCR radiation paper
+        phs0 = PhaseSet('default_rad',
                         [Phase('CpU', 1, [[f1, 'T', np.less, 6e3]]),
                          Phase('WIM', 2, [[f1, 'xHII', np.greater_equal, 0.5],
                                           [f1, 'T', np.greater_equal, 6e3],
@@ -165,46 +169,29 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
                          Phase('hot', 4, [[f1, 'T', np.greater_equal, 3.5e4]])]
                         )
 
-        # Same as default, except for further division of warm gas based on xHII< 0.1,
-        # >0.9, and in between, and lower temperature threshold (3000 K)
-        phs1 = PhaseSet('default_pion',
-                        [Phase('cold', 1, [[f1, 'T', np.less, 3e3]]),
-                         Phase('wpion', 2, [[f1, 'xHII', np.greater_equal, 0.1],
-                                            [f1, 'xHII', np.less, 0.9],
-                                            [f1, 'T', np.greater_equal, 3e3],
-                                            [f1, 'T', np.less, 3.5e4]]),
-                         Phase('wion', 3, [[f1, 'xHII', np.greater_equal, 0.9],
-                                           [f1, 'T', np.greater_equal, 3e3],
-                                           [f1, 'T', np.less, 3.5e4]]),
-                         Phase('wneu', 4, [[f1, 'xHII', np.less, 0.1],
-                                           [f1, 'T', np.greater_equal, 3e3],
-                                           [f1, 'T', np.less, 3.5e4]]),
-                         Phase('hot', 5, [[f1, 'T', np.greater_equal, 3.5e4]])]
-                        )
-
-        # Used to characterize partially ionized gas & gas exposed to LyC radiation
-        phs2 = create_phase_set_with_LyC_mask(phs1)
-
         # Used to characterize warm gas in terms of xHII, xHII_eq
-        phs3 = PhaseSet('warm_eq',
-                        [Phase('w1_eq', 1, [[f1, 'T', np.greater_equal, 3e3],
-                                            [f1, 'T', np.less, 1.5e4],
-                                            [f2, 'xHII', np.less, 2.0, 'xHII_eq']]),
-                         Phase('w2_eq', 2, [[f1, 'T', np.greater_equal, 1.5e4],
-                                            [f1, 'T', np.less, 3.5e4],
-                                            [f2, 'xHII', np.less, 2.0, 'xHII_eq']]),
-                         Phase('w1_geq', 3, [[f1, 'T', np.greater_equal, 3e3],
+        # Note that temperature boundary for warm is lower than that used by default
+        phs1_ = PhaseSet('warm_eq',
+                         [Phase('w1_eq', 1, [[f1, 'T', np.greater_equal, 3e3],
                                              [f1, 'T', np.less, 1.5e4],
-                                             [f2, 'xHII', np.greater_equal, 2.0, 'xHII_eq']]),
-                         Phase('w2_geq', 4, [[f1, 'T', np.greater_equal, 1.5e4],
+                                             [f2, 'xHII', np.less, 2.0, 'xHII_eq']]),
+                          Phase('w2_eq', 2, [[f1, 'T', np.greater_equal, 1.5e4],
                                              [f1, 'T', np.less, 3.5e4],
-                                             [f2, 'xHII', np.greater_equal, 2.0, 'xHII_eq']])]
-                        )
+                                             [f2, 'xHII', np.less, 2.0, 'xHII_eq']]),
+                          Phase('w1_geq', 3, [[f1, 'T', np.greater_equal, 3e3],
+                                              [f1, 'T', np.less, 1.5e4],
+                                              [f2, 'xHII', np.greater_equal, 2.0, 'xHII_eq']]),
+                          Phase('w2_geq', 4, [[f1, 'T', np.greater_equal, 1.5e4],
+                                              [f1, 'T', np.less, 3.5e4],
+                                              [f2, 'xHII', np.greater_equal, 2.0, 'xHII_eq']]),
+                          Phase('CpU', 5, [[f1, 'T', np.greater_equal, 3.5e4]]),
+                          Phase('hot', 6, [[f1, 'T', np.less, 3e3]])]
+                         )
 
         # Used to characterize partially ionized gas & gas exposed to LyC radiation
-        phs4 = create_phase_set_with_LyC_mask(phs3)
+        phs1 = create_phase_set_with_LyC_mask(phs1_, flag_phot=[1, 0, 1, 0, 0, 0])
 
-        return {phs.name: phs for phs in (phs0, phs1, phs2, phs3, phs4)}
+        return {phs.name: phs for phs in (phs0, phs1)}
 
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
