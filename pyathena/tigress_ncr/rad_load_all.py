@@ -10,20 +10,43 @@ models1 = dict(
     LGR4_2pc='/tigress/changgoo/TIGRESS-NCR/LGR4_2pc_NCR.full',
 )
 
-# Metallicity suite (Kim+)
+# Metallicity suite (KimCG+)
+# https://github.com/PrincetonUniversity/Athena-TIGRESS/wiki/TIGRESS-NCR-Metallicity-Suite
 models2 = dict(
+    S05_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR8_8pc_NCR_S05.full.b10.v3.iCR5.Zg1.Zd1.xy4096.eps0.0',
+    S05_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR8_8pc_NCR_S05.full.b10.v3.iCR5.Zg0.1.Zd0.1.xy8192.eps0.0',
+
     R8_Z1='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy2048.eps0.0',
     R8_Z03='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.3.Zd0.3.xy4096.eps0.0',
     R8_Z01='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy4096.eps0.0',
     R8_Zg01_Zd0025='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.025.xy4096.eps0.0',
+
+    R8_b10_Z1='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b10.v3.iCR4.Zg1.Zd1.xy2048.eps0.0',
+    R8_b10_Z03='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b10.v3.iCR4.Zg0.3.Zd0.3.xy4096.eps0.0',
+    R8_b10_Z01='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b10.v3.iCR4.Zg0.1.Zd0.1.xy4096.eps0.0',
+    R8_b10_Zg01_Zd0025='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR.full.b10.v3.iCR4.Zg0.1.Zd0.025.xy4096.eps0.0',
+
+    S30_Z1='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR_S30.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps0.0',
+    S30_Z01='/projects/EOSTRIKE/TIGRESS-NCR/R8_8pc_NCR_S30.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy2048.eps0.0',
 
     LGR4_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8',
     LGR4_Z03='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.3.Zd0.3.xy2048.eps1.e-8',
     LGR4_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy2048.eps1.e-8',
     LGR4_Zg01_Zd0025='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b1.v3.iCR4.Zg0.1.Zd0.025.xy2048.eps1.e-8',
 
-    LGR8_S05_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR8_8pc_NCR_S05.full.b10.v3.iCR5.Zg1.Zd1.xy4096.eps0.0',
-    LGR8_S05_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR8_8pc_NCR_S05.full.b10.v3.iCR5.Zg0.1.Zd0.1.xy8192.eps0.0',
+    LGR4_b10_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b10.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8',
+    LGR4_b10_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR.full.b10.v3.iCR4.Zg0.1.Zd0.1.xy2048.eps1.e-8',
+
+    S100_Z1r='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR_S100.full.b1.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01',
+    S100_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR_S100.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8',
+    S100_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR4_4pc_NCR_S100.full.b1.v3.iCR4.Zg0.1.Zd0.1.xy2048.eps1.e-8',
+
+    S150_Om100q0_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8',
+    S150_Om100q0_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR2_4pc_NCR_S150.full.b2.Om01.q0.v3.iCR5.Zg0.1.Zd0.1.xy2048.eps1.e-8',
+    S150_Om200_Z1r='/projects/EOSTRIKE/TIGRESS-NCR/LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01',
+    S150_Om200_Z1='/projects/EOSTRIKE/TIGRESS-NCR/LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8',
+    S150_Om200_Z01='/projects/EOSTRIKE/TIGRESS-NCR/LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR5.Zg0.1.Zd0.1.xy2048.eps1.e-8',
+
 )
 
 # Time range analyzed
@@ -34,19 +57,40 @@ tMyr_range['R8_8pc'] = [250,450]
 tMyr_range['R8_4pc'] = [250,450]
 tMyr_range['LGR4_2pc'] = [250,350]
 
-# Metallicity suite
+# Metallicity suite (KimCG+)
+tMyr_range['S05_Z1'] = [614,1703]
+tMyr_range['S05_Z01'] = [614,1830]
+
 tMyr_range['R8_Z1'] = [438,977]
 tMyr_range['R8_Z03'] = [438,977]
 tMyr_range['R8_Z01'] = [438,977]
 tMyr_range['R8_Zg01_Zd0025'] = [438,977]
+
+tMyr_range['R8_b10_Z1'] = [438,977]
+tMyr_range['R8_b10_Z03'] = [438,977]
+tMyr_range['R8_b10_Z01'] = [438,977]
+tMyr_range['R8_b10_Zg01_Zd0025'] = [438,977]
+
+tMyr_range['S30_Z1'] = [438,977]
+tMyr_range['S30_Z01'] = [438,977]
 
 tMyr_range['LGR4_Z1'] = [204,488]
 tMyr_range['LGR4_Z03'] = [204,488]
 tMyr_range['LGR4_Z01'] = [204,488]
 tMyr_range['LGR4_Zg01_Zd0025'] = [204,488]
 
-tMyr_range['LGR8_S05_Z1'] = [614,1703]
-tMyr_range['LGR8_S05_Z01'] = [614,1830]
+tMyr_range['LGR4_b10_Z1'] = [204,488]
+tMyr_range['LGR4_b10_Z01'] = [204,488]
+
+tMyr_range['S100_Z1r'] = [204,487]
+tMyr_range['S100_Z1'] = [204,425]
+tMyr_range['S100_Z01'] = [204,488]
+
+tMyr_range['S150_Om100q0_Z1'] = [122,378]
+tMyr_range['S150_Om100q0_Z01'] = [122,353]
+tMyr_range['S150_Om200_Z1r'] = [153,336]
+tMyr_range['S150_Om200_Z1'] = [153,397]
+tMyr_range['S150_Om200_Z01'] = [153,412]
 
 def get_summary(s, model):
 
