@@ -4,13 +4,17 @@ from functools import reduce
 
 @dataclass(frozen=True)
 class Phase:
-    """Phase info. Need to be mutually exclusive.
+    """Phase info. Selection conditions must be mutually exclusive to assign unique mask
+    to each cell.
 
+    Attributes:
+        name (str): phase name
+        mask (int): unique id used to mask data
+        cond (list): list containing a selction function (first element), followed by its
+                     arguments conditions (np.logical_and, cond)
     """
     name: str
-    # Used to mask data
     mask: int
-    # List of conditions for selcting cells by applying reduce(np.logical_and, cond)
     cond: list
 
 @dataclass(frozen=True)
@@ -28,6 +32,22 @@ class PhaseSet:
         object.__setattr__(self, 'phase_names', [ph.name for ph in self.phases])
         object.__setattr__(self, 'phase_mask_dict',
                            {ph.name: ph.mask for ph in self.phases})
+
+    def __str__(self):
+        rows = ['PhaseSet: {0:s}'.format(self.name)]
+        for ph in self.phases:
+            rows.append(ph.__repr__())
+
+        return '\n  '.join(rows)
+
+    def __repr__(self):
+        rows = ['PhaseSet: {0:s}'.format(self.name)]
+        for ph in self.phases:
+            rows.append(ph.__repr__())
+
+        return '\n  '.join(rows)
+
+# JGKIM: can implement a class that takes xarray DataSet as an argument and creates a phase mask
 
 def create_phase_masks(dd, phs):
     # Set phase id and fraction
