@@ -1,17 +1,44 @@
 import matplotlib.pyplot as plt
+import numpy as np
 
 from .rad_load_all import read_zpa_and_hst
+
+# Some convenience functions (works for specific purposes only)
+def plot_quantiles(ax, z, q, dim='time',
+                   plt_25_75=True, plt_5_95=True, plt_mean=True, color='k'):
+    plt.sca(ax)
+    if plt_25_75:
+        plt.fill_between(z, q.quantile(0.25, dim=dim),
+                            q.quantile(0.75, dim=dim), alpha=0.2, lw=0, color=color)
+    if plt_5_95:
+        plt.fill_between(z, q.quantile(0.05, dim=dim),
+                            q.quantile(0.95, dim=dim), alpha=0.15, lw=0, color=color)
+    if plt_mean:
+        plt.plot(z, q.mean(axis=0), alpha=1, lw=2, ls=':', c=color)
+
+    plt.plot(z, q.quantile(0.5, dim=dim), alpha=0.8, lw=3, c=color)
+
+def plot_quantiles_1(axes, zp, f, dim='time', plt_25_75=True, plt_5_95=True,
+                     plt_mean=True, colors='k'):
+    if len(np.atleast_1d(colors)) == 1:
+        colors = np.repeat(colors, len(zp))
+
+    for ax, z, color in zip(axes, zp, colors):
+        plot_quantiles(ax, z['z'], z[f], dim=dim, plt_25_75=True, plt_5_95=True,
+                       plt_mean=True, color=color)
+
+def plot_quantiles_2(axes, zp, f, zp2, f2, dim='time', plt_25_75=True, plt_5_95=True,
+                     plt_mean=True, colors='k'):
+    if len(np.atleast_1d(colors)) == 1:
+        colors = np.repeat(colors, len(zp))
+
+    for ax, z, z2, color in zip(axes, zp, zp2, colors):
+        plot_quantiles(ax, z['z'], z[f]/z2[f2], dim=dim,
+                       plt_25_75=plt_25_75, plt_5_95=True, plt_mean=True, color=color)
 
 def plot_zprof(sa, df, mdl, phase_set_name=None, force_override=False):
 
     read_zpa_and_hst(sa, df, mdl)
-
-    # zp_w1 = (zpa.sel(phase='w1_eq_noLyC') + zpa.sel(phase='w1_geq_noLyC') +\
-    #      zpa.sel(phase='w1_eq_LyC') + zpa.sel(phase='w1_geq_LyC') +\
-    #      zpa.sel(phase='w1_eq_LyC_pi') + zpa.sel(phase='w1_geq_LyC_pi')).assign_coords(phase='w1')
-    # zp_w2 = (zpa.sel(phase='w2_eq_noLyC') + zpa.sel(phase='w2_geq_noLyC') +\
-    #          zpa.sel(phase='w2_eq_LyC') + zpa.sel(phase='w2_geq_LyC') +\
-    #          zpa.sel(phase='w2_eq_LyC_pi') + zpa.sel(phase='w2_geq_LyC_pi')).assign_coords(phase='w2')
 
     zp_whole = zpa.sel(phase='whole')
     zp_w1_geq = zpa.sel(phase='w1_geq_noLyC') + zpa.sel(phase='w1_geq_LyC') +\
@@ -29,27 +56,6 @@ def plot_zprof(sa, df, mdl, phase_set_name=None, force_override=False):
     fig, axes = plt.subplots(6, 4, figsize=(20, 30), constrained_layout=True)
     for ax, title in zip(axes[0,:],['w1-eq-noLyC','w1-eq-LyC-pi', 'w1-neq', 'w1-eq-LyC']):
         ax.set_title(title)
-
-    def plot_quantiles(ax, z, q, color='k', plt_25_75=True, plt_5_95=True, plt_mean=True):
-        plt.sca(ax)
-        if plt_25_75:
-            plt.fill_between(z, q.quantile(0.25, dim='time'),
-                                q.quantile(0.75, dim='time'), lw=0, color=color, alpha=0.2)
-        if plt_5_95:
-            plt.fill_between(z, q.quantile(0.05, dim='time'),
-                                q.quantile(0.95, dim='time'), lw=0, color=color, alpha=0.15)
-        if plt_mean:
-            plt.plot(z, q.mean(axis=0), c=color, alpha=1, lw=2, ls=':')
-
-        plt.plot(z, q.quantile(0.5, dim='time'), lw=3, color=color, alpha=0.5)
-
-    def plot_quantiles_1(axes, zp, f):
-        for ax, z in zip(axes, zp):
-            plot_quantiles(ax, z['z'], z[f])
-
-    def plot_quantiles_2(axes, zp, f, zp2, f2):
-        for ax, z, z2 in zip(axes, zp, zp2):
-            plot_quantiles(ax, z['z'], z[f]/z2[f2])
 
     zp = [zp_w1_eq_noLyC, zp_w1_eq_LyC_pi, zp_w1_geq, zp_w1_eq_LyC]
     plot_quantiles_1(axes[0,:], zp, 'frac')

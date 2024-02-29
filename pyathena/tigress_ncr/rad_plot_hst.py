@@ -29,9 +29,7 @@ def plot_hist(model_set, model,
                                  phase_set_name=phase_set_name,
                                  force_override=force_override)
     xlim = df.loc[model]['tMyr_range']
-    print(xlim)
 
-    # return s, zpa
     u = s.u
     zpa = zpa.rename(dict(time='time_code'))
     zpa = zpa.assign_coords(tMyr=zpa.time_code*u.Myr)
@@ -145,4 +143,6 @@ def plot_hist(model_set, model,
         fig.savefig('/tigress/jk11/figures/NCR-RADIATION/hst-{0:s}-{1:s}.png'.\
                     format(model, phase_set_name), dpi=200, bbox_inches='tight')
 
-    return fig, h, s, zpa, zp_pi, zp_neq
+    zp_dict = dict(zpa=zpa, zp_eq=zp_eq, zp_neq=zp_neq, zp_pi=zp_pi)
+
+    return fig, s, zp_dict, h
