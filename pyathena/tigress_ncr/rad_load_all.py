@@ -175,6 +175,21 @@ def load_zprof_new(s):
 
     return zp
 
+def read_zpa_and_hst(sa, df, mdl, phase_set_name=None, force_override=False):
+    s = sa.simdict[mdl]
+    nums = df.loc[mdl]['nums']
+    if phase_set_name is None:
+        phase_set_name = list(s.phase_set.keys())[-1]
+
+    zpa = s.read_zprof_from_vtk_all(nums,
+                                    phase_set_name=phase_set_name,
+                                    force_override=force_override)
+
+    zpa, h = s.merge_zprof_with_hst(zpa)
+
+    return s, zpa, h
+
+
 if __name__ == '__main__':
     sa, df = load_sim_ncr_rad_all(verbose=True)
 
