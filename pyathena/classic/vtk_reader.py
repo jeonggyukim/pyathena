@@ -155,7 +155,7 @@ class AthenaDomain(object):
 
     def _setup_mpi_grid(self):
         gnx = self.grids[0]['Nx']
-        self.NGrids = (self.domain['Nx']/self.grids[0]['Nx']).astype(np.int)
+        self.NGrids = (self.domain['Nx']/self.grids[0]['Nx']).astype(int)
         self.gid = np.arange(self.ngrids)
         i = 0
         for n in range(self.NGrids[2]):
