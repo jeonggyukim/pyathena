@@ -323,7 +323,7 @@ def plot_lambda_cool_ncr():
 
     return fig
 
-def get_den_t_cool(nH, Z, ionized):
+def get_nH_t_cool(nH, Z, ionized):
     gamma = 5.0/3.0
     cgi_metal, cgi_He, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He =\
         set_CIE_interpolator(return_xe=True)
@@ -334,23 +334,23 @@ def get_den_t_cool(nH, Z, ionized):
     cool_tot_ = rr['cool_H'] + (1.0 - f1(T))*rr['cool_other'] + \
                f1(T)*(Z*cgi_metal(T) + cgi_He(T))
     rr['cool_tot'] = cool_tot_
-    den_t_cool = (1.1 + rr['xe_eq'])*ac.k_B*T*au.K/\
+    nH_t_cool = (1.1 + rr['xe_eq'])*ac.k_B*T*au.K/\
         ((gamma-1.0)*cool_tot_*au.erg*au.cm**3/au.s)
 
-    return rr, den_t_cool.to('yr cm-3')
+    return rr, nH_t_cool.to('yr cm-3')
 
-def plot_t_cool(nH=1.0, Z=[0.001, 0.01, 0.1, 1.0, 3.0]):
+def plot_nH_t_cool(nH=1.0, Z=[0.001, 0.01, 0.1, 1.0, 3.0]):
 
     fig, axes = plt.subplots(1, 1, figsize=(6, 5),
                              constrained_layout=True)
     cmap = mpl.cm.plasma_r
     norm = mpl.colors.LogNorm(0.003, 3.0)
     for Z_ in Z:
-        rr1, t_cool1 = get_den_t_cool(nH, Z_, False)
-        rr2, t_cool2 = get_den_t_cool(nH, Z_, True)
-        plt.loglog(rr1['T'], t_cool1, c=cmap(norm(Z_)),
+        rr1, nH_t_cool1 = get_nH_t_cool(nH, Z_, False)
+        rr2, nH_t_cool2 = get_nH_t_cool(nH, Z_, True)
+        plt.loglog(rr1['T'], nH_t_cool1, c=cmap(norm(Z_)),
                    label=r'{0:g}'.format(Z_))
-        plt.loglog(rr2['T'], t_cool2, c=cmap(norm(Z_)), ls='--')
+        plt.loglog(rr2['T'], nH_t_cool2, c=cmap(norm(Z_)), ls='--')
 
     plt.xlabel(r'$T\;[{\rm K}]$')
     plt.ylabel(r'$n \times t_{\rm cool}\;[{\rm cm}^{-3}\,{\rm yr}]$')
@@ -364,16 +364,14 @@ def plot_t_cool(nH=1.0, Z=[0.001, 0.01, 0.1, 1.0, 3.0]):
 
 
 def plot_Lambda_nHt_cool_xe_eq():
-    from pyathena.microphysics.plots import\
-        plot_lambda_cool_ncr, plot_t_cool, get_den_t_cool
     from pyathena.classic import coolftn as cf
 
     muH = 1.4271
     c = cf.get_cool(cf.T1)
     T = cf.get_temp(cf.T1)
     xe = muH/(T/cf.T1) - 1.1
-    r, n_t_cool = get_den_t_cool(1.0, 1.0, ionized=False)
-    r2, n_t_cool2 = get_den_t_cool(1.0, 1.0, ionized=True)
+    r, n_t_cool = get_nH_t_cool(1.0, 1.0, ionized=False)
+    r2, n_t_cool2 = get_nH_t_cool(1.0, 1.0, ionized=True)
 
     fig, axes = plt.subplots(1, 3, figsize=(16, 5), constrained_layout=True)
     plt.sca(axes[0])
