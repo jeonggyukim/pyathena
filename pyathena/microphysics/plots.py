@@ -92,7 +92,7 @@ def get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4, Z_g=1.0, Z_
     cool_HLya = coolLya(nH,T,xHI_eq,xe_eq)/nH
     cool_CII_ = coolCII(nH,T,xe_eq,xHI_eq,0.0,xCII_eq)/nH
     cool_OI_ = coolOI(nH,T,xe_eq,xHI_eq,0.0,xOI_eq)/nH
-    cool_neb_ = coolneb(nH,T,xe_eq,xHII_eq,Z_g)
+    cool_neb_ = coolneb(nH,T,xe_eq,xHII_eq,Z_g)/nH
     cool_other =  cool_CII_ + cool_OI_ + cool_neb_
     if gr_rec:
         cool_grRec = coolRec(nH,T,xe_eq,Z_d,G_PE)/nH
