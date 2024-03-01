@@ -333,6 +333,7 @@ def get_den_t_cool(nH, Z, ionized):
     T = rr['T']
     cool_tot_ = rr['cool_H'] + (1.0 - f1(T))*rr['cool_other'] + \
                f1(T)*(Z*cgi_metal(T) + cgi_He(T))
+    rr['cool_tot'] = cool_tot_
     den_t_cool = (1.1 + rr['xe_eq'])*ac.k_B.cgs*T/((gamma-1.0)*cool_tot_)
 
     return rr, den_t_cool*(1.0*au.second).to('yr')
@@ -357,5 +358,50 @@ def plot_t_cool(nH=1.0, Z=[0.001, 0.01, 0.1, 1.0, 3.0]):
     plt.axvspan(2e4, 3.5e4, alpha=0.2, color='grey')
     plt.grid(linestyle=':')
     plt.legend(loc=4, title=r'$Z^{\prime}$')
+
+    return fig
+
+
+def plot_Lambda_nHt_cool_xe_eq():
+    from pyathena.microphysics.plots import\
+        plot_lambda_cool_ncr, plot_t_cool, get_den_t_cool
+    from pyathena.classic import coolftn as cf
+
+    muH = 1.4271
+    c = cf.get_cool(cf.T1)
+    T = cf.get_temp(cf.T1)
+    xe = muH/(T/cf.T1) - 1.1
+    r, n_t_cool = get_den_t_cool(1.0, 1.0, ionized=False)
+    r2, n_t_cool2 = get_den_t_cool(1.0, 1.0, ionized=True)
+
+    fig, axes = plt.subplots(1, 3, figsize=(16, 5), constrained_layout=True)
+    plt.sca(axes[0])
+    plt.loglog(T, c, label='KO17')
+    l, = plt.loglog(r['T'], r['cool_tot'], label='KGKO23')
+    plt.loglog(r2['T'], r2['cool_tot'], label='KGKO23 (with PH)',
+               c=l.get_color(), ls='--')
+    plt.setp(axes[0], ylim=(1e-27, 5e-21),
+             ylabel=r'$\Lambda\;[{\rm erg}\,{\rm cm}^3\,{\rm s}^{-1}]$')
+    plt.legend()
+
+    plt.sca(axes[1])
+    plt.loglog(T, ((1.1 + xe)*ac.k_B*(T*au.K)/(c*au.cm**3*au.erg/au.s)).to('yr cm-3'))
+    l, = plt.loglog(r['T'], ((1.1 + r['xe_eq'])*ac.k_B*(r['T']*au.K)/\
+                             (r['cool_tot']*au.cm**3*au.erg/au.s)).to('yr cm-3'))
+    plt.loglog(r2['T'], ((1.1 + r2['xe_eq'])*ac.k_B*(r2['T']*au.K)/\
+                         (r2['cool_tot']*au.cm**3*au.erg/au.s)).to('yr cm-3'),
+               c=l.get_color(), ls='--')
+    plt.setp(axes[1], ylim=(5e2, 1e7),
+             ylabel=r'$n_{\rm H}t_{\rm cool} = P/(n_{\rm H}\Lambda)\;[{\rm yr}\,{\rm cm}^{-3}]$')
+
+    plt.sca(axes[2])
+    plt.loglog(T, xe)
+    l, = plt.loglog(r['T'], r['xe_eq'])
+    plt.loglog(r2['T'], r2['xe_eq'], c=l.get_color(), ls='--')
+    plt.setp(axes[2], ylim=(1e-3, 2), ylabel=r'$x_{\rm e,eq}$')
+
+    plt.setp(axes, xlim=(3e3, 1e8), xlabel=r'$T\;[{\rm K}]$');
+    for ax in axes:
+        ax.grid()
 
     return fig
