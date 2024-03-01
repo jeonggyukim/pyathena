@@ -1,23 +1,25 @@
 import numpy as np
 import xarray as xr
-import astropy.units as au
-import astropy.constants as ac
-import sys, os
-import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm
-import argparse
 
-sys.path.insert(0, "../../")
+# import astropy.units as au
+# import astropy.constants as ac
+import sys
+import os
+# import matplotlib.pyplot as plt
+# from matplotlib.colors import LogNorm
+# import argparse
+
+# sys.path.insert(0, "../../")  # noqa
 
 import pyathena as pa
 from pyathena.io.read_hst import read_hst
 import gc
 
 from pyathena.tigress_ncr.get_cooling import (
-    get_cooling_heating,
+    # get_cooling_heating,
     get_pdfs,
-    set_bins_default,
-    get_pdf_xarray,
+    # set_bins_default,
+    # get_pdf_xarray,
 )
 from pyathena.fields.xray_emissivity import get_xray_emissivity
 
@@ -65,7 +67,7 @@ for m in models:
     elif suite == "icm":
         nums = s.nums
     for num in nums:
-        if not (num in s.nums):
+        if num not in s.nums:
             continue
         savdir = "{}/jointpdf/cooling_heating/".format(s.savdir)
         if not os.path.isdir(savdir):

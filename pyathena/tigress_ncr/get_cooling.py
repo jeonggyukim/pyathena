@@ -1,4 +1,24 @@
-from ..microphysics.cool import *
+from ..microphysics.cool import (
+    heatPE,
+    heatCR,
+    heatH2,
+    coolLya,
+    coolHIion,
+    coolffH,
+    coolrecH,
+    coolH2rovib,
+    coolH2colldiss,
+    coolCI,
+    coolCII,
+    coolOI,
+    coolneb,
+    coolRec,
+    get_xCII,
+    get_xCO,
+)
+
+import astropy.constants as ac
+import astropy.units as au
 import xarray as xr
 import numpy as np
 import pandas as pd
@@ -30,13 +50,13 @@ def get_cooling_heating(sim, ds, zrange=None, return_Lambda_e=True):
     # else:
     #     return_Lambda_e = False
 
-    if 'iCoolHCIE' in sim.par['cooling']:
-        iCoolHCIE = sim.par['cooling']['iCoolHCIE']
+    if "iCoolHCIE" in sim.par["cooling"]:
+        iCoolHCIE = sim.par["cooling"]["iCoolHCIE"]
     else:
         iCoolHCIE = 0
 
     # unit definition
-    unitT = sim.u.energy_density / ac.k_B / sim.muH * au.cm ** 3
+    unitT = sim.u.energy_density / ac.k_B / sim.muH * au.cm**3
 
     # read all necessary native fields
     field_to_read = [
@@ -73,7 +93,7 @@ def get_cooling_heating(sim, ds, zrange=None, return_Lambda_e=True):
 
     # set metallicities
     Z_g = sim.par["problem"]["Z_gas"]
-    Z_d = sim.par["problem"]["Z_dust"]
+    # Z_d = sim.par["problem"]["Z_dust"]
 
     # get a few derived fields
     dd["xHII"] = 1 - dd["xHI"] - 2.0 * dd["xH2"]
@@ -94,13 +114,13 @@ def get_cooling_heating(sim, ds, zrange=None, return_Lambda_e=True):
     cool_CIE = get_Lambda_CIE(dd, return_Lambda_e=return_Lambda_e)
     cool_CIE["CIE_metal"] = cool_CIE["CIE_metal"] * Z_g * dd["nH"] ** 2 * w2
     cool_CIE["CIE_He"] = cool_CIE["CIE_He"] * dd["nH"] ** 2
-    if (iCoolHCIE):
+    if iCoolHCIE:
         # CIE hydrogen cooling
         cool_CIE["CIE_H"] = cool_CIE["CIE_H"] * dd["nH"] ** 2 * w2
         # non-equilibrium hydrogen cooling
         cool_hyd *= w1
     else:
-        cool_CIE=cool_CIE[["CIE_metal","CIE_He"]]
+        cool_CIE = cool_CIE[["CIE_metal", "CIE_He"]]
         print("no HCIE")
 
     # heating
@@ -128,17 +148,19 @@ def get_cooling_heating(sim, ds, zrange=None, return_Lambda_e=True):
 
 def get_heating(s, dd):
     """calculate heating"""
-    if 'CR_ionization_rate' in dd: CR_rate = dd['CR_ionization_rate']
-    else: CR_rate = s.par["problem"]["xi_CR_amp"]*2.e-16
+    if "CR_ionization_rate" in dd:
+        CR_rate = dd["CR_ionization_rate"]
+    else:
+        CR_rate = s.par["problem"]["xi_CR_amp"] * 2.0e-16
     # set metallicities
-    Z_g = s.par["problem"]["Z_gas"]
+    # Z_g = s.par["problem"]["Z_gas"]
     Z_d = s.par["problem"]["Z_dust"]
     # normalization factors
     Erad_PE0 = s.par["cooling"]["Erad_PE0"] / s.u.energy_density.cgs.value
     Erad_LW0 = s.par["cooling"]["Erad_LW0"] / s.u.energy_density.cgs.value
     xi_diss_H2_conv = s.par["cooling"]["xi_diss_H2_ISRF"] / Erad_LW0
     eV_ = (1.0 * au.eV).cgs.value
-    dhnu_H2_diss = 0.4 * eV_
+    # dhnu_H2_diss = 0.4 * eV_
     if "dhnu_HI_PH" in s.par["radps"]:
         dhnu_HI_PH = s.par["radps"]["dhnu_HI_PH"] * eV_
     else:
@@ -151,25 +173,25 @@ def get_heating(s, dd):
     sigma_H2_PH = s.par["opacity"]["sigma_H2_PH"]
     hnu_PH = s.par["radps"]["hnu_PH"] * eV_
     # calculate normalized radiation fields
-    Erad_PE = 0.
-    Erad_LW = 0.
-    if 'rad_energy_density_PE' in dd:
+    Erad_PE = 0.0
+    Erad_LW = 0.0
+    if "rad_energy_density_PE" in dd:
         Erad_PE = dd["rad_energy_density_PE"]
-    if 'rad_energy_density_LW' in dd:
+    if "rad_energy_density_LW" in dd:
         Erad_LW = dd["rad_energy_density_LW"]
     G_PE = (Erad_PE + Erad_LW) / (Erad_PE0 + Erad_LW0)
-    if 'rad_energy_density_PH' in dd:
+    if "rad_energy_density_PH" in dd:
         Erad_PH = dd["rad_energy_density_PH"]
         xi_ph_HI = Erad_PH * s.u.energy_density.cgs.value
         xi_ph_HI *= ac.c.cgs.value * sigma_HI_PH / hnu_PH
         xi_ph_H2 = Erad_PH * s.u.energy_density.cgs.value
         xi_ph_H2 *= ac.c.cgs.value * sigma_H2_PH / hnu_PH
-    if 'rad_energy_density_LW_diss' in dd:
+    if "rad_energy_density_LW_diss" in dd:
         Erad_LW_diss = dd["rad_energy_density_LW_diss"]
         xi_diss_H2 = Erad_LW_diss * xi_diss_H2_conv
     else:
-        xi_diss_H2 = 0.
-        print('no Photo Dissociation')
+        xi_diss_H2 = 0.0
+        print("no Photo Dissociation")
     # set flags
     try:
         ikgr_H2 = s.par["cooling"]["ikgr_H2"]
@@ -178,7 +200,7 @@ def get_heating(s, dd):
     try:
         kgr_H2 = s.par["cooling"]["kgr_H2"]
     except KeyError:
-        kgr_H2 = 3.e-17
+        kgr_H2 = 3.0e-17
     try:
         iPEheating = s.par["cooling"]["iPEheating"]
     except KeyError:
@@ -191,8 +213,7 @@ def get_heating(s, dd):
         print("no PE heating")
 
     heatrate["CR"] = heatCR(
-        dd["nH"], dd["xe"], dd["xHI"], dd["xH2"], CR_rate,
-        old = s.oldCRheating
+        dd["nH"], dd["xe"], dd["xHI"], dd["xH2"], CR_rate, old=s.oldCRheating
     )
     # if 'rad_energy_density_LW_diss' in dd:
     if s.iH2heating > 0:
@@ -205,7 +226,7 @@ def get_heating(s, dd):
             Z_d,
             kind=s.iH2heating,
             xi_diss_H2_ISRF=s.par["cooling"]["xi_diss_H2_ISRF"],
-            kgr_H2 = kgr_H2,
+            kgr_H2=kgr_H2,
             ikgr_H2=ikgr_H2,
         )
     else:
@@ -217,7 +238,7 @@ def get_heating(s, dd):
     #     dd["nH"], dd["T"], dd["xHI"], dd["xH2"], xi_diss_H2
     # )
     # heatrate["H2_diss"] = heatH2diss(dd["xH2"], xi_diss_H2)
-    if 'rad_energy_density_PH' in dd:
+    if "rad_energy_density_PH" in dd:
         heatrate["PH_HI"] = dd["xHI"] * xi_ph_HI * dhnu_HI_PH
         heatrate["PH_H2"] = dd["xH2"] * xi_ph_H2 * dhnu_H2_PH
     else:
@@ -230,63 +251,74 @@ def get_heating(s, dd):
 
 def get_hydrogen_cooling(sim, dd):
     """a wrapper function to calculate H cooling"""
-    if 'iCoolH2rovib' in sim.par['cooling']:
-        iCoolH2rovib = sim.par['cooling']['iCoolH2rovib']
+    if "iCoolH2rovib" in sim.par["cooling"]:
+        iCoolH2rovib = sim.par["cooling"]["iCoolH2rovib"]
     else:
         iCoolH2rovib = 0
-    if 'iCoolH2colldiss' in sim.par['cooling']:
-        iCoolH2colldiss = sim.par['cooling']['iCoolH2colldiss']
+    if "iCoolH2colldiss" in sim.par["cooling"]:
+        iCoolH2colldiss = sim.par["cooling"]["iCoolH2colldiss"]
     else:
         iCoolH2colldiss = 0
 
-    if 'xHIcut' in sim.par['cooling']:
-        xHIcut = sim.par['cooling']['xHIcut']
+    if "xHIcut" in sim.par["cooling"]:
+        xHIcut = sim.par["cooling"]["xHIcut"]
     else:
         xHIcut = 0.0
-    if 'xHIIcut' in sim.par['cooling']:
-        xHIIcut = sim.par['cooling']['xHIIcut']
+    if "xHIIcut" in sim.par["cooling"]:
+        xHIIcut = sim.par["cooling"]["xHIIcut"]
     else:
         xHIIcut = 0.0
-    if 'xH2cut' in sim.par['cooling']:
-        xH2cut = sim.par['cooling']['xH2cut']
+    if "xH2cut" in sim.par["cooling"]:
+        xH2cut = sim.par["cooling"]["xH2cut"]
     else:
         xH2cut = 0.0
 
-    cuts=dict(xHI=xHIcut, xHII=xHIIcut, xH2=xH2cut)
+    cuts = dict(xHI=xHIcut, xHII=xHIIcut, xH2=xH2cut)
     for x in cuts:
-        print('{} cut is {}'.format(x,cuts[x]))
+        print("{} cut is {}".format(x, cuts[x]))
 
     coolrate = xr.Dataset()
     # HI cooling
     x = "xHI"
-    coolrate["HI_Lya"] = coolLya(dd["nH"], dd["T"], dd["xe"], dd["xHI"]).where(dd[x]>cuts[x],0.0)
-    coolrate["HI_collion"] = coolHIion(dd["nH"], dd["T"], dd["xe"], dd["xHI"]).where(dd[x]>cuts[x],0.0)
+    coolrate["HI_Lya"] = coolLya(dd["nH"], dd["T"], dd["xe"], dd["xHI"]).where(
+        dd[x] > cuts[x], 0.0
+    )
+    coolrate["HI_collion"] = coolHIion(dd["nH"], dd["T"], dd["xe"], dd["xHI"]).where(
+        dd[x] > cuts[x], 0.0
+    )
     # HII cooling
     x = "xHII"
-    coolrate["HII_ff"] = coolffH(dd["nH"], dd["T"], dd["xe"], dd["xHII"]).where(dd[x]>cuts[x],0.0)
-    coolrate["HII_rec"] = coolrecH(dd["nH"], dd["T"], dd["xe"], dd["xHII"]).where(dd[x]>cuts[x],0.0)
+    coolrate["HII_ff"] = coolffH(dd["nH"], dd["T"], dd["xe"], dd["xHII"]).where(
+        dd[x] > cuts[x], 0.0
+    )
+    coolrate["HII_rec"] = coolrecH(dd["nH"], dd["T"], dd["xe"], dd["xHII"]).where(
+        dd[x] > cuts[x], 0.0
+    )
     # H2 cooling
     x = "xH2"
     if iCoolH2rovib:
-        coolrate["H2_rovib"] = coolH2rovib(dd["nH"], dd["T"], dd["xHI"], dd["xH2"]).where(dd[x]>cuts[x],0.0)  # rovib
+        coolrate["H2_rovib"] = coolH2rovib(
+            dd["nH"], dd["T"], dd["xHI"], dd["xH2"]
+        ).where(dd[x] > cuts[x], 0.0)  # rovib
     if iCoolH2colldiss:
-        coolrate["H2_colldiss"] = coolH2colldiss(dd["nH"], dd["T"], dd["xHI"], dd["xH2"]).where(dd[x]>cuts[x],0.0)
+        coolrate["H2_colldiss"] = coolH2colldiss(
+            dd["nH"], dd["T"], dd["xHI"], dd["xH2"]
+        ).where(dd[x] > cuts[x], 0.0)
     return coolrate
 
 
 def get_other_cooling(s, dd):
-    """function to other cooling at low T
-    """
-    if not ("xHII" in dd):
+    """function to other cooling at low T"""
+    if "xHII" not in dd:
         raise KeyError("xHII must set before calling this function")
 
-    if 'iChem' in s.par['cooling']:
-        iChem = (s.par['cooling']['iChem'] == 1)
+    if "iChem" in s.par["cooling"]:
+        iChem = s.par["cooling"]["iChem"] == 1
     else:
         iChem = True
 
-    if (not iChem):
-        print('no Chemistry')
+    if not iChem:
+        print("no Chemistry")
 
     # set total C, O abundance
     xOstd = s.par["cooling"]["xOstd"]
@@ -298,19 +330,19 @@ def get_other_cooling(s, dd):
     Erad_PE0 = s.par["cooling"]["Erad_PE0"] / s.u.energy_density.cgs.value
     Erad_LW0 = s.par["cooling"]["Erad_LW0"] / s.u.energy_density.cgs.value
 
-    Erad_PE = 0.
-    Erad_LW = 0.
-    if 'rad_energy_density_PE' in dd:
+    Erad_PE = 0.0
+    Erad_LW = 0.0
+    if "rad_energy_density_PE" in dd:
         Erad_PE = dd["rad_energy_density_PE"]
-        if dd['rad_energy_density_PE'].max().data == 0:
-            gr_rec=False
-            print('no PE')
+        if dd["rad_energy_density_PE"].max().data == 0:
+            gr_rec = False
+            print("no PE")
         else:
-            gr_rec=True
+            gr_rec = True
     else:
-        gr_rec=False
-        print('no PE')
-    if 'rad_energy_density_LW' in dd:
+        gr_rec = False
+        print("no PE")
+    if "rad_energy_density_LW" in dd:
         Erad_LW = dd["rad_energy_density_LW"]
     G_PE = (Erad_PE + Erad_LW) / (Erad_PE0 + Erad_LW0)
     G_CI = Erad_LW / Erad_LW0
@@ -326,9 +358,11 @@ def get_other_cooling(s, dd):
         iCII_rec_rate = False
     # calculate C, O species abundances
     dd["xOII"] = dd["xHII"] * s.par["cooling"]["xOstd"] * s.par["problem"]["Z_gas"]
-    if 'CR_ionization_rate' in dd: CR_rate = dd['CR_ionization_rate']
-    else: CR_rate = s.par["problem"]["xi_CR_amp"]*2.e-16
-    if (iChem):
+    if "CR_ionization_rate" in dd:
+        CR_rate = dd["CR_ionization_rate"]
+    else:
+        CR_rate = s.par["problem"]["xi_CR_amp"] * 2.0e-16
+    if iChem:
         dd["xCII"] = get_xCII(
             dd["nH"],
             dd["xe"],
@@ -342,7 +376,7 @@ def get_other_cooling(s, dd):
             xCstd=xCstd,
             gr_rec=gr_rec,
             CRphotC=CRphotC,
-            iCII_rec_rate=iCII_rec_rate
+            iCII_rec_rate=iCII_rec_rate,
         )
         dd["xCO"], ncrit = get_xCO(
             dd["nH"],
@@ -361,10 +395,9 @@ def get_other_cooling(s, dd):
     else:
         dd["xOI"] = np.clip(xOstd * Z_g - dd["xOII"], 1.0e-20, None)
 
-
     # cooling others
     coolrate = xr.Dataset()
-    if (iChem):
+    if iChem:
         # CI
         coolrate["CI"] = coolCI(
             dd["nH"], dd["T"], dd["xe"], dd["xHI"], dd["xH2"], dd["xCI"]
@@ -380,8 +413,12 @@ def get_other_cooling(s, dd):
     else:
         # CII
         coolrate["CII"] = coolCII(
-            dd["nH"], dd["T"], dd["xe"], dd["xHI"], dd["xH2"],
-            s.par["cooling"]["xCstd"] * s.par["problem"]["Z_gas"]
+            dd["nH"],
+            dd["T"],
+            dd["xe"],
+            dd["xHI"],
+            dd["xH2"],
+            s.par["cooling"]["xCstd"] * s.par["problem"]["Z_gas"],
         )
         # OI
         coolrate["OI"] = coolOI(
@@ -408,19 +445,20 @@ def get_other_cooling(s, dd):
         iPhotIon = s.par["radps"]["iPhotIon"]
     except KeyError:
         iPhotIon = True
-    if (iPhotIon):
+    if iPhotIon:
         coolrate["neb"] = coolneb(dd["nH"], dd["T"], dd["xe"], dd["xHII"], Z_g)
     else:
         print("no Nebular cooling")
 
-    try:
-        iPEheating = s.par["cooling"]["iPEheating"]
-    except KeyError:
-        iPEheating = True
+    # try:
+    #     iPEheating = s.par["cooling"]["iPEheating"]
+    # except KeyError:
+    #     iPEheating = True
+
     # if (iPEheating):
     coolrate["grRec"] = coolRec(dd["nH"], dd["T"], dd["xe"], Z_d, G_PE)
     # else:
-        # print("no grain recom. cooling")
+    # print("no grain recom. cooling")
 
     return coolrate
 
@@ -452,7 +490,7 @@ def set_CIE_interpolator(return_xe=False, return_Lambda_e=False):
     from ..microphysics.cool_gnat12 import CoolGnat12
 
     cg = CoolGnat12(abundance="Asplund09")
-    elem_no_ion_frac = []
+    # elem_no_ion_frac = []
     xe = dict()
     xe_tot = np.zeros_like(cg.temp)
     cool = dict()
@@ -517,9 +555,7 @@ def set_CIE_interpolator(return_xe=False, return_Lambda_e=False):
 
     cgi_H = interp1d(cg.temp, cool["H"], bounds_error=False, fill_value=0.0)
     if return_xe:
-        cgi_xe = interp1d(
-            cg.temp, xe_tot, bounds_error=False, fill_value=0.0
-        )
+        cgi_xe = interp1d(cg.temp, xe_tot, bounds_error=False, fill_value=0.0)
         cgi_xe_mHHe = interp1d(
             cg.temp, xe_tot - xe["H"] - xe["He"], bounds_error=False, fill_value=0.0
         )
@@ -573,7 +609,7 @@ def set_bins_default():
         bmin, bmax = v
         try:
             dbin = dbins[k]
-        except:
+        except KeyError:
             dbin = 0.1
         nbin = int((bmax - bmin) / dbin) + 1
         if k in nologs:
@@ -599,11 +635,13 @@ def get_pdf_xarray(x, y, w, xbin, ybin, xf, yf):
     yc = 0.5 * (ye[1:] + ye[:-1])
     dx = xe[1] - xe[0]
     dy = ye[1] - ye[0]
-    pdf = xr.DataArray(h[0].T / dx / dy, coords=[yc, xc], dims=[yf+'_bin', xf+'_bin'])
+    pdf = xr.DataArray(
+        h[0].T / dx / dy, coords=[yc, xc], dims=[yf + "_bin", xf + "_bin"]
+    )
     return pdf
 
 
-def get_pdfs(xf, yf, data, rate, wlist = None, set_bins=set_bins_default):
+def get_pdfs(xf, yf, data, rate, wlist=None, set_bins=set_bins_default):
     bins, nologs = set_bins()
     pdfs = xr.Dataset()
     if wlist is None:
@@ -619,6 +657,6 @@ def get_pdfs(xf, yf, data, rate, wlist = None, set_bins=set_bins_default):
         pdf = get_pdf_xarray(x, y, w, xbin, ybin, xf, yf)
         pdfs[s] = pdf
     pdf = get_pdf_xarray(x, y, None, xbin, ybin, xf, yf)
-    pdfs['vol'] = pdf
+    pdfs["vol"] = pdf
 
     return pdfs

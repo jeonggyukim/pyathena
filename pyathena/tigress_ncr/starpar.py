@@ -23,7 +23,7 @@ class StarPar:
             for k in r.keys():
                 try:
                     rr[k].append(r[k].value.item())
-                except:
+                except NameError:
                     rr[k].append(r[k])
 
         rr = pd.DataFrame(rr)
@@ -31,8 +31,7 @@ class StarPar:
 
     @LoadSim.Decorators.check_pickle
     def read_starpar(self, num, savdir=None, force_override=False):
-
-        sp = self.load_starpar_vtk(num,force_override=force_override)
+        sp = self.load_starpar_vtk(num, force_override=force_override)
         u = self.u
         domain = self.domain
         par = self.par
@@ -105,7 +104,7 @@ class StarPar:
 
     @LoadSim.Decorators.check_pickle
     def get_Jrad_pp_all(self, savdir=None, force_override=False):
-        zpa = self.read_zprof("whole", savdir=savdir, force_override=False)
+        # zpa = self.read_zprof("whole", savdir=savdir, force_override=False)
         PE_pp = []
         LW_pp = []
         for i in self.nums_starpar:

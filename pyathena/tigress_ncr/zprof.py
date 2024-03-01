@@ -15,53 +15,60 @@ from ..load_sim import LoadSim
 from ..io.read_zprof import read_zprof_all, ReadZprofBase
 from ..classic.utils import texteffect
 
+
 def zprof_rename(s):
-    if hasattr(s,'newzp'): return s.newzp
+    if hasattr(s, "newzp"):
+        return s.newzp
     rename_dict = dict()
-    kind = 'new' if s.test_phase_sep_hst() else 'old'
+    kind = "new" if s.test_phase_sep_hst() else "old"
     shorthands = s.get_phase_shorthand()
-    for i,pname in enumerate(shorthands):
-        rename_dict['phase{}'.format(i+1)] = pname
-    if not hasattr(s,'zp'):
+    for i, pname in enumerate(shorthands):
+        rename_dict["phase{}".format(i + 1)] = pname
+    if not hasattr(s, "zp"):
         zp = s.read_zprof_new()
     else:
-        if not 'phase' in s.zp:
+        if "phase" not in s.zp:
             zp = s.read_zprof_new()
     zp = s.zp
-    zp = zp.to_array().to_dataset('phase').rename(rename_dict)
-    zp = zp.to_array('phase').to_dataset('variable')
+    zp = zp.to_array().to_dataset("phase").rename(rename_dict)
+    zp = zp.to_array("phase").to_dataset("variable")
 
     newzp = xr.Dataset()
     if not s.test_newcool():
-        newzp['CNM'] = zp.sel(phase='c').squeeze().to_array()
-        newzp['UNM'] = zp.sel(phase='u').squeeze().to_array()
-        newzp['WNM'] = zp.sel(phase='w').squeeze().to_array()
-        newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
-        newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
+        newzp["CNM"] = zp.sel(phase="c").squeeze().to_array()
+        newzp["UNM"] = zp.sel(phase="u").squeeze().to_array()
+        newzp["WNM"] = zp.sel(phase="w").squeeze().to_array()
+        newzp["WHIM"] = zp.sel(phase="h1").squeeze().to_array()
+        newzp["HIM"] = zp.sel(phase="h2").squeeze().to_array()
     else:
-        if kind == 'old':
-            newzp['CMM'] = zp.sel(phase='mol').squeeze().to_array()
-            newzp['WIM'] = zp.sel(phase='pi').squeeze().to_array()
-            newzp['CNM'] = zp.sel(phase=['HIcc','HIc']).sum(dim='phase').to_array()
-            newzp['UNM'] = zp.sel(phase=['HIu','HIuc']).sum(dim='phase').to_array()
-            newzp['WNM'] = zp.sel(phase=['HIw','HIwh']).sum(dim='phase').to_array()
-            newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
-            newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
-        elif kind == 'new':
-            newzp['CMM'] = zp.sel(phase='cmm').squeeze().to_array()
-    #         newzp['UIM'] = zp.sel(phase='uim').squeeze().to_array()
-            newzp['WIM'] = zp.sel(phase=['uim','wpim','wcim']).sum(dim='phase').to_array()
-            newzp['CNM'] = zp.sel(phase='cnm').squeeze().to_array()
-            newzp['UNM'] = zp.sel(phase='unm').squeeze().to_array()
-            newzp['WNM'] = zp.sel(phase='wnm').squeeze().to_array()
-            newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
-            newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
-#         newzp['Others'] = (zp.sel(phase=['hotnothers']).squeeze()-zp.sel(phase=['h1','h2']).sum(dim='phase')).to_array()
-    s.newzp = newzp.to_array('phase').to_dataset('variable')
+        if kind == "old":
+            newzp["CMM"] = zp.sel(phase="mol").squeeze().to_array()
+            newzp["WIM"] = zp.sel(phase="pi").squeeze().to_array()
+            newzp["CNM"] = zp.sel(phase=["HIcc", "HIc"]).sum(dim="phase").to_array()
+            newzp["UNM"] = zp.sel(phase=["HIu", "HIuc"]).sum(dim="phase").to_array()
+            newzp["WNM"] = zp.sel(phase=["HIw", "HIwh"]).sum(dim="phase").to_array()
+            newzp["WHIM"] = zp.sel(phase="h1").squeeze().to_array()
+            newzp["HIM"] = zp.sel(phase="h2").squeeze().to_array()
+        elif kind == "new":
+            newzp["CMM"] = zp.sel(phase="cmm").squeeze().to_array()
+            #         newzp['UIM'] = zp.sel(phase='uim').squeeze().to_array()
+            newzp["WIM"] = (
+                zp.sel(phase=["uim", "wpim", "wcim"]).sum(dim="phase").to_array()
+            )
+            newzp["CNM"] = zp.sel(phase="cnm").squeeze().to_array()
+            newzp["UNM"] = zp.sel(phase="unm").squeeze().to_array()
+            newzp["WNM"] = zp.sel(phase="wnm").squeeze().to_array()
+            newzp["WHIM"] = zp.sel(phase="h1").squeeze().to_array()
+            newzp["HIM"] = zp.sel(phase="h2").squeeze().to_array()
+    #         newzp['Others'] = (zp.sel(phase=['hotnothers']).squeeze()-zp.sel(phase=['h1','h2']).sum(dim='phase')).to_array()
+    s.newzp = newzp.to_array("phase").to_dataset("variable")
     return s.newzp
 
+
 class Zprof(ReadZprofBase):
-    def read_zprof_new(self, phase="all", flist=None, savdir=None, force_override=False):
+    def read_zprof_new(
+        self, phase="all", flist=None, savdir=None, force_override=False
+    ):
         f = self.files["zprof"][0]
         nphase = len(glob.glob(f[: f.rfind("phase")] + "*.zprof"))
 
@@ -101,15 +108,15 @@ class Zprof(ReadZprofBase):
                 "cnm",
                 "unm",
                 "wnm",
-                "hotnothers"
+                "hotnothers",
             ]
         else:
             phase_name = [
-                    "c",
-                    "u",
-                    "w",
-                    "h1",
-                    "h2",
+                "c",
+                "u",
+                "w",
+                "h1",
+                "h2",
             ]
             if self.test_newcool():
                 phase_name += [
@@ -125,10 +132,10 @@ class Zprof(ReadZprofBase):
         return phase_name
 
     @LoadSim.Decorators.check_netcdf_zprof
-    def _read_zprof(self, phase="whole", savdir=None, force_override=False,
-        pickling=False):
-        """Function to read zprof and convert quantities to convenient units.
-        """
+    def _read_zprof(
+        self, phase="whole", savdir=None, force_override=False, pickling=False
+    ):
+        """Function to read zprof and convert quantities to convenient units."""
 
         ds = read_zprof_all(
             osp.dirname(self.files["zprof"][0]),
@@ -137,7 +144,7 @@ class Zprof(ReadZprofBase):
             savdir=savdir,
             verbose=self.verbose,
             force_override=force_override,
-            pickling=pickling
+            pickling=pickling,
         )
         u = self.u
         # Divide all variables by total area Lx*Ly
@@ -168,8 +175,7 @@ class Zprof(ReadZprofBase):
         return ds
 
     def load_zprof_for_sfr(self, fromfile=True, tofile=True):
-        """Process zprof data for pressure/weight analysis
-        """
+        """Process zprof data for pressure/weight analysis"""
         if fromfile:
             try:
                 with xr.open_dataset(
@@ -252,8 +258,7 @@ class Zprof(ReadZprofBase):
         return momzp
 
     def load_zprof_for_wind(self, fromfile=True, tofile=True):
-        """Process zprof data for pressure/weight analysis
-        """
+        """Process zprof data for pressure/weight analysis"""
         if fromfile:
             try:
                 with xr.open_dataset(
@@ -318,8 +323,8 @@ class Zprof(ReadZprofBase):
             print(vx0, vy0)
             # <0.5*rho v_z v_x^2> = <0.5*rho v_z v_x,t^2>
             #                     - <rho v_z v_x>v_x0 - 0.5<rho v_z> v_x0**2
-            FzE1 = zp["pFzE1"] - zp["pFzM1"] * vx0 + 0.5 * zp["pFzd"] * vx0 ** 2
-            FzE2 = zp["pFzE2"] - zp["pFzM2"] * vy0 + 0.5 * zp["pFzd"] * vy0 ** 2
+            FzE1 = zp["pFzE1"] - zp["pFzM1"] * vx0 + 0.5 * zp["pFzd"] * vx0**2
+            FzE2 = zp["pFzE2"] - zp["pFzM2"] * vy0 + 0.5 * zp["pFzd"] * vy0**2
             pflux["energy_kin"] = (FzE1 + FzE2 + zp["pFzE3"]) * u.energy_flux
         else:
             pflux["energy_kin"] = (
@@ -342,8 +347,8 @@ class Zprof(ReadZprofBase):
         if self.test_spiralarm():
             # <0.5*rho v_z v_x^2> = <0.5*rho v_z v_x,t^2>
             #                     - <rho v_z v_x>v_x0 - 0.5<rho v_z> v_x0**2
-            FzE1 = zp["mFzE1"] - zp["mFzM1"] * vx0 + 0.5 * zp["mFzd"] * vx0 ** 2
-            FzE2 = zp["mFzE2"] - zp["mFzM2"] * vy0 + 0.5 * zp["mFzd"] * vy0 ** 2
+            FzE1 = zp["mFzE1"] - zp["mFzM1"] * vx0 + 0.5 * zp["mFzd"] * vx0**2
+            FzE2 = zp["mFzE2"] - zp["mFzM2"] * vy0 + 0.5 * zp["mFzd"] * vy0**2
             nflux["energy_kin"] = (FzE1 + FzE2 + zp["mFzE3"]) * u.energy_flux
         else:
             nflux["energy_kin"] = (
@@ -506,7 +511,7 @@ def plt_zprof_compare(
                 **texteffect(fontsize="xx-large"),
                 ha="center",
                 transform=axes[ic, ir].transAxes,
-                color="k"
+                color="k",
             )
 
     plt.suptitle("  ".join(models))
@@ -593,8 +598,7 @@ def plt_zprof_avg_compare(
 
 
 def plot_stacked_bar(frac, x="time", **kwargs):
-    """A convenient wrapper for stacked bar graph plot for pressure/weight
-    """
+    """A convenient wrapper for stacked bar graph plot for pressure/weight"""
     # setup colors and labels using seaborn
     import seaborn as sns
 
@@ -640,15 +644,14 @@ def plot_stacked_bar(frac, x="time", **kwargs):
                 bottom=f0,
                 label=label,
                 color=c,
-                **kwargs
+                **kwargs,
             )
 
         f0 += frac.sel(varph=varph).data.copy()
 
 
 def plot_pressure_fraction(ptdata, ph="2p", rolling=None, normed=True):
-    """Plot time evolution of pressure contributions as a stacked bar graph
-    """
+    """Plot time evolution of pressure contributions as a stacked bar graph"""
 
     if rolling is None:
         pt = ptdata
@@ -675,8 +678,7 @@ def plot_pressure_fraction(ptdata, ph="2p", rolling=None, normed=True):
 
 
 def plot_weight_fraction(wtdata, rolling=None, normed=True):
-    """Plot time evolution of pressure contributions as a stacked bar graph
-    """
+    """Plot time evolution of pressure contributions as a stacked bar graph"""
 
     if rolling is None:
         wt = wtdata
@@ -758,8 +760,7 @@ def plt_pressure_weight_tevol(sim, rolling=None, normed=True):
 
 
 def calc_phase_fraction(zpdata, x="time", var="fmass", zcut="H", z0=0, rolling=None):
-    """Plot time evolution of filling factors of different phases
-    """
+    """Plot time evolution of filling factors of different phases"""
     phs = list(zpdata.phase.data)
 
     z = zpdata.z
@@ -768,7 +769,7 @@ def calc_phase_fraction(zpdata, x="time", var="fmass", zcut="H", z0=0, rolling=N
     if z0 == 0:
         if zcut == "H":
             zcut = np.sqrt(
-                (d * z ** 2).sel(phase=phs[:-3]).sum(dim=["z", "phase"])
+                (d * z**2).sel(phase=phs[:-3]).sum(dim=["z", "phase"])
                 / d.sel(phase=phs[:-3]).sum(dim=["z", "phase"])
             )
         phdata = zpdata.where(np.abs(z) < zcut).sum(dim="z")
@@ -891,7 +892,7 @@ def plt_phase_balance(sim, **z_kwargs):
 
 def plt_upsilon_comparison(sa, trange=slice(300, 500), torb=None, norm=False):
     Upsilon_unit = (
-        (ac.k_B * au.K / au.cm ** 3 / ac.M_sun * ac.kpc ** 2 * au.yr).to("km/s").value
+        (ac.k_B * au.K / au.cm**3 / ac.M_sun * ac.kpc**2 * au.yr).to("km/s").value
     )
     Pstack = xr.Dataset()
     Wstack = xr.Dataset()

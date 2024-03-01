@@ -100,10 +100,10 @@ def calc_pdfs(
 
 if __name__ == "__main__":
     COMM = MPI.COMM_WORLD
-    basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full"
+    basedir = "/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full"
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
+        "-b", "--basedir", type=str, default=basedir, help="Name of the basedir."
     )
     args = vars(parser.parse_args())
     locals().update(args)
@@ -121,7 +121,7 @@ if __name__ == "__main__":
 
         mynums = COMM.scatter(nums, root=0)
         for num in mynums:
-            s.create_tar(num=num,kind='vtk',remove_original=False)
+            s.create_tar(num=num, kind="vtk", remove_original=False)
         COMM.barrier()
 
         # reading it again
@@ -138,7 +138,7 @@ if __name__ == "__main__":
     print("[rank, mynums]:", COMM.rank, mynums)
 
     for num in range(200, 800):
-        if not (num in mynums):
+        if num not in mynums:
             continue
         print(num, end=" ")
         # for num in s.nums:
@@ -209,7 +209,7 @@ if __name__ == "__main__":
                     pdf_heat_xHI.to_netcdf(
                         os.path.join(savdir, heatfname.replace(".heat.", ".xHI.heat."))
                     )
-                for xf, yf in zip(['T','nH','nH'],['Lambda_cool','pok','T']):
+                for xf, yf in zip(["T", "nH", "nH"], ["Lambda_cool", "pok", "T"]):
                     pdf_z, pdf_tot = calc_pdfs(
                         s,
                         ds,
@@ -223,7 +223,7 @@ if __name__ == "__main__":
                         radiation=True,
                     )
             else:
-                for xf, yf in zip(['T','nH','nH'],['Lambda_cool','pok','T']):
+                for xf, yf in zip(["T", "nH", "nH"], ["Lambda_cool", "pok", "T"]):
                     pdf_z, pdf_tot = calc_pdfs(
                         s,
                         ds,
@@ -242,5 +242,3 @@ if __name__ == "__main__":
         print("Remaining Garbage:", end=" ")
         pprint.pprint(gc.garbage)
         sys.stdout.flush()
-
-

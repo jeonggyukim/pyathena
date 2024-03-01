@@ -93,7 +93,7 @@ def create_wind_pdf(dset, sim):
         for key in pdfout:
             xf, yf, wf = key.split("-")
             pdf_ds[wf] = xr.DataArray(
-                pdfout[key][0].T / normout[wf] / dbin ** 2,
+                pdfout[key][0].T / normout[wf] / dbin**2,
                 coords=[pdfout[key][2][:-1], pdfout[key][1][:-1]],
                 dims=["cs", "vout"],
             )
@@ -103,7 +103,8 @@ def create_wind_pdf(dset, sim):
         pdf_ds.attrs["NxNyNt"] = Nx * Ny * Nt
 
         fname = "{}/vz_pdf/{}.pdf-out.{:d}.nc".format(sim.basedir, sim.basename, z)
-        if os.path.isfile(fname): os.remove(fname)
+        if os.path.isfile(fname):
+            os.remove(fname)
         pdf_ds.to_netcdf(fname)
         pdf_ds.close()
 
@@ -111,7 +112,7 @@ def create_wind_pdf(dset, sim):
         for key in pdfin:
             xf, yf, wf = key.split("-")
             pdf_ds[wf] = xr.DataArray(
-                pdfin[key][0].T / normin[wf] / dbin ** 2,
+                pdfin[key][0].T / normin[wf] / dbin**2,
                 coords=[pdfin[key][2][:-1], pdfin[key][1][:-1]],
                 dims=["cs", "vin"],
             )
@@ -121,7 +122,8 @@ def create_wind_pdf(dset, sim):
         pdf_ds.attrs["NxNyNt"] = Nx * Ny * Nt
 
         fname = "{}/vz_pdf/{}.pdf-in.{:d}.nc".format(sim.basedir, sim.basename, z)
-        if os.path.isfile(fname): os.remove(fname)
+        if os.path.isfile(fname):
+            os.remove(fname)
         pdf_ds.to_netcdf(fname)
         pdf_ds.close()
 
@@ -129,14 +131,16 @@ def create_wind_pdf(dset, sim):
 def get_pdf_fname(sim, out="out", z0=500):
     return "{}/vz_pdf/{}.pdf-{}.{:d}.nc".format(sim.basedir, sim.basename, out, z0)
 
+
 def test_wind_pdf(sim):
     exist = True
-    for z0 in [500,1000]:
-        for dr in ['out','in']:
+    for z0 in [500, 1000]:
+        for dr in ["out", "in"]:
             pdfname = get_pdf_fname(sim, out=dr, z0=z0)
             if not os.path.isfile(pdfname):
                 exist = False
     return exist
+
 
 def load_wind_pdf(sim, z0=500):
     pdfname = get_pdf_fname(sim, z0=z0)
@@ -149,8 +153,8 @@ def load_wind_pdf(sim, z0=500):
 
         for f, u in units.items():
             pdf.attrs[f + "_unit"] = u
-        vout = 10.0 ** pdf.vout
-        cs = 10.0 ** pdf.cs
+        vout = 10.0**pdf.vout
+        cs = 10.0**pdf.cs
         pdf["vBz"] = np.sqrt(5 * (cs) ** 2 + (vout) ** 2)
 
     return pdf
