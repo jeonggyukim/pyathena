@@ -14,6 +14,8 @@ import get_xCII, coeff_kcoll_H, coeff_alpha_rr_H, coeff_alpha_gr_H, coolHI, \
 from .cool import coolCII, coolneb, coolLya, coolrecH, coolffH, coolHI
 from .get_cooling import f1, set_CIE_interpolator
 
+from ..classic import coolftn as cf
+
 from pyathena import set_plt_fancy
 
 def f_xe(xe, xH2, nH, T, xi_CR, G_CI, G_PE, Z_d, Z_g, zeta_pi, xOstd, xCstd,
@@ -364,7 +366,7 @@ def plot_nH_t_cool(nH=1.0, Z=[0.001, 0.01, 0.1, 1.0, 3.0]):
 
 
 def plot_Lambda_nHt_cool_xe_eq():
-    from pyathena.classic import coolftn as cf
+
 
     muH = 1.4271
     c = cf.get_cool(cf.T1)
