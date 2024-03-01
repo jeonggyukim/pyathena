@@ -4,7 +4,7 @@ import pandas as pd
 import xarray as xr
 import numpy as np
 import astropy.constants as ac
-import astropy.units as au
+# import astropy.units as au
 
 from ..load_sim import LoadSim
 from ..util.units import Units
@@ -24,8 +24,7 @@ from .get_cooling import get_cooling_heating, get_pdfs
 class LoadSimTIGRESSNCR(
     LoadSim, Hst, Zprof, SliceProj, StarPar, PDF, H2, Profile1D, Snapshot_HIH2EM
 ):
-    """LoadSim class for analyzing TIGRESS-RT simulations.
-    """
+    """LoadSim class for analyzing TIGRESS-RT simulations."""
 
     def __init__(
         self, basedir, savdir=None, load_method="pyathena", muH=1.4271, verbose=False
@@ -169,7 +168,7 @@ class LoadSimTIGRESSNCR(
             ds.domain["time"], self.heat_ratio.index, self.heat_ratio
         )
         T1 = dd["pressure"] / dd["density"]
-        T1 *= (self.u.velocity ** 2 * ac.m_p / ac.k_B).cgs.value
+        T1 *= (self.u.velocity**2 * ac.m_p / ac.k_B).cgs.value
         T1data = np.clip(T1.data, 10, None)
         temp = nH / nH * coolftn().get_temp(T1data)
         Lambda_cool = nH / nH * coolftn().get_cool(T1data)
@@ -185,8 +184,7 @@ class LoadSimTIGRESSNCR(
         return dd
 
     def get_savdir_pdf(self, zrange=None):
-        """return joint pdf savdir
-        """
+        """return joint pdf savdir"""
         if not self.test_newcool():
             return "{}/jointpdf/cooling_heating/".format(self.savdir)
         if zrange is None:
@@ -205,11 +203,11 @@ class LoadSimTIGRESSNCR(
             i = 0
             imax = 10000
             while i < imax:
-                l = fp.readline()
-                if "dhnu_HI" in l:
-                    dhnu_HI_PH = float(l.split(":")[-1])
-                if "dhnu_H2" in l:
-                    dhnu_H2_PH = float(l.split(":")[-1])
+                line = fp.readline()
+                if "dhnu_HI" in line:
+                    dhnu_HI_PH = float(line.split(":")[-1])
+                if "dhnu_H2" in line:
+                    dhnu_H2_PH = float(line.split(":")[-1])
                     break
                 i += 1
         return dhnu_HI_PH, dhnu_H2_PH
@@ -280,17 +278,17 @@ class LoadSimTIGRESSNCR(
         if "PH_H2" in pdf_heat.dims:
             pdf_heat["PH_H2"] = pdf_heat["PH_H2"] * dhnu_H2_PH / dhnu_H2_PH_default
         if "nH" in pdf_cool.dims:
-            pdf_cool = pdf_cool.rename(nH='nH_bin')
+            pdf_cool = pdf_cool.rename(nH="nH_bin")
         if "T" in pdf_cool.dims:
-            pdf_cool = pdf_cool.rename(T='T_bin')
+            pdf_cool = pdf_cool.rename(T="T_bin")
         if "xHI" in pdf_cool.dims:
-            pdf_cool = pdf_cool.rename(xHI='xHI_bin')
+            pdf_cool = pdf_cool.rename(xHI="xHI_bin")
         if "nH" in pdf_heat.dims:
-            pdf_heat = pdf_heat.rename(nH='nH_bin')
+            pdf_heat = pdf_heat.rename(nH="nH_bin")
         if "T" in pdf_heat.dims:
-            pdf_heat = pdf_heat.rename(T='T_bin')
+            pdf_heat = pdf_heat.rename(T="T_bin")
         if "xHI" in pdf_heat.dims:
-            pdf_heat = pdf_heat.rename(xHI='xHI_bin')
+            pdf_heat = pdf_heat.rename(xHI="xHI_bin")
         return pdf_cool, pdf_heat
 
     def create_coolheat_pdf(self, ds, zrange=None):
@@ -339,7 +337,9 @@ class LoadSimTIGRESSNCR(
             os.path.join(savdir, heatfname.replace(".heat.", ".xHI.heat."))
         )
 
-    def get_merge_jointpdfs(self, nums=None, zrange=None, force_override=False, xHI=False):
+    def get_merge_jointpdfs(
+        self, nums=None, zrange=None, force_override=False, xHI=False
+    ):
         savdir = self.get_savdir_pdf(zrange=zrange)
         merged_fname = os.path.join(savdir, "jointpdf_all.nc")
         if xHI:
@@ -370,7 +370,7 @@ class LoadSimTIGRESSNCR(
                     pdf_cool.update(pdf_heat)
                 else:
                     pdf_cool = pdfs
-                if not ("time" in pdf_cool):
+                if "time" not in pdf_cool:
                     ds = self.load_vtk(num)
                     pdf_cool = pdf_cool.assign_coords(time=ds.domain["time"])
                 pdf_cool = pdf_cool.assign_coords(
@@ -385,8 +385,7 @@ class LoadSimTIGRESSNCR(
         return pdf
 
     def load_chunk(self, num, scratch_dir="/scratch/gpfs/changgoo/TIGRESS-NCR/"):
-        """Read in temporary outputs in scartch directory
-        """
+        """Read in temporary outputs in scartch directory"""
         scratch_dir += osp.join(self.basename, "midplane_chunk")
         chunk_file = osp.join(
             scratch_dir, "{:s}.{:04d}.hLx.nc".format(self.problem_id, num)
@@ -397,8 +396,7 @@ class LoadSimTIGRESSNCR(
             self.data_chunk = chunk
 
     def get_field_from_chunk(self, fields):
-        """Get fields using temporary outputs in scartch directory
-        """
+        """Get fields using temporary outputs in scartch directory"""
         dd = xr.Dataset()
         for f in fields:
             if f in self.data_chunk:
@@ -410,69 +408,110 @@ class LoadSimTIGRESSNCR(
         return dd
 
     @staticmethod
-    def get_phase_Tlist(kind='ncr'):
-        if kind == 'ncr':
+    def get_phase_Tlist(kind="ncr"):
+        if kind == "ncr":
             return [500, 6000, 15000, 35000, 5.0e5]
-        elif kind == 'classic':
+        elif kind == "classic":
             return [200, 5000, 15000, 20000, 5.0e5]
 
     @staticmethod
     def get_phase_T1list():
         return [500, 6000, 13000, 24000, 1.0e6]
 
-    def ytload(self,num):
+    def ytload(self, num):
         import yt
+
         self.yt = yt
-        self.u.units_override.update(dict(magnetic_unit=(self.u.muG*1.e-6,"gauss")))
+        self.u.units_override.update(dict(magnetic_unit=(self.u.muG * 1.0e-6, "gauss")))
 
         # define fields from TIGRESS-NCR output
-        from yt.utilities.physical_constants import mh, me
+        from yt.utilities.physical_constants import mh
 
         muH = self.muH
         Zsolar = 0.02
 
         def _ndensity(field, data):
-            return data[("gas","density")]/(muH*mh)
+            return data[("gas", "density")] / (muH * mh)
 
         def _nelectron(field, data):
-            return data[("gas","density")]*data[("athena","xe")]/(muH*mh)
+            return data[("gas", "density")] * data[("athena", "xe")] / (muH * mh)
 
         def _temperature(field, data):
-            return data[("athena","temperature")]*yt.units.K
+            return data[("athena", "temperature")] * yt.units.K
 
         def _EM(field, data):
-            return data[("gas","H_nuclei_density")]*data[("gas","El_number_density")]*data[("gas","cell_volume")]
+            return (
+                data[("gas", "H_nuclei_density")]
+                * data[("gas", "El_number_density")]
+                * data[("gas", "cell_volume")]
+            )
 
         def _metallicity(field, data):
-            return data[("athena","specific_scalar[0]")]
+            return data[("athena", "specific_scalar[0]")]
 
         def _metallicity_solar(field, data):
-            return data[("athena","specific_scalar[0]")]/Zsolar
+            return data[("athena", "specific_scalar[0]")] / Zsolar
 
-        fname = self._get_fvtk('vtk_tar',num=num)
-        ds = yt.load(fname,units_override=self.u.units_override,unit_system='cgs')
+        fname = self._get_fvtk("vtk_tar", num=num)
+        ds = yt.load(fname, units_override=self.u.units_override, unit_system="cgs")
 
         # add/override fields
-        ds.add_field(("gas","H_nuclei_density"),function=_ndensity, force_override=True,
-                     units='cm**(-3)',display_name=r'$n_{\rm H}$', sampling_type="cell")
-        ds.add_field(("gas","El_number_density"), function=_nelectron, force_override=True,
-                     units='cm**(-3)',display_name=r'$n_{\rm e}$', sampling_type="cell")
-        ds.add_field(("gas","temperature"), function=_temperature, force_override=True,
-                     units='K',display_name=r'$T$', sampling_type="cell")
-        ds.add_field(("gas","emission_measure"), function=_EM, force_override=True,
-                     units='cm**(-3)',display_name=r'EM', sampling_type="cell")
-        ds.add_field(("gas","metallicity"), function=_metallicity, force_override=True,
-                     units='dimensionless',display_name=r'Z', sampling_type="cell")
-        ds.add_field(("gas","metallicity_solar"), function=_metallicity_solar, force_override=True,
-                     units='dimensionless',display_name=r'$Z/Z_\odot$', sampling_type="cell")
+        ds.add_field(
+            ("gas", "H_nuclei_density"),
+            function=_ndensity,
+            force_override=True,
+            units="cm**(-3)",
+            display_name=r"$n_{\rm H}$",
+            sampling_type="cell",
+        )
+        ds.add_field(
+            ("gas", "El_number_density"),
+            function=_nelectron,
+            force_override=True,
+            units="cm**(-3)",
+            display_name=r"$n_{\rm e}$",
+            sampling_type="cell",
+        )
+        ds.add_field(
+            ("gas", "temperature"),
+            function=_temperature,
+            force_override=True,
+            units="K",
+            display_name=r"$T$",
+            sampling_type="cell",
+        )
+        ds.add_field(
+            ("gas", "emission_measure"),
+            function=_EM,
+            force_override=True,
+            units="cm**(-3)",
+            display_name=r"EM",
+            sampling_type="cell",
+        )
+        ds.add_field(
+            ("gas", "metallicity"),
+            function=_metallicity,
+            force_override=True,
+            units="dimensionless",
+            display_name=r"Z",
+            sampling_type="cell",
+        )
+        ds.add_field(
+            ("gas", "metallicity_solar"),
+            function=_metallicity_solar,
+            force_override=True,
+            units="dimensionless",
+            display_name=r"$Z/Z_\odot$",
+            sampling_type="cell",
+        )
 
         return ds
+
 
 class LoadSimTIGRESSNCRAll(object):
     """Class to load multiple simulations"""
 
     def __init__(self, models=None, muH=None):
-
         # Default models
         if models is None:
             models = dict()
@@ -523,7 +562,7 @@ class LoadSimTIGRESSNCRAll(object):
     # adding two objects
     def __add__(self, o):
         for mdl in o.models:
-            if not (mdl in self.models):
+            if mdl not in self.models:
                 self.models += [mdl]
                 self.basedirs[mdl] = o.basedirs[mdl]
                 self.muH[mdl] = o.muH[mdl]

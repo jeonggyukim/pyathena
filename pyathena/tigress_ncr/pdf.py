@@ -5,18 +5,21 @@ import os.path as osp
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
-import astropy.units as au
-import astropy.constants as ac
-from matplotlib.colors import Normalize, LogNorm
+
+# import astropy.units as au
+# import astropy.constants as ac
+from matplotlib.colors import LogNorm
 import xarray as xr
 
 from ..classic.utils import texteffect
-from ..plt_tools.cmap import cmap_apply_alpha
-from ..util.scp_to_pc import scp_to_pc
+
+# from ..plt_tools.cmap import cmap_apply_alpha
+# from ..util.scp_to_pc import scp_to_pc
 from ..load_sim import LoadSim
 from ..plt_tools.plt_starpar import scatter_sp
-from ..classic.cooling import coolftn
-from ..io.read_hst import read_hst
+
+# from ..classic.cooling import coolftn
+# from ..io.read_hst import read_hst
 from .get_cooling import set_bins_default
 
 
@@ -25,8 +28,7 @@ class PDF:
 
     @LoadSim.Decorators.check_pickle
     def read_pdf2d_avg(self, nums=None, savdir=None, force_override=False):
-        """Take sum of all pdf2d
-        """
+        """Take sum of all pdf2d"""
 
         if nums is None:
             nums = self.nums
@@ -67,7 +69,6 @@ class PDF:
         savdir=None,
         force_override=False,
     ):
-
         bin_fields_def = [
             ["nH", "pok"],
             ["nH", "pok"],
@@ -115,7 +116,7 @@ class PDF:
         dd = dd.stack(xyz=["x", "y", "z"]).dropna(dim="xyz")
         for bf, wf in zip(bin_fields, weight_fields):
             k = "-".join(bf)
-            if not (k in res):
+            if k not in res:
                 res[k] = dict()
             xdat = dd[bf[0]]
             ydat = dd[bf[1]]
@@ -148,7 +149,6 @@ class PDF:
         xscale="log",
         yscale="log",
     ):
-
         if weighted:
             hist = "vol"
         else:
@@ -187,7 +187,6 @@ class PDF:
         force_override=False,
         savefig=True,
     ):
-
         if savdir is None:
             savdir = self.savdir
 
@@ -301,7 +300,7 @@ class PDF:
             y=1.02,
             va="center",
             ha="center",
-            **texteffect(fontsize="xx-large")
+            **texteffect(fontsize="xx-large"),
         )
 
         if savefig:
@@ -353,7 +352,7 @@ class PDF:
         if not os.path.isdir(savdir):
             os.makedirs(savdir)
         fbase = os.path.basename(self.fvtk)
-        fpdf = os.path.join(savdir, fbase[:-4]+".pdf.nc")
+        fpdf = os.path.join(savdir, fbase[:-4] + ".pdf.nc")
         if (
             not force_override
             and osp.exists(fpdf)
@@ -364,7 +363,7 @@ class PDF:
                     xf, yf, wf, zmin, zmax
                 )
             )
-            pdf = xr.open_dataarray(fpdf, engine='netcdf4')
+            pdf = xr.open_dataarray(fpdf, engine="netcdf4")
         else:
             self.logger.info(
                 "[jointpdf]: Creating Joint PDFs of {} and {} weigthed by {} at z in +-({},{})".format(
@@ -400,10 +399,10 @@ class PDF:
             h = np.histogram2d(x, y, bins=[self.bins[xf], self.bins[yf]], weights=w)
         xe = h[1]
         ye = h[2]
-        if not (xf in self.nologs):
+        if xf not in self.nologs:
             xe = np.log10(xe)
             xf = "log_" + xf
-        if not (yf in self.nologs):
+        if yf not in self.nologs:
             ye = np.log10(ye)
             yf = "log_" + yf
         xc = 0.5 * (xe[1:] + xe[:-1])
@@ -428,7 +427,7 @@ def plot_pair(pdf, wf="vol", fields=None):
         try:
             yf = fields[i + 1]
             key = "{}-{}-{}".format(xf, yf, wf)
-        except:
+        except KeyError:
             yf = fields[0]
             key = "{}-{}-{}".format(yf, xf, wf)
         xc = pdf[xf]

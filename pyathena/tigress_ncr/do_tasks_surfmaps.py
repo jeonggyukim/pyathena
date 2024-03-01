@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
 import os
-import os.path as osp
+
+# import os.path as osp
 import gc
 import time
 from mpi4py import MPI
@@ -17,7 +18,8 @@ import cmasher as cmr
 
 import pyathena as pa
 from pyathena.util.split_container import split_container
-from pyathena.plt_tools.make_movie import make_movie
+
+# from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigress_ncr.slc_prj import slc_to_xarray
 
 dirpath = os.path.dirname(__file__)
@@ -62,7 +64,7 @@ def do_surfmaps(s, num, outdir):
     ]
     prjdata = s.read_prj(num, fields=fields, force_override=False)
 
-    if ('Sigma_HII' not in prjdata['x']) or ('Sigma_gas' not in prjdata['x']):
+    if ("Sigma_HII" not in prjdata["x"]) or ("Sigma_gas" not in prjdata["x"]):
         prjdata = s.read_prj(num, fields=fields, force_override=True)
 
     prjdata = slc_to_xarray(prjdata)

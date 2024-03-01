@@ -1,26 +1,27 @@
 import os
-import os.path as osp
-import pandas as pd
+
+# import os.path as osp
+# import pandas as pd
 import numpy as np
-import astropy.constants as ac
-import astropy.units as au
+
+# import astropy.constants as ac
+# import astropy.units as au
 import matplotlib.pyplot as plt
 import matplotlib.gridspec as gridspec
-from matplotlib.colors import LogNorm, SymLogNorm, Normalize
-import cmasher.cm as cmr
+from matplotlib.colors import LogNorm  # , SymLogNorm, Normalize
+# import cmasher.cm as cmr
 
-import pyathena as pa
-import gc
+# import pyathena as pa
+# import gc
 
 
 def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
-    """draw joint PDFs of T and nH for cooling and heating processes
-    """
+    """draw joint PDFs of T and nH for cooling and heating processes"""
     savdir = s.get_savdir_pdf(zrange=zrange)
     pdf_cool, pdf_heat = s.get_coolheat_pdf(num, zrange=zrange, xHI=xHI)
     dims = list(pdf_cool.dims)
     xdim = dims[0]
-    ydim = dims[1]
+    # ydim = dims[1]
     coolkey = set(list(pdf_cool.keys())) - {"total", "OIold", "vol"}
     heatkey = set(list(pdf_heat.keys())) - {"total", "vol"}
     if pdf is not None:
@@ -105,11 +106,11 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
         plt.ylim(1, 8)
 
     if xHI:
-        xl = "xHI"
+        # xl = "xHI"
         xl1 = r"$x_{H^0}$"
         xl2 = r"{d\log T\,dx_{H^0}}[{\rm dex^{-1}}]$"
     else:
-        xl = "nH"
+        # xl = "nH"
         xl1 = r"$\log\,n_{H}\,[{\rm cm^{-3}]$"
         xl2 = r"{d\log T\,d\log\,n_H}[{\rm dex^{-2}}]$"
     gs2 = gridspec.GridSpec(3, 1)
@@ -191,8 +192,7 @@ def draw_jointpdfs(s, num, pdf=None, zrange=None, save=True, xHI=False):
 
 
 def draw_Tpdf(s, num, pdf=None, zrange=None, save=True):
-    """draw temperature pdfs of cooling/heating (nH-integrated)
-    """
+    """draw temperature pdfs of cooling/heating (nH-integrated)"""
     savdir = s.get_savdir_pdf(zrange=zrange)
     pdf_cool, pdf_heat = s.get_coolheat_pdf(num, zrange=zrange)
     if "OIold" in pdf_cool:
@@ -348,8 +348,9 @@ def draw_sorted_contribution(
     dT = pdf["T_bin"][1] - pdf["T_bin"][0]
     dnH = pdf.nH_bin[1] - pdf.nH_bin[0]
 
-    warm = (pdf.sel(T_bin=slice(np.log10(T1), np.log10(T2))).sum(dim='T_bin')
-            * dT).sum(dim="nH_bin") * dnH
+    warm = (pdf.sel(T_bin=slice(np.log10(T1), np.log10(T2))).sum(dim="T_bin") * dT).sum(
+        dim="nH_bin"
+    ) * dnH
 
     vset0 = set.union(coolkey, heatkey)
     heatset = []

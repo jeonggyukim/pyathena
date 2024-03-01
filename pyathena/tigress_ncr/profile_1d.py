@@ -23,7 +23,7 @@ class Profile1D:
         """
         Function to calculate 1D profile(s) and pickle using
         scipy.stats.binned_statistics
-        
+
         Parameters
         ----------
         num : int
@@ -86,7 +86,7 @@ class Profile1D:
         for y in fields_y:
             res[y] = dict()
 
-        get_lambda_name = lambda l: getsource(l).split("=")[0].strip()
+        get_lambda_name = lambda x: getsource(x).split("=")[0].strip()  # noqa: E731
 
         # Compute statistics
         for y in fields_y:

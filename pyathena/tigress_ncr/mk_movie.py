@@ -2,31 +2,33 @@
 
 import os
 import os.path as osp
-import gc
-import time
+
+# import gc
+# import time
 from mpi4py import MPI
-import matplotlib.pyplot as plt
-import pprint
+
+# import matplotlib.pyplot as plt
+# import pprint
 import argparse
-import sys
+# import sys
 
 import pyathena as pa
-from pyathena.util.split_container import split_container
+
+# from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
 
 if __name__ == "__main__":
-
     movie = True
     COMM = MPI.COMM_WORLD
 
-    basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR_noSN"
+    basedir = "/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR_noSN"
 
     savdir = None
     savdir_pkl = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
+        "-b", "--basedir", type=str, default=basedir, help="Name of the basedir."
     )
     args = vars(parser.parse_args())
     locals().update(args)

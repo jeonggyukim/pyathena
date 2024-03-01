@@ -1,17 +1,20 @@
 import pyathena as pa
 import matplotlib.pyplot as plt
 from pyathena.plt_tools.make_movie import make_movie
-import glob, os, sys
+import glob
+import os
+import sys
 from shutil import copyfile
 import os.path as osp
 import argparse
-import numpy as np
+# import numpy as np
+
 
 def get_time_from_zprof(s, inum):
     zpf = glob.glob(os.path.join(s.basedir, "zprof/", f"*.{inum:04d}.whole.zprof"))
     with open(zpf[0], "r") as fp:
-        l = fp.readline()
-        time = float(l[l.rfind("=") + 1 :])
+        line = fp.readline()
+        time = float(line[line.rfind("=") + 1 :])
     return time
 
 
@@ -30,13 +33,13 @@ def stitch_number_densities(s, i, tf="layer", ncrsp=False):
         sub_x1 = 0.25
         sub_x2 = 0.95
     else:
-        Nx, Ny, Nz = s.domain['Nx']
-        if Nz/Nx == 6:
+        Nx, Ny, Nz = s.domain["Nx"]
+        if Nz / Nx == 6:
             main_x1 = 0.35
             main_x2 = 1
             sub_x1 = 0.35
             sub_x2 = 0.65
-        elif Nz/Nx == 3:
+        elif Nz / Nx == 3:
             main_x1 = 0.25
             main_x2 = 1
             sub_x1 = 0.25
@@ -46,13 +49,13 @@ def stitch_number_densities(s, i, tf="layer", ncrsp=False):
     main_dx = main_x2 - main_x1
     sub_dx = sub_x2 - sub_x1
     Nsub = 3
-    fig_xsize = fig_ysize*main_dx + fig_ysize*Nsub*sub_dx
-    wratios = [main_dx] + [sub_dx]*Nsub
+    fig_xsize = fig_ysize * main_dx + fig_ysize * Nsub * sub_dx
+    wratios = [main_dx] + [sub_dx] * Nsub
     with plt.style.context("dark_background", {"figure.dpi": 300}):
         fig, axes = plt.subplots(
             1,
             4,
-            figsize=(fig_xsize,fig_ysize),
+            figsize=(fig_xsize, fig_ysize),
             gridspec_kw=dict(wspace=0, hspace=0, width_ratios=wratios),
         )
 
@@ -77,7 +80,7 @@ def stitch_number_densities(s, i, tf="layer", ncrsp=False):
                 va="top",
                 xycoords="axes fraction",
                 weight="bold",
-                fontsize="xx-large"
+                fontsize="xx-large",
             )
             if name == "total":
                 plt.xlim(Nx * main_x1, Nx * main_x2)
@@ -103,14 +106,13 @@ def stitch_number_densities(s, i, tf="layer", ncrsp=False):
 
 
 def stitch_observables(s, i, tf="layer", ncrsp=False):
-    fields = ["CII_luminosity",
-              "HI_21cm_luminosity",
-              "H_alpha_luminosity",
-              "xray_luminosity_0.5_7.0_keV"]
-    field_names = ["CII",
-                   "HI 21cm",
-                   r"${\bf H_\alpha}$",
-                   "X-ray (0.5-7.0 keV)"]
+    fields = [
+        "CII_luminosity",
+        "HI_21cm_luminosity",
+        "H_alpha_luminosity",
+        "xray_luminosity_0.5_7.0_keV",
+    ]
+    field_names = ["CII", "HI 21cm", r"${\bf H_\alpha}$", "X-ray (0.5-7.0 keV)"]
     fig_ysize = 10
     if ncrsp:
         main_x1 = 0.25
@@ -118,13 +120,13 @@ def stitch_observables(s, i, tf="layer", ncrsp=False):
         cbar_x1 = 1.05
         cbar_x2 = 1.3
     else:
-        Nx, Ny, Nz = s.domain['Nx']
-        if Nz/Nx == 6:
+        Nx, Ny, Nz = s.domain["Nx"]
+        if Nz / Nx == 6:
             main_x1 = 0.35
             main_x2 = 0.65
             cbar_x1 = 0.75
             cbar_x2 = 1
-        elif Nz/Nx == 3:
+        elif Nz / Nx == 3:
             main_x1 = 0.25
             main_x2 = 0.75
             cbar_x1 = 0.75
@@ -135,15 +137,17 @@ def stitch_observables(s, i, tf="layer", ncrsp=False):
     main_dx = main_x2 - main_x1
     cbar_dx = cbar_x2 - cbar_x1
     Nfield = len(fields)
-    fig_xsize = fig_ysize*(main_dx+cbar_dx)*Nfield
-    wratios = [main_dx,cbar_dx]*Nfield
+    fig_xsize = fig_ysize * (main_dx + cbar_dx) * Nfield
+    wratios = [main_dx, cbar_dx] * Nfield
     with plt.style.context("dark_background", {"figure.dpi": 200}):
         fig, axes = plt.subplots(
-            1, Nfield*2, figsize=(fig_xsize, fig_ysize),
-            gridspec_kw=dict(wspace=0, hspace=0, width_ratios=wratios)
+            1,
+            Nfield * 2,
+            figsize=(fig_xsize, fig_ysize),
+            gridspec_kw=dict(wspace=0, hspace=0, width_ratios=wratios),
         )
 
-        for field, name, ax in zip(fields, field_names, axes.reshape(Nfield,2)):
+        for field, name, ax in zip(fields, field_names, axes.reshape(Nfield, 2)):
             if tf == "linramp":
                 head = f"{field}_linramp"
             else:
@@ -173,7 +177,7 @@ def stitch_observables(s, i, tf="layer", ncrsp=False):
             ha="left",
             xycoords="axes fraction",
             weight="bold",
-            fontsize='xx-large'
+            fontsize="xx-large",
         )
         fig.savefig(
             os.path.join(s.basedir, "volume", f"luminosity_{tf}_time_{inum:04d}.png"),
@@ -182,10 +186,7 @@ def stitch_observables(s, i, tf="layer", ncrsp=False):
 
 
 def stitch_rgb(s, i, ncrsp=False):
-    fields = ["luminosity_RGB",
-              "luminosity_R",
-              "luminosity_G",
-              "luminosity_B"]
+    fields = ["luminosity_RGB", "luminosity_R", "luminosity_G", "luminosity_B"]
     fig_ysize = 10
     if ncrsp:
         main_x1 = 0.25
@@ -193,13 +194,13 @@ def stitch_rgb(s, i, ncrsp=False):
         cbar_x1 = 1.05
         cbar_x2 = 1.3
     else:
-        Nx, Ny, Nz = s.domain['Nx']
-        if Nz/Nx == 6:
+        Nx, Ny, Nz = s.domain["Nx"]
+        if Nz / Nx == 6:
             main_x1 = 0.35
             main_x2 = 0.65
             cbar_x1 = 0.75
             cbar_x2 = 1
-        elif Nz/Nx == 3:
+        elif Nz / Nx == 3:
             main_x1 = 0.25
             main_x2 = 0.75
             cbar_x1 = 0.75
@@ -209,12 +210,14 @@ def stitch_rgb(s, i, ncrsp=False):
     main_dx = main_x2 - main_x1
     cbar_dx = cbar_x2 - cbar_x1
     Nfield = len(fields)
-    fig_xsize = fig_ysize*main_dx+(main_dx+cbar_dx)*(Nfield-1)*fig_ysize
-    wratios = [main_dx]+[main_dx,cbar_dx]*(Nfield-1)
+    fig_xsize = fig_ysize * main_dx + (main_dx + cbar_dx) * (Nfield - 1) * fig_ysize
+    wratios = [main_dx] + [main_dx, cbar_dx] * (Nfield - 1)
     with plt.style.context("dark_background", {"figure.dpi": 200}):
         fig, axes = plt.subplots(
-            1, 7, figsize=(fig_xsize, fig_ysize),
-            gridspec_kw=dict(wspace=0, hspace=0, width_ratios=wratios)
+            1,
+            7,
+            figsize=(fig_xsize, fig_ysize),
+            gridspec_kw=dict(wspace=0, hspace=0, width_ratios=wratios),
         )
 
         field = fields[0]
@@ -231,7 +234,7 @@ def stitch_rgb(s, i, ncrsp=False):
         plt.xlim(Nx * main_x1, Nx * main_x2)
         plt.axis("off")
 
-        for field, ax in zip(fields[1:], axes[1:].reshape(3,2)):
+        for field, ax in zip(fields[1:], axes[1:].reshape(3, 2)):
             files = sorted(
                 glob.glob(os.path.join(s.basedir, "volume", f"{field}_time_????.png"))
             )
@@ -253,35 +256,39 @@ def stitch_rgb(s, i, ncrsp=False):
             ha="left",
             xycoords="axes fraction",
             weight="bold",
-            fontsize='xx-large'
+            fontsize="xx-large",
         )
         fig.savefig(
-            os.path.join(s.basedir, "volume", f"luminosity_RGB_channel_time_{inum:04d}.png"),
+            os.path.join(
+                s.basedir, "volume", f"luminosity_RGB_channel_time_{inum:04d}.png"
+            ),
             bbox_inches="tight",
         )
 
+
 def stitch_rgb2(s, i, ncrsp=True):
     from matplotlib.gridspec import GridSpec
+
     files = sorted(
-        glob.glob(os.path.join(s.basedir, "volume", f"luminosity_RGB_time_????.png"))
+        glob.glob(os.path.join(s.basedir, "volume", "luminosity_RGB_time_????.png"))
     )
     inum = int(files[i].split("_")[-1].split(".")[0])
     time = get_time_from_zprof(s, inum)
 
-    fig_ysize=12
+    fig_ysize = 12
     if ncrsp:
         main_x1 = 0.25
         main_x2 = 0.95
         sub_x1 = 0.25
         sub_x2 = 1.3
     else:
-        Nx, Ny, Nz = s.domain['Nx']
-        if Nz/Nx == 6:
+        Nx, Ny, Nz = s.domain["Nx"]
+        if Nz / Nx == 6:
             main_x1 = 0.35
             main_x2 = 0.65
             sub_x1 = main_x1
             sub_x2 = 1
-        elif Nz/Nx == 3:
+        elif Nz / Nx == 3:
             main_x1 = 0.25
             main_x2 = 0.75
             sub_x1 = main_x1
@@ -292,18 +299,20 @@ def stitch_rgb2(s, i, ncrsp=True):
     main_dx = main_x2 - main_x1
     sub_dx = sub_x2 - sub_x1
 
-    fig_xsize = fig_ysize*main_dx+(sub_dx)*fig_ysize/3.
-    wratios = [main_dx, sub_dx/3]
+    fig_xsize = fig_ysize * main_dx + (sub_dx) * fig_ysize / 3.0
+    wratios = [main_dx, sub_dx / 3]
 
-    with plt.style.context("dark_background",{'figure.dpi':300}):
-        fig = plt.figure(figsize=(fig_xsize,fig_ysize))
-        gs = GridSpec(3,2,fig, 0,0,1,1,0.1,0,width_ratios=wratios)
-        ax = fig.add_subplot(gs[:,0])
-        img = plt.imread(os.path.join(s.basedir,'volume',f'luminosity_RGB_time_{inum:04d}.png'))
-        Nx,Ny,Nch = img.shape
+    with plt.style.context("dark_background", {"figure.dpi": 300}):
+        fig = plt.figure(figsize=(fig_xsize, fig_ysize))
+        gs = GridSpec(3, 2, fig, 0, 0, 1, 1, 0.1, 0, width_ratios=wratios)
+        ax = fig.add_subplot(gs[:, 0])
+        img = plt.imread(
+            os.path.join(s.basedir, "volume", f"luminosity_RGB_time_{inum:04d}.png")
+        )
+        Nx, Ny, Nch = img.shape
         plt.imshow(img)
-        plt.xlim(Nx*main_x1,Nx*main_x2)
-        plt.axis('off')
+        plt.xlim(Nx * main_x1, Nx * main_x2)
+        plt.axis("off")
         ax.annotate(
             f"t={time*s.u.Myr:5.1f}Myr",
             (0.05, 1.0),
@@ -311,22 +320,30 @@ def stitch_rgb2(s, i, ncrsp=True):
             ha="left",
             xycoords="axes fraction",
             weight="bold",
-            fontsize='xx-large'
+            fontsize="xx-large",
         )
-        for i,ch in enumerate('RGB'):
-            ax=fig.add_subplot(gs[i,1])
-            img = plt.imread(os.path.join(s.basedir,'volume',f'luminosity_{ch}_time_{inum:04d}.png'))
-            Nx,Ny,Nch = img.shape
+        for i, ch in enumerate("RGB"):
+            ax = fig.add_subplot(gs[i, 1])
+            img = plt.imread(
+                os.path.join(
+                    s.basedir, "volume", f"luminosity_{ch}_time_{inum:04d}.png"
+                )
+            )
+            Nx, Ny, Nch = img.shape
             plt.imshow(img)
-            plt.xlim(Nx*sub_x1,Nx*sub_x2)
-            plt.axis('off')
+            plt.xlim(Nx * sub_x1, Nx * sub_x2)
+            plt.axis("off")
 
         fig.savefig(
-            os.path.join(s.basedir, "volume", f"luminosity_RGB_channel_time_{inum:04d}.png"),
+            os.path.join(
+                s.basedir, "volume", f"luminosity_RGB_channel_time_{inum:04d}.png"
+            ),
             bbox_inches="tight",
         )
 
+
 if __name__ == "__main__":
+    basedir = None
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "-b", "--basedir", type=str, default=None, help="Name of the basedir."
@@ -352,20 +369,19 @@ if __name__ == "__main__":
     nfiles = None
     all_identical = True
     for f in fields:
-        for tf in ['_linramp','']:
+        for tf in ["_linramp", ""]:
             files = sorted(
-                glob.glob(
-                    osp.join(s.basedir, "volume", f"{f}{tf}_time_????.png")
-                )
+                glob.glob(osp.join(s.basedir, "volume", f"{f}{tf}_time_????.png"))
             )
-            print(f'found {len(files)} images for {f}{tf}')
+            print(f"found {len(files)} images for {f}{tf}")
             if nfiles is not None:
                 if nfiles != len(files):
                     all_identical = False
             else:
                 nfiles = len(files)
 
-    if not all_identical: sys.exit()
+    if not all_identical:
+        sys.exit()
 
     ncrsp = s.test_spiralarm()
     # montage
@@ -401,7 +417,7 @@ if __name__ == "__main__":
                 fout,
                 f"/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR_volume/{osp.basename(fout)}",
             )
-    fin = os.path.join(s.basedir, "volume", f"luminosity_RGB_channel_time_????.png")
+    fin = os.path.join(s.basedir, "volume", "luminosity_RGB_channel_time_????.png")
     fout = osp.join(s.basedir, f"{s.basename}_luminosity_RGB_channel_time.mp4")
     make_movie(fin, fout, fps_in=15, fps_out=15)
     copyfile(

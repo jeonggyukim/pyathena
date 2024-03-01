@@ -1,27 +1,28 @@
 #!/usr/bin/env python
 
-import os
-import os.path as osp
+# import os
+# import os.path as osp
 import gc
 import time
 from mpi4py import MPI
-import matplotlib.pyplot as plt
+
+# import matplotlib.pyplot as plt
 import pprint
 import argparse
 import sys
-import pickle
+# import pickle
 
 import pyathena as pa
 from pyathena.util.split_container import split_container
-from pyathena.plt_tools.make_movie import make_movie
-from pyathena.tigress_ncr.phase import *
-from pyathena.tigress_ncr.cooling_breakdown import *
+
+# from pyathena.plt_tools.make_movie import make_movie
+# from pyathena.tigress_ncr.phase import *
+from pyathena.tigress_ncr.cooling_breakdown import draw_Tpdf
 
 if __name__ == "__main__":
-
     COMM = MPI.COMM_WORLD
 
-    basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
+    basedir = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
 
     # savdir = '/tigress/jk11/tmp4/'
     # savdir_pkl = '/tigress/jk11/tmp3/'
@@ -30,7 +31,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
+        "-b", "--basedir", type=str, default=basedir, help="Name of the basedir."
     )
     args = vars(parser.parse_args())
     locals().update(args)
@@ -47,7 +48,7 @@ if __name__ == "__main__":
 
         mynums = COMM.scatter(nums, root=0)
         for num in mynums:
-            s.create_tar(num=num,kind='vtk',remove_original=True,overwrite=True)
+            s.create_tar(num=num, kind="vtk", remove_original=True, overwrite=True)
         COMM.barrier()
 
         # reading it again
@@ -67,7 +68,7 @@ if __name__ == "__main__":
     time0 = time.time()
     for num in mynums:
         print(num, end=" ")
-        f1 = draw_Tpdf(s,num)
+        f1 = draw_Tpdf(s, num)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")

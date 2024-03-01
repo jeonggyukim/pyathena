@@ -9,7 +9,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 class Snapshot_HIH2EM:
     def plt_snapshot_HIH2EM(self, num):
-
         nr = 2
         nc = 4
         fig, axes = plt.subplots(

@@ -2,9 +2,10 @@ import os
 import pandas as pd
 import numpy as np
 from scipy.special import expn
-import xarray as xr
+
+# import xarray as xr
 import astropy.units as au
-import astropy.constants as ac
+# import astropy.constants as ac
 
 
 def J_over_JUV_inside_slab(tau, tau_SF):
@@ -82,7 +83,7 @@ def read_rad_lost(filename, force_override=False, verbose=False):
     df = df.drop(labels=[df.columns[-1]], axis=1)
     col = {0: "time", 1: "nfreq", 2: "nsrc", 3: "N_mu"}
     nfreq = df[1][0]
-    N_mu = df[3][0]
+    # N_mu = df[3][0]
     for i in range(4, 4 + nfreq):
         col[i] = "L_tot{0:d}".format(i - 4)
 
@@ -119,7 +120,7 @@ def calc_Jrad_pp(s, num):
         )
 
     dz_cgs = dz * u.length.cgs.value
-    LxLy = (s.domain["Lx"][0] * s.domain["Lx"][1]) * u.pc ** 2
+    LxLy = (s.domain["Lx"][0] * s.domain["Lx"][1]) * u.pc**2
 
     # Cell centers (z plus center)
     zpc = zpa.z.data
@@ -148,7 +149,7 @@ def calc_Jrad_pp(s, num):
             rsp["sp_src"][f"L_{f}"]
             / LxLy
             / (4.0 * np.pi)
-            * (1.0 * au.Lsun / au.pc ** 2).cgs.value
+            * (1.0 * au.Lsun / au.pc**2).cgs.value
         )
 
         # plane-parallel approximation

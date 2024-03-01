@@ -1,26 +1,30 @@
 #!/usr/bin/env python
 
 import os
-import os.path as osp
+
+# import os.path as osp
 import gc
 import time
 from mpi4py import MPI
-import matplotlib.pyplot as plt
+
+# import matplotlib.pyplot as plt
 import pprint
 import argparse
 import sys
-import pickle
+# import pickle
+
+import xarray as xr
 
 import pyathena as pa
 from pyathena.util.split_container import split_container
-from pyathena.plt_tools.make_movie import make_movie
-from pyathena.tigress_ncr.phase import *
+
+# from pyathena.plt_tools.make_movie import make_movie
+from pyathena.tigress_ncr.phase import assign_phase, PDF1D
 
 if __name__ == "__main__":
-
     COMM = MPI.COMM_WORLD
 
-    basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
+    basedir = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
 
     # savdir = '/tigress/jk11/tmp4/'
     # savdir_pkl = '/tigress/jk11/tmp3/'
@@ -29,7 +33,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
+        "-b", "--basedir", type=str, default=basedir, help="Name of the basedir."
     )
     args = vars(parser.parse_args())
     locals().update(args)
@@ -41,13 +45,13 @@ if __name__ == "__main__":
         if COMM.rank == 0:
             print("basedir, nums", s.basedir, nums)
             nums = split_container(nums, COMM.size)
-            os.makedirs(os.path.join(s.savdir,'xprof'),exist_ok=True)
+            os.makedirs(os.path.join(s.savdir, "xprof"), exist_ok=True)
         else:
             nums = None
 
         mynums = COMM.scatter(nums, root=0)
         for num in mynums:
-            s.create_tar(num=num,kind='vtk',remove_original=True)
+            s.create_tar(num=num, kind="vtk", remove_original=True)
         COMM.barrier()
 
         # reading it again
@@ -68,23 +72,26 @@ if __name__ == "__main__":
     for num in mynums:
         ds = s.load_vtk(num)
 
-        data = ds.get_field(field=['nH','pok','T','xHI','xHII','xH2','vz'])
+        data = ds.get_field(field=["nH", "pok", "T", "xHI", "xHII", "xH2", "vz"])
 
-        ph = assign_phase(s,data,kind='six')
+        ph = assign_phase(s, data, kind="six")
 
-        phclist = [phdict['c'] for phdict in ph.attrs['phdef']]
+        phclist = [phdict["c"] for phdict in ph.attrs["phdef"]]
         vz_ph = []
-        for i,(phname,phcolor) in enumerate(zip(ph.attrs['phlist'],phclist)):
-            phsel=data.where(ph==i)
-            vz=xr.Dataset()
-            vz['rhovz2']=(phsel['nH']*phsel['vz']**2).sum(dim=['y','z'])
-            vz['rho']=(phsel['nH']).sum(dim=['y','z'])
-            vz['pok']=(phsel['pok']).sum(dim=['y','z'])
+        for i, (phname, phcolor) in enumerate(zip(ph.attrs["phlist"], phclist)):
+            phsel = data.where(ph == i)
+            vz = xr.Dataset()
+            vz["rhovz2"] = (phsel["nH"] * phsel["vz"] ** 2).sum(dim=["y", "z"])
+            vz["rho"] = (phsel["nH"]).sum(dim=["y", "z"])
+            vz["pok"] = (phsel["pok"]).sum(dim=["y", "z"])
             vz_ph.append(vz.assign_coords(phase=phname))
-        vz_ph = xr.concat(vz_ph,dim='phase')
-        vz_ph = vz_ph.assign_coords(time=ds.domain['time'])
-        vz_ph.to_netcdf(os.path.join(s.savdir,'xprof',
-                                    '{}.{:04d}.xprof.nc'.format(s.basename,num)))
+        vz_ph = xr.concat(vz_ph, dim="phase")
+        vz_ph = vz_ph.assign_coords(time=ds.domain["time"])
+        vz_ph.to_netcdf(
+            os.path.join(
+                s.savdir, "xprof", "{}.{:04d}.xprof.nc".format(s.basename, num)
+            )
+        )
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
         print("Remaining Garbage:", end=" ")

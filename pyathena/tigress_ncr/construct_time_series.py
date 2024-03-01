@@ -10,9 +10,11 @@ from pyathena.tigress_ncr.get_cooling import (
 )
 from pyathena.microphysics.cool import heatCR
 import astropy.constants as ac
+
 # import astropy.units as au
 from pyathena.tigress_ncr.ncr_paper_lowz import LowZData
 from mpi4py import MPI
+
 
 def f1(T, T0=2e4, T1=3.5e4):
     """transition function"""
@@ -25,6 +27,7 @@ def f1(T, T0=2e4, T1=3.5e4):
             1.0 / (1.0 + np.exp(-10.0 * (T - 0.5 * (T0 + T1)) / (T1 - T0))),
         ),
     )
+
 
 class athena_data(object):
     def __init__(self, s, data):
@@ -45,28 +48,30 @@ class athena_data(object):
         self.phase = assign_phase(self.sim, self, kind="six")
 
     def update_cooling_heating(self):
-        w2 = f1(self["T"],
-                T0=self.sim.par["cooling"]["Thot0"],
-                T1=self.sim.par["cooling"]["Thot1"])
+        w2 = f1(
+            self["T"],
+            T0=self.sim.par["cooling"]["Thot0"],
+            T1=self.sim.par["cooling"]["Thot1"],
+        )
         w1 = 1 - w2
-        self.data_heat = get_heating(self.sim, self)*self['nH'] * w1
-        self.data_cool = get_other_cooling(self.sim, self)*self['nH'] * w1
-        self.data_cool.update(get_hydrogen_cooling(self.sim, self)*self['nH'])
+        self.data_heat = get_heating(self.sim, self) * self["nH"] * w1
+        self.data_cool = get_other_cooling(self.sim, self) * self["nH"] * w1
+        self.data_cool.update(get_hydrogen_cooling(self.sim, self) * self["nH"])
         for var in self.data_cool:
-            if var.startswith('Lambda') or var.startswith('Gamma'):
+            if var.startswith("Lambda") or var.startswith("Gamma"):
                 continue
-            self.data_cool[f'Lambda_{var}'] = self.data_cool[var]/self['nH']**2
-            self.data_cool[f'Lambda_nH_{var}'] = self.data_cool[var]/self['nH']
+            self.data_cool[f"Lambda_{var}"] = self.data_cool[var] / self["nH"] ** 2
+            self.data_cool[f"Lambda_nH_{var}"] = self.data_cool[var] / self["nH"]
         for var in self.data_heat:
-            if var.startswith('Lambda') or var.startswith('Gamma'):
+            if var.startswith("Lambda") or var.startswith("Gamma"):
                 continue
-            self.data_heat[f'Gamma_{var}'] = self.data_heat[var]/self['nH']
+            self.data_heat[f"Gamma_{var}"] = self.data_heat[var] / self["nH"]
 
     def __getitem__(self, field):
         if field in self.data:
             return self.data[field]
-        elif field == 'T':
-            self.data['T'] = self.data['temperature']
+        elif field == "T":
+            self.data["T"] = self.data["temperature"]
         elif field in self.sim.dfi:
             self.data[field] = self.sim.dfi[field]["func"](self.data, self.sim.u)
         elif field == "charging":
@@ -114,13 +119,13 @@ class athena_data(object):
                 * self.u.Myr
             )
         elif field == "vx2":
-            self.data["vx2"] = self["vx"]**2
+            self.data["vx2"] = self["vx"] ** 2
         elif field == "vy2":
-            self.data["vy2"] = self["vy"]**2
+            self.data["vy2"] = self["vy"] ** 2
         elif field == "vz2":
-            self.data["vz2"] = self["vz"]**2
+            self.data["vz2"] = self["vz"] ** 2
         elif field == "qcr":
-            self.data["qcr"] = self.data_heat['Gamma_CR']/self['xi_CR']
+            self.data["qcr"] = self.data_heat["Gamma_CR"] / self["xi_CR"]
         else:
             raise KeyError("{} is not available".format(field))
         return self.data[field]
@@ -150,11 +155,14 @@ class athena_data(object):
             "ne",
             "nHI",
             "nHII",
-            "vx","vx2",
-            "vy","vy2",
-            "vz","vz2",
+            "vx",
+            "vx2",
+            "vy",
+            "vy2",
+            "vz",
+            "vz2",
             "xi_CR",
-            "qcr"
+            "qcr",
         ]
         for f in flist:
             self[f]
@@ -213,7 +221,7 @@ def construct_timeseries(s, m, force_override=False):
             "xe",
             "velocity1",
             "velocity2",
-            "velocity3"
+            "velocity3",
         ]
         s.slc = s.read_slc_time_series(
             nums=slcnums, fields=fields, sfr=True, radiation=True
@@ -254,8 +262,9 @@ def construct_timeseries(s, m, force_override=False):
     # get tau and ftau
     sigma_PE = s.par["opacity"]["sigma_dust_PE0"]
     sigma_LW = s.par["opacity"]["sigma_dust_LW0"]
-    sigma_FUV = (sigma_PE * s.slc["Ltot_PE"] +
-                 sigma_LW * s.slc["Ltot_LW"]) / s.slc["Ltot_FUV"]
+    sigma_FUV = (sigma_PE * s.slc["Ltot_PE"] + sigma_LW * s.slc["Ltot_LW"]) / s.slc[
+        "Ltot_FUV"
+    ]
     NH = s.slc["Sigma_gas"] * ((ac.M_sun / ac.pc**2) / (s.u.muH * ac.m_p)).cgs.value
     H = s.slc["H_2p"]
     nmid = s.slc["nmid"]
@@ -278,7 +287,9 @@ def construct_timeseries(s, m, force_override=False):
     # phase-separated weighted means
     vmeans = []
     nmeans = []
-    for ph, phname in zip([cnm, cold, wnm, twop, wim], ["CNM", "Cold", "WNM", "2p", "WIM"]):
+    for ph, phname in zip(
+        [cnm, cold, wnm, twop, wim], ["CNM", "Cold", "WNM", "2p", "WIM"]
+    ):
         vavg, navg = s.data.get_means(ph)
         eps = (s.data["nH"] * s.data["chi_FUV"] * s.data["eps_PE"] * ph).sum(
             dim=["x", "y"]
@@ -297,13 +308,14 @@ def construct_timeseries(s, m, force_override=False):
 
     return da, ds1, ds2
 
+
 if __name__ == "__main__":
     pdata = LowZData()
     nmodels = len(pdata.mlist)
     COMM = MPI.COMM_WORLD
-    mylist = [pdata.mlist[i] for i in range(nmodels) if i%COMM.size == COMM.rank]
+    mylist = [pdata.mlist[i] for i in range(nmodels) if i % COMM.size == COMM.rank]
     print(COMM.rank, mylist)
     for m in mylist:
         print(m)
         s = pdata.sa.set_model(m)
-        da,vavg,navg = construct_timeseries(s,m,force_override=True)
+        da, vavg, navg = construct_timeseries(s, m, force_override=True)

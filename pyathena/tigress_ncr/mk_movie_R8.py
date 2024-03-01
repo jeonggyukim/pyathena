@@ -2,12 +2,12 @@
 
 import os
 import os.path as osp
-import gc
-import time
-import matplotlib.pyplot as plt
-import pprint
-import argparse
-import sys
+# import gc
+# import time
+# import matplotlib.pyplot as plt
+# import pprint
+# import argparse
+# import syss
 
 from pyathena.plt_tools.make_movie import make_movie
 
@@ -21,4 +21,4 @@ for field in ["Sigma_gas"]:  # ,'nH','pok','surf']:
     fin = osp.join(basedir, "{0}/{0}.*.png".format(field))
     fout = osp.join(basedir, "movies/{0:s}.mp4".format(field))
     make_movie(fin, fout, fps_in=15, fps_out=15)
-    from shutil import copyfile
+    # from shutil import copyfile

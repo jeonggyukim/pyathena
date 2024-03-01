@@ -1,13 +1,13 @@
 import os
 import pandas as pd
-import numpy as np
-import xarray as xr
+# import numpy as np
+# import xarray as xr
 
 
 def read_rad_lost(filename, force_override=False, verbose=False):
     """
     Function to read rad_lost.txt and pickle
-    
+
     Parameters:
        filename : string
            Name of the file to open, including extension
@@ -41,7 +41,7 @@ def read_rad_lost(filename, force_override=False, verbose=False):
     df = df.drop(labels=[df.columns[-1]], axis=1)
     col = {0: "time", 1: "nfreq", 2: "nsrc", 3: "N_mu"}
     nfreq = df[1][0]
-    N_mu = df[3][0]
+    # N_mu = df[3][0]
     for i in range(4, 4 + nfreq):
         col[i] = "L_tot{0:d}".format(i - 4)
 

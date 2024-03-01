@@ -1,26 +1,28 @@
 #!/usr/bin/env python
 
 import os
-import os.path as osp
+
+# import os.path as osp
 import gc
 import time
 from mpi4py import MPI
 import matplotlib.pyplot as plt
 import pprint
 import argparse
-import sys
+
+# import sys
 import pickle
 
 import pyathena as pa
 from pyathena.util.split_container import split_container
-from pyathena.plt_tools.make_movie import make_movie
-from pyathena.tigress_ncr.phase import *
+
+# from pyathena.plt_tools.make_movie import make_movie
+from pyathena.tigress_ncr.phase import recal_nP, PDF1D
 
 if __name__ == "__main__":
-
     COMM = MPI.COMM_WORLD
 
-    basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
+    basedir = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
 
     # savdir = '/tigress/jk11/tmp4/'
     # savdir_pkl = '/tigress/jk11/tmp3/'
@@ -29,7 +31,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
+        "-b", "--basedir", type=str, default=basedir, help="Name of the basedir."
     )
     args = vars(parser.parse_args())
     locals().update(args)
@@ -73,21 +75,23 @@ if __name__ == "__main__":
             plt.close(fig)
         # 2d pdf
         try:
-            npfile=os.path.join(s.basedir,'np_pdf',
-                                '{}.{:04d}.np_pdf.nc'.format(s.basename,num))
+            npfile = os.path.join(
+                s.basedir, "np_pdf", "{}.{:04d}.np_pdf.nc".format(s.basename, num)
+            )
             if not os.path.isdir(os.path.dirname(npfile)):
                 os.makedirs(os.path.dirname(npfile))
             if not os.path.isfile(npfile):
-                ds=s.load_vtk(num)
-                flist = ['nH','pok','T']
+                ds = s.load_vtk(num)
+                flist = ["nH", "pok", "T"]
                 if s.test_newcool():
-                    flist.append(['xe','xHI','xHII','xH2',
-                                  'cool_rate','net_cool_rate'])
-                dchunk=ds.get_field(flist)
-                dchunk['T1'] = dchunk['pok']/dchunk['nH']
-                dchunk=dchunk.sel(z=slice(-300,300))
+                    flist.append(
+                        ["xe", "xHI", "xHII", "xH2", "cool_rate", "net_cool_rate"]
+                    )
+                dchunk = ds.get_field(flist)
+                dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
+                dchunk = dchunk.sel(z=slice(-300, 300))
                 print(" creating nP ", end=" ")
-                pdf_dset = recal_nP(dchunk,NCR=s.test_newcool())
+                pdf_dset = recal_nP(dchunk, NCR=s.test_newcool())
                 pdf_dset.to_netcdf(npfile)
             else:
                 print(" skipping nP ", end=" ")
@@ -95,7 +99,7 @@ if __name__ == "__main__":
             print(" passing nP ", end=" ")
 
         # 1d pdfs
-        s.pdf.recal_1Dpdfs(num,force_override=False)
+        s.pdf.recal_1Dpdfs(num, force_override=False)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")

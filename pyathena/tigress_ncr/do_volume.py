@@ -16,6 +16,7 @@ from pyathena.util.split_container import split_container
 # from pyathena.plt_tools.make_movie import make_movie
 
 import astropy.constants as ac
+
 # import astropy.units as au
 import yt
 from yt.visualization.volume_rendering.api import create_volume_source
@@ -23,19 +24,20 @@ from yt.visualization.volume_rendering.api import create_volume_source
 
 from pyathena.microphysics.cool import get_xCII, q10CII_
 
+
 def add_fields(s, ds, xray=True, CII=True):
     # yt standard abundance fields
     def _nHI(field, data):
         xHI = data[("athena", "xHI")]
-        return data[("gas", "H_nuclei_density")] * xHI * (xHI>0.01)
+        return data[("gas", "H_nuclei_density")] * xHI * (xHI > 0.01)
 
     def _nHII(field, data):
-        xHII =  1 - data[("athena", "xHI")] - 2 * data[("athena", "xH2")]
-        return data[("gas", "H_nuclei_density")] * xHII * (xHII>0.01)
+        xHII = 1 - data[("athena", "xHI")] - 2 * data[("athena", "xH2")]
+        return data[("gas", "H_nuclei_density")] * xHII * (xHII > 0.01)
 
     def _nH2(field, data):
         xH2 = data[("athena", "xH2")]
-        return 2.0 * data[("gas", "H_nuclei_density")] * xH2 * (xH2>0.01)
+        return 2.0 * data[("gas", "H_nuclei_density")] * xH2 * (xH2 > 0.01)
 
     def _jHalpha(field, data):
         T4 = data[("athena", "temperature")].v / 1.0e4
@@ -52,14 +54,16 @@ def add_fields(s, ds, xray=True, CII=True):
         )
 
     def _LHalpha(field, data):
-        return data[("gas","H_alpha_emissivity")]*data[("gas", "cell_volume")]
+        return data[("gas", "H_alpha_emissivity")] * data[("gas", "cell_volume")]
 
     def _jHI21(field, data):
-        C = 4*np.pi*1.6201623e-33*yt.units.erg/yt.units.s # (3/16pi)h*nu*A (KKO14)
-        return C*data[("gas","H_p0_number_density")]
+        C = (
+            4 * np.pi * 1.6201623e-33 * yt.units.erg / yt.units.s
+        )  # (3/16pi)h*nu*A (KKO14)
+        return C * data[("gas", "H_p0_number_density")]
 
     def _LHI21(field, data):
-        return data[("gas","HI_21cm_emissivity")]*data[("gas", "cell_volume")]
+        return data[("gas", "HI_21cm_emissivity")] * data[("gas", "cell_volume")]
 
     # add/override fields
     ds.add_field(
@@ -138,7 +142,7 @@ def add_fields(s, ds, xray=True, CII=True):
         srcmdl = pyxsim.CIESourceModel(
             model, emin, emax, nbins, Zmet, binscale=binscale, abund_table="aspl"
         )
-        xray_fields = srcmdl.make_source_fields(ds, 0.5, 7.0, force_override=True)
+        _ = srcmdl.make_source_fields(ds, 0.5, 7.0, force_override=True)
 
     if CII:
         # set total C, O abundance
@@ -212,10 +216,7 @@ def add_fields(s, ds, xray=True, CII=True):
             )
 
         def _jCII(field, data):
-            return (
-                data[("gas", "Lambda_CII")]
-                * data[("gas", "H_nuclei_density")] ** 2
-            )
+            return data[("gas", "Lambda_CII")] * data[("gas", "H_nuclei_density")] ** 2
 
         def _LCII(field, data):
             return data[("gas", "CII_emissivity")] * data[("gas", "cell_volume")]
@@ -253,76 +254,108 @@ def add_fields(s, ds, xray=True, CII=True):
         )
 
     # more fields
-    def _specific_enthalphy(field,data):
-        return data["gas", "specific_thermal_energy"] + data["gas", "pressure"]/data["gas", "density"]
-    def _specific_kinetic_energy(field,data):
-        return 0.5*data["gas", "velocity_magnitude"]**2
-    def _total_energy_density(field,data):
-        return data["gas", "specific_total_energy"]*data["gas", "density"]
-    def _total_energy_flux_z(field,data):
-        return (data["gas", "specific_enthalphy"] + data["gas", "specific_kinetic_energy"])*data["gas", "momentum_density_z"]
-    def _vzout(field,data):
-        return data["gas", "velocity_z"]*(data["gas","z"]/data["gas","z"])
-    def _vzin(field,data):
-        return data["gas", "velocity_z"]*(-data["gas","z"]/data["gas","z"])
+    def _specific_enthalphy(field, data):
+        return (
+            data["gas", "specific_thermal_energy"]
+            + data["gas", "pressure"] / data["gas", "density"]
+        )
 
-    ds.add_field(("gas","specific_enthalphy"),
-                function=_specific_enthalphy,
-                units='(km/s)**2',
-                sampling_type="cell",force_override=True)
-    ds.add_field(("gas","specific_kinetic_energy"),
-                function=_specific_kinetic_energy,
-                units='(km/s)**2',
-                sampling_type="cell",force_override=True)
-    ds.add_field(("gas","total_energy_density"),
-                function=_total_energy_density,
-                units='erg/cm**3',
-                sampling_type="cell",force_override=True)
-    ds.add_field(("gas","total_energy_flux_z"),
-                function=_total_energy_flux_z,
-                units='erg/s/cm**2',
-                sampling_type="cell",force_override=True)
-    ds.add_field(("gas","vzout"),
-                function=_vzout,
-                units='km/s',
-                sampling_type="cell",force_override=True)
-    ds.add_field(("gas","vzin"),
-                function=_vzin,
-                units='km/s',
-                sampling_type="cell",force_override=True)
+    def _specific_kinetic_energy(field, data):
+        return 0.5 * data["gas", "velocity_magnitude"] ** 2
+
+    def _total_energy_density(field, data):
+        return data["gas", "specific_total_energy"] * data["gas", "density"]
+
+    def _total_energy_flux_z(field, data):
+        return (
+            data["gas", "specific_enthalphy"] + data["gas", "specific_kinetic_energy"]
+        ) * data["gas", "momentum_density_z"]
+
+    def _vzout(field, data):
+        return data["gas", "velocity_z"] * (data["gas", "z"] / data["gas", "z"])
+
+    def _vzin(field, data):
+        return data["gas", "velocity_z"] * (-data["gas", "z"] / data["gas", "z"])
+
+    ds.add_field(
+        ("gas", "specific_enthalphy"),
+        function=_specific_enthalphy,
+        units="(km/s)**2",
+        sampling_type="cell",
+        force_override=True,
+    )
+    ds.add_field(
+        ("gas", "specific_kinetic_energy"),
+        function=_specific_kinetic_energy,
+        units="(km/s)**2",
+        sampling_type="cell",
+        force_override=True,
+    )
+    ds.add_field(
+        ("gas", "total_energy_density"),
+        function=_total_energy_density,
+        units="erg/cm**3",
+        sampling_type="cell",
+        force_override=True,
+    )
+    ds.add_field(
+        ("gas", "total_energy_flux_z"),
+        function=_total_energy_flux_z,
+        units="erg/s/cm**2",
+        sampling_type="cell",
+        force_override=True,
+    )
+    ds.add_field(
+        ("gas", "vzout"),
+        function=_vzout,
+        units="km/s",
+        sampling_type="cell",
+        force_override=True,
+    )
+    ds.add_field(
+        ("gas", "vzin"),
+        function=_vzin,
+        units="km/s",
+        sampling_type="cell",
+        force_override=True,
+    )
 
     return ds
+
 
 def get_mytf(b, c, nlayer=0):
     def linramp(vals, minval, maxval):
         return 0.9 * (vals - vals.min()) / (vals.max() - vals.min()) + 0.1
+
     tf = yt.ColorTransferFunction((np.log10(b[0]), np.log10(b[1])))
     if nlayer == 0:
         tf.map_to_colormap(
             np.log10(b[0]), np.log10(b[1]), scale=20, scale_func=linramp, colormap=c
         )
     else:
-        tf.add_layers(nlayer, w=0.1, alpha=np.linspace(10,40,nlayer), colormap=c)
+        tf.add_layers(nlayer, w=0.1, alpha=np.linspace(10, 40, nlayer), colormap=c)
 
     return tf
 
-def render_volume(ds, f, b, c, nlayer=0, render = True):
+
+def render_volume(ds, f, b, c, nlayer=0, render=True):
     sc = yt.create_scene(ds, field=f)
 
     tf = get_mytf(b, c, nlayer=nlayer)
     sc[0].set_transfer_function(tf)
 
     cam = sc.camera
-    cam.set_position([1024,-1024,1024],north_vector=[0,0,1])
+    cam.set_position([1024, -1024, 1024], north_vector=[0, 0, 1])
     cam.zoom(1.5)
     cam.set_resolution(1024)
-    sc.annotate_domain(ds,color=[1,1,1,1])
+    sc.annotate_domain(ds, color=[1, 1, 1, 1])
     if render:
         im = sc.render()
     else:
         im = None
 
     return im, tf, sc
+
 
 def add_volume_source(sc, ds, f, b, c, nlayer=0, render=True):
     vol = create_volume_source(ds, field=f)
@@ -337,31 +370,40 @@ def add_volume_source(sc, ds, f, b, c, nlayer=0, render=True):
 
     return im, tf
 
+
 def add_tf_to_image(fig, ds, f, tf, xoff=0.1):
-    ax2 = fig.add_axes([1-xoff,0.1,0.05,0.8])
-    tf.vert_cbar(256,False,ax2,label_fmt="%d")
-    if f[1].startswith('xray'):
+    ax2 = fig.add_axes([1 - xoff, 0.1, 0.05, 0.8])
+    tf.vert_cbar(256, False, ax2, label_fmt="%d")
+    if f[1].startswith("xray"):
         label = f"log ${ds.field_info[f].display_name.replace('$','')}\,[{ds.field_info[f].units}]$"
     else:
         label = f"log {ds.field_info[f].display_name} [{ds.field_info[f].units}]"
-    ax2.set_ylabel(label,weight='bold',fontsize=15)
+    ax2.set_ylabel(label, weight="bold", fontsize=15)
 
-def save_with_tf(ds, f, im, tf, fout = None, xoff = 0.1):
-    fig = plt.figure(figsize=(5,5),dpi=200)
-    ax = fig.add_axes([0,0,1,1])
-    ax.axis('off')
-    ax.imshow(im.swapaxes(0,1))
+
+def save_with_tf(ds, f, im, tf, fout=None, xoff=0.1):
+    fig = plt.figure(figsize=(5, 5), dpi=200)
+    ax = fig.add_axes([0, 0, 1, 1])
+    ax.axis("off")
+    ax.imshow(im.swapaxes(0, 1))
     add_tf_to_image(fig, ds, f, tf, xoff=xoff)
-    ax.annotate(f"t={ds.current_time.to('Myr').v:5.1f} Myr",(xoff,0.95),
-                xycoords='axes fraction',ha='left',va='top',weight='bold')
+    ax.annotate(
+        f"t={ds.current_time.to('Myr').v:5.1f} Myr",
+        (xoff, 0.95),
+        xycoords="axes fraction",
+        ha="left",
+        va="top",
+        weight="bold",
+    )
     if fout is not None:
-        fig.savefig(fout,dpi=200,bbox_inches='tight')
-    print(f'file saved: {fout}')
+        fig.savefig(fout, dpi=200, bbox_inches="tight")
+    print(f"file saved: {fout}")
 
     return fig
 
-def make_many_volumes(s, ds, num, all = True, rgb = False):
-    ncr = s.test_newcool()
+
+def make_many_volumes(s, ds, num, all=True, rgb=False):
+    # ncr = s.test_newcool()
     ncrsp = s.test_spiralarm()
     xoff = -0.1 if ncrsp else 0.1
 
@@ -424,46 +466,47 @@ def make_many_volumes(s, ds, num, all = True, rgb = False):
     if all or rgb:
         # separately
         # Halpha,HI,Xray
-        r,g,b = [1,0,2]
-        fields_rgb = [fields[r],fields[g],fields[b]]
-        bounds_rgb = [bounds[r],bounds[g],bounds[b]]
-        cmaps_rgb = ['Reds','Greens','Blues']
+        r, g, b = [1, 0, 2]
+        fields_rgb = [fields[r], fields[g], fields[b]]
+        bounds_rgb = [bounds[r], bounds[g], bounds[b]]
+        cmaps_rgb = ["Reds", "Greens", "Blues"]
 
-        for channel,f,b,c in zip(['R','G','B'],fields_rgb,bounds_rgb,cmaps_rgb):
-            b_narrow = (b[0]*1.e2,b[1])
+        for channel, f, b, c in zip(["R", "G", "B"], fields_rgb, bounds_rgb, cmaps_rgb):
+            b_narrow = (b[0] * 1.0e2, b[1])
             im, tf, sc = render_volume(ds, f, b_narrow, c, nlayer=0)
-            fout = osp.join(
-                    foutdir, f"luminosity_{channel}_time_{num:04d}.png"
-                )
+            fout = osp.join(foutdir, f"luminosity_{channel}_time_{num:04d}.png")
             save_with_tf(ds, f, im, tf, fout=fout, xoff=xoff)
 
         # combined
         b = bounds_rgb[0]
-        b_narrow = (b[0]*1.e2,b[1])
-        im, tf_r, sc = render_volume(ds, fields_rgb[0], b_narrow, cmaps_rgb[0],
-                                    nlayer=0, render=False)
+        b_narrow = (b[0] * 1.0e2, b[1])
+        im, tf_r, sc = render_volume(
+            ds, fields_rgb[0], b_narrow, cmaps_rgb[0], nlayer=0, render=False
+        )
         b = bounds_rgb[1]
-        b_narrow = (b[0]*1.e2,b[1])
-        im, tf_g = add_volume_source(sc, ds, fields_rgb[1], b_narrow, cmaps_rgb[1],
-                                    render=False)
+        b_narrow = (b[0] * 1.0e2, b[1])
+        im, tf_g = add_volume_source(
+            sc, ds, fields_rgb[1], b_narrow, cmaps_rgb[1], render=False
+        )
         b = bounds_rgb[2]
-        b_narrow = (b[0]*1.e2,b[1])
-        im, tf_b = add_volume_source(sc, ds, fields_rgb[2], b_narrow, cmaps_rgb[2],
-                                    render=True)
+        b_narrow = (b[0] * 1.0e2, b[1])
+        im, tf_b = add_volume_source(
+            sc, ds, fields_rgb[2], b_narrow, cmaps_rgb[2], render=True
+        )
         fig = save_with_tf(ds, fields_rgb[0], im, tf_r, xoff=xoff)
-        add_tf_to_image(fig, ds, fields_rgb[1], tf_g, xoff=xoff-0.2)
-        add_tf_to_image(fig, ds, fields_rgb[2], tf_b, xoff=xoff-0.4)
+        add_tf_to_image(fig, ds, fields_rgb[1], tf_g, xoff=xoff - 0.2)
+        add_tf_to_image(fig, ds, fields_rgb[2], tf_b, xoff=xoff - 0.4)
         fout = osp.join(foutdir, f"luminosity_RGB_time_{num:04d}.png")
-        fig.savefig(fout,dpi=200,bbox_inches='tight')
+        fig.savefig(fout, dpi=200, bbox_inches="tight")
 
 
 def make_joint_pdfs(s, ds):
-    foutdir = osp.join(os.fspath(s.basedir), "volume")
+    # foutdir = osp.join(os.fspath(s.basedir), "volume")
 
     Nx, Ny, Nz = ds.domain_dimensions
-    le = ds.domain_left_edge.v
-    re = ds.domain_right_edge.v
-    profile = yt.create_profile(
+    # le = ds.domain_left_edge.v
+    # re = ds.domain_right_edge.v
+    yt.create_profile(
         data_source=ds.all_data(),
         bin_fields=[("gas", "H_nuclei_density"), ("gas", "temperature")],
         fields=[
@@ -484,7 +527,6 @@ def make_joint_pdfs(s, ds):
 
 
 def make_volume(ds):
-
     box = ds.box(ds.domain_left_edge, ds.domain_right_edge)
 
     # Add density
@@ -559,7 +601,7 @@ if __name__ == "__main__":
     if True:
         for num in mynums:
             ds = s.ytload(num)
-            ds = add_fields(s,ds,xray=True,CII=True)
+            ds = add_fields(s, ds, xray=True, CII=True)
 
             with plt.style.context("dark_background"):
                 make_many_volumes(s, ds, num)

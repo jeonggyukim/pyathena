@@ -28,7 +28,7 @@ class H2:
             for k in r.keys():
                 try:
                     rr[k].append(r[k].value.item())
-                except:
+                except NameError:
                     rr[k].append(r[k])
 
         rr = pd.DataFrame(rr)
@@ -37,7 +37,6 @@ class H2:
 
     @LoadSim.Decorators.check_pickle
     def read_H2eq(self, num, prefix="H2eq", savdir=None, force_override=False):
-
         par = self.par
         u = self.u
         h = self.read_hst()
@@ -82,11 +81,11 @@ class H2:
         )
 
         nH_1d = np.logspace(np.log10(dd["nH"].min()), np.log10(dd["nH"].max()))
-        xH2eq_1d = calc_xH2eq(nH_1d, xi_CR0, k_gr=par["cooling"]["kgr_H2"], zeta_LW=0.0)
+        # xH2eq_1d = calc_xH2eq(nH_1d, xi_CR0, k_gr=par["cooling"]["kgr_H2"], zeta_LW=0.0)
 
         Mconv = (
             self.domain["dx"].prod()
-            * (u.length.cgs.value ** 3 * u.density.value)
+            * (u.length.cgs.value**3 * u.density.value)
             / (1.0 * au.M_sun).cgs.value
         )
 
