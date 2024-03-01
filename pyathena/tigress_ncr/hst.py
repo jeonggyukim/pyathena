@@ -1,7 +1,5 @@
-# read_hst.py
+# hst.py
 
-import os
-import os.path as osp
 import glob
 import xarray as xr
 import numpy as np
@@ -18,21 +16,20 @@ from ..load_sim import LoadSim
 class Hst:
     @LoadSim.Decorators.check_pickle_hst
     def read_hst(self, savdir=None, force_override=False):
-        """Function to read hst and convert quantities to convenient units
-        """
+        """Function to read hst and convert quantities to convenient units"""
 
         par = self.par
         u = self.u
         domain = self.domain
 
         # volume of resolution element (code unit)
-        dvol = domain["dx"].prod()
+        # dvol = domain["dx"].prod()
         # total volume of domain (code unit)
         vol = domain["Lx"].prod()
         # Area of domain (code unit)
         LxLy = domain["Lx"][0] * domain["Lx"][1]
         # Lz
-        Lz = domain["Lx"][2]
+        # Lz = domain["Lx"][2]
 
         Omega = self.par["problem"]["Omega"]
         if Omega > 0:
@@ -49,13 +46,15 @@ class Hst:
         nscalars = self.par["configure"]["nscalars"]
 
         hst = read_hst(self.files["hst"], force_override=force_override)
-        t = np.array(hst['time'])
+        t = np.array(hst["time"])
         if self.test_phase_sep_hst():
             self.logger.info("[read_hst]: Reading phase separated history files...")
             hw = self.read_hst_phase(iph=0, force_override=force_override).sel(time=t)
-            hph = self.read_hst_phase_all(force_override=force_override,reduced=False).sel(time=t)
+            hph = self.read_hst_phase_all(
+                force_override=force_override, reduced=False
+            ).sel(time=t)
 
-        h = pd.DataFrame()
+        h = dict()
 
         if self.par["configure"]["gas"] == "mhd":
             mhd = True
@@ -84,11 +83,11 @@ class Hst:
 
         if newcool:
             h["M_HI"] = h["mass{0:d}".format(nscalars - 3)]
-            h["Sigma_HI"] = h["M_HI"] / (LxLy * u.pc ** 2)
+            h["Sigma_HI"] = h["M_HI"] / (LxLy * u.pc**2)
             h["M_H2"] = 2.0 * h["mass{0:d}".format(nscalars - 2)]
-            h["Sigma_H2"] = h["M_H2"] / (LxLy * u.pc ** 2)
+            h["Sigma_H2"] = h["M_H2"] / (LxLy * u.pc**2)
             h["M_HII"] = h["mass"] - h["M_H2"] - h["M_HI"]
-            h["Sigma_HII"] = h["M_HII"] / (LxLy * u.pc ** 2)
+            h["Sigma_HII"] = h["M_HII"] / (LxLy * u.pc**2)
 
         # Total outflow mass
         if self.test_phase_sep_hst():
@@ -104,9 +103,9 @@ class Hst:
             h["mass_out"] = h["mass_out"] * LxLy * u.Msun
 
         # Mass surface density in Msun/pc^2
-        h["Sigma_gas"] = h["mass"] / (LxLy * u.pc ** 2)
-        h["Sigma_sp"] = h["mass_sp"] / (LxLy * u.pc ** 2)
-        h["Sigma_out"] = h["mass_out"] / (LxLy * u.pc ** 2)
+        h["Sigma_gas"] = h["mass"] / (LxLy * u.pc**2)
+        h["Sigma_sp"] = h["mass_sp"] / (LxLy * u.pc**2)
+        h["Sigma_out"] = h["mass_out"] / (LxLy * u.pc**2)
 
         # Calculate (cumulative) SN ejecta mass
         # JKIM: only from clustered type II(?)
@@ -246,79 +245,84 @@ class Hst:
         except KeyError:
             radps = False
 
-        # if radps:
-        #     # Total/escaping luminosity in Lsun
-        #     ifreq = dict()
-        #     for f in ("PH", "LW", "PE"):  # ,'PE_unatt'):
-        #         try:
-        #             ifreq[f] = par["radps"]["ifreq_{0:s}".format(f)]
-        #         except KeyError:
-        #             pass
+        if radps:
+            # Total/escaping luminosity in Lsun
+            ifreq = dict()
+            for f in ("PH", "LW", "PE"):  # ,'PE_unatt'):
+                try:
+                    ifreq[f] = par["radps"]["ifreq_{0:s}".format(f)]
+                except KeyError:
+                    pass
 
-        #     for i in range(par["radps"]["nfreq"]):
-        #         for k, v in ifreq.items():
-        #             if i == v:
-        #                 try:
-        #                     h[f"Ltot_{k}"] = hst[f"Ltot{i}"] * u.Lsun # * vol is omitted as it is already taken into account
-        #                     h[f"Lesc_{k}"] = hst[f"Lesc{i}"] * u.Lsun # * vol
-        #                     if par["radps"]["eps_extinct"] > 0.0:
-        #                         h[f"Leps_{k}"] = hst[f"Leps{i}"] * u.Lsun # * vol
-        #                     try:
-        #                         h[f"Ldust_{k}"] = hst[f"Ldust{i}"] * u.Lsun # * vol
-        #                     except KeyError:
-        #                         self.logger.info("Ldust not found in hst")
+            for i in range(par["radps"]["nfreq"]):
+                for k, v in ifreq.items():
+                    if i == v:
+                        try:
+                            h[f"Ltot_{k}"] = (
+                                hst[f"Ltot{i}"] * u.Lsun
+                            )  # * vol is omitted as it is already taken into account
+                            h[f"Lesc_{k}"] = hst[f"Lesc{i}"] * u.Lsun  # * vol
+                            if par["radps"]["eps_extinct"] > 0.0:
+                                h[f"Leps_{k}"] = hst[f"Leps{i}"] * u.Lsun  # * vol
+                            try:
+                                h[f"Ldust_{k}"] = hst[f"Ldust{i}"] * u.Lsun  # * vol
+                            except KeyError:
+                                self.logger.info("Ldust not found in hst")
 
-        #                     hnu = (par["radps"][f"hnu_{k}"] * au.eV).cgs.value
-        #                     h[f"Qtot_{k}"] = (
-        #                         h[f"Ltot_{k}"].values * (ac.L_sun.cgs.value) / hnu
-        #                     )
-        #                     h[f"Qesc_{k}"] = (
-        #                         h[f"Lesc_{k}"].values * (ac.L_sun.cgs.value) / hnu
-        #                     )
-        #                     if f'Ldust_{k}' in h:
-        #                         h[f'Qdust_{k}'] = (
-        #                             h[f'Ldust_{k}'].values * (ac.L_sun.cgs.value)/hnu
-        #                         )
-        #                     # Cumulative number of escaped photons
-        #                     h[f"Qtot_cum_{k}"] = integrate.cumtrapz(
-        #                         h[f"Qtot_{k}"], h.time * u.time.cgs.value, initial=0.0
-        #                     )
-        #                     h[f"Qesc_cum_{k}"] = integrate.cumtrapz(
-        #                         h[f"Qesc_{k}"], h.time * u.time.cgs.value, initial=0.0
-        #                     )
-        #                     # Instantaneous escape fraction
-        #                     h[f"fesc_{k}"] = h[f"Lesc_{k}"] / h[f"Ltot_{k}"]
-        #                     # Cumulative escape fraction
-        #                     h[f"fesc_cum_{k}"] = integrate.cumtrapz(
-        #                         h[f"Lesc_{k}"], h.time, initial=0.0
-        #                     ) / integrate.cumtrapz(h[f"Ltot_{k}"], h.time, initial=0.0)
-        #                     h[f"fesc_cum_{k}"].fillna(value=0.0, inplace=True)
-        #                 except KeyError as e:
-        #                     pass
-        #                     # raise e
-        #     if 'Qtot_PH' in h.columns and \
-        #     'Qesc_PH' in h.columns and \
-        #     'Qdust_PH' in h.columns:
-
-        #         h['Qieff'] = h['Qtot_PH'] - h['Qesc_PH'] - h['Qdust_PH']
-        #         h['fion'] = h['Qieff']/h['Qtot_PH']
-        #         h['fion_cum'] = integrate.cumtrapz(h[f'Qieff'], h.time, initial=0.0)/\
-        #                     integrate.cumtrapz(h[f'Qtot_PH'], h.time, initial=0.0)
-        #     if "Ltot_LW" in h.columns and "Ltot_PE" in h.columns:
-        #         h["fesc_FUV"] = (h["Lesc_PE"] + h["Lesc_LW"]) / (
-        #             h["Ltot_PE"] + h["Ltot_LW"]
-        #         )
-        #         h["fesc_cum_FUV"] = integrate.cumtrapz(
-        #             h["Lesc_PE"] + h["Lesc_LW"], h.time, initial=0.0
-        #         ) / integrate.cumtrapz(
-        #             h["Ltot_PE"] + h["Ltot_LW"], h.time, initial=0.0
-        #         )
-        #         h[f"fesc_cum_FUV"].fillna(value=0.0, inplace=True)
+                            hnu = (par["radps"][f"hnu_{k}"] * au.eV).cgs.value
+                            h[f"Qtot_{k}"] = h[f"Ltot_{k}"] * (ac.L_sun.cgs.value) / hnu
+                            h[f"Qesc_{k}"] = h[f"Lesc_{k}"] * (ac.L_sun.cgs.value) / hnu
+                            if f"Ldust_{k}" in h:
+                                h[f"Qdust_{k}"] = (
+                                    h[f"Ldust_{k}"] * (ac.L_sun.cgs.value) / hnu
+                                )
+                            # Cumulative number of escaped photons
+                            h[f"Qtot_cum_{k}"] = integrate.cumtrapz(
+                                h[f"Qtot_{k}"],
+                                h["time"] * u.time.cgs.value,
+                                initial=0.0,
+                            )
+                            h[f"Qesc_cum_{k}"] = integrate.cumtrapz(
+                                h[f"Qesc_{k}"],
+                                h["time"] * u.time.cgs.value,
+                                initial=0.0,
+                            )
+                            # Instantaneous escape fraction
+                            h[f"fesc_{k}"] = h[f"Lesc_{k}"] / h[f"Ltot_{k}"]
+                            # Cumulative escape fraction
+                            h[f"fesc_cum_{k}"] = integrate.cumtrapz(
+                                h[f"Lesc_{k}"], h["time"], initial=0.0
+                            ) / integrate.cumtrapz(
+                                h[f"Ltot_{k}"], h["time"], initial=0.0
+                            )
+                            # h[f"fesc_cum_{k}"].fillna(value=0.0, inplace=True)
+                        except KeyError:
+                            pass
+            if "Qtot_PH" in h and "Qesc_PH" in h and "Qdust_PH" in h:
+                h["Qieff"] = h["Qtot_PH"] - h["Qesc_PH"] - h["Qdust_PH"]
+                h["fion"] = h["Qieff"] / h["Qtot_PH"]
+                h["fion_cum"] = integrate.cumtrapz(
+                    h["Qieff"], h["time"], initial=0.0
+                ) / integrate.cumtrapz(h["Qtot_PH"], h["time"], initial=0.0)
+            if "Ltot_LW" in h and "Ltot_PE" in h:
+                h["fesc_FUV"] = (h["Lesc_PE"] + h["Lesc_LW"]) / (
+                    h["Ltot_PE"] + h["Ltot_LW"]
+                )
+                h["fesc_cum_FUV"] = integrate.cumtrapz(
+                    h["Lesc_PE"] + h["Lesc_LW"], h["time"], initial=0.0
+                ) / integrate.cumtrapz(
+                    h["Ltot_PE"] + h["Ltot_LW"], h["time"], initial=0.0
+                )
+                # h[f"fesc_cum_FUV"].fillna(value=0.0, inplace=True)
 
         try:
             h["xi_CR0"] = hst["xi_CR0"]
         except KeyError:
             pass
+
+        h = pd.DataFrame(h)
+        for f in ("PH", "LW", "PE", "FUV"):
+            h[f"fesc_cum_{f}"].fillna(value=0.0, inplace=True)
 
         h.index = h["time_code"]
 
@@ -369,14 +373,22 @@ class Hst:
         hstph = hstph.to_array("phase").to_dataset("variable")
         reduced = reduced & self.test_newcool()
         if reduced:
-            ph_reduced = dict(CMM=['CMM','UMM','W1MM','W2MM'],
-                            CNM=['CNM'], UNM=['UNM'], WNM=['W1NM','W2NM'],
-                            UIM=['CIM','UIM'], WPIM=['W1IM'], WCIM=['W2IM'],
-                            WHIM=['WHIM','WHNM','WHMM'],HIM=['HIM','HNM','HMM']
-                            )
-            hlist=[hstph.sel(phase=phases).sum(dim='phase').assign_coords(phase=phname)
-                   for phname, phases in ph_reduced.items()]
-            hstph=xr.concat(hlist,dim='phase')
+            ph_reduced = dict(
+                CMM=["CMM", "UMM", "W1MM", "W2MM"],
+                CNM=["CNM"],
+                UNM=["UNM"],
+                WNM=["W1NM", "W2NM"],
+                UIM=["CIM", "UIM"],
+                WPIM=["W1IM"],
+                WCIM=["W2IM"],
+                WHIM=["WHIM", "WHNM", "WHMM"],
+                HIM=["HIM", "HNM", "HMM"],
+            )
+            hlist = [
+                hstph.sel(phase=phases).sum(dim="phase").assign_coords(phase=phname)
+                for phname, phases in ph_reduced.items()
+            ]
+            hstph = xr.concat(hlist, dim="phase")
         return hstph
 
     def get_hst_phase_name(self, iph):
@@ -390,45 +402,58 @@ class Hst:
             nchph = len(chphase)
             if iph > nthph * nchph:
                 raise KeyError(
-                    "{} phases are defined, but iph={} is given".format(nthph * nchph, iph)
+                    "{} phases are defined, but iph={} is given".format(
+                        nthph * nchph, iph
+                    )
                 )
             return thphase[(iph - 1) % nthph] + chphase[(iph - 1) // nthph] + "M"
         else:
-            return ['CNM','UNM','WNM','WHIM','HIM'][iph-1]
+            return ["CNM", "UNM", "WNM", "WHIM", "HIM"][iph - 1]
 
-    def add_header_from_other_model(self,sim2):
+    def add_header_from_other_model(self, sim2):
         def get_header(hf):
-            header = ''
-            with open(hf,'r') as fp:
-                for l in fp:
-                    if l.startswith('#'):
-                        header+=l
+            header = ""
+            with open(hf, "r") as fp:
+                for line in fp:
+                    if line.startswith("#"):
+                        header += line
                     else:
                         break
             return header
 
         # hst
-        hf = self.files['hst']
-        hf2 = sim2.files['hst']
+        hf = self.files["hst"]
+        hf2 = sim2.files["hst"]
         if len(get_header(hf)) > 0:
-            print('header exists!')
+            print("header exists!")
             return
 
-        with open(hf, 'r') as original: data = original.read()
+        with open(hf, "r") as original:
+            data = original.read()
         header = get_header(hf2)
-        with open(hf, 'w') as modified: modified.write(header + data)
+        with open(hf, "w") as modified:
+            modified.write(header + data)
 
-        fhstph = sorted(glob.glob(hf.replace(".hst", ".phase*.hst"))+glob.glob(hf.replace(".hst", ".whole.hst")))
-        fhstph2 = sorted(glob.glob(hf2.replace(".hst", ".phase*.hst"))+glob.glob(hf2.replace(".hst", ".whole.hst")))
+        fhstph = sorted(
+            glob.glob(hf.replace(".hst", ".phase*.hst"))
+            + glob.glob(hf.replace(".hst", ".whole.hst"))
+        )
+        fhstph2 = sorted(
+            glob.glob(hf2.replace(".hst", ".phase*.hst"))
+            + glob.glob(hf2.replace(".hst", ".whole.hst"))
+        )
 
         if len(fhstph) != len(fhstph2):
-            print('Number of phases are inconsistent!')
+            print("Number of phases are inconsistent!")
             return
 
-        for hf,hf2 in zip(fhstph,fhstph2):
-            with open(hf, 'r') as original: data = original.read()
+        for hf, hf2 in zip(fhstph, fhstph2):
+            with open(hf, "r") as original:
+                data = original.read()
             header = get_header(hf2)
-            with open(hf, 'w') as modified: modified.write(header + data)
+            with open(hf, "w") as modified:
+                modified.write(header + data)
+
 
 def plt_hst_compare(
     sa,
@@ -463,7 +488,6 @@ def plt_hst_compare(
     ylim="R8",
     figsize=None,
 ):
-
     if ylim == "R8":
         ylim = dict(
             Sigma_gas=(5, 13),
