@@ -14,14 +14,13 @@ import pickle
 import pyathena as pa
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
-from pyathena.tigress_ncr.phase import *
-from pyathena.tigress_ncr.cooling_breakdown import *
+from pyathena.tigress_ncr.phase import PDF1D
+# from pyathena.tigress_ncr.cooling_breakdown import draw_Tpdf
 
 if __name__ == "__main__":
-
     COMM = MPI.COMM_WORLD
 
-    basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
+    basedir = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
 
     # savdir = '/tigress/jk11/tmp4/'
     # savdir_pkl = '/tigress/jk11/tmp3/'
@@ -30,7 +29,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
+        "-b", "--basedir", type=str, default=basedir, help="Name of the basedir."
     )
     args = vars(parser.parse_args())
     locals().update(args)
@@ -47,7 +46,7 @@ if __name__ == "__main__":
 
         mynums = COMM.scatter(nums, root=0)
         for num in mynums:
-            s.create_tar(num=num,kind='vtk',remove_original=True,overwrite=True)
+            s.create_tar(num=num, kind="vtk", remove_original=True, overwrite=True)
             gc.collect()
         COMM.barrier()
 
@@ -73,7 +72,10 @@ if __name__ == "__main__":
         try:
             if s.test_newcool():
                 fig = s.plt_snapshot(
-                    num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=False,
+                    num,
+                    savdir_pkl=savdir_pkl,
+                    savdir=savdir,
+                    force_override=False,
                     norm_factor=2,
                 )
                 plt.close(fig)
@@ -95,7 +97,10 @@ if __name__ == "__main__":
         except (EOFError, KeyError, pickle.UnpicklingError):
             if s.test_newcool():
                 fig = s.plt_snapshot(
-                    num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True,
+                    num,
+                    savdir_pkl=savdir_pkl,
+                    savdir=savdir,
+                    force_override=True,
                     norm_factor=2,
                 )
                 plt.close(fig)
@@ -119,33 +124,33 @@ if __name__ == "__main__":
                     agemax=40,
                 )
         # 2d pdf
-        try:
-            npfile=os.path.join(s.basedir,'np_pdf',
-                                '{}.{:04d}.np_pdf.nc'.format(s.basename,num))
-            if not os.path.isdir(os.path.dirname(npfile)):
-                os.makedirs(os.path.dirname(npfile))
-            if not os.path.isfile(npfile):
-                ds=s.load_vtk(num)
-                flist = ['nH','pok','T']
-                if s.test_newcool():
-                    flist += ['xe','xHI','xHII','xH2',
-                              'cool_rate','net_cool_rate']
-                dchunk=ds.get_field(flist)
-                dchunk['T1'] = dchunk['pok']/dchunk['nH']
-                dchunk=dchunk.sel(z=slice(-300,300))
-                print(" creating nP ")
-                pdf_dset = recal_nP(dchunk,NCR=s.test_newcool())
-                pdf_dset.to_netcdf(npfile)
-            else:
-                print(" skipping nP ")
-        except IOError:
-            print(" passing nP ")
+        # try:
+        #     npfile=os.path.join(s.basedir,'np_pdf',
+        #                         '{}.{:04d}.np_pdf.nc'.format(s.basename,num))
+        #     if not os.path.isdir(os.path.dirname(npfile)):
+        #         os.makedirs(os.path.dirname(npfile))
+        #     if not os.path.isfile(npfile):
+        #         ds=s.load_vtk(num)
+        #         flist = ['nH','pok','T']
+        #         if s.test_newcool():
+        #             flist += ['xe','xHI','xHII','xH2',
+        #                       'cool_rate','net_cool_rate']
+        #         dchunk=ds.get_field(flist)
+        #         dchunk['T1'] = dchunk['pok']/dchunk['nH']
+        #         dchunk=dchunk.sel(z=slice(-300,300))
+        #         print(" creating nP ")
+        #         pdf_dset = recal_nP(dchunk,NCR=s.test_newcool())
+        #         pdf_dset.to_netcdf(npfile)
+        #     else:
+        #         print(" skipping nP ")
+        # except IOError:
+        #     print(" passing nP ")
 
         # 1d pdfs
-        s.pdf.recal_1Dpdfs(num,force_override=False)
+        s.pdf.recal_1Dpdfs(num, force_override=False)
 
         # coolheat breakdown
-        if s.test_newcool(): f1 = draw_Tpdf(s,num)
+        # if s.test_newcool(): f1 = draw_Tpdf(s,num)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
@@ -157,23 +162,36 @@ if __name__ == "__main__":
     COMM.barrier()
 
     if COMM.rank == 0:
-       if not osp.isdir(osp.join(s.basedir,'movies')): os.mkdir(osp.join(s.basedir,'movies'))
-       fin = osp.join(s.basedir, 'snapshot/*.png')
-       fout = osp.join(s.basedir, 'movies/{0:s}_snapshot.mp4'.format(s.basename))
-       make_movie(fin, fout, fps_in=15, fps_out=15)
-       from shutil import copyfile
-       copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
-                               osp.basename(fout)))
-       fin = osp.join(s.basedir, 'pdf2d/*.png')
-       fout = osp.join(s.basedir, 'movies/{0:s}_pdf2d.mp4'.format(s.basename))
-       make_movie(fin, fout, fps_in=15, fps_out=15)
-       from shutil import copyfile
-       copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
-                               osp.basename(fout)))
+        if not osp.isdir(osp.join(s.basedir, "movies")):
+            os.mkdir(osp.join(s.basedir, "movies"))
+        fin = osp.join(s.basedir, "snapshot/*.png")
+        fout = osp.join(s.basedir, "movies/{0:s}_snapshot.mp4".format(s.basename))
+        make_movie(fin, fout, fps_in=15, fps_out=15)
+        from shutil import copyfile
 
-       print('')
-       print('################################################')
-       print('# Do tasks')
-       print('# Execution time [sec]: {:.1f}'.format(time.time()-time0))
-       print('################################################')
-       print('')
+        copyfile(
+            fout,
+            osp.join(
+                "/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR",
+                osp.basename(fout),
+            ),
+        )
+        fin = osp.join(s.basedir, "pdf2d/*.png")
+        fout = osp.join(s.basedir, "movies/{0:s}_pdf2d.mp4".format(s.basename))
+        make_movie(fin, fout, fps_in=15, fps_out=15)
+        from shutil import copyfile
+
+        copyfile(
+            fout,
+            osp.join(
+                "/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR",
+                osp.basename(fout),
+            ),
+        )
+
+        print("")
+        print("################################################")
+        print("# Do tasks")
+        print("# Execution time [sec]: {:.1f}".format(time.time() - time0))
+        print("################################################")
+        print("")

@@ -89,14 +89,17 @@ def set_my_dfi(dfi):
 def draw_xT(s, slcdata, pdfcmap, log=False):
     hist_bin = recal_xT(slcdata)
     if log:
-        h, xbin, ybin = hist_bin[2]  # log
+        h = hist_bin["T-logxHI"]  # log
     else:
-        h, xbin, ybin = hist_bin[0]  # linear
-    dx = xbin[1] - xbin[0]
-    dy = ybin[1] - ybin[0]
-    h = h / h.sum() / dx / dy
+        h = hist_bin["T-xHI"]  # linear
+    h = h / h["nH"]
+    ydim, xdim = h.dims
+    xbin = h[xdim]
+    ybin = h[ydim]
 
-    plt.pcolormesh(xbin, ybin, h.T, norm=LogNorm(1.0e-5, 50), cmap=pdfcmap)
+    plt.pcolormesh(
+        xbin, ybin, h, norm=LogNorm(1.0e-5, 50), cmap=pdfcmap, shading="nearest"
+    )
     add_phase_cuts(
         Tlist=s.get_phase_Tlist(), lkwargs=dict(color="w", ls="--", lw=1), log=log
     )
@@ -125,10 +128,11 @@ def do_slcmaps(s, num, outdir, axis="z"):
     pdfcmap = cmr.get_sub_cmap(cmr.seasons_s, 0.6, 1.0)
 
     slcds = s.read_slc_xarray(num, fields=None, axis=axis)
-    for ax in ["x","y","z"]:
-        if ax in slcds: slcds=slcds.assign({ax:slcds[ax]*1.e-3})
-    zmax = s.domain['Lx'][2]*0.25*1.e-3
-    xmax = s.domain['Lx'][1]*0.5*1.e-3
+    for ax in ["x", "y", "z"]:
+        if ax in slcds:
+            slcds = slcds.assign({ax: slcds[ax] * 1.0e-3})
+    zmax = s.domain["Lx"][2] * 0.25 * 1.0e-3
+    xmax = s.domain["Lx"][1] * 0.5 * 1.0e-3
     slcdata = athena_data(s, slcds)
 
     if s.config_time < pd.to_datetime("2022-02-10 13:21:32 -0500"):
@@ -146,22 +150,35 @@ def do_slcmaps(s, num, outdir, axis="z"):
         )
 
     flist = list(dfi.keys())
-    flist = ["nH","ne","nHII","temperature","chi_FUV","Erad_LyC",
-             "pok","xe","xi_CR","Bmag","pok_mag",
-             "cool_rate","heat_rate","net_cool_reat"]
+    flist = [
+        "nH",
+        "ne",
+        "nHII",
+        "temperature",
+        "chi_FUV",
+        "Erad_LyC",
+        "pok",
+        "xe",
+        "xi_CR",
+        "Bmag",
+        "pok_mag",
+        "cool_rate",
+        "heat_rate",
+        "net_cool_reat",
+    ]
     # flist = ["nH"]
     for f in flist + ["phase", "xTpdf"]:
         plt.clf()
         if axis == "z" or f == "phase":
             plt.figure(num=0)
         else:
-            plt.figure(num=0, figsize=(4,zmax/xmax*3))
+            plt.figure(num=0, figsize=(4, zmax / xmax * 3))
         if f == "phase":
             ph = assign_phase(s, slcdata, kind="six")
             draw_phase(ph)
-            plt.gca().set_aspect('equal')
+            plt.gca().set_aspect("equal")
             if axis != "z":
-                plt.ylim(-zmax,zmax)
+                plt.ylim(-zmax, zmax)
         elif f == "xTpdf":
             draw_xT(s, slcdata, pdfcmap, log=False)
         else:
@@ -173,11 +190,13 @@ def do_slcmaps(s, num, outdir, axis="z"):
                 continue
             data.plot(**plt_kwargs[f])
             if axis != "z":
-                plt.ylim(-zmax,zmax)
-            plt.gca().set_aspect('equal')
+                plt.ylim(-zmax, zmax)
+            plt.gca().set_aspect("equal")
         plt.title(f"t = {tMyr:5.1f} Myr")
         plt.savefig(
-            os.path.join(outdir, f"{f}.{num:04d}.{axis}.png"), bbox_inches="tight", dpi=200
+            os.path.join(outdir, f"{f}.{num:04d}.{axis}.png"),
+            bbox_inches="tight",
+            dpi=200,
         )
 
 
