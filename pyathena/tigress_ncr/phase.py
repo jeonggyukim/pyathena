@@ -21,12 +21,14 @@ def print_red(txt):
 
 
 # recalculate PDFs with finer bins
-def recal_nP(dchunk,NCR=True):
+def recal_nP(dchunk, yf="pok", NCR=True):
     dset = xr.Dataset()
     alist = [None]
-    if NCR: alist += ["xHI", "xHII"]
+    if NCR:
+        alist += ["xHI", "xHII", "neu", "pion", "ion"]
     wlist = ["vol", "nH"]
-    if NCR: wlist += ["net_cool_rate"]
+    if NCR:
+        wlist += ["net_cool_rate"]
     for xs in alist:
         for wf in wlist:
             xbins = np.logspace(-6, 6, 601)
@@ -37,6 +39,12 @@ def recal_nP(dchunk,NCR=True):
                 cond = dchunk["xHII"] < 0.5
             elif xs == "xHII":
                 cond = dchunk["xHII"] > 0.5
+            elif xs == "neu":
+                cond = dchunk["xe"] < 0.1
+            elif xs == "pion":
+                cond = (dchunk["xe"] > 0.1) & (dchunk["xe"] < 0.9)
+            elif xs == "ion":
+                cond = dchunk["xe"] > 0.9
 
             x = (
                 dchunk["nH"]
@@ -45,13 +53,7 @@ def recal_nP(dchunk,NCR=True):
                 .dropna(dim="xyz")
                 .data
             )
-            y = (
-                dchunk["pok"]
-                .where(cond)
-                .stack(xyz=["x", "y", "z"])
-                .dropna(dim="xyz")
-                .data
-            )
+            y = dchunk[yf].where(cond).stack(xyz=["x", "y", "z"]).dropna(dim="xyz").data
             if wf == "vol":
                 w = None
             else:
@@ -78,7 +80,7 @@ def recal_nP(dchunk,NCR=True):
             da = xr.DataArray(
                 pdf,
                 coords=[0.5 * (ybins[1:] + ybins[:-1]), 0.5 * (xbins[1:] + xbins[:-1])],
-                dims=["pok", "n_H"],
+                dims=[yf, "n_H"],
             )
             dset["{}-{}".format("all" if xs is None else xs, wf)] = da
             dset = dset.assign_coords({wf: total})
@@ -86,9 +88,9 @@ def recal_nP(dchunk,NCR=True):
 
 
 def recal_xT(dchunk):
-    hist_bin = []
+    dset = xr.Dataset()
     T = ["T", "T1"]
-    xs = ["xHI", "xHII"]
+    xs = ["xHI", "xHII", "xe"]
     log = [False, True]
     for T_ in T:
         try:
@@ -97,20 +99,34 @@ def recal_xT(dchunk):
             continue
         for log_ in log:
             for xs_ in xs:
+                if log_:
+                    label = f"{T_}-log{xs_}"
+                else:
+                    label = f"{T_}-{xs_}"
                 x, y, w = (
                     np.log10(dchunk[T_].data.flatten()),
                     dchunk[xs_].data.flatten(),
                     dchunk["nH"].data.flatten(),
                 )
-                yr = [0, 1]
+                yr = [0, 1.3]
                 if log_:
                     y = np.log10(y)
-                    yr = [-6, 0]
-                hist_bin.append(
-                    np.histogram2d(x, y, weights=w, range=[[1, 8], yr], bins=[300, 150])
-                )
+                    yr = [-6, 0.3]
 
-    return hist_bin
+                h, b1, b2 = np.histogram2d(
+                    x, y, weights=w, range=[[1, 8], yr], bins=[300, 150]
+                )
+                dx = b1[1] - b1[0]
+                dy = b2[1] - b2[0]
+                pdf = h.T / dx / dy
+                da = xr.DataArray(
+                    pdf,
+                    coords=[0.5 * (b2[1:] + b2[:-1]), 0.5 * (b1[1:] + b1[:-1])],
+                    dims=["logx" if log_ else "x", "T"],
+                )
+                dset[label] = da
+    dset = dset.assign_coords({"nH": dchunk["nH"].data.sum()})
+    return dset.assign_coords(time=dchunk.time)
 
 
 def add_phase_cuts(
@@ -122,8 +138,8 @@ def add_phase_cuts(
     xH2cut=0.25,
     xHI_CIE=True,
     log=False,
-    lkwargs = dict(color="b", ls="--", lw=1),
-    color_cie = "r"
+    lkwargs=dict(color="b", ls="--", lw=1),
+    color_cie="r",
 ):
     phcolors = get_phcolor_dict(
         cmap=None if T1 else cmr.pride,
@@ -438,14 +454,14 @@ def define_phase(s, kind="full", verbose=False):
                 name="UNM",
                 Tmin=Tlist[1],
                 Tmax=Tlist[2],
-                abundance=None,
-                amin=0.0,
+                abundance="xHI",
+                amin=0.5,
                 c=pcdict["UNM"],
             )
         )
 
     # warm neutral (xHI>0.5, 6000<T<35000)
-    if kind == 'classic':
+    if kind == "classic":
         i += 1
         phdef.append(
             dict(
@@ -499,14 +515,14 @@ def define_phase(s, kind="full", verbose=False):
                 c=pcdict["WCIM"],
             )
         )
-    elif (kind != 'classic'):
+    elif kind != "classic":
         # combined warm ionzied
         i += 1
         phdef.append(
             dict(
                 idx=i,
                 name="WIM",
-                Tmin=Tlist[2],
+                Tmin=Tlist[1],
                 Tmax=Tlist[4],
                 abundance="xHII",
                 amin=0.5,
@@ -646,8 +662,10 @@ def get_phcolor_dict(cmap=None, T1=False, cmin=0, cmax=1):
 
 def draw_phase(ph):
     phlist, phcmap = get_phcmap()
-    if 'phlist' in ph.attrs: phlist = ph.attrs['phlist']
-    if 'phcmap' in ph.attrs: phcmap = ph.attrs['phcmap']
+    if "phlist" in ph.attrs:
+        phlist = ph.attrs["phlist"]
+    if "phcmap" in ph.attrs:
+        phcmap = ph.attrs["phcmap"]
     nph = len(phlist)
     image_style = {
         "axes.grid": False,
@@ -672,9 +690,6 @@ def draw_phase(ph):
             )
         axes[1].set_ylabel("Phase")
         axes[0].set_aspect("equal")
-
-
-import tqdm
 
 
 class PDF1D:
@@ -721,28 +736,28 @@ class PDF1D:
         flist = ["nH", "pok", "T"]
         wflist = ["vol", "nH"]
         if s.test_newcool():
-            flist+=[
-                    "xe",
-                    "xHI",
-                    "xHII",
-                    "xH2",
-                    "cool_rate",
-                    "heat_rate",
-                    "net_cool_rate",
-                    ]
+            flist += [
+                "xe",
+                "xHI",
+                "xHII",
+                "xH2",
+                "cool_rate",
+                "heat_rate",
+                "net_cool_rate",
+            ]
             wflist += [
-                        "ne",
-                        "nHI",
-                        "nHII",
-                        "nH2",
-                        "net_cool_rate",
-                        "cool_rate",
-                        "heat_rate",
-                        "netcool",
-                        ]
-            phkind='full'
+                "ne",
+                "nHI",
+                "nHII",
+                "nH2",
+                "net_cool_rate",
+                "cool_rate",
+                "heat_rate",
+                "netcool",
+            ]
+            phkind = "full"
         else:
-            phkind='classic'
+            phkind = "classic"
         try:
             s.load_chunk(num)
             dchunk = s.get_field_from_chunk(flist)
@@ -766,7 +781,6 @@ class PDF1D:
             nH=(-6, 4, 0.05), T=(0, 9, 0.05), T1=(0, 9, 0.05), pok=(0, 7, 0.05)
         )
 
-        pdf_all = []
         for tf in ["T", "T1", "pok", "nH"]:
             pdfdir = os.path.join(out_dir, "1D-pdfs", "{}-pdf".format(tf))
             os.makedirs(pdfdir, exist_ok=True)
@@ -780,7 +794,7 @@ class PDF1D:
             for wf in wflist:
                 ph_pdf = xr.Dataset()
                 for i, phinfo in enumerate(ph.attrs["phdef"]):
-                    c = phinfo["c"]
+                    # c = phinfo["c"]
                     phname = phinfo["name"]
                     h, b = self.Tpdf(
                         dchunk.where(ph == i),
@@ -826,8 +840,7 @@ class PDF1D:
             else:
                 print_red(num)
 
-    @staticmethod
-    def load_1Dpdf(s, num, tf, from_scratch=False):
+    def load_1Dpdf(self, s, num, tf, from_scratch=False):
         if from_scratch:
             out_dir = os.path.join(self.scrbase, s.basename)
         else:
@@ -864,9 +877,10 @@ class PDF1D:
                 pass
         setattr(self, tf, xr.concat(pdflist, dim="time"))
 
-        if save: getattr(self,tf).to_netcdf(fname)
+        if save:
+            getattr(self, tf).to_netcdf(fname)
 
-    def load_all(self,save=True, read_from_file=True):
+    def load_all(self, save=True, read_from_file=True):
         for tf in ["T", "T1", "pok", "nH"]:
             self.loader(self.sim, tf, save=save, read_from_file=read_from_file)
 
