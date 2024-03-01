@@ -120,7 +120,9 @@ def get_xCO(nH, xH2, xCII, xOII, Z_d, Z_g, xi_CR, chi_CO, xCstd=1.6e-4, xOstd=3.
     xOtot = xOstd * Z_g
     kcr16 = xi_CR * 1e16
     term1 = np.maximum(4e3 * Z_d / kcr16**2, 1.0)
-    ncrit = np.power(term1, chi_CO ** (1.0 / 3.0)) * (50 * kcr16 / np.power(Z_d, 1.4))
+    ncrit = term1 ** np.cbrt(chi_CO).astype("float64") * (
+        50 * kcr16 / np.power(Z_d, 1.4)
+    )
     xCO = nH**2 / (nH**2 + ncrit**2)
     xCO = xCO * (2.0 * xH2)
     xCO = xCO * np.minimum(xCtot - xCII, xOtot - xOII)
@@ -499,7 +501,7 @@ def coolOI(nH, T, xe, xHI, xH2, xOI):
     E20OI_ = 4.509e-14
     E21OI_ = 1.365e-14
 
-    T2 = T * 1e-2
+    T2 = np.clip(T * 1e-2, 1.0e-5, 1.0e5)
     lnT2 = np.log(T2)
     # Collisional rates from  Draine (2011) (Appendix F Table F.6)
     # HI
@@ -556,7 +558,7 @@ def coolneb(nH, T, xe, xHII, Z_g):
         -0.58648172,
         0.69170381,
     ]
-    T4 = T * 1e-4
+    T4 = np.clip(T, 500, 1.0e6) * 1e-4
     lnT4 = np.log(T4)
     lnT4_2 = lnT4 * lnT4
     lnT4_3 = lnT4_2 * lnT4
