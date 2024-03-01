@@ -15,8 +15,7 @@ from .cool import coolCII, coolneb, coolLya, coolrecH, coolffH, coolHI
 from .get_cooling import f1, set_CIE_interpolator
 
 from ..classic import coolftn as cf
-
-from pyathena import set_plt_fancy
+from ..plt_tools.set_plt import set_plt_fancy
 
 def f_xe(xe, xH2, nH, T, xi_CR, G_CI, G_PE, Z_d, Z_g, zeta_pi, xOstd, xCstd,
          gr_rec=True):

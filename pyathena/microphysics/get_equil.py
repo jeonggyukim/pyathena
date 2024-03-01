@@ -7,12 +7,13 @@ from .cool import heatCR, heatPE
 from .cool_rosen95 import CoolRosen95
 from ..util.rad_uvb import f_sshld_R13
 
+from .cool import get_xn_eq
+from ..util import rad_uvb
+
 def get_equil(f_Lambda, z=0.0, manual=True, Gamma_pe0=None,
               heating_pi_UVB=True, heating_pe=True, heating_cr=False,
               sshld=False, chi_PE=1.0, Zd=1.0, xi_cr=0.0, coll_ion=True):
 
-    from pyathena.microphysics.cool import get_xn_eq
-    from pyathena.util import rad_uvb
 
     # Read FG UV Background
     r = rad_uvb.read_FG20()
