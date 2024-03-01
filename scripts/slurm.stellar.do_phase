@@ -4,7 +4,7 @@
 #SBATCH --ntasks=24              # total number of tasks
 #SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=00:30:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=24:00:00          # total run time limit (HH:MM:SS)
 
 module purge
 module load anaconda3/2022.5 openmpi/gcc/4.1.0
@@ -13,9 +13,13 @@ conda activate pyathena-lem
 export PYTHONPATH="$HOME/pyathena:$HOME/yt-changgoo"
 echo $PYTHONPATH
 
-OUTDIR=$1
-
 cd $HOME/pyathena
-date -Iseconds
-srun python pyathena/tigress_ncr/do_tasks_phase.py -b $OUTDIR 1> scripts/logs/do_phase-$SLURM_JOB_ID.out 2> scripts/logs/do_phase-$SLURM_JOB_ID.err
-date -Iseconds
+DIRS=`ls /scratch/gpfs/changgoo/TIGRESS-NCR/ | grep $1`
+
+for dir in $DIRS
+do
+  echo $dir
+  echo "do tasks started"
+  OUTDIR=/scratch/gpfs/changgoo/TIGRESS-NCR/$dir
+  srun python pyathena/tigress_ncr/do_tasks_phase.py -b $OUTDIR 1>> scripts/logs/do_phase-$SLURM_JOB_ID.out 2>> scripts/logs/do_phase-$SLURM_JOB_ID.err
+done

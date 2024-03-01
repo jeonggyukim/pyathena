@@ -765,6 +765,7 @@ class PDF1D:
             try:
                 ds = s.load_vtk(num)
                 dchunk = ds.get_field(flist)
+                ds.close()
             except OSError:
                 return False
         dchunk["T1"] = dchunk["pok"] / dchunk["nH"] / self.sim.muH

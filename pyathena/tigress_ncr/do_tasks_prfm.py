@@ -170,6 +170,7 @@ def get_prfm_quantities(s, num, overwrite=False):
     prfm.update(get_sfrmap(s, num))
     prfm["sigma"] = dat["density"].sum(dim="z") * s.domain["dx"][2] * s.u.Msun
     prfm.to_netcdf(fname)
+    ds.close()
 
 
 if __name__ == "__main__":

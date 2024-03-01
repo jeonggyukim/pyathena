@@ -191,4 +191,6 @@ class H2:
         res["pdf1d"][k]["bine"] = bine
         res["pdf1d"][k]["h"] = hw
 
+        ds.close()
+
         return res

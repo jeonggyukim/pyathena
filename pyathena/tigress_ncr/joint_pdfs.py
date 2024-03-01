@@ -236,7 +236,7 @@ if __name__ == "__main__":
                         species=False,
                         radiation=False,
                     )
-
+        ds.close()
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
         print("Remaining Garbage:", end=" ")

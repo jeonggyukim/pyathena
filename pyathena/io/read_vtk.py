@@ -536,6 +536,9 @@ class AthenaDataSet(object):
 
         return grid
 
+    def close(self):
+        pass
+
 
 def _parse_filename(filename):
     """Break up a filename into its component
@@ -655,6 +658,8 @@ def _set_field_map(grid):
             fp.seek(offset)
         else:
             offset = fp.tell()
+
+    fp.close()
 
     return field_map
 

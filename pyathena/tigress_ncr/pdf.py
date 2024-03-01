@@ -134,6 +134,8 @@ class PDF:
 
         res["time_code"] = ds.domain["time"]
 
+        ds.close()
+
         return res
 
     def plt_pdf2d(
@@ -314,6 +316,7 @@ class PDF:
             plt.savefig(savname, dpi=200, bbox_inches="tight")
             plt.close()
 
+        ds.close()
         return fig
 
     def load_one_jointpdf(

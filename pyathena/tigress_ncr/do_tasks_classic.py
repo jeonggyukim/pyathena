@@ -93,6 +93,7 @@ if __name__ == "__main__":
                 print(" creating nP ", end=" ")
                 pdf_dset = recal_nP(dchunk, NCR=s.test_newcool())
                 pdf_dset.to_netcdf(npfile)
+                ds.close()
             else:
                 print(" skipping nP ", end=" ")
         except IOError:

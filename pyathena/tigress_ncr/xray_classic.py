@@ -144,4 +144,5 @@ for m in models:
         S_X = S_X.assign_coords(time=ds.domain["time"])
         S_X.to_netcdf(os.path.join(savdir, sxname))
 
+        ds.close()
         gc.collect()

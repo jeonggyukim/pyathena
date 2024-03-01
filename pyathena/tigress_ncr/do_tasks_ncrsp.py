@@ -92,6 +92,8 @@ if __name__ == "__main__":
                 s.savdir, "xprof", "{}.{:04d}.xprof.nc".format(s.basename, num)
             )
         )
+        ds.close()
+
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
         print("Remaining Garbage:", end=" ")

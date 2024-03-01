@@ -375,4 +375,6 @@ def paper_snapshot(
     # plt.savefig(os.path.join(outdir,'{:s}.{:04d}.z{:03d}.snapshot.png'.format(s.basename,ds.num,z0)),
     # dpi=300,bbox_inches='tight')
 
+    ds.close()
+
     return fig

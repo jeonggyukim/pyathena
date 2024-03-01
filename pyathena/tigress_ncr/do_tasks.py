@@ -15,7 +15,93 @@ import pyathena as pa
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigress_ncr.phase import PDF1D
-# from pyathena.tigress_ncr.cooling_breakdown import draw_Tpdf
+from pyathena.tigress_ncr.cooling_breakdown import draw_Tpdf
+from .do_tasks_phase import process_one_file_phase
+
+
+def scatter_nums(s, nums):
+    if COMM.rank == 0:
+        print("basedir, nums", s.basedir, nums)
+        nums = split_container(nums, COMM.size)
+    else:
+        nums = None
+
+    mynums = COMM.scatter(nums, root=0)
+    print("[rank, mynums]:", COMM.rank, mynums)
+
+    return mynums
+
+
+def process_tar(s):
+    if s.nums_rawtar is not None:
+        mynums = scatter_nums(s, s.nums_rawtar)
+
+        for num in mynums:
+            s.create_tar(num=num, kind="vtk", remove_original=True, overwrite=True)
+            gc.collect()
+        COMM.barrier()
+
+        # reading it again
+        s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
+    return s
+
+
+def process_one_file_slc_prj(s, num):
+    try:
+        if s.test_newcool():
+            fig = s.plt_snapshot(
+                num,
+                savdir_pkl=savdir_pkl,
+                savdir=savdir,
+                force_override=False,
+                norm_factor=2,
+            )
+            plt.close(fig)
+            fig = s.plt_pdf2d_all(
+                num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir
+            )
+            plt.close(fig)
+        else:
+            fig = s.plt_snapshot(
+                num,
+                savdir_pkl=savdir_pkl,
+                savdir=savdir,
+                force_override=True,
+                fields_xy=("Sigma_gas", "nH", "T", "Bmag"),
+                fields_xz=("Sigma_gas", "nH", "T", "vz", "Bmag"),
+                norm_factor=4,
+                agemax=40,
+            )
+    except (EOFError, KeyError, pickle.UnpicklingError):
+        if s.test_newcool():
+            fig = s.plt_snapshot(
+                num,
+                savdir_pkl=savdir_pkl,
+                savdir=savdir,
+                force_override=True,
+                norm_factor=2,
+            )
+            plt.close(fig)
+            fig = s.plt_pdf2d_all(
+                num,
+                plt_zprof=False,
+                savdir_pkl=savdir_pkl,
+                savdir=savdir,
+                force_override=True,
+            )
+            plt.close(fig)
+        else:
+            fig = s.plt_snapshot(
+                num,
+                savdir_pkl=savdir_pkl,
+                savdir=savdir,
+                force_override=True,
+                fields_xy=("Sigma_gas", "nH", "T", "Bmag"),
+                fields_xz=("Sigma_gas", "nH", "T", "vz", "Bmag"),
+                norm_factor=4,
+                agemax=40,
+            )
+
 
 if __name__ == "__main__":
     COMM = MPI.COMM_WORLD
@@ -36,121 +122,29 @@ if __name__ == "__main__":
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
     # tar vtk files
-    if s.nums_rawtar is not None:
-        nums = s.nums_rawtar
-        if COMM.rank == 0:
-            print("basedir, nums", s.basedir, nums)
-            nums = split_container(nums, COMM.size)
-        else:
-            nums = None
+    s = process_tar(s)
 
-        mynums = COMM.scatter(nums, root=0)
-        for num in mynums:
-            s.create_tar(num=num, kind="vtk", remove_original=True, overwrite=True)
-            gc.collect()
-        COMM.barrier()
-
-        # reading it again
-        s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
-
+    # set PDF1D
     s.pdf = PDF1D(s)
-    nums = s.nums
 
-    if COMM.rank == 0:
-        print("basedir, nums", s.basedir, nums)
-        nums = split_container(nums, COMM.size)
-    else:
-        nums = None
-
-    mynums = COMM.scatter(nums, root=0)
-    print("[rank, mynums]:", COMM.rank, mynums)
+    # get my nums
+    mynums = scatter_nums(s, s.nums)
 
     time0 = time.time()
     for num in mynums:
         print(num, end=" ")
 
-        try:
-            if s.test_newcool():
-                fig = s.plt_snapshot(
-                    num,
-                    savdir_pkl=savdir_pkl,
-                    savdir=savdir,
-                    force_override=False,
-                    norm_factor=2,
-                )
-                plt.close(fig)
-                fig = s.plt_pdf2d_all(
-                    num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir
-                )
-                plt.close(fig)
-            else:
-                fig = s.plt_snapshot(
-                    num,
-                    savdir_pkl=savdir_pkl,
-                    savdir=savdir,
-                    force_override=True,
-                    fields_xy=("Sigma_gas", "nH", "T", "Bmag"),
-                    fields_xz=("Sigma_gas", "nH", "T", "vz", "Bmag"),
-                    norm_factor=4,
-                    agemax=40,
-                )
-        except (EOFError, KeyError, pickle.UnpicklingError):
-            if s.test_newcool():
-                fig = s.plt_snapshot(
-                    num,
-                    savdir_pkl=savdir_pkl,
-                    savdir=savdir,
-                    force_override=True,
-                    norm_factor=2,
-                )
-                plt.close(fig)
-                fig = s.plt_pdf2d_all(
-                    num,
-                    plt_zprof=False,
-                    savdir_pkl=savdir_pkl,
-                    savdir=savdir,
-                    force_override=True,
-                )
-                plt.close(fig)
-            else:
-                fig = s.plt_snapshot(
-                    num,
-                    savdir_pkl=savdir_pkl,
-                    savdir=savdir,
-                    force_override=True,
-                    fields_xy=("Sigma_gas", "nH", "T", "Bmag"),
-                    fields_xz=("Sigma_gas", "nH", "T", "vz", "Bmag"),
-                    norm_factor=4,
-                    agemax=40,
-                )
+        # slc prj
+        process_one_file_slc_prj(s, num)
         # 2d pdf
-        # try:
-        #     npfile=os.path.join(s.basedir,'np_pdf',
-        #                         '{}.{:04d}.np_pdf.nc'.format(s.basename,num))
-        #     if not os.path.isdir(os.path.dirname(npfile)):
-        #         os.makedirs(os.path.dirname(npfile))
-        #     if not os.path.isfile(npfile):
-        #         ds=s.load_vtk(num)
-        #         flist = ['nH','pok','T']
-        #         if s.test_newcool():
-        #             flist += ['xe','xHI','xHII','xH2',
-        #                       'cool_rate','net_cool_rate']
-        #         dchunk=ds.get_field(flist)
-        #         dchunk['T1'] = dchunk['pok']/dchunk['nH']
-        #         dchunk=dchunk.sel(z=slice(-300,300))
-        #         print(" creating nP ")
-        #         pdf_dset = recal_nP(dchunk,NCR=s.test_newcool())
-        #         pdf_dset.to_netcdf(npfile)
-        #     else:
-        #         print(" skipping nP ")
-        # except IOError:
-        #     print(" passing nP ")
+        process_one_file_phase(s, num)
 
         # 1d pdfs
         s.pdf.recal_1Dpdfs(num, force_override=False)
 
         # coolheat breakdown
-        # if s.test_newcool(): f1 = draw_Tpdf(s,num)
+        if s.test_newcool():
+            f1 = draw_Tpdf(s, num)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
