@@ -1,4 +1,4 @@
-from .load_sim_tigress_ncr import LoadSimTIGRESSNCR,LoadSimTIGRESSNCRAll
+from .load_sim_tigress_ncr import LoadSimTIGRESSNCRAll
 import pyathena as pa
 import numpy as np
 import pandas as pd
@@ -12,50 +12,59 @@ import matplotlib.pyplot as plt
 
 from .phase import get_phcolor_dict
 
+
 class PaperData(object):
     def __init__(self):
-        self.outdir='/tigress/changgoo/public_html/TIGRESS-NCR/figures/'
-        basedir = '/tigress/changgoo/TIGRESS-NCR/'
-        scrdir = '/scratch/gpfs/changgoo/TIGRESS-NCR/'
-        base_lowZ = '/tigress/changgoo/TIGRESS-NCR-lowZ/'
-        models_full = dict(R8_8pc=scrdir+'R8_8pc_NCR.full.v3',
-                           R8_4pc=basedir+'R8_4pc_NCR.full.xy2048.eps0.np768.has',
-                           LGR4_4pc=basedir+'LGR4_4pc_NCR.full.xy1024.eps1.e-8',
-                           LGR4_2pc=basedir+'LGR4_2pc_NCR.full',
-                           )
-        models_fb = dict(R8_UV=basedir+'R8_8pc_NCR.UV/',
-                      R8_SN=basedir+'R8_8pc_NCR.SN/',
-                      R8_classic=basedir+'R8_8pc_NCR.classic/',
-                      LGR4_UV=basedir+'LGR4_4pc_NCR.UV/',
-                      LGR4_SN=basedir+'LGR4_4pc_NCR.SN/',
-                      LGR4_classic=basedir+'LGR4_4pc_NCR.classic/',
-                    )
-        models_full2 = dict(R8_8pc2=basedir+'R8_8pc_NCR.full.latest2',
-              # R8_4pc2=basedir+'R8_4pc_NCR.full',
-              LGR4_4pc2=basedir+'LGR4_4pc_NCR.full',
-                LGR4_8pc2=basedir+'LGR4_8pc_NCR.full',
-              # LGR4_2pc2=basedir+'LGR4_2pc_NCR.full',
-             )
-        models_fb2 = dict(R8_UV2=scrdir+'R8_8pc_NCR.UV.v3/',
-                      R8_SN2=scrdir+'R8_8pc_NCR.SN.v3/',
-                      R8_classic2=scrdir+'R8_8pc_NCR.classic.v3/',
-                      # LGR4_UV2=basedir+'LGR4_4pc_NCR.UV.v2/',
-                      # LGR4_SN2=basedir+'LGR4_4pc_NCR.SN.v2/',
-                      # LGR4_classic2=basedir+'LGR4_4pc_NCR.classic.v2/',
-                    )
-        models_mag = dict(R8_b10=basedir+'R8_8pc_NCR.full/',
-                      R8_UVb10=basedir+'R8_8pc_NCR.UV.b10/',
-                      R8_UV=basedir+'R8_8pc_NCR.UV/',
-                      R8_norot=basedir+'R8_8pc_NCR.full.norot.b10/',
-                      R8_nosh=basedir+'R8_8pc_NCR.full.q0.b10/',
-                      R8_hydro=basedir+'R8_8pc_NCR.full.hd/',
-                    )
-        models_lowZ = dict(R8_Z03=base_lowZ+'R8_8pc_NCR.full.Z0.3.xy4096.eps0.0/',
-                           R8_Z01=base_lowZ+'R8_8pc_NCR.full.Z0.1.xy4096.eps0.0/')
-        models_norun = dict(R8_norun=basedir+'R8_8pc_NCR.full.norun/',
-                            LGR4_norun=basedir+'LGR4_4pc_NCR.full.norun/',
-                            )
-        models=dict()
+        self.outdir = "/tigress/changgoo/public_html/TIGRESS-NCR/figures/"
+        basedir = "/tigress/changgoo/TIGRESS-NCR/"
+        scrdir = "/scratch/gpfs/changgoo/TIGRESS-NCR/"
+        base_lowZ = "/tigress/changgoo/TIGRESS-NCR-lowZ/"
+        models_full = dict(
+            R8_8pc=scrdir + "R8_8pc_NCR.full.v3",
+            R8_4pc=basedir + "R8_4pc_NCR.full.xy2048.eps0.np768.has",
+            LGR4_4pc=basedir + "LGR4_4pc_NCR.full.xy1024.eps1.e-8",
+            LGR4_2pc=basedir + "LGR4_2pc_NCR.full",
+        )
+        models_fb = dict(
+            R8_UV=basedir + "R8_8pc_NCR.UV/",
+            R8_SN=basedir + "R8_8pc_NCR.SN/",
+            R8_classic=basedir + "R8_8pc_NCR.classic/",
+            LGR4_UV=basedir + "LGR4_4pc_NCR.UV/",
+            LGR4_SN=basedir + "LGR4_4pc_NCR.SN/",
+            LGR4_classic=basedir + "LGR4_4pc_NCR.classic/",
+        )
+        models_full2 = dict(
+            R8_8pc2=basedir + "R8_8pc_NCR.full.latest2",
+            # R8_4pc2=basedir+'R8_4pc_NCR.full',
+            LGR4_4pc2=basedir + "LGR4_4pc_NCR.full",
+            LGR4_8pc2=basedir + "LGR4_8pc_NCR.full",
+            # LGR4_2pc2=basedir+'LGR4_2pc_NCR.full',
+        )
+        models_fb2 = dict(
+            R8_UV2=scrdir + "R8_8pc_NCR.UV.v3/",
+            R8_SN2=scrdir + "R8_8pc_NCR.SN.v3/",
+            R8_classic2=scrdir + "R8_8pc_NCR.classic.v3/",
+            # LGR4_UV2=basedir+'LGR4_4pc_NCR.UV.v2/',
+            # LGR4_SN2=basedir+'LGR4_4pc_NCR.SN.v2/',
+            # LGR4_classic2=basedir+'LGR4_4pc_NCR.classic.v2/',
+        )
+        models_mag = dict(
+            R8_b10=basedir + "R8_8pc_NCR.full/",
+            R8_UVb10=basedir + "R8_8pc_NCR.UV.b10/",
+            R8_UV=basedir + "R8_8pc_NCR.UV/",
+            R8_norot=basedir + "R8_8pc_NCR.full.norot.b10/",
+            R8_nosh=basedir + "R8_8pc_NCR.full.q0.b10/",
+            R8_hydro=basedir + "R8_8pc_NCR.full.hd/",
+        )
+        models_lowZ = dict(
+            R8_Z03=base_lowZ + "R8_8pc_NCR.full.Z0.3.xy4096.eps0.0/",
+            R8_Z01=base_lowZ + "R8_8pc_NCR.full.Z0.1.xy4096.eps0.0/",
+        )
+        models_norun = dict(
+            R8_norun=basedir + "R8_8pc_NCR.full.norun/",
+            LGR4_norun=basedir + "LGR4_4pc_NCR.full.norun/",
+        )
+        models = dict()
         models.update(models_full)
         models.update(models_fb)
         models.update(models_mag)
@@ -64,10 +73,15 @@ class PaperData(object):
         models.update(models_lowZ)
         models.update(models_norun)
         self.sa = LoadSimTIGRESSNCRAll(models)
-        self.models = dict(full = models_full, fb = models_fb, mag = models_mag,
-                           full2 = models_full2, fb2 = models_fb2, lowZ = models_lowZ,
-                           norun = models_norun
-                           )
+        self.models = dict(
+            full=models_full,
+            fb=models_fb,
+            mag=models_mag,
+            full2=models_full2,
+            fb2=models_fb2,
+            lowZ=models_lowZ,
+            norun=models_norun,
+        )
         self._set_colors()
         self._set_plot_kwargs()
         self.set_model_list()
@@ -75,97 +89,104 @@ class PaperData(object):
     def _set_colors(self):
         import cmasher as cmr
 
-        cmap1 = cmr.get_sub_cmap('cmr.pride', 0.1, 0.45, N=3)
-        cmap2 = cmr.get_sub_cmap('cmr.pride_r', 0.1, 0.45, N=3)
+        cmap1 = cmr.get_sub_cmap("cmr.pride", 0.1, 0.45, N=3)
+        cmap2 = cmr.get_sub_cmap("cmr.pride_r", 0.1, 0.45, N=3)
 
-        colors=dict()
+        colors = dict()
 
-        for pre,cmap in zip(['R8','LGR4'],[cmap1,cmap2]):
-            for m,c in zip(['classic','UV','SN'],cmap.colors):
-                colors['_'.join([pre,m])] = c
+        for pre, cmap in zip(["R8", "LGR4"], [cmap1, cmap2]):
+            for m, c in zip(["classic", "UV", "SN"], cmap.colors):
+                colors["_".join([pre, m])] = c
 
-        for m,c in zip(['Z03','Z01'],cmap2.colors[::-1]):
-            colors['_'.join(['R8',m])] = c
+        for m, c in zip(["Z03", "Z01"], cmap2.colors[::-1]):
+            colors["_".join(["R8", m])] = c
 
-        colors['R8_8pc']='tab:cyan'
-        colors['R8_4pc']='tab:blue'
-        colors['LGR4_8pc']='tab:pink'
-        colors['LGR4_4pc']='tab:red'
-        colors['LGR4_2pc']='tab:purple'
-        colors['R8_full']='tab:cyan'
-        colors['R8_b10']='gold'
-        colors['R8_UVb10']='tab:olive'
-        colors['R8_nosh']='black'
-        colors['R8_norot']='tab:gray'
-        colors['R8_hydro']='tab:orange'
+        colors["R8_8pc"] = "tab:cyan"
+        colors["R8_4pc"] = "tab:blue"
+        colors["LGR4_8pc"] = "tab:pink"
+        colors["LGR4_4pc"] = "tab:red"
+        colors["LGR4_2pc"] = "tab:purple"
+        colors["R8_full"] = "tab:cyan"
+        colors["R8_b10"] = "gold"
+        colors["R8_UVb10"] = "tab:olive"
+        colors["R8_nosh"] = "black"
+        colors["R8_norot"] = "tab:gray"
+        colors["R8_hydro"] = "tab:orange"
 
-        for m in self.models['full2']:
+        for m in self.models["full2"]:
             colors[m] = colors[m[:-1]]
-        for m in self.models['fb2']:
+        for m in self.models["fb2"]:
             colors[m] = colors[m[:-1]]
         self.colors = colors
 
     def _set_plot_kwargs(self):
-        plt_kwargs=dict()
-        #initialize
+        plt_kwargs = dict()
+        # initialize
         for m in self.sa.models:
-            if not m in self.colors:
-                plt_kwargs[m]=dict()
+            if m not in self.colors:
+                plt_kwargs[m] = dict()
                 continue
-            plt_kwargs[m]=dict(color=self.colors[m])
-            if m.endswith('2'):
-                plt_kwargs[m].update(dict(lw=3,alpha=0.5))
-        plt_kwargs['LGR4_8pc2'].update(dict(lw=1,alpha=0.5))
+            plt_kwargs[m] = dict(color=self.colors[m])
+            if m.endswith("2"):
+                plt_kwargs[m].update(dict(lw=3, alpha=0.5))
+        plt_kwargs["LGR4_8pc2"].update(dict(lw=1, alpha=0.5))
         self.plt_kwargs = plt_kwargs
 
     def set_model_list(self):
-        mlist = dict(res = ['R8_4pc','R8_8pc','LGR4_2pc','LGR4_4pc'],
-                     std = ['R8_4pc','R8_8pc','LGR4_2pc','LGR4_4pc'],
-                     fbR8 = ['R8_8pc','R8_classic','R8_UV','R8_SN'],
-                     fbLGR4 = ['LGR4_4pc','LGR4_classic','LGR4_UV','LGR4_SN'],
-                     mag = list(self.models['mag'].keys()),
-                     oldnew = ['R8_8pc','R8_8pc2','LGR4_4pc','LGR4_4pc2'],
-                     fbR8new = ['R8_8pc2','R8_classic2','R8_UV2','R8_SN2'],
-                     lowZ = ['R8_8pc2','R8_Z03','R8_Z01'],
-                     norun = ['R8_norun','LGR4_norun']
-                     )
-        trlist = dict(res = [slice(250,450)]*2+[slice(250,350)]*3,
-                      std = [slice(250,450)]*2+[slice(250,350)]*2,
-                      fbR8 = [slice(400,600)]*len(mlist['fbR8']),
-                      fbLGR4 = [slice(350,450)]*len(mlist['fbLGR4']),
-                      mag = [slice(400,600)]*len(mlist['mag']),
-                      oldnew = [slice(250,450)]*2+[slice(250,350)]*2,
-                      fbR8new = [slice(400,600)]*len(mlist['fbR8new']),
-                      lowZ = [slice(300,600)]*len(mlist['lowZ']),
-                      norun = [slice(250,450),slice(250,350)]
+        mlist = dict(
+            res=["R8_4pc", "R8_8pc", "LGR4_2pc", "LGR4_4pc"],
+            std=["R8_4pc", "R8_8pc", "LGR4_2pc", "LGR4_4pc"],
+            fbR8=["R8_8pc", "R8_classic", "R8_UV", "R8_SN"],
+            fbLGR4=["LGR4_4pc", "LGR4_classic", "LGR4_UV", "LGR4_SN"],
+            mag=list(self.models["mag"].keys()),
+            oldnew=["R8_8pc", "R8_8pc2", "LGR4_4pc", "LGR4_4pc2"],
+            fbR8new=["R8_8pc2", "R8_classic2", "R8_UV2", "R8_SN2"],
+            lowZ=["R8_8pc2", "R8_Z03", "R8_Z01"],
+            norun=["R8_norun", "LGR4_norun"],
+        )
+        trlist = dict(
+            res=[slice(250, 450)] * 2 + [slice(250, 350)] * 3,
+            std=[slice(250, 450)] * 2 + [slice(250, 350)] * 2,
+            fbR8=[slice(400, 600)] * len(mlist["fbR8"]),
+            fbLGR4=[slice(350, 450)] * len(mlist["fbLGR4"]),
+            mag=[slice(400, 600)] * len(mlist["mag"]),
+            oldnew=[slice(250, 450)] * 2 + [slice(250, 350)] * 2,
+            fbR8new=[slice(400, 600)] * len(mlist["fbR8new"]),
+            lowZ=[slice(300, 600)] * len(mlist["lowZ"]),
+            norun=[slice(250, 450), slice(250, 350)],
         )
 
-        mlist['fb'] = mlist['fbR8'] + mlist['fbLGR4']
-        trlist['fb'] = trlist['fbR8'] + trlist['fbLGR4']
-        restart_from = dict(R8_4pc='R8_8pc2',R8_8pc='R8_8pc2',LGR4_2pc='LGR4_4pc2',LGR4_4pc2='LGR4_8pc2')
+        mlist["fb"] = mlist["fbR8"] + mlist["fbLGR4"]
+        trlist["fb"] = trlist["fbR8"] + trlist["fbLGR4"]
+        restart_from = dict(
+            R8_4pc="R8_8pc2",
+            R8_8pc="R8_8pc2",
+            LGR4_2pc="LGR4_4pc2",
+            LGR4_4pc2="LGR4_8pc2",
+        )
         # restart_from = dict(R8_norun='R8_8pc',LGR4_norun='LGR4_4pc')
-        restart_from.update({m:'R8_8pc' for m in mlist['fbR8'][1:]})
-        restart_from.update({m:'LGR4_4pc' for m in mlist['fbLGR4'][1:]})
-        restart_from.update({m:'R8_8pc2' for m in mlist['fbR8new'][1:]})
+        restart_from.update({m: "R8_8pc" for m in mlist["fbR8"][1:]})
+        restart_from.update({m: "LGR4_4pc" for m in mlist["fbLGR4"][1:]})
+        restart_from.update({m: "R8_8pc2" for m in mlist["fbR8new"][1:]})
         self.mlist = mlist
         self.trlist = trlist
         self.restart_from = restart_from
 
-    def show_global_history(self,m):
-        h=self.set_global_history(m,recal=False)
+    def show_global_history(self, m):
+        h = self.set_global_history(m, recal=False)
         if len(plt.gcf().axes) != 12:
             axes = None
         else:
             axes = plt.gcf().axes
-        axes = self.plot_basics(h,name=m,axes=axes)
+        axes = self.plot_basics(h, name=m, axes=axes)
 
-    def set_global_history(self,m,recal=False):
+    def set_global_history(self, m, recal=False):
         s = self.sa.set_model(m)
-        if hasattr(s,'h'):
+        if hasattr(s, "h"):
             if "SKE" not in s.h:
-                recal=True
+                recal = True
         else:
-            recal=True
+            recal = True
 
         if recal:
             PaperData.get_global_history(s)
@@ -174,363 +195,518 @@ class PaperData(object):
 
     @staticmethod
     def get_global_history(s):
-        h = pa.read_hst(s.files['hst'])
-        if not hasattr(s,'zpw'):
-            s.zpw = s.read_zprof(phase='whole')
+        h = pa.read_hst(s.files["hst"])
+        if not hasattr(s, "zpw"):
+            s.zpw = s.read_zprof(phase="whole")
 
         if s.test_phase_sep_hst():
             hw = s.read_hst_phase(iph=0)
             hall = s.read_hst_phase_all()
-            hwc = hall.sel(phase=['CMM','CNM','UNM','WNM','UIM','WPIM','WCIM']).sum(dim='phase')
+            hwc = hall.sel(
+                phase=["CMM", "CNM", "UNM", "WNM", "UIM", "WPIM", "WCIM"]
+            ).sum(dim="phase")
         else:
             zp = PaperData.zprof_rename(s)
 
-        vol = np.prod(s.domain['Lx'])
-        area = vol/s.domain['Lx'][2]
-        nscal = s.par['configure']['nscalars']
+        vol = np.prod(s.domain["Lx"])
+        area = vol / s.domain["Lx"][2]
+        nscal = s.par["configure"]["nscalars"]
 
-        Sigma_gas = h['mass']*s.u.Msun*vol/area
-        Sigma_star = h['msp']*s.u.Msun*vol/area
+        Sigma_gas = h["mass"] * s.u.Msun * vol / area
+        Sigma_star = h["msp"] * s.u.Msun * vol / area
 
-        time = h['time']
+        time = h["time"]
         if s.test_phase_sep_hst():
-            mass_out = (hw["Fzm_upper_dt"] - hw["Fzm_lower_dt"])
+            mass_out = hw["Fzm_upper_dt"] - hw["Fzm_lower_dt"]
             mass_out = mass_out - mass_out[0]
         else:
-            mass_out = scipy.integrate.cumtrapz(h['F3_upper'] - h['F3_lower'], h['time'], initial=0.0)
-        Sigma_out = (mass_out)/(s.domain['Lx'][2])*vol*s.u.Msun/area
-        Sigma_H2 = 2.0*h['scalar{}'.format(nscal-2)]*s.u.Msun*vol/area
-        Sigma_HI = h['scalar{}'.format(nscal-3)]*s.u.Msun*vol/area
-        Sigma_HII = Sigma_gas-Sigma_HI-Sigma_H2
+            mass_out = scipy.integrate.cumtrapz(
+                h["F3_upper"] - h["F3_lower"], h["time"], initial=0.0
+            )
+        Sigma_out = (mass_out) / (s.domain["Lx"][2]) * vol * s.u.Msun / area
+        Sigma_H2 = 2.0 * h["scalar{}".format(nscal - 2)] * s.u.Msun * vol / area
+        Sigma_HI = h["scalar{}".format(nscal - 3)] * s.u.Msun * vol / area
+        Sigma_HII = Sigma_gas - Sigma_HI - Sigma_H2
 
-        sfr10 = h['sfr10']
-        sfr40 = h['sfr40']
-        sfr100 = h['sfr100']
+        sfr10 = h["sfr10"]
+        sfr40 = h["sfr40"]
+        sfr100 = h["sfr100"]
         sfr = sfr10
         if s.test_phase_sep_hst():
-            H = np.sqrt(hw['H2']/hw['mass'])
-            P = hw['P']
+            H = np.sqrt(hw["H2"] / hw["mass"])
+            P = hw["P"]
         else:
-            H = np.sqrt(h['H2']/h['mass'])
-            P = h['P']
-        Pimag = 0.
-        if 'x1ME' in h:
-            Pimag = h['x1ME']+h['x2ME']-2.0*h['x3ME']
-            vA = np.sqrt(2.0*(h['x1ME']+h['x2ME']+h['x3ME'])/h['mass'])
-        szeff = np.sqrt((2.0*h['x3KE'] + P + Pimag)/h['mass'])
-        vz = np.sqrt((2.0*h['x3KE'])/h['mass'])
-        tver = H/vz*s.u.Myr
-        tMyr = h['time']*s.u.Myr
-        torb = 2*np.pi/s.par['problem']['Omega']*s.u.Myr
-        tdep = Sigma_gas/sfr/1.e3
-        tdep10 = Sigma_gas/sfr10/1.e3
-        tdep40 = Sigma_gas/sfr40/1.e3
-        tdep100 = Sigma_gas/sfr100/1.e3
+            H = np.sqrt(h["H2"] / h["mass"])
+            P = h["P"]
+        Pimag = 0.0
+        if "x1ME" in h:
+            Pimag = h["x1ME"] + h["x2ME"] - 2.0 * h["x3ME"]
+            vA = np.sqrt(2.0 * (h["x1ME"] + h["x2ME"] + h["x3ME"]) / h["mass"])
+        szeff = np.sqrt((2.0 * h["x3KE"] + P + Pimag) / h["mass"])
+        vz = np.sqrt((2.0 * h["x3KE"]) / h["mass"])
+        tver = H / vz * s.u.Myr
+        tMyr = h["time"] * s.u.Myr
+        torb = 2 * np.pi / s.par["problem"]["Omega"] * s.u.Myr
+        tdep = Sigma_gas / sfr / 1.0e3
+        tdep10 = Sigma_gas / sfr10 / 1.0e3
+        tdep40 = Sigma_gas / sfr40 / 1.0e3
+        tdep100 = Sigma_gas / sfr100 / 1.0e3
 
         # basic quantities
-        h1 = dict(Sigma_gas=Sigma_gas,Sigma_star=Sigma_star,Sigma_out=Sigma_out,
-                Sigma_H2=Sigma_H2,Sigma_HI=Sigma_HI,Sigma_HII=Sigma_HII,
-                sfr=sfr, sfr10=sfr10, sfr40=sfr40, sfr100=sfr100,
-                H=H, szeff=szeff, vz=vz,
-                tdep=tdep, tdep10=tdep10, tdep40=tdep40, tdep100=tdep100,
-                tver=tver, tMyr=tMyr, torb=time/torb, time=time)
-        if 'x1ME' in h:
+        h1 = dict(
+            Sigma_gas=Sigma_gas,
+            Sigma_star=Sigma_star,
+            Sigma_out=Sigma_out,
+            Sigma_H2=Sigma_H2,
+            Sigma_HI=Sigma_HI,
+            Sigma_HII=Sigma_HII,
+            sfr=sfr,
+            sfr10=sfr10,
+            sfr40=sfr40,
+            sfr100=sfr100,
+            H=H,
+            szeff=szeff,
+            vz=vz,
+            tdep=tdep,
+            tdep10=tdep10,
+            tdep40=tdep40,
+            tdep100=tdep100,
+            tver=tver,
+            tMyr=tMyr,
+            torb=time / torb,
+            time=time,
+        )
+        if "x1ME" in h:
             h1.update(dict(vA=vA))
 
         # for warm/cold
         if s.test_phase_sep_hst():
-            Ptot_wc = hwc['P']+2.0*hwc['x3KE']+hwc['x1ME']+hwc['x2ME']-hwc['x3ME']
-            Pturb_wc = 2.0*hwc['x3KE']
-            dtot = hwc['mass']
-            szeff_wc = np.sqrt(Ptot_wc/dtot)
-            vz_wc = np.sqrt(Pturb_wc/dtot)
-            H_wc = np.sqrt(hwc['H2']/dtot)
-            tver_wc = H_wc/vz_wc*s.u.Myr
-            tMyr_wc = hwc['time']*s.u.Myr
-            h1_wc = dict(szeff_wc=szeff_wc,vz_wc=vz_wc,H_wc=H_wc,tver_wc=tver_wc)
+            Ptot_wc = (
+                hwc["P"] + 2.0 * hwc["x3KE"] + hwc["x1ME"] + hwc["x2ME"] - hwc["x3ME"]
+            )
+            Pturb_wc = 2.0 * hwc["x3KE"]
+            dtot = hwc["mass"]
+            szeff_wc = np.sqrt(Ptot_wc / dtot)
+            vz_wc = np.sqrt(Pturb_wc / dtot)
+            H_wc = np.sqrt(hwc["H2"] / dtot)
+            tver_wc = H_wc / vz_wc * s.u.Myr
+            tMyr_wc = hwc["time"] * s.u.Myr
+            h1_wc = dict(szeff_wc=szeff_wc, vz_wc=vz_wc, H_wc=H_wc, tver_wc=tver_wc)
         else:
             zp = s.newzp
-            zpwc = zp.sel(phase=['CMM', 'WIM', 'CNM', 'UNM', 'WNM']).sum(dim='phase')
-            Ptot_wc = zpwc['P']+2.0*zpwc['Ek3']+zpwc['PB1']+zpwc['PB2']-zpwc['PB3']
-            Pturb_wc = 2.0*zpwc['Ek3']
-            dtot = zpwc['d'].sum(dim='z')
-            szeff_wc = np.sqrt(Ptot_wc.sum(dim='z')/dtot)
-            vz_wc = np.sqrt(Pturb_wc.sum(dim='z')/dtot)
-            H_wc = np.sqrt((zpwc.z**2*zpwc['d']).sum(dim='z')/dtot)
-            tver_wc = H_wc/vz_wc*s.u.Myr
+            zpwc = zp.sel(phase=["CMM", "WIM", "CNM", "UNM", "WNM"]).sum(dim="phase")
+            Ptot_wc = (
+                zpwc["P"] + 2.0 * zpwc["Ek3"] + zpwc["PB1"] + zpwc["PB2"] - zpwc["PB3"]
+            )
+            Pturb_wc = 2.0 * zpwc["Ek3"]
+            dtot = zpwc["d"].sum(dim="z")
+            szeff_wc = np.sqrt(Ptot_wc.sum(dim="z") / dtot)
+            vz_wc = np.sqrt(Pturb_wc.sum(dim="z") / dtot)
+            H_wc = np.sqrt((zpwc.z**2 * zpwc["d"]).sum(dim="z") / dtot)
+            tver_wc = H_wc / vz_wc * s.u.Myr
             tMyr_wc = zpwc.time
-            h1_wc = dict(szeff_wc=np.interp(tMyr,tMyr_wc,szeff_wc),
-                         vz_wc=np.interp(tMyr,tMyr_wc,vz_wc),
-                         H_wc=np.interp(tMyr,tMyr_wc,H_wc),
-                         tver_wc=np.interp(tMyr,tMyr_wc,tver_wc))
+            h1_wc = dict(
+                szeff_wc=np.interp(tMyr, tMyr_wc, szeff_wc),
+                vz_wc=np.interp(tMyr, tMyr_wc, vz_wc),
+                H_wc=np.interp(tMyr, tMyr_wc, H_wc),
+                tver_wc=np.interp(tMyr, tMyr_wc, tver_wc),
+            )
         h1.update(h1_wc)
         if not s.test_newcool():
-            s.h=pd.DataFrame(h1)
+            s.h = pd.DataFrame(h1)
             return s.h
 
         # energy gain/loss
         ifreq = dict()
-        for f in ('PH','LW','PE'): #,'PE_unatt'):
+        for f in ("PH", "LW", "PE"):  # ,'PE_unatt'):
             try:
-                ifreq[f] = s.par['radps']['ifreq_{0:s}'.format(f)]
+                ifreq[f] = s.par["radps"]["ifreq_{0:s}".format(f)]
             except KeyError:
                 pass
-        for i in range(s.par['radps']['nfreq']):
+        for i in range(s.par["radps"]["nfreq"]):
             for k, v in ifreq.items():
                 if i == v:
-                    factor = s.u.Lsun if s.test_phase_sep_hst() else vol*s.u.Lsun
-                    h[f'Ltot_{k}'] = h[f'Ltot{i}']*factor
+                    factor = s.u.Lsun if s.test_phase_sep_hst() else vol * s.u.Lsun
+                    h[f"Ltot_{k}"] = h[f"Ltot{i}"] * factor
                     try:
-                        h[f'Ldust_{k}'] = h[f'Ldust{i}']*factor
-                        h[f'Labs_{k}'] = h[f'Ldust{i}']*factor
-                        if k == 'PH':
-                            hnu_LyC = (s.par['radps']['hnu_PH']*au.eV).cgs.value
-                            Lsun_cgs = (1.0*ac.L_sun).cgs.value
-                            h['Lgas_PH'] = ((h['phot_rate_H2']+h['phot_rate_HI']))*hnu_LyC/s.u.Lsun/Lsun_cgs*factor
-                            h['Labs_PH'] += h['Lgas_PH']
-                    except:
-                        print(f'no photon diagnostics for {k}')
+                        h[f"Ldust_{k}"] = h[f"Ldust{i}"] * factor
+                        h[f"Labs_{k}"] = h[f"Ldust{i}"] * factor
+                        if k == "PH":
+                            hnu_LyC = (s.par["radps"]["hnu_PH"] * au.eV).cgs.value
+                            Lsun_cgs = (1.0 * ac.L_sun).cgs.value
+                            h["Lgas_PH"] = (
+                                (h["phot_rate_H2"] + h["phot_rate_HI"])
+                                * hnu_LyC
+                                / s.u.Lsun
+                                / Lsun_cgs
+                                * factor
+                            )
+                            h["Labs_PH"] += h["Lgas_PH"]
+                    except KeyError:
+                        print(f"no photon diagnostics for {k}")
         # injected radiation
-        SLyC = h['Ltot_PH']/area
-        SPE = h['Ltot_PE']/area
-        SLW = h['Ltot_LW']/area
-        Srad=SLyC+SPE+SLW
+        SLyC = h["Ltot_PH"] / area
+        SPE = h["Ltot_PE"] / area
+        SLW = h["Ltot_LW"] / area
+        Srad = SLyC + SPE + SLW
 
         # injected SN energy
-        sn = pa.read_hst(s.files['sn'])
-        Nsn,tbin = np.histogram(sn['time']*s.u.Myr,bins=tMyr)
+        sn = pa.read_hst(s.files["sn"])
+        Nsn, tbin = np.histogram(sn["time"] * s.u.Myr, bins=tMyr)
         dt = np.diff(tbin)
-        SSN = np.concatenate([[0],(1.e51*au.erg/au.Myr).to('Lsun').value*Nsn/dt/area])
-        SSN = pd.Series(SSN,h.index)
+        SSN = np.concatenate(
+            [[0], (1.0e51 * au.erg / au.Myr).to("Lsun").value * Nsn / dt / area]
+        )
+        SSN = pd.Series(SSN, h.index)
 
         # total radiative heating rate
         zp = s.zpw
-        factor = (s.u.energy/s.u.time).to('Lsun') if s.test_phase_sep_hst() else (au.pc**3*au.erg/au.cm**3/au.s).to('Lsun')
-        Sheat=np.interp(tMyr, zp.time, zp['heat'].sum(dim='z')*(s.domain['dx'][2]*factor))
-        Scool=np.interp(tMyr, zp.time, zp['cool'].sum(dim='z')*(s.domain['dx'][2]*factor))
+        factor = (
+            (s.u.energy / s.u.time).to("Lsun")
+            if s.test_phase_sep_hst()
+            else (au.pc**3 * au.erg / au.cm**3 / au.s).to("Lsun")
+        )
+        Sheat = np.interp(
+            tMyr, zp.time, zp["heat"].sum(dim="z") * (s.domain["dx"][2] * factor)
+        )
+        Scool = np.interp(
+            tMyr, zp.time, zp["cool"].sum(dim="z") * (s.domain["dx"][2] * factor)
+        )
 
         # total energy outflow rates
         if s.test_phase_sep_hst():
-            Sedot = (hw["Fze_upper"] - hw["Fze_lower"]) * (s.u.energy/s.u.time).to('Lsun')
+            Sedot = (hw["Fze_upper"] - hw["Fze_lower"]) * (s.u.energy / s.u.time).to(
+                "Lsun"
+            )
         else:
-            Sedot = Srad*0
+            Sedot = Srad * 0
 
         # turbulence dissipation rate
-        SKE = (h['x1KE'] + h['x2KE'] + h['x3KE'])/tver * vol/area * (s.u.energy/s.u.time).to('Lsun')
+        SKE = (
+            (h["x1KE"] + h["x2KE"] + h["x3KE"])
+            / tver
+            * vol
+            / area
+            * (s.u.energy / s.u.time).to("Lsun")
+        )
         # add energetics fields
-        h2 = dict(SLyC=SLyC, SPE=SPE, SLW=SLW, Srad=Srad, SKE=SKE,
-                  SSN=SSN, Sheat=Sheat, Scool=Scool, Snet=Scool-Sheat, Sedot = Sedot)
+        h2 = dict(
+            SLyC=SLyC,
+            SPE=SPE,
+            SLW=SLW,
+            Srad=Srad,
+            SKE=SKE,
+            SSN=SSN,
+            Sheat=Sheat,
+            Scool=Scool,
+            Snet=Scool - Sheat,
+            Sedot=Sedot,
+        )
         # absorption fraction
-        for f,f2 in zip(('PH','PE','LW'),('LyC','PE','LW')):
-            if f'Labs_{f}' in h: h2.update({f'Sabs_{f2}':h[f'Labs_{f}']/area})
-            if f'Ldust_{f}' in h: h2.update({f'Sabs_dust_{f2}':h[f'Ldust_{f}']/area})
-            if f'Lgas_{f}' in h: h2.update({f'Sabs_gas_{f2}':h[f'Lgas_{f}']/area})
+        for f, f2 in zip(("PH", "PE", "LW"), ("LyC", "PE", "LW")):
+            if f"Labs_{f}" in h:
+                h2.update({f"Sabs_{f2}": h[f"Labs_{f}"] / area})
+            if f"Ldust_{f}" in h:
+                h2.update({f"Sabs_dust_{f2}": h[f"Ldust_{f}"] / area})
+            if f"Lgas_{f}" in h:
+                h2.update({f"Sabs_gas_{f2}": h[f"Lgas_{f}"] / area})
         h1.update(h2)
 
-        s.h=pd.DataFrame(h1)
+        s.h = pd.DataFrame(h1)
         return s.h
 
     @staticmethod
-    def zprof_rename(s,flist=None):
-        if hasattr(s,'newzp'): return s.newzp
+    def zprof_rename(s, flist=None):
+        if hasattr(s, "newzp"):
+            return s.newzp
         rename_dict = dict()
-        kind = 'new' if s.test_phase_sep_hst() else 'old'
+        kind = "new" if s.test_phase_sep_hst() else "old"
         shorthands = s.get_phase_shorthand()
-        for i,pname in enumerate(shorthands):
-            rename_dict['phase{}'.format(i+1)] = pname
-        if not hasattr(s,'zp'):
+        for i, pname in enumerate(shorthands):
+            rename_dict["phase{}".format(i + 1)] = pname
+        if not hasattr(s, "zp"):
             zp = s.read_zprof_new(flist=flist)
         else:
-            if not 'phase' in s.zp:
+            if "phase" not in s.zp:
                 zp = s.read_zprof_new(flist=flist)
         zp = s.zp
-        zp = zp.to_array().to_dataset('phase').rename(rename_dict)
-        zp = zp.to_array('phase').to_dataset('variable')
+        zp = zp.to_array().to_dataset("phase").rename(rename_dict)
+        zp = zp.to_array("phase").to_dataset("variable")
 
         newzp = xr.Dataset()
         if not s.test_newcool():
-            newzp['CNM'] = zp.sel(phase='c').squeeze().to_array()
-            newzp['UNM'] = zp.sel(phase='u').squeeze().to_array()
-            newzp['WNM'] = zp.sel(phase='w').squeeze().to_array()
-            newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
-            newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
+            newzp["CNM"] = zp.sel(phase="c").squeeze().to_array()
+            newzp["UNM"] = zp.sel(phase="u").squeeze().to_array()
+            newzp["WNM"] = zp.sel(phase="w").squeeze().to_array()
+            newzp["WHIM"] = zp.sel(phase="h1").squeeze().to_array()
+            newzp["HIM"] = zp.sel(phase="h2").squeeze().to_array()
         else:
-            if kind == 'old':
-                newzp['CMM'] = zp.sel(phase='mol').squeeze().to_array()
-                newzp['WIM'] = zp.sel(phase='pi').squeeze().to_array()
-                newzp['CNM'] = zp.sel(phase=['HIcc','HIc']).sum(dim='phase').to_array()
-                newzp['UNM'] = zp.sel(phase=['HIu','HIuc']).sum(dim='phase').to_array()
-                newzp['WNM'] = zp.sel(phase=['HIw','HIwh']).sum(dim='phase').to_array()
-                newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
-                newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
-            elif kind == 'new':
-                newzp['CMM'] = zp.sel(phase='cmm').squeeze().to_array()
-        #         newzp['UIM'] = zp.sel(phase='uim').squeeze().to_array()
-                newzp['WIM'] = zp.sel(phase=['uim','wpim','wcim']).sum(dim='phase').to_array()
-                newzp['CNM'] = zp.sel(phase='cnm').squeeze().to_array()
-                newzp['UNM'] = zp.sel(phase='unm').squeeze().to_array()
-                newzp['WNM'] = zp.sel(phase='wnm').squeeze().to_array()
-                newzp['WHIM'] = zp.sel(phase='h1').squeeze().to_array()
-                newzp['HIM'] = zp.sel(phase='h2').squeeze().to_array()
-    #         newzp['Others'] = (zp.sel(phase=['hotnothers']).squeeze()-zp.sel(phase=['h1','h2']).sum(dim='phase')).to_array()
-        s.newzp = newzp.to_array('phase').to_dataset('variable')
-        delattr(s,'zp')
+            if kind == "old":
+                newzp["CMM"] = zp.sel(phase="mol").squeeze().to_array()
+                newzp["WIM"] = zp.sel(phase="pi").squeeze().to_array()
+                newzp["CNM"] = zp.sel(phase=["HIcc", "HIc"]).sum(dim="phase").to_array()
+                newzp["UNM"] = zp.sel(phase=["HIu", "HIuc"]).sum(dim="phase").to_array()
+                newzp["WNM"] = zp.sel(phase=["HIw", "HIwh"]).sum(dim="phase").to_array()
+                newzp["WHIM"] = zp.sel(phase="h1").squeeze().to_array()
+                newzp["HIM"] = zp.sel(phase="h2").squeeze().to_array()
+            elif kind == "new":
+                newzp["CMM"] = zp.sel(phase="cmm").squeeze().to_array()
+                #         newzp['UIM'] = zp.sel(phase='uim').squeeze().to_array()
+                newzp["WIM"] = (
+                    zp.sel(phase=["uim", "wpim", "wcim"]).sum(dim="phase").to_array()
+                )
+                newzp["CNM"] = zp.sel(phase="cnm").squeeze().to_array()
+                newzp["UNM"] = zp.sel(phase="unm").squeeze().to_array()
+                newzp["WNM"] = zp.sel(phase="wnm").squeeze().to_array()
+                newzp["WHIM"] = zp.sel(phase="h1").squeeze().to_array()
+                newzp["HIM"] = zp.sel(phase="h2").squeeze().to_array()
+        #         newzp['Others'] = (zp.sel(phase=['hotnothers']).squeeze()-zp.sel(phase=['h1','h2']).sum(dim='phase')).to_array()
+        s.newzp = newzp.to_array("phase").to_dataset("variable")
+        delattr(s, "zp")
         return s.newzp
 
-    def Pmid_time_series(self,m,sfr=None,dt=0,zrange=slice(-10,10),
-                         from_files=True,recal=False):
+    def Pmid_time_series(
+        self, m, sfr=None, dt=0, zrange=slice(-10, 10), from_files=True, recal=False
+    ):
         s = self.sa.set_model(m)
         if from_files:
-            fzpmid=os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id))
-            fzpw=os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))
+            fzpmid = os.path.join(
+                s.basedir, "zprof", "{}.zpmid.nc".format(s.problem_id)
+            )
+            fzpw = os.path.join(s.basedir, "zprof", "{}.zpwmid.nc".format(s.problem_id))
             if os.path.isfile(fzpmid):
                 with xr.open_dataset(fzpmid) as zpmid:
                     zpmid.attrs = PaperData.set_zprof_attr()
                     s.zpmid = zpmid
             if os.path.isfile(fzpw):
-                with xr.open_dataset(fzpw) as zpwmid: s.zpwmid = zpwmid
+                with xr.open_dataset(fzpw) as zpwmid:
+                    s.zpwmid = zpwmid
 
-        zpmid, zpwmid = PaperData.get_Pmid_time_series(s,sfr=sfr,dt=dt,
-                                                       zrange=zrange,recal=recal)
+        zpmid, zpwmid = PaperData.get_Pmid_time_series(
+            s, sfr=sfr, dt=dt, zrange=zrange, recal=recal
+        )
         return zpmid, zpwmid
 
     @staticmethod
-    def get_Pmid_time_series(s,sfr=None,dt=0,zrange=slice(-10,10),
-                             recal=False, return_zprof=False):
-        if (hasattr(s,'zpmid') and hasattr(s,'zpwmid') and
-           (not recal) and (not return_zprof)):
+    def get_Pmid_time_series(
+        s, sfr=None, dt=0, zrange=slice(-10, 10), recal=False, return_zprof=False
+    ):
+        if (
+            hasattr(s, "zpmid")
+            and hasattr(s, "zpwmid")
+            and (not recal)
+            and (not return_zprof)
+        ):
             # smoothing
-            if dt>0:
-                window = int(dt/s.zpmid.time.diff(dim='time').median())
-                zpmid = s.zpmid.rolling(time=window,center=True,min_periods=1).mean()
+            if dt > 0:
+                window = int(dt / s.zpmid.time.diff(dim="time").median())
+                zpmid = s.zpmid.rolling(time=window, center=True, min_periods=1).mean()
             else:
                 zpmid = s.zpmid
             return zpmid, s.zpwmid
 
-        if hasattr(s,'newzp'):
+        if hasattr(s, "newzp"):
             zp = s.newzp
         else:
             zp = PaperData.zprof_rename(s)
 
         zpmid = xr.Dataset()
         dm = s.domain
-        dz = dm['dx'][2]
+        dz = dm["dx"][2]
         # calculate weight first
-        uWext=(zp['dWext'].sel(z=slice(0,dm['re'][2]))[:,::-1].cumsum(dim='z')[:,::-1]*dz)
-        lWext=(-zp['dWext'].sel(z=slice(dm['le'][2],0)).cumsum(dim='z')*dz)
-        Wext=xr.concat([lWext,uWext],dim='z')
-        if 'dWsg' in zp:
-            uWsg=(zp['dWsg'].sel(z=slice(0,dm['re'][2]))[:,::-1].cumsum(dim='z')[:,::-1]*dz)
-            lWsg=(-zp['dWsg'].sel(z=slice(dm['le'][2],0)).cumsum(dim='z')*dz)
-            Wsg=xr.concat([lWsg,uWsg],dim='z')
-        W=Wext+Wsg
-        zpmid['Wext']=Wext
-        zpmid['Wsg']=Wsg
-        zpmid['W']=W
+        uWext = (
+            zp["dWext"].sel(z=slice(0, dm["re"][2]))[:, ::-1].cumsum(dim="z")[:, ::-1]
+            * dz
+        )
+        lWext = -zp["dWext"].sel(z=slice(dm["le"][2], 0)).cumsum(dim="z") * dz
+        Wext = xr.concat([lWext, uWext], dim="z")
+        if "dWsg" in zp:
+            uWsg = (
+                zp["dWsg"]
+                .sel(z=slice(0, dm["re"][2]))[:, ::-1]
+                .cumsum(dim="z")[:, ::-1]
+                * dz
+            )
+            lWsg = -zp["dWsg"].sel(z=slice(dm["le"][2], 0)).cumsum(dim="z") * dz
+            Wsg = xr.concat([lWsg, uWsg], dim="z")
+        W = Wext + Wsg
+        zpmid["Wext"] = Wext
+        zpmid["Wsg"] = Wsg
+        zpmid["W"] = W
 
         # caculate radiation pressure
-        if 'frad_z0' in zp:
-            frad_list=['frad_z0','frad_z1','frad_z2']
+        if "frad_z0" in zp:
+            frad_list = ["frad_z0", "frad_z1", "frad_z2"]
             for frad in frad_list:
-                uPrad=zp[frad].sel(z=slice(0,dm['re'][2]))[:,::-1].cumsum(dim='z')[:,::-1]*dz
-                lPrad=-zp[frad].sel(z=slice(dm['le'][2],0)).cumsum(dim='z')*dz
-                zpmid[frad]=xr.concat([lPrad,uPrad],dim='z')
-            zpmid['Prad']=zpmid[frad_list].to_array().sum(dim='variable')
+                uPrad = (
+                    zp[frad]
+                    .sel(z=slice(0, dm["re"][2]))[:, ::-1]
+                    .cumsum(dim="z")[:, ::-1]
+                    * dz
+                )
+                lPrad = -zp[frad].sel(z=slice(dm["le"][2], 0)).cumsum(dim="z") * dz
+                zpmid[frad] = xr.concat([lPrad, uPrad], dim="z")
+            zpmid["Prad"] = zpmid[frad_list].to_array().sum(dim="variable")
 
         # Pressures/Stresses
-        zpmid['Pth'] = zp['P']
-        zpmid['Pturb'] = 2.0*zp['Ek3']
-        zpmid['Ptot'] = zpmid['Pth']+zpmid['Pturb']
-        if 'PB1' in zp:
-            zpmid['Pmag'] = zp['PB1']+zp['PB2']+zp['PB3']
-            zpmid['Pimag'] = zpmid['Pmag'] - 2.0*zp['PB3']
-            zpmid['dPmag'] = zp['dPB1']+zp['dPB2']+zp['dPB3']
-            zpmid['dPimag'] = zpmid['dPmag'] - 2.0*zp['dPB3']
-            zpmid['oPmag'] = zpmid['Pmag']-zpmid['dPmag']
-            zpmid['oPimag'] = zpmid['Pimag']-zpmid['dPimag']
-            zpmid['Ptot'] += zpmid['Pimag']
+        zpmid["Pth"] = zp["P"]
+        zpmid["Pturb"] = 2.0 * zp["Ek3"]
+        zpmid["Ptot"] = zpmid["Pth"] + zpmid["Pturb"]
+        if "PB1" in zp:
+            zpmid["Pmag"] = zp["PB1"] + zp["PB2"] + zp["PB3"]
+            zpmid["Pimag"] = zpmid["Pmag"] - 2.0 * zp["PB3"]
+            zpmid["dPmag"] = zp["dPB1"] + zp["dPB2"] + zp["dPB3"]
+            zpmid["dPimag"] = zpmid["dPmag"] - 2.0 * zp["dPB3"]
+            zpmid["oPmag"] = zpmid["Pmag"] - zpmid["dPmag"]
+            zpmid["oPimag"] = zpmid["Pimag"] - zpmid["dPimag"]
+            zpmid["Ptot"] += zpmid["Pimag"]
 
         # density, area
-        zpmid['nH'] = zp['d']
-        zpmid['A'] = zp['A']
+        zpmid["nH"] = zp["d"]
+        zpmid["A"] = zp["A"]
 
         # heat and cool
-        if 'cool' in zp:
-            zpmid['heat']= zp['heat']
-            zpmid['cool']= zp['cool']
-            if 'netcool' in zp:
-                zpmid['net_cool']= zp['net_cool']
+        if "cool" in zp:
+            zpmid["heat"] = zp["heat"]
+            zpmid["cool"] = zp["cool"]
+            if "netcool" in zp:
+                zpmid["net_cool"] = zp["net_cool"]
             else:
-                zpmid['net_cool']= zp['cool'] - zp['heat']
+                zpmid["net_cool"] = zp["cool"] - zp["heat"]
 
         # Erad
-        if 'Erad0' in zp: zpmid['Erad0']= zp['Erad0']
-        if 'Erad1' in zp: zpmid['Erad1']= zp['Erad1']
-        if 'Erad2' in zp: zpmid['Erad2']= zp['Erad2']
-
+        if "Erad0" in zp:
+            zpmid["Erad0"] = zp["Erad0"]
+        if "Erad1" in zp:
+            zpmid["Erad1"] = zp["Erad1"]
+        if "Erad2" in zp:
+            zpmid["Erad2"] = zp["Erad2"]
 
         # rearrange phases
-        twop=zpmid.sel(phase=['CMM','CNM','UNM','WNM']).sum(dim='phase').assign_coords(phase='2p')
-        hot=zpmid.sel(phase=['WHIM','HIM']).sum(dim='phase').assign_coords(phase='hot')
-        if 'WIM' in zpmid.phase:
-            wim=zpmid.sel(phase=['WIM']).sum(dim='phase').assign_coords(phase='WIM')
-            zpmid = xr.concat([twop,wim,hot],dim='phase')
+        twop = (
+            zpmid.sel(phase=["CMM", "CNM", "UNM", "WNM"])
+            .sum(dim="phase")
+            .assign_coords(phase="2p")
+        )
+        hot = (
+            zpmid.sel(phase=["WHIM", "HIM"]).sum(dim="phase").assign_coords(phase="hot")
+        )
+        if "WIM" in zpmid.phase:
+            wim = zpmid.sel(phase=["WIM"]).sum(dim="phase").assign_coords(phase="WIM")
+            zpmid = xr.concat([twop, wim, hot], dim="phase")
         else:
-            zpmid = xr.concat([twop,hot],dim='phase')
-    #     zpw=zpmid.sel(phase=['whole']).squeeze()
+            zpmid = xr.concat([twop, hot], dim="phase")
+        #     zpw=zpmid.sel(phase=['whole']).squeeze()
 
         # szeff
-        szeff = np.sqrt(zpmid['Ptot'].sum(dim='z')/zpmid['nH'].sum(dim='z'))
+        szeff = np.sqrt(zpmid["Ptot"].sum(dim="z") / zpmid["nH"].sum(dim="z"))
 
-        if return_zprof: return zpmid
+        if return_zprof:
+            return zpmid
 
         # select midplane
-        zpmid = zpmid.sel(z=zrange).mean(dim='z')
-        zpwmid = zpmid.sum(dim='phase')
+        zpmid = zpmid.sel(z=zrange).mean(dim="z")
+        zpwmid = zpmid.sum(dim="phase")
 
         # SFR from history
-        vol = np.prod(s.domain['Lx'])
-        area = vol/s.domain['Lx'][2]
+        vol = np.prod(s.domain["Lx"])
+        area = vol / s.domain["Lx"][2]
 
-        h=pa.read_hst(s.files['hst'])
-        zpmid['sfr10'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['sfr10']),coords=[zpmid.time])
-        zpmid['sfr40'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['sfr40']),coords=[zpmid.time])
-        zpmid['sfr100'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['sfr100']),coords=[zpmid.time])
+        h = pa.read_hst(s.files["hst"])
+        zpmid["sfr10"] = xr.DataArray(
+            np.interp(zpmid.time_code, h["time"], h["sfr10"]), coords=[zpmid.time]
+        )
+        zpmid["sfr40"] = xr.DataArray(
+            np.interp(zpmid.time_code, h["time"], h["sfr40"]), coords=[zpmid.time]
+        )
+        zpmid["sfr100"] = xr.DataArray(
+            np.interp(zpmid.time_code, h["time"], h["sfr100"]), coords=[zpmid.time]
+        )
         if sfr is None:
-            zpmid['sfr'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],h['sfr10']),coords=[zpmid.time])
+            zpmid["sfr"] = xr.DataArray(
+                np.interp(zpmid.time_code, h["time"], h["sfr10"]), coords=[zpmid.time]
+            )
         else:
-            zpmid['sfr'] = sfr
+            zpmid["sfr"] = sfr
 
         # sz from history
-        if 'x1ME' in h:
-            szmag = h['x1ME']+h['x2ME']-2.0*h['x3ME']
+        if "x1ME" in h:
+            szmag = h["x1ME"] + h["x2ME"] - 2.0 * h["x3ME"]
         else:
             szmag = 0.0
         if s.test_phase_sep_hst():
             hw = s.read_hst_phase()
-            P = hw['P']
+            P = hw["P"]
         else:
-            P = h['P']
-        szeff_mid = np.sqrt((2.0*h['x3KE']+P+szmag)/h['mass'])
-        zpmid['szeff'] = xr.DataArray(np.interp(zpmid.time_code,h['time'],szeff_mid),coords=[zpmid.time])
+            P = h["P"]
+        szeff_mid = np.sqrt((2.0 * h["x3KE"] + P + szmag) / h["mass"])
+        zpmid["szeff"] = xr.DataArray(
+            np.interp(zpmid.time_code, h["time"], szeff_mid), coords=[zpmid.time]
+        )
 
         # PDE
-        zpmid['sigma_eff'] = szeff
-        zpmid['sigma_eff_mid'] = np.sqrt(zpmid['Ptot']/zpmid['nH'])
-        zpmid['Sigma_gas'] = xr.DataArray(np.interp(zp.time_code,h['time'],h['mass']*s.u.Msun*vol/area),coords=[zpmid.time])
-        rhosd=0.5*s.par['problem']['SurfS']/s.par['problem']['zstar']+s.par['problem']['rhodm']
-        zpmid['PDE1'] = np.pi*zpmid['Sigma_gas']**2/2.0*(ac.G*(ac.M_sun/ac.pc**2)**2/ac.k_B).cgs.value
-        zpmid['PDE2_2p'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['sigma_eff'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
-        zpmid['PDE2_2p_mid'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['sigma_eff_mid'].sel(phase='2p')*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
-        zpmid['PDE2'] = zpmid['Sigma_gas']*np.sqrt(2*rhosd)*zpmid['szeff']*(np.sqrt(ac.G*ac.M_sun/ac.pc**3)*(ac.M_sun/ac.pc**2)*au.km/au.s/ac.k_B).cgs.value
-        zpmid['PDE_2p_mid'] = zpmid['PDE1']+zpmid['PDE2_2p_mid']
-        zpmid['PDE_2p'] = zpmid['PDE1']+zpmid['PDE2_2p']
-        zpmid['PDE'] = zpmid['PDE1']+zpmid['PDE2']
+        zpmid["sigma_eff"] = szeff
+        zpmid["sigma_eff_mid"] = np.sqrt(zpmid["Ptot"] / zpmid["nH"])
+        zpmid["Sigma_gas"] = xr.DataArray(
+            np.interp(zp.time_code, h["time"], h["mass"] * s.u.Msun * vol / area),
+            coords=[zpmid.time],
+        )
+        rhosd = (
+            0.5 * s.par["problem"]["SurfS"] / s.par["problem"]["zstar"]
+            + s.par["problem"]["rhodm"]
+        )
+        zpmid["PDE1"] = (
+            np.pi
+            * zpmid["Sigma_gas"] ** 2
+            / 2.0
+            * (ac.G * (ac.M_sun / ac.pc**2) ** 2 / ac.k_B).cgs.value
+        )
+        zpmid["PDE2_2p"] = (
+            zpmid["Sigma_gas"]
+            * np.sqrt(2 * rhosd)
+            * zpmid["sigma_eff"].sel(phase="2p")
+            * (
+                np.sqrt(ac.G * ac.M_sun / ac.pc**3)
+                * (ac.M_sun / ac.pc**2)
+                * au.km
+                / au.s
+                / ac.k_B
+            ).cgs.value
+        )
+        zpmid["PDE2_2p_mid"] = (
+            zpmid["Sigma_gas"]
+            * np.sqrt(2 * rhosd)
+            * zpmid["sigma_eff_mid"].sel(phase="2p")
+            * (
+                np.sqrt(ac.G * ac.M_sun / ac.pc**3)
+                * (ac.M_sun / ac.pc**2)
+                * au.km
+                / au.s
+                / ac.k_B
+            ).cgs.value
+        )
+        zpmid["PDE2"] = (
+            zpmid["Sigma_gas"]
+            * np.sqrt(2 * rhosd)
+            * zpmid["szeff"]
+            * (
+                np.sqrt(ac.G * ac.M_sun / ac.pc**3)
+                * (ac.M_sun / ac.pc**2)
+                * au.km
+                / au.s
+                / ac.k_B
+            ).cgs.value
+        )
+        zpmid["PDE_2p_mid"] = zpmid["PDE1"] + zpmid["PDE2_2p_mid"]
+        zpmid["PDE_2p"] = zpmid["PDE1"] + zpmid["PDE2_2p"]
+        zpmid["PDE"] = zpmid["PDE1"] + zpmid["PDE2"]
 
-        fzpmid=os.path.join(s.basedir,'zprof','{}.zpmid.nc'.format(s.problem_id))
-        fzpw=os.path.join(s.basedir,'zprof','{}.zpwmid.nc'.format(s.problem_id))
-        if os.path.isfile(fzpmid): os.remove(fzpmid)
-        if os.path.isfile(fzpw): os.remove(fzpw)
+        fzpmid = os.path.join(s.basedir, "zprof", "{}.zpmid.nc".format(s.problem_id))
+        fzpw = os.path.join(s.basedir, "zprof", "{}.zpwmid.nc".format(s.problem_id))
+        if os.path.isfile(fzpmid):
+            os.remove(fzpmid)
+        if os.path.isfile(fzpw):
+            os.remove(fzpw)
 
         zpmid.to_netcdf(fzpmid)
         zpwmid.to_netcdf(fzpw)
@@ -540,179 +716,233 @@ class PaperData(object):
         s.zpwmid = zpwmid
 
         # smoothing
-        if dt>0:
-            window = int(dt/zpmid.time.diff(dim='time').median())
-            zpmid = zpmid.rolling(time=window,center=True,min_periods=1).mean()
+        if dt > 0:
+            window = int(dt / zpmid.time.diff(dim="time").median())
+            zpmid = zpmid.rolling(time=window, center=True, min_periods=1).mean()
 
         return zpmid, zpwmid
 
     @staticmethod
     def set_zprof_attr(attrs=None):
-        if attrs is None: attrs=dict()
+        if attrs is None:
+            attrs = dict()
         # misc.
-        phcolors=get_phcolor_dict(cmr.pride,cmin=0.1,cmax=0.8)
-        phcolors['WIM']=phcolors['WPIM']
-        colors = {'2p':phcolors['CMM'],'WIM':phcolors['WNM'],'hot':phcolors['WHIM']}
-        labels = {'2p':'2p','WIM':'WIM','hot':'hot'}
-        Plabels = {'Ptot':r'${P}_{\rm tot}$','Pth':r'${P}_{\rm th}$',
-                  'Pturb':r'${P}_{\rm turb}$','Pimag':r'${\Pi}_{\rm mag}$',
-                  'dPimag':r'${\Pi}_{\delta B}$','oPimag':r'${\Pi}_{\overline{B}}$',
-                  'W':r'$\mathcal{W}$','Wext':r'$\mathcal{W}_{\rm ext}$',
-                  'Wsg':r'$\mathcal{W}_{\rm sg}$',
-                  'PDE':r'$P_{\rm DE}$','Prad':r'$\Delta P_{\rm rad}$'}
-        Pcolors = {'Ptot':'k','Pth':'tab:blue','Pturb':'tab:orange','Pimag':'tab:green',
-                  'dPimag':'gold','oPimag':'tab:green','W':'k'}
-        Ulabels = {'Ptot':r'$\Upsilon_{\rm tot}$','Pth':r'$\Upsilon_{\rm th}$',
-                  'Pturb':r'$\Upsilon_{\rm turb}$','Pimag':r'$\Upsilon_{\rm mag}$',
-                  'dPimag':r'$\Upsilon_{\delta B}$','oPimag':r'$\Upsilon_{\overline{B}}$'}
-        attrs['colors']=colors
-        attrs['labels']=labels
-        attrs['Plabels']=Plabels
-        attrs['Ulabels']=Ulabels
-        attrs['Pcolors']=Pcolors
+        phcolors = get_phcolor_dict(cmr.pride, cmin=0.1, cmax=0.8)
+        phcolors["WIM"] = phcolors["WPIM"]
+        colors = {
+            "2p": phcolors["CMM"],
+            "WIM": phcolors["WNM"],
+            "hot": phcolors["WHIM"],
+        }
+        labels = {"2p": "2p", "WIM": "WIM", "hot": "hot"}
+        Plabels = {
+            "Ptot": r"${P}_{\rm tot}$",
+            "Pth": r"${P}_{\rm th}$",
+            "Pturb": r"${P}_{\rm turb}$",
+            "Pimag": r"${\Pi}_{\rm mag}$",
+            "dPimag": r"${\Pi}_{\delta B}$",
+            "oPimag": r"${\Pi}_{\overline{B}}$",
+            "W": r"$\mathcal{W}$",
+            "Wext": r"$\mathcal{W}_{\rm ext}$",
+            "Wsg": r"$\mathcal{W}_{\rm sg}$",
+            "PDE": r"$P_{\rm DE}$",
+            "Prad": r"$\Delta P_{\rm rad}$",
+        }
+        Pcolors = {
+            "Ptot": "k",
+            "Pth": "tab:blue",
+            "Pturb": "tab:orange",
+            "Pimag": "tab:green",
+            "dPimag": "gold",
+            "oPimag": "tab:green",
+            "W": "k",
+        }
+        Ulabels = {
+            "Ptot": r"$\Upsilon_{\rm tot}$",
+            "Pth": r"$\Upsilon_{\rm th}$",
+            "Pturb": r"$\Upsilon_{\rm turb}$",
+            "Pimag": r"$\Upsilon_{\rm mag}$",
+            "dPimag": r"$\Upsilon_{\delta B}$",
+            "oPimag": r"$\Upsilon_{\overline{B}}$",
+        }
+        attrs["colors"] = colors
+        attrs["labels"] = labels
+        attrs["Plabels"] = Plabels
+        attrs["Ulabels"] = Ulabels
+        attrs["Pcolors"] = Pcolors
 
         return attrs
 
     @staticmethod
-    def plot_basics(h,name='model',axes=None):
+    def plot_basics(h, name="model", axes=None):
         if axes is None:
-            fig,axes = plt.subplots(4,3,figsize=(10,10),sharey='row')
+            fig, axes = plt.subplots(4, 3, figsize=(10, 10), sharey="row")
             axes = axes.flatten()
         axes_it = iter(axes)
-        fields = ['Sigma_gas','Sigma_star','Sigma_out',
-                'Sigma_HI','Sigma_HII','Sigma_H2',
-                'sfr10','sfr40','sfr100',
-                'szeff','vz','vA']
+        fields = [
+            "Sigma_gas",
+            "Sigma_star",
+            "Sigma_out",
+            "Sigma_HI",
+            "Sigma_HII",
+            "Sigma_H2",
+            "sfr10",
+            "sfr40",
+            "sfr100",
+            "szeff",
+            "vz",
+            "vA",
+        ]
 
         for f in fields:
             plt.sca(next(axes_it))
-            plt.plot(h['time'],h[f],label=name)
+            plt.plot(h["time"], h[f], label=name)
             plt.ylabel(f)
         plt.tight_layout()
         return axes
 
-import pyathena as pa
 
 class PaperIData(PaperData):
     def __init__(self):
-        self.outdir='/tigress/changgoo/public_html/TIGRESS-NCR/I-figures/'
-        basedir = '/tigress/changgoo/TIGRESS-NCR/'
-        scrdir = '/scratch/gpfs/changgoo/TIGRESS-NCR/'
-        models_full = dict(R8_8pc=scrdir+'R8_8pc_NCR.full.v3',
-                           R8_4pc=basedir+'R8_4pc_NCR.full.xy2048.eps0.np768.has',
-                           LGR4_4pc=scrdir+'LGR4_4pc_NCR.full.v3.frad.g0',
-                        #    LGR4_2pc=basedir+'LGR4_2pc_NCR.full.xy1024.eps2.5e-9.np768')
-                           LGR4_2pc=basedir+'LGR4_2pc_NCR.full')
-        models_full2 = dict(R8_8pc2=basedir+'R8_8pc_NCR.full.latest2',
-                            LGR4_4pc3=basedir+'LGR4_4pc_NCR.full.xy1024.eps1.e-8',
-                            LGR4_4pc2=basedir+'LGR4_4pc_NCR.full',
-                            LGR4_8pc2=basedir+'LGR4_8pc_NCR.full')
+        self.outdir = "/tigress/changgoo/public_html/TIGRESS-NCR/I-figures/"
+        basedir = "/tigress/changgoo/TIGRESS-NCR/"
+        scrdir = "/scratch/gpfs/changgoo/TIGRESS-NCR/"
+        models_full = dict(
+            R8_8pc=scrdir + "R8_8pc_NCR.full.v3",
+            R8_4pc=basedir + "R8_4pc_NCR.full.xy2048.eps0.np768.has",
+            LGR4_4pc=scrdir + "LGR4_4pc_NCR.full.v3.frad.g0",
+            #    LGR4_2pc=basedir+'LGR4_2pc_NCR.full.xy1024.eps2.5e-9.np768')
+            LGR4_2pc=basedir + "LGR4_2pc_NCR.full",
+        )
+        models_full2 = dict(
+            R8_8pc2=basedir + "R8_8pc_NCR.full.latest2",
+            LGR4_4pc3=basedir + "LGR4_4pc_NCR.full.xy1024.eps1.e-8",
+            LGR4_4pc2=basedir + "LGR4_4pc_NCR.full",
+            LGR4_8pc2=basedir + "LGR4_8pc_NCR.full",
+        )
 
-        models=dict()
+        models = dict()
         models.update(models_full)
         models.update(models_full2)
         self.sa = pa.LoadSimTIGRESSNCRAll(models)
-        self.models = dict(full = models_full)
+        self.models = dict(full=models_full)
         self._set_colors()
         self._set_plot_kwargs()
         self.set_model_list()
 
-        os.makedirs(self.outdir,exist_ok=True)
+        os.makedirs(self.outdir, exist_ok=True)
 
     def _set_colors(self):
-        colors=dict()
-        colors['R8_8pc']='tab:cyan'
-        colors['R8_4pc']='tab:blue'
-        colors['LGR4_4pc']='tab:red'
-        colors['LGR4_2pc']='tab:purple'
-        self.colors=colors
+        colors = dict()
+        colors["R8_8pc"] = "tab:cyan"
+        colors["R8_4pc"] = "tab:blue"
+        colors["LGR4_4pc"] = "tab:red"
+        colors["LGR4_2pc"] = "tab:purple"
+        self.colors = colors
 
     def _set_plot_kwargs(self):
-        plt_kwargs=dict()
-        #initialize
+        plt_kwargs = dict()
+        # initialize
         for m in self.sa.models:
-            if not m in self.colors:
-                plt_kwargs[m]=dict()
+            if m not in self.colors:
+                plt_kwargs[m] = dict()
                 continue
-            plt_kwargs[m]=dict(color=self.colors[m])
+            plt_kwargs[m] = dict(color=self.colors[m])
         self.plt_kwargs = plt_kwargs
 
     def set_model_list(self):
-        mlist = dict(std = ['R8_4pc','R8_8pc','LGR4_2pc','LGR4_4pc'])
-        trlist = dict(std = [slice(250,450)]*2+[slice(250,350)]*2)
-        restart_from = dict(R8_4pc='R8_8pc2',R8_8pc='R8_8pc2',LGR4_2pc='LGR4_4pc2',LGR4_4pc='LGR4_4pc3',LGR4_4pc2='LGR4_8pc2')
+        mlist = dict(std=["R8_4pc", "R8_8pc", "LGR4_2pc", "LGR4_4pc"])
+        trlist = dict(std=[slice(250, 450)] * 2 + [slice(250, 350)] * 2)
+        restart_from = dict(
+            R8_4pc="R8_8pc2",
+            R8_8pc="R8_8pc2",
+            LGR4_2pc="LGR4_4pc2",
+            LGR4_4pc="LGR4_4pc3",
+            LGR4_4pc2="LGR4_8pc2",
+        )
         self.mlist = mlist
         self.trlist = trlist
         self.restart_from = restart_from
 
+
 class RadConvergenceData(PaperData):
     def __init__(self):
-        self.outdir='/tigress/changgoo/public_html/TIGRESS-NCR/Conv-figures/'
-        basedir = '/tigress/changgoo/TIGRESS-NCR/'
-        scrdir = '/scratch/gpfs/changgoo/TIGRESS-NCR/'
-        models_radconv = dict(R8_xy1_eps0=scrdir+'R8_8pc_NCR.full.v3.RT.xy1024.eps0.0',
-                              R8_xy2_eps0=scrdir+'R8_8pc_NCR.full.v3.frad.g0',
-                              R8_xy4_eps0=scrdir+'R8_8pc_NCR.full.v3.RT.xy4096.eps0.0',
-                              R8_xy05_eps0=scrdir+'R8_8pc_NCR.full.v3.RT.xy512.eps0.0',
-                              R8_xy1_eps1_8=scrdir+'R8_8pc_NCR.full.v3.RT.xy1024.eps1.e-8',
-                              R8_xy2_eps1_8=scrdir+'R8_8pc_NCR.full.v3.RT.xy2048.eps1.e-8',
-                             )
+        self.outdir = "/tigress/changgoo/public_html/TIGRESS-NCR/Conv-figures/"
+        # basedir = '/tigress/changgoo/TIGRESS-NCR/'
+        scrdir = "/scratch/gpfs/changgoo/TIGRESS-NCR/"
+        models_radconv = dict(
+            R8_xy1_eps0=scrdir + "R8_8pc_NCR.full.v3.RT.xy1024.eps0.0",
+            R8_xy2_eps0=scrdir + "R8_8pc_NCR.full.v3.frad.g0",
+            R8_xy4_eps0=scrdir + "R8_8pc_NCR.full.v3.RT.xy4096.eps0.0",
+            R8_xy05_eps0=scrdir + "R8_8pc_NCR.full.v3.RT.xy512.eps0.0",
+            R8_xy1_eps1_8=scrdir + "R8_8pc_NCR.full.v3.RT.xy1024.eps1.e-8",
+            R8_xy2_eps1_8=scrdir + "R8_8pc_NCR.full.v3.RT.xy2048.eps1.e-8",
+        )
         self.sa = pa.LoadSimTIGRESSNCRAll(models_radconv)
 
-        os.makedirs(self.outdir,exist_ok=True)
+        os.makedirs(self.outdir, exist_ok=True)
 
 
 class PaperIIIData(PaperData):
     def __init__(self):
-        self.outdir='/tigress/changgoo/public_html/TIGRESS-NCR/I-figures/'
-        basedir = '/tigress/changgoo/TIGRESS-NCR/'
-        basedir_lowZ = '/tigress/changgoo/TIGRESS-NCR-lowZ/'
-        scrdir = '/scratch/gpfs/changgoo/TIGRESS-NCR/'
-        models_full = dict(R8_8pc=scrdir+'R8_8pc_NCR.full.v3.frad.g0',
-                           R8_8pc_Z03=basedir_lowZ+'R8_8pc_NCR.full.Z0.3.xy4096.eps0.0',
-                           R8_8pc_Z01=basedir_lowZ+'R8_8pc_NCR.full.Z0.1.xy4096.eps0.0',
-                           R8_4pc=basedir+'R8_4pc_NCR.full.xy2048.eps0.np768.has',
-                           LGR4_4pc=scrdir+'LGR4_4pc_NCR.full.v3.frad.g0',
-                           LGR4_2pc=basedir+'LGR4_2pc_NCR.full'
-                           )
-        models_full2 = dict(R8_8pc2=basedir+'R8_8pc_NCR.full.latest2',
-                            LGR4_4pc3=basedir+'LGR4_4pc_NCR.full.xy1024.eps1.e-8',
-                            LGR4_4pc2=basedir+'LGR4_4pc_NCR.full',
-                            LGR4_8pc2=basedir+'LGR4_8pc_NCR.full')
+        self.outdir = "/tigress/changgoo/public_html/TIGRESS-NCR/I-figures/"
+        basedir = "/tigress/changgoo/TIGRESS-NCR/"
+        basedir_lowZ = "/tigress/changgoo/TIGRESS-NCR-lowZ/"
+        scrdir = "/scratch/gpfs/changgoo/TIGRESS-NCR/"
+        models_full = dict(
+            R8_8pc=scrdir + "R8_8pc_NCR.full.v3.frad.g0",
+            R8_8pc_Z03=basedir_lowZ + "R8_8pc_NCR.full.Z0.3.xy4096.eps0.0",
+            R8_8pc_Z01=basedir_lowZ + "R8_8pc_NCR.full.Z0.1.xy4096.eps0.0",
+            R8_4pc=basedir + "R8_4pc_NCR.full.xy2048.eps0.np768.has",
+            LGR4_4pc=scrdir + "LGR4_4pc_NCR.full.v3.frad.g0",
+            LGR4_2pc=basedir + "LGR4_2pc_NCR.full",
+        )
+        models_full2 = dict(
+            R8_8pc2=basedir + "R8_8pc_NCR.full.latest2",
+            LGR4_4pc3=basedir + "LGR4_4pc_NCR.full.xy1024.eps1.e-8",
+            LGR4_4pc2=basedir + "LGR4_4pc_NCR.full",
+            LGR4_8pc2=basedir + "LGR4_8pc_NCR.full",
+        )
 
-        models=dict()
+        models = dict()
         models.update(models_full)
         models.update(models_full2)
         self.sa = pa.LoadSimTIGRESSNCRAll(models)
-        self.models = dict(full = models_full)
+        self.models = dict(full=models_full)
         self._set_colors()
         self._set_plot_kwargs()
         self.set_model_list()
 
-        os.makedirs(self.outdir,exist_ok=True)
+        os.makedirs(self.outdir, exist_ok=True)
 
     def _set_colors(self):
-        colors=dict()
-        colors['R8_8pc']='tab:cyan'
-        colors['R8_4pc']='tab:blue'
-        colors['LGR4_4pc']='tab:red'
-        colors['LGR4_2pc']='tab:purple'
-        self.colors=colors
+        colors = dict()
+        colors["R8_8pc"] = "tab:cyan"
+        colors["R8_4pc"] = "tab:blue"
+        colors["LGR4_4pc"] = "tab:red"
+        colors["LGR4_2pc"] = "tab:purple"
+        self.colors = colors
 
     def _set_plot_kwargs(self):
-        plt_kwargs=dict()
-        #initialize
+        plt_kwargs = dict()
+        # initialize
         for m in self.sa.models:
-            if not m in self.colors:
-                plt_kwargs[m]=dict()
+            if m not in self.colors:
+                plt_kwargs[m] = dict()
                 continue
-            plt_kwargs[m]=dict(color=self.colors[m])
+            plt_kwargs[m] = dict(color=self.colors[m])
         self.plt_kwargs = plt_kwargs
 
     def set_model_list(self):
-        mlist = dict(std = ['R8_4pc','R8_8pc','LGR4_2pc','LGR4_4pc'])
-        trlist = dict(std = [slice(250,450)]*2+[slice(250,350)]*2)
-        restart_from = dict(R8_4pc='R8_8pc2',R8_8pc='R8_8pc2',LGR4_2pc='LGR4_4pc2',LGR4_4pc='LGR4_4pc3',LGR4_4pc2='LGR4_8pc2')
+        mlist = dict(std=["R8_4pc", "R8_8pc", "LGR4_2pc", "LGR4_4pc"])
+        trlist = dict(std=[slice(250, 450)] * 2 + [slice(250, 350)] * 2)
+        restart_from = dict(
+            R8_4pc="R8_8pc2",
+            R8_8pc="R8_8pc2",
+            LGR4_2pc="LGR4_4pc2",
+            LGR4_4pc="LGR4_4pc3",
+            LGR4_4pc2="LGR4_8pc2",
+        )
         self.mlist = mlist
         self.trlist = trlist
         self.restart_from = restart_from

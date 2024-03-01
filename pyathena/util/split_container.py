@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 from mpi4py import MPI
-import numpy as np
 
 def split_container(container, count):
     """
@@ -47,7 +46,7 @@ def split_N(COMM,N):
             if rank >= remainder:
                 rstart += remainder
                 rend   += remainder
-            else: 
+            else:
                 rstart += rank
                 rend   += rank + 1
     return rstart, rend
@@ -70,7 +69,7 @@ if __name__ == '__main__':
         jobs = split_container(jobs, COMM.size)
     else:
         jobs = None
-        
+
     # Scatter jobs across cores.
     jobs = COMM.scatter(jobs, root=0)
     print(jobs)
