@@ -40,7 +40,7 @@ def get_xe_arr(nH, T, xH2, xeM, xi_CR, G_PE, G_CI, zeta_pi, Z_d, Z_g, xCstd, xOs
             xCII.append(xCstd*Z_g)
             xOII.append(xHII_*Z_g*xOstd)
         else:
-            xe = brentq(f_xe, 1e-3, 1.3, args=(xH2, nH_, T_, xi_CR, G_CI, G_PE, Z_d, Z_g,
+            xe = brentq(f_xe, 1e-4, 1.3, args=(xH2, nH_, T_, xi_CR, G_CI, G_PE, Z_d, Z_g,
                                                zeta_pi, xOstd, xCstd, gr_rec))
             xHII_ = get_xHII(nH_, xe, xH2, xeM, T_, xi_CR, G_PE, Z_d, zeta_pi, gr_rec)
             xCII_ = get_xCII(nH_, xe, xH2, T_, Z_d, Z_g, xi_CR, G_PE, G_CI, xCstd, gr_rec)
@@ -334,9 +334,10 @@ def get_den_t_cool(nH, Z, ionized):
     cool_tot_ = rr['cool_H'] + (1.0 - f1(T))*rr['cool_other'] + \
                f1(T)*(Z*cgi_metal(T) + cgi_He(T))
     rr['cool_tot'] = cool_tot_
-    den_t_cool = (1.1 + rr['xe_eq'])*ac.k_B.cgs*T/((gamma-1.0)*cool_tot_)
+    den_t_cool = (1.1 + rr['xe_eq'])*ac.k_B*T*au.K/\
+        ((gamma-1.0)*cool_tot_*au.erg*au.cm**3/au.s)
 
-    return rr, den_t_cool*(1.0*au.second).to('yr')
+    return rr, den_t_cool.to('yr cm-3')
 
 def plot_t_cool(nH=1.0, Z=[0.001, 0.01, 0.1, 1.0, 3.0]):
 
