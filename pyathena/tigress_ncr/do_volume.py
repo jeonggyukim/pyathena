@@ -12,7 +12,6 @@ import sys
 import numpy as np
 
 import pyathena as pa
-from pyathena.util.split_container import split_container
 # from pyathena.plt_tools.make_movie import make_movie
 
 import astropy.constants as ac
@@ -23,6 +22,7 @@ from yt.visualization.volume_rendering.api import create_volume_source
 # from yt.visualization.volume_rendering.api import Scene
 
 from pyathena.microphysics.cool import get_xCII, q10CII_
+from .do_tasks import process_tar, scatter_nums
 
 
 def add_fields(s, ds, xray=True, CII=True):
@@ -566,48 +566,50 @@ def make_volume(ds):
 if __name__ == "__main__":
     COMM = MPI.COMM_WORLD
 
-    basedir_def = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
+    basedir = "/tigress/changgoo/TIGRESS-NCR/R8_4pc_NCR"
+    inum0 = 0
 
     savdir = None
     savdir_pkl = None
 
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "-b", "--basedir", type=str, default=basedir_def, help="Name of the basedir."
+        "-b", "--basedir", type=str, default=basedir, help="Name of the basedir."
     )
 
     parser.add_argument(
-        "-i", "--inum0", type=int, default=0, help="snapshot number to start."
+        "-i", "--inum0", type=int, default=inum0, help="snapshot number to start."
     )
 
     args = vars(parser.parse_args())
     locals().update(args)
 
-    s = pa.LoadSimTIGRESSNCR(basedir, verbose=True, load_method="yt")  # noqa
+    s = pa.LoadSimTIGRESSNCR(basedir, verbose=True, load_method="yt")
 
-    nums = s.nums[inum0:]  # noqa
+    # tar vtk files
+    if s.nums_rawtar is not None:
+        s = process_tar(s)
 
-    if COMM.rank == 0:
-        print("basedir, nums", s.basedir, nums)
-        nums = split_container(nums, COMM.size)
+    # get my nums
+    if s.nums is not None:
+        mynums = scatter_nums(s, s.nums[inum0:])
     else:
-        nums = None
+        mynums = []
 
-    mynums = COMM.scatter(nums, root=0)
     print("[rank, mynums]:", COMM.rank, mynums)
     foutdir = osp.join(os.fspath(s.basedir), "volume")
     os.makedirs(foutdir, exist_ok=True)
     time0 = time.time()
-    if True:
-        for num in mynums:
-            ds = s.ytload(num)
-            ds = add_fields(s, ds, xray=True, CII=True)
 
-            with plt.style.context("dark_background"):
-                make_many_volumes(s, ds, num)
+    for num in mynums:
+        ds = s.ytload(num)
+        ds = add_fields(s, ds, xray=True, CII=True)
 
-            n = gc.collect()
-            print("Unreachable objects:", n, end=" ")
-            print("Remaining Garbage:", end=" ")
-            pprint.pprint(gc.garbage)
-            sys.stdout.flush()
+        with plt.style.context("dark_background"):
+            make_many_volumes(s, ds, num)
+
+        n = gc.collect()
+        print("Unreachable objects:", n, end=" ")
+        print("Remaining Garbage:", end=" ")
+        pprint.pprint(gc.garbage)
+        sys.stdout.flush()

@@ -17,12 +17,12 @@ import xarray as xr
 import yt
 
 import pyathena as pa
-from pyathena.util.split_container import split_container
 
 # from pyathena.plt_tools.make_movie import make_movie
 # from pyathena.tigress_ncr.phase import *
 # from pyathena.tigress_ncr.cooling_breakdown import *
 from pyathena.tigress_ncr.do_volume import add_fields
+from .do_tasks import process_tar, scatter_nums
 
 units = dict()
 units.update(dict(velocity_z="km/s"))
@@ -317,30 +317,14 @@ if __name__ == "__main__":
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
     # tar vtk files
     if s.nums_rawtar is not None:
-        nums = s.nums_rawtar
-        if COMM.rank == 0:
-            print("basedir, nums", s.basedir, nums)
-            nums = split_container(nums, COMM.size)
-        else:
-            nums = None
+        s = process_tar(s)
 
-        mynums = COMM.scatter(nums, root=0)
-        for num in mynums:
-            s.create_tar(num=num, kind="vtk", remove_original=True, overwrite=True)
-        COMM.barrier()
-
-        # reading it again
-        s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
-
-    nums = s.nums
-
-    if COMM.rank == 0:
-        print("basedir, nums", s.basedir, nums)
-        nums = split_container(nums, COMM.size)
+    # get my nums
+    if s.nums is not None:
+        mynums = scatter_nums(s, s.nums)
     else:
-        nums = None
+        mynums = []
 
-    mynums = COMM.scatter(nums, root=0)
     print("[rank, mynums]:", COMM.rank, mynums)
 
     time0 = time.time()

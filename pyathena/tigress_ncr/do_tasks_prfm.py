@@ -16,10 +16,10 @@ import numpy as np
 import xarray as xr
 
 import pyathena as pa
-from pyathena.util.split_container import split_container
 # from pyathena.plt_tools.make_movie import make_movie
 
 from pathlib import Path
+from .do_tasks import process_tar, scatter_nums
 
 
 def grid_msp(s, num, agemin, agemax):
@@ -191,16 +191,16 @@ if __name__ == "__main__":
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
+    # tar vtk files
+    if s.nums_rawtar is not None:
+        s = process_tar(s)
 
-    nums = s.nums
-
-    if COMM.rank == 0:
-        print("basedir, nums", s.basedir, nums)
-        nums = split_container(nums, COMM.size)
+    # get my nums
+    if s.nums is not None:
+        mynums = scatter_nums(s, s.nums)
     else:
-        nums = None
+        mynums = []
 
-    mynums = COMM.scatter(nums, root=0)
     print("[rank, mynums]:", COMM.rank, mynums)
 
     time0 = time.time()

@@ -122,13 +122,17 @@ if __name__ == "__main__":
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
     # tar vtk files
-    s = process_tar(s)
+    if s.nums_rawtar is not None:
+        s = process_tar(s)
 
     # set PDF1D
     s.pdf = PDF1D(s)
 
     # get my nums
-    mynums = scatter_nums(s, s.nums)
+    if s.nums is not None:
+        mynums = scatter_nums(s, s.nums)
+    else:
+        mynums = []
 
     time0 = time.time()
     for num in mynums:

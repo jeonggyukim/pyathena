@@ -14,7 +14,6 @@ import sys
 import cmasher as cmr
 
 import pyathena as pa
-from pyathena.util.split_container import split_container
 from pyathena.tigress_ncr.ncr_paper_lowz import athena_data
 from pyathena.tigress_ncr.phase import (
     assign_phase,
@@ -22,6 +21,7 @@ from pyathena.tigress_ncr.phase import (
     recal_xT,
     add_phase_cuts,
 )
+from .do_tasks import process_tar, scatter_nums
 
 dirpath = os.path.dirname(__file__)
 
@@ -223,30 +223,14 @@ if __name__ == "__main__":
 
     # tar vtk files
     if s.nums_rawtar is not None:
-        nums = s.nums_rawtar
-        if COMM.rank == 0:
-            print("basedir, nums", s.basedir, nums)
-            nums = split_container(nums, COMM.size)
-        else:
-            nums = None
+        s = process_tar(s)
 
-        mynums = COMM.scatter(nums, root=0)
-        for num in mynums:
-            s.create_tar(num=num, kind="vtk", remove_original=True, overwrite=True)
-        COMM.barrier()
-
-        # reading it again
-        s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
-
-    nums = s.nums_starpar
-
-    if COMM.rank == 0:
-        print("basedir, nums", s.basedir, nums)
-        nums = split_container(nums, COMM.size)
+    # get my nums
+    if s.nums is not None:
+        mynums = scatter_nums(s, s.nums_starpar)
     else:
-        nums = None
+        mynums = []
 
-    mynums = COMM.scatter(nums, root=0)
     print("[rank, mynums]:", COMM.rank, mynums)
 
     time0 = time.time()
