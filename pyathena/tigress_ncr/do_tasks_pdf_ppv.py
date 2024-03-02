@@ -23,7 +23,7 @@ import yt
 # from pyathena.tigress_ncr.phase import *
 # from pyathena.tigress_ncr.cooling_breakdown import *
 from pyathena.tigress_ncr.do_volume import add_fields
-from .do_tasks import process_tar, scatter_nums
+from pyathena.tigress_ncr.do_tasks import scatter_nums
 
 units = dict()
 units.update(dict(velocity_z="km/s"))
@@ -316,10 +316,6 @@ if __name__ == "__main__":
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
-    # tar vtk files
-    if s.nums_rawtar is not None:
-        s = process_tar(s)
-
     # get my nums
     if s.nums is not None:
         mynums = scatter_nums(s, s.nums)

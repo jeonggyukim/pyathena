@@ -19,7 +19,7 @@ import pyathena as pa
 
 # from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigress_ncr.phase import assign_phase
-from .do_tasks import process_tar, scatter_nums
+from pyathena.tigress_ncr.do_tasks import scatter_nums
 
 
 def process_one_file_ncrsp(s, num):
@@ -64,10 +64,6 @@ if __name__ == "__main__":
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
-    # tar vtk files
-    if s.nums_rawtar is not None:
-        s = process_tar(s)
-
     # get my nums
     if s.nums is not None:
         mynums = scatter_nums(s, s.nums)

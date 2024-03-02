@@ -17,7 +17,7 @@ import pyathena as pa
 # from pyathena.plt_tools.make_movie import make_movie
 # from pyathena.tigress_ncr.phase import *
 from pyathena.tigress_ncr.cooling_breakdown import draw_Tpdf
-from .do_tasks import process_tar, scatter_nums
+from pyathena.tigress_ncr.do_tasks import scatter_nums
 
 if __name__ == "__main__":
     COMM = MPI.COMM_WORLD
@@ -37,10 +37,6 @@ if __name__ == "__main__":
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
-    # tar vtk files
-    if s.nums_rawtar is not None:
-        s = process_tar(s)
-
     # get my nums
     if s.nums is not None:
         mynums = scatter_nums(s, s.nums)

@@ -20,7 +20,7 @@ import pyathena as pa
 
 # from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigress_ncr.slc_prj import slc_to_xarray
-from .do_tasks import process_tar, scatter_nums
+from pyathena.tigress_ncr.do_tasks import scatter_nums
 
 dirpath = os.path.dirname(__file__)
 
@@ -120,10 +120,6 @@ if __name__ == "__main__":
     # create folder
     outdir = os.path.join(s.basedir, "surfmaps")
     os.makedirs(outdir, exist_ok=True)
-
-    # tar vtk files
-    if s.nums_rawtar is not None:
-        s = process_tar(s)
 
     # get my nums
     if s.nums is not None:

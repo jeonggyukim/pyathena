@@ -14,9 +14,52 @@ import pickle
 import pyathena as pa
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
-from pyathena.tigress_ncr.phase import PDF1D
+from pyathena.tigress_ncr.phase import PDF1D, recal_nP, recal_xT
 from pyathena.tigress_ncr.cooling_breakdown import draw_Tpdf
-from .do_tasks_phase import process_one_file_phase
+
+
+def process_one_file_phase(s, num):
+    npfile = os.path.join(
+        s.basedir, "np_pdf", "{}.{:04d}.np_pdf-z300.nc".format(s.basename, num)
+    )
+    nTfile = os.path.join(
+        s.basedir, "nT_pdf", "{}.{:04d}.nT_pdf-z300.nc".format(s.basename, num)
+    )
+    xTfile = os.path.join(
+        s.basedir, "xT_pdf", "{}.{:04d}.xT_pdf-z300.nc".format(s.basename, num)
+    )
+    os.makedirs(os.path.dirname(npfile), exist_ok=True)
+    os.makedirs(os.path.dirname(nTfile), exist_ok=True)
+    os.makedirs(os.path.dirname(xTfile), exist_ok=True)
+    if not os.path.isfile(xTfile):
+        ds = s.load_vtk(num)
+        flist = ["nH", "pok", "T"]
+        if s.test_newcool():
+            flist += ["xe", "xHI", "xHII", "xH2", "cool_rate", "net_cool_rate"]
+        dchunk = ds.get_field(flist)
+        dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
+        print(" creating nP ")
+        for zmax in [300, 1000, None]:
+            if zmax is not None:
+                dchunk = dchunk.sel(z=slice(-zmax, zmax))
+                npfile_ = npfile.replace("-z300.nc", f"-z{zmax}.nc")
+                nTfile_ = nTfile.replace("-z300.nc", f"-z{zmax}.nc")
+                xTfile_ = xTfile.replace("-z300.nc", f"-z{zmax}.nc")
+            else:
+                npfile_ = npfile.replace("-z300.nc", ".nc")
+                nTfile_ = nTfile.replace("-z300.nc", ".nc")
+                xTfile_ = xTfile.replace("-z300.nc", ".nc")
+            pdf_dset = recal_nP(dchunk, NCR=s.test_newcool())
+            pdf_dset.to_netcdf(npfile_)
+            pdf_dset = recal_nP(dchunk, yf="T", NCR=s.test_newcool())
+            pdf_dset.to_netcdf(nTfile_)
+            hist_bin = recal_xT(dchunk)
+            hist_bin.to_netcdf(xTfile_)
+
+        # close
+        ds.close()
+    else:
+        print(" skipping nP ")
 
 
 def scatter_nums(s, nums):
@@ -121,18 +164,17 @@ if __name__ == "__main__":
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
-    # tar vtk files
-    if s.nums_rawtar is not None:
-        s = process_tar(s)
-
-    # set PDF1D
-    s.pdf = PDF1D(s)
-
+    s = process_tar(s)
     # get my nums
     if s.nums is not None:
         mynums = scatter_nums(s, s.nums)
     else:
         mynums = []
+
+    print("[rank, mynums]:", COMM.rank, mynums)
+
+    # set PDF1D
+    s.pdf = PDF1D(s)
 
     time0 = time.time()
     for num in mynums:

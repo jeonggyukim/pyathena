@@ -22,7 +22,7 @@ from yt.visualization.volume_rendering.api import create_volume_source
 # from yt.visualization.volume_rendering.api import Scene
 
 from pyathena.microphysics.cool import get_xCII, q10CII_
-from .do_tasks import process_tar, scatter_nums
+from pyathena.tigress_ncr.do_tasks import scatter_nums
 
 
 def add_fields(s, ds, xray=True, CII=True):
@@ -585,11 +585,6 @@ if __name__ == "__main__":
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=True, load_method="yt")
-
-    # tar vtk files
-    if s.nums_rawtar is not None:
-        s = process_tar(s)
-
     # get my nums
     if s.nums is not None:
         mynums = scatter_nums(s, s.nums[inum0:])
