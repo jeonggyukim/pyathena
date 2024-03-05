@@ -10,7 +10,7 @@ from .cool_gnat12 import CoolGnat12
 from .rec_rate import RecRate
 from .cool \
 import get_xCII, coeff_kcoll_H, coeff_alpha_rr_H, coeff_alpha_gr_H, coolHI, \
-    coolRec, coolCII, coolOI, coolHIion
+    coolRec, coolCII, coolOI, coolHIion, heatPE, heatCR
 from .cool import coolCII, coolneb, coolLya, coolrecH, coolffH, coolHI
 from .get_cooling import f1, set_CIE_interpolator
 
@@ -58,22 +58,21 @@ def get_xe_arr(nH, T, xH2, xeM, xi_CR, G_PE, G_CI, zeta_pi, Z_d, Z_g, xCstd, xOs
 
     return xe, xHII, xCII, xOII, xOI
 
-def get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4, Z_g=1.0, Z_d=1.0,
-             G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16, gr_rec=True, ionized=False):
+def get_cool_eq(nH, cgi_xe_He, cgi_xe_mHHe, cgi_metal, cgi_He, xCstd=1.6e-4, xOstd=3.2e-4,
+                Z_g=1.0, Z_d=1.0, G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16, zeta_pi=0.0,
+                gr_rec=True, T=None):
 
-    if ionized:
-        # Optically thin ionizing photon flux assuming distance and Q
-        Q = 1e49
-        r = (5.0*au.pc).cgs.value
-        sigma_pi = 3e-18
-        zeta_pi = Q/(4.0*np.pi*r**2)*sigma_pi
-    else:
-        zeta_pi = 0.0
+    """Calculate chemical (but not thermal) equilibrium and cooling function
 
-    # print('zeta_pi: {0:.3e}'.format(zeta_pi))
+    Returns
+    -------
+    cool : cooling function Lambda [erg cm^3 s-1]
+    """
+
+    if T is None:
+        T = np.logspace(3, 8, 1201)
 
     xeM0 = xCstd*Z_g
-    T = np.logspace(3, 8, 1201)
     nH = np.full_like(T, nH)
     xe_eq, xHII_eq, xCII_eq, xOII_eq, xOI_eq =\
         get_xe_arr(nH, T, xH2, xeM0, xi_CR, G_PE, G_CI, zeta_pi, Z_d, Z_g, xCstd, xOstd,
@@ -83,7 +82,6 @@ def get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4, Z_g=1.0, Z_
     xOII_eq = np.array(xOII_eq)
     xOI_eq = xOstd*Z_g - xOII_eq
 
-    # print(cgi_xe_mHHe(T))
     # Add CIE electron abundance resulting from He and metals
     xe_eq += f1(T)*(cgi_xe_He(T) + Z_g*cgi_xe_mHHe(T))
 
@@ -101,15 +99,30 @@ def get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4, Z_g=1.0, Z_
     else:
         cool_grRec = 0.0
 
-    res = dict(T=T, xe_eq=xe_eq, xHI_eq=xHI_eq, xHII_eq=xHII_eq,
-               xCII_eq=xCII_eq, xOI_eq=xOI_eq, xOII_eq=xOII_eq,
-               cool_H=cool_H, cool_other=cool_other,
-               cool_CII=cool_CII_, cool_OI=cool_OI_,
-               cool_neb=cool_neb_,
-               cool_grRec=cool_grRec,
-               cool_Hffrec=cool_Hffrec, cool_HLya=cool_HLya)
+    cool_tot = cool_H + (1.0 - f1(T))*cool_other +\
+        f1(T)*(Z_g*cgi_metal(T) + cgi_He(T))
+
+    res = dict(nH=nH, T=T, Z_g=Z_g, Z_d=Z_d, G_PE=G_PE, zeta_pi=zeta_pi, xi_CR=xi_CR,
+               xe_eq=xe_eq, xHI_eq=xHI_eq, xHII_eq=xHII_eq, xCII_eq=xCII_eq,
+               xOI_eq=xOI_eq, xOII_eq=xOII_eq, xH2=xH2, cool_H=cool_H,
+               cool_other=cool_other, cool_CII=cool_CII_, cool_OI=cool_OI_,
+               cool_neb=cool_neb_, cool_grRec=cool_grRec, cool_Hffrec=cool_Hffrec,
+               cool_HLya=cool_HLya, cool_tot=cool_tot)
 
     return res
+
+def get_heat_eq(rr, dhnu_pi_HI=3.4):
+    """Heating per H [erg s^-1 H^-1] ignoring H2-related processes
+
+    Cooling by grain-assisted recombination is included as a negative heating
+    """
+    rr['Gamma_pi'] = rr['xHI_eq']*rr['zeta_pi']*(dhnu_pi_HI*au.eV).cgs.value
+    rr['Gamma_cr'] = heatCR(rr['nH'], rr['xe_eq'], rr['xHI_eq'], rr['xH2'], rr['xi_CR'])
+    rr['Gamma_pe'] = heatPE(rr['nH'], rr['T'], rr['xe_eq'], rr['Z_d'], rr['G_PE'])
+    rr['Gamma_grRec'] = -coolRec(rr['nH'], rr['T'], rr['xe_eq'], rr['Z_d'], rr['G_PE'])
+    rr['Gamma_tot'] = rr['Gamma_pi'] + rr['Gamma_cr'] + rr['Gamma_pe'] + rr['Gamma_grRec']
+
+    return rr
 
 def plot_lambda_cool_ncr():
     set_plt_fancy()
@@ -139,11 +152,11 @@ def plot_lambda_cool_ncr():
     lw_other = 1.5
 
     plt.sca(axes[0])
-    # Ieutral
+    # Neutral
     ls = '-'
-    r0 = get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4, Z_g=Z_g,
-                  Z_d=Z_d, G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16, gr_rec=gr_rec,
-                  ionized=False)
+    r0 = get_cool_eq(nH, cgi_xe_He, cgi_xe_mHHe, cgi_metal, cgi_He, Z_g=Z_g, Z_d=Z_d,
+                     G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16, zeta_pi=0.0, gr_rec=gr_rec)
+
     r0_Z1 = r0
     T = r0['T']
     xe_eq1 = r0['xe_eq']
@@ -169,9 +182,9 @@ def plot_lambda_cool_ncr():
 
     # Ionized
     ls = '--'
-    r1 = get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4,
-                  Z_g=1.0, Z_d=1.0, G_CI=100.0, G_PE=100.0, xH2=0.0, xi_CR=2e-16, gr_rec=gr_rec,
-                  ionized=True)
+    r1 = get_cool_eq(nH, cgi_xe_He, cgi_xe_mHHe, cgi_metal, cgi_He, Z_g=Z_g, Z_d=Z_d,
+                     G_CI=100.0, G_PE=100.0, xH2=0.0, xi_CR=2e-16, zeta_pi=zeta_pi,
+                     gr_rec=gr_rec)
     r1_Z1 = r1
     T = r1['T']
     xe_eq2 = r1['xe_eq']
@@ -197,7 +210,7 @@ def plot_lambda_cool_ncr():
     plt.sca(ax_add1)
     plt.loglog(r0_Z1['T'],r0_Z1['xe_eq'], c='k', ls='-')
     plt.loglog(r1_Z1['T'],r1_Z1['xe_eq'], c='k', ls='--')
-    plt.loglog(cg.temp, cgi_xe_H(cg.temp)+cgi_xe_mH(cg.temp), c='k', ls=':')
+    plt.loglog(cg.temp, cgi_xe_H(cg.temp) + cgi_xe_mH(cg.temp), c='k', ls=':')
 
     plt.loglog(r0_Z1['T'], r0_Z1['xHI_eq'], c='r', ls='-')
     plt.loglog(r1_Z1['T'], r1_Z1['xHI_eq'], c='r', ls='--')
@@ -223,10 +236,11 @@ def plot_lambda_cool_ncr():
     plt.sca(axes[1])
     Z_g = 0.01
     Z_d = 0.01
+    # Neutral
     ls = '-'
-    r0 = get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4, Z_g=Z_g,
-                  Z_d=Z_d, G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16, gr_rec=gr_rec,
-                  ionized=False)
+    r0 = get_cool_eq(nH, cgi_xe_He, cgi_xe_mHHe, cgi_metal, cgi_He, Z_g=Z_g, Z_d=Z_d,
+                     G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16, zeta_pi=0.0, gr_rec=gr_rec)
+
     r0_Z001 = r0
     T = r0['T']
     xe_eq3 = r0['xe_eq']
@@ -249,11 +263,11 @@ def plot_lambda_cool_ncr():
     plt.loglog(T, cool_tot3, c='k', label=r'$\Lambda_{\rm tot}$', lw=3, ls=ls)
 
     # Ionized
-    r1 = get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4, Z_g=Z_g,
-                  Z_d=Z_d, G_CI=100.0, G_PE=100.0, xH2=0.0, xi_CR=2e-16, gr_rec=gr_rec,
-                  ionized=True)
-    r1_Z001 = r0
     ls = '--'
+    r1 = get_cool_eq(nH, cgi_xe_He, cgi_xe_mHHe, cgi_metal, cgi_He, Z_g=Z_g, Z_d=Z_d,
+                     G_CI=100.0, G_PE=100.0, xH2=0.0, xi_CR=2e-16, zeta_pi=zeta_pi,
+                     gr_rec=gr_rec)
+    r1_Z001 = r0
     T = r1['T']
     xe_eq4 = r1['xe_eq']
     cool_tot4 = r1['cool_H'] + (1.0 - f1(T))*r1['cool_other'] + \
@@ -324,34 +338,45 @@ def plot_lambda_cool_ncr():
 
     return fig
 
-def get_nH_t_cool(nH, Z, ionized):
+def get_nH_t_cool(nH, Z_g, Z_d, ionized=False):
+    if ionized:
+        Q = 1e49
+        r = (5.0*au.pc).cgs.value
+        sigma_pi = 3e-18
+        zeta_pi = Q/(4.0*np.pi*r**2)*sigma_pi
+    else:
+        zeta_pi = 0.0
+
     gamma = 5.0/3.0
     cgi_metal, cgi_He, cgi_xe_mH, cgi_xe_mHHe, cgi_xe_He =\
         set_CIE_interpolator(return_xe=True)
-    rr = get_cool(nH, cgi_xe_He, cgi_xe_mHHe, xCstd=1.6e-4, xOstd=3.2e-4,
-                  Z_g=Z, Z_d=Z, G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16,
-                  ionized=ionized, gr_rec=True)
+    rr = get_cool_eq(nH, cgi_xe_He, cgi_xe_mHHe, cgi_metal, cgi_He, Z_g=Z_g, Z_d=Z_d,
+                     G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16, zeta_pi=zeta_pi,
+                     gr_rec=True)
+    rr = get_cool_eq(nH, cgi_xe_He, cgi_xe_mHHe, cgi_metal, cgi_He, Z_g=Z_g, Z_d=Z_d,
+                     G_CI=1.0, G_PE=1.0, xH2=0.0, xi_CR=2e-16, zeta_pi=zeta_pi,
+                     gr_rec=True)
+
     T = rr['T']
-    cool_tot_ = rr['cool_H'] + (1.0 - f1(T))*rr['cool_other'] + \
-               f1(T)*(Z*cgi_metal(T) + cgi_He(T))
-    rr['cool_tot'] = cool_tot_
     nH_t_cool = (1.1 + rr['xe_eq'])*ac.k_B*T*au.K/\
-        ((gamma-1.0)*cool_tot_*au.erg*au.cm**3/au.s)
+        ((gamma-1.0)*rr['cool_tot']*au.erg*au.cm**3/au.s)
 
     return rr, nH_t_cool.to('yr cm-3')
 
-def plot_nH_t_cool(nH=1.0, Z=[0.001, 0.01, 0.1, 1.0, 3.0]):
+def plot_nH_t_cool(nH=1.0,
+                   Z_g=[0.001, 0.01, 0.1, 1.0, 3.0],
+                   Z_d=[0.001, 0.01, 0.1, 1.0, 3.0]):
 
     fig, axes = plt.subplots(1, 1, figsize=(6, 5),
                              constrained_layout=True)
     cmap = mpl.cm.plasma_r
     norm = mpl.colors.LogNorm(0.003, 3.0)
-    for Z_ in Z:
-        rr1, nH_t_cool1 = get_nH_t_cool(nH, Z_, False)
-        rr2, nH_t_cool2 = get_nH_t_cool(nH, Z_, True)
-        plt.loglog(rr1['T'], nH_t_cool1, c=cmap(norm(Z_)),
-                   label=r'{0:g}'.format(Z_))
-        plt.loglog(rr2['T'], nH_t_cool2, c=cmap(norm(Z_)), ls='--')
+    for Z_g_, Z_d_ in zip(Z_g, Z_d):
+        rr1, nH_t_cool1 = get_nH_t_cool(nH, Z_g_, Z_d_, False)
+        rr2, nH_t_cool2 = get_nH_t_cool(nH, Z_g_, Z_d_, True)
+        plt.loglog(rr1['T'], nH_t_cool1, c=cmap(norm(Z_g_)),
+                   label=r'{0:g}'.format(Z_g_))
+        plt.loglog(rr2['T'], nH_t_cool2, c=cmap(norm(Z_g_)), ls='--')
 
     plt.xlabel(r'$T\;[{\rm K}]$')
     plt.ylabel(r'$n \times t_{\rm cool}\;[{\rm cm}^{-3}\,{\rm yr}]$')
@@ -364,12 +389,14 @@ def plot_nH_t_cool(nH=1.0, Z=[0.001, 0.01, 0.1, 1.0, 3.0]):
     return fig
 
 
-def plot_Lambda_nHt_cool_xe_eq():
+def plot_Lambda_nHt_cool_xe_eq_comp():
+    """Compare cooling function, cooling time, and xe_eq between NCR and classic
 
-
-    muH = 1.4271
+    """
     c = cf.get_cool(cf.T1)
     T = cf.get_temp(cf.T1)
+    muH = 1.4271
+    # Electron fraction for classic cooling assuming xHe=0.1
     xe = muH/(T/cf.T1) - 1.1
     r, n_t_cool = get_nH_t_cool(1.0, 1.0, ionized=False)
     r2, n_t_cool2 = get_nH_t_cool(1.0, 1.0, ionized=True)
@@ -391,8 +418,8 @@ def plot_Lambda_nHt_cool_xe_eq():
     plt.loglog(r2['T'], ((1.1 + r2['xe_eq'])*ac.k_B*(r2['T']*au.K)/\
                          (r2['cool_tot']*au.cm**3*au.erg/au.s)).to('yr cm-3'),
                c=l.get_color(), ls='--')
-    plt.setp(axes[1], ylim=(5e2, 1e7),
-             ylabel=r'$n_{\rm H}t_{\rm cool} = P/(n_{\rm H}\Lambda)\;[{\rm yr}\,{\rm cm}^{-3}]$')
+    plt.setp(axes[1], ylim=(5e2, 1e7), ylabel=r'$n_{\rm H}t_{\rm cool}=$'+\
+             r'$P/(n_{\rm H}\Lambda)\;[{\rm yr}\,{\rm cm}^{-3}]$')
 
     plt.sca(axes[2])
     plt.loglog(T, xe)
