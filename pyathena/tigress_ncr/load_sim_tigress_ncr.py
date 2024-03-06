@@ -19,10 +19,12 @@ from .phase_set import Phase, PhaseSet
 from .phase_set import create_phase_set_with_LyC_mask
 from .phase_set import create_phase_set_with_density_bins
 from .zprof_from_vtk import ZprofFromVTK
+from .rad_hst import ReadHstRadiation
 
 class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
                         StarPar, PDF, Hist2d, H2, Profile1D, Snapshot_HIH2EM,
-                        RadiationAndPartiallyIonized):
+                        RadiationAndPartiallyIonized,
+                        ReadHstRadiation):
     """LoadSim class for analyzing TIGRESS-RT simulations.
     """
 

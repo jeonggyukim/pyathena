@@ -12,7 +12,6 @@ from ..classic.utils import cc_arr
 from ..classic.vtk_reader import AthenaDataSet
 
 from ..load_sim import LoadSim
-from ..io.read_hst import read_hst
 from ..decorators import check_netcdf_zprof_vtk
 
 class ZprofFromVTK:
@@ -136,21 +135,7 @@ class ZprofFromVTK:
         return xr.concat(zplist, dim='time')
 
     def merge_zprof_with_hst(self, zpa):
-
-        u = self.u
-        LxLy = self.domain['Lx'][0]*self.domain['Lx'][1]*u.pc**2
-        hnu_LyC = (self.par['radps']['hnu_PH']*au.eV).cgs.value
-        h = read_hst(self.files['hst'])
-        h['tMyr'] = h['time']*u.Myr
-        h['fesc_LyC'] = (h['Lpp0'] + h['Lesc0'] + h['Lxymax0'])/h['Ltot0']
-        h['fesc_FUV'] = (h['Lpp1'] + h['Lesc1'] + h['Lxymax1'] + h['Leps1'] +\
-                         h['Lpp2'] + h['Lesc2'] + h['Lxymax2'] + h['Leps2'])/(h['Ltot1'] + h['Ltot2'])
-        # Luminosity per area [Lsun/pc^2]
-        h['Sigma_LyC'] = h['Ltot0']*u.Lsun/LxLy
-        h['Sigma_FUV'] = (h['Ltot1'] + h['Ltot2'])*u.Lsun/LxLy
-        # Ionizing photon rate per area [#/s/kpc^2]
-        h['Phi_LyC'] = h['Sigma_LyC']*(1.0*au.Lsun).cgs.value/hnu_LyC/u.kpc**2
-
+        h = self.read_hst_rad()
         columns = ['fesc_LyC', 'fesc_FUV', 'Ltot0', 'Ltot1', 'sfr10']
         for c in columns:
             f = interp1d(h['time'], h[c], fill_value='extrapolate', bounds_error=False)
