@@ -243,11 +243,12 @@ if __name__ == "__main__":
             for prefix in plot_prefix:
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
                                 srcdir])
-            plot_prefix = [
-                    config.PLOT_PREFIX_CORE_EVOLUTION,
-                          ]
-            for prefix in plot_prefix:
-                for pid in pids:
-                    prf = "{}.par{}".format(prefix, pid)
+            prefix = config.PLOT_PREFIX_CORE_EVOLUTION
+            for pid in pids:
+                for method in [1, 2]:
+                    s.select_cores(method)
+                    if pid not in s.good_cores():
+                        continue
+                    prf = f"{prefix}.par{pid}.ver{method}"
                     subprocess.run(["make_movie", "-p", prf, "-s", srcdir,
                                     "-d", srcdir])
