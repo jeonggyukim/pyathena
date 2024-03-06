@@ -11,7 +11,7 @@ from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation.tes import TESc, get_critical_tes
 from pyathena.core_formation import config
-import turb_sphere as tes
+from turb_sphere import utils
 
 
 class LognormalPDF:
@@ -781,17 +781,21 @@ def calculate_observables(s, core, rprf, rmax):
     """Calculate observable properties of a core"""
     # Create interpolation functions
     rho_itp = interp1d(rprf.r.data, rprf.rho.data)
-    r_obs = fwhm(rho_itp, rmax)
+    dvel_sq_itp = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
+    r_obs = utils.fwhm(rho_itp, rmax)
     try:
+        # Mean density inside FWHM radius
         m_obs = rprf.menc.interp(r=r_obs).data[()]
         rhoavg_obs = m_obs / (4*np.pi*r_obs**3/3)
 
-        dv2 = rprf.dvel1_sq_mw.sel(r=slice(0, rmax))
-        rho = rprf.rho.sel(r=slice(0, rmax))
-        sigma_obs = np.sqrt(dv2.weighted(rprf.r**2*rho).mean('r').data[()])
+        # Projected velocity dispersion within FWHM
+        num = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), r_obs, rmax)
+        den = utils.integrate_2d_projected(lambda x: rho_itp(x), r_obs, rmax)
+        sigma_obs = np.sqrt(num/den)
 
+        # Critical mass of TES having rcrit = R_FWHM
         tsc = TESc(sigma=sigma_obs)
-        xi_fwhm = fwhm(tsc.rho, tsc.get_rcrit())
+        xi_fwhm = utils.fwhm(tsc.rho, tsc.get_rcrit())
         m_over_xi = tsc.menc(xi_fwhm) / xi_fwhm
         mcrit = np.pi*s.cs**2/s.gconst*m_over_xi*r_obs
     except ValueError:
