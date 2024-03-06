@@ -4,6 +4,62 @@ import functools
 import xarray as xr
 from inspect import getcallargs
 
+def check_pickle_hst(_read_hst):
+
+    @functools.wraps(_read_hst)
+    def wrapper(cls, *args, **kwargs):
+        if 'suffix' in kwargs:
+            suffix = kwargs['suffix']
+        else:
+            suffix = None
+
+        if 'savdir' in kwargs:
+            savdir = kwargs['savdir']
+        else:
+            savdir = osp.join(cls.savdir, 'hst')
+
+        if 'force_override' in kwargs:
+            force_override = kwargs['force_override']
+        else:
+            force_override = False
+
+        # Create savdir if it doesn't exist
+        if not osp.exists(savdir):
+            try:
+                os.makedirs(savdir)
+                force_override = True
+            except (IOError, PermissionError) as e:
+                cls.logger.warning('Could not make directory')
+
+        if suffix is None:
+            fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
+                            '.{0:s}.mod.p'.format(cls.basename))
+        else:
+            fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
+                            '.{0:s}.{1:s}.mod.p'.format(cls.basename, suffix))
+
+        # Check if the original history file is updated
+        if not force_override and osp.exists(fpkl) and \
+           osp.getmtime(fpkl) > osp.getmtime(cls.files['hst']):
+            cls.logger.info('[read_hst]: Reading pickle.')
+            #print('[read_hst]: Reading pickle.')
+            hst = pd.read_pickle(fpkl)
+            cls.hst = hst
+            return hst
+        else:
+            cls.logger.info('[read_hst]: Reading original hst file.')
+            # If we are here, force_override is True or history file is updated.
+            # Call read_hst function
+            hst = _read_hst(cls, *args, **kwargs)
+            try:
+                hst.to_pickle(fpkl)
+            except (IOError, PermissionError) as e:
+                cls.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
+            return hst
+
+    return wrapper
+
+
 def check_netcdf_zprof_vtk(_read_zprof_vtk):
 
     @functools.wraps(_read_zprof_vtk)
