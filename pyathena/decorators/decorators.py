@@ -1,22 +1,33 @@
 import os
 import os.path as osp
 import functools
+import pandas as pd
 import xarray as xr
 from inspect import getcallargs
 
-def check_pickle_hst(_read_hst):
+def check_pickle_hst(func):
 
-    @functools.wraps(_read_hst)
+    @functools.wraps(func)
     def wrapper(cls, *args, **kwargs):
-        if 'suffix' in kwargs:
-            suffix = kwargs['suffix']
+        # Convert positional args to keyword args
+        call_args = getcallargs(func, cls, *args, **kwargs)
+        call_args.pop('self')
+        kwargs = call_args
+
+        if 'prefix' in kwargs:
+            prefix = kwargs['prefix']
         else:
-            suffix = None
+            prefix = None
 
         if 'savdir' in kwargs:
             savdir = kwargs['savdir']
+            if savdir is None:
+                savdir = cls.savdir
         else:
-            savdir = osp.join(cls.savdir, 'hst')
+            savdir = cls.savdir
+
+        if prefix is not None:
+            savdir = osp.join(savdir, prefix)
 
         if 'force_override' in kwargs:
             force_override = kwargs['force_override']
@@ -31,12 +42,12 @@ def check_pickle_hst(_read_hst):
             except (IOError, PermissionError) as e:
                 cls.logger.warning('Could not make directory')
 
-        if suffix is None:
+        if prefix is None:
             fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
                             '.{0:s}.mod.p'.format(cls.basename))
         else:
             fpkl = osp.join(savdir, osp.basename(cls.files['hst']) +
-                            '.{0:s}.{1:s}.mod.p'.format(cls.basename, suffix))
+                            '.{0:s}.{1:s}.mod.p'.format(cls.basename, prefix))
 
         # Check if the original history file is updated
         if not force_override and osp.exists(fpkl) and \
@@ -50,22 +61,23 @@ def check_pickle_hst(_read_hst):
             cls.logger.info('[read_hst]: Reading original hst file.')
             # If we are here, force_override is True or history file is updated.
             # Call read_hst function
-            hst = _read_hst(cls, *args, **kwargs)
+            hst = func(cls, *args, **kwargs)
             try:
                 hst.to_pickle(fpkl)
             except (IOError, PermissionError) as e:
-                cls.logger.warning('[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
+                cls.logger.warning(
+                    '[read_hst]: Could not pickle hst to {0:s}.'.format(fpkl))
             return hst
 
     return wrapper
 
 
-def check_netcdf_zprof_vtk(_read_zprof_vtk):
+def check_netcdf_zprof_vtk(func):
 
-    @functools.wraps(_read_zprof_vtk)
+    @functools.wraps(func)
     def wrapper(cls, *args, **kwargs):
         # Convert positional args to keyword args
-        call_args = getcallargs(_read_zprof_vtk, cls, *args, **kwargs)
+        call_args = getcallargs(func, cls, *args, **kwargs)
         call_args.pop('self')
         kwargs = call_args
 
@@ -120,7 +132,7 @@ def check_netcdf_zprof_vtk(_read_zprof_vtk):
             return ds
         else:
             cls.logger.info('[read_zprof_vtk]: Construct zprof from vtk')
-            ds = _read_zprof_vtk(cls, **kwargs)
+            ds = func(cls, **kwargs)
 
             # Somehow overwriting with mode='w' in to_netcdf doesn't work..
             # Delete file first
