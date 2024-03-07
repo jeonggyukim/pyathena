@@ -12,13 +12,13 @@ from ..classic.utils import cc_arr
 from ..classic.vtk_reader import AthenaDataSet
 
 from ..load_sim import LoadSim
-from ..decorators import check_netcdf_zprof_vtk
+from ..decorators.decorators import check_netcdf_zprof_vtk
 
 class ZprofFromVTK:
 
     @check_netcdf_zprof_vtk
     def read_zprof_from_vtk(self, num,
-                            fields=['nH','ne','nesq','xHII','xe',
+                            fields=['nH','ne','nHI','nesq','xHII','xe',
                                     'T','Uion','Erad_LyC','Erad_PE','Erad_LW'],
                             weights=['nH','ne','nesq'], phase_set_name='ncrrad',
                             prefix='zprof_vtk', savdir=None, force_override=False):
@@ -136,7 +136,7 @@ class ZprofFromVTK:
 
     def merge_zprof_with_hst(self, zpa):
         h = self.read_hst_rad()
-        columns = ['fesc_LyC', 'fesc_FUV', 'Ltot0', 'Ltot1', 'sfr10']
+        columns = h.columns
         for c in columns:
             f = interp1d(h['time'], h[c], fill_value='extrapolate', bounds_error=False)
             assign_kwargs = {c:(['time'], f(zpa['time']))}

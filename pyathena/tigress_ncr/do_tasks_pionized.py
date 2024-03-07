@@ -17,15 +17,16 @@ from pyathena.tigress_ncr.rad_load_all import load_sim_ncr_rad_all
 if __name__ == '__main__':
     COMM = MPI.COMM_WORLD
 
-    sa, df = load_sim_ncr_rad_all(model_set='lowZ', verbose=False)
+    # sa, df = load_sim_ncr_rad_all(model_set='lowZ', verbose=False)
     models = sa.models
 
     # models = ['R8_Z1']
     # mdl = 'LGR8_S05_Z1'
     # mdl = 'LGR8_S05_Z01'
 
-    # sa, df = load_sim_ncr_rad_all(model_set='radiation_paper', verbose=False)
-    # models = ['R8_4pc']
+    sa, df = load_sim_ncr_rad_all(model_set='radiation_paper', verbose=False)
+    models = sa.models
+    #models = ['R8_4pc']
 
     force_override = True
     for mdl in models:

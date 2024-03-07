@@ -1,5 +1,7 @@
 from pathlib import Path
 import pandas as pd
+import cmasher as cmr
+import matplotlib as mpl
 
 from .load_sim_tigress_ncr import LoadSimTIGRESSNCRAll
 
@@ -92,7 +94,7 @@ tMyr_range['S150_Om200_Z1r'] = [153,336]
 tMyr_range['S150_Om200_Z1'] = [153,397]
 tMyr_range['S150_Om200_Z01'] = [153,412]
 
-def get_summary(s, model):
+def get_summary(s, model, force_override=False):
 
     df = dict()
     df['tMyr_range'] = tMyr_range[model]
@@ -101,11 +103,22 @@ def get_summary(s, model):
     df['nums_starpar'] = s.get_output_nums(df['tMyr_range'], out_fmt='starpar_vtk')
     df['nums_starpar_range'] = [df['nums_starpar'][0], df['nums_starpar'][-1]]
     df['beta'] = s.par['problem']['beta']
+    df['Zd'] = float(s.par['problem']['Z_dust'])
+    df['Zg'] = float(s.par['problem']['Z_gas'])
+
+    # Summary from history
+    h = s.read_hst_rad(force_override=force_override)
+    df['fesc_LyC_cumul'] = h['fesc_LyC_cumul'].iloc[-1]
+
+    # Set plot kwargs
+    norm_Zg = mpl.colors.LogNorm(10.0**-1.3, 10.0**0.3)
+    df['markeredgecolor'] = mpl.colors.rgb2hex(cmr.guppy(norm_Zg(df['Zd'])))
 
     return df
 
 def load_sim_ncr_rad_all(model_set='radiation_paper',
                          savdir_base='/tigress/jk11/NCR-RAD',
+                         force_override=False,
                          verbose=False):
     """
     Load all simulations for radiation analysis
@@ -137,10 +150,9 @@ def load_sim_ncr_rad_all(model_set='radiation_paper',
     print('[load_sim_ncr_rad_all]:', end=' ')
     for mdl in sa.models:
         print(mdl, end=' ')
-        savdir = str(Path(savdir_base,
-                          Path(sa.basedirs[mdl]).name))
+        savdir = str(Path(savdir_base, Path(sa.basedirs[mdl]).name))
         s = sa.set_model(mdl, savdir=savdir, verbose=verbose)
-        df = get_summary(s, mdl)
+        df = get_summary(s, mdl, force_override=force_override)
         df_list.append(pd.DataFrame(pd.Series(df, name=mdl)).T)
 
     df = pd.concat(df_list, sort=True).sort_index(ascending=False)

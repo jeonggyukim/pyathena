@@ -16,9 +16,9 @@ def get_fig_axes_caxes(nrow=7, ncol=2, ncaxes=3):
 
     return fig, axes, caxes
 
-def plot_hist(model_set, model,
-              sa=None, df=None, phase_set_name='warm_eq_LyC_ma',
-              force_override=False, savefig=True):
+def plot_hst(model_set, model,
+             sa=None, df=None, phase_set_name='warm_eq_LyC_ma',
+             force_override=False, savefig=True):
     if sa is None or df is None:
         sa, df = load_sim_ncr_rad_all(model_set=model_set, verbose=False)
 
@@ -35,8 +35,14 @@ def plot_hist(model_set, model,
     zpa = zpa.assign_coords(tMyr=zpa.time_code*u.Myr)
     zpa = zpa.swap_dims(dict(time_code='tMyr'))
 
+    # zpa = zpa.rename(dict(z='z_pc'))
+    zpa = zpa.assign_coords(z_kpc=zpa.z*u.kpc)
+    # zpa = zpa.swap_dims(dict(time_code='tMyr'))
+
     zp_eq = zpa.sel(phase='w1_eq_noLyC')
     zp_pi = zpa.sel(phase='w1_eq_LyC_pi') + zpa.sel(phase='w1_eq_LyC')
+    # Exposed to strong radiation only
+    zp_pi_strong = zpa.sel(phase='w1_eq_LyC_pi')
     zp_neq = zpa.sel(phase='w1_geq_noLyC') +\
         zpa.sel(phase='w1_geq_LyC') + zpa.sel(phase='w1_geq_LyC_pi')
 
@@ -67,9 +73,9 @@ def plot_hist(model_set, model,
     cmap = [cmo.tempo,
             cmr.get_sub_cmap(cmo.balance, 0.0, 0.5).reversed(),
             cmr.get_sub_cmap(cmo.balance, 0.5, 1.0)]
-    label = [r'$f_{V,{\rm w,eq}}$',
-             r'$f_{V,{\rm w,pi}}$',
-             r'$f_{V,{\rm w,neq}}$']
+    label = [r'$f_{V,{\rm eq}}$',
+             r'$f_{V,{\rm pi}}$',
+             r'$f_{V,{\rm neq}}$']
     plot_spacetime_diagram(axes[1:4], caxes, zp, cmap, label)
     plt.setp(axes[1:4], ylim=(-1.3, 1.3), ylabel=r'$z\;[{\rm kpc}]$')
     for ax in axes[1:4]:
@@ -120,7 +126,7 @@ def plot_hist(model_set, model,
 
     plot_hist_one(axes[5], zps, 'tMyr', 'xHII_w_nesq', 'frac_w_nesq', plt_kwargs)
     plt.setp(axes[5], yscale='linear', ylim=(0, 1.1),
-             ylabel=r'$\langle x_{\rm H^+} \rangle_{n_{\rm e}^2} / f_{n_{\rm e}^2}$')
+             ylabel=r'$\langle x_{\rm H^+} \rangle_{n_{\rm e}^2}$')
 
     plot_hist_one(axes[6], zps, 'tMyr', 'T_w_nesq', 'frac_w_nesq', plt_kwargs)
 
@@ -130,7 +136,7 @@ def plot_hist(model_set, model,
         ylim = (5e3, 1.5e4)
 
     plt.setp(axes[6], yscale='linear', ylim=ylim,
-             ylabel=r'$\langle T \rangle_{n_{\rm e}^2} / f_{n_{\rm e}^2}$')
+             ylabel=r'$\langle T \rangle_{n_{\rm e}^2}\;[{\rm K}]$')
 
     plt.setp(axes, xlim=xlim)
     plt.setp(axes[-1], xlabel=r'${\rm time}\;[{\rm Myr}]$')
@@ -143,6 +149,7 @@ def plot_hist(model_set, model,
         fig.savefig('/tigress/jk11/figures/NCR-RADIATION/hst-{0:s}-{1:s}.png'.\
                     format(model, phase_set_name), dpi=200, bbox_inches='tight')
 
-    zp_dict = dict(zpa=zpa, zp_eq=zp_eq, zp_neq=zp_neq, zp_pi=zp_pi)
+    zp_dict = dict(zpa=zpa, zp_eq=zp_eq, zp_neq=zp_neq,
+                   zp_pi=zp_pi, zp_pi_strong=zp_pi_strong)
 
     return fig, s, zp_dict, h

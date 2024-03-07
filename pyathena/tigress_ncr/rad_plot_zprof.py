@@ -4,37 +4,30 @@ import numpy as np
 from .rad_load_all import read_zpa_and_hst
 
 # Some convenience functions (works for specific purposes only)
-def plot_quantiles(ax, z, q, dim='time',
-                   plt_25_75=True, plt_5_95=True, plt_mean=True, color='k'):
-    plt.sca(ax)
-    if plt_25_75:
-        plt.fill_between(z, q.quantile(0.25, dim=dim),
-                            q.quantile(0.75, dim=dim), alpha=0.2, lw=0, color=color)
-    if plt_5_95:
-        plt.fill_between(z, q.quantile(0.05, dim=dim),
-                            q.quantile(0.95, dim=dim), alpha=0.15, lw=0, color=color)
-    if plt_mean:
-        plt.plot(z, q.mean(axis=0), alpha=1, lw=2, ls=':', c=color)
+def plot_quantiles(ax, z, q, dimx, dimy, q1=[0.16, 0.84], q2=None, plot_median=True,
+                   plot_mean=False, color='k'):
+    if q1 is not None:
+        ax.fill_between(z[dimx], q.quantile(q1[0], dim=dimy), q.quantile(q1[1], dim=dim),
+                        alpha=0.2, lw=0, color=color)
+    if q2 is not None:
+        ax.fill_between(z[dimx], q.quantile(q2[0], dim=dimy), q.quantile(q2[1], dim=dim),
+                        alpha=0.15, lw=0, color=color)
+    if plot_median:
+        ax.plot(z[dimx], q.quantile(0.5, dim=dimy), alpha=0.8, lw=3, c=color)
+    if plot_mean:
+        ax.plot(z[dimx], q.mean(dim=dimx), alpha=1, lw=2, ls=':', c=color)
 
-    plt.plot(z, q.quantile(0.5, dim=dim), alpha=0.8, lw=3, c=color)
+# def plot_quantiles_1(axes, zp, f, dim='time', q1=[0.16, 0.84], q2=None, plot_median=True,
+#                      plot_mean=False, color='k'):
+#     for ax, z, color in zip(axes, zp, colors):
+#         plot_quantiles(ax, z['z_kpc'], z[f], dim=dim, plt_25_75=plt_25_75, plt_5_95=plt_5_95,
+#                        plt_mean=plt_mean, color=color)
 
-def plot_quantiles_1(axes, zp, f, dim='time', plt_25_75=True, plt_5_95=True,
-                     plt_mean=True, colors='k'):
-    if len(np.atleast_1d(colors)) == 1:
-        colors = np.repeat(colors, len(zp))
-
-    for ax, z, color in zip(axes, zp, colors):
-        plot_quantiles(ax, z['z'], z[f], dim=dim, plt_25_75=True, plt_5_95=True,
-                       plt_mean=True, color=color)
-
-def plot_quantiles_2(axes, zp, f, zp2, f2, dim='time', plt_25_75=True, plt_5_95=True,
-                     plt_mean=True, colors='k'):
-    if len(np.atleast_1d(colors)) == 1:
-        colors = np.repeat(colors, len(zp))
-
-    for ax, z, z2, color in zip(axes, zp, zp2, colors):
-        plot_quantiles(ax, z['z'], z[f]/z2[f2], dim=dim,
-                       plt_25_75=plt_25_75, plt_5_95=True, plt_mean=True, color=color)
+# def plot_quantiles_2(axes, zp, f, zp2, f2, dim='time', plt_25_75=True, plt_5_95=True,
+#                      plt_mean=True, colors='k'):
+#     for ax, z, z2, color in zip(axes, zp, zp2, colors):
+#         plot_quantiles(ax, z['z_kpc'], z[f]/z2[f2], dim=dim, plt_25_75=plt_25_75,
+#                        plt_5_95=plt_5_95, plt_mean=plt_mean, color=color)
 
 def plot_zprof(sa, df, mdl, phase_set_name=None, force_override=False):
 
