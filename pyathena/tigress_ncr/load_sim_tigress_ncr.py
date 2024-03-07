@@ -186,8 +186,8 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
                           Phase('w2_geq', 4, [[f1, 'T', np.greater_equal, 1.5e4],
                                               [f1, 'T', np.less, 3.5e4],
                                               [f2, 'xHII', np.greater_equal, 2.0, 'xHII_eq']]),
-                          Phase('CpU', 5, [[f1, 'T', np.greater_equal, 3.5e4]]),
-                          Phase('hot', 6, [[f1, 'T', np.less, 3e3]])]
+                          Phase('CpU', 5, [[f1, 'T', np.less, 3e3]]),
+                          Phase('hot', 6, [[f1, 'T', np.greater_equal, 3.5e4]])]
                          )
 
         # Used to characterize partially ionized gas & gas exposed to LyC radiation
