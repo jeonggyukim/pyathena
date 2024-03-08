@@ -51,7 +51,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         All preimages of t_coll cores.
     """
 
-    def __init__(self, basedir_or_Mach=None, method=1, savdir=None,
+    def __init__(self, basedir_or_Mach=None, method=2, savdir=None,
                  load_method='pyathena', verbose=False, force_override=False):
         """The constructor for LoadSimCoreFormation class
 
@@ -211,7 +211,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         return good_cores
 
     @LoadSim.Decorators.check_pickle
-    def update_core_props(self, ncells_min=8, method=1,
+    def update_core_props(self, method, ncells_min=8,
                           prefix=None, savdir=None, force_override=False):
         """Update core properties
 
@@ -535,7 +535,7 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, method=1, savdir=None,
+    def set_model(self, model, method=2, savdir=None,
                   load_method='pyathena', verbose=False,
                   reset=False, force_override=False):
         self.model = model
