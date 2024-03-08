@@ -785,13 +785,12 @@ def calculate_observables(s, core, rprf, rmax):
     r_obs = utils.fwhm(rho_itp, rmax)
     try:
         # Mean density inside FWHM radius
-        m_obs = rprf.menc.interp(r=r_obs).data[()]
+        m_obs = utils.integrate_2d_projected(lambda x: rho_itp(x), r_obs, rmax)
         rhoavg_obs = m_obs / (4*np.pi*r_obs**3/3)
 
         # Projected velocity dispersion within FWHM
-        num = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), r_obs, rmax)
-        den = utils.integrate_2d_projected(lambda x: rho_itp(x), r_obs, rmax)
-        sigma_obs = np.sqrt(num/den)
+        two_ke = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), r_obs, rmax)
+        sigma_obs = np.sqrt(two_ke/m_obs)
 
         # Critical mass of TES having rcrit = R_FWHM
         tsc = TESc(sigma=sigma_obs)
