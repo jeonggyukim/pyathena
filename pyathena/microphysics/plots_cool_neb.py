@@ -1,4 +1,3 @@
-
 # Requires cool_tigress module (separate repo)
 import sys
 sys.path.insert(0, '/tigress/jk11/code/tigress_cooling/python/')
@@ -11,8 +10,12 @@ import matplotlib.pyplot as plt
 import cmocean
 import astropy.units as au
 import astropy.constants as ac
+from scipy.interpolate import interp1d
+from scipy.optimize import brentq
 
 from .cool import coolRec, heatPE, coeff_alpha_rr_H
+from .get_cooling import set_CIE_interpolator
+from .plots_cool import get_cool_eq, get_heat_eq
 
 from ..plt_tools.set_plt import set_plt_fancy
 from ..plt_tools.line_annotation import LineAnnotation
@@ -283,3 +286,64 @@ def plot_Lambda_nebular(Z_g1=1.0, Z_d1=1.0, Z_g2=0.1, Z_d2=0.1,
         ax.set_ylim(2e-26, 2e-23)
 
     # plt.savefig('/tigress/jk11/figures/NEWCOOL/fig-cool-photoionized-updated.pdf',png=200)
+
+
+def get_cgi():
+    cgi = dict()
+    cgi['metal'], cgi['He'], cgi['xe_mH'], cgi['xe_mHHe'], cgi['xe_He'] =\
+            set_CIE_interpolator(return_xe=True)
+    return cgi
+
+def get_cool_heat_eq(T, nH, Z_g, Z_d, zeta_pi, chi, xi_CR, xH2=0.0, cgi=None,
+                     dhnu_pi_HI=3.5, dust=False):
+    if cgi is None:
+        cgi = get_cgi()
+
+    if dust:
+        gr_rec = True
+    else:
+        gr_rec = False
+    rr = get_cool_eq(nH, cgi['xe_He'], cgi['xe_mHHe'], cgi['metal'], cgi['He'],
+                     Z_g=Z_g, Z_d=Z_d, G_CI=chi, G_PE=chi, xH2=xH2, xi_CR=xi_CR,
+                     zeta_pi=zeta_pi, gr_rec=gr_rec, T=T)
+    rr = get_heat_eq(rr, dhnu_pi_HI=dhnu_pi_HI, dust=dust)
+    f_Lambda_net = interp1d(rr['T'], rr['cool_tot'] - rr['Gamma_tot']/rr['nH'],
+                            bounds_error=True)
+    rr['T_eq'] = brentq(f_Lambda_net, T.min()*1.01, T.max()*0.99)
+
+    return rr
+
+def get_T_eq(nH, Z_g, Z_d, chi, xi_CR, zeta_pi, T=np.logspace(3.3, 4.5, 500),
+             cgi=get_cgi(), dhnu_pi_HI=3.5, dust=False):
+    rr = dict()
+    for i, (nH_, Z_g_, Z_d_, chi_, xi_CR_, zeta_pi_)\
+        in enumerate(zip(nH, Z_g, Z_d, chi, xi_CR, zeta_pi)):
+        r = get_cool_heat_eq(T, nH_, Z_g_, Z_d_, zeta_pi_, chi_, xi_CR_, 0.0, cgi,
+                             dhnu_pi_HI, dust)
+        if i == 0:
+            for k in r.keys():
+                rr[k] = []
+
+        for k in r.keys():
+            rr[k].append(r[k])
+
+    return rr
+
+def plt_Teq_photoionized(ax, dhnu_pi_HI=3.5, zeta_pi=1e-8):
+    Z_g = np.logspace(np.log10(0.01), np.log10(3.0), 30)
+    Z_d = np.where(Z_g > 0.2, Z_g, 0.2*(Z_g/0.2)**3)
+    N = len(Z_g)
+    xi_CR = np.repeat(2e-16, N)
+    for nH_,lw_ in zip([1e2],[3]):
+        nH = np.repeat(nH_, N)
+        zeta_pi = np.repeat(zeta_pi, N)
+        for chi_,c_ in zip([1e2],['C0']):
+            chi = np.repeat(chi_, N)
+            rr = get_T_eq(nH, Z_g, Z_d, chi, xi_CR, zeta_pi, dhnu_pi_HI=dhnu_pi_HI,
+                          dust=True)
+            l, = ax.semilogx(rr['Z_g'], rr['T_eq'], alpha=0.5, c=c_, lw=lw_,
+                             label=f'{int(np.log10(nH_))}, {int(np.log10(chi_))}')
+
+        rr2 = get_T_eq(nH, Z_g, Z_d, chi, xi_CR, zeta_pi, dhnu_pi_HI=dhnu_pi_HI,
+                       dust=False)
+        ax.semilogx(rr2['Z_g'], rr2['T_eq'], lw=lw_, ls='--', alpha=0.5, c='grey')
