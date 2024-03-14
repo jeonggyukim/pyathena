@@ -82,10 +82,10 @@ def set_my_dfi(dfi):
     my_dfi["EM"] = add_dfi(
         r"${\rm EM}\,[{\rm cm^{-6}\,pc}]$", LogNorm(1.0e-2, 1.0e4), plt.cm.plasma
     )
-    my_dfi["chi_FUV"]["cmap"] = cmr.amber
-    my_dfi["chi_FUV"]["norm"] = LogNorm(1.0e-1, 1.0e2)
-    my_dfi["Erad_LyC"]["cmap"] = cmr.sunburst
-    my_dfi["Erad_LyC"]["norm"] = LogNorm(1.0e-16, 1.0e-12)
+    my_dfi['chi_FUV']['cmap'] = cmr.amber
+    my_dfi['chi_FUV']['norm'] = LogNorm(1.e-1, 1.e3)
+    my_dfi['Erad_LyC']['cmap'] = cmr.cosmic
+    my_dfi['Erad_LyC']['norm'] = LogNorm(1.e-16, 1.e-10)
     my_dfi["T"]["cmap"] = jh_cmap
     my_dfi["T"]["norm"] = LogNorm(1.0e1, 1.0e7)
     my_dfi["cool_rate"]["norm"] = LogNorm(1.0e-27, 1.0e-20)
@@ -374,7 +374,5 @@ def paper_snapshot(
 
     # plt.savefig(os.path.join(outdir,'{:s}.{:04d}.z{:03d}.snapshot.png'.format(s.basename,ds.num,z0)),
     # dpi=300,bbox_inches='tight')
-
-    ds.close()
 
     return fig

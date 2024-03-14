@@ -537,7 +537,11 @@ class AthenaDataSet(object):
         return grid
 
     def close(self):
-        pass
+        if hasattr(self,"arr"):
+            del self.arr
+        for g in self.grid:
+            g.pop("data")
+            g["data"] = dict()
 
 
 def _parse_filename(filename):

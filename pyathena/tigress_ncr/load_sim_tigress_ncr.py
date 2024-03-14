@@ -253,7 +253,6 @@ class LoadSimTIGRESSNCR(
                 if create:
                     ds = self.load_vtk(num=num)
                     self.create_coolheat_pdf(ds, zrange=zrange)
-                    ds.close()
                 else:
                     return
 
@@ -266,7 +265,6 @@ class LoadSimTIGRESSNCR(
             if create:
                 ds = self.load_vtk(num=num)
                 self.create_coolheat_pdf(ds, zrange=zrange)
-                ds.close()
             else:
                 return
 
@@ -375,7 +373,6 @@ class LoadSimTIGRESSNCR(
                 if "time" not in pdf_cool:
                     ds = self.load_vtk(num)
                     pdf_cool = pdf_cool.assign_coords(time=ds.domain["time"])
-                    ds.close()
                 pdf_cool = pdf_cool.assign_coords(
                     cool=pdf_cool.attrs["total_cooling"],
                     heat=pdf_cool.attrs["total_heating"],

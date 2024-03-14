@@ -22,7 +22,6 @@ from ..plt_tools.plt_starpar import scatter_sp
 # from ..io.read_hst import read_hst
 from .get_cooling import set_bins_default
 
-
 class PDF:
     bins, nologs = set_bins_default()
 
@@ -134,8 +133,6 @@ class PDF:
 
         res["time_code"] = ds.domain["time"]
 
-        ds.close()
-
         return res
 
     def plt_pdf2d(
@@ -196,7 +193,8 @@ class PDF:
         ds = s.load_vtk(num)
         pdf = s.read_pdf2d(num, savdir=savdir_pkl, force_override=force_override)
         prj = s.read_prj(num, savdir=savdir_pkl, force_override=force_override)
-        slc = s.read_slc(num, savdir=savdir_pkl, force_override=force_override)
+        slc = s.read_slc_from_allslc(num, savdir=savdir_pkl,
+                                     force_override=force_override)
         hst = s.read_hst(savdir=savdir, force_override=force_override)
         sp = s.load_starpar_vtk(num)
         if plt_zprof:
@@ -316,7 +314,6 @@ class PDF:
             plt.savefig(savname, dpi=200, bbox_inches="tight")
             plt.close()
 
-        ds.close()
         return fig
 
     def load_one_jointpdf(

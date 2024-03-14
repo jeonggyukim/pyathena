@@ -11,6 +11,16 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 
+def get_time_from_zprof(fname):
+    # Read time
+    with open(fname, 'r') as f:
+        h = f.readline()
+        try:
+            time = float(h[h.rfind('t=') + 2:])
+            return time
+        except ValueError:
+            raise ValueError(f)
+
 def read_zprof_all(dirname, problem_id, phase='whole', savdir=None,
                    verbose=False,
                    force_override=False, pickling=False):

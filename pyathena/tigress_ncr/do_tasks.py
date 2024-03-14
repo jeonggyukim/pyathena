@@ -17,7 +17,9 @@ from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigress_ncr.phase import PDF1D, recal_nP, recal_xT
 from pyathena.tigress_ncr.cooling_breakdown import draw_Tpdf
 
+from memory_profiler import profile
 
+@profile
 def process_one_file_phase(s, num):
     npfile = os.path.join(
         s.basedir, "np_pdf", "{}.{:04d}.np_pdf-z300.nc".format(s.basename, num)
@@ -55,9 +57,6 @@ def process_one_file_phase(s, num):
             pdf_dset.to_netcdf(nTfile_)
             hist_bin = recal_xT(dchunk)
             hist_bin.to_netcdf(xTfile_)
-
-        # close
-        ds.close()
     else:
         print(" skipping nP ")
 
@@ -70,10 +69,9 @@ def scatter_nums(s, nums):
         nums = None
 
     mynums = COMM.scatter(nums, root=0)
-    print("[rank, mynums]:", COMM.rank, mynums)
+    # print("[rank, mynums]:", COMM.rank, mynums)
 
     return mynums
-
 
 def process_tar(s):
     if s.nums_rawtar is not None:
@@ -88,7 +86,7 @@ def process_tar(s):
         s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
     return s
 
-
+@profile
 def process_one_file_slc_prj(s, num):
     try:
         if s.test_newcool():
@@ -115,6 +113,7 @@ def process_one_file_slc_prj(s, num):
                 norm_factor=4,
                 agemax=40,
             )
+            plt.close(fig)
     except (EOFError, KeyError, pickle.UnpicklingError):
         if s.test_newcool():
             fig = s.plt_snapshot(
@@ -144,6 +143,7 @@ def process_one_file_slc_prj(s, num):
                 norm_factor=4,
                 agemax=40,
             )
+            plt.close(fig)
 
 
 if __name__ == "__main__":
@@ -191,6 +191,12 @@ if __name__ == "__main__":
         # coolheat breakdown
         if s.test_newcool():
             f1 = draw_Tpdf(s, num)
+
+        if hasattr(s,"ds"):
+            s.ds.close()
+
+        # close all figures
+        plt.close("all")
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")

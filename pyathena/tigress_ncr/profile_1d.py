@@ -114,5 +114,4 @@ class Profile1D:
         res["time_code"] = ds.domain["time"]
         res["time"] = ds.domain["time"] * self.u.Myr
 
-        ds.close()
         return res

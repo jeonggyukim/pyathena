@@ -107,8 +107,6 @@ class SliceProj:
                 else:
                     res[zlab][f] = dat[f].data
 
-        ds.close()
-
         return res
 
     def read_slc_from_allslc(
@@ -222,8 +220,6 @@ class SliceProj:
             for f in fields:
                 res[zlab][f] = dat[f].data
 
-        ds.close()
-
         return res
 
     @LoadSim.Decorators.check_pickle
@@ -273,8 +269,6 @@ class SliceProj:
                     val = (dat["density"] * dat[f"specific_scalar[{ns}]"]).data
                     valsum = np.sum(val, axis=2 - i) * conv_Sigma
                     res[ax][f"Sigma_scalar{ns}"] = valsum
-
-        ds.close()
 
         return res
 
@@ -327,8 +321,6 @@ class SliceProj:
             res[ax]["neB_w"] = (ne * Btot * dx * warm).sum(dim=ax)
             res[ax]["Btot_w"] = (Btot * dx * warm).sum(dim=ax)
             res[ax]["warm"] = (warm).sum(dim=ax)
-
-        ds.close()
 
         return res
 
@@ -780,8 +772,6 @@ class SliceProj:
 
             savname = osp.join(savdir, "{0:s}_{1:04d}.png".format(self.basename, num))
             plt.savefig(savname, dpi=200, bbox_inches="tight")
-
-        ds.close()
 
         return fig
 

@@ -14,6 +14,7 @@ import matplotlib.pyplot as plt
 
 from .phase import assign_phase
 from .ncr_papers import PaperData
+from ..io.read_zprof import get_time_from_zprof
 # from ..plt_tools.utils import texteffect
 
 from scipy.ndimage import shift
@@ -229,7 +230,7 @@ class LowZData(PaperData):
         ] = "R8_8pc_NCR.full.b1.v3.iCR4.Zg1.Zd1"
         mlist_early[
             "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg3.Zd3.xy1024.eps1.e-8"
-        ] = "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8"
+        ] = None #"LGR4_4pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8"
         # mlist_early[
         #     "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg3.Zd3.xy512.eps1.e-7"
         # ] = "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8"
@@ -329,7 +330,8 @@ class LowZData(PaperData):
         hlist = []
         namelist = []
         Zlist = []
-        for m in self.mgroup[group]:
+        mlist = sorted(self.mgroup[group])[::-1]
+        for m in mlist:
             s = self.sa.set_model(m)
             namelist.append(s.name)
             if tslice is not None:
@@ -341,12 +343,18 @@ class LowZData(PaperData):
         return namelist, hlist, Zlist
 
     def get_trange(self, s):
+        tmin = get_time_from_zprof(s.files["zprof"][0])*s.u.Myr
+        tmax = get_time_from_zprof(s.files["zprof"][-1])*s.u.Myr
         if s.torb_Myr < 50:
-            trange = slice(s.torb_Myr * 5, s.torb_Myr * 15)
+            tmin = max(tmin, s.torb_Myr * 5)
+            tmax = min(tmax, s.torb_Myr * 15)
         elif s.torb_Myr > 300:
-            trange = slice(s.torb_Myr * 1.5, s.torb_Myr * 5)
+            tmin = max(tmin, s.torb_Myr * 1.5)
+            tmax = min(tmax, s.torb_Myr * 5)
         else:
-            trange = slice(s.torb_Myr * 2, s.torb_Myr * 5)
+            tmin = max(tmin, s.torb_Myr * 2)
+            tmax = min(tmax, s.torb_Myr * 5)
+        trange = slice(tmin,tmax)
 
         return trange
 
@@ -372,7 +380,7 @@ class LowZData(PaperData):
         if "LGR8" in m:
             sfr_field = "sfr100"
         if trange is None:
-            self.get_trange(s)
+            trange = self.get_trange(s)
             if not silent:
                 print(
                     m, s.torb_Myr, trange, zpmid.time.data.min(), zpmid.time.data.max()
@@ -603,17 +611,19 @@ def add_boxplot(
     namelist, ylist, Zdlist = pdata.collect_hst_list(field, group=group, tslice=tslice)
     Zd_to_idx = {3: 0, 1: 1, 0.3: 2, 0.1: 3, 0.025: 4}
     if Zd_in_x:
-        pos = np.array(sorted(Zdlist))
+        pos = np.array(Zdlist)
+        if "b10" in group:
+            pos *=1.35
+        width = pos*0.3
     else:
         pos = np.array([Zd_to_idx[Zd] for Zd in Zdlist])
-
-    width = 0.4
-
+        width = 0.4
+        if "b10" in group:
+            pos = pos.astype("float") + width * 1.1
     colors = [pdata.plt_kwargs[group]["colors"][Zd_to_idx[Zd]] for Zd in Zdlist]
     ls = pdata.plt_kwargs[group]["ls"]
 
-    if "b10" in group:
-        pos = pos.astype("float") + width * 1.1
+
     box = plt.boxplot(
         ylist,
         positions=pos + offset,

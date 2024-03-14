@@ -148,6 +148,11 @@ class AthenaDataSetTar(AthenaDataSet):
 
     def close(self):
         self.tarfile.close()
+        if hasattr(self,"arr"):
+            del self.arr
+        for g in self.grid:
+            g.pop("data")
+            g["data"] = dict()
 
 
 def _set_field_map(grid, tf):
