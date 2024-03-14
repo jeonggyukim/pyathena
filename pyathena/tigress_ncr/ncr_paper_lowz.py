@@ -2,7 +2,7 @@
 import pyathena as pa
 import numpy as np
 
-# import pandas as pd
+import pandas as pd
 import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
@@ -126,7 +126,8 @@ class LowZData(PaperData):
         s2 = sa.set_model(m2)
         h2 = s2.read_hst()
         t0 = h2.index[0]
-        hnew = h1[:t0].append(h2).fillna(0.0)
+        hnew = pd.concat([h1[:t0],h2],ignore_index=True).fillna(0.0)
+        hnew.index = hnew.time_code
         return hnew
 
     @staticmethod
@@ -227,8 +228,11 @@ class LowZData(PaperData):
             "R8_8pc_NCR.full.b1.v3.iCR4.Zg3.Zd3.xy1024.eps1.e-8"
         ] = "R8_8pc_NCR.full.b1.v3.iCR4.Zg1.Zd1"
         mlist_early[
-            "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg3.Zd3.xy512.eps1.e-7"
+            "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg3.Zd3.xy1024.eps1.e-8"
         ] = "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8"
+        # mlist_early[
+        #     "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg3.Zd3.xy512.eps1.e-7"
+        # ] = "LGR4_4pc_NCR.full.b1.v3.iCR4.Zg1.Zd1.xy1024.eps1.e-8"
         mlist_early[
             "LGR2_4pc_NCR_S150.full.b2.Om02.v3.iCR5.Zg1.Zd1.xy1024.eps1.e-8.rstZ01"
         ] = None
@@ -590,6 +594,7 @@ def add_boxplot(
     offset=0,
     tslice=None,
     label=True,
+    Zd_in_x=False,
     beta_label=False,
 ):
     if tslice is None:
@@ -597,10 +602,14 @@ def add_boxplot(
         tslice = slice(torb * 2, torb * 5)
     namelist, ylist, Zdlist = pdata.collect_hst_list(field, group=group, tslice=tslice)
     Zd_to_idx = {3: 0, 1: 1, 0.3: 2, 0.1: 3, 0.025: 4}
-    pos = np.array([Zd_to_idx[Zd] for Zd in Zdlist])
+    if Zd_in_x:
+        pos = np.array(sorted(Zdlist))
+    else:
+        pos = np.array([Zd_to_idx[Zd] for Zd in Zdlist])
+
     width = 0.4
 
-    colors = [pdata.plt_kwargs[group]["colors"][idx] for idx in pos]
+    colors = [pdata.plt_kwargs[group]["colors"][Zd_to_idx[Zd]] for Zd in Zdlist]
     ls = pdata.plt_kwargs[group]["ls"]
 
     if "b10" in group:
@@ -658,7 +667,8 @@ def add_boxplot(
     plt.ylabel(r"$\Sigma_{\rm SFR}\,[M_\odot\,{\rm kpc^{-2}\,yr^{-1}}]$")
     ax = plt.gca()
     ax.grid(visible=False)
-    ax.xaxis.set_tick_params(which="both", bottom=False, top=False, labelbottom=False)
+    if not Zd_in_x:
+        ax.xaxis.set_tick_params(which="both", bottom=False, top=False, labelbottom=False)
 
 
 def get_PW_zprof(s, recal=False):
