@@ -198,6 +198,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.cores = self.cores2.copy()
             case 3:
                 self.cores = self.cores3.copy()
+            case _:
+                raise Exception("Method must be one of (1, 2, 3)")
 
     def good_cores(self, cores_dict=None):
         """List of resolved and isolated cores"""
