@@ -69,16 +69,16 @@ class Units(object):
             # Try manually setting the unit for the ism unit system
             if units_dict['unit_system'] == 'ism':
                 self.mass = (units_dict['mass_cgs']*au.g).to('Msun')
-                self.length = (1.0*au.pc).to('pc')
-                self.velocity = (1.0*au.km/au.s).to('km s-1')
-                self.time = (self.length/self.velocity).to('Myr')
+                self.length = (units_dict['length_cgs']*au.cm).to('pc')
+                self.time = (units_dict['time_cgs']*au.s).to('Myr')
+                self.velocity = (self.length/self.time).to('km s-1')
             else:
                 self.mass = units_dict['mass_cgs']*au.g
                 self.length = units_dict['length_cgs']*au.cm
                 self.time = units_dict['time_cgs']*au.s
                 self.velocity = self.length/self.time
             try:
-                self.muH = (units_dict['mean_mass_per_hydrogen']*au.g/mH).value
+                self.muH = units_dict['mean_mass_per_hydrogen']
             except KeyError:
                 pass
         else:
