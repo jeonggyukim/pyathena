@@ -5,6 +5,8 @@ import numpy as np
 from pathlib import Path
 import pickle
 from scipy.interpolate import interp1d
+from astropy import units as au
+from astropy import constants as ac
 
 from pyathena.load_sim import LoadSim
 from pyathena.util.units import Units
@@ -87,6 +89,23 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             basedir = basedir_or_Mach
             super().__init__(basedir, savdir=savdir, load_method=load_method,
                              units=Units('code'), verbose=verbose)
+            # Override Unit system assuming dense sub-patch of a GMC
+            nH0 = 200*au.cm**-3  # Mean Hydrogen number density
+            T = 10*au.K  # Temperature
+            mH = 1.008*au.u  # Mass of a hydrogen atom
+            mu = 14/6  # Average molecular weight per particle
+            muH = 1.4  # Average molecular weight per hydrogen
+            cs = np.sqrt(ac.k_B*T / (mu*mH))
+            rho0 = muH*nH0*mH
+            LJ0 = np.sqrt(np.pi*cs**2/(ac.G*rho0)).to('pc')
+            MJ0 = (rho0*LJ0**3).to('Msun')
+            tJ0 = (LJ0/cs).to('Myr')
+            units_dict = {'unit_system': 'ism',
+                          'mass_cgs': MJ0.cgs.value,
+                          'length_cgs': LJ0.cgs.value,
+                          'time_cgs': tJ0.cgs.value,
+                          'mean_mass_per_hydrogen': muH}
+            self.u = Units('custom', units_dict=units_dict)
             self.Mach = self.par['problem']['Mach']
 
             LognormalPDF.__init__(self, self.Mach)
