@@ -135,29 +135,15 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.logger.warning("Failed to load radial profiles")
                 pass
 
-            try:
-                # Calculate derived core properties using the predicted critical time
-                savdir = Path(self.savdir, 'cores')
-                self.cores1 = self.update_core_props(method=1, prefix='cores1',
-                                                     savdir=savdir, force_override=force_override)
-            except (AttributeError, KeyError):
-                self.logger.warning(f"Failed to update core properties for model {self.basename}")
-
-            try:
-                # Calculate derived core properties using the empirical critical time
-                savdir = Path(self.savdir, 'cores')
-                self.cores2 = self.update_core_props(method=2, prefix='cores2',
-                                                     savdir=savdir, force_override=force_override)
-            except (AttributeError, KeyError):
-                self.logger.warning(f"Failed to update core properties with empirical tcrit for model {self.basename}")
-
-            try:
-                # Calculate derived core properties using the empirical critical time
-                savdir = Path(self.savdir, 'cores')
-                self.cores3 = self.update_core_props(method=3, prefix='cores3',
-                                                     savdir=savdir, force_override=force_override)
-            except (AttributeError, KeyError):
-                self.logger.warning(f"Failed to update core properties with empirical tcrit with r_crit_alt for model {self.basename}")
+            self.cores_dict = {}
+            for method in [1, 2, 3]:
+                try:
+                    # Calculate derived core properties using the predicted critical time
+                    savdir = Path(self.savdir, 'cores')
+                    self.cores_dict[method] = self.update_core_props(method=method, prefix=f'cores{method}',
+                                                         savdir=savdir, force_override=force_override)
+                except (AttributeError, KeyError):
+                    self.logger.warning(f"Failed to update core properties for model {self.basename}, method {method}")
 
             try:
                 self.select_cores(method)
@@ -211,15 +197,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             return pickle.load(handle)
 
     def select_cores(self, method):
-        match method:
-            case 1:
-                self.cores = self.cores1.copy()
-            case 2:
-                self.cores = self.cores2.copy()
-            case 3:
-                self.cores = self.cores3.copy()
-            case _:
-                raise Exception("Method must be one of (1, 2, 3)")
+        if method not in {1, 2, 3}:
+            raise Exception("Method must be one of (1, 2, 3)")
+        self.cores = self.cores_dict[method].copy()
 
     def good_cores(self, cores_dict=None):
         """List of resolved and isolated cores"""
@@ -350,7 +330,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                         tf = phst.loc[idx].time
                 cores.attrs['tinfall_end'] = tf
                 cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
-
 
                 prestellar_cores = cores.loc[:cores.attrs['numcoll']]
                 oprops = []

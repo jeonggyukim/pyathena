@@ -372,8 +372,8 @@ def plot_core_evolution(s, pid, num, rmax=None):
     ds = s.load_hdf5(num, quantities=['dens'], load_method='pyathena')
     gd = s.load_dendro(num)
     core = s.cores[pid].loc[num]
-    core1 = s.cores1[pid].loc[num]
-    core2 = s.cores2[pid].loc[num]
+    core1 = s.cores_dict[1][pid].loc[num]
+    core2 = s.cores_dict[2][pid].loc[num]
     rprf = s.rprofs[pid].sel(num=num)
 
     # Find the location of the core

@@ -887,56 +887,74 @@ def critical_time(s, pid, method=1):
     rprofs = s.rprofs[pid]
 
     ncrit = None
-    for num, core in cores.sort_index(ascending=False).iterrows():
-        if num in cores.index[-2:]:
-            if method in {1, 2} and np.isnan(core.critical_radius):
-                msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
-                msg += f" is NaN for par {pid}, method {method}."
-                msg += f" This may have been caused by negative pindex. Continuing"
-                s.logger.warning(msg)
-                continue
-            elif method == 3 and np.isnan(core.critical_radius_alt):
-                msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
-                msg += f" is NaN for par {pid}, method {method}."
-                msg += f" This may have been caused by negative pindex. Continuing"
-                s.logger.warning(msg)
-                continue
-        rprf = rprofs.sel(num=num)
 
-        if method == 1:
-            # Critical conditions are satisfied after critical time,
-            # throughout the collapse.
-            if np.isfinite(core.critical_radius):
-                menc = rprf.menc.interp(r=core.critical_radius).data[()]
-            else:
-                menc = np.nan
-            cond1 = core.tidal_radius >= core.critical_radius
-            cond2 = menc >= core.critical_mass
-            cond = cond1 and cond2
-            if not cond:
-                ncrit = num + 1
-                break
-        elif method == 2:
-            # Net force at the critical radius is negative after the critical time,
-            # throughout the collapse.
-            if np.isfinite(core.critical_radius):
-                fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
-                fnet = fnet.interp(r=core.critical_radius).data[()]
-            else:
-                fnet = np.nan
-            if not fnet < 0:
-                ncrit = num + 1
-                break
-        elif method == 3:
-            # Similar to method 2, but using alternative critical radius
-            if np.isfinite(core.critical_radius_alt):
-                fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
-                fnet = fnet.interp(r=core.critical_radius_alt).data[()]
-            else:
-                fnet = np.nan
-            if not fnet < 0:
-                ncrit = num + 1
-                break
+    if method in {1, 2, 3}:
+        # For these method, check conditions from t_coll, marching backward in time.
+        for num, core in cores.sort_index(ascending=False).iterrows():
+            if num in cores.index[-2:]:
+                if method in {1, 2} and np.isnan(core.critical_radius):
+                    msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
+                    msg += f" is NaN for par {pid}, method {method}."
+                    msg += f" This may have been caused by negative pindex. Continuing"
+                    s.logger.warning(msg)
+                    continue
+                elif method == 3 and np.isnan(core.critical_radius_alt):
+                    msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
+                    msg += f" is NaN for par {pid}, method {method}."
+                    msg += f" This may have been caused by negative pindex. Continuing"
+                    s.logger.warning(msg)
+                    continue
+            rprf = rprofs.sel(num=num)
+
+            if method == 1:
+                # Critical conditions are satisfied after critical time,
+                # throughout the collapse.
+                if np.isfinite(core.critical_radius):
+                    menc = rprf.menc.interp(r=core.critical_radius).data[()]
+                else:
+                    menc = np.nan
+                cond1 = core.tidal_radius >= core.critical_radius
+                cond2 = menc >= core.critical_mass
+                cond = cond1 and cond2
+                if not cond:
+                    ncrit = num + 1
+                    break
+            elif method == 2:
+                # Net force at the critical radius is negative after the critical time,
+                # throughout the collapse.
+                if np.isfinite(core.critical_radius):
+                    fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
+                    fnet = fnet.interp(r=core.critical_radius).data[()]
+                else:
+                    fnet = np.nan
+                if not fnet < 0:
+                    ncrit = num + 1
+                    break
+            elif method == 3:
+                # Similar to method 2, but using alternative critical radius
+                if np.isfinite(core.critical_radius_alt):
+                    fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
+                    fnet = fnet.interp(r=core.critical_radius_alt).data[()]
+                else:
+                    fnet = np.nan
+                if not fnet < 0:
+                    ncrit = num + 1
+                    break
+    elif method in {4, 5}:
+        for num, core in cores.sort_index(ascending=True).iterrows():
+            if method == 4:
+                # Predicted critical time using R_tidal_max
+                cond = core.tidal_radius0 >= core.critical_radius
+                if cond:
+                    ncrit = num
+                    break
+            elif method == 5:
+                # Predicted critical time using R_tidal_min
+                cond = core.leaf_radius >= core.critical_radius
+                if cond:
+                    ncrit = num
+                    break
+
     if ncrit is None or ncrit == cores.index[-1] + 1:
         # If the critical condition is satisfied for all time, or is not satisfied at t_coll,
         # set ncrit to NaN.
