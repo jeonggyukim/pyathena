@@ -89,23 +89,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             basedir = basedir_or_Mach
             super().__init__(basedir, savdir=savdir, load_method=load_method,
                              units=Units('code'), verbose=verbose)
-            # Override Unit system assuming dense sub-patch of a GMC
-            nH0 = 200*au.cm**-3  # Mean Hydrogen number density
-            T = 10*au.K  # Temperature
-            mH = 1.008*au.u  # Mass of a hydrogen atom
-            mu = 14/6  # Average molecular weight per particle
-            muH = 1.4  # Average molecular weight per hydrogen
-            cs = np.sqrt(ac.k_B*T / (mu*mH))
-            rho0 = muH*nH0*mH
-            LJ0 = np.sqrt(np.pi*cs**2/(ac.G*rho0)).to('pc')
-            MJ0 = (rho0*LJ0**3).to('Msun')
-            tJ0 = (LJ0/cs).to('Myr')
-            units_dict = {'unit_system': 'ism',
-                          'mass_cgs': MJ0.cgs.value,
-                          'length_cgs': LJ0.cgs.value,
-                          'time_cgs': tJ0.cgs.value,
-                          'mean_mass_per_hydrogen': muH}
-            self.u = Units('custom', units_dict=units_dict)
             self.Mach = self.par['problem']['Mach']
 
             LognormalPDF.__init__(self, self.Mach)
@@ -176,6 +159,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             except (AttributeError, KeyError):
                 self.logger.warning(f"Failed to update core properties with empirical tcrit with r_crit_alt for model {self.basename}")
 
+            try:
+                self.select_cores(method)
+            except AttributeError:
+                self.logger.warning(f"Failed to select core with method {method} for model {self.basename}")
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
             LognormalPDF.__init__(self, self.Mach)
@@ -184,10 +171,24 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         else:
             raise ValueError("Unknown parameter type for basedir_or_Mach")
 
-        try:
-            self.select_cores(method)
-        except AttributeError:
-            self.logger.warning(f"Failed to select core with method {method} for model {self.basename}")
+        # Override Unit system assuming dense sub-patch of a GMC
+        nH0 = 200*au.cm**-3  # Mean Hydrogen number density
+        T = 10*au.K  # Temperature
+        mH = 1.008*au.u  # Mass of a hydrogen atom
+        mu = 14/6  # Average molecular weight per particle
+        muH = 1.4  # Average molecular weight per hydrogen
+        cs = np.sqrt(ac.k_B*T / (mu*mH))
+        rho0 = muH*nH0*mH
+        LJ0 = np.sqrt(np.pi*cs**2/(ac.G*rho0)).to('pc')
+        MJ0 = (rho0*LJ0**3).to('Msun')
+        tJ0 = (LJ0/cs).to('Myr')
+        units_dict = {'unit_system': 'ism',
+                      'mass_cgs': MJ0.cgs.value,
+                      'length_cgs': LJ0.cgs.value,
+                      'time_cgs': tJ0.cgs.value,
+                      'mean_mass_per_hydrogen': muH}
+        self.u = Units('custom', units_dict=units_dict)
+
 
     def load_dendro(self, num, pruned=True):
         """Load pickled dendrogram object
