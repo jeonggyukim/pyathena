@@ -940,7 +940,7 @@ def critical_time(s, pid, method=1):
                 if not fnet < 0:
                     ncrit = num + 1
                     break
-    elif method in {4, 5}:
+    elif method in {4, 5, 6, 7}:
         for num, core in cores.sort_index(ascending=True).iterrows():
             if method == 4:
                 # Predicted critical time using R_tidal_max
@@ -952,6 +952,25 @@ def critical_time(s, pid, method=1):
                 # Predicted critical time using R_tidal_min
                 cond = core.leaf_radius >= core.critical_radius
                 if cond:
+                    ncrit = num
+                    break
+            elif method == 6:
+                # Predicted critical time using R_tidal_avg
+                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius0)
+                cond = rtidal_avg >= core.critical_radius
+                if cond:
+                    ncrit = num
+                    break
+            elif method == 7:
+                # Predicted critical time using R_tidal_avg and Menc
+                if np.isfinite(core.critical_radius):
+                    menc = rprf.menc.interp(r=core.critical_radius).data[()]
+                else:
+                    menc = np.nan
+                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius0)
+                cond1 = rtidal_avg >= core.critical_radius
+                cond2 = menc >= core.critical_mass
+                if cond1 and cond2:
                     ncrit = num
                     break
 

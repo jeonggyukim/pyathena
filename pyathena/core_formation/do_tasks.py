@@ -149,7 +149,8 @@ if __name__ == "__main__":
         # Calculate Lagrangian properties
         if args.lagrangian_props:
             def wrapper(pid):
-                for method in [6]:
+                method_list = [1, 2, 4, 5, 6, 7]
+                for method in method_list:
                     s.select_cores(method)
                     if pid in s.cores:
                         tasks.lagrangian_props(s, pid, method=method, overwrite=args.overwrite)
