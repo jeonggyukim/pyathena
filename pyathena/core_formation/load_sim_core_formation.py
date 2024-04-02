@@ -136,14 +136,14 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 pass
 
             self.cores_dict = {}
-            for method in [1, 2, 4, 5]:
+            for i in [1, 2, 4, 5]:
                 try:
                     # Calculate derived core properties using the predicted critical time
                     savdir = Path(self.savdir, 'cores')
-                    self.cores_dict[method] = self.update_core_props(method=method, prefix=f'cores{method}',
+                    self.cores_dict[i] = self.update_core_props(method=i, prefix=f'cores{i}',
                                                          savdir=savdir, force_override=force_override)
                 except (AttributeError, KeyError):
-                    self.logger.warning(f"Failed to update core properties for model {self.basename}, method {method}")
+                    self.logger.warning(f"Failed to update core properties for model {self.basename}, method {i}")
 
             try:
                 self.select_cores(method)
