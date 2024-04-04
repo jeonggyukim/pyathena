@@ -68,6 +68,7 @@ class StarPar():
         # Summary
         r = dict()
         r['time'] = sp.time
+        r['tMyr'] = sp.time*u.Myr
         r['nstars'] = sp.nstars
         r['isrc'] = isrc
         r['nsrc'] = np.sum(isrc)
@@ -82,11 +83,38 @@ class StarPar():
         sp['L_LW'] = LtoM.calc_LLW_SB99(sp['mass'], sp['mage'])
         sp['L_FUV'] = sp['L_PE'] + sp['L_LW']
 
+        if r['nsrc'] > 0:
+            r['lsrc'] = 1/np.sqrt(r['nsrc']/LxLy)
+            Qi_srt = sp['Qi'].sort_values(ascending=False)
+            L_FUV_srt = sp['L_FUV'].sort_values(ascending=False)
+            over90_Qi = Qi_srt.cumsum() > 0.9*Qi_srt.sum()
+            over90_LFUV = L_FUV_srt.cumsum() > 0.9*L_FUV_srt.sum()
+            idx_90_Qi = [over90_Qi.index[i] \
+                         for i in range(np.where(over90_Qi)[0][0]+1)]
+            idx_90_LFUV = [over90_LFUV.index[i] \
+                           for i in range(np.where(over90_LFUV)[0][0]+1)]
+            r['nsrc_90_Qi'] = len(idx_90_Qi)
+            r['nsrc_90_LFUV'] = len(idx_90_LFUV)
+            r['lsrc_90_Qi'] = 1/np.sqrt(r['nsrc_90_Qi']/LxLy)
+            r['lsrc_90_LFUV'] = 1/np.sqrt(r['nsrc_90_LFUV']/LxLy)
+            r['Qi_90'] = Qi_srt[idx_90_Qi].sum()
+            r['L_FUV_90'] = L_FUV_srt[idx_90_LFUV].sum()
+        else:
+            r['lsrc'] = np.nan
+            r['nsrc_90_Qi'] = 0
+            r['nsrc_90_LFUV'] = 0
+            r['lsrc_90_Qi'] = np.nan
+            r['lsrc_90_LFUV'] = np.nan
+            r['Qi_90'] = 0.0
+            r['L_FUV_90'] = 0.0
+
         # Save source as separate DataFrame
         r['sp_src'] = sp
 
         if np.sum(isrc) > 0:
             r['z_max'] = np.max(sp['x3'])
+            r['z_min'] = np.min(sp['x3'])
+            r['z_max_min_over_two'] = 0.5*(r['z_max'] - r['z_min'])
             r['z_min'] = np.min(sp['x3'])
             r['z_mean_mass'] = np.average(sp['x3'], weights=sp['mass'])
             r['z_mean_Qi'] = np.average(sp['x3'], weights=sp['Qi'])
@@ -97,16 +125,21 @@ class StarPar():
                                               weights=sp['Qi']))
             r['stdz_LFUV'] = np.sqrt(np.average((sp['x3'] - r['z_mean_LFUV'])**2,
                                                 weights=sp['L_FUV']))
+            r['H_Qi'] = np.sqrt(np.sum(sp['x3']**2*sp['Qi'])/np.sum(sp['Qi']))
+            r['H_LFUV'] = np.sqrt(np.sum(sp['x3']**2*sp['L_FUV'])/np.sum(sp['L_FUV']))
         else:
             # No source particles
             r['z_max'] = np.nan
             r['z_min'] = np.nan
+            r['z_max_min_over_two'] = np.nan
             r['z_mean_mass'] = np.nan
             r['z_mean_Qi'] = np.nan
             r['z_mean_LFUV'] = np.nan
             r['stdz_mass'] = np.nan
             r['stdz_Qi'] = np.nan
             r['stdz_LFUV'] = np.nan
+            r['H_Qi'] = np.nan
+            r['H_LFUV'] = np.nan
 
         r['Qi_tot'] = np.sum(sp['Qi'])
         r['L_LW_tot'] = np.sum(sp['L_LW'])
@@ -114,7 +147,11 @@ class StarPar():
         r['L_FUV_tot'] = np.sum(sp['L_FUV'])
 
         # Ionizing photon per unit area
-        r['Phi_i'] = r['Qi_tot']/LxLy
+        r['Phi_LyC'] = r['Qi_tot']/LxLy
+        # PE luminosity per unit area
+        r['Sigma_PE'] = r['L_PE_tot']/LxLy
+        # LW luminosity per unit area
+        r['Sigma_LW'] = r['L_LW_tot']/LxLy
         # FUV luminosity per unit area
         r['Sigma_FUV'] = r['L_FUV_tot']/LxLy
 
