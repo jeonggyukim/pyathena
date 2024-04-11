@@ -962,6 +962,7 @@ def critical_time(s, pid, method=1):
                     ncrit = num
                     break
             elif method == 7:
+                rprf = rprofs.sel(num=num)
                 # Predicted critical time using R_tidal_avg and Menc
                 if np.isfinite(core.critical_radius):
                     menc = rprf.menc.interp(r=core.critical_radius).data[()]
