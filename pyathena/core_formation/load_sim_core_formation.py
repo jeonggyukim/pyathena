@@ -147,7 +147,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             try:
                 self.select_cores(method)
-            except AttributeError:
+            except KeyError:
                 self.logger.warning(f"Failed to select core with method {method} for model {self.basename}")
         elif isinstance(basedir_or_Mach, (float, int)):
             self.Mach = basedir_or_Mach
