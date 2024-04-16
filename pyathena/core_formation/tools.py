@@ -785,8 +785,15 @@ def calculate_observables(s, core, rprf, rmax):
     r_obs = utils.fwhm(rho_itp, rmax)
     try:
         # Mean density inside FWHM radius
-        m_obs = utils.integrate_2d_projected(lambda x: rho_itp(x), r_obs, rmax)
+        m_obs = utils.integrate_2d_projected(rho_itp, r_obs, rmax)
         rhoavg_obs = m_obs / (4*np.pi*r_obs**3/3)
+
+        # Calculate background subtracted quantities
+        r_obs_bgrsub = utils.fwhm_bgrsub(rho_itp, rmax)
+        dcol_bgr = utils.integrate_los(rho_itp, r_obs_bgrsub, rmax)
+        m_bgr = dcol_bgr*np.pi*r_obs_bgrsub**2
+        m_obs_bgrsub = utils.integrate_2d_projected(rho_itp, r_obs_bgrsub, rmax) - m_bgr
+        rhoavg_bgrsub = m_obs_bgrsub / (4*np.pi*r_obs_bgrsub**3/3)
 
         # Projected velocity dispersion within FWHM
         two_ke = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), r_obs, rmax)
@@ -802,12 +809,14 @@ def calculate_observables(s, core, rprf, rmax):
         # it can sometimes exceed the maximum radius of the radial profiles.
         # If that happens, we cannot solve for the properties within the
         # FWHM radius.
+        r_obs_bgrsub = np.nan
         m_obs = np.nan
+        m_obs_bgrsub = np.nan
         rhoavg_obs = np.nan
         sigma_obs = np.nan
         mcrit = np.nan
-    res = dict(r_obs=r_obs, m_obs=m_obs, rhoavg_obs=rhoavg_obs, sigma_obs=sigma_obs,
-               mcrit_at_robs=mcrit)
+    res = dict(r_obs=r_obs, m_obs=m_obs, r_obs_bgrsub=r_obs_bgrsub, m_obs_bgrsub=m_obs_bgrsub,
+               rhoavg_obs=rhoavg_obs, sigma_obs=sigma_obs, mcrit_at_robs=mcrit)
 
     return res
 
