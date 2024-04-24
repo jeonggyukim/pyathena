@@ -176,7 +176,7 @@ def groupby_bins(dat, coord, edges, cumulative=False):
     res: xarray.DataArray
         binned array
     """
-    dat = dat.transpose('z', 'y', 'x')
+    dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
     fc = dat[coord].data.flatten()  # flattened coordinates
     fd = dat.data.flatten()  # flattened data
     bin_sum = np.histogram(fc, edges, weights=fd)[0]
@@ -221,7 +221,7 @@ def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False):
     res: xarray.DataArray
         binned array
     """
-    dat = dat.transpose('z', 'y', 'x')
+    dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
     fc = dat[coord].data.flatten()  # flattened coordinates
     fd = dat.data.flatten()  # flattened data
     bin_sum = fh.histogram1d(fc, nbin, (ledge, redge), weights=fd)
