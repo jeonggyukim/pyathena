@@ -442,6 +442,9 @@ class LowZData(PaperData):
             "PDE_whole_approx_sp",
             "PDE_2p_avg_approx_sp",
             "PDE_2p_mid_approx_sp",
+            "PDE_whole_approx_sp2",
+            "PDE_2p_avg_approx_sp2",
+            "PDE_2p_mid_approx_sp2",
             "PDE_whole_full",
             "PDE_2p_avg_full",
             "PDE_2p_mid_full",
@@ -455,6 +458,11 @@ class LowZData(PaperData):
         ]:
             ydata[yf] = zpmid[yf]
         ydata["sfr"] = zpmid[sfr_field]
+        # total P and nH
+        ydata["Ptot_all"] = zpwmid["Ptot"] * s.u.pok
+        ydata["nH_all"] = zpwmid["nH"]
+        ydata["Ptot_2p_all"] = zpmid["Ptot"].sel(phase="2p") * s.u.pok
+        ydata["nH_2p_all"] = zpmid["nH"].sel(phase="2p")
         # full
         ydata["W"] = zpwmid["W"] * s.u.pok
         ydata["Wsg"] = zpwmid["Wsg"] * s.u.pok
@@ -480,6 +488,9 @@ class LowZData(PaperData):
         ydata["Zgas"] = s.Zgas * zpmid["Sigma_gas"] / zpmid["Sigma_gas"]
         ydata["Zdust"] = s.Zdust * zpmid["Sigma_gas"] / zpmid["Sigma_gas"]
         ydata["PDE"] = zpmid["PDE_2p_avg_full"]
+
+        ydata["tdyn"] = ydata["H"]/ydata["sigma_eff"] * s.u.Myr
+        ydata["edyn"] = ydata["tdyn"]/ydata["tdep"]
         if reduce:
             # apply only on the good data points
             ydata = ydata.where(
@@ -740,9 +751,6 @@ def get_PW_zprof(s, recal=False):
         zpmid["oPimag"] = zpmid["Pimag"] - zpmid["dPimag"]
         zpmid["Ptot"] += zpmid["Pimag"]
 
-    # scale height
-    zpmid["H"] = np.sqrt((zp["d"] * zp.z**2).sum(dim="z") / zp["d"].sum(dim="z"))
-
     # density, area
     zpmid["nH"] = zp["d"]
     zpmid["A"] = zp["A"]
@@ -776,6 +784,9 @@ def get_PW_zprof(s, recal=False):
         zpmid = xr.concat([twop, wim, hot], dim="phase")
     else:
         zpmid = xr.concat([twop, hot], dim="phase")
+
+    # scale height
+    zpmid["H"] = np.sqrt((zpmid["nH"] * zpmid.z**2).sum(dim="z") / zpmid["nH"].sum(dim="z"))
 
     if os.path.isfile(fzpmid):
         os.remove(fzpmid)
@@ -916,6 +927,12 @@ def get_PW_time_series_from_zprof(
         / 2.0
         * (ac.G * (ac.M_sun / ac.pc**2) ** 2 / ac.k_B).cgs.value
     )
+    zpmid["PDE1_sp"] = (
+        np.pi
+        * zpmid["Sigma_gas"] * (zpmid["Sigma_gas"]+zpmid["Sigma_sp"])
+        / 2.0
+        * (ac.G * (ac.M_sun / ac.pc**2) ** 2 / ac.k_B).cgs.value
+    )
     zpmid["PDE2_2p"] = (
         zpmid["Sigma_gas"]
         * np.sqrt(2 * rhosd)
@@ -997,13 +1014,24 @@ def get_PW_time_series_from_zprof(
     zpmid["PDE_whole_approx"] = (
         zpmid["PDE1"] + zpmid["PDE2"]
     )  # PDE from mass weighted mean VD of whole gas
+
     zpmid["PDE_2p_mid_approx_sp"] = (
+        zpmid["PDE1_sp"] + zpmid["PDE2_2p_mid"]
+    )  # PDE from midplane pressure and density of 2p gas + new star gravity added to gas
+    zpmid["PDE_2p_avg_approx_sp"] = (
+        zpmid["PDE1_sp"] + zpmid["PDE2_2p"]
+    )  # PDE from mass weighted mean VD of 2p gas + new star gravity added to gas
+    zpmid["PDE_whole_approx_sp"] = (
+        zpmid["PDE1_sp"] + zpmid["PDE2"]
+    )  # PDE from mass weighted mean VD of whole gas + new star gravity added to gas
+
+    zpmid["PDE_2p_mid_approx_sp2"] = (
         zpmid["PDE1"] + zpmid["PDE3_2p_mid"]
     )  # PDE from midplane pressure and density of 2p gas + added new star particle gravity
-    zpmid["PDE_2p_avg_approx_sp"] = (
+    zpmid["PDE_2p_avg_approx_sp2"] = (
         zpmid["PDE1"] + zpmid["PDE3_2p"]
     )  # PDE from mass weighted mean VD of 2p gas + added new star particle gravity
-    zpmid["PDE_whole_approx_sp"] = (
+    zpmid["PDE_whole_approx_sp2"] = (
         zpmid["PDE1"] + zpmid["PDE3"]
     )  # PDE from mass weighted mean VD of whole gas + added new star particle gravity
 
