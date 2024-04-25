@@ -223,7 +223,7 @@ if __name__ == "__main__":
 
     # get my nums
     if s.nums is not None:
-        mynums = scatter_nums(s, s.nums_starpar)
+        mynums = scatter_nums(s, s.nums_starpar, COMM)
     else:
         mynums = []
 

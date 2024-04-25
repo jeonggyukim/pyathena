@@ -318,7 +318,7 @@ if __name__ == "__main__":
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
     # get my nums
     if s.nums is not None:
-        mynums = scatter_nums(s, s.nums)
+        mynums = scatter_nums(s, s.nums, COMM)
     else:
         mynums = []
 

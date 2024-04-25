@@ -61,7 +61,7 @@ def process_one_file_phase(s, num):
         print(" skipping nP ")
 
 
-def scatter_nums(s, nums):
+def scatter_nums(s, nums, COMM):
     if COMM.rank == 0:
         print("basedir, nums", s.basedir, nums)
         nums = split_container(nums, COMM.size)
@@ -75,7 +75,7 @@ def scatter_nums(s, nums):
 
 def process_tar(s):
     if s.nums_rawtar is not None:
-        mynums = scatter_nums(s, s.nums_rawtar)
+        mynums = scatter_nums(s, s.nums_rawtar, COMM)
 
         for num in mynums:
             s.create_tar(num=num, kind="vtk", remove_original=True, overwrite=True)
@@ -167,7 +167,7 @@ if __name__ == "__main__":
     s = process_tar(s)
     # get my nums
     if s.nums is not None:
-        mynums = scatter_nums(s, s.nums)
+        mynums = scatter_nums(s, s.nums, COMM)
     else:
         mynums = []
 

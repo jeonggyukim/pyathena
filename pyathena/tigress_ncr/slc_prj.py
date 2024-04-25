@@ -269,6 +269,10 @@ class SliceProj:
                     val = (dat["density"] * dat[f"specific_scalar[{ns}]"]).data
                     valsum = np.sum(val, axis=2 - i) * conv_Sigma
                     res[ax][f"Sigma_scalar{ns}"] = valsum
+                elif 'Erad_FUV' in field:
+                    res[ax]['Sigma_FUV'] = (np.sum(dat["Erad_FUV"],axis=2-i)*dx.cgs.value).data
+                elif 'Erad_LyC' in fields:
+                    res[ax]['Sigma_LyC'] = (np.sum(dat["Erad_LyC"],axis=2-i)*dx.cgs.value).data
 
         return res
 
