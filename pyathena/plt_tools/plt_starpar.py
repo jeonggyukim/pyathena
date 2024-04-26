@@ -38,7 +38,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
                norm_factor=4., kind='prj', dist_max=50.0,
                marker='o', edgecolors=None, linewidths=None, alpha=1.0,
                kpc=False, runaway=False, agemax=20.0, agemax_sn=40.0,
-               plt_old=False, u=None):
+               plt_old=False, u=None, norm_func=np.sqrt):
     """Function to scatter plot star particles. (From pyathena classic)
 
     Parameters
@@ -113,7 +113,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
             if norm_factor < 0:
                 spm = sp_cl['mass']/sp_cl['mass']*(-norm_factor)
             else:
-                spm = np.sqrt(sp_cl['mass']*Msun)/norm_factor
+                spm = norm_func(sp_cl['mass']*Msun)/norm_factor
             spa = sp_cl['age']*Myr
             if plt_old:
                 iyoung = np.where(spa < 1e10)
