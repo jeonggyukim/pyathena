@@ -777,61 +777,112 @@ def calculate_accelerations(rprf):
     return acc
 
 
-def calculate_observables(s, core, rprf, rmax):
+def calculate_observables(s, core, rprf, rmax, method):
     """Calculate observable properties of a core"""
-    # Create interpolation functions
-    rho_itp = interp1d(rprf.r.data, rprf.rho.data)
-    dvel_sq_itp = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
-    r_obs = utils.fwhm(rho_itp, rmax)
-    try:
-        # Mean density inside FWHM radius
-        m_obs = utils.integrate_2d_projected(rho_itp, r_obs, rmax)
-        rhoavg_obs = m_obs / (4*np.pi*r_obs**3/3)
 
-        # Calculate background subtracted quantities (background = R_tidal))
-        r_bgrsub = utils.fwhm_bgrsub(rho_itp, rmax, method='radius', rbgr=rmax)
-        dcol_bgr = utils.integrate_los(rho_itp, r_bgrsub, rmax)
-        m_bgr = dcol_bgr*np.pi*r_bgrsub**2
-        m_bgrsub = utils.integrate_2d_projected(rho_itp, r_bgrsub, rmax) - m_bgr
-        rhoavg_bgrsub = m_bgrsub / (4*np.pi*r_bgrsub**3/3)
+    match method:
+        case '3d':
+            # Method 1: calculate observable properties from radial profile, truncated at rmax
 
-        # Calculate background subtracted quantities (iterative subtraction)
-        r_bgrsub_itr = utils.fwhm_bgrsub(rho_itp, rmax, method='iterative')
-        dcol_bgr = utils.integrate_los(rho_itp, r_bgrsub_itr, rmax)
-        m_bgr = dcol_bgr*np.pi*r_bgrsub_itr**2
-        m_bgrsub_itr = utils.integrate_2d_projected(rho_itp, r_bgrsub_itr, rmax) - m_bgr
-        rhoavg_bgrsub_itr = m_bgrsub_itr / (4*np.pi*r_bgrsub_itr**3/3)
+            # Create interpolation functions
+            rho_itp = interp1d(rprf.r.data, rprf.rho.data)
+            rfwhm = utils.fwhm(rho_itp, rmax)
+            if rfwhm < rprf.r.max():
+                # Mean density inside FWHM radius
+                mfwhm = utils.integrate_2d_projected(rho_itp, rfwhm, rmax)
+                dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
 
-        # Projected velocity dispersion within FWHM
-        two_ke = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), r_obs, rmax)
-        sigma_obs = np.sqrt(two_ke/m_obs)
+                # Central surface density
+                dcen = utils.integrate_los(rho_itp, 0, rmax)
 
-        # Critical mass of TES having rcrit = R_FWHM
-        tsc = TESc(sigma=sigma_obs)
-        xi_fwhm = utils.fwhm(tsc.rho, tsc.get_rcrit())
-        m_over_xi = tsc.menc(xi_fwhm) / xi_fwhm
-        mcrit = np.pi*s.cs**2/s.gconst*m_over_xi*r_obs
-    except ValueError:
-        # Because r_obs is found by multiplying two to the HMHW,
-        # it can sometimes exceed the maximum radius of the radial profiles.
-        # If that happens, we cannot solve for the properties within the
-        # FWHM radius.
-        r_bgrsub = np.nan
-        r_bgrsub_itr = np.nan
-        m_obs = np.nan
-        m_bgrsub = np.nan
-        m_bgrsub_itr = np.nan
-        rhoavg_obs = np.nan
-        rhoavg_bgrsub = np.nan
-        rhoavg_bgrsub_itr = np.nan
-        sigma_obs = np.nan
-        mcrit = np.nan
-    res = dict(r_obs=r_obs, m_obs=m_obs, rhoavg_obs=rhoavg_obs,
-               r_bgrsub=r_bgrsub, m_bgrsub=m_bgrsub, rhoavg_bgrsub=rhoavg_bgrsub,
-               r_bgrsub_itr=r_bgrsub_itr, m_bgrsub_itr=m_bgrsub_itr, rhoavg_bgrsub_itr=rhoavg_bgrsub_itr,
-               sigma_obs=sigma_obs, mcrit_at_robs=mcrit)
+                # Projected velocity dispersion within FWHM
+                dvel_sq_itp = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
+                two_ke = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), rfwhm, rmax)
+                sigma = np.sqrt(two_ke/mfwhm)
 
-    return res
+#        # Critical mass of TES having rcrit = R_FWHM
+#        ts = TESc(p=core.pindex, sigma=sigma)
+#        xi_fwhm = utils.fwhm(ts.rho, ts.rmax)
+#        m_fwhm = utils.integrate_2d_projected(ts.rho, xi_fwhm, ts.rmax)
+#        m_over_xi = m_fwhm / xi_fwhm
+#        mcrit = np.pi*s.cs**2/s.gconst*m_over_xi*rfwhm
+            else:
+                mfwhm = dfwhm = dcen = sigma = np.nan
+            obsprops = dict(radius=rfwhm, mass=mfwhm, mean_density=dfwhm,
+                            central_column_density=dcen, velocity_dispersion=sigma)
+
+        case 'iterative':
+            # Method 2: calculate observable properties from iterative background subtraction, using
+            # the 3D radial profile.
+
+            try:
+                # Calculate background subtracted quantities (iterative subtraction)
+                rho_itp = interp1d(rprf.r.data, rprf.rho.data)
+                rfwhm = utils.fwhm_bgrsub(rho_itp, rmax, method='iterative')
+                dcol_bgr = utils.integrate_los(rho_itp, rfwhm, rmax)
+                m_bgr = dcol_bgr*np.pi*rfwhm**2
+                mfwhm = utils.integrate_2d_projected(rho_itp, rfwhm, rmax) - m_bgr
+                dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
+
+                # Central surface density (background subtracted)
+                dcen = utils.integrate_los(rho_itp, 0, rmax) - dcol_bgr
+
+                # Projected velocity dispersion within FWHM
+                dvel_sq_itp = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
+                two_ke = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), rfwhm, rmax)
+                sigma = np.sqrt(two_ke/mfwhm)
+            except ValueError:
+                # Because r_obs is found by multiplying two to the HMHW,
+                # it can sometimes exceed the maximum radius of the radial profiles.
+                # If that happens, we cannot solve for the properties within the
+                # FWHM radius.
+                mfwhm = dfwhm = dcen = sigma = np.nan
+            obsprops = dict(radius=rfwhm, mass=mfwhm, mean_density=dfwhm,
+                            central_column_density=dcen, velocity_dispersion=sigma)
+
+        case '2d_wholebox':
+            dcol_profs = calculate_surface_density_profiles(s, core)
+            obsprops = dict()
+            for dim, dcol in dcol_profs.items():
+                # Simplest background subtraction -- average column in the whole box
+                dcol_bgr = s.rho0*s.Lbox
+                try:
+                    rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr), dcol.R.max()[()], which='column')
+                    mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+                    dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
+                except ValueError:
+                    rfwhm = mfwhm = dfwhm = np.nan
+                # Central surface density (background subtracted)
+                dcen = dcol.sel(R=0).data[()] - dcol_bgr
+                obsprops[f'radius_{dim}'] = rfwhm
+                obsprops[f'mass_{dim}'] = mfwhm
+                obsprops[f'mean_density_{dim}'] = dfwhm
+                obsprops[f'center_column_density_{dim}'] = dcen
+
+        case '2d_fwhm':
+            dcol_profs = calculate_surface_density_profiles(s, core)
+            obsprops = dict()
+            for dim, dcol in dcol_profs.items():
+                for ff in [1, 1.5, 2]:
+                    try:
+                        rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data), dcol.R.max()[()], which='column')
+                        dcol_bgr = dcol.interp(R=ff*rfwhm).data[()]
+                        try:
+                            rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr), dcol.R.max()[()], which='column')
+                            mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+                            dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
+                        except ValueError:
+                            rfwhm = mfwhm = dfwhm = np.nan
+                        dcen = dcol.sel(R=0).data[()] - dcol_bgr
+                    except ValueError:
+                        rfwhm = mfwhm = dfwhm = dcen = np.nan
+                    obsprops[f'radius_{dim}_f{ff}'] = rfwhm
+                    obsprops[f'mass_{dim}_f{ff}'] = mfwhm
+                    obsprops[f'mean_density_{dim}_f{ff}'] = dfwhm
+                    obsprops[f'center_column_density_{dim}_f{ff}'] = dcen
+
+    obsprops['num'] = core.name
+    return obsprops
 
 
 def calculate_surface_density_profiles(s, core):
