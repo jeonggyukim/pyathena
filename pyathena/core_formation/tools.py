@@ -834,6 +834,47 @@ def calculate_observables(s, core, rprf, rmax):
     return res
 
 
+def calculate_surface_density_profiles(s, core):
+    """Calculate radial profile of the surface density directly from the map"""
+    num = core.name
+
+    # Read the central position of the core and recenter the snapshot
+    xc, yc, zc = get_coords_node(s, core.leaf_id)
+    ds = s.load_hdf5(num, quantities=['dens'])
+    ds, (xc, yc, zc) = recenter_dataset(ds, (xc, yc, zc))
+    xycoordnames = dict(z=['x', 'y'],
+                        x=['y', 'z'],
+                        y=['z', 'x'])
+    xycenters = dict(z=[xc, yc],
+                     x=[yc, zc],
+                     y=[zc, xc])
+
+    # Calculate surface density maps
+    dcol_maps = {}
+    for i, dim in enumerate(['x', 'y', 'z']):
+        x1, x2 = xycoordnames[dim]
+        x1c, x2c = xycenters[dim]
+        dcol = (ds.dens*s.domain['dx'][i]).sum(dim)
+        dcol.coords['R'] = np.sqrt((dcol[x1]- x1c)**2 + (dcol[x2] - x2c)**2)
+        dcol_maps[dim] = dcol
+
+    # Calculate surface density radial profiles
+    ledge = 0.5*s.dx
+    nbin = s.domain['Nx'][0]//2 - 1
+    redge = (nbin + 0.5)*s.dx
+    dcol_profs = {}
+    for i, dim in enumerate(['x', 'y', 'z']):
+        dcol = dcol_maps[dim]
+        x1, x2 = xycoordnames[dim]
+        x1c, x2c = xycenters[dim]
+        dcol0 = xr.DataArray(dcol.sel({x1:x1c, x2:x2c}).data[()], dims='R', coords={'R':[0,]})
+        dcol = transform.fast_groupby_bins(dcol, 'R', ledge, redge, nbin)
+        dcol = xr.concat([dcol0, dcol], dim='R')
+        dcol_profs[dim] = dcol
+
+    return dcol_profs
+
+
 def column_density(rcyl, frho, rmax):
     """Calculate column density
 
