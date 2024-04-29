@@ -333,22 +333,25 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
 
                 prestellar_cores = cores.loc[:cores.attrs['numcoll']]
-                oprops = []
-                for num, core in prestellar_cores.iterrows():
-                    fname = Path(self.savdir, 'cores',
-                                 'observables.par{}.{:05d}.p'
-                                 .format(pid, num))
-                    if fname.exists():
-                        oprops.append(pd.read_pickle(fname))
-                if len(oprops) > 0:
-                    oprops = pd.DataFrame(oprops).set_index('num').sort_index()
 
-                    # Save attributes before performing join, which will drop them.
-                    attrs = cores.attrs.copy()
-                    attrs.update(oprops.attrs)
-                    cores = cores.join(oprops)
-                    # Reattach attributes
-                    cores.attrs = attrs
+                for obs_method in ['three_d', 'iterative', 'two_d_wholebox', 'two_d_fwhm']:
+                    oprops = []
+                    for num, core in prestellar_cores.iterrows():
+                        fname = Path(self.savdir, 'cores',
+                                     'observables.par{}.{:05d}.p'
+                                     .format(pid, num))
+                        if fname.exists():
+                            oprops.append(pd.read_pickle(fname)[obs_method])
+                    if len(oprops) > 0:
+                        oprops = pd.DataFrame(oprops).set_index('num').sort_index()
+                        oprops = oprops.rename(columns={k: f'{obs_method}_{k}' for k in oprops.columns})
+
+                        # Save attributes before performing join, which will drop them.
+                        attrs = cores.attrs.copy()
+                        attrs.update(oprops.attrs)
+                        cores = cores.join(oprops)
+                        # Reattach attributes
+                        cores.attrs = attrs
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
