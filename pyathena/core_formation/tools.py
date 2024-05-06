@@ -847,7 +847,8 @@ def calculate_observables(s, core, rprf, rmax, method):
                 # Simplest background subtraction -- average column in the whole box
                 dcol_bgr = s.rho0*s.Lbox
                 try:
-                    rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr), dcol.R.max()[()], which='column')
+                    rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
+                                       dcol.R.max()[()], which='column')
                     mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
                     dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
                 except ValueError:
