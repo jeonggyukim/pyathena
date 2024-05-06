@@ -297,14 +297,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     # Reattach attributes
                     cores.attrs = attrs
 
-                # Calculate normalized times
-                cores.insert(1, 'tnorm1',
-                             (cores.time - cores.attrs['tcoll'])
-                              / cores.attrs['tff_crit'])
-                cores.insert(2, 'tnorm2',
-                             (cores.time - cores.attrs['tcrit'])
-                              / (cores.attrs['tcoll'] - cores.attrs['tcrit']))
-
                 mcore = cores.attrs['mcore']
                 rcore = cores.attrs['rcore']
 
@@ -331,6 +323,15 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                         tf = phst.loc[idx].time
                 cores.attrs['tinfall_end'] = tf
                 cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
+
+                # Calculate normalized times
+                cores.insert(1, 'tnorm1',
+                             (cores.time - cores.attrs['tcoll'])
+                              / cores.attrs['tff_crit'])
+                cores.insert(2, 'tnorm2',
+                             (cores.time - cores.attrs['tcrit']) / cores.attrs['dt_coll'])
+                cores.insert(3, 'tnorm3',
+                             (cores.time - cores.attrs['tcoll']) / cores.attrs['dt_coll'])
 
                 prestellar_cores = cores.loc[:cores.attrs['numcoll']]
 
