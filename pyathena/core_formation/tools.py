@@ -841,58 +841,20 @@ def calculate_observables(s, core, rprf, rmax, method):
                             central_column_density=dcen, velocity_dispersion=sigma)
 
         case '2d_wholebox':
-            dcol_profs = calculate_surface_density_profiles(s, core)
-            obsprops = dict()
-            for dim, dcol in dcol_profs.items():
-                # Simplest background subtraction -- average column in the whole box
-                dcol_bgr = s.rho0*s.Lbox
-                try:
-                    rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
-                                       dcol.R.max()[()], which='column')
-                    mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
-                    dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
-                except ValueError:
-                    rfwhm = mfwhm = dfwhm = np.nan
-                # Central surface density (background subtracted)
-                dcen = dcol.sel(R=0).data[()] - dcol_bgr
-                obsprops[f'radius_{dim}'] = rfwhm
-                obsprops[f'mass_{dim}'] = mfwhm
-                obsprops[f'mean_density_{dim}'] = dfwhm
-                obsprops[f'center_column_density_{dim}'] = dcen
-
-        case '2d_fwhm':
-            dcol_profs = calculate_surface_density_profiles(s, core)
-            obsprops = dict()
-            for dim, dcol in dcol_profs.items():
-                for ff in [1, 1.5, 2]:
-                    try:
-                        rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data), dcol.R.max()[()], which='column')
-                        dcol_bgr = dcol.interp(R=ff*rfwhm).data[()]
-                        try:
-                            rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr), dcol.R.max()[()], which='column')
-                            mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
-                            dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
-                        except ValueError:
-                            rfwhm = mfwhm = dfwhm = np.nan
-                        dcen = dcol.sel(R=0).data[()] - dcol_bgr
-                    except ValueError:
-                        rfwhm = mfwhm = dfwhm = dcen = np.nan
-                    obsprops[f'radius_{dim}_f{ff}'] = rfwhm
-                    obsprops[f'mass_{dim}_f{ff}'] = mfwhm
-                    obsprops[f'mean_density_{dim}_f{ff}'] = dfwhm
-                    obsprops[f'center_column_density_{dim}_f{ff}'] = dcen
+            obsprops = calculate_observables_using_wholebox_background(s, core)
 
     obsprops['num'] = core.name
     return obsprops
 
 
-def calculate_surface_density_profiles(s, core):
+def calculate_observables_using_wholebox_background(s, core):
     """Calculate radial profile of the surface density directly from the map"""
     num = core.name
+    obsprops = dict()
 
     # Read the central position of the core and recenter the snapshot
     xc, yc, zc = get_coords_node(s, core.leaf_id)
-    ds = s.load_hdf5(num, quantities=['dens'])
+    ds = s.load_hdf5(num, quantities=['dens','mom1','mom2','mom3'])
     ds, (xc, yc, zc) = recenter_dataset(ds, (xc, yc, zc))
     xycoordnames = dict(z=['x', 'y'],
                         x=['y', 'z'],
@@ -914,7 +876,6 @@ def calculate_surface_density_profiles(s, core):
     ledge = 0.5*s.dx
     nbin = s.domain['Nx'][0]//2 - 1
     redge = (nbin + 0.5)*s.dx
-    dcol_profs = {}
     for i, dim in enumerate(['x', 'y', 'z']):
         dcol = dcol_maps[dim]
         x1, x2 = xycoordnames[dim]
@@ -922,9 +883,41 @@ def calculate_surface_density_profiles(s, core):
         dcol0 = xr.DataArray(dcol.sel({x1:x1c, x2:x2c}).data[()], dims='R', coords={'R':[0,]})
         dcol = transform.fast_groupby_bins(dcol, 'R', ledge, redge, nbin)
         dcol = xr.concat([dcol0, dcol], dim='R')
-        dcol_profs[dim] = dcol
 
-    return dcol_profs
+        # Simplest background subtraction -- average column in the whole box
+        dcol_bgr = s.rho0*s.Lbox
+        sigma = dict()
+        try:
+            # Calculate FWHM quantities
+            rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
+                               dcol.R.max()[()], which='column')
+            mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+            dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
+
+            # Calculate velocity dispersion along the pencil beam
+            ds.coords['R'] = np.sqrt((ds[x1]- x1c)**2 + (ds[x2] - x2c)**2)
+            for rho_crit in np.arange(20, 201, 20):
+                d = ds.where((ds.dens > rho_crit)&(ds.R<rfwhm), other=0, drop=True)
+                rho = d.dens.copy(deep=False)
+                v = d[f'mom{i+1}']/rho
+                sigma[rho_crit] = np.sqrt((v**2).weighted(rho).mean() - v.weighted(rho).mean()**2).data[()]
+
+        except ValueError:
+            rfwhm = mfwhm = dfwhm = np.nan
+            for rho_crit in np.arange(20, 201, 20):
+                sigma[rho_crit] = np.nan
+
+        # Central column density
+        dcen = dcol.sel(R=0).data[()] - dcol_bgr
+
+        obsprops[f'radius_{dim}'] = rfwhm
+        obsprops[f'mass_{dim}'] = mfwhm
+        obsprops[f'mean_density_{dim}'] = dfwhm
+        obsprops[f'center_column_density_{dim}'] = dcen
+        for rho_crit in np.arange(20, 201, 20):
+            obsprops[f'velocity_dispersion_{dim}_d{rho_crit}'] = sigma[rho_crit]
+
+    return obsprops
 
 
 def column_density(rcyl, frho, rmax):
