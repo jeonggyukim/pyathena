@@ -16,6 +16,7 @@ if __name__ == "__main__":
     # MHD models
     for iseed in [1,]:
         models[f"M5J2B2P{iseed}N512"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B2.P{iseed}.N512"
+        models[f"M5J2B4P{iseed}N512"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512"
         models[f"M10J4B2P{iseed}N1024"] = f"/scratch/gpfs/sm69/cores/mhd/M10.J4.B2.P{iseed}.N1024"
 
     # Experimental
@@ -132,7 +133,7 @@ if __name__ == "__main__":
             print(msg)
             def wrapper(num):
                 tasks.radial_profile(s, num, pids, overwrite=args.overwrite,
-                                     full_radius=False, days_overwrite=0)
+                                     full_radius=True, days_overwrite=10)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
@@ -161,6 +162,8 @@ if __name__ == "__main__":
         # Find observables
         if args.observables:
             print(f"Calculate observable core properties for model {mdl}")
+            # Only select resolved cores.
+            pids = sorted(set(pids) & set(s.good_cores()))
             for pid in pids:
                 cores = s.cores[pid]
                 cores = cores.loc[:cores.attrs['numcoll']]
