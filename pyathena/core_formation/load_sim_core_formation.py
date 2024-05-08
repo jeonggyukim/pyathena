@@ -335,7 +335,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
                 prestellar_cores = cores.loc[:cores.attrs['numcoll']]
 
-                for obs_method in ['three_d', 'iterative', 'two_d_wholebox', 'two_d_fwhm']:
+                for obs_method in ['three_d', 'iterative', 'two_d_wholebox']:
                     oprops = []
                     for num, core in prestellar_cores.iterrows():
                         fname = Path(self.savdir, 'cores',
