@@ -288,6 +288,10 @@ def lagrangian_props(s, pid, method=1, overwrite=False):
     lprops.to_pickle(ofname, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+def projections(s, num, overwrite=True):
+    s.read_prj(num, force_override=overwrite)
+
+
 def observables(s, pid, num, overwrite=False):
     # Check if file exists
     ofname = Path(s.savdir, 'cores',

@@ -127,13 +127,22 @@ if __name__ == "__main__":
                 p.map(wrapper, pids)
 
         # Calculate radial profiles of t_coll cores and pickle them.
+        if args.projections:
+            msg = ("calculate and save projections for " f"model {mdl}")
+            print(msg)
+            def wrapper(num):
+                tasks.projections(s, num, overwrite=args.overwrite)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
+
+        # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
             msg = ("calculate and save radial profiles for "
                    f"model {mdl}")
             print(msg)
             def wrapper(num):
                 tasks.radial_profile(s, num, pids, overwrite=args.overwrite,
-                                     full_radius=True, days_overwrite=10)
+                                     full_radius=True, days_overwrite=20)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
