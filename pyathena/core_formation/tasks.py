@@ -244,14 +244,15 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
 
         # Find the location of the core
         center = tools.get_coords_node(s, core.leaf_id)
+        center = dict(zip(['x', 'y', 'z'], center))
 
         # Roll the data such that the core is at the center of the domain
         ds, center = tools.recenter_dataset(ds0, center)
 
         # Calculate the angular momentum vector within the tidal radius.
-        x = ds.x - center[0]
-        y = ds.y - center[1]
-        z = ds.z - center[2]
+        x = ds.x - center['x']
+        y = ds.y - center['y']
+        z = ds.z - center['z']
         r = np.sqrt(x**2 + y**2 + z**2)
         lx = (y*ds.mom3 - z*ds.mom2).where(r < core.tidal_radius).sum().data[()]*s.dV
         ly = (z*ds.mom1 - x*ds.mom3).where(r < core.tidal_radius).sum().data[()]*s.dV
@@ -259,7 +260,7 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
         lvec = np.array([lx, ly, lz])
 
         # Calculate radial profile
-        rprf = tools.calculate_radial_profile(s, ds, center, rmax, lvec)
+        rprf = tools.calculate_radial_profile(s, ds, list(center.values()), rmax, lvec)
         rprf = rprf.expand_dims(dict(t=[ds.Time,]))
         rprf['lx'] = xr.DataArray([lx,], dims='t')
         rprf['ly'] = xr.DataArray([ly,], dims='t')

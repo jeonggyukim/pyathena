@@ -856,13 +856,13 @@ def calculate_projected_radial_profiles(s, core):
     # Read the central position of the core and recenter the snapshot
     xc, yc, zc = get_coords_node(s, core.leaf_id)
     ds = s.load_hdf5(num, quantities=['dens','mom1','mom2','mom3'])
-    ds, (xc, yc, zc) = recenter_dataset(ds, (xc, yc, zc))
+    ds, new_center = recenter_dataset(ds, dict(x=xc, y=yc, z=zc))
     xycoordnames = dict(z=['x', 'y'],
                         x=['y', 'z'],
                         y=['z', 'x'])
-    xycenters = dict(z=[xc, yc],
-                     x=[yc, zc],
-                     y=[zc, xc])
+    xycenters = dict(z=[new_center['x'], new_center['y']],
+                     x=[new_center['y'], new_center['z']],
+                     y=[new_center['z'], new_center['x']])
 
     # Observational critical density for the line emission
     critical_densities = np.arange(60, 201, 20)
@@ -921,13 +921,13 @@ def calculate_observables_using_wholebox_background(s, core):
     # Read the central position of the core and recenter the snapshot
     xc, yc, zc = get_coords_node(s, core.leaf_id)
     ds = s.load_hdf5(num, quantities=['dens','mom1','mom2','mom3'])
-    ds, (xc, yc, zc) = recenter_dataset(ds, (xc, yc, zc))
+    ds, new_center = recenter_dataset(ds, dict(x=xc, y=yc, z=zc))
     xycoordnames = dict(z=['x', 'y'],
                         x=['y', 'z'],
                         y=['z', 'x'])
-    xycenters = dict(z=[xc, yc],
-                     x=[yc, zc],
-                     y=[zc, xc])
+    xycenters = dict(z=[new_center['x'], new_center['y']],
+                     x=[new_center['y'], new_center['z']],
+                     y=[new_center['z'], new_center['x']])
 
     # Calculate surface density maps
     dcol_maps = {}
@@ -1304,24 +1304,15 @@ def recenter_dataset(ds, center):
         Position of the new center. This must be the grid coordinates
         closest, but not exactly the same, to (0, 0, 0).
     """
-    if isinstance(ds, xr.Dataset):
-        shape = np.array(list(ds.sizes.values()), dtype=int)
-    elif isinstance(ds, xr.DataArray):
-        shape = np.array(ds.shape, dtype=int)
-    else:
-        TypeError("Data type {} is not supported".format(type(ds)))
-    hNz, hNy, hNx = shape >> 1
-    xc, yc, zc = center
-    dx = ds.x.data[1] - ds.x.data[0]
-    dy = ds.y.data[1] - ds.y.data[0]
-    dz = ds.z.data[1] - ds.z.data[0]
-    ishift = hNx - np.where(np.isclose(ds.x.data, xc, atol=1e-1*dx))[0][0]
-    jshift = hNy - np.where(np.isclose(ds.y.data, yc, atol=1e-1*dy))[0][0]
-    kshift = hNz - np.where(np.isclose(ds.z.data, zc, atol=1e-1*dz))[0][0]
-    xc_new = ds.x.isel(x=hNx).data[()]
-    yc_new = ds.y.isel(y=hNy).data[()]
-    zc_new = ds.z.isel(z=hNz).data[()]
-    return ds.roll(x=ishift, y=jshift, z=kshift), (xc_new, yc_new, zc_new)
+    shift, new_center = {}, {}
+    for dim, pos in center.items():
+        hNx = ds.sizes[dim] // 2
+        coords = ds.coords[dim].data
+        dx = coords[1] - coords[0]
+        shift[dim] = hNx - np.where(np.isclose(coords, pos, atol=1e-1*dx))[0][0]
+        new_center[dim] = ds.coords[dim].isel({dim:hNx}).data[()]
+
+    return ds.roll(shift), new_center
 
 
 def get_rhocrit_KM05(lmb_sonic):

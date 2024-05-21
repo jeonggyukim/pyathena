@@ -420,7 +420,7 @@ def plot_core_evolution(s, pid, num, rmax=None):
 
     # Zoom-in dataset
     sel = dict(x=slice(-hw, hw), y=slice(-hw, hw), z=slice(-hw, hw))
-    d, _ = tools.recenter_dataset(ds, (xc, yc, zc))
+    d, _ = tools.recenter_dataset(ds, dict(x=xc, y=yc, z=zc))
     d = d.sel(sel)
 
     for i, prj_axis in enumerate(['z', 'x', 'y']):
@@ -440,9 +440,9 @@ def plot_core_evolution(s, pid, num, rmax=None):
         if core.envelop_id != gd.trunk:
             nodes.append(gd.sibling(core.envelop_id))
         plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
-                                  recenter=(xc, yc, zc), select=sel, color='k')
+                                  recenter=dict(x=xc, y=yc, z=zc), select=sel, color='k')
         plot_grid_dendro_contours(s, gd, core.envelop_id, ds.coords, axis=prj_axis,
-                                  recenter=(xc, yc, zc), select=sel, color='r')
+                                  recenter=dict(x=xc, y=yc, z=zc), select=sel, color='r')
         if core.tidal_radius <= np.sqrt(2)*hw:
             c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
             plt.gca().add_artist(c0)
