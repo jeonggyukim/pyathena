@@ -191,7 +191,7 @@ def groupby_bins(dat, coord, edges, cumulative=False):
     return res
 
 
-def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False):
+def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False, skipna=True):
     """High performance version of groupby_bins using fast_histogram.
 
     Although groupby_bins using np.histogram is significantly faster than
@@ -224,6 +224,10 @@ def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False):
     dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
     fc = dat[coord].data.flatten()  # flattened coordinates
     fd = dat.data.flatten()  # flattened data
+    if skipna:
+        mask = ~np.isnan(fd)
+        fc = fc[mask]
+        fd = fd[mask]
     bin_sum = fh.histogram1d(fc, nbin, (ledge, redge), weights=fd)
     bin_cnt = fh.histogram1d(fc, nbin, (ledge, redge))
     if cumulative:
