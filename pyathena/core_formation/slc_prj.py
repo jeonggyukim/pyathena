@@ -56,10 +56,17 @@ class SliceProj:
             res[ax] = dict()
             dcol = (ds.dens*dx).sum(ax)
             res[ax]['Sigma_gas'] = dcol
-            vel = (mom_los*dx).sum(ax) / dcol
-            res[ax][f'vel'] = vel
-            vel_sq = (mom_los**2/ds.dens*dx).sum(ax) / dcol
-            res[ax][f'veldisp'] = np.sqrt(vel_sq - vel**2)
+
+
+            for ncrit in [50, 100]:
+                d = ds.where((ds.dens > ncrit), other=np.nan)
+                dens = ds.dens.copy(deep=False)
+                vel = d[f'mom{i+1}']/dens
+                vel_los = vel.weighted(dens).mean(ax)
+                vdisp_los = np.sqrt((vel**2).weighted(dens).mean(ax) - vel_los**2)
+
+                res[ax][f'vel_nc{ncrit}'] = vel_los
+                res[ax][f'veldisp_nc{ncrit}'] = vdisp_los
 
         return res
 
