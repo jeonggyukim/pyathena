@@ -596,6 +596,65 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     return rprofs
 
 
+def calculate_projected_radial_profile(s, core):
+    """Calculate projected radial profile of column density and velocities
+
+    Parameters
+    ----------
+    s : LoadSim
+        LoadSimCoreFormation instance.
+    core : pandas.Series
+        Object containing core informations
+
+    Returns
+    -------
+    rprf : dict
+        Dictionary containing projected radial profiles along x,y,z directions
+    """
+    # TODO Merge this function with `calculate_observables_using_wholebox_background`
+    num = core.name
+
+    # Read the central position of the core and recenter the snapshot
+    xc, yc, zc = get_coords_node(s, core.leaf_id)
+
+    prj = s.read_prj(num)
+
+    xycoordnames = dict(z=['x', 'y'],
+                        x=['y', 'z'],
+                        y=['z', 'x'])
+
+    xycenters = dict(z=[xc, yc],
+                     x=[yc, zc],
+                     y=[zc, xc])
+
+    # Observational critical density for the line emission
+    critical_densities = np.arange(60, 201, 20)
+
+    # Calculate surface density radial profiles
+    rprofs = {}
+    ledge = 0.5*s.dx
+    nbin = s.domain['Nx'][0]//2 - 1
+    redge = (nbin + 0.5)*s.dx
+    for i, ax in enumerate(['x', 'y', 'z']):
+        x1, x2 = xycoordnames[ax]
+        x1c, x2c = xycenters[ax]
+        rprofs[ax] = dict()
+
+        # Surface density
+        for qty in prj[ax].keys():
+            ds = prj[ax][qty]
+            ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
+            ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
+                    + (ds.coords[x2] - new_center[x2])**2)
+            ds_c = xr.DataArray(ds.sel({x1:new_center[x1], x2:new_center[x2]}).data[()],
+                                  dims='R', coords={'R':[0,]})
+            ds = transform.fast_groupby_bins(ds, 'R', ledge, redge, nbin)
+            ds = xr.concat([ds_c, ds], dim='R')
+            rprofs[ax][qty] = ds
+
+    return rprofs
+
+
 def calculate_lagrangian_props(s, cores, rprofs):
     # Slice cores that have corresponding radial profiles
     common_indices = sorted(set(cores.index) & set(rprofs.num.data))
@@ -845,72 +904,6 @@ def calculate_observables(s, core, rprf, rmax, method):
 
     obsprops['num'] = core.name
     return obsprops
-
-
-def calculate_projected_radial_profiles(s, core):
-    """Calculate radial profile of the surface density directly from the map"""
-    # TODO Merge this function with `calculate_observables_using_wholebox_background`
-    num = core.name
-    obsprops = dict()
-
-    # Read the central position of the core and recenter the snapshot
-    xc, yc, zc = get_coords_node(s, core.leaf_id)
-    ds = s.load_hdf5(num, quantities=['dens','mom1','mom2','mom3'])
-    ds, new_center = recenter_dataset(ds, dict(x=xc, y=yc, z=zc))
-    xycoordnames = dict(z=['x', 'y'],
-                        x=['y', 'z'],
-                        y=['z', 'x'])
-    xycenters = dict(z=[new_center['x'], new_center['y']],
-                     x=[new_center['y'], new_center['z']],
-                     y=[new_center['z'], new_center['x']])
-
-    # Observational critical density for the line emission
-    critical_densities = np.arange(60, 201, 20)
-
-    maps, profs = {}, {}  # container for the 2D maps and 1D profiles
-    for i, dim in enumerate(['x', 'y', 'z']):
-        x1, x2 = xycoordnames[dim]
-        x1c, x2c = xycenters[dim]
-
-        # Column density
-        dcol = (ds.dens*s.domain['dx'][i]).sum(dim)
-        dcol.coords['R'] = np.sqrt((dcol[x1]- x1c)**2 + (dcol[x2] - x2c)**2)
-        maps[f'dcol_{dim}'] = dcol
-
-        # Line-of-sight velocity dispersion
-        for ncrit in critical_densities:
-            d = ds.where((ds.dens > ncrit), other=np.nan)
-            dens = ds.dens.copy(deep=False)
-            vel = d[f'mom{i+1}']/dens
-            vlos = np.sqrt((vel**2).weighted(dens).mean(dim)
-                    - vel.weighted(dens).mean(dim)**2)
-            vlos.coords['R'] = np.sqrt((vlos[x1]- x1c)**2 + (vlos[x2] - x2c)**2)
-            maps[f'vlos_{dim}_nc{ncrit}'] = vlos
-
-    # Calculate surface density radial profiles
-    ledge = 0.5*s.dx
-    nbin = s.domain['Nx'][0]//2 - 1
-    redge = (nbin + 0.5)*s.dx
-    for i, dim in enumerate(['x', 'y', 'z']):
-        x1, x2 = xycoordnames[dim]
-        x1c, x2c = xycenters[dim]
-
-        # Surface density
-        dcol = maps[f'dcol_{dim}']
-        dcol_c = xr.DataArray(dcol.sel({x1:x1c, x2:x2c}).data[()], dims='R', coords={'R':[0,]})
-        dcol = transform.fast_groupby_bins(dcol, 'R', ledge, redge, nbin)
-        dcol = xr.concat([dcol_c, dcol], dim='R')
-        profs[f'dcol_{dim}'] = dcol
-
-        # Line-of-sight velocity dispersion
-        for ncrit in critical_densities:
-            vlos = maps[f'vlos_{dim}_nc{ncrit}']
-            vlos_c = xr.DataArray(vlos.sel({x1:x1c, x2:x2c}).data[()], dims='R', coords={'R':[0,]})
-            vlos = transform.fast_groupby_bins(vlos, 'R', ledge, redge, nbin)
-            vlos = xr.concat([vlos_c, vlos], dim='R')
-            profs[f'vlos_{dim}_nc{ncrit}'] = vlos
-
-    return maps, profs
 
 
 def calculate_observables_using_wholebox_background(s, core):
