@@ -596,7 +596,7 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
     return rprofs
 
 
-def calculate_projected_radial_profile(s, core):
+def calculate_prj_radial_profile(s, num, origin):
     """Calculate projected radial profile of column density and velocities
 
     Parameters
@@ -611,11 +611,9 @@ def calculate_projected_radial_profile(s, core):
     rprf : dict
         Dictionary containing projected radial profiles along x,y,z directions
     """
-    # TODO Merge this function with `calculate_observables_using_wholebox_background`
-    num = core.name
 
     # Read the central position of the core and recenter the snapshot
-    xc, yc, zc = get_coords_node(s, core.leaf_id)
+    xc, yc, zc = origin
 
     prj = s.read_prj(num)
 
@@ -627,9 +625,6 @@ def calculate_projected_radial_profile(s, core):
                      x=[yc, zc],
                      y=[zc, xc])
 
-    # Observational critical density for the line emission
-    critical_densities = np.arange(60, 201, 20)
-
     # Calculate surface density radial profiles
     rprofs = {}
     ledge = 0.5*s.dx
@@ -638,9 +633,9 @@ def calculate_projected_radial_profile(s, core):
     for i, ax in enumerate(['x', 'y', 'z']):
         x1, x2 = xycoordnames[ax]
         x1c, x2c = xycenters[ax]
-        rprofs[ax] = dict()
 
         # Surface density
+
         for qty in prj[ax].keys():
             ds = prj[ax][qty]
             ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
@@ -650,7 +645,9 @@ def calculate_projected_radial_profile(s, core):
                                   dims='R', coords={'R':[0,]})
             ds = transform.fast_groupby_bins(ds, 'R', ledge, redge, nbin)
             ds = xr.concat([ds_c, ds], dim='R')
-            rprofs[ax][qty] = ds
+            rprofs[f'{ax}_{qty}'] = ds
+
+    rprofs = xr.Dataset(rprofs)
 
     return rprofs
 
