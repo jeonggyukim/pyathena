@@ -315,12 +315,12 @@ def observables(s, pid, num, overwrite=False):
     core = s.cores[pid].loc[num]
 
     # Calculate observables
-    obsprops_3d = tools.calculate_observables(s, core, rprf, core.tidal_radius0, '3d')
+    obsprops_3d = tools.calculate_observables(s, core, rprf, core.tidal_radius0, 'three_d')
     obsprops_itr = tools.calculate_observables(s, core, rprf, core.tidal_radius0, 'iterative')
-    obsprops_2d_wholebox = tools.calculate_observables(s, core, rprf, core.tidal_radius0, '2d_wholebox')
-    observables = dict(three_d        = obsprops_3d,
-                       iterative      = obsprops_itr,
-                       two_d_wholebox = obsprops_2d_wholebox)
+    obsprops_2d = tools.calculate_observables(s, core, None, None, 'two_d')
+    observables = dict(three_d   = obsprops_3d,
+                       iterative = obsprops_itr,
+                       two_d     = obsprops_2d)
 
     # write to file
     if ofname.exists():

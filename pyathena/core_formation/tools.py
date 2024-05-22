@@ -840,7 +840,7 @@ def calculate_observables(s, core, rprf, rmax, method):
     """Calculate observable properties of a core"""
 
     match method:
-        case '3d':
+        case 'three_d':
             # Method 1: calculate observable properties from radial profile, truncated at rmax
 
             # Create interpolation functions
@@ -899,53 +899,47 @@ def calculate_observables(s, core, rprf, rmax, method):
             obsprops = dict(radius=rfwhm, mass=mfwhm, mean_density=dfwhm,
                             central_column_density=dcen, velocity_dispersion=sigma)
 
-        case '2d_wholebox':
+        case 'two_d':
+            obsprops = dict()
 
+            # Simplest background subtraction -- average column in the whole box
+            dcol_bgr = s.rho0*s.Lbox
+
+            for i, dim in enumerate(['x', 'y', 'z']):
+                obsprops[dim] = dict()
+                rprf_prj = calculate_projected_radial_profile(s, core)
+                dcol = rprf_prj[dim]['Sigma_gas']
+
+                sigma = dict()
+                ncrit_list = [k.split('nc')[-1] for k in rprf_prj[dim].keys()
+                          if k.startswith('veldisp_nc')]
+                try:
+                    # Calculate FWHM quantities
+                    rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
+                                       dcol.R.max()[()], which='column')
+                    mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+                    dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
+
+                    # Calculate velocity dispersion along the pencil beam
+                    for ncrit in ncrit_list:
+                        sigma[ncrit] = rprf_prj[dim][f'veldisp_nc{ncrit}'].sel(R=slice(0, rfwhm)).weighted(dcol.R*dcol).mean().data[()]
+
+                except ValueError:
+                    rfwhm = mfwhm = dfwhm = np.nan
+                    for ncrit in ncrit_list:
+                        sigma[ncrit] = np.nan
+
+                # Central column density
+                dcen = dcol.sel(R=0).data[()] - dcol_bgr
+
+                obsprops[dim]['radius'] = rfwhm
+                obsprops[dim]['mass'] = mfwhm
+                obsprops[dim]['mean_density'] = dfwhm
+                obsprops[dim]['center_column_density'] = dcen
+                for ncrit in ncrit_list:
+                    obsprops[dim][f'velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
 
     obsprops['num'] = core.name
-    return obsprops
-
-
-def calculate_observables_using_wholebox_background(s, core):
-    """Calculate radial profile of the surface density directly from the map"""
-    obsprops = dict()
-
-    # Simplest background subtraction -- average column in the whole box
-    dcol_bgr = s.rho0*s.Lbox
-
-    for i, dim in enumerate(['x', 'y', 'z']):
-        obsprops[dim] = dict()
-        rprf_prj = calculate_projected_radial_profile(s, core)
-        dcol = rprf_prj[dim]['Sigma_gas']
-
-        sigma = dict()
-        ncrit_list = [k.split('nc')[-1] for k in rprf_prj[dim].keys()
-                      if k.startswith('veldisp_nc')]
-        try:
-            # Calculate FWHM quantities
-            rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
-                               dcol.R.max()[()], which='column')
-            mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
-            dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
-
-            # Calculate velocity dispersion along the pencil beam
-            for ncrit in ncrit_list:
-                sigma[ncrit] = rprf_prj[dim][f'veldisp_nc{ncrit}'].sel(R=slice(0, rfwhm)).weighted(dcol.R*dcol).mean().data[()]
-
-        except ValueError:
-            rfwhm = mfwhm = dfwhm = np.nan
-            for ncrit in ncrit_list:
-                sigma[ncrit] = np.nan
-
-        # Central column density
-        dcen = dcol.sel(R=0).data[()] - dcol_bgr
-
-        obsprops[dim]['radius'] = rfwhm
-        obsprops[dim]['mass'] = mfwhm
-        obsprops[dim]['mean_density'] = dfwhm
-        obsprops[dim]['center_column_density'] = dcen
-        for ncrit in ncrit_list:
-            obsprops[dim][f'velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
 
     return obsprops
 
