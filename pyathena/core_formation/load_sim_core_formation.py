@@ -333,26 +333,30 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 cores.insert(3, 'tnorm3',
                              (cores.time - cores.attrs['tcoll']) / cores.attrs['dt_coll'])
 
-                prestellar_cores = cores.loc[:cores.attrs['numcoll']]
 
-                for obs_method in ['three_d', 'iterative', 'two_d']:
-                    oprops = []
-                    for num, core in prestellar_cores.iterrows():
-                        fname = Path(self.savdir, 'cores',
-                                     'observables.par{}.{:05d}.p'
-                                     .format(pid, num))
-                        if fname.exists():
-                            oprops.append(pd.read_pickle(fname)[obs_method])
-                    if len(oprops) > 0:
-                        oprops = pd.DataFrame(oprops).set_index('num').sort_index()
-                        oprops = oprops.rename(columns={k: f'{obs_method}_{k}' for k in oprops.columns})
+                # Try finding observed properties and attach them
+                try:
+                    prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+                    for obs_method in ['three_d', 'iterative', 'two_d']:
+                        oprops = []
+                        for num, core in prestellar_cores.iterrows():
+                            fname = Path(self.savdir, 'cores',
+                                         'observables.par{}.{:05d}.p'
+                                         .format(pid, num))
+                            if fname.exists():
+                                oprops.append(pd.read_pickle(fname)[obs_method])
+                        if len(oprops) > 0:
+                            oprops = pd.DataFrame(oprops).set_index('num').sort_index()
+                            oprops = oprops.rename(columns={k: f'{obs_method}_{k}' for k in oprops.columns})
 
-                        # Save attributes before performing join, which will drop them.
-                        attrs = cores.attrs.copy()
-                        attrs.update(oprops.attrs)
-                        cores = cores.join(oprops)
-                        # Reattach attributes
-                        cores.attrs = attrs
+                            # Save attributes before performing join, which will drop them.
+                            attrs = cores.attrs.copy()
+                            attrs.update(oprops.attrs)
+                            cores = cores.join(oprops)
+                            # Reattach attributes
+                            cores.attrs = attrs
+                except:
+                    pass
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
