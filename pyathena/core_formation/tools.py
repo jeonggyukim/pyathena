@@ -906,7 +906,6 @@ def calculate_observables(s, core, rprf, rmax, method):
             dcol_bgr = s.rho0*s.Lbox
 
             for i, dim in enumerate(['x', 'y', 'z']):
-                obsprops[dim] = dict()
                 rprf_prj = calculate_projected_radial_profile(s, core)
                 dcol = rprf_prj[dim]['Sigma_gas']
 
@@ -932,12 +931,12 @@ def calculate_observables(s, core, rprf, rmax, method):
                 # Central column density
                 dcen = dcol.sel(R=0).data[()] - dcol_bgr
 
-                obsprops[dim]['radius'] = rfwhm
-                obsprops[dim]['mass'] = mfwhm
-                obsprops[dim]['mean_density'] = dfwhm
-                obsprops[dim]['center_column_density'] = dcen
+                obsprops[f'{dim}_radius'] = rfwhm
+                obsprops[f'{dim}_mass'] = mfwhm
+                obsprops[f'{dim}_mean_density'] = dfwhm
+                obsprops[f'{dim}_center_column_density'] = dcen
                 for ncrit in ncrit_list:
-                    obsprops[dim][f'velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
+                    obsprops[f'{dim}_velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
 
     obsprops['num'] = core.name
 
