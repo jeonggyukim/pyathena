@@ -46,10 +46,14 @@ if __name__ == "__main__":
                         help="Perform forward core tracking (protostellar phase)")
     parser.add_argument("-r", "--radial-profile", action="store_true",
                         help="Calculate radial profiles of each cores")
+    parser.add_argument("--prj-radial-profile", action="store_true",
+                        help="Calculate radial profiles of each cores")
     parser.add_argument("-t", "--critical-tes", action="store_true",
                         help="Calculate critical TES of each cores")
     parser.add_argument("--lagrangian-props", action="store_true",
                         help="Calculate Lagrangian properties of cores")
+    parser.add_argument("--projections", action="store_true",
+                        help="Calculate projections")
     parser.add_argument("--observables", action="store_true",
                         help="Calculate observable properties of cores")
     parser.add_argument("--linewidth-size", action="store_true",
@@ -146,6 +150,16 @@ if __name__ == "__main__":
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
+        # Calculate radial profiles of t_coll cores and pickle them.
+        if args.prj_radial_profile:
+            msg = ("calculate and save projected radial profiles for "
+                   f"model {mdl}")
+            print(msg)
+            def wrapper(num):
+                tasks.prj_radial_profile(s, num, pids, overwrite=args.overwrite)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
+
         # Find critical tes
         if args.critical_tes:
             print(f"find critical tes for cores for model {mdl}")
@@ -172,7 +186,7 @@ if __name__ == "__main__":
         if args.observables:
             print(f"Calculate observable core properties for model {mdl}")
             # Only select resolved cores.
-            pids = sorted(set(pids) & set(s.good_cores()))
+#            pids = sorted(set(pids) & set(s.good_cores()))
             for pid in pids:
                 cores = s.cores[pid]
                 cores = cores.loc[:cores.attrs['numcoll']]

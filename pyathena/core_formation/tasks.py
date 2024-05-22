@@ -272,6 +272,67 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
         rprf.to_netcdf(ofname)
 
 
+def prj_radial_profile(s, num, pids, overwrite=False):
+    pids_skip = []
+    for pid in pids:
+        cores = s.cores[pid]
+        if num not in cores.index:
+            pids_skip.append(pid)
+            continue
+        ofname = Path(s.savdir, 'radial_profile',
+                      'prj_radial_profile.par{}.{:05d}.nc'.format(pid, num))
+        if ofname.exists() and not overwrite:
+            pids_skip.append(pid)
+
+    pids_to_process = sorted(set(pids) - set(pids_skip))
+
+    if len(pids_to_process) == 0:
+        msg = ("[prj_radial_profile] Every core alreay has radial profiles at "
+               f"num = {num}. Skipping...")
+        print(msg)
+        return
+
+    msg = ("[prj_radial_profile] Start reading snapshot at "
+           f"num = {num}.")
+    print(msg)
+
+    # Loop through cores
+    for pid in pids_to_process:
+        cores = s.cores[pid]
+        if num not in cores.index:
+            # This snapshot `num` does not contain any image of the core `pid`
+            # Continue to the next core.
+            continue
+
+        # Create directory and check if a file already exists
+        ofname = Path(s.savdir, 'radial_profile',
+                      f'prj_radial_profile.par{pid}.{num:05d}.nc')
+        ofname.parent.mkdir(exist_ok=True)
+        if ofname.exists() and not overwrite:
+            msg = (f"[prj_radial_profile] A file already exists for pid = {pid} "
+                   f", num = {num}. Continue to the next core")
+            print(msg)
+            continue
+
+        msg = (f"[prj_radial_profile] processing model {s.basename}, "
+               f"pid {pid}, num {num}")
+        print(msg)
+
+        core = cores.loc[num]
+
+        # Find the location of the core
+        center = tools.get_coords_node(s, core.leaf_id)
+
+        # Calculate radial profile
+        rprf = tools.calculate_prj_radial_profile(s, num, center)
+        rprf = rprf.expand_dims(dict(t=[core.time,]))
+
+        # write to file
+        if ofname.exists():
+            ofname.unlink()
+        rprf.to_netcdf(ofname)
+
+
 def lagrangian_props(s, pid, method=1, overwrite=False):
     # Check if file exists
     ofname = Path(s.savdir, 'cores', f'lprops_ver{method}.par{pid}.p')
