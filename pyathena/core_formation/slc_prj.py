@@ -58,7 +58,7 @@ class SliceProj:
             res[ax]['Sigma_gas'] = dcol
 
 
-            for ncrit in [50, 100]:
+            for ncrit in [10, 20, 30, 50, 100]:
                 d = ds.where((ds.dens > ncrit), other=np.nan)
                 dens = ds.dens.copy(deep=False)
                 vel = d[f'mom{i+1}']/dens
