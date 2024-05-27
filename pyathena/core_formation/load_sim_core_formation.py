@@ -518,6 +518,35 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                                   ).cumulative_integrate('r')
                 rprofs = rprofs.merge(tools.calculate_accelerations(rprofs))
                 rprofs = rprofs.set_xindex('num')
+
+            # Read projected radial profiles
+            prj_rprofs, nums = [], []
+            min_nr = None
+            for num in cores.index:
+                try:
+                    fname = Path(self.savdir, 'radial_profile',
+                                 'prj_radial_profile.par{}.{:05d}.nc'
+                                 .format(pid, num))
+                    rprf = xr.open_dataset(fname)
+                    if min_nr is None:
+                        min_nr = rprf.sizes['R']
+                    else:
+                        min_nr = min(min_nr, rprf.sizes['R'])
+                    prj_rprofs.append(rprf)
+                    nums.append(num)
+                except FileNotFoundError:
+                    pids_not_found.append(pid)
+                    break
+            if len(prj_rprofs) > 0:
+                prj_rprofs = xr.concat(prj_rprofs, 't')
+                prj_rprofs = prj_rprofs.assign_coords(dict(num=('t', nums)))
+                # Slice data to common range in R.
+                prj_rprofs = prj_rprofs.isel(R=slice(0, min_nr))
+                if 'num' in rprofs.indexes:
+                    rprofs = rprofs.drop_indexes('num')
+                rprofs = rprofs.merge(prj_rprofs)
+                rprofs = rprofs.set_xindex('num')
+
             rprofs_dict[pid] = rprofs
         if len(pids_not_found) > 0:
             msg = f"Some radial profiles are missing for pid {pids_not_found}."
