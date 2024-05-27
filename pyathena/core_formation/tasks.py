@@ -378,7 +378,7 @@ def observables(s, pid, num, overwrite=False):
     # Calculate observables
     obsprops_3d = tools.calculate_observables(s, core, rprf, core.tidal_radius0, 'three_d')
     obsprops_itr = tools.calculate_observables(s, core, rprf, core.tidal_radius0, 'iterative')
-    obsprops_2d = tools.calculate_observables(s, core, None, None, 'two_d')
+    obsprops_2d = tools.calculate_observables(s, core, rprf, None, 'two_d')
     observables = dict(three_d   = obsprops_3d,
                        iterative = obsprops_itr,
                        two_d     = obsprops_2d)

@@ -903,12 +903,9 @@ def calculate_observables(s, core, rprf, rmax, method):
             dcol_bgr = s.rho0*s.Lbox
 
             for i, dim in enumerate(['x', 'y', 'z']):
-                rprf_prj = calculate_projected_radial_profile(s, core)
-                dcol = rprf_prj[dim]['Sigma_gas']
-
+                dcol = rprf[f'{dim}_Sigma_gas']
+                ncrit_list = [10, 20, 30, 50, 100]
                 sigma = dict()
-                ncrit_list = [k.split('nc')[-1] for k in rprf_prj[dim].keys()
-                          if k.startswith('veldisp_nc')]
                 try:
                     # Calculate FWHM quantities
                     rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
@@ -918,7 +915,7 @@ def calculate_observables(s, core, rprf, rmax, method):
 
                     # Calculate velocity dispersion along the pencil beam
                     for ncrit in ncrit_list:
-                        sigma[ncrit] = rprf_prj[dim][f'veldisp_nc{ncrit}'].sel(R=slice(0, rfwhm)).weighted(dcol.R*dcol).mean().data[()]
+                        sigma[ncrit] = rprf[f'{dim}_veldisp_nc{ncrit}'].sel(R=slice(0, rfwhm)).weighted(dcol.R*dcol).mean().data[()]
 
                 except ValueError:
                     rfwhm = mfwhm = dfwhm = np.nan
