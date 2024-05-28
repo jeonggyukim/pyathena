@@ -1475,14 +1475,14 @@ def reff_sph(vol):
     return fac*vol**(1/3)
 
 
-def get_evol_norm(vmin=-4, vmax=0):
+def get_evol_norm(vmin=-3, vmid=0, vmax=1):
     """Get a normalization for color coding evolutionary time
     
-    Blue (vmin)  ->  white (-1)  ->  red (vmax=0).
+    Blue (vmin)  ->  white (vmid)  ->  red (vmax).
     """
     # Color scale
     from matplotlib import colors
-    alpha = np.log(0.5) / np.log((-1 - vmin)/(vmax - vmin))
+    alpha = np.log(0.5) / np.log((vmid - vmin)/(vmax - vmin))
     def _forward(x):
         t = (x - vmin) / (vmax - vmin)
         return t**alpha
@@ -1492,13 +1492,13 @@ def get_evol_norm(vmin=-4, vmax=0):
     return norm
 
 
-def get_evol_cbar(mappable):
+def get_evol_cbar(mappable, ax=None, cax=None, ticks=[-3, -1, 0, 0.5, 1]):
     """Get an appropriate color bar for get_evol_norm"""
     import matplotlib.pyplot as plt
-    cbar = plt.colorbar(mappable, label=r'$\dfrac{t - t_\mathrm{coll}}{\Delta t_\mathrm{coll}}$')
+    cbar = plt.colorbar(mappable, ax=ax, cax=cax, label=r'$\dfrac{t - t_\mathrm{crit}}{\Delta t_\mathrm{coll}}$')
     cbar.solids.set(alpha=1)
-    cbar.set_ticks([-4, -2, -1, -0.5, 0])
-    cbar.set_ticklabels([-4, -2, -1, -0.5, 0])
+    cbar.set_ticks(ticks)
+    cbar.set_ticklabels(ticks)
     cbar.ax.minorticks_off()
     return cbar
 
