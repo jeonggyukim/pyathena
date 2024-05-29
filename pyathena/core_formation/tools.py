@@ -1048,10 +1048,11 @@ def critical_time(s, pid, method=1):
                     ncrit = num + 1
                     break
             elif method == 2:
-                # Net force at the critical radius is negative after the critical time,
-                # throughout the collapse.
+                # Net force at the critical radius is negative after the
+                # critical time, throughout the collapse.
                 if np.isfinite(core.critical_radius):
-                    fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
+                    fnet = (rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani
+                            - rprf.Fgrv)
                     fnet = fnet.interp(r=core.critical_radius).data[()]
                 else:
                     fnet = np.nan
@@ -1061,7 +1062,8 @@ def critical_time(s, pid, method=1):
             elif method == 3:
                 # Similar to method 2, but using alternative critical radius
                 if np.isfinite(core.critical_radius_alt):
-                    fnet = rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani - rprf.Fgrv
+                    fnet = (rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani
+                            - rprf.Fgrv)
                     fnet = fnet.interp(r=core.critical_radius_alt).data[()]
                 else:
                     fnet = np.nan
@@ -1104,9 +1106,10 @@ def critical_time(s, pid, method=1):
                     break
 
     if ncrit is None or ncrit == cores.index[-1] + 1:
-        # If the critical condition is satisfied for all time, or is not satisfied at t_coll,
-        # set ncrit to NaN.
-        # TODO: we may not want to discard those that the critical condition is satisfied for all times.
+        # If the critical condition is satisfied for all time, or is not
+        # satisfied at t_coll, set ncrit to NaN.
+        # TODO: we may not want to discard those that the critical condition
+        # is satisfied for all times.
         ncrit = np.nan
     return ncrit
 
@@ -1202,8 +1205,10 @@ def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
     rsonic = get_sonic(Mach, Lbox)
     if rho_amb is None:
         rho_amb = s.get_contrast(mfrac)
-    rhoc_BE, R_BE, M_BE = get_critical_tes(rhoe=rho_amb, rsonic=np.inf, pindex=0.5)
-    rhoc_TES, R_TES, M_TES = get_critical_tes(rhoe=rho_amb, rsonic=rsonic, pindex=0.5)
+    rhoc_BE, R_BE, M_BE = get_critical_tes(rhoe=rho_amb, rsonic=np.inf,
+                                           pindex=0.5)
+    rhoc_TES, R_TES, M_TES = get_critical_tes(rhoe=rho_amb, rsonic=rsonic,
+                                              pindex=0.5)
     R_LP_BE = lpradius(M_BE, s.cs, s.gconst)
     R_LP_TES = lpradius(M_TES, s.cs, s.gconst)
     dx_req_LP = R_LP_BE/ncells_min
@@ -1263,8 +1268,8 @@ def recenter_dataset(ds, center):
         hNx = ds.sizes[dim] // 2
         coords = ds.coords[dim].data
         dx = coords[1] - coords[0]
-        shift[dim] = hNx - np.where(np.isclose(coords, pos, atol=1e-1*dx))[0][0]
-        new_center[dim] = ds.coords[dim].isel({dim:hNx}).data[()]
+        shift[dim] = hNx - np.where(np.isclose(coords, pos, atol=0.1*dx))[0][0]
+        new_center[dim] = ds.coords[dim].isel({dim: hNx}).data[()]
 
     return ds.roll(shift), new_center
 
@@ -1348,7 +1353,9 @@ def test_isolated_core(s, cores):
     nd = core.leaf_id
     pcore = get_coords_node(s, nd)
 
-    return (np.sqrt(((pstar - pcore)**2).sum(axis=1)) > core.tidal_radius).all()
+    dst = np.sqrt(((pstar - pcore)**2).sum(axis=1))
+
+    return (dst > core.tidal_radius).all()
 
 
 def get_critical_core_props(s, pid, e1=0.7, e2=0.4):
@@ -1480,15 +1487,17 @@ def reff_sph(vol):
 
 def get_evol_norm(vmin=-3, vmid=0, vmax=1):
     """Get a normalization for color coding evolutionary time
-    
+
     Blue (vmin)  ->  white (vmid)  ->  red (vmax).
     """
     # Color scale
     from matplotlib import colors
     alpha = np.log(0.5) / np.log((vmid - vmin)/(vmax - vmin))
+
     def _forward(x):
         t = (x - vmin) / (vmax - vmin)
         return t**alpha
+
     def _inverse(x):
         return vmin + (vmax - vmin)*x**(1/alpha)
     norm = colors.FuncNorm((_forward, _inverse), vmin=vmin, vmax=vmax)
@@ -1498,7 +1507,8 @@ def get_evol_norm(vmin=-3, vmid=0, vmax=1):
 def get_evol_cbar(mappable, ax=None, cax=None, ticks=[-3, -1, 0, 0.5, 1]):
     """Get an appropriate color bar for get_evol_norm"""
     import matplotlib.pyplot as plt
-    cbar = plt.colorbar(mappable, ax=ax, cax=cax, label=r'$\dfrac{t - t_\mathrm{crit}}{\Delta t_\mathrm{coll}}$')
+    lbl = r'$\dfrac{t - t_\mathrm{crit}}{\Delta t_\mathrm{coll}}$'
+    cbar = plt.colorbar(mappable, ax=ax, cax=cax, label=lbl)
     cbar.solids.set(alpha=1)
     cbar.set_ticks(ticks)
     cbar.set_ticklabels(ticks)
