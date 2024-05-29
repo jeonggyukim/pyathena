@@ -911,6 +911,8 @@ def calculate_observables(s, core, rprf, rmax, method):
                     rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
                                        dcol.R.max()[()], which='column')
                     mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+                    dcol_fwhm = dcol.interp(R=rfwhm)
+                    mfwhm_bgrsub = ((dcol-dcol_fwhm)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
                     dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
 
                     # Calculate velocity dispersion along the pencil beam
@@ -918,7 +920,7 @@ def calculate_observables(s, core, rprf, rmax, method):
                         sigma[ncrit] = rprf[f'{dim}_veldisp_nc{ncrit}'].sel(R=slice(0, rfwhm)).weighted(dcol.R*dcol).mean().data[()]
 
                 except ValueError:
-                    rfwhm = mfwhm = dfwhm = np.nan
+                    rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
                     for ncrit in ncrit_list:
                         sigma[ncrit] = np.nan
 
@@ -927,6 +929,7 @@ def calculate_observables(s, core, rprf, rmax, method):
 
                 obsprops[f'{dim}_radius'] = rfwhm
                 obsprops[f'{dim}_mass'] = mfwhm
+                obsprops[f'{dim}_mass_bgrsub'] = mfwhm_bgrsub
                 obsprops[f'{dim}_mean_density'] = dfwhm
                 obsprops[f'{dim}_center_column_density'] = dcen
                 for ncrit in ncrit_list:
