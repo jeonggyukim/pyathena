@@ -634,7 +634,6 @@ def calculate_prj_radial_profile(s, num, origin):
         x1, x2 = xycoordnames[ax]
         x1c, x2c = xycenters[ax]
 
-
         # Volume-weighted averages
         for qty in prj[ax].keys():
             ds = prj[ax][qty].copy(deep=True)
@@ -917,11 +916,23 @@ def calculate_observables(s, core, rprf, rmax, method):
         case 'two_d':
             obsprops = dict()
 
+            # Prepare for projection map
+            # See `calculate_prj_radial_profile`
+            xc, yc, zc = get_coords_node(s, core.leaf_id)
+            prj = s.read_prj(core.name)
+            xycoordnames = dict(z=['x', 'y'],
+                                x=['y', 'z'],
+                                y=['z', 'x'])
+            xycenters = dict(z=[xc, yc],
+                             x=[yc, zc],
+                             y=[zc, xc])
+
+
             # Simplest background subtraction -- average column in the whole box
             dcol_bgr = s.rho0*s.Lbox
 
-            for i, dim in enumerate(['x', 'y', 'z']):
-                dcol = rprf[f'{dim}_Sigma_gas']
+            for i, ax in enumerate(['x', 'y', 'z']):
+                dcol = rprf[f'{ax}_Sigma_gas']
                 ncrit_list = [10, 20, 30, 50, 100]
                 sigma = dict()
                 try:
@@ -933,9 +944,17 @@ def calculate_observables(s, core, rprf, rmax, method):
                     mfwhm_bgrsub = ((dcol-dcol_fwhm)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
                     dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
 
-                    # Calculate velocity dispersion along the pencil beam
+                    # Calculate surface-density weighted average projected velocity
+                    # dispersion, directly using the 2D map data
+                    x1, x2 = xycoordnames[ax]
+                    x1c, x2c = xycenters[ax]
                     for ncrit in ncrit_list:
-                        sigma[ncrit] = rprf[f'{dim}_veldisp_nc{ncrit}'].sel(R=slice(0, rfwhm)).weighted(dcol.R*dcol).mean().data[()]
+                        w = prj[ax]['Sigma_gas']
+                        ds = prj[ax][f'veldisp_nc{ncrit}'].copy(deep=True)
+                        ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
+                        ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
+                                                 + (ds.coords[x2] - new_center[x2])**2)
+                        sigma[ncrit] = ds.where(ds.R < rfwhm).weighted(w).mean().data[()]
 
                 except ValueError:
                     rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
@@ -945,13 +964,13 @@ def calculate_observables(s, core, rprf, rmax, method):
                 # Central column density
                 dcen = dcol.sel(R=0).data[()] - dcol_bgr
 
-                obsprops[f'{dim}_radius'] = rfwhm
-                obsprops[f'{dim}_mass'] = mfwhm
-                obsprops[f'{dim}_mass_bgrsub'] = mfwhm_bgrsub
-                obsprops[f'{dim}_mean_density'] = dfwhm
-                obsprops[f'{dim}_center_column_density'] = dcen
+                obsprops[f'{ax}_radius'] = rfwhm
+                obsprops[f'{ax}_mass'] = mfwhm
+                obsprops[f'{ax}_mass_bgrsub'] = mfwhm_bgrsub
+                obsprops[f'{ax}_mean_density'] = dfwhm
+                obsprops[f'{ax}_center_column_density'] = dcen
                 for ncrit in ncrit_list:
-                    obsprops[f'{dim}_velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
+                    obsprops[f'{ax}_velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
 
     obsprops['num'] = core.name
 
