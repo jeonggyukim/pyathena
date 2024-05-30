@@ -1203,8 +1203,8 @@ def recenter_dataset(ds, center):
     ----------
     ds : xarray.Dataset or xarray.DataArray
         Dataset to be recentered.
-    center : tuple
-        New (x, y, z) coordinates of the center.
+    center : dict
+        {x:xc, y:yc} or {x:xc, y:yc, z:zc}, etc.
 
     Returns
     -------
