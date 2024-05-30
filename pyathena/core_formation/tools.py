@@ -387,13 +387,10 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
             except ValueError:
                 dcrit = rcrit = mcrit = np.nan
 
-    # Calculate alternative critical radius (experimental)
-    rsupcrit = calculate_critical_radius(s, core, rprf)
-
     res = dict(tidal_mass=mtidal, center_density=rhoc,
                mean_tidal_density=mean_tidal_density, sonic_radius=rs, pindex=p,
                critical_contrast=dcrit, critical_radius=rcrit,
-               critical_mass=mcrit, critical_radius_alt=rsupcrit)
+               critical_mass=mcrit)
     return res
 
 
