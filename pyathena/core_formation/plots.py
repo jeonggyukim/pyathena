@@ -308,8 +308,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.sca(axs[1])
     plt.plot(time, cores.tidal_radius, c='tab:blue',
              label=r'$R_\mathrm{tidal}$')
-    plt.plot(time, cores.envelop_radius, c='tab:blue', ls='-', lw=1)
-    plt.plot(time, cores.leaf_radius, c='tab:blue', ls='--', lw=1)
+    plt.plot(time, cores.leaf_radius, c='tab:blue', ls='-', lw=1)
     plt.plot(time, cores.sonic_radius, c='tab:green',
              label=r'$R_\mathrm{sonic}$')
     plt.plot(time, cores.critical_radius, c='tab:red',
@@ -436,12 +435,9 @@ def plot_core_evolution(s, pid, num, rmax=None):
         # 2. Zoom-in projections
         plt.sca(axs['zoom'][i])
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
-        nodes = list(gd.descendants[core.envelop_id].copy())
-        if core.envelop_id != gd.trunk:
-            nodes.append(gd.sibling(core.envelop_id))
-        plot_grid_dendro_contours(s, gd, nodes, ds.coords, axis=prj_axis,
+        plot_grid_dendro_contours(s, gd, gd.sibling(core.leaf_id), ds.coords, axis=prj_axis,
                                   recenter=dict(x=xc, y=yc, z=zc), select=sel, color='k')
-        plot_grid_dendro_contours(s, gd, core.envelop_id, ds.coords, axis=prj_axis,
+        plot_grid_dendro_contours(s, gd, core.leaf_id, ds.coords, axis=prj_axis,
                                   recenter=dict(x=xc, y=yc, z=zc), select=sel, color='r')
         if core.tidal_radius <= np.sqrt(2)*hw:
             c0 = plt.Circle((0, 0), core.tidal_radius, fill=False, color='k', lw=1)
@@ -553,7 +549,7 @@ def plot_core_evolution(s, pid, num, rmax=None):
     # Until precalculating the energies, disable the plot
     axs['energy'].remove()
 #    plt.sca(axs['energy'])
-#    plot_energies(s, ds, rprf, core, gd, core.envelop_id)
+#    plot_energies(s, ds, rprf, core, gd, core.leaf_id)
 #    if emin is not None and emax is not None:
 #        plt.ylim(emin, emax)
 #    plt.xlim(0, rmax)

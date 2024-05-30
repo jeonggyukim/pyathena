@@ -420,17 +420,18 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores = pd.read_pickle(fname).sort_index()
 
             prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+            # TODO What is done here????
             for num, core in prestellar_cores.sort_index(ascending=False).iterrows():
                 if num == prestellar_cores.index[-1]:
                     lid0 = core.leaf_id
-                    rtidal0 = core.tidal_radius
+                    rtidal = core.tidal_radius
                 else:
                     lid = core.leaf_id
-                    if tools.get_node_distance(self, lid, lid0) > rtidal0:
+                    if tools.get_node_distance(self, lid, lid0) > rtidal:
                         num_start = num + 1
                         break
                     lid0 = lid
-                    rtidal0 = core.tidal_radius
+                    rtidal = core.tidal_radius
             cores = cores.loc[num_start:]
 
             if cores.attrs['tcoll_resolved']:

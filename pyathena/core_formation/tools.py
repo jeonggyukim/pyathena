@@ -107,14 +107,13 @@ def find_tcoll_core(s, pid, ncells_min=27):
 # TODO Stopping condition due to leaf distance is just arbitrary, because in principle if the
 # leaf disappears by a merger, it would keep tracking. We need more physically motivated stopping
 # condition
-def track_cores(s, pid, sub_frac=0.2):
+def track_cores(s, pid):
     """Perform reverse core tracking
 
     Parameters
     ----------
     s : LoadSimCoreFormation
     pid : int
-    sub_frac : float, optional
 
     Returns
     -------
@@ -144,35 +143,25 @@ def track_cores(s, pid, sub_frac=0.2):
         time = [ds['Time'],]
         leaf_id = [np.nan,]
         leaf_radius = [np.nan,]
-        envelop_id = [np.nan,]
-        envelop_radius = [np.nan,]
         tidal_radius = [np.nan,]
-        tidal_radius_uncorrected = [np.nan,]
         tcoll_resolved = False
     else:
         tcoll_resolved = True
         gd = s.load_dendro(num)
 
         # Calculate effective radius of this leaf
-        rlf = reff_sph(gd.len(lid)*s.dV)
+        rleaf = reff_sph(gd.len(lid)*s.dV)
 
         # Do the tidal correction to neglect attached substructures.
-        eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
-        renv = reff_sph(gd.len(eid)*s.dV)
 
         # Calculate tidal radius
-        rtidal = calculate_tidal_radius(s, gd, eid, lid)
-        rtidal0 = calculate_tidal_radius(s, gd, lid, lid)
+        rtidal = calculate_tidal_radius(s, gd, lid, lid)
 
         nums_track = [num,]
         time = [ds['Time'],]
         leaf_id = [lid,]
-        leaf_radius = [rlf,]
-        envelop_id = [eid,]
-        envelop_radius = [renv,]
+        leaf_radius = [rleaf,]
         tidal_radius = [rtidal,]
-        tidal_radius_uncorrected = [rtidal0,]
-        flag_stop = False  # True if rtidal0-based tracking should be stopped
 
         for num in nums[1:]:
             msg = '[track_cores] processing model {} pid {} num {}'
@@ -184,7 +173,7 @@ def track_cores(s, pid, sub_frac=0.2):
             # find closeast leaf to the previous preimage
             dst = [get_node_distance(s, leaf, leaf_id[-1]) for leaf in gd.leaves]
             lid = gd.leaves[np.argmin(dst)]
-            rlf = reff_sph(gd.len(lid)*s.dV)
+            rleaf = reff_sph(gd.len(lid)*s.dV)
 
             # If there is sink particle in the leaf, stop tracking.
             idx = np.floor((pds[['x1', 'x2', 'x3']] - s.domain['le']) / s.dx).astype('int')
@@ -198,47 +187,25 @@ def track_cores(s, pid, sub_frac=0.2):
             if flag > 0:
                 break
 
-            # Do the tidal correction to neglect attached substructures.
-            eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
-            renv = reff_sph(gd.len(eid)*s.dV)
-
             # Calculate tidal radius
-            rtidal = calculate_tidal_radius(s, gd, eid, lid)
-            rtidal0 = calculate_tidal_radius(s, gd, lid, lid)
-
-            # This is ugly, but simple fix. Because the core tracking ends based on the corrected
-            # tidal radius, it will keep going even when it should be stopped based on the
-            # uncorrected tidal radius. So, when it should be stop based on the uncorrected
-            # tidal radius, we set rtidal0 = NaN
-            fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal0, tidal_radius_uncorrected[-1])
-            if fdst > 1:
-                flag_stop = True
-            if flag_stop:
-                rtidal0 = np.nan
+            rtidal = calculate_tidal_radius(s, gd, lid, lid)
 
             # If the center moved more than the tidal radius, stop tracking.
-            fdst = get_node_distance(s, lid, leaf_id[-1]) / max(rtidal, tidal_radius[-1])
-            if fdst > 1:
+            if get_node_distance(s, lid, leaf_id[-1]) > max(rtidal, tidal_radius[-1]):
                 break
 
             nums_track.append(num)
             time.append(ds['Time'])
             leaf_id.append(lid)
-            leaf_radius.append(rlf)
-            envelop_id.append(eid)
-            envelop_radius.append(renv)
+            leaf_radius.append(rleaf)
             tidal_radius.append(rtidal)
-            tidal_radius_uncorrected.append(rtidal0)
 
     # SMOON: Using dtype=object is to prevent automatic upcasting from int to float
     # when indexing a single row. Maybe there is a better approach.
     cores = pd.DataFrame(dict(time=time,
                               leaf_id=leaf_id,
                               leaf_radius=leaf_radius,
-                              envelop_id=envelop_id,
-                              envelop_radius=envelop_radius,
-                              tidal_radius=tidal_radius,
-                              tidal_radius0=tidal_radius_uncorrected),
+                              tidal_radius=tidal_radius),
                          index=nums_track, dtype=object).sort_index()
 
     # Set attributes
@@ -249,14 +216,13 @@ def track_cores(s, pid, sub_frac=0.2):
     return cores
 
 
-def track_protostellar_cores(s, pid, sub_frac=0.2):
+def track_protostellar_cores(s, pid):
     """Perform forward core tracking
 
     Parameters
     ----------
     s : LoadSimCoreFormation
     pid : int
-    sub_frac : float, optional
 
     Returns
     -------
@@ -284,10 +250,8 @@ def track_protostellar_cores(s, pid, sub_frac=0.2):
     time = []
     leaf_id = []
     leaf_radius = []
-    envelop_id = []
-    envelop_radius = []
     tidal_radius  = []
-    tidal_radius_uncorrected = []
+
     for num in nums:
         msg = '[track_protostellar_cores] processing model {} pid {} num {}'
         print(msg.format(s.basename, pid, num))
@@ -304,77 +268,27 @@ def track_protostellar_cores(s, pid, sub_frac=0.2):
         dst = [get_periodic_distance(get_coords_node(s, lid), sink_pos, s.Lbox)
                for lid in gd.leaves]
         lid = gd.leaves[np.argmin(dst)]
-        rlf = reff_sph(gd.len(lid)*s.dV)
-
-        # Do the tidal correction to neglect attached substructures.
-        eid, _ = disregard_substructures(s, gd, lid, tol=sub_frac)
-        renv = reff_sph(gd.len(eid)*s.dV)
+        rleaf = reff_sph(gd.len(lid)*s.dV)
 
         # Calculate tidal radius
-        rtidal = calculate_tidal_radius(s, gd, eid, lid)
-        rtidal0 = calculate_tidal_radius(s, gd, lid, lid)
+        rtidal = calculate_tidal_radius(s, gd, lid, lid)
 
         nums_track.append(num)
         time.append(ds['Time'])
         leaf_id.append(lid)
-        leaf_radius.append(rlf)
-        envelop_id.append(eid)
-        envelop_radius.append(renv)
+        leaf_radius.append(rleaf)
         tidal_radius.append(rtidal)
-        tidal_radius_uncorrected.append(rtidal0)
 
     tmp = pd.DataFrame(dict(time=time,
                             leaf_id=leaf_id,
                             leaf_radius=leaf_radius,
-                            envelop_id=envelop_id,
-                            envelop_radius=envelop_radius,
-                            tidal_radius=tidal_radius,
-                            tidal_radius0=tidal_radius_uncorrected),
+                            tidal_radius=tidal_radius),
                        index=nums_track, dtype=object).sort_index()
     tmp.attrs = cores.attrs
 
     cores = pd.concat([cores, tmp])
 
     return cores
-
-
-def disregard_substructures(s, gd, node, tol):
-    """Go up the dendrogram hierarchy by neglecting substructures.
-
-    Parameters
-    ----------
-    s : LoadSimCoreFormation
-        Object containing simulation metadata.
-    gd : grid_dendro.Dendrogram
-        Dendrogram object.
-    node : int
-        Input node to be corrected.
-    tol : float
-        Fraction of the effective radius below which a sibling is
-        considered as subtructure.
-
-    Returns
-    -------
-    nd : int
-        ID of the corrected node.
-    reff : float
-        Effective radius of the corrected node.
-    """
-    nd = node
-    while True:
-        reff = reff_sph(gd.len(nd)*s.dV)
-        if nd == gd.trunk:
-            return nd, reff
-        parent = gd.parent[nd]
-
-        sib = gd.sibling(nd)
-        reff_sibling = reff_sph(gd.len(sib)*s.dV)
-
-        if reff_sibling < tol*reff:
-            nd = parent
-        else:
-            break
-    return nd, reff
 
 
 def calculate_tidal_radius(s, gd, node, leaf=None):
@@ -1111,7 +1025,7 @@ def critical_time(s, pid, method=1):
         for num, core in cores.sort_index(ascending=True).iterrows():
             if method == 4:
                 # Predicted critical time using R_tidal_max
-                cond = core.tidal_radius0 >= core.critical_radius
+                cond = core.tidal_radius >= core.critical_radius
                 if cond:
                     ncrit = num
                     break
@@ -1123,7 +1037,7 @@ def critical_time(s, pid, method=1):
                     break
             elif method == 6:
                 # Predicted critical time using R_tidal_avg
-                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius0)
+                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius)
                 cond = rtidal_avg >= core.critical_radius
                 if cond:
                     ncrit = num
@@ -1135,7 +1049,7 @@ def critical_time(s, pid, method=1):
                     menc = rprf.menc.interp(r=core.critical_radius).data[()]
                 else:
                     menc = np.nan
-                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius0)
+                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius)
                 cond1 = rtidal_avg >= core.critical_radius
                 cond2 = menc >= core.critical_mass
                 if cond1 and cond2:
