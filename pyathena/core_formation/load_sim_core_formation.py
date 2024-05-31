@@ -237,13 +237,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             cores = self.cores[pid].copy()
             rprofs = self.rprofs[pid]
 
-            # Select which critical radius to use
-            if method == 3:
-                cores.critical_radius = cores.critical_radius_alt
-                cores = cores.drop('critical_radius_alt', axis=1)
-            else:
-                cores = cores.drop('critical_radius_alt', axis=1)
-
             # Find critical time
             ncrit = tools.critical_time(self, pid, method)
             cores.attrs['numcrit'] = ncrit
