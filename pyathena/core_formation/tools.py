@@ -191,7 +191,7 @@ def track_cores(s, pid):
             rtidal = calculate_tidal_radius(s, gd, lid, lid)
 
             # If the center moved more than the tidal radius, stop tracking.
-            if get_node_distance(s, lid, leaf_id[-1]) > max(rtidal, tidal_radius[-1]):
+            if get_node_distance(s, lid, leaf_id[-1]) > tidal_radius[-1]:
                 break
 
             nums_track.append(num)

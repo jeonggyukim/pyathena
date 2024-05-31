@@ -414,25 +414,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             mcore_go15_found = False
 
 
-        num_start = 0
         for pid in self.pids:
             fname = Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
             cores = pd.read_pickle(fname).sort_index()
 
             prestellar_cores = cores.loc[:cores.attrs['numcoll']]
-            # TODO What is done here????
-            for num, core in prestellar_cores.sort_index(ascending=False).iterrows():
-                if num == prestellar_cores.index[-1]:
-                    lid0 = core.leaf_id
-                    rtidal = core.tidal_radius
-                else:
-                    lid = core.leaf_id
-                    if tools.get_node_distance(self, lid, lid0) > rtidal:
-                        num_start = num + 1
-                        break
-                    lid0 = lid
-                    rtidal = core.tidal_radius
-            cores = cores.loc[num_start:]
 
             if cores.attrs['tcoll_resolved']:
                 # Read critical TES info and concatenate to self.cores
