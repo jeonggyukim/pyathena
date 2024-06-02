@@ -106,7 +106,7 @@ def critical_tes(s, pid, num, overwrite=False):
         return
 
     if num not in s.rprofs[pid].num:
-        msg = (f"Radial profile for num={num} does not exist. "
+        msg = (f"Radial profile for pid={pid}, num={num} does not exist. "
                 "Cannot calculate critical_tes. Skipping...")
         logging.warning(msg)
         return
