@@ -1061,9 +1061,13 @@ class LoadSim(object):
                         self.nums_rst = [int(f[-9:-4]) for f in numbered_rstfiles]
                     else:
                         self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
-                    self.logger.info('rst: {0:s} nums: {1:d}-{2:d}'.format(
-                                     osp.dirname(self.files['rst'][0]),
-                                     self.nums_rst[0], self.nums_rst[-1]))
+                    msg = 'rst: {0:s}'.format(osp.dirname(self.files['rst'][0]))
+                    if len(self.nums_rst) > 0:
+                        msg += ' nums: {0:d}-{1:d}'.format(
+                                self.nums_rst[0], self.nums_rst[-1])
+                    if np.any(['final' in f for f in self.files['rst']]):
+                        msg += ' final: yes'
+                    self.logger.info(msg)
                 else:
                     self.logger.warning(
                         'rst files not found in {0:s}.'.format(self.basedir))
