@@ -769,9 +769,10 @@ def calculate_observables(s, core, rprf, rmax, method):
             # Method 1: calculate observable properties from radial profile, truncated at rmax
 
             # Create interpolation functions
-            rho_itp = interp1d(rprf.r.data, rprf.rho.data)
-            rfwhm = utils.fwhm(rho_itp, rmax)
-            if rfwhm < rprf.r.max():
+            try:
+                rho_itp = interp1d(rprf.r.data, rprf.rho.data)
+                rfwhm = utils.fwhm(rho_itp, rmax)
+
                 # Mean density inside FWHM radius
                 mfwhm = utils.integrate_2d_projected(rho_itp, rfwhm, rmax)
                 dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
@@ -790,8 +791,8 @@ def calculate_observables(s, core, rprf, rmax, method):
 #        m_fwhm = utils.integrate_2d_projected(ts.rho, xi_fwhm, ts.rmax)
 #        m_over_xi = m_fwhm / xi_fwhm
 #        mcrit = np.pi*s.cs**2/s.gconst*m_over_xi*rfwhm
-            else:
-                mfwhm = dfwhm = dcen = sigma = np.nan
+            except ValueError:
+                rfwhm = mfwhm = dfwhm = dcen = sigma = np.nan
             obsprops = dict(radius=rfwhm, mass=mfwhm, mean_density=dfwhm,
                             central_column_density=dcen, velocity_dispersion=sigma)
 
@@ -820,7 +821,7 @@ def calculate_observables(s, core, rprf, rmax, method):
                 # it can sometimes exceed the maximum radius of the radial profiles.
                 # If that happens, we cannot solve for the properties within the
                 # FWHM radius.
-                mfwhm = dfwhm = dcen = sigma = np.nan
+                rfwhm = mfwhm = dfwhm = dcen = sigma = np.nan
             obsprops = dict(radius=rfwhm, mass=mfwhm, mean_density=dfwhm,
                             central_column_density=dcen, velocity_dispersion=sigma)
 
