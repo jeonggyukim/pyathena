@@ -51,20 +51,20 @@ class SliceProj:
         for ax in axes:
             i = axtoi[ax]
             dx = self.domain['dx'][i]
-            mom_los = ds[f'mom{i+1}']
+            ds[f'vel{i+1}'] = ds[f'mom{i+1}']/ds.dens
 
             res[ax] = dict()
-            dcol = (ds.dens*dx).sum(ax)
-            res[ax]['Sigma_gas'] = dcol
-
+            res[ax]['Sigma_gas'] = (ds.dens*dx).sum(ax)
 
             for ncrit in [10, 20, 30, 50, 100]:
-                d = ds.where((ds.dens > ncrit), other=np.nan)
-                dens = ds.dens.copy(deep=False)
-                vel = d[f'mom{i+1}']/dens
-                vel_los = vel.weighted(dens).mean(ax)
-                vdisp_los = np.sqrt((vel**2).weighted(dens).mean(ax) - vel_los**2)
+                d = ds.where((ds.dens > ncrit), other=0)
+                # Surface density
+                res[ax][f'Sigma_gas_nc{ncrit}'] = (d.dens*dx).sum(ax)
 
+                # Velocity and velocity dispersion
+                vel = d[f'vel{i+1}']
+                vel_los = vel.weighted(d.dens).mean(ax)
+                vdisp_los = np.sqrt((vel**2).weighted(d.dens).mean(ax) - vel_los**2)
                 res[ax][f'vel_nc{ncrit}'] = vel_los
                 res[ax][f'veldisp_nc{ncrit}'] = vdisp_los
 
