@@ -1211,9 +1211,10 @@ def obs_core_radius(dcol, dcol_bgr=0):
     -------
     robs : float
     """
+    dcol = dcol - dcol_bgr
     dcol_c = dcol.isel(R=0).data[()]
     rmax = dcol.R.isel(R=(dcol.data < 0.5*dcol_c).nonzero()[0][0]).data[()]
-    robs = utils.fwhm(interp1d(dcol.R.data[()], dcol.data - dcol_bgr),
+    robs = utils.fwhm(interp1d(dcol.R.data[()], dcol.data),
                       rmax, which='column')
     return robs
 
