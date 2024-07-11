@@ -761,128 +761,69 @@ def calculate_accelerations(rprf):
     return acc
 
 
-def calculate_observables(s, core, rprf, rmax, method):
+def calculate_observables(s, core, rprf):
     """Calculate observable properties of a core"""
 
-    match method:
-        case 'three_d':
-            # Method 1: calculate observable properties from radial profile, truncated at rmax
+    obsprops = dict()
 
-            # Create interpolation functions
-            try:
-                rho_itp = interp1d(rprf.r.data, rprf.rho.data)
-                rfwhm = utils.fwhm(rho_itp, rmax)
-
-                # Mean density inside FWHM radius
-                mfwhm = utils.integrate_2d_projected(rho_itp, rfwhm, rmax)
-                dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
-
-                # Central surface density
-                dcen = utils.integrate_los(rho_itp, 0, rmax)
-
-                # Projected velocity dispersion within FWHM
-                dvel_sq_itp = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
-                two_ke = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), rfwhm, rmax)
-                sigma = np.sqrt(two_ke/mfwhm)
-
-#        # Critical mass of TES having rcrit = R_FWHM
-#        ts = TESc(p=core.pindex, sigma=sigma)
-#        xi_fwhm = utils.fwhm(ts.rho, ts.rmax)
-#        m_fwhm = utils.integrate_2d_projected(ts.rho, xi_fwhm, ts.rmax)
-#        m_over_xi = m_fwhm / xi_fwhm
-#        mcrit = np.pi*s.cs**2/s.gconst*m_over_xi*rfwhm
-            except ValueError:
-                rfwhm = mfwhm = dfwhm = dcen = sigma = np.nan
-            obsprops = dict(radius=rfwhm, mass=mfwhm, mean_density=dfwhm,
-                            central_column_density=dcen, velocity_dispersion=sigma)
-
-        case 'iterative':
-            # Method 2: calculate observable properties from iterative background subtraction, using
-            # the 3D radial profile.
-
-            try:
-                # Calculate background subtracted quantities (iterative subtraction)
-                rho_itp = interp1d(rprf.r.data, rprf.rho.data)
-                rfwhm = utils.fwhm_bgrsub(rho_itp, rmax, method='iterative')
-                dcol_bgr = utils.integrate_los(rho_itp, rfwhm, rmax)
-                m_bgr = dcol_bgr*np.pi*rfwhm**2
-                mfwhm = utils.integrate_2d_projected(rho_itp, rfwhm, rmax) - m_bgr
-                dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
-
-                # Central surface density (background subtracted)
-                dcen = utils.integrate_los(rho_itp, 0, rmax) - dcol_bgr
-
-                # Projected velocity dispersion within FWHM
-                dvel_sq_itp = interp1d(rprf.r.data, rprf.dvel1_sq_mw)
-                two_ke = utils.integrate_2d_projected(lambda x: rho_itp(x)*dvel_sq_itp(x), rfwhm, rmax)
-                sigma = np.sqrt(two_ke/mfwhm)
-            except ValueError:
-                # Because r_obs is found by multiplying two to the HMHW,
-                # it can sometimes exceed the maximum radius of the radial profiles.
-                # If that happens, we cannot solve for the properties within the
-                # FWHM radius.
-                rfwhm = mfwhm = dfwhm = dcen = sigma = np.nan
-            obsprops = dict(radius=rfwhm, mass=mfwhm, mean_density=dfwhm,
-                            central_column_density=dcen, velocity_dispersion=sigma)
-
-        case 'two_d':
-            obsprops = dict()
-
-            # Prepare for projection map
-            # See `calculate_prj_radial_profile`
-            xc, yc, zc = get_coords_node(s, core.leaf_id)
-            prj = s.read_prj(core.name)
-            xycoordnames = dict(z=['x', 'y'],
-                                x=['y', 'z'],
-                                y=['z', 'x'])
-            xycenters = dict(z=[xc, yc],
-                             x=[yc, zc],
-                             y=[zc, xc])
+    # Prepare for projection map
+    # See `calculate_prj_radial_profile`
+    xc, yc, zc = get_coords_node(s, core.leaf_id)
+    prj = s.read_prj(core.name)
+    xycoordnames = dict(z=['x', 'y'],
+                        x=['y', 'z'],
+                        y=['z', 'x'])
+    xycenters = dict(z=[xc, yc],
+                     x=[yc, zc],
+                     y=[zc, xc])
 
 
-            # Simplest background subtraction -- average column in the whole box
-            dcol_bgr = s.rho0*s.Lbox
+    # Simplest background subtraction -- average column in the whole box
+    dcol_bgr = s.rho0*s.Lbox
 
-            for i, ax in enumerate(['x', 'y', 'z']):
-                dcol = rprf[f'{ax}_Sigma_gas']
-                ncrit_list = [10, 20, 30, 50, 100]
-                sigma = dict()
-                try:
-                    # Calculate FWHM quantities
-                    rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
-                                       dcol.R.max()[()], which='column')
-                    mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
-                    dcol_fwhm = dcol.interp(R=rfwhm)
-                    mfwhm_bgrsub = ((dcol-dcol_fwhm)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
-                    dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
+    for i, ax in enumerate(['x', 'y', 'z']):
+        dcol = rprf[f'{ax}_Sigma_gas']
+        # Central column density
+        dcol_c = dcol.sel(R=0).data[()] - dcol_bgr
+        ncrit_list = [10, 20, 30, 50, 100]
+        sigma = dict()
+        try:
+            # Calculate FWHM quantities
+            rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
+                               dcol.R.max()[()], which='column')
+            mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+            dcol_fwhm = dcol.interp(R=rfwhm)
+            mfwhm_bgrsub = ((dcol-dcol_fwhm)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+            dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
 
-                    # Calculate surface-density weighted average projected velocity
-                    # dispersion, directly using the 2D map data
-                    x1, x2 = xycoordnames[ax]
-                    x1c, x2c = xycenters[ax]
-                    for ncrit in ncrit_list:
-                        w = prj[ax]['Sigma_gas']
-                        ds = prj[ax][f'veldisp_nc{ncrit}'].copy(deep=True)
-                        ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
-                        ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
-                                                 + (ds.coords[x2] - new_center[x2])**2)
-                        sigma[ncrit] = ds.where(ds.R < rfwhm).weighted(w).mean().data[()]
+            # Calculate surface-density weighted average projected velocity
+            # dispersion, directly using the 2D map data
+            x1, x2 = xycoordnames[ax]
+            x1c, x2c = xycenters[ax]
+            for ncrit in ncrit_list:
+                dcol = rprf[f'{ax}_Sigma_gas_nc{ncrit}']
+                robs = obs_core_radius(dcol)
+                w = prj[ax][f'Sigma_gas_nc{ncrit}'].copy(deep=True)
+                ds = prj[ax][f'veldisp_nc{ncrit}'].copy(deep=True)
+                w, _ = recenter_dataset(w, {x1:x1c, x2:x2c})
+                ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
+                ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
+                                         + (ds.coords[x2] - new_center[x2])**2)
+                sigma[ncrit] = ds.where(ds.R < robs).weighted(w).mean().data[()]
 
-                except ValueError:
-                    rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
-                    for ncrit in ncrit_list:
-                        sigma[ncrit] = np.nan
+        except ValueError:
+            rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
+            for ncrit in ncrit_list:
+                sigma[ncrit] = np.nan
 
-                # Central column density
-                dcen = dcol.sel(R=0).data[()] - dcol_bgr
 
-                obsprops[f'{ax}_radius'] = rfwhm
-                obsprops[f'{ax}_mass'] = mfwhm
-                obsprops[f'{ax}_mass_bgrsub'] = mfwhm_bgrsub
-                obsprops[f'{ax}_mean_density'] = dfwhm
-                obsprops[f'{ax}_center_column_density'] = dcen
-                for ncrit in ncrit_list:
-                    obsprops[f'{ax}_velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
+        obsprops[f'{ax}_radius'] = rfwhm
+        obsprops[f'{ax}_mass'] = mfwhm
+        obsprops[f'{ax}_mass_bgrsub'] = mfwhm_bgrsub
+        obsprops[f'{ax}_mean_density'] = dfwhm
+        obsprops[f'{ax}_center_column_density'] = dcol_c
+        for ncrit in ncrit_list:
+            obsprops[f'{ax}_velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
 
     obsprops['num'] = core.name
 

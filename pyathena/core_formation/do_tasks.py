@@ -187,8 +187,6 @@ if __name__ == "__main__":
         # Find observables
         if args.observables:
             print(f"Calculate observable core properties for model {mdl}")
-            # Only select resolved cores.
-#            pids = sorted(set(pids) & set(s.good_cores()))
             for pid in pids:
                 cores = s.cores[pid]
                 cores = cores.loc[:cores.attrs['numcoll']]
