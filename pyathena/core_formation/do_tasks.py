@@ -15,9 +15,11 @@ if __name__ == "__main__":
 
     # MHD models
     for iseed in [1,]:
-        models[f"M5J2B2P{iseed}N512"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B2.P{iseed}.N512"
-        models[f"M5J2B4P{iseed}N512"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512"
-        models[f"M10J4B2P{iseed}N1024"] = f"/scratch/gpfs/sm69/cores/mhd/M10.J4.B2.P{iseed}.N1024"
+        models[f"M5B4P{iseed}base"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.base"
+        models[f"M5B4P{iseed}uct0strict0"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct0.strict0"
+        models[f"M5B4P{iseed}uct0strict1"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct0.strict1"
+        models[f"M5B4P{iseed}uct1strict0"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct1.strict0"
+        models[f"M5B4P{iseed}uct1strict1"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct1.strict1"
 
     # Experimental
     models['M3J4P1N1024'] = "/tigress/sm69/cores/hydro/M3.J4.P1.N1024"
@@ -32,11 +34,13 @@ if __name__ == "__main__":
                         help="List of particle ids to process")
     parser.add_argument("--np", type=int, default=1,
                         help="Number of processors")
+    parser.add_argument("-o", "--overwrite", action="store_true",
+                        help="Overwrite everything")
     parser.add_argument("--combine-partab", action="store_true",
                         help="Join partab files")
     parser.add_argument("--combine-partab-full", action="store_true",
                         help="Join partab files including last output")
-    parser.add_argument("-g", "--run-grid", action="store_true",
+    parser.add_argument("--run-grid", action="store_true",
                         help="Run GRID-dendro")
     parser.add_argument("--prune", action="store_true",
                         help="Prune dendrogram")
@@ -44,23 +48,21 @@ if __name__ == "__main__":
                         help="Perform reverse core tracking (prestellar phase)")
     parser.add_argument("--track-protostellar-cores", action="store_true",
                         help="Perform forward core tracking (protostellar phase)")
-    parser.add_argument("-r", "--radial-profile", action="store_true",
+    parser.add_argument("--radial-profile", action="store_true",
                         help="Calculate radial profiles of each cores")
-    parser.add_argument("--prj-radial-profile", action="store_true",
-                        help="Calculate radial profiles of each cores")
-    parser.add_argument("-t", "--critical-tes", action="store_true",
+    parser.add_argument("--critical-tes", action="store_true",
                         help="Calculate critical TES of each cores")
     parser.add_argument("--lagrangian-props", action="store_true",
                         help="Calculate Lagrangian properties of cores")
     parser.add_argument("--projections", action="store_true",
                         help="Calculate projections")
+    parser.add_argument("--prj-radial-profile", action="store_true",
+                        help="Calculate radial profiles of each cores")
     parser.add_argument("--observables", action="store_true",
                         help="Calculate observable properties of cores")
     parser.add_argument("--linewidth-size", action="store_true",
                         help="Calculate linewidth-size relation")
-    parser.add_argument("-o", "--overwrite", action="store_true",
-                        help="Overwrite everything")
-    parser.add_argument("-m", "--make-movie", action="store_true",
+    parser.add_argument("--make-movie", action="store_true",
                         help="Create movies")
     parser.add_argument("--plot-core-evolution", action="store_true",
                         help="Create core evolution plots")
@@ -146,7 +148,7 @@ if __name__ == "__main__":
             print(msg)
             def wrapper(num):
                 tasks.radial_profile(s, num, pids, overwrite=args.overwrite,
-                                     full_radius=True, days_overwrite=20)
+                                     full_radius=True, days_overwrite=150)
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums)
 
