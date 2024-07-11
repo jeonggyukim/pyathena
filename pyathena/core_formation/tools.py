@@ -1385,6 +1385,25 @@ def reff_sph(vol):
     return fac*vol**(1/3)
 
 
+def obs_core_radius(dcol):
+    """Observational core radius
+
+    The radius at which the column density drops by 10% of the
+    central value.
+
+    Parameters
+    ----------
+    dcol : xarray.DataArray
+
+    Returns
+    -------
+    robs : float
+    """
+    dcol_c = dcol.isel(R=0)
+    robs = dcol.where(dcol > 0.1*dcol_c, drop=True).R[-1].data[()]
+    return robs
+
+
 def get_evol_norm(vmin=-3, vmid=0, vmax=1):
     """Get a normalization for color coding evolutionary time
 
