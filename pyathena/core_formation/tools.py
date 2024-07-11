@@ -789,8 +789,7 @@ def calculate_observables(s, core, rprf):
         sigma = dict()
         try:
             # Calculate FWHM quantities
-            rfwhm = utils.fwhm(interp1d(dcol.R.data[()], dcol.data-dcol_bgr),
-                               dcol.R.max()[()], which='column')
+            rfwhm = obs_core_radius(dcol, dcol_bgr)
             mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
             dcol_fwhm = dcol.interp(R=rfwhm)
             mfwhm_bgrsub = ((dcol-dcol_fwhm)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
@@ -802,6 +801,7 @@ def calculate_observables(s, core, rprf):
             x1c, x2c = xycenters[ax]
             for ncrit in ncrit_list:
                 dcol = rprf[f'{ax}_Sigma_gas_nc{ncrit}']
+                # FWHM radius of the dense gas surface density
                 robs = obs_core_radius(dcol)
                 w = prj[ax][f'Sigma_gas_nc{ncrit}'].copy(deep=True)
                 ds = prj[ax][f'veldisp_nc{ncrit}'].copy(deep=True)
@@ -1326,7 +1326,7 @@ def reff_sph(vol):
     return fac*vol**(1/3)
 
 
-def obs_core_radius(dcol):
+def obs_core_radius(dcol, dcol_bgr=0):
     """Observational core radius
 
     The radius at which the column density drops by 10% of the
@@ -1340,8 +1340,10 @@ def obs_core_radius(dcol):
     -------
     robs : float
     """
-    dcol_c = dcol.isel(R=0)
-    robs = dcol.where(dcol > 0.1*dcol_c, drop=True).R[-1].data[()]
+    dcol_c = dcol.isel(R=0).data[()]
+    rmax = dcol.R.isel(R=(dcol.data < 0.5*dcol_c).nonzero()[0][0]).data[()]
+    robs = utils.fwhm(interp1d(dcol.R.data[()], dcol.data - dcol_bgr),
+                      rmax, which='column')
     return robs
 
 
