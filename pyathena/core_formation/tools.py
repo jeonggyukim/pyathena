@@ -924,38 +924,6 @@ def column_density(rcyl, frho, rmax):
     return dcol
 
 
-def fwhm(frho, rmax, which='volume'):
-    """Calculate the FWHM of the column density profile
-
-    Parameters
-    ----------
-    frho : function
-        The function that returns the volume/column density at a given
-        spherical radius.
-        Either rho(r) or Sigma(r) depending on `which`.
-    rmax : float
-        The maximum radius to integrate out.
-    which : str, optional
-        If the input is volume density, `volume`
-        If the input is column density, `column`
-
-    Returns
-    -------
-    fwhm : float
-        The FWHM of the column density profile.
-    """
-    if which == 'volume':
-        n0 = column_density(0, frho, rmax)
-        fwhm = 2*brentq(lambda x: column_density(x, frho, rmax) - 0.5*n0,
-                        0, rmax)
-    elif which == 'column':
-        n0 = frho(0)
-        fwhm = 2*brentq(lambda x: frho(x) - 0.5*n0, 0, rmax)
-    else:
-        raise ValueError("which must be either volume or column")
-    return fwhm
-
-
 def critical_time(s, pid, method=1):
     cores = s.cores[pid].copy()
     if len(cores) == 0:
