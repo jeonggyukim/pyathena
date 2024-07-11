@@ -350,6 +350,8 @@ def lagrangian_props(s, pid, method=1, overwrite=False):
 
 
 def projections(s, num, overwrite=True):
+    msg = '[projections] processing model {} num {}'
+    print(msg.format(s.basename, num))
     s.read_prj(num, force_override=overwrite)
 
 
