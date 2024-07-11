@@ -9,9 +9,8 @@ from scipy.interpolate import interp1d
 from pathlib import Path
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
-from pyathena.core_formation.tes import TESc, get_critical_tes
 from pyathena.core_formation import config
-from turb_sphere import utils
+from turb_sphere import utils, tes
 
 
 class LognormalPDF:
@@ -323,7 +322,7 @@ def calculate_tidal_radius(s, gd, node, leaf=None):
     return rtidal
 
 
-def calculate_critical_tes(s, rprf, core, mode='tot'):
+def calculate_critical_tes(s, rprf, core):
     """Calculates critical tes given the radial profile.
 
     Given the radial profile, find the critical tes at the same central
@@ -350,7 +349,8 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
 
     # Set scale length and mass based on the center and edge densities
     rhoc = rprf.rho.isel(r=0).data[()]
-    LJ_c = MJ_c = np.sqrt(s.rho0/rhoc)
+    r0 = s.cs/np.sqrt(4*np.pi*s.gconst*rhoc)
+    m0 = s.cs**3/np.sqrt(4*np.pi*s.gconst**3*rhoc)
     mtidal = (4*np.pi*rprf.r**2*rprf.rho).sel(r=slice(0, core.tidal_radius)
                                               ).integrate('r').data[()]
     mean_tidal_density = mtidal / (4*np.pi*core.tidal_radius**3/3)
@@ -376,14 +376,12 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
             rs = np.exp(-intercept/(p))
     
             # Find critical TES at the central density
-            xi_s = rs / LJ_c
-            tsc = TESc(p=p, rs=xi_s)
+            xi_s = rs / r0
+            ts = tes.TES(pindex=p, rsonic=xi_s)
             try:
-                xi_crit = tsc.get_rcrit(mode=mode)
-                u, du = tsc.solve(xi_crit)
-                dcrit = np.exp(-u)
-                rcrit = xi_crit*LJ_c
-                mcrit = tsc.menc(xi_crit)*MJ_c
+                dcrit = np.exp(ts.ucrit)
+                rcrit = ts.rcrit*r0
+                mcrit = ts.mcrit*m0
             except ValueError:
                 dcrit = rcrit = mcrit = np.nan
 
@@ -392,30 +390,6 @@ def calculate_critical_tes(s, rprf, core, mode='tot'):
                critical_contrast=dcrit, critical_radius=rcrit,
                critical_mass=mcrit)
     return res
-
-
-def calculate_critical_radius(s, core, rprf):
-    tsc = TESc(p=core.pindex)
-    rs_floor = tsc.sonic_radius_floor()
-    rs_ceil = tsc._rs_ceil
-
-    rs = core.sonic_radius
-    for rmax, menc in zip(rprf.r.data[1:], rprf.menc.data[1:]):
-        # Find a TES that has the critical radius = rmax
-        def fx(xi_s):
-            tsc = TESc(p=core.pindex, rs=xi_s)
-            return xi_s*rmax/tsc.get_rcrit() - rs
-        # Sometime, when p and rs is extremely small, ValueError occurs.
-        try:
-            xi_s = brentq(fx, rs_floor, rs_ceil)
-        except ValueError:
-            return np.nan
-        tsc = TESc(p=core.pindex, rs=xi_s)
-        conv = rs/xi_s
-        mcrit = conv*tsc.menc(tsc.get_rcrit())
-        if menc > mcrit:
-            return rmax
-    return np.inf
 
 
 def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
@@ -1021,60 +995,6 @@ def get_node_distance(s, nd1, nd2):
     # TODO generalize this
     dst = get_periodic_distance(pos1, pos2, s.Lbox)
     return dst
-
-
-def get_resolution_requirement(Mach, Lbox, mfrac=None, rho_amb=None,
-                               ncells_min=10):
-    """Print resolution requirements
-
-    Parameters
-    ----------
-    Mach : float
-        Mach number
-    Lbox : float
-        Box size
-    mfrac : float, optional
-        Cumulative mass fraction in a mass-weighted density pdf.
-    rho_amb : float, optional
-        Ambient density. If given, override mfrac.
-    ncells_min : int, optional
-        Minimum number of cells to resolve critical TES.
-    """
-    if mfrac is None and rho_amb is None:
-        raise ValueError("Specify either mfrac or rho_amb")
-    s = load_sim_core_formation.LoadSimCoreFormation(Mach)
-    rsonic = get_sonic(Mach, Lbox)
-    if rho_amb is None:
-        rho_amb = s.get_contrast(mfrac)
-    rhoc_BE, R_BE, M_BE = get_critical_tes(rhoe=rho_amb, rsonic=np.inf,
-                                           pindex=0.5)
-    rhoc_TES, R_TES, M_TES = get_critical_tes(rhoe=rho_amb, rsonic=rsonic,
-                                              pindex=0.5)
-    R_LP_BE = lpradius(M_BE, s.cs, s.gconst)
-    R_LP_TES = lpradius(M_TES, s.cs, s.gconst)
-    dx_req_LP = R_LP_BE/ncells_min
-    dx_req_BE = R_BE/ncells_min
-    ncells_req_LP = np.ceil(Lbox/dx_req_LP).astype(int)
-    ncells_req_BE = np.ceil(Lbox/dx_req_BE).astype(int)
-
-    print(f"Mach number = {Mach}")
-    print("sonic length = {}".format(rsonic))
-    print("Ambient density={:.3f}".format(rho_amb))
-    print("Bonner-Ebert mass = {:.3f}".format(M_BE))
-    print("Bonner-Ebert radius = {:.3f}".format(R_BE))
-    print("Bonner-Ebert central density = {:.3f}".format(rhoc_BE))
-    print("Critical TES mass = {:.3f}".format(M_TES))
-    print("Critical TES radius = {:.3f}".format(R_TES))
-    print("Critical TES central density = {:.3f}".format(rhoc_TES))
-    print("Equivalent LP radius for Bonner-Ebert sphere = "
-          "{:.3f}".format(R_LP_BE))
-    print("Equivalent LP radius for TES = {:.3f}".format(R_LP_TES))
-    print("Required resolution dx to resolve LP core = {}".format(dx_req_LP))
-    print("Required resolution Ncells to resolve LP core = {}".format(
-        ncells_req_LP))
-    print("Required resolution dx to resolve BE sphere = {}".format(dx_req_BE))
-    print("Required resolution Ncells to resolve BE sphere = {}".format(
-        ncells_req_BE))
 
 
 def get_sonic(Mach_outer, l_outer, p=0.5):

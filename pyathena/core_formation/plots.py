@@ -14,7 +14,7 @@ import xarray as xr
 from yt.frontends.athena_pp.data_structures import AthenaPPDataset
 # pythena modules
 from pyathena.core_formation import tools
-from pyathena.core_formation import tes
+from turb_sphere import tes
 from grid_dendro import energy
 
 
@@ -470,21 +470,19 @@ def plot_core_evolution(s, pid, num, rmax=None):
 
     # overplot critical tes
     if np.isfinite(core.center_density):
-        LJ_c = 1.0/np.sqrt(core.center_density)
-        xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
+        r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
+        xi_max = rprf.r.isel(r=-1).data[()]/r0
         if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
-            ts = tes.TESc(p=core.pindex, rs=core.sonic_radius/LJ_c)
+            ts = tes.TES(pindex=core.pindex, rsonic=core.sonic_radius/r0)
             xi = np.logspace(np.log10(ts._rfloor), np.log10(xi_max))
-            u, du = ts.solve(xi)
             for ax in axs['rho']:
-                ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
+                ax.plot(xi*r0, ts.density(xi), 'r--', lw=1.5)
 
         # overplot critical BE
-        ts = tes.TESc()
+        ts = tes.TES()
         xi = np.logspace(np.log10(ts._rfloor), np.log10(xi_max))
-        u, du = ts.solve(xi)
         for ax in axs['rho']:
-            ax.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
+            ax.plot(xi*r0, ts.density(xi), 'r:', lw=1)
             ax.set_xlabel(r'$r/L_{J,0}$')
             ax.set_ylabel(r'$\rho/\rho_0$')
             ax.set_ylim(1e0, tools.lpdensity(s.dx/2, s.cs, s.gconst))
@@ -668,40 +666,17 @@ def core_structure(s, pid, num, rmax=None):
         plt.plot(rprf.r, rhoLP, 'k--', lw=1)
 
         # overplot critical tes
-        LJ_c = 1.0/np.sqrt(core.center_density)
-        xi_min = rprf.r.isel(r=0).data[()]/LJ_c
-        xi_max = rprf.r.isel(r=-1).data[()]/LJ_c
+        r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
+        xi_min = rprf.r.isel(r=1).data[()]/r0
+        xi_max = rprf.r.isel(r=-1).data[()]/r0
         xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
         if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
-            ts = tes.TESc(p=core.pindex, rs=core.sonic_radius/LJ_c)
-            u, du = ts.solve(xi)
-            plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r--', lw=1.5)
+            ts = tes.TES(pindex=core.pindex, rsonic=core.sonic_radius/r0)
+            plt.plot(xi*r0, ts.density(xi), 'r--', lw=1.5)
 
         # overplot critical BE
-        ts = tes.TESc()
-        u, du = ts.solve(xi)
-        plt.plot(xi*LJ_c, core.center_density*np.exp(u), 'r:', lw=1)
-
-        # overplot critical tes given rho_edge
-        LJ_e = 1.0/np.sqrt(core.edge_density)
-        xi_min = rprf.r.isel(r=0).data[()]/LJ_e
-        xi_max = rprf.r.isel(r=-1).data[()]/LJ_e
-        xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-        if not np.isnan(core.sonic_radius) and not np.isinf(core.sonic_radius):
-            ts = tes.TESe(p=core.pindex, xi_s=core.sonic_radius/LJ_e)
-            try:
-                uc, _, _ = ts.get_crit()
-                u, _ = ts.solve(xi, uc)
-                plt.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b--', lw=1.5)
-            except ValueError:
-                # Cannot find critical TES. Do not plot.
-                pass
-
-        # overplot critical BE
-        ts = tes.TESe()
-        uc, _, _ = ts.get_crit()
-        u, _ = ts.solve(xi, uc)
-        plt.plot(xi*LJ_e, core.edge_density*np.exp(u), 'b:', lw=1)
+        ts = tes.TES()
+        plt.plot(xi*r0, ts.density(xi), 'r:', lw=1)
 
         plt.axhline(core.edge_density, ls='-.', c='tab:gray')
         plt.yscale('log')
@@ -737,13 +712,11 @@ def core_structure(s, pid, num, rmax=None):
         plt.sca(ax)
         ln1 = plt.axvline(core.tidal_radius, c='tab:gray', lw=1)
         ln2 = plt.axvline(core.critical_radius, ls='--', c='tab:gray')
-        ln3 = plt.axvline(core.critical_radius_e, ls='-.', c='tab:gray')
-        ln4 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
+        ln3 = plt.axvline(core.sonic_radius, ls=':', c='tab:gray')
     plt.sca(axs[0,1])
-    lgd = plt.legend([ln1, ln2, ln3, ln4], [r'$R_\mathrm{tidal}$',
-                                            r'$R_\mathrm{crit,c}$',
-                                            r'$R_\mathrm{crit,e}$',
-                                            r'$R_\mathrm{sonic}$'],
+    lgd = plt.legend([ln1, ln2, ln3], [r'$R_\mathrm{tidal}$',
+                                       r'$R_\mathrm{crit,c}$',
+                                       r'$R_\mathrm{sonic}$'],
                      loc='upper right')
     return fig
 
@@ -757,26 +730,21 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     if ax is not None:
         plt.sca(ax)
 
-    r0 = core.critical_radius
+    rcrit = core.critical_radius
 
-    plt.plot(rprf.r/r0, rprf.rho/core.center_density, ls='-', marker='+', color='k', lw=lw)
+    plt.plot(rprf.r/rcrit, rprf.rho/core.center_density, ls='-', marker='+', color='k', lw=lw)
 
     # Overplot critical TES
-    tsc = tes.TESc(p=core.pindex, rs=core.sonic_radius*np.sqrt(core.center_density))
-    xi_min = tsc._rfloor*np.sqrt(core.center_density)
-    xi_max = r0*np.sqrt(core.center_density)
-    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-    u, _ = tsc.solve(xi)
-    plt.plot(xi/np.sqrt(core.center_density)/r0, np.exp(u), c='tab:red', lw=lw)
+    r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
+    ts = tes.TES(pindex=core.pindex, rsonic=core.sonic_radius/r0)
+    xi = np.logspace(np.log10(ts._rfloor), np.log10(rcrit/r0))
+    plt.plot(xi*r0/rcrit, ts.density(xi), c='tab:red', lw=lw)
 
     # Overplot critical BE
-    tsc = tes.TESc()
-    xi_min = tsc._rfloor*np.sqrt(core.center_density)
-    xi_max = r0*np.sqrt(core.center_density)
-    xi = np.logspace(np.log10(xi_min), np.log10(xi_max))
-    u, _ = tsc.solve(xi)
-    plt.plot(xi/np.sqrt(core.center_density)/r0, np.exp(u), c='tab:blue', lw=lw)
-    plt.axvline(tsc.get_rcrit()/np.sqrt(core.center_density)/r0, lw=lw/2, c='tab:blue', ls='--')
+    ts = tes.TES()
+    xi = np.logspace(np.log10(ts._rfloor), np.log10(rcrit/r0))
+    plt.plot(xi*r0/rcrit, ts.density(xi), c='tab:blue', lw=lw)
+    plt.axvline(ts.rcrit*r0/rcrit, lw=lw/2, c='tab:blue', ls='--')
 
     plt.xlim(0, 1)
     plt.ylim(5e-3, 1e0)
