@@ -809,7 +809,7 @@ def calculate_observables(s, core, rprf):
                 ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
                 ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
                                          + (ds.coords[x2] - new_center[x2])**2)
-                sigma[ncrit] = ds.where(ds.R < robs).weighted(w).mean().data[()]
+                sigma[ncrit] = np.sqrt((ds.where(ds.R < robs)**2).weighted(w).mean().data[()])
 
         except ValueError:
             rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
