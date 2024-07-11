@@ -377,8 +377,8 @@ def calculate_critical_tes(s, rprf, core):
     
             # Find critical TES at the central density
             xi_s = rs / r0
-            ts = tes.TES(pindex=p, rsonic=xi_s)
             try:
+                ts = tes.TES(pindex=p, rsonic=xi_s)
                 dcrit = np.exp(ts.ucrit)
                 rcrit = ts.rcrit*r0
                 mcrit = ts.mcrit*m0
