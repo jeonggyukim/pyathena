@@ -776,15 +776,17 @@ def calculate_observables(s, core, rprf):
             for ncrit in ncrit_list:
                 dcol = rprf[f'{ax}_Sigma_gas_nc{ncrit}']
                 # FWHM radius of the dense gas surface density
-                robs = obs_core_radius(dcol)
-                w = prj[ax][f'Sigma_gas_nc{ncrit}'].copy(deep=True)
-                ds = prj[ax][f'veldisp_nc{ncrit}'].copy(deep=True)
-                w, _ = recenter_dataset(w, {x1:x1c, x2:x2c})
-                ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
-                ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
-                                         + (ds.coords[x2] - new_center[x2])**2)
-                sigma[ncrit] = np.sqrt((ds.where(ds.R < robs)**2).weighted(w).mean().data[()])
-
+                try:
+                    robs = obs_core_radius(dcol)
+                    w = prj[ax][f'Sigma_gas_nc{ncrit}'].copy(deep=True)
+                    ds = prj[ax][f'veldisp_nc{ncrit}'].copy(deep=True)
+                    w, _ = recenter_dataset(w, {x1:x1c, x2:x2c})
+                    ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
+                    ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
+                                             + (ds.coords[x2] - new_center[x2])**2)
+                    sigma[ncrit] = np.sqrt((ds.where(ds.R < robs)**2).weighted(w).mean().data[()])
+                except ValueError:
+                    sigma[ncrit] = np.nan
         except ValueError:
             rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
             for ncrit in ncrit_list:
@@ -1213,7 +1215,12 @@ def obs_core_radius(dcol, dcol_bgr=0):
     """
     dcol = dcol - dcol_bgr
     dcol_c = dcol.isel(R=0).data[()]
-    rmax = dcol.R.isel(R=(dcol.data < 0.5*dcol_c).nonzero()[0][0]).data[()]
+    idx = (dcol.data < 0.5*dcol_c).nonzero()[0]
+    if len(idx) < 1:
+        raise ValueError("FWHM radius cannot be found")
+    else:
+        idx = idx[0]
+    rmax = dcol.R.isel(R=idx).data[()]
     robs = utils.fwhm(interp1d(dcol.R.data[()], dcol.data),
                       rmax, which='column')
     return robs
