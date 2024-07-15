@@ -780,7 +780,7 @@ def calculate_observables(s, core, rprf):
         dcol = rprf[f'{ax}_Sigma_gas']
         # Central column density
         dcol_c = dcol.sel(R=0).data[()] - dcol_bgr
-        ncrit_list = [10, 20, 30, 50, 100]
+        ncrit_list = [5, 10, 20, 30, 50, 100]
         sigma = dict()
         try:
             # Calculate FWHM quantities
