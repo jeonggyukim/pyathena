@@ -1061,9 +1061,13 @@ class LoadSim(object):
                         self.nums_rst = [int(f[-9:-4]) for f in numbered_rstfiles]
                     else:
                         self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
-                    self.logger.info('rst: {0:s} nums: {1:d}-{2:d}'.format(
-                                     osp.dirname(self.files['rst'][0]),
-                                     self.nums_rst[0], self.nums_rst[-1]))
+                    msg = 'rst: {0:s}'.format(osp.dirname(self.files['rst'][0]))
+                    if len(self.nums_rst) > 0:
+                        msg += ' nums: {0:d}-{1:d}'.format(
+                                self.nums_rst[0], self.nums_rst[-1])
+                    if np.any(['final' in f for f in self.files['rst']]):
+                        msg += ' final: yes'
+                    self.logger.info(msg)
                 else:
                     self.logger.warning(
                         'rst files not found in {0:s}.'.format(self.basedir))
@@ -1250,14 +1254,16 @@ class LoadSim(object):
 
                 if not force_override and osp.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
-                    res = pickle.load(open(fpkl, 'rb'))
+                    with open(fpkl, 'rb') as fb:
+                        res = pickle.load(fb)
                     return res
                 else:
                     cls.logger.info('[check_pickle]: Read original dump.')
                     # If we are here, force_override is True or history file is updated.
                     res = read_func(cls, **kwargs)
                     try:
-                        pickle.dump(res, open(fpkl, 'wb'))
+                        with open(fpkl, 'wb') as fb:
+                            pickle.dump(res, fb)
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not pickle to {0:s}.'.format(fpkl))
                     return res
