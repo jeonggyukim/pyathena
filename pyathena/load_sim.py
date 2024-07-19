@@ -20,7 +20,7 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
-from .io.read_particles import read_partab, read_parhst
+from .io.read_particles import read_partab, read_parbin, read_parhst
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -365,6 +365,40 @@ class LoadSim(object):
 
         return self.ds
 
+    def load_parbin(self, num=None, iparbin=None,
+                    partag=None, **kwargs):
+        """Read Athena++ parbin file.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number.
+           e.g., /basedir/parbin/problem_id.out?.num.par?.tab.
+        iparbin : int
+           Read i-th file in the parbin file list.
+           Overrides num if both are given.
+        partag : int
+           Particle id in the input file. Default value is 'par0'
+
+        Returns
+        -------
+        pds : pandas.DataFrame
+            Particle data
+        """
+        if num is None and iparbin is None:
+            raise ValueError('Specify either num or iparbin')
+
+        if partag is None:
+            partag = self._parbin_partag_def
+
+        self.fparbin = self._get_fparbin(self.parbin_outid, partag, num, iparbin)
+        if self.fparbin is None or not osp.exists(self.fparbin):
+            self.logger.info('[load_parbin]: parbin file does not exist. ')
+
+        self.pds = read_parbin(self.fparbin, **kwargs)
+
+        return self.pds
+
     def load_partab(self, num=None, ipartab=None,
                     partag=None, **kwargs):
         """Read Athena++ partab file.
@@ -456,7 +490,7 @@ class LoadSim(object):
         return self.sp
 
     def load_rst(self, num=None, irst=None, verbose=False):
-        if num is None and ivtk is None:
+        if num is None and irst is None:
             raise ValueError('Specify either num or irst')
 
         # get starpar_vtk file name and check if it exist
@@ -637,6 +671,7 @@ class LoadSim(object):
         (athena_pp only)
         hdf5: problem_id.out?.num.athdf
         partab: problem_id.out?.num.par?.tab
+        parbin: problem_id.out?.num.par?.parbin
         parhst: problem_id.pid.csv
         loop_time: problem_id.loop_time.txt
         task_time: problem_id.task_time.txt
@@ -693,6 +728,9 @@ class LoadSim(object):
         partab_patterns = [('partab', '*.out?.?????.par?.tab'),
                          ('*.out?.?????.par?.tab',)]
 
+        parbin_patterns = [('parbin', '*.out?.?????.par?.parbin'),
+                         ('*.out?.?????.par?.parbin',)]
+
         parhst_patterns = [('parhst', '*.par*.csv'),
                          ('*.par*.csv',)]
 
@@ -739,9 +777,12 @@ class LoadSim(object):
                     # Save particle output tags
                     if k.startswith('particle'):
                         par_id = int(k.strip('particle')) - 1
+                        if self.par[k]['type'] == "none":
+                            continue
                         partag = 'par{}'.format(par_id)
                         self.partags.append(partag)
                         self._partab_partag_def = partag
+                        self._parbin_partag_def = partag
 
                 # if there are hdf5 outputs, save some info
                 if self.out_fmt.count('hdf5') > 0:
@@ -762,6 +803,10 @@ class LoadSim(object):
                         if k.startswith('output') and self.par[k]['file_type'] == 'partab':
                             self.partab_outid = int(re.split(r'(\d+)',k)[1])
 
+                if 'parbin' in self.out_fmt:
+                    for k in self.par.keys():
+                        if k.startswith('output') and self.par[k]['file_type'] == 'parbin':
+                            self.parbin_outid = int(re.split(r'(\d+)',k)[1])
             else:
                 for k in self.par.keys():
                     if k.startswith('output'):
@@ -977,6 +1022,29 @@ class LoadSim(object):
                         partag, osp.dirname(self.files['partab'][partag][0]),
                         self.nums_partab[partag][0], self.nums_partab[partag][-1]))
 
+        # Find parbin files
+        if 'parbin' in self.out_fmt:
+            self.files['parbin'] = dict()
+            self.nums_parbin = dict()
+            for partag in self.partags:
+                parbin_patterns_ = []
+                for p in parbin_patterns:
+                    p = list(p)
+                    p[-1] = p[-1].replace('par?', partag)
+                    parbin_patterns_.append(tuple(p))
+                self.files['parbin'][partag] = self._find_match(parbin_patterns_)
+                if not self.files['parbin'][partag]:
+                    self.logger.warning(
+                        'parbin ({0:s}) files not found in {1:s}'.\
+                        format(partag, self.basedir))
+                    self.nums_parbin[partag] = None
+                else:
+                    self.nums_parbin[partag] = [int(f[-17:-12])
+                                                 for f in self.files['parbin'][partag]]
+                    self.logger.info('parbin ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        partag, osp.dirname(self.files['parbin'][partag][0]),
+                        self.nums_parbin[partag][0], self.nums_parbin[partag][-1]))
+
         # Find parhst files
         if self.athena_pp and any(['particle' in k for k in self.par.keys()]):
             fparhst = self._find_match(parhst_patterns)
@@ -1146,6 +1214,23 @@ class LoadSim(object):
                 self.problem_id, outid, num, partag))
 
         return fpartab
+
+    def _get_fparbin(self, outid, partag, num=None, iparbin=None):
+        """Get parbin file path
+        """
+
+        try:
+            dirname = osp.dirname(self.files['parbin'][partag][0])
+        except IndexError:
+            return None
+        if iparbin is not None:
+            fparbin = self.files['parbin'][partag][iparbin]
+        else:
+            fpattern = '{0:s}.out{1:d}.{2:05d}.{3:s}.parbin'
+            fparbin = osp.join(dirname, fpattern.format(
+                self.problem_id, outid, num, partag))
+
+        return fparbin
 
     def _get_fparhst(self, pid):
         """Get parhst file path
