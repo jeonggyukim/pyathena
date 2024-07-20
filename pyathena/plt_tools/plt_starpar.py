@@ -73,7 +73,11 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
         # Runaways
         sp_ru = sp[runaways]
         # Sources have negative values of id
-        src_ru = (sp_ru['id'] < 0)
+        try:
+            src_ru = (sp_ru['id'] < 0)
+        except KeyError:
+            # athena++
+            src_ru = (sp_ru['flag'] < 0)
         sp_ru_src = sp_ru[src_ru]
         sp_ru_nonsrc = sp_ru[~src_ru]
 

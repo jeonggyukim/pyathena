@@ -397,7 +397,7 @@ class LoadSim(object):
 
         self.pds = read_parbin(self.fparbin, **kwargs)
 
-        return self.pds
+        return self.pds.to_dataframe()
 
     def load_partab(self, num=None, ipartab=None,
                     partag=None, **kwargs):

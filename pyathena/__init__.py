@@ -37,6 +37,9 @@ __all__ = [
            # CoreFormation
            "LoadSimCoreFormation",
            "LoadSimCoreFormationAll",
+           # TIGRIS
+           "LoadSimTIGRESSPP",
+           "LoadSimTIGRESSPPAll",
            ]
 
 from .io.read_vtk import read_vtk, AthenaDataSet
@@ -65,6 +68,7 @@ from .tigress_xco.load_sim_tigress_xco import LoadSimTIGRESSXCO, LoadSimTIGRESSX
 from .tigress_ncr.load_sim_tigress_ncr import LoadSimTIGRESSNCR, LoadSimTIGRESSNCRAll
 from .tigress_gc.load_sim_tigress_gc import LoadSimTIGRESSGC, LoadSimTIGRESSGCAll
 from .core_formation.load_sim_core_formation import LoadSimCoreFormation, LoadSimCoreFormationAll
+from .tigresspp.load_sim_tigresspp import LoadSimTIGRESSPP, LoadSimTIGRESSPPAll
 
 # ReadObs class
 from .obs.read_obs import ReadObs

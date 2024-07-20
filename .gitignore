@@ -12,3 +12,5 @@ docs/_static
 .DS_Store
 tags
 job*
+*.png
+

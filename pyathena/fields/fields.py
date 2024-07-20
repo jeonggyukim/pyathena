@@ -95,9 +95,14 @@ def set_derived_fields_def(par, x0, newcool):
     label[f] = r'$r\;[{\rm pc}]$'
     cmap[f] = 'viridis'
     # Set vmax to box length
-    Lx = par['domain1']['x1max']-par['domain1']['x1min']
-    Ly = par['domain1']['x2max']-par['domain1']['x2min']
-    Lz = par['domain1']['x3max']-par['domain1']['x3min']
+    if "domain1" in par:
+        blockname="domain1"
+    elif "mesh" in par:
+        blockname="mesh"
+    Lx = par[blockname]['x1max']-par[blockname]['x1min']
+    Ly = par[blockname]['x2max']-par[blockname]['x2min']
+    Lz = par[blockname]['x3max']-par[blockname]['x3min']
+
     Lmax = max(max(Lx,Ly),Lz)
     vminmax[f] = (0,Lmax)
     take_log[f] = False
@@ -243,7 +248,12 @@ def set_derived_fields_def(par, x0, newcool):
     take_log[f] = True
 
     # Cooling related fields
-    if par['configure']['cooling'] == 'ON':
+    if "configure" in par:
+        cooling = par['configure']['cooling'] == 'ON'
+    else:
+        # should find a way to check this for athena++
+        cooling = False
+    if cooling:
         # T [K] - gas temperature
         f = 'T'
         if newcool:
@@ -1268,6 +1278,15 @@ class DerivedFields(object):
         except KeyError:
             newcool = False
 
+        try:
+            if par['configure']['gas'] == 'mhd':
+                mhd = True
+            else:
+                mhd = False
+        except KeyError:
+            # need general way to determine this
+            mhd=True
+
         self.func, self.field_dep, \
             self.label, self.cmap, \
             self.vminmax, self.take_log = set_derived_fields_def(par, x0, newcool)
@@ -1275,7 +1294,7 @@ class DerivedFields(object):
         dicts = (self.func, self.field_dep, self.label, self.cmap, \
                  self.vminmax, self.take_log)
 
-        if par['configure']['gas'] == 'mhd':
+        if mhd:
             dicts_ = set_derived_fields_mag(par, x0)
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)

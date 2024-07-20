@@ -38,11 +38,10 @@ def read_parbin(filename, **kwargs):
 
     Returns
     -------
-    ds : pandas.DataFrame
+    ds : xarray.Dataset
         Particle data
     """
     ds = parbin(filename, **kwargs)
-    ds.set_index('pid', inplace=True)
 
     return ds
 
