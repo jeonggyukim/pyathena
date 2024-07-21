@@ -492,7 +492,7 @@ class SliceProj:
             if savdir is None:
                 savdir = osp.join(self.savdir, "snapshot")
             if not osp.exists(savdir):
-                os.makedirs(savdir)
+                os.makedirs(savdir,exist_ok=True)
 
             savname = osp.join(savdir, "{0:s}_{1:04d}.png".format(self.basename, num))
             plt.savefig(savname, dpi=200, bbox_inches="tight")

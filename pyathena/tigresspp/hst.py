@@ -114,6 +114,29 @@ class Hst:
 
         return h
 
+    def plt_hst(self):
+        h = self.read_hst()
+        fig, axes = plt.subplots(1, 3, figsize=(8, 3), num=0)
+        plt.sca(axes[0])
+        plt.plot(h["time"], h["Sigma_gas"])
+        if ("Sigma_sp" in h):
+            plt.plot(h["time"], h["Sigma_sp"])
+        plt.ylabel(r"$\Sigma_{\rm gas}, \Sigma_{\rm sink}$")
+
+        plt.sca(axes[1])
+        plt.plot(h["time"], h["sfr10"])
+        plt.plot(h["time"], h["sfr40"])
+        plt.ylabel(r"$\Sigma_{\rm SFR}$")
+        plt.yscale("log")
+
+        if "SFUV" in h:
+            plt.sca(axes[2])
+            plt.plot(h["time"], h["SFUV"])
+            plt.plot(h["time"], h["heat_ratio"])
+            plt.ylabel(r"$\Sigma_{\rm FUV}, \Sigma_{\rm FUV}/\Sigma_{\rm FUV,0}$")
+            plt.yscale("log")
+        plt.tight_layout()
+        return fig
 def get_snr(sntime,time,tbin='auto',snth=100.):
     import xarray as xr
     snt = sntime.to_numpy()
