@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
 
+
 class Timing:
     def load_task_time(self, groups=None):
         """Read .task_time.txt file
@@ -131,8 +132,8 @@ class Timing:
 
         plt.sca(axes[1])
         (ncells / lt[keys]).boxplot(vert=False, showfliers=False)
-        plt.xlim(1.e4,1.e8)
-        plt.axvline(1.e5)
+        plt.xlim(1.0e4, 1.0e8)
+        plt.axvline(1.0e5)
         plt.xscale("log")
         plt.xlabel("zcs")
 

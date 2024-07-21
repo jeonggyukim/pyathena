@@ -5,6 +5,7 @@ import os.path as osp
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+
 # import astropy.units as au
 # import astropy.constants as ac
 from matplotlib.colors import Normalize, LogNorm
@@ -21,7 +22,7 @@ cmap_def = dict(
     Sigma_H2=plt.cm.pink_r,
     EM=plt.cm.plasma,
     nH=plt.cm.Spectral_r,
-    T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7.),
+    T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3.0 / 7.0),
     pok=plt.cm.plasma,
     vz=plt.cm.bwr,
     chi_FUV=plt.cm.viridis,
@@ -31,39 +32,43 @@ cmap_def = dict(
 )
 
 norm_def = dict(
-    Sigma_gas=LogNorm(1e-2,1e2),
-    Sigma_H2=LogNorm(1e-2,1e2),
-    EM=LogNorm(1e0,1e5),
-    nH=LogNorm(1e-4,1e3),
-    T=LogNorm(1e1,1e7),
-    pok=LogNorm(1.e2,1.e6),
-    vz=Normalize(-200,200),
-    chi_FUV=LogNorm(1e-2,1e2),
-    Erad_LyC=LogNorm(1e-16,5e-13),
-    xi_CR=LogNorm(5e-17,1e-15),
-    Bmag=LogNorm(1.e-2,1.e2)
+    Sigma_gas=LogNorm(1e-2, 1e2),
+    Sigma_H2=LogNorm(1e-2, 1e2),
+    EM=LogNorm(1e0, 1e5),
+    nH=LogNorm(1e-4, 1e3),
+    T=LogNorm(1e1, 1e7),
+    pok=LogNorm(1.0e2, 1.0e6),
+    vz=Normalize(-200, 200),
+    chi_FUV=LogNorm(1e-2, 1e2),
+    Erad_LyC=LogNorm(1e-16, 5e-13),
+    xi_CR=LogNorm(5e-17, 1e-15),
+    Bmag=LogNorm(1.0e-2, 1.0e2),
 )
 
 tiny = 1.0e-30
 
-cpp_to_cc = {"rho":"density","press":"pressure",
-             "vel1":"velocity1","vel2":"velocity2","vel3":"velocity3",
-             "Bcc1":"cell_centered_B1","Bcc2":"cell_centered_B2",
-             "Bcc3":"cell_centered_B3"}
+cpp_to_cc = {
+    "rho": "density",
+    "press": "pressure",
+    "vel1": "velocity1",
+    "vel2": "velocity2",
+    "vel3": "velocity3",
+    "Bcc1": "cell_centered_B1",
+    "Bcc2": "cell_centered_B2",
+    "Bcc3": "cell_centered_B3",
+}
+
 
 class SliceProj:
     @staticmethod
     def _get_extent(domain):
-
         r = dict()
-        r['x'] = (domain['le'][1], domain['re'][1],
-                  domain['le'][2], domain['re'][2])
-        r['y'] = (domain['le'][0], domain['re'][0],
-                  domain['le'][2], domain['re'][2])
-        r['z'] = (domain['le'][0], domain['re'][0],
-                  domain['le'][1], domain['re'][1])
+        r["x"] = (domain["le"][1], domain["re"][1], domain["le"][2], domain["re"][2])
+        r["y"] = (domain["le"][0], domain["re"][0], domain["le"][2], domain["re"][2])
+        r["z"] = (domain["le"][0], domain["re"][0], domain["le"][1], domain["re"][1])
 
         return r
+
     @LoadSim.Decorators.check_pickle
     def read_allslc(
         self,
@@ -77,7 +82,7 @@ class SliceProj:
 
         ds = self.load_hdf5(num=num).rename(cpp_to_cc)
 
-        if ("cell_centered_B1" in ds):
+        if "cell_centered_B1" in ds:
             self.mhd = True
         else:
             self.mhd = False
@@ -85,9 +90,13 @@ class SliceProj:
         res = dict()
         res["time"] = ds.attrs["Time"]
         res["extent"] = self._get_extent(self.domain)
-        res["center"] = dict(x=self.domain["center"][0],y=self.domain["center"][1],z=self.domain["center"][2])
+        res["center"] = dict(
+            x=self.domain["center"][0],
+            y=self.domain["center"][1],
+            z=self.domain["center"][2],
+        )
         for ax in axes:
-            dat = ds.sel({ax:res["center"][ax]}, method="nearest")
+            dat = ds.sel({ax: res["center"][ax]}, method="nearest")
             res[ax] = dict()
             for f in dat:
                 if f in ["velocity", "cell_centered_B"]:
@@ -117,7 +126,7 @@ class SliceProj:
         allslc = self.read_allslc(num, savdir=savdir, force_override=force_override)
         keylist = list(allslc.keys())
 
-        if ("cell_centered_B1" in allslc):
+        if "cell_centered_B1" in allslc:
             self.mhd = True
         else:
             self.mhd = False
@@ -160,25 +169,25 @@ class SliceProj:
         return newslc
 
     @LoadSim.Decorators.check_pickle
-    def read_prj(self, num, axes=['x', 'y', 'z'], prefix='prj',
-                 savdir=None, force_override=False):
-
+    def read_prj(
+        self, num, axes=["x", "y", "z"], prefix="prj", savdir=None, force_override=False
+    ):
         axtoi = dict(x=0, y=1, z=2)
-        fields = ['rho']
+        fields = ["rho"]
         axes = np.atleast_1d(axes)
 
         dat = self.load_hdf5(num=num, quantities=fields)
 
         res = dict()
-        res['extent'] = self._get_extent(self.domain)
+        res["extent"] = self._get_extent(self.domain)
 
         for ax in axes:
             i = axtoi[ax]
-            dx = self.domain['dx'][i]*self.u.length
-            conv_Sigma = (dx*self.u.density).to('Msun/pc**2')
+            dx = self.domain["dx"][i] * self.u.length
+            conv_Sigma = (dx * self.u.density).to("Msun/pc**2")
 
             res[ax] = dict()
-            res[ax]['Sigma_gas'] = (np.sum(dat['rho'], axis=2-i)*conv_Sigma).data
+            res[ax]["Sigma_gas"] = (np.sum(dat["rho"], axis=2 - i) * conv_Sigma).data
 
         return res
 
@@ -377,7 +386,7 @@ class SliceProj:
         dat["prj"] = self.read_prj(
             num, savdir=savdir_pkl, force_override=force_override
         )
-        time = dat["slc"]["time"]*self.u.Myr
+        time = dat["slc"]["time"] * self.u.Myr
         sp = self.load_parbin(num)
 
         extent = dat["prj"]["extent"]["z"]
@@ -423,7 +432,7 @@ class SliceProj:
                     "z",
                     kind="prj",
                     kpc=False,
-                    norm_factor=norm_factor/2,
+                    norm_factor=norm_factor / 2,
                     agemax=agemax,
                     agemax_sn=agemax_sn,
                     runaway=runaway,
@@ -492,7 +501,7 @@ class SliceProj:
             if savdir is None:
                 savdir = osp.join(self.savdir, "snapshot")
             if not osp.exists(savdir):
-                os.makedirs(savdir,exist_ok=True)
+                os.makedirs(savdir, exist_ok=True)
 
             savname = osp.join(savdir, "{0:s}_{1:04d}.png".format(self.basename, num))
             plt.savefig(savname, dpi=200, bbox_inches="tight")
@@ -500,38 +509,39 @@ class SliceProj:
         return fig
 
 
-def slc_to_xarray(slc,axis='z'):
+def slc_to_xarray(slc, axis="z"):
     dset = xr.Dataset()
     for f in slc[axis].keys():
-        x0,x1,y0,y1=slc['extent'][axis[0]]
+        x0, x1, y0, y1 = slc["extent"][axis[0]]
 
-        Ny,Nx=slc[axis][f].shape
+        Ny, Nx = slc[axis][f].shape
 
-        xfc = np.linspace(x0,x1,Nx+1)
-        yfc = np.linspace(y0,y1,Ny+1)
-        xcc = 0.5*(xfc[1:] + xfc[:-1])
-        ycc = 0.5*(yfc[1:] + yfc[:-1])
+        xfc = np.linspace(x0, x1, Nx + 1)
+        yfc = np.linspace(y0, y1, Ny + 1)
+        xcc = 0.5 * (xfc[1:] + xfc[:-1])
+        ycc = 0.5 * (yfc[1:] + yfc[:-1])
 
-        dims = dict(z=['y','x'],x=['z','y'],y=['z','x'])
+        dims = dict(z=["y", "x"], x=["z", "y"], y=["z", "x"])
 
-        dset[f] = xr.DataArray(slc[axis][f],coords=[ycc,xcc],dims=dims[axis[0]])
+        dset[f] = xr.DataArray(slc[axis][f], coords=[ycc, xcc], dims=dims[axis[0]])
     return dset
+
 
 def slc_get_all_z(slc):
     dlist = []
     for k in slc.keys():
-        if k.startswith('z'):
-            slc_dset = slc_to_xarray(slc,k)
+        if k.startswith("z"):
+            slc_dset = slc_to_xarray(slc, k)
             if len(k) == 1:
-                z0=0.
-            elif k[1] == 'n':
-                z0 = float(k[2:])*(-100)
-            elif k[1] == 'p':
-                z0 = float(k[2:])*(100)
+                z0 = 0.0
+            elif k[1] == "n":
+                z0 = float(k[2:]) * (-100)
+            elif k[1] == "p":
+                z0 = float(k[2:]) * (100)
             else:
                 raise KeyError
             slc_dset = slc_dset.assign_coords(z=z0)
             dlist.append(slc_dset)
         else:
             pass
-    return xr.concat(dlist,dim='z').sortby('z')
+    return xr.concat(dlist, dim="z").sortby("z")
