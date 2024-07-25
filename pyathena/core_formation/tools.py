@@ -780,47 +780,51 @@ def calculate_observables(s, core, rprf):
         dcol = rprf[f'{ax}_Sigma_gas']
         # Central column density
         dcol_c = dcol.sel(R=0).data[()] - dcol_bgr
-        ncrit_list = [5, 10, 20, 30, 50, 100]
-        sigma = dict()
+        nthr_list = [5, 10, 20, 30, 50, 100]
+        obs_sigma, obs_radius = dict(), dict()
         try:
             # Calculate FWHM quantities
-            rfwhm = obs_core_radius(dcol, dcol_bgr)
+            rfwhm = obs_core_radius(dcol, 'fwhm', dcol_bgr)
             mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
             dcol_fwhm = dcol.interp(R=rfwhm)
             mfwhm_bgrsub = ((dcol-dcol_fwhm)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
             dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
+        except ValueError:
+            rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
 
-            # Calculate surface-density weighted average projected velocity
-            # dispersion, directly using the 2D map data
-            x1, x2 = xycoordnames[ax]
-            x1c, x2c = xycenters[ax]
-            for ncrit in ncrit_list:
-                dcol = rprf[f'{ax}_Sigma_gas_nc{ncrit}']
-                # FWHM radius of the dense gas surface density
+        # Calculate surface-density weighted average projected velocity
+        # dispersion, directly using the 2D map data
+        x1, x2 = xycoordnames[ax]
+        x1c, x2c = xycenters[ax]
+        for method in ['fwhm', 'los', 'fixed']:
+            obs_sigma[method] = dict()
+            obs_radius[method] = dict()
+            for nthr in nthr_list:
+                dcol = rprf[f'{ax}_Sigma_gas_nc{nthr}']
                 try:
-                    robs = obs_core_radius(dcol)
-                    w = prj[ax][f'Sigma_gas_nc{ncrit}'].copy(deep=True)
-                    ds = prj[ax][f'veldisp_nc{ncrit}'].copy(deep=True)
+                    robs = obs_core_radius(dcol, method=method, rho_thr=nthr)
+                    w = prj[ax][f'Sigma_gas_nc{nthr}'].copy(deep=True)
+                    ds = prj[ax][f'veldisp_nc{nthr}'].copy(deep=True)
                     w, _ = recenter_dataset(w, {x1:x1c, x2:x2c})
                     ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
                     ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
                                              + (ds.coords[x2] - new_center[x2])**2)
-                    sigma[ncrit] = np.sqrt((ds.where(ds.R < robs)**2).weighted(w).mean().data[()])
+                    obs_radius[method][nthr] = robs
+                    obs_sigma[method][nthr] = np.sqrt(
+                            (ds.where(ds.R < robs)**2).weighted(w).mean().data[()])
                 except ValueError:
-                    sigma[ncrit] = np.nan
-        except ValueError:
-            rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
-            for ncrit in ncrit_list:
-                sigma[ncrit] = np.nan
-
+                    obs_radius[method][nthr] = np.nan
+                    obs_sigma[method][nthr] = np.nan
 
         obsprops[f'{ax}_radius'] = rfwhm
         obsprops[f'{ax}_mass'] = mfwhm
         obsprops[f'{ax}_mass_bgrsub'] = mfwhm_bgrsub
         obsprops[f'{ax}_mean_density'] = dfwhm
         obsprops[f'{ax}_center_column_density'] = dcol_c
-        for ncrit in ncrit_list:
-            obsprops[f'{ax}_velocity_dispersion_nc{ncrit}'] = sigma[ncrit]
+        for method in ['fwhm', 'los', 'fixed']:
+            for nthr in nthr_list:
+                obsprops[f'{ax}_obs_radius_{method}_nc{nthr}'] = obs_radius[method][nthr]
+                obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}'] = obs_sigma[method][nthr]
 
     obsprops['num'] = core.name
 
@@ -1220,7 +1224,7 @@ def reff_sph(vol):
     return fac*vol**(1/3)
 
 
-def obs_core_radius(dcol, dcol_bgr=0):
+def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None):
     """Observational core radius
 
     The radius at which the column density drops by 10% of the
@@ -1229,21 +1233,38 @@ def obs_core_radius(dcol, dcol_bgr=0):
     Parameters
     ----------
     dcol : xarray.DataArray
+        The radial column density profile.
 
     Returns
     -------
     robs : float
     """
-    dcol = dcol - dcol_bgr
-    dcol_c = dcol.isel(R=0).data[()]
-    idx = (dcol.data < 0.5*dcol_c).nonzero()[0]
-    if len(idx) < 1:
-        raise ValueError("FWHM radius cannot be found")
-    else:
-        idx = idx[0]
-    rmax = dcol.R.isel(R=idx).data[()]
-    robs = utils.fwhm(interp1d(dcol.R.data[()], dcol.data),
-                      rmax, which='column')
+    match method:
+        case 'fwhm':
+            dcol = dcol - dcol_bgr
+            dcol_c = dcol.isel(R=0).data[()]
+            idx = (dcol.data < 0.5*dcol_c).nonzero()[0]
+            if len(idx) < 1:
+                raise ValueError("FWHM radius cannot be found")
+            else:
+                idx = idx[0]
+            rmax = dcol.R.isel(R=idx).data[()]
+            robs = utils.fwhm(interp1d(dcol.R.data[()], dcol.data),
+                              rmax, which='column')
+        case 'los':
+            if rho_thr is None:
+                raise ValueError("rho_thr must be specified for los method")
+            rfwhm = obs_core_radius(dcol)
+            robs = dcol.sel(R=slice(0, rfwhm)).weighted(dcol.R).mean().data[()] / rho_thr / 4
+        case 'fixed':
+            dcol = dcol - dcol_bgr
+            dcol_c = dcol.isel(R=0).data[()]
+            idx = (dcol.data < 0.2*dcol_c).nonzero()[0]
+            if len(idx) < 1:
+                raise ValueError("FWHM radius cannot be found")
+            else:
+                idx = idx[0]
+            robs = dcol.R.isel(R=idx).data[()]
     return robs
 
 
