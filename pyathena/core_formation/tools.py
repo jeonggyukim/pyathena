@@ -820,12 +820,16 @@ def calculate_observables(s, core, rprf):
 
         # Calculate the true line-of-sight length
         rlos_true = dict()
+        rlos_mass_weighted = dict()
+        rhoavg_los = dict()
         for nthr in nthr_list:
             dens_3d.coords['R'] = np.sqrt((dens_3d.coords[x1]- new_center_3d[x1])**2
                                           + (dens_3d.coords[x2] - new_center_3d[x2])**2)
             rfwhm_thr = obs_radius['fwhm'][nthr]
             if np.isnan(rfwhm_thr):
                 rlos = np.nan
+                rlos_mw = np.nan
+                rhoavg = np.nan
             else:
                 rho_los = dens_3d.where((dens_3d.R < rfwhm_thr)&(dens_3d > nthr)).mean([x1, x2])
                 try:
@@ -834,9 +838,15 @@ def calculate_observables(s, core, rprf):
                     idx = np.nonzero(((rho_los[ax] < 0)&(np.isnan(rho_los))).data)[0][-1]
                     x3l = rho_los[ax].data[idx]
                     rlos = 0.5*(x3u - x3l)
+                    rlos_mw = np.sqrt(((rho_los[ax] - new_center_3d[ax])**2).weighted(rho_los.fillna(0)).mean().data[()])
+                    rhoavg = rho_los.sel({ax:slice(x3l, x3u)}).mean().data[()]
                 except IndexError:
                     rlos = np.nan
+                    rlos_mw = np.nan
+                    rhoavg = np.nan
             rlos_true[nthr] = rlos
+            rlos_mass_weighted[nthr] = rlos_mw
+            rhoavg_los[nthr] = rhoavg
 
         obsprops[f'{ax}_radius'] = rfwhm
         obsprops[f'{ax}_mass'] = mfwhm
@@ -849,6 +859,8 @@ def calculate_observables(s, core, rprf):
                 obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}'] = obs_sigma[method][nthr]
         for nthr in nthr_list:
             obsprops[f'{ax}_radius_los_nc{nthr}'] = rlos_true[nthr]
+            obsprops[f'{ax}_radius_los_mw_nc{nthr}'] = rlos_mass_weighted[nthr]
+            obsprops[f'{ax}_mean_density_los_nc{nthr}'] = rhoavg_los[nthr]
 
     return obsprops
 
