@@ -788,9 +788,11 @@ def calculate_observables(s, core, rprf):
         try:
             # Calculate FWHM quantities
             rfwhm = obs_core_radius(dcol, 'fwhm', dcol_bgr)
-            mfwhm = ((dcol-dcol_bgr)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+            mfwhm = ((dcol - dcol_bgr)*2*np.pi*dcol.R
+                     ).sel(R=slice(0, rfwhm)).integrate('R').data[()]
             dcol_fwhm = dcol.interp(R=rfwhm)
-            mfwhm_bgrsub = ((dcol-dcol_fwhm)*2*np.pi*dcol.R).sel(R=slice(0, rfwhm)).integrate('R').data[()]
+            mfwhm_bgrsub = ((dcol - dcol_fwhm)*2*np.pi*dcol.R
+                            ).sel(R=slice(0, rfwhm)).integrate('R').data[()]
             dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
         except ValueError:
             rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
@@ -807,13 +809,16 @@ def calculate_observables(s, core, rprf):
                     robs = obs_core_radius(dcol, method=method, rho_thr=nthr)
                     w = prj[ax][f'Sigma_gas_nc{nthr}'].copy(deep=True)
                     ds = prj[ax][f'veldisp_nc{nthr}'].copy(deep=True)
-                    w, _ = recenter_dataset(w, {x1:x1c, x2:x2c})
-                    ds, new_center = recenter_dataset(ds, {x1:x1c, x2:x2c})
-                    ds.coords['R'] = np.sqrt((ds.coords[x1]- new_center[x1])**2
-                                             + (ds.coords[x2] - new_center[x2])**2)
+                    w, _ = recenter_dataset(w, {x1: x1c, x2: x2c})
+                    ds, new_center = recenter_dataset(ds, {x1: x1c, x2: x2c})
+                    ds.coords['R'] = np.sqrt((ds.coords[x1] -
+                                              new_center[x1])**2
+                                             + (ds.coords[x2] -
+                                                new_center[x2])**2)
                     obs_radius[method][nthr] = robs
-                    obs_sigma[method][nthr] = np.sqrt(
-                            (ds.where(ds.R < robs)**2).weighted(w).mean().data[()])
+                    obs_sigma[method][nthr]\
+                        = np.sqrt((ds.where(ds.R < robs)**2).weighted(w).mean()
+                                  ).data[()]
                 except ValueError:
                     obs_radius[method][nthr] = np.nan
                     obs_sigma[method][nthr] = np.nan
@@ -823,23 +828,30 @@ def calculate_observables(s, core, rprf):
         rlos_mass_weighted = dict()
         rhoavg_los = dict()
         for nthr in nthr_list:
-            dens_3d.coords['R'] = np.sqrt((dens_3d.coords[x1]- new_center_3d[x1])**2
-                                          + (dens_3d.coords[x2] - new_center_3d[x2])**2)
+            dens_3d.coords['R'] = np.sqrt((dens_3d.coords[x1] -
+                                           new_center_3d[x1])**2
+                                          + (dens_3d.coords[x2] -
+                                             new_center_3d[x2])**2)
             rfwhm_thr = obs_radius['fwhm'][nthr]
             if np.isnan(rfwhm_thr):
                 rlos = np.nan
                 rlos_mw = np.nan
                 rhoavg = np.nan
             else:
-                rho_los = dens_3d.where((dens_3d.R < rfwhm_thr)&(dens_3d > nthr)).mean([x1, x2])
+                rho_los = dens_3d.where((dens_3d.R < rfwhm_thr) &
+                                        (dens_3d > nthr)).mean([x1, x2])
                 try:
-                    idx = np.nonzero(((rho_los[ax] >= 0)&(np.isnan(rho_los))).data)[0][0]
+                    idx = np.nonzero(((rho_los[ax] >= 0) &
+                                      (np.isnan(rho_los))).data)[0][0]
                     x3u = rho_los[ax].data[idx]
-                    idx = np.nonzero(((rho_los[ax] < 0)&(np.isnan(rho_los))).data)[0][-1]
+                    idx = np.nonzero(((rho_los[ax] < 0) &
+                                      (np.isnan(rho_los))).data)[0][-1]
                     x3l = rho_los[ax].data[idx]
                     rlos = 0.5*(x3u - x3l)
-                    rlos_mw = np.sqrt(((rho_los[ax] - new_center_3d[ax])**2).weighted(rho_los.fillna(0)).mean().data[()])
-                    rhoavg = rho_los.sel({ax:slice(x3l, x3u)}).mean().data[()]
+                    rlos_mw = np.sqrt(((rho_los[ax] - new_center_3d[ax])**2
+                                       ).weighted(rho_los.fillna(0)).mean()
+                                      ).data[()]
+                    rhoavg = rho_los.sel({ax: slice(x3l, x3u)}).mean().data[()]
                 except IndexError:
                     rlos = np.nan
                     rlos_mw = np.nan
@@ -855,8 +867,10 @@ def calculate_observables(s, core, rprf):
         obsprops[f'{ax}_center_column_density'] = dcol_c
         for method in ['fwhm', 'los', 'fixed']:
             for nthr in nthr_list:
-                obsprops[f'{ax}_obs_radius_{method}_nc{nthr}'] = obs_radius[method][nthr]
-                obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}'] = obs_sigma[method][nthr]
+                obsprops[f'{ax}_obs_radius_{method}_nc{nthr}']\
+                    = obs_radius[method][nthr]
+                obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}']\
+                    = obs_sigma[method][nthr]
         for nthr in nthr_list:
             obsprops[f'{ax}_radius_los_nc{nthr}'] = rlos_true[nthr]
             obsprops[f'{ax}_radius_los_mw_nc{nthr}'] = rlos_mass_weighted[nthr]
@@ -910,13 +924,16 @@ def critical_time(s, pid, method=1):
     ncrit = None
 
     if method in {1, 2}:
-        # For these method, check conditions from t_coll, marching backward in time.
+        # For these method, check conditions from t_coll,
+        # marching backward in time.
         for num, core in cores.sort_index(ascending=False).iterrows():
             if num in cores.index[-2:]:
                 if np.isnan(core.critical_radius):
-                    msg = f"Critical radius at t_coll - {cores.attrs['numcoll']-num}"
-                    msg += f" is NaN for par {pid}, method {method}."
-                    msg += f" This may have been caused by negative pindex. Continuing"
+                    n2coll = cores.attrs['numcoll'] - num
+                    msg = (f"Critical radius at t_coll - {n2coll}"
+                           f" is NaN for par {pid}, method {method}."
+                           " This may have been caused by negative pindex."
+                           " Continuing...")
                     s.logger.warning(msg)
                     continue
             rprf = rprofs.sel(num=num)
@@ -1289,7 +1306,8 @@ def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None):
             if rho_thr is None:
                 raise ValueError("rho_thr must be specified for los method")
             rfwhm = obs_core_radius(dcol)
-            robs = dcol.sel(R=slice(0, rfwhm)).weighted(dcol.R).mean().data[()] / rho_thr / 4
+            robs = (dcol.sel(R=slice(0, rfwhm)).weighted(dcol.R).mean()
+                    / rho_thr / 4).data[()]
         case 'fixed':
             dcol = dcol - dcol_bgr
             dcol_c = dcol.isel(R=0).data[()]
