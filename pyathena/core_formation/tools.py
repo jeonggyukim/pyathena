@@ -759,19 +759,22 @@ def calculate_accelerations(rprf):
 def calculate_observables(s, core, rprf):
     """Calculate observable properties of a core"""
 
+    num = core.name
     obsprops = dict()
+    obsprops['num'] = num
 
     # Prepare for projection map
     # See `calculate_prj_radial_profile`
     xc, yc, zc = get_coords_node(s, core.leaf_id)
     prj = s.read_prj(core.name)
+    dens_3d = s.load_hdf5(num, quantities=['dens']).dens
+    dens_3d, new_center_3d = recenter_dataset(dens_3d, dict(x=xc, y=yc, z=zc))
     xycoordnames = dict(z=['x', 'y'],
                         x=['y', 'z'],
                         y=['z', 'x'])
     xycenters = dict(z=[xc, yc],
                      x=[yc, zc],
                      y=[zc, xc])
-
 
     # Simplest background subtraction -- average column in the whole box
     dcol_bgr = s.rho0*s.Lbox
@@ -791,7 +794,6 @@ def calculate_observables(s, core, rprf):
             dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
         except ValueError:
             rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
-
         # Calculate surface-density weighted average projected velocity
         # dispersion, directly using the 2D map data
         x1, x2 = xycoordnames[ax]
@@ -816,6 +818,26 @@ def calculate_observables(s, core, rprf):
                     obs_radius[method][nthr] = np.nan
                     obs_sigma[method][nthr] = np.nan
 
+        # Calculate the true line-of-sight length
+        rlos_true = dict()
+        for nthr in nthr_list:
+            dens_3d.coords['R'] = np.sqrt((dens_3d.coords[x1]- new_center_3d[x1])**2
+                                          + (dens_3d.coords[x2] - new_center_3d[x2])**2)
+            rfwhm_thr = obs_radius['fwhm'][nthr]
+            if np.isnan(rfwhm_thr):
+                rlos = np.nan
+            else:
+                rho_los = dens_3d.where((dens_3d.R < rfwhm_thr)&(dens_3d > nthr)).mean([x1, x2])
+                try:
+                    idx = np.nonzero(((rho_los[ax] >= 0)&(np.isnan(rho_los))).data)[0][0]
+                    x3u = rho_los[ax].data[idx]
+                    idx = np.nonzero(((rho_los[ax] < 0)&(np.isnan(rho_los))).data)[0][-1]
+                    x3l = rho_los[ax].data[idx]
+                    rlos = 0.5*(x3u - x3l)
+                except IndexError:
+                    rlos = np.nan
+            rlos_true[nthr] = rlos
+
         obsprops[f'{ax}_radius'] = rfwhm
         obsprops[f'{ax}_mass'] = mfwhm
         obsprops[f'{ax}_mass_bgrsub'] = mfwhm_bgrsub
@@ -825,8 +847,8 @@ def calculate_observables(s, core, rprf):
             for nthr in nthr_list:
                 obsprops[f'{ax}_obs_radius_{method}_nc{nthr}'] = obs_radius[method][nthr]
                 obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}'] = obs_sigma[method][nthr]
-
-    obsprops['num'] = core.name
+        for nthr in nthr_list:
+            obsprops[f'{ax}_radius_los_nc{nthr}'] = rlos_true[nthr]
 
     return obsprops
 
