@@ -838,23 +838,22 @@ def calculate_observables(s, core, rprf):
                 rlos_mw = np.nan
                 rhoavg = np.nan
             else:
-                rho_los = dens_3d.where((dens_3d.R < rfwhm_thr) &
-                                        (dens_3d > nthr)).mean([x1, x2])
+                d3dthr = dens_3d.where(dens_3d > nthr, other=0)
+                dst = np.abs(dens_3d[ax] - new_center_3d[ax])
+                rlos_mw = dst.where((dens_3d > nthr) & (dens_3d.R < rfwhm_thr)
+                                    ).weighted(d3dthr).mean().data[()]
+                rho_los = d3dthr.where(dens_3d.R < rfwhm_thr).mean([x1, x2])
                 try:
                     idx = np.nonzero(((rho_los[ax] >= 0) &
-                                      (np.isnan(rho_los))).data)[0][0]
+                                      (rho_los < nthr)).data)[0][0]
                     x3u = rho_los[ax].data[idx]
                     idx = np.nonzero(((rho_los[ax] < 0) &
-                                      (np.isnan(rho_los))).data)[0][-1]
+                                      (rho_los < nthr)).data)[0][-1]
                     x3l = rho_los[ax].data[idx]
                     rlos = 0.5*(x3u - x3l)
-                    rlos_mw = np.sqrt(((rho_los[ax] - new_center_3d[ax])**2
-                                       ).weighted(rho_los.fillna(0)).mean()
-                                      ).data[()]
                     rhoavg = rho_los.sel({ax: slice(x3l, x3u)}).mean().data[()]
                 except IndexError:
                     rlos = np.nan
-                    rlos_mw = np.nan
                     rhoavg = np.nan
             rlos_true[nthr] = rlos
             rlos_mass_weighted[nthr] = rlos_mw
