@@ -2,7 +2,7 @@ import numpy as np
 import xarray as xr
 import pandas as pd
 from scipy.special import erfcinv
-from scipy import odr
+from scipy.stats import linregress
 from scipy.optimize import brentq
 from scipy.integrate import quad
 from scipy.interpolate import interp1d
@@ -343,10 +343,6 @@ def calculate_critical_tes(s, rprf, core):
     res : dict
         center_density, edge_density, critical_radius, pindex, sonic_radius
     """
-    # Select data for sonic radius fit
-    r = rprf.r.sel(r=slice(0, core.tidal_radius)).data[1:]
-    vr = np.sqrt(rprf.dvel1_sq_mw.sel(r=slice(0, core.tidal_radius)).data[1:])
-
     # Set scale length and mass based on the center and edge densities
     rhoc = rprf.rho.isel(r=0).data[()]
     r0 = s.cs/np.sqrt(4*np.pi*s.gconst*rhoc)
@@ -355,38 +351,34 @@ def calculate_critical_tes(s, rprf, core):
                                               ).integrate('r').data[()]
     mean_tidal_density = mtidal / (4*np.pi*core.tidal_radius**3/3)
 
-    if len(r) < 1:
-        # Sonic radius is zero. Cannot find critical tes.
-        p = rs = dcrit = rcrit = mcrit = np.nan
+    rmin_fit = 0.5*s.dx
+    rmax_fit = max(core.tidal_radius, 4.5*s.dx)
+    # Select data for sonic radius fit
+    rds = rprf.r.sel(r=slice(rmin_fit, rmax_fit)).data
+    vr = np.sqrt(rprf.dvel1_sq_mw.sel(r=slice(rmin_fit, rmax_fit)).data)
+
+    res = linregress(np.log(rds), np.log(vr/s.cs))
+    pindex = res.slope
+    intercept = res.intercept
+
+    if pindex <= 0:
+        rs = dcrit = rcrit = mcrit = np.nan
     else:
-        def f(B, x):
-            return B[0]*x + B[1]
-        beta0 = [0.5, 1]
+        # sonic radius
+        rs = np.exp(-intercept/pindex)
 
-        linear = odr.Model(f)
-        mydata = odr.Data(np.log(r), np.log(vr/s.cs))
-        myodr = odr.ODR(mydata, linear, beta0=beta0)
-        myoutput = myodr.run()
-        p, intercept = myoutput.beta
-
-        if p <= 0:
-            rs = dcrit = rcrit = mcrit = np.nan
-        else:
-            # sonic radius
-            rs = np.exp(-intercept/(p))
-    
-            # Find critical TES at the central density
-            xi_s = rs / r0
-            try:
-                ts = tes.TES(pindex=p, rsonic=xi_s)
-                dcrit = np.exp(ts.ucrit)
-                rcrit = ts.rcrit*r0
-                mcrit = ts.mcrit*m0
-            except ValueError:
-                dcrit = rcrit = mcrit = np.nan
+        # Find critical TES at the central density
+        xi_s = rs / r0
+        try:
+            ts = tes.TES(pindex=pindex, rsonic=xi_s)
+            dcrit = np.exp(ts.ucrit)
+            rcrit = ts.rcrit*r0
+            mcrit = ts.mcrit*m0
+        except ValueError:
+            dcrit = rcrit = mcrit = np.nan
 
     res = dict(tidal_mass=mtidal, center_density=rhoc,
-               mean_tidal_density=mean_tidal_density, sonic_radius=rs, pindex=p,
+               mean_tidal_density=mean_tidal_density, sonic_radius=rs, pindex=pindex,
                critical_contrast=dcrit, critical_radius=rcrit,
                critical_mass=mcrit)
     return res
