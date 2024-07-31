@@ -836,15 +836,20 @@ def calculate_observables(s, core, rprf):
                                     ).weighted(d3dthr).mean().data[()]
                 rho_los = d3dthr.where(dens_3d.R < rfwhm_thr).mean([x1, x2])
                 try:
+                    rho_itp = interp1d(rho_los[ax].data, rho_los.data)
                     idx = np.nonzero(((rho_los[ax] >= 0) &
                                       (rho_los < nthr)).data)[0][0]
-                    x3u = rho_los[ax].data[idx]
+                    xa = rho_los[ax].data[idx-1]
+                    xb = rho_los[ax].data[idx]
+                    x3u = brentq(lambda x: rho_itp(x) - nthr, xa, xb)
                     idx = np.nonzero(((rho_los[ax] < 0) &
                                       (rho_los < nthr)).data)[0][-1]
-                    x3l = rho_los[ax].data[idx]
+                    xa = rho_los[ax].data[idx]
+                    xb = rho_los[ax].data[idx+1]
+                    x3l = brentq(lambda x: rho_itp(x) - nthr, xa, xb)
                     rlos = 0.5*(x3u - x3l)
                     rhoavg = rho_los.sel({ax: slice(x3l, x3u)}).mean().data[()]
-                except IndexError:
+                except (ValueError, IndexError):
                     rlos = np.nan
                     rhoavg = np.nan
             rlos_true[nthr] = rlos
@@ -1266,7 +1271,7 @@ def reff_sph(vol):
     return fac*vol**(1/3)
 
 
-def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None):
+def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0.2):
     """Observational core radius
 
     The radius at which the column density drops by 10% of the
@@ -1302,7 +1307,7 @@ def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None):
         case 'fixed':
             dcol = dcol - dcol_bgr
             dcol_c = dcol.isel(R=0).data[()]
-            idx = (dcol.data < 0.2*dcol_c).nonzero()[0]
+            idx = (dcol.data < fixed_thres*dcol_c).nonzero()[0]
             if len(idx) < 1:
                 raise ValueError("FWHM radius cannot be found")
             else:
