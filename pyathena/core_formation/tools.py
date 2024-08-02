@@ -834,7 +834,7 @@ def calculate_observables(s, core, rprf):
                 dst = np.abs(dens_3d[ax] - new_center_3d[ax])
                 rlos_mw = dst.where((dens_3d > nthr) & (dens_3d.R < rfwhm_thr)
                                     ).weighted(d3dthr).mean().data[()]
-                rho_los = d3dthr.where(dens_3d.R < rfwhm_thr).mean([x1, x2])
+                rho_los = d3dthr.where(dens_3d.R < rfwhm).mean([x1, x2])
                 try:
                     rho_itp = interp1d(rho_los[ax].data, rho_los.data)
                     idx = np.nonzero(((rho_los[ax] >= 0) &
