@@ -136,7 +136,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 pass
 
             self.cores_dict = {}
-            for i in [1, 2, 4, 5, 6, 7]:
+            for i in [2, 6]:
                 try:
                     # Calculate derived core properties using the predicted critical time
                     savdir = Path(self.savdir, 'cores')
