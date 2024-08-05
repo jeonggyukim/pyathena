@@ -57,7 +57,7 @@ class SliceProj:
             res[ax]['Sigma_gas'] = (ds.dens*dx).sum(ax)
 
             for ncrit in [5, 10, 20, 30, 50, 100]:
-                d = ds.where((ds.dens > ncrit), other=0)
+                d = ds.where((ds.dens >= ncrit), other=0)
                 # Surface density
                 res[ax][f'Sigma_gas_nc{ncrit}'] = (d.dens*dx).sum(ax)
 
