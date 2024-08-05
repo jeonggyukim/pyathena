@@ -1312,7 +1312,10 @@ def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0
                 raise ValueError("FWHM radius cannot be found")
             else:
                 idx = idx[0]
-            robs = dcol.R.isel(R=idx).data[()]
+            xa = dcol.R.isel(R=idx-1).data[()]
+            xb = dcol.R.isel(R=idx).data[()]
+            dcol_itp = interp1d(dcol.R.data, dcol.data)
+            robs = brentq(lambda x: dcol_itp(x) - fixed_thres*dcol_c, xa, xb)
     return robs
 
 
