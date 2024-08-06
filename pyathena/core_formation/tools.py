@@ -798,7 +798,7 @@ def calculate_observables(s, core, rprf):
             for nthr in nthr_list:
                 dcol = rprf[f'{ax}_Sigma_gas_nc{nthr}']
                 try:
-                    robs = obs_core_radius(dcol, method=method, rho_thr=nthr)
+                    robs = obs_core_radius(dcol, method=method, rho_thr=nthr, fixed_thres=0.1)
                     w = prj[ax][f'Sigma_gas_nc{nthr}'].copy(deep=True)
                     ds = prj[ax][f'veldisp_nc{nthr}'].copy(deep=True)
                     w, _ = recenter_dataset(w, {x1: x1c, x2: x2c})
@@ -824,15 +824,15 @@ def calculate_observables(s, core, rprf):
                                            new_center_3d[x1])**2
                                           + (dens_3d.coords[x2] -
                                              new_center_3d[x2])**2)
-            rfwhm_thr = obs_radius['fwhm'][nthr]
-            if np.isnan(rfwhm_thr):
+            robs = obs_radius['fixed'][nthr]
+            if np.isnan(robs):
                 rlos = np.nan
                 rlos_mw = np.nan
                 rhoavg = np.nan
             else:
                 d3dthr = dens_3d.where(dens_3d > nthr, other=0)
                 dst = np.abs(dens_3d[ax] - new_center_3d[ax])
-                rlos_mw = dst.where((dens_3d > nthr) & (dens_3d.R < rfwhm_thr)
+                rlos_mw = dst.where((dens_3d > nthr) & (dens_3d.R < robs)
                                     ).weighted(d3dthr).mean().data[()]
                 rho_los = d3dthr.where(dens_3d.R < rfwhm).mean([x1, x2])
                 try:
@@ -1301,8 +1301,8 @@ def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0
         case 'los':
             if rho_thr is None:
                 raise ValueError("rho_thr must be specified for los method")
-            rfwhm = obs_core_radius(dcol)
-            robs = (dcol.sel(R=slice(0, rfwhm)).weighted(dcol.R).mean()
+            rpos = obs_core_radius(dcol, 'fixed', fixed_thres=fixed_thres)
+            robs = (dcol.sel(R=slice(0, rpos)).weighted(dcol.R).mean()
                     / rho_thr / 4).data[()]
         case 'fixed':
             dcol = dcol - dcol_bgr
