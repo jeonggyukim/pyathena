@@ -744,7 +744,8 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
     ts = tes.TES()
     xi = np.logspace(np.log10(ts._rfloor), np.log10(rcrit/r0))
     plt.plot(xi*r0/rcrit, ts.density(xi), c='tab:blue', lw=lw)
-    plt.axvline(ts.rcrit*r0/rcrit, lw=lw/2, c='tab:blue', ls='--')
+    plt.plot(ts.rcrit*r0/rcrit, ts.density(ts.rcrit), c='tab:blue',
+             marker=MarkerStyle('o', fillstyle='full'))
 
     plt.xlim(0, 1)
     plt.ylim(5e-3, 1e0)
