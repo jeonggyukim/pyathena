@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 import pandas as pd
-from scipy.special import erfcinv
+from scipy.special import erfcinv, erfc
 from scipy.stats import linregress
 from scipy.optimize import brentq
 from scipy.integrate import quad
@@ -51,6 +51,13 @@ class LognormalPDF:
         f = (1 / np.sqrt(2*np.pi*self.var))*np.exp(-(x - self.mu)**2
                                                    / (2*self.var))
         return f
+
+    def mfrac_above(self, rhothr):
+        """Return the mass fraction above density rhothr"""
+        xthr = np.log(rhothr)
+        tthr = (xthr - self.mu) / np.sqrt(2*self.var)
+        return 0.5*erfc(tthr)
+
 
     def get_contrast(self, frac):
         """Calculates density contrast for given mass coverage
