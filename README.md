@@ -18,7 +18,7 @@ Below is an example of how you can set up pyathena. It assumes that you have alr
    ```
 3. Create an environment from the env.yml file
    ```sh
-   conda update conda # if you haven't already
+   conda update conda
    conda env create -f path_to_pyathena/env.yml
    ```
 4. Activate the pyathena environment
@@ -26,6 +26,11 @@ Below is an example of how you can set up pyathena. It assumes that you have alr
    conda activate pyathena
    ```
 5. Add pyathena directory to your python startup file (optional but recommended).
+
+Sometimes `yt` and other installed packages (e.g., numpy) may have compatibility issues. In this case, you can downgrade packages to more stable, older versions. For example,
+```sh
+conda install -c conda-forge numpy=1.26.4
+```
 
 ## Example Usage
 
