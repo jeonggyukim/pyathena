@@ -41,7 +41,7 @@ def read_hst(filename, force_override=False, verbose=False):
 
         # C engine is faster but python engine is currently more feature-complete
         hst = pd.read_csv(filename, names=vlist,
-                          comment='#', delim_whitespace=True, engine='python')
+                          comment='#', sep=r'\s+', engine='python')
         try:
             hst.to_pickle(fpkl)
         except IOError:

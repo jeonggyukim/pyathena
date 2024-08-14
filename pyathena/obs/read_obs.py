@@ -50,7 +50,7 @@ class ReadObs():
         self.df['Leroy08'] = self._read_Leroy08()
 
     def _read_MD17(self):
-        df = pd.read_csv(self.files['MD17'], sep='\s+', skiprows=0,
+        df = pd.read_csv(self.files['MD17'], sep=r'\s+', skiprows=0,
                          names=['Cloud','Ncomp','Npix','A','l','e_l','b','e_b',
                                 'theta','WCO','NH2','Sigma','vcent','sigmav','Rmax',
                                 'Rmin','Rang','Rgal','INF','Dn','Df','zn','zf','Sn',
@@ -70,7 +70,7 @@ class ReadObs():
         return self.df['MD17']
 
     def _read_Evans14(self):
-        df = pd.read_csv(self.files['Evans14'], sep='\s+', skiprows=2,
+        df = pd.read_csv(self.files['Evans14'], sep=r'\s+', skiprows=2,
                          names=['Dist','Rcloud','SFR','Mcloud','M_dense','Sigma_SFR',
                                 'Sigma_gas','t_ff','sigmav','t_cross'])
         df['SFEff'] = df['SFR']*df['t_ff']/df['Mcloud']

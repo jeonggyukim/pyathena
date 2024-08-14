@@ -6,7 +6,9 @@ import numpy as np
 import astropy.units as au
 import astropy.constants as ac
 import pandas as pd
-from scipy.integrate import simps, trapz, cumulative_trapezoid
+from scipy.integrate import simpson as simps
+from scipy.integrate import trapezoid as trapz
+from scipy.integrate import cumulative_trapezoid as cumtrapz
 from scipy.interpolate import interp1d
 
 from ..microphysics.dust_draine import DustDraine
@@ -168,10 +170,10 @@ class SB99(object):
 
         # Time averaged energy, momentum injection rates \int_0^t q dt / \int_0^t dt
         for v in ('all', 'OB','RSG', 'LBV', 'WR'):
-            df['Edot_' + v + '_avg'] = cumulative_trapezoid(df['Edot_'+v], x=df['time_Myr'], initial=0.0)/\
-                    cumulative_trapezoid(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
-            df['pdot_' + v + '_avg'] = cumulative_trapezoid(df['pdot_'+v], x=df['time_Myr'], initial=0.0)/\
-                    cumulative_trapezoid(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
+            df['Edot_' + v + '_avg'] = cumtrapz(df['Edot_'+v], x=df['time_Myr'], initial=0.0)/\
+                    cumtrapz(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
+            df['pdot_' + v + '_avg'] = cumtrapz(df['pdot_'+v], x=df['time_Myr'], initial=0.0)/\
+                    cumtrapz(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
             df['Edot_' + v + '_avg'].iloc[0] = df['Edot_' + v + '_avg'].iloc[1]
             df['pdot_' + v + '_avg'].iloc[0] = df['pdot_' + v + '_avg'].iloc[1]
 
@@ -400,28 +402,28 @@ class SB99(object):
         for kk in ['L','Q']:
             r[kk+'_avg'] = dict()
             for k in r[kk].keys():
-                r[kk+'_avg'][k] = cumulative_trapezoid(r[kk][k], x=r['time_Myr'], initial=0.0)/\
-                                cumulative_trapezoid(np.repeat(1.0,len(r['time_Myr'])), x=r['time_Myr'], initial=0.0)
+                r[kk+'_avg'][k] = cumtrapz(r[kk][k], x=r['time_Myr'], initial=0.0)/\
+                                cumtrapz(np.repeat(1.0,len(r['time_Myr'])), x=r['time_Myr'], initial=0.0)
                 r[kk+'_avg'][k][0] = r[kk+'_avg'][k][1]
 
         for kk in ['hnu','Cabs','Cext','Crpr']:
             r[kk+'_Lavg'] = dict()
             for k in r[kk].keys():
-                r[kk+'_Lavg'][k] = cumulative_trapezoid(r[kk][k]*r['L'][k], x=r['time_Myr'], initial=0.0)/\
-                                cumulative_trapezoid(r['L'][k], x=r['time_Myr'], initial=0.0)
+                r[kk+'_Lavg'][k] = cumtrapz(r[kk][k]*r['L'][k], x=r['time_Myr'], initial=0.0)/\
+                                cumtrapz(r['L'][k], x=r['time_Myr'], initial=0.0)
                 r[kk+'_Lavg'][k][0] = r[kk+'_Lavg'][k][1]
 
         for kk in ['hnu','Cabs','Cext','Crpr']:
             r[kk+'_Qavg'] = dict()
             for k in r[kk].keys():
-                r[kk+'_Qavg'][k] = cumulative_trapezoid(r[kk][k]*r['Q'][k], x=r['time_Myr'], initial=0.0)/\
-                                cumulative_trapezoid(r['Q'][k], x=r['time_Myr'], initial=0.0)
+                r[kk+'_Qavg'][k] = cumtrapz(r[kk][k]*r['Q'][k], x=r['time_Myr'], initial=0.0)/\
+                                cumtrapz(r['Q'][k], x=r['time_Myr'], initial=0.0)
                 r[kk+'_Qavg'][k][0] = r[kk+'_Qavg'][k][1]
 
         # Q-weighted average for quantities related to ionizing radiation
         for k in ['dhnu_H_LyC','dhnu_H2_LyC','sigma_pi_H','sigma_pi_H2']:
-            r[k+'_Qavg'] = cumulative_trapezoid(r[k]*r['Q']['LyC'], x=r['time_Myr'], initial=0.0)/\
-                cumulative_trapezoid(r['Q']['LyC'], x=r['time_Myr'], initial=0.0)
+            r[k+'_Qavg'] = cumtrapz(r[k]*r['Q']['LyC'], x=r['time_Myr'], initial=0.0)/\
+                cumtrapz(r['Q']['LyC'], x=r['time_Myr'], initial=0.0)
             r[k+'_Qavg'][0] = r[k+'_Qavg'][1]
 
         return r
@@ -616,8 +618,8 @@ class SB99(object):
     @staticmethod
     def plt_lum_cumul(ax, rr, rw, rs, normed=True, plt_sn=False, lw=2):
 
-        integrate_L_cum = lambda L, t: cumulative_trapezoid((L*au.L_sun).cgs.value,
-                                                            (t*au.yr).cgs.value, initial=0.0)
+        integrate_L_cum = lambda L, t: cumtrapz((L*au.L_sun).cgs.value,
+                                                (t*au.yr).cgs.value, initial=0.0)
 
         L_tot_cum = integrate_L_cum(rr['L']['tot'], rr['time_yr'])
         L_UV_cum = integrate_L_cum(rr['L']['UV'], rr['time_yr'])
@@ -662,7 +664,7 @@ class SB99(object):
     @staticmethod
     def plt_pdot_cumul(ax, rr, rw, rs, normed=False, plt_sn=False, lw=2):
 
-        integrate_pdot = lambda pdot, t: cumulative_trapezoid(
+        integrate_pdot = lambda pdot, t: cumtrapz(
             pdot, t*au.Myr, initial=0.0)
 
         pdot_tot_cum = integrate_pdot(rr['L']['tot'], rr['time_Myr'])
