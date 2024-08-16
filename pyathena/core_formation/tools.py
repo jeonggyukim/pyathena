@@ -1278,7 +1278,7 @@ def reff_sph(vol):
     return fac*vol**(1/3)
 
 
-def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0.2):
+def obs_core_radius(rprf_dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0.2):
     """Observational core radius
 
     The radius at which the column density drops by 10% of the
@@ -1286,7 +1286,7 @@ def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0
 
     Parameters
     ----------
-    dcol : xarray.DataArray
+    rprf_dcol : xarray.DataArray
         The radial column density profile.
 
     Returns
@@ -1295,43 +1295,43 @@ def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0
     """
     match method:
         case 'fwhm':
-            dcol = dcol - dcol_bgr
-            dcol_c = dcol.isel(R=0).data[()]
-            idx = (dcol.data < 0.5*dcol_c).nonzero()[0]
+            rprf_dcol = rprf_dcol - dcol_bgr
+            dcol_c = rprf_dcol.isel(R=0).data[()]
+            idx = (rprf_dcol.data < 0.5*dcol_c).nonzero()[0]
             if len(idx) < 1:
                 raise ValueError(f"Core radius with method {method} cannot be found")
             else:
                 idx = idx[0]
-            rmax = dcol.R.isel(R=idx).data[()]
-            robs = utils.fwhm(interp1d(dcol.R.data[()], dcol.data),
+            rmax = rprf_dcol.R.isel(R=idx).data[()]
+            robs = utils.fwhm(interp1d(rprf_dcol.R.data[()], rprf_dcol.data),
                               rmax, which='column')
         case 'los':
             if rho_thr is None:
                 raise ValueError("rho_thr must be specified for los method")
-            rpos = obs_core_radius(dcol, 'fixed', fixed_thres=fixed_thres)
-            robs = (dcol.sel(R=slice(0, rpos)).weighted(dcol.R).mean()
+            rpos = obs_core_radius(rprf_dcol, 'fixed', fixed_thres=fixed_thres)
+            robs = (rprf_dcol.sel(R=slice(0, rpos)).weighted(rprf_dcol.R).mean()
                     / rho_thr / 4).data[()]
         case 'fixed':
-            dcol = dcol - dcol_bgr
-            dcol_c = dcol.isel(R=0).data[()]
-            idx = (dcol.data < fixed_thres*dcol_c).nonzero()[0]
+            rprf_dcol = rprf_dcol - dcol_bgr
+            dcol_c = rprf_dcol.isel(R=0).data[()]
+            idx = (rprf_dcol.data < fixed_thres*dcol_c).nonzero()[0]
             if len(idx) < 1:
                 raise ValueError(f"Core radius with method {method} cannot be found")
             else:
                 idx = idx[0]
-            xa = dcol.R.isel(R=idx-1).data[()]
-            xb = dcol.R.isel(R=idx).data[()]
-            dcol_itp = interp1d(dcol.R.data, dcol.data)
+            xa = rprf_dcol.R.isel(R=idx-1).data[()]
+            xb = rprf_dcol.R.isel(R=idx).data[()]
+            dcol_itp = interp1d(rprf_dcol.R.data, rprf_dcol.data)
             robs = brentq(lambda x: dcol_itp(x) - fixed_thres*dcol_c, xa, xb)
         case 'bgr':
-            idx = (dcol.data < dcol_bgr).nonzero()[0]
+            idx = (rprf_dcol.data < dcol_bgr).nonzero()[0]
             if len(idx) < 1:
                 raise ValueError(f"Core radius with method {method} cannot be found")
             else:
                 idx = idx[0]
-            xa = dcol.R.isel(R=idx-1).data[()]
-            xb = dcol.R.isel(R=idx).data[()]
-            dcol_itp = interp1d(dcol.R.data, dcol.data)
+            xa = rprf_dcol.R.isel(R=idx-1).data[()]
+            xb = rprf_dcol.R.isel(R=idx).data[()]
+            dcol_itp = interp1d(rprf_dcol.R.data, rprf_dcol.data)
             robs = brentq(lambda x: dcol_itp(x) - dcol_bgr, xa, xb)
     return robs
 
