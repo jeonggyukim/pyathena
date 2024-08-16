@@ -1299,7 +1299,7 @@ def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0
             dcol_c = dcol.isel(R=0).data[()]
             idx = (dcol.data < 0.5*dcol_c).nonzero()[0]
             if len(idx) < 1:
-                raise ValueError("FWHM radius cannot be found")
+                raise ValueError(f"Core radius with method {method} cannot be found")
             else:
                 idx = idx[0]
             rmax = dcol.R.isel(R=idx).data[()]
@@ -1316,13 +1316,23 @@ def obs_core_radius(dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0
             dcol_c = dcol.isel(R=0).data[()]
             idx = (dcol.data < fixed_thres*dcol_c).nonzero()[0]
             if len(idx) < 1:
-                raise ValueError("FWHM radius cannot be found")
+                raise ValueError(f"Core radius with method {method} cannot be found")
             else:
                 idx = idx[0]
             xa = dcol.R.isel(R=idx-1).data[()]
             xb = dcol.R.isel(R=idx).data[()]
             dcol_itp = interp1d(dcol.R.data, dcol.data)
             robs = brentq(lambda x: dcol_itp(x) - fixed_thres*dcol_c, xa, xb)
+        case 'bgr':
+            idx = (dcol.data < dcol_bgr).nonzero()[0]
+            if len(idx) < 1:
+                raise ValueError(f"Core radius with method {method} cannot be found")
+            else:
+                idx = idx[0]
+            xa = dcol.R.isel(R=idx-1).data[()]
+            xb = dcol.R.isel(R=idx).data[()]
+            dcol_itp = interp1d(dcol.R.data, dcol.data)
+            robs = brentq(lambda x: dcol_itp(x) - dcol_bgr, xa, xb)
     return robs
 
 
