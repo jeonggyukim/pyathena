@@ -774,20 +774,23 @@ def calculate_observables(s, core, rprf):
     xycenters = dict(z=[xc, yc],
                      x=[yc, zc],
                      y=[zc, xc])
+    nthr_list = [5, 10, 20, 30, 50, 100]
 
     # Simplest background subtraction -- average column in the whole box
-    dcol_bgr = s.rho0*s.Lbox
+    dcol_bgr0 = s.rho0*s.Lbox
 
+    # Observable properties from radial profiles,
+    # without any density thresholding.
+    # This is analogous to dust map.
     for i, ax in enumerate(['x', 'y', 'z']):
         dcol = rprf[f'{ax}_Sigma_gas']
         # Central column density
-        dcol_c = dcol.sel(R=0).data[()] - dcol_bgr
-        nthr_list = [5, 10, 20, 30, 50, 100]
+        dcol_c = dcol.sel(R=0).data[()] - dcol_bgr0
         obs_sigma, obs_radius = dict(), dict()
         try:
             # Calculate FWHM quantities
-            rfwhm = obs_core_radius(dcol, 'fwhm', dcol_bgr)
-            mfwhm = ((dcol - dcol_bgr)*2*np.pi*dcol.R
+            rfwhm = obs_core_radius(dcol, 'fwhm', dcol_bgr=dcol_bgr0)
+            mfwhm = ((dcol - dcol_bgr0)*2*np.pi*dcol.R
                      ).sel(R=slice(0, rfwhm)).integrate('R').data[()]
             dcol_fwhm = dcol.interp(R=rfwhm)
             mfwhm_bgrsub = ((dcol - dcol_fwhm)*2*np.pi*dcol.R
@@ -795,90 +798,61 @@ def calculate_observables(s, core, rprf):
             dfwhm = mfwhm / (4*np.pi*rfwhm**3/3)
         except ValueError:
             rfwhm = mfwhm = mfwhm_bgrsub = dfwhm = np.nan
-        # Calculate surface-density weighted average projected velocity
-        # dispersion, directly using the 2D map data
-        x1, x2 = xycoordnames[ax]
-        x1c, x2c = xycenters[ax]
-        for method in ['fwhm', 'los', 'fixed']:
-            obs_sigma[method] = dict()
-            obs_radius[method] = dict()
-            for nthr in nthr_list:
-                dcol = rprf[f'{ax}_Sigma_gas_nc{nthr}']
-                try:
-                    robs = obs_core_radius(dcol, method=method, rho_thr=nthr, fixed_thres=0.1)
-                    w = prj[ax][f'Sigma_gas_nc{nthr}'].copy(deep=True)
-                    ds = prj[ax][f'veldisp_nc{nthr}'].copy(deep=True)
-                    w, _ = recenter_dataset(w, {x1: x1c, x2: x2c})
-                    ds, new_center = recenter_dataset(ds, {x1: x1c, x2: x2c})
-                    ds.coords['R'] = np.sqrt((ds.coords[x1] -
-                                              new_center[x1])**2
-                                             + (ds.coords[x2] -
-                                                new_center[x2])**2)
-                    obs_radius[method][nthr] = robs
-                    obs_sigma[method][nthr]\
-                        = np.sqrt((ds.where(ds.R < robs)**2).weighted(w).mean()
-                                  ).data[()]
-                except ValueError:
-                    obs_radius[method][nthr] = np.nan
-                    obs_sigma[method][nthr] = np.nan
-
-        # Calculate the true line-of-sight length
-        rlos_true = dict()
-        rlos_mass_weighted = dict()
-        rhoavg_los = dict()
-        for nthr in nthr_list:
-            dens_3d.coords['R'] = np.sqrt((dens_3d.coords[x1] -
-                                           new_center_3d[x1])**2
-                                          + (dens_3d.coords[x2] -
-                                             new_center_3d[x2])**2)
-            robs = obs_radius['fixed'][nthr]
-            if np.isnan(robs):
-                rlos = np.nan
-                rlos_mw = np.nan
-                rhoavg = np.nan
-            else:
-                d3dthr = dens_3d.where(dens_3d > nthr, other=0)
-                dst = np.abs(dens_3d[ax] - new_center_3d[ax])
-                rlos_mw = dst.where((dens_3d > nthr) & (dens_3d.R < robs)
-                                    ).weighted(d3dthr).mean().data[()]
-                rho_los = d3dthr.where(dens_3d.R < rfwhm).mean([x1, x2])
-                try:
-                    rho_itp = interp1d(rho_los[ax].data, rho_los.data)
-                    idx = np.nonzero(((rho_los[ax] >= 0) &
-                                      (rho_los < nthr)).data)[0][0]
-                    xa = rho_los[ax].data[idx-1]
-                    xb = rho_los[ax].data[idx]
-                    x3u = brentq(lambda x: rho_itp(x) - nthr, xa, xb)
-                    idx = np.nonzero(((rho_los[ax] < 0) &
-                                      (rho_los < nthr)).data)[0][-1]
-                    xa = rho_los[ax].data[idx]
-                    xb = rho_los[ax].data[idx+1]
-                    x3l = brentq(lambda x: rho_itp(x) - nthr, xa, xb)
-                    rlos = 0.5*(x3u - x3l)
-                    rhoavg = rho_los.sel({ax: slice(x3l, x3u)}).mean().data[()]
-                except (ValueError, IndexError):
-                    rlos = np.nan
-                    rhoavg = np.nan
-            rlos_true[nthr] = rlos
-            rlos_mass_weighted[nthr] = rlos_mw
-            rhoavg_los[nthr] = rhoavg
-
         obsprops[f'{ax}_radius'] = rfwhm
         obsprops[f'{ax}_mass'] = mfwhm
         obsprops[f'{ax}_mass_bgrsub'] = mfwhm_bgrsub
         obsprops[f'{ax}_mean_density'] = dfwhm
         obsprops[f'{ax}_center_column_density'] = dcol_c
-        for method in ['fwhm', 'los', 'fixed']:
-            for nthr in nthr_list:
-                obsprops[f'{ax}_obs_radius_{method}_nc{nthr}']\
-                    = obs_radius[method][nthr]
-                obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}']\
-                    = obs_sigma[method][nthr]
-        for nthr in nthr_list:
-            obsprops[f'{ax}_radius_los_nc{nthr}'] = rlos_true[nthr]
-            obsprops[f'{ax}_radius_los_mw_nc{nthr}'] = rlos_mass_weighted[nthr]
-            obsprops[f'{ax}_mean_density_los_nc{nthr}'] = rhoavg_los[nthr]
 
+
+    # Observable properties using density thresholding.
+    # Analogous to molecular line observations.
+    for i, ax in enumerate(['x', 'y', 'z']):
+        x1, x2 = xycoordnames[ax]
+        x1c, x2c = xycenters[ax]
+        dens_3d.coords['R'] = np.sqrt((dens_3d.coords[x1] -
+                                       new_center_3d[x1])**2
+                                      + (dens_3d.coords[x2] -
+                                         new_center_3d[x2])**2)
+        for nthr in nthr_list:
+            # POS FWHM radius
+            dcol_prf = rprf[f'{ax}_Sigma_gas_nc{nthr}']
+            d3dthr = dens_3d.where(dens_3d > nthr, other=0)
+            try:
+                rfwhm = obs_core_radius(dcol_prf, method='fwhm')
+            except:
+                rfwhm = np.nan
+
+            # POS radius using background thresholding
+            dcol_map = prj[ax][f'Sigma_gas_nc{nthr}'].copy(deep=True)
+            dv_map = prj[ax][f'veldisp_nc{nthr}'].copy(deep=True)
+            dcol_map, _ = recenter_dataset(dcol_map, {x1: x1c, x2: x2c})
+            dv_map, new_center = recenter_dataset(dv_map, {x1: x1c, x2: x2c})
+            rpos = np.sqrt((dv_map.coords[x1] - new_center[x1])**2
+                           + (dv_map.coords[x2] - new_center[x2])**2)
+            dcol_bgr = dcol_bgr0*s.mfrac_above(nthr/s.rho0)
+            rmax = rpos.where(dcol_map < dcol_bgr).min().data[()]
+            # Loop over different plane-of-sky radius definitions
+            for rcore_pos, method in zip([rfwhm, rmax], ['fwhm', 'background']):
+                obsprops[f'{ax}_pos_radius_{method}_nc{nthr}'] = rcore_pos
+                if np.isfinite(rcore_pos):
+                    obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}'] =\
+                        np.sqrt((dv_map.where(rpos < rcore_pos)**2
+                                 ).weighted(dcol_map).mean()).data[()]
+
+                    # True line-of-sight distance
+                    los_dst = np.abs(dens_3d.coords[ax] - new_center_3d[ax])
+                    rlos_true = los_dst.where(dens_3d.R < rcore_pos
+                                              ).weighted(d3dthr).mean().data[()]
+                    obsprops[f'{ax}_los_radius_{method}_nc{nthr}'] = rlos_true
+
+
+                    obsprops[f'{ax}_mean_column_density_{method}_nc{nthr}']\
+                            = dcol_prf.sel(R=slice(0, rcore_pos)).weighted(dcol_prf.R).mean().data[()]
+                else:
+                    obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}'] = np.nan
+                    obsprops[f'{ax}_los_radius_{method}_nc{nthr}'] = np.nan
+                    obsprops[f'{ax}_mean_column_density_{method}_nc{nthr}'] = np.nan
     return obsprops
 
 
@@ -1278,7 +1252,7 @@ def reff_sph(vol):
     return fac*vol**(1/3)
 
 
-def obs_core_radius(rprf_dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_thres=0.2):
+def obs_core_radius(rprf_dcol, method='fwhm', dcol_bgr=0):
     """Observational core radius
 
     The radius at which the column density drops by 10% of the
@@ -1305,25 +1279,7 @@ def obs_core_radius(rprf_dcol, method='fwhm', dcol_bgr=0, rho_thr=None, fixed_th
             rmax = rprf_dcol.R.isel(R=idx).data[()]
             robs = utils.fwhm(interp1d(rprf_dcol.R.data[()], rprf_dcol.data),
                               rmax, which='column')
-        case 'los':
-            if rho_thr is None:
-                raise ValueError("rho_thr must be specified for los method")
-            rpos = obs_core_radius(rprf_dcol, 'fixed', fixed_thres=fixed_thres)
-            robs = (rprf_dcol.sel(R=slice(0, rpos)).weighted(rprf_dcol.R).mean()
-                    / rho_thr / 4).data[()]
-        case 'fixed':
-            rprf_dcol = rprf_dcol - dcol_bgr
-            dcol_c = rprf_dcol.isel(R=0).data[()]
-            idx = (rprf_dcol.data < fixed_thres*dcol_c).nonzero()[0]
-            if len(idx) < 1:
-                raise ValueError(f"Core radius with method {method} cannot be found")
-            else:
-                idx = idx[0]
-            xa = rprf_dcol.R.isel(R=idx-1).data[()]
-            xb = rprf_dcol.R.isel(R=idx).data[()]
-            dcol_itp = interp1d(rprf_dcol.R.data, rprf_dcol.data)
-            robs = brentq(lambda x: dcol_itp(x) - fixed_thres*dcol_c, xa, xb)
-        case 'bgr':
+        case 'background':
             idx = (rprf_dcol.data < dcol_bgr).nonzero()[0]
             if len(idx) < 1:
                 raise ValueError(f"Core radius with method {method} cannot be found")
