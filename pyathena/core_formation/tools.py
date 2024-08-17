@@ -757,24 +757,30 @@ def calculate_accelerations(rprf):
 
 def calculate_observables(s, core, rprf):
     """Calculate observable properties of a core"""
-
+    nthr_list = [5, 10, 20, 30, 50, 100]
     num = core.name
     obsprops = dict()
     obsprops['num'] = num
-
-    # Prepare for projection map
-    # See `calculate_prj_radial_profile`
+    prj = s.read_prj(num)
     xc, yc, zc = get_coords_node(s, core.leaf_id)
-    prj = s.read_prj(core.name)
-    dens_3d = s.load_hdf5(num, quantities=['dens']).dens
-    dens_3d, new_center_3d = recenter_dataset(dens_3d, dict(x=xc, y=yc, z=zc))
     xycoordnames = dict(z=['x', 'y'],
                         x=['y', 'z'],
                         y=['z', 'x'])
     xycenters = dict(z=[xc, yc],
                      x=[yc, zc],
                      y=[zc, xc])
-    nthr_list = [5, 10, 20, 30, 50, 100]
+
+    # Read 3d data cube
+    dens_3d = s.load_hdf5(num, quantities=['dens']).dens
+    dens_3d, new_center_3d = recenter_dataset(dens_3d, dict(x=xc, y=yc, z=zc))
+    for i, ax in enumerate(['x', 'y', 'z']):
+        x1, x2 = xycoordnames[ax]
+        x1c, x2c = xycenters[ax]
+        dens_3d.coords[f'{ax}_rpos'] = np.sqrt((dens_3d.coords[x1] -
+                                                new_center_3d[x1])**2
+                                               + (dens_3d.coords[x2] -
+                                                  new_center_3d[x2])**2)
+        dens_3d.coords[f'{ax}_rlos'] = np.abs(dens_3d.coords[ax] - new_center_3d[ax])
 
     # Simplest background subtraction -- average column in the whole box
     dcol_bgr0 = s.rho0*s.Lbox
@@ -807,17 +813,14 @@ def calculate_observables(s, core, rprf):
 
     # Observable properties using density thresholding.
     # Analogous to molecular line observations.
-    for i, ax in enumerate(['x', 'y', 'z']):
-        x1, x2 = xycoordnames[ax]
-        x1c, x2c = xycenters[ax]
-        dens_3d.coords['R'] = np.sqrt((dens_3d.coords[x1] -
-                                       new_center_3d[x1])**2
-                                      + (dens_3d.coords[x2] -
-                                         new_center_3d[x2])**2)
-        for nthr in nthr_list:
+    for nthr in nthr_list:
+        d3dthr = dens_3d.where(dens_3d > nthr, other=0)
+        for i, ax in enumerate(['x', 'y', 'z']):
+            x1, x2 = xycoordnames[ax]
+            x1c, x2c = xycenters[ax]
+
             # POS FWHM radius
             dcol_prf = rprf[f'{ax}_Sigma_gas_nc{nthr}']
-            d3dthr = dens_3d.where(dens_3d > nthr, other=0)
             try:
                 rfwhm = obs_core_radius(dcol_prf, method='fwhm')
             except:
@@ -832,6 +835,7 @@ def calculate_observables(s, core, rprf):
                            + (dv_map.coords[x2] - new_center[x2])**2)
             dcol_bgr = dcol_bgr0*s.mfrac_above(nthr/s.rho0)
             rmax = rpos.where(dcol_map < dcol_bgr).min().data[()]
+
             # Loop over different plane-of-sky radius definitions
             for rcore_pos, method in zip([rfwhm, rmax], ['fwhm', 'background']):
                 obsprops[f'{ax}_pos_radius_{method}_nc{nthr}'] = rcore_pos
@@ -841,12 +845,11 @@ def calculate_observables(s, core, rprf):
                                  ).weighted(dcol_map).mean()).data[()]
 
                     # True line-of-sight distance
-                    los_dst = np.abs(dens_3d.coords[ax] - new_center_3d[ax])
-                    rlos_true = los_dst.where(dens_3d.R < rcore_pos
-                                              ).weighted(d3dthr).mean().data[()]
+                    rlos_crd = dens_3d.coords[f'{ax}_rlos']
+                    rpos_crd = dens_3d.coords[f'{ax}_rpos']
+                    rlos_true = rlos_crd.where(rpos_crd < rcore_pos
+                                               ).weighted(d3dthr).mean().data[()]
                     obsprops[f'{ax}_los_radius_{method}_nc{nthr}'] = rlos_true
-
-
                     obsprops[f'{ax}_mean_column_density_{method}_nc{nthr}']\
                             = dcol_prf.sel(R=slice(0, rcore_pos)).weighted(dcol_prf.R).mean().data[()]
                 else:
