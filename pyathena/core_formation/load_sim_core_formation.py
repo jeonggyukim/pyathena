@@ -172,7 +172,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                       'mass_cgs': MJ0.cgs.value,
                       'length_cgs': LJ0.cgs.value,
                       'time_cgs': tJ0.cgs.value,
-                      'mean_mass_per_hydrogen': muH}
+                      'mean_mass_per_hydrogen': (muH*mH).cgs.value}
         self.u = Units('custom', units_dict=units_dict)
 
 
