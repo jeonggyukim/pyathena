@@ -167,7 +167,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         LJ0 = np.sqrt(np.pi*cs**2/(ac.G*rho0)).to('pc')
         MJ0 = (rho0*LJ0**3).to('Msun')
         tJ0 = (LJ0/cs).to('Myr')
-        units_dict = {'unit_system': 'ism',
+        units_dict = {'unit_system': 'cloud',
                       'mass_cgs': MJ0.cgs.value,
                       'length_cgs': LJ0.cgs.value,
                       'time_cgs': tJ0.cgs.value,
@@ -274,8 +274,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             else:
                 cores.attrs['resolved'] = False
 
-            if cores.attrs['resolved'] and cores.attrs['isolated']:
-                # Lines below are executed only for resolved and isolated cores.
+            # Load Lagrangian props
+            if tools.test_resolved_core(self, cores, ncells_min//2) and cores.attrs['isolated']:
                 fname = Path(self.savdir, 'cores', f'lprops_ver{method}.par{pid}.p')
                 if fname.exists():
                     lprops = pd.read_pickle(fname).sort_index()
@@ -288,6 +288,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     cores = cores.join(lprops)
                     # Reattach attributes
                     cores.attrs = attrs
+
+            # Lines below are executed only for resolved and isolated cores.
+            if cores.attrs['resolved'] and cores.attrs['isolated']:
 
                 mcore = cores.attrs['mcore']
                 rcore = cores.attrs['rcore']
