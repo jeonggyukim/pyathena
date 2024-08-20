@@ -815,7 +815,7 @@ def calculate_observables(s, core, rprf):
     # Analogous to molecular line observations.
     for nthr in nthr_list:
         d3dthr = dens_3d.where(dens_3d > nthr, other=0)
-        for i, ax in enumerate(['x', 'y', 'z']):
+        for ax in ['x', 'y', 'z']:
             x1, x2 = xycoordnames[ax]
             x1c, x2c = xycenters[ax]
 
