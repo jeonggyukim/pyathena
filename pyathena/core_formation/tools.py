@@ -839,10 +839,11 @@ def calculate_observables(s, core, rprf):
             # POS radius using filling factor thresholding
             afrac_thres = 0.5
             flag = xr.where(dcol_map > dcol_bgr, 1, 0)
+            flag.coords['R'] = dens_3d.coords[f'{ax}_rpos']
             ledge = 0.5*s.dx
             nbin = s.domain['Nx'][0]//2 - 1
             redge = (nbin + 0.5)*s.dx
-            afrac = pa.util.transform.fast_groupby_bins(flag, 'R', ledge, redge, nbin)
+            afrac = transform.fast_groupby_bins(flag, 'R', ledge, redge, nbin)
             xb = afrac.R.data[afrac < afrac_thres][0]
             xa = xb - s.dx
             rmax2 = brentq(lambda x: interp1d(afrac.R.data, afrac.data)(x) - afrac_thres, xa, xb)
