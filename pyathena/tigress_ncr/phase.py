@@ -21,7 +21,7 @@ def print_red(txt):
 
 
 # recalculate PDFs with finer bins
-def recal_nP(dchunk, yf="pok", NCR=True):
+def recal_nP(dchunk, xf="nH", yf="pok", NCR=True, Nx=601, Ny=501):
     dset = xr.Dataset()
     alist = [None]
     if NCR:
@@ -31,8 +31,11 @@ def recal_nP(dchunk, yf="pok", NCR=True):
         wlist += ["net_cool_rate"]
     for xs in alist:
         for wf in wlist:
-            xbins = np.logspace(-6, 6, 601)
-            ybins = np.logspace(0, 10, 501)
+            if xf == "nH":
+                xbins = np.logspace(-6, 6, Nx)
+            elif xf == "T":
+                xbins = np.logspace(1, 8, Nx)
+            ybins = np.logspace(0, 10, Ny)
             if xs is None:
                 cond = dchunk["nH"] > 0.0
             elif xs == "xHI":
@@ -47,22 +50,22 @@ def recal_nP(dchunk, yf="pok", NCR=True):
                 cond = dchunk["xe"] > 0.9
 
             x = (
-                dchunk["nH"]
+                dchunk[xf]
                 .where(cond)
-                .stack(xyz=["x", "y", "z"])
-                .dropna(dim="xyz")
-                .data
+                # .stack(xyz=["x", "y", "z"])
+                # .dropna(dim="xyz")
+                .data.flatten()
             )
-            y = dchunk[yf].where(cond).stack(xyz=["x", "y", "z"]).dropna(dim="xyz").data
+            y = dchunk[yf].where(cond).data.flatten()#stack(xyz=["x", "y", "z"]).dropna(dim="xyz").data
             if wf == "vol":
                 w = None
             else:
                 w = (
                     dchunk[wf]
                     .where(cond)
-                    .stack(xyz=["x", "y", "z"])
-                    .dropna(dim="xyz")
-                    .data
+                    # .stack(xyz=["x", "y", "z"])
+                    # .dropna(dim="xyz")
+                    .data.flatten()
                 )
             h, b1, b2 = np.histogram2d(x, y, weights=w, bins=[xbins, ybins])
             dx = np.log10(b1[1] / b1[0])
@@ -80,7 +83,7 @@ def recal_nP(dchunk, yf="pok", NCR=True):
             da = xr.DataArray(
                 pdf,
                 coords=[0.5 * (ybins[1:] + ybins[:-1]), 0.5 * (xbins[1:] + xbins[:-1])],
-                dims=[yf, "n_H"],
+                dims=[yf, "n_H" if xf == "nH" else xf],
             )
             dset["{}-{}".format("all" if xs is None else xs, wf)] = da
             dset = dset.assign_coords({wf: total})

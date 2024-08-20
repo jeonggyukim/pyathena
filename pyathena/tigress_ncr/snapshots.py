@@ -12,6 +12,20 @@ import numpy as np
 import pyathena as pa
 import pandas as pd
 
+Plabels = {
+    "Ptot": r"${P}_{\rm tot}$",
+    "Pth": r"${P}_{\rm th}$",
+    "Pturb": r"${P}_{\rm turb}$",
+    "Pmag": r"${P}_{\rm mag}$",
+    "Pimag": r"${\Pi}_{\rm mag}$",
+    "dPimag": r"${\Pi}_{\delta B}$",
+    "oPimag": r"${\Pi}_{\overline{B}}$",
+    "W": r"$\mathcal{W}$",
+    "Wext": r"$\mathcal{W}_{\rm ext}$",
+    "Wsg": r"$\mathcal{W}_{\rm sg}$",
+    "PDE": r"$P_{\rm DE}$",
+    "Prad": r"$\Delta P_{\rm rad}$",
+}
 
 def decorate_ax(text, ax, iscbar=False):
     if iscbar:
@@ -98,6 +112,13 @@ def set_my_dfi(dfi):
         cmr.get_sub_cmap(cmr.fusion, 0.1, 0.9),
     )
     my_dfi["Uion"] = add_dfi(r"$U_{\rm ion}$", LogNorm(1.0e-6, 1.0e-2), cmr.dusk)
+    Punit_label = r"$/k_B\,[{\rm cm^{-3}\,K}]$"
+    for P in ["Pth","Pturb","Pimag","Pmag","Ptot"]:
+        my_dfi[P] = add_dfi(Plabels[P]+Punit_label,
+            LogNorm(vmin=1.e2, vmax=1.e6),cmr.ember
+        )
+
+
     return my_dfi
 
 

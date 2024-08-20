@@ -17,9 +17,9 @@ from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigress_ncr.phase import PDF1D, recal_nP, recal_xT
 from pyathena.tigress_ncr.cooling_breakdown import draw_Tpdf
 
-from memory_profiler import profile
+#from memory_profiler import profile
 
-@profile
+#@profile
 def process_one_file_phase(s, num):
     npfile = os.path.join(
         s.basedir, "np_pdf", "{}.{:04d}.np_pdf-z300.nc".format(s.basename, num)
@@ -86,7 +86,7 @@ def process_tar(s):
         s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
     return s
 
-@profile
+#@profile
 def process_one_file_slc_prj(s, num):
     try:
         if s.test_newcool():

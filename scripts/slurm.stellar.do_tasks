@@ -4,9 +4,9 @@
 #SBATCH --ntasks=24              # total number of tasks
 ##SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=06:00:00          # total run time limit (HH:MM:SS)
-#SBATCH --mem=1500G
-#SBATCH --partition=bigmem
+#SBATCH --time=00:30:00          # total run time limit (HH:MM:SS)
+##SBATCH --mem=1500G
+##SBATCH --partition=bigmem
 
 module purge
 # module load anaconda3/2020.11 openmpi/gcc/4.1.0

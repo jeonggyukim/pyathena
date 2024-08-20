@@ -1756,6 +1756,20 @@ class athena_data(object):
         elif field == "phase":
             self.data[field] = assign_phase(self.sim, self, kind="six")
             return self.data[field]
+        elif field == "Pth":
+            return self.data["pressure"]*self.sim.u.pok
+        elif field == "Pturb":
+            Pturb = self.data["density"]*self.data["velocity3"]**2
+            return Pturb*self.sim.u.pok
+        elif field == "Pmag":
+            Pmag = 0.5*(self.data["cell_centered_B1"]**2+self.data["cell_centered_B2"]**2+self.data["cell_centered_B3"]**2)
+            return Pmag*self.sim.u.pok
+        elif field == "Pimag":
+            Pimag = 0.5*(self.data["cell_centered_B1"]**2+self.data["cell_centered_B2"]**2-self.data["cell_centered_B3"]**2)
+            return Pimag*self.sim.u.pok
+        elif field == "Ptot":
+            Ptot = self['Pth']+self['Pturb']+self['Pimag']
+            return Ptot
         else:
             raise KeyError("{} is not available".format(field))
 
