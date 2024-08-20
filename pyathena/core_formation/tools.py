@@ -757,7 +757,7 @@ def calculate_accelerations(rprf):
 
 def calculate_observables(s, core, rprf):
     """Calculate observable properties of a core"""
-    nthr_list = [5, 10, 20, 30, 50, 100]
+    nthr_list = [10, 30, 100]
     num = core.name
     obsprops = dict()
     obsprops['num'] = num
@@ -836,8 +836,19 @@ def calculate_observables(s, core, rprf):
             dcol_bgr = dcol_bgr0*s.mfrac_above(nthr/s.rho0)
             rmax = rpos.where(dcol_map < dcol_bgr).min().data[()]
 
+            # POS radius using filling factor thresholding
+            afrac_thres = 0.5
+            flag = xr.where(dcol_map > dcol_bgr, 1, 0)
+            ledge = 0.5*s.dx
+            nbin = s.domain['Nx'][0]//2 - 1
+            redge = (nbin + 0.5)*s.dx
+            afrac = pa.util.transform.fast_groupby_bins(flag, 'R', ledge, redge, nbin)
+            xb = afrac.R.data[afrac < afrac_thres][0]
+            xa = xb - s.dx
+            rmax2 = brentq(lambda x: interp1d(afrac.R.data, afrac.data)(x) - afrac_thres, xa, xb)
+
             # Loop over different plane-of-sky radius definitions
-            for rcore_pos, method in zip([rfwhm, rmax], ['fwhm', 'background']):
+            for rcore_pos, method in zip([rfwhm, rmax, rmax2], ['fwhm', 'background', 'filling']):
                 obsprops[f'{ax}_pos_radius_{method}_nc{nthr}'] = rcore_pos
                 if np.isfinite(rcore_pos):
                     obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}'] =\
