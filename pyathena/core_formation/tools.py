@@ -868,7 +868,10 @@ def calculate_observables(s, core, rprf):
                     arr = arr.transpose('z', 'y', 'x').data
                     msk = msk.transpose('z', 'y', 'x').data
                     wgt = wgt.transpose('z', 'y', 'x').data
-                    rlos_true = np.average(arr[msk], weights=wgt[msk])
+                    try:
+                        rlos_true = np.average(arr[msk], weights=wgt[msk])
+                    except ZeroDivisionError:
+                        rlos_true = np.nan
 #                    rlos_true = rlos_crd.where(rpos_crd < rcore_pos
 #                                               ).weighted(d3dthr).mean().data[()]
                     obsprops[f'{ax}_los_radius_{method}_nc{nthr}'] = rlos_true
