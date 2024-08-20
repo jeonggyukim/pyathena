@@ -675,22 +675,25 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
     else:
         raise ValueError("Provide either seed or pid")
 
-    d, origin = tools.recenter_dataset(ds, origin)
-    d.coords['r'] = np.sqrt((d.z - origin[2])**2 + (d.y - origin[1])**2 + (d.x - origin[0])**2)
+    d, origin = tools.recenter_dataset(ds, dict(x=origin[0], y=origin[1], z=origin[2]))
+    d.coords['r'] = np.sqrt((d.z - origin['z'])**2 + (d.y - origin['y'])**2 + (d.x - origin['x'])**2)
 
     rmax = s.Lbox/2
-    nmax = np.floor(rmax/s.dx) + 1
-    edges = np.insert(np.arange(s.dx/2, (nmax + 1)*s.dx, s.dx), 0, 0)
-    d = d.sel(x=slice(origin[0] - edges[-1], origin[0] + edges[-1]),
-              y=slice(origin[1] - edges[-1], origin[1] + edges[-1]),
-              z=slice(origin[2] - edges[-1], origin[2] + edges[-1]))
+
+    nbin = int(np.ceil(rmax/s.dx))
+    ledge = 0.5*s.dx
+    redge = (nbin + 0.5)*s.dx
 
     rprf = {}
     for k in ['vel1', 'vel2', 'vel3']:
-        rprf[k] = transform.groupby_bins(d[k], 'r', edges, cumulative=True)
-        rprf[k+'_sq'] = transform.groupby_bins(d[k]**2, 'r', edges, cumulative=True)
-        rprf['d'+k] = np.sqrt(rprf[k+'_sq'] - rprf[k]**2)
-    rprf['rho'] = transform.groupby_bins(d['dens'], 'r', edges, cumulative=True)
+        rprf[k] = transform.fast_groupby_bins(d[k], 'r', ledge, redge, nbin, cumulative=False)
+        rprf[f'{k}_sq'] = transform.fast_groupby_bins(d[k]**2, 'r', ledge, redge, nbin, cumulative=False)
+        rprf[f'd{k}'] = np.sqrt(rprf[f'{k}_sq'] - rprf[k]**2)
+        rprf[f'{k}_cum'] = transform.fast_groupby_bins(d[k], 'r', ledge, redge, nbin, cumulative=True)
+        rprf[f'{k}_sq_cum'] = transform.fast_groupby_bins(d[k]**2, 'r', ledge, redge, nbin, cumulative=True)
+        rprf[f'd{k}_cum'] = np.sqrt(rprf[f'{k}_sq_cum'] - rprf[f'{k}_cum']**2)
+    rprf['rho'] = transform.fast_groupby_bins(d['dens'], 'r', ledge, redge, nbin, cumulative=False)
+    rprf['rho_cum'] = transform.fast_groupby_bins(d['dens'], 'r', ledge, redge, nbin, cumulative=True)
     rprf = xr.Dataset(rprf)
 
     # write to file
