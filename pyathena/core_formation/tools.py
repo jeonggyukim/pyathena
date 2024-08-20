@@ -858,8 +858,15 @@ def calculate_observables(s, core, rprf):
                     # True line-of-sight distance
                     rlos_crd = dens_3d.coords[f'{ax}_rlos']
                     rpos_crd = dens_3d.coords[f'{ax}_rpos']
-                    rlos_true = rlos_crd.where(rpos_crd < rcore_pos
-                                               ).weighted(d3dthr).mean().data[()]
+                    # Optimized numpy operation using broadcast; almost order of faster than
+                    # built-in xarray weighted average which is commented out.
+                    arr, msk, wgt = xr.broadcast(rlos_crd, rpos_crd < rcore_pos, d3dthr)
+                    arr = arr.transpose('z', 'y', 'x').data
+                    msk = msk.transpose('z', 'y', 'x').data
+                    wgt = wgt.transpose('z', 'y', 'x').data
+                    rlos_true = np.average(arr[msk], weights=wgt[msk])
+#                    rlos_true = rlos_crd.where(rpos_crd < rcore_pos
+#                                               ).weighted(d3dthr).mean().data[()]
                     obsprops[f'{ax}_los_radius_{method}_nc{nthr}'] = rlos_true
                     obsprops[f'{ax}_mean_column_density_{method}_nc{nthr}']\
                             = dcol_prf.sel(R=slice(0, rcore_pos)).weighted(dcol_prf.R).mean().data[()]
