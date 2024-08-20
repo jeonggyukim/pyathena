@@ -846,7 +846,10 @@ def calculate_observables(s, core, rprf):
             afrac = transform.fast_groupby_bins(flag, 'R', ledge, redge, nbin)
             xb = afrac.R.data[afrac < afrac_thres][0]
             xa = xb - s.dx
-            rmax2 = brentq(lambda x: interp1d(afrac.R.data, afrac.data)(x) - afrac_thres, xa, xb)
+            try:
+                rmax2 = brentq(lambda x: interp1d(afrac.R.data, afrac.data)(x) - afrac_thres, xa, xb)
+            except ValueError:
+                rmax2 = np.nan
 
             # Loop over different plane-of-sky radius definitions
             for rcore_pos, method in zip([rfwhm, rmax, rmax2], ['fwhm', 'background', 'filling']):
