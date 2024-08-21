@@ -203,7 +203,7 @@ if __name__ == "__main__":
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.linewidth_size:
-            for num in [30, 40, 50, 60]:
+            for num in [74]:
                 ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'])
                 ds['vel1'] = ds.mom1/ds.dens
                 ds['vel2'] = ds.mom2/ds.dens
@@ -213,16 +213,16 @@ if __name__ == "__main__":
                 with Pool(args.np) as p:
                     p.map(wrapper, np.arange(1000))
 
-                def wrapper2(pid):
-                    tasks.calculate_linewidth_size(s, num, pid=pid, overwrite=args.overwrite, ds=ds)
-                with Pool(args.np) as p:
-                    p.map(wrapper2, s.good_cores())
+#                def wrapper2(pid):
+#                    tasks.calculate_linewidth_size(s, num, pid=pid, overwrite=args.overwrite, ds=ds)
+#                with Pool(args.np) as p:
+#                    p.map(wrapper2, s.good_cores())
 
-            def wrapper2(pid):
-                ncrit = s.cores[pid].attrs['numcrit']
-                tasks.calculate_linewidth_size(s, ncrit, pid=pid, overwrite=args.overwrite)
-            with Pool(args.np) as p:
-                p.map(wrapper2, s.good_cores())
+#            def wrapper2(pid):
+#                ncrit = s.cores[pid].attrs['numcrit']
+#                tasks.calculate_linewidth_size(s, ncrit, pid=pid, overwrite=args.overwrite)
+#            with Pool(args.np) as p:
+#                p.map(wrapper2, s.good_cores())
 
         # make plots
         if args.plot_core_evolution:
