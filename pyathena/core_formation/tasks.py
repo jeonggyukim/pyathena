@@ -652,6 +652,9 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
         if num not in s.cores[pid].index:
             print(f'[linewidth_size] {num} is not in the snapshot list of core {pid}')
             return
+        elif num > s.cores[pid].attrs['numcoll']:
+            print(f'[linewidth_size] core {pid} is protostellar at snapshot {num}')
+            return
 
         # Check if file exists
         ofname = Path(s.savdir, 'linewidth_size',
@@ -686,14 +689,10 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
 
     rprf = {}
     for k in ['vel1', 'vel2', 'vel3']:
-        rprf[k] = transform.fast_groupby_bins(d[k], 'r', ledge, redge, nbin, cumulative=False)
-        rprf[f'{k}_sq'] = transform.fast_groupby_bins(d[k]**2, 'r', ledge, redge, nbin, cumulative=False)
+        rprf[k] = transform.fast_groupby_bins(d[k], 'r', ledge, redge, nbin, cumulative=True)
+        rprf[f'{k}_sq'] = transform.fast_groupby_bins(d[k]**2, 'r', ledge, redge, nbin, cumulative=True)
         rprf[f'd{k}'] = np.sqrt(rprf[f'{k}_sq'] - rprf[k]**2)
-        rprf[f'{k}_cum'] = transform.fast_groupby_bins(d[k], 'r', ledge, redge, nbin, cumulative=True)
-        rprf[f'{k}_sq_cum'] = transform.fast_groupby_bins(d[k]**2, 'r', ledge, redge, nbin, cumulative=True)
-        rprf[f'd{k}_cum'] = np.sqrt(rprf[f'{k}_sq_cum'] - rprf[f'{k}_cum']**2)
-    rprf['rho'] = transform.fast_groupby_bins(d['dens'], 'r', ledge, redge, nbin, cumulative=False)
-    rprf['rho_cum'] = transform.fast_groupby_bins(d['dens'], 'r', ledge, redge, nbin, cumulative=True)
+    rprf['rho'] = transform.fast_groupby_bins(d['dens'], 'r', ledge, redge, nbin, cumulative=True)
     rprf = xr.Dataset(rprf)
 
     # write to file
