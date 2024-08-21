@@ -390,6 +390,7 @@ class AthenaDataSet(object):
             attrs = dict()
             for k, v in self.domain.items():
                 attrs[k] = v
+                attrs['num'] = self.num
             return xr.Dataset(dat, coords=coords, attrs=attrs)
         else:
             if len(field) == 1:
