@@ -32,6 +32,12 @@ Sometimes `yt` and other installed packages (e.g., numpy) may have compatibility
 conda install -c conda-forge numpy=1.26.4
 ```
 
+To update the existing pyathena environment with an updated env.yml file
+```sh
+conda activate pyathena
+conda env update --file env.yml --prune
+```
+
 ## Example Usage
 
 See example [notebooks](notebook).

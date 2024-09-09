@@ -10,8 +10,10 @@ from pathlib import Path
 from pyathena.util import transform
 from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import config
-from turb_sphere import utils, tes
-
+try:
+    from turb_sphere import utils, tes
+except ModuleNotFoundError:
+    pass
 
 class LognormalPDF:
     """Lognormal probability distribution function"""

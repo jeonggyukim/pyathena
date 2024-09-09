@@ -1,5 +1,8 @@
 from pathlib import Path
-from pygc.pot import MHubble, Plummer
+try:
+    from pygc.pot import MHubble, Plummer
+except ModuleNotFoundError:
+    pass
 import numpy as np
 import pandas as pd
 import xarray as xr
