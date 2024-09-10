@@ -995,36 +995,36 @@ class LoadSim(object):
 
         # Find zprof files
         # Multiple zprof files for each snapshot.
-        if 'zprof' in self.out_fmt:
-            fzprof = self._find_match(zprof_patterns)
-            if fzprof:
-                self.files['zprof'] = fzprof
-                self.nums_zprof = dict()
-                self.phase = []
-                for f in self.files['zprof']:
-                    _, num, ph, _ = osp.basename(f).split('.')[-4:]
-                    try:
-                        self.nums_zprof[ph].append(int(num))
-                    except KeyError:
-                        self.phase.append(ph)
-                        self.nums_zprof[ph] = []
-                        self.nums_zprof[ph].append(int(num))
+        # if 'zprof' in self.out_fmt:
+        fzprof = self._find_match(zprof_patterns)
+        if fzprof:
+            self.files['zprof'] = fzprof
+            self.nums_zprof = dict()
+            self.phase = []
+            for f in self.files['zprof']:
+                _, num, ph, _ = osp.basename(f).split('.')[-4:]
+                try:
+                    self.nums_zprof[ph].append(int(num))
+                except KeyError:
+                    self.phase.append(ph)
+                    self.nums_zprof[ph] = []
+                    self.nums_zprof[ph].append(int(num))
 
-                # Check if number of files for each phase matches
-                num = [len(self.nums_zprof[ph]) for ph in self.nums_zprof.keys()]
-                if not all(num):
-                    self.logger.warning('Number of zprof files doesn\'t match.')
-                    self.logger.warning(', '.join(['{0:s}: {1:d}'.format(ph, \
-                        len(self.nums_zprof[ph])) for ph in self.phase][:-1]))
-                else:
-                    self.logger.info('zprof: {0:s} nums: {1:d}-{2:d}'.format(
-                    osp.dirname(self.files['zprof'][0]),
-                    self.nums_zprof[self.phase[0]][0],
-                    self.nums_zprof[self.phase[0]][-1]))
-
+            # Check if number of files for each phase matches
+            num = [len(self.nums_zprof[ph]) for ph in self.nums_zprof.keys()]
+            if not all(num):
+                self.logger.warning('Number of zprof files doesn\'t match.')
+                self.logger.warning(', '.join(['{0:s}: {1:d}'.format(ph, \
+                    len(self.nums_zprof[ph])) for ph in self.phase][:-1]))
             else:
-                self.logger.warning(
-                    'zprof files not found in {0:s}.'.format(self.basedir))
+                self.logger.info('zprof: {0:s} nums: {1:d}-{2:d}'.format(
+                osp.dirname(self.files['zprof'][0]),
+                self.nums_zprof[self.phase[0]][0],
+                self.nums_zprof[self.phase[0]][-1]))
+
+        else:
+            self.logger.warning(
+                'zprof files not found in {0:s}.'.format(self.basedir))
 
         # 2d vtk files
         self._fmt_vtk2d_not_found = []

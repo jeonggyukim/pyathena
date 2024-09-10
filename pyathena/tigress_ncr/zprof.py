@@ -56,7 +56,8 @@ class Zprof(ReadZprofBase):
         """
         if hasattr(self,'zp_pw'):
             return self.zp_pw
-        zp = self.read_zprof(phase=['2p','h','whole'])
+        zp = self.read_zprof(phase=['2p','h'])
+        zp["whole"] = zp["2p"] + zp["h"]
 
         zplist=[]
         for ph in zp:
@@ -98,6 +99,7 @@ class Zprof(ReadZprofBase):
             momzp['Wsg']=xr.zeros_like(zp['P'])
         momzp['W']=momzp['Wext']+momzp['Wsg']
         momzp['A']=zp['A']
+        momzp['d']=zp['d']
 
         self.zp_pw = momzp
         return momzp
