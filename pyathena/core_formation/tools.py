@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 from pathlib import Path
 from pyathena.util import transform
 from pyathena.core_formation import config
-from turb_sphere import utils, tes
+from tesphere import utils, tes
 
 class LognormalPDF:
     """Lognormal probability distribution function"""
@@ -966,7 +966,7 @@ def critical_time(s, pid, method=1):
                 if not fnet < 0:
                     ncrit = num + 1
                     break
-    elif method in {4, 5, 6, 7}:
+    elif method in {4, 5, 6, 7, 8}:
         for num, core in cores.sort_index(ascending=True).iterrows():
             if method == 4:
                 # Predicted critical time using R_tidal_max
@@ -1000,6 +1000,15 @@ def critical_time(s, pid, method=1):
                 if cond1 and cond2:
                     ncrit = num
                     break
+            elif method == 8:
+                # Predicted critical time using xi_s
+                r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
+                xi_s = core.sonic_radius / r0
+                cond = xi_s > 9.1
+                if cond:
+                    ncrit = num
+                    break
+
 
     if ncrit is None or ncrit == cores.index[-1] + 1:
         # If the critical condition is satisfied for all time, or is not
