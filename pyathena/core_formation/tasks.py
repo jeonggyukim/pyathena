@@ -688,11 +688,12 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
     redge = (nbin + 0.5)*s.dx
 
     rprf = {}
-    for k in ['vel1', 'vel2', 'vel3']:
-        rprf[k] = transform.fast_groupby_bins(d[k], 'r', ledge, redge, nbin, cumulative=True)
-        rprf[f'{k}_sq'] = transform.fast_groupby_bins(d[k]**2, 'r', ledge, redge, nbin, cumulative=True)
-        rprf[f'd{k}'] = np.sqrt(rprf[f'{k}_sq'] - rprf[k]**2)
-    rprf['rho'] = transform.fast_groupby_bins(d['dens'], 'r', ledge, redge, nbin, cumulative=True)
+    for cum_flag, suffix in zip([True, False], ['', 'sh']):
+        for k in ['vel1', 'vel2', 'vel3']:
+            rprf[k+suffix] = transform.fast_groupby_bins(d[k], 'r', ledge, redge, nbin, cumulative=cum_flag)
+            rprf[f'{k}_sq'+suffix] = transform.fast_groupby_bins(d[k]**2, 'r', ledge, redge, nbin, cumulative=cum_flag)
+            rprf[f'd{k}'+suffix] = np.sqrt(rprf[f'{k}_sq'] - rprf[k]**2)
+        rprf['rho'+suffix] = transform.fast_groupby_bins(d['dens'], 'r', ledge, redge, nbin, cumulative=cum_flag)
     rprf = xr.Dataset(rprf)
 
     # write to file
