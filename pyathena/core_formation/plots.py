@@ -14,7 +14,7 @@ import xarray as xr
 from yt.frontends.athena_pp.data_structures import AthenaPPDataset
 # pythena modules
 from pyathena.core_formation import tools
-from turb_sphere import tes
+from tesphere import tes
 from grid_dendro import energy
 
 
