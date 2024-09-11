@@ -135,7 +135,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 pass
 
             self.cores_dict = {}
-            for i in [2, 7]:
+            for i in [2, 7, 8]:
                 try:
                     # Calculate derived core properties using the predicted critical time
                     savdir = Path(self.savdir, 'cores')
@@ -196,7 +196,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             return pickle.load(handle)
 
     def select_cores(self, method):
-        method_list = {1, 2, 3, 4, 5, 6, 7}
+        method_list = {1, 2, 3, 4, 5, 6, 7, 8}
         if method not in method_list:
             raise Exception("Method must be one of {}".format(sorted(method_list)))
         self.cores = self.cores_dict[method].copy()
