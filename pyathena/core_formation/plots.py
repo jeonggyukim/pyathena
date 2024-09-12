@@ -462,23 +462,25 @@ def plot_core_evolution(s, pid, num, rmax=None):
         plt.plot(r, rhoLP, 'k--')
 
     # overplot critical tes
-    if np.isfinite(core.center_density):
-        r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
-        xi_max = rprf.r.isel(r=-1).data[()]/r0
-        if np.isfinite(core.sonic_radius):
+    r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
+    xi_max = rprf.r.isel(r=-1).data[()]/r0
+    if np.isfinite(core.sonic_radius):
+        try:
             ts = tes.TES(pindex=core.pindex, rsonic=core.sonic_radius/r0)
             xi = np.logspace(np.log10(ts._rfloor), np.log10(xi_max))
             for ax in axs['rho']:
                 ax.plot(xi*r0, core.center_density*ts.density(xi), 'r--', lw=1.5)
+        except UserWarning:
+            pass
 
-        # overplot critical BE
-        ts = tes.TES()
-        xi = np.logspace(np.log10(ts._rfloor), np.log10(xi_max))
-        for ax in axs['rho']:
-            ax.plot(xi*r0, core.center_density*ts.density(xi), 'r:', lw=1)
-            ax.set_xlabel(r'$r/L_{J,0}$')
-            ax.set_ylabel(r'$\rho/\rho_0$')
-            ax.set_ylim(1e0, tools.lpdensity(s.dx/2, s.cs, s.gconst))
+    # overplot critical BE
+    ts = tes.TES()
+    xi = np.logspace(np.log10(ts._rfloor), np.log10(xi_max))
+    for ax in axs['rho']:
+        ax.plot(xi*r0, core.center_density*ts.density(xi), 'r:', lw=1)
+        ax.set_xlabel(r'$r/L_{J,0}$')
+        ax.set_ylabel(r'$\rho/\rho_0$')
+        ax.set_ylim(1e0, tools.lpdensity(s.dx/2, s.cs, s.gconst))
 
     plt.sca(axs['rho'][0])
     plt.plot(s.dx/2, rprf.rho.isel(r=0), marker=MarkerStyle(4, fillstyle='full'), ms=20)
@@ -731,9 +733,12 @@ def radial_profile_at_tcrit(s, pid, ax=None, lw=1.5):
 
     # Overplot critical TES
     r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
-    ts = tes.TES(pindex=core.pindex, rsonic=core.sonic_radius/r0)
-    xi = np.logspace(np.log10(ts._rfloor), np.log10(rcrit/r0))
-    plt.plot(xi*r0/rcrit, ts.density(xi), c='tab:red', lw=lw)
+    try:
+        ts = tes.TES(pindex=core.pindex, rsonic=core.sonic_radius/r0)
+        xi = np.logspace(np.log10(ts._rfloor), np.log10(rcrit/r0))
+        plt.plot(xi*r0/rcrit, ts.density(xi), c='tab:red', lw=lw)
+    except UserWarning:
+        s.logger.warning(f"model {s.basename} pid {pid} has out-of-range pindex at tcrit")
 
     # Overplot critical BE
     ts = tes.TES()
