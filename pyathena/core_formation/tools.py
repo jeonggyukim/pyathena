@@ -582,11 +582,11 @@ def calculate_lagrangian_props(s, cores, rprofs):
     mcore = cores.attrs['mcore']
 
     if np.isnan(ncrit):
-        radius = menc = rhoe = rhoavg = np.nan
+        radius = menc_crit = rhoe = rhoavg = np.nan
         vinfall = sigma_mw = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
-        radius, menc, rhoe, rhoavg = [], [], [], []
+        radius, menc_crit, rhoe, rhoavg = [], [], [], []
         vinfall, sigma_mw = [], []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
         for num, core in cores.iterrows():
@@ -604,9 +604,9 @@ def calculate_lagrangian_props(s, cores, rprofs):
 
             # enclosed mass within the critical radius
             if np.isnan(core.critical_radius):
-                menc.append(np.nan)
+                menc_crit.append(np.nan)
             else:
-                menc.append(rprof.menc.interp(r=core.critical_radius).data[()])
+                menc_crit.append(rprof.menc.interp(r=core.critical_radius).data[()])
 
 
             # Mass-weighted infall speed
@@ -628,7 +628,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
             Fcen.append(rprf.Fcen.data[()])
             Fani.append(rprf.Fani.data[()])
             Fgrv.append(rprf.Fgrv.data[()])
-    lprops = pd.DataFrame(data = dict(radius=radius, menc=menc, edge_density=rhoe, mean_density=rhoavg,
+    lprops = pd.DataFrame(data = dict(radius=radius, menc_crit=menc_crit, edge_density=rhoe, mean_density=rhoavg,
                                       vinfall=vinfall, sigma_mw=sigma_mw,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)

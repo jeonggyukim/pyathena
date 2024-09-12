@@ -324,7 +324,7 @@ def plot_diagnostics(s, pid, normalize_time=True):
     plt.sca(axs[2])
     plt.plot(time, cores.tidal_mass, c='tab:blue',
              label=r'$M_\mathrm{tidal}$')
-    plt.plot(time, cores.menc, c='tab:blue', ls='-.',
+    plt.plot(time, cores.menc_crit, c='tab:blue', ls='-.',
              label=r'$M_\mathrm{enc}$')
     plt.plot(time, cores.critical_mass, c='tab:red',
              label=r'$M_\mathrm{crit}$')
