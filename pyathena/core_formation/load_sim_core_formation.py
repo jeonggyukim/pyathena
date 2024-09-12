@@ -141,7 +141,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     # Calculate derived core properties using the predicted critical time
                     savdir = Path(self.savdir, 'cores')
                     self.cores_dict[mtd] = self.update_core_props(method=mtd, prefix=f'cores_tcrit_{mtd}',
-                                                         savdir=savdir, force_override=force_override)
+                                                                  savdir=savdir, force_override=force_override)
                 except (AttributeError, KeyError):
                     self.logger.warning(f"Failed to update core properties for model {self.basename}, method {mtd}")
 
@@ -202,29 +202,25 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             raise Exception("Method must be one of {}".format(sorted(method_list)))
         self.cores = self.cores_dict[method].copy()
 
-    def good_cores(self, nres):
+    def good_cores(self, nres=8):
         """List of resolved and isolated cores"""
         good_cores = []
         for pid, cores in self.cores.items():
-            rcore = cores.attrs['rcore']
-            if np.isfinite(rcore):
-                if cores.attrs['isolated'] and rcore >= nres:
-                    good_cores.append(pid)
+            if cores.attrs['isolated'] and tools.test_resolved_core(self, cores, nres):
+                good_cores.append(pid)
         return good_cores
 
     @LoadSim.Decorators.check_pickle
-    def update_core_props(self, method, ncells_min=8,
+    def update_core_props(self, method,
                           prefix=None, savdir=None, force_override=False):
         """Update core properties
 
         Calculate lagrangian core properties using the radial profiles
-        Set isolated and resolved flags
+        Set isolated flag
         Add normalized times
 
         Parameters
         ----------
-        ncells_min : int, optional
-            Minimum number of cells to be considered 'resolved'
 
         Returns
         -------
@@ -262,92 +258,84 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 cores.attrs['mean_density'] = mean_density
                 cores.attrs['tff_crit'] = tff_crit
 
-            # Test resolvedness and isolatedness
+            # Test isolatedness
             if tools.test_isolated_core(self, cores):
                 cores.attrs['isolated'] = True
             else:
                 cores.attrs['isolated'] = False
-            if tools.test_resolved_core(self, cores, ncells_min):
-                cores.attrs['resolved'] = True
-            else:
-                cores.attrs['resolved'] = False
 
             # Load Lagrangian props
-            if tools.test_resolved_core(self, cores, ncells_min//2) and cores.attrs['isolated']:
-                fname = Path(self.savdir, 'cores', f'lprops_tcrit_{method}.par{pid}.p')
-                if fname.exists():
-                    lprops = pd.read_pickle(fname).sort_index()
-                    if set(lprops.columns).issubset(cores.columns):
-                        cores = cores.drop(lprops.columns, axis=1)
+            fname = Path(self.savdir, 'cores', f'lprops_tcrit_{method}.par{pid}.p')
+            if fname.exists():
+                lprops = pd.read_pickle(fname).sort_index()
+                if set(lprops.columns).issubset(cores.columns):
+                    cores = cores.drop(lprops.columns, axis=1)
+
+                # Save attributes before performing join, which will drop them.
+                attrs = cores.attrs.copy()
+                attrs.update(lprops.attrs)
+                cores = cores.join(lprops)
+                # Reattach attributes
+                cores.attrs = attrs
+
+            mcore = cores.attrs['mcore']
+            rcore = cores.attrs['rcore']
+
+            # Building time
+            if np.isnan(ncrit):
+                cores.attrs['dt_build'] = np.nan
+            else:
+                rprf = rprofs.sel(num=ncrit)
+                mdot = (-4*np.pi*rcore**2*rprf.rho*rprf.vel1_mw).interp(r=rcore).data[()]
+                cores.attrs['dt_build'] = mcore / mdot
+
+            # Collapse time
+            cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
+
+            # Infall time
+            if np.isnan(mcore):
+                tf = np.nan
+            else:
+                phst = self.load_parhst(pid)
+                idx = phst.mass.sub(mcore).abs().argmin()
+                if idx == phst.index[-1]:
+                    tf = np.nan
+                else:
+                    tf = phst.loc[idx].time
+            cores.attrs['tinfall_end'] = tf
+            cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
+
+            # Calculate normalized times
+            cores.insert(1, 'tnorm1',
+                         (cores.time - cores.attrs['tcoll'])
+                          / cores.attrs['tff_crit'])
+            cores.insert(2, 'tnorm2',
+                         (cores.time - cores.attrs['tcrit']) / cores.attrs['dt_coll'])
+            cores.insert(3, 'tnorm3',
+                         (cores.time - cores.attrs['tcoll']) / cores.attrs['dt_coll'])
+
+
+            # Try finding observed properties and attach them
+            try:
+                prestellar_cores = cores.loc[:cores.attrs['numcoll']]
+                oprops = []
+                for num, core in prestellar_cores.iterrows():
+                    fname = Path(self.savdir, 'cores',
+                                 'observables.par{}.{:05d}.p'
+                                 .format(pid, num))
+                    if fname.exists():
+                        oprops.append(pd.read_pickle(fname))
+                if len(oprops) > 0:
+                    oprops = pd.DataFrame(oprops).set_index('num').sort_index()
 
                     # Save attributes before performing join, which will drop them.
                     attrs = cores.attrs.copy()
-                    attrs.update(lprops.attrs)
-                    cores = cores.join(lprops)
+                    attrs.update(oprops.attrs)
+                    cores = cores.join(oprops)
                     # Reattach attributes
                     cores.attrs = attrs
-
-            # Lines below are executed only for resolved and isolated cores.
-            if cores.attrs['resolved'] and cores.attrs['isolated']:
-
-                mcore = cores.attrs['mcore']
-                rcore = cores.attrs['rcore']
-
-                # Building time
-                if np.isnan(ncrit):
-                    cores.attrs['dt_build'] = np.nan
-                else:
-                    rprf = rprofs.sel(num=ncrit)
-                    mdot = (-4*np.pi*rcore**2*rprf.rho*rprf.vel1_mw).interp(r=rcore).data[()]
-                    cores.attrs['dt_build'] = mcore / mdot
-
-                # Collapse time
-                cores.attrs['dt_coll'] = cores.attrs['tcoll'] - cores.attrs['tcrit']
-
-                # Infall time
-                if np.isnan(mcore):
-                    tf = np.nan
-                else:
-                    phst = self.load_parhst(pid)
-                    idx = phst.mass.sub(mcore).abs().argmin()
-                    if idx == phst.index[-1]:
-                        tf = np.nan
-                    else:
-                        tf = phst.loc[idx].time
-                cores.attrs['tinfall_end'] = tf
-                cores.attrs['dt_infall'] = tf - cores.attrs['tcoll']
-
-                # Calculate normalized times
-                cores.insert(1, 'tnorm1',
-                             (cores.time - cores.attrs['tcoll'])
-                              / cores.attrs['tff_crit'])
-                cores.insert(2, 'tnorm2',
-                             (cores.time - cores.attrs['tcrit']) / cores.attrs['dt_coll'])
-                cores.insert(3, 'tnorm3',
-                             (cores.time - cores.attrs['tcoll']) / cores.attrs['dt_coll'])
-
-
-                # Try finding observed properties and attach them
-                try:
-                    prestellar_cores = cores.loc[:cores.attrs['numcoll']]
-                    oprops = []
-                    for num, core in prestellar_cores.iterrows():
-                        fname = Path(self.savdir, 'cores',
-                                     'observables.par{}.{:05d}.p'
-                                     .format(pid, num))
-                        if fname.exists():
-                            oprops.append(pd.read_pickle(fname))
-                    if len(oprops) > 0:
-                        oprops = pd.DataFrame(oprops).set_index('num').sort_index()
-
-                        # Save attributes before performing join, which will drop them.
-                        attrs = cores.attrs.copy()
-                        attrs.update(oprops.attrs)
-                        cores = cores.join(oprops)
-                        # Reattach attributes
-                        cores.attrs = attrs
-                except:
-                    pass
+            except:
+                pass
 
             # Sort attributes
             cores.attrs = {k: cores.attrs[k] for k in sorted(cores.attrs)}
