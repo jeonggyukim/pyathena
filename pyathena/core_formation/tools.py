@@ -957,7 +957,7 @@ def critical_time(s, pid, method='empirical'):
             if not fnet < 0:
                 ncrit = num + 1
                 break
-    elif method in ['predicted', 'pred_xis', 'pred_be']:
+    elif method in ['predicted', 'pred_xis']:
         for num, core in cores.sort_index(ascending=True).iterrows():
             if method == 'predicted':
                 # Predicted critical time using R_tidal_avg and Menc
@@ -978,18 +978,6 @@ def critical_time(s, pid, method='empirical'):
                 xi_s = core.sonic_radius / r0
                 cond = xi_s > 8.99  # r_crit = r_s at xi_s = 8.99 for p=0.5
                 if cond:
-                    ncrit = num
-                    break
-            elif method == 'pred_be':
-                # Predicted critical time using BE critical radius/mass.
-                rprf = rprofs.sel(num=num)
-                rbe = 1.82*s.cs/np.sqrt(s.gconst*core.center_density)
-                mbe = 4.43*s.cs**3/s.gconst**1.5/np.sqrt(core.center_density)
-                menc = rprf.menc.interp(r=mbe).data[()]
-                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius)
-                cond1 = rtidal_avg >= rbe
-                cond2 = menc >= mbe
-                if cond1 and cond2:
                     ncrit = num
                     break
 
@@ -1129,11 +1117,11 @@ def rounddown(a, decimal):
     return np.floor(a*10**decimal) / 10**decimal
 
 
-def test_resolved_core(s, cores, ncells_min):
+def test_resolved_core(s, cores, nres):
     """Test if the given core is sufficiently resolved.
 
     Returns True if the critical radius at t_crit is greater than
-    ncells_min*dx.
+    nres*dx.
 
     Parameters
     ----------
@@ -1141,7 +1129,7 @@ def test_resolved_core(s, cores, ncells_min):
         Object containing simulation metadata
     pid : int
         Particle ID.
-    ncells_min : int
+    nres : int
         Minimum number of cells to be considered resolved.
 
     Returns
@@ -1153,7 +1141,7 @@ def test_resolved_core(s, cores, ncells_min):
     if np.isnan(ncrit):
         return False
     ncells = cores.loc[ncrit].critical_radius / s.dx
-    if ncells >= ncells_min:
+    if ncells >= nres:
         return True
     else:
         return False
