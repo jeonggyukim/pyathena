@@ -202,15 +202,14 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             raise Exception("Method must be one of {}".format(sorted(method_list)))
         self.cores = self.cores_dict[method].copy()
 
-    def good_cores(self, cores_dict=None):
+    def good_cores(self, nres):
         """List of resolved and isolated cores"""
         good_cores = []
-        if cores_dict is None:
-            cores_dict = self.cores
-        for pid in cores_dict.keys():
-            cores = cores_dict[pid]
-            if cores.attrs['isolated'] and cores.attrs['resolved']:
-                good_cores.append(pid)
+        for pid, cores in self.cores.items():
+            rcore = cores.attrs['rcore']
+            if np.isfinite(rcore):
+                if cores.attrs['isolated'] and rcore >= nres:
+                    good_cores.append(pid)
         return good_cores
 
     @LoadSim.Decorators.check_pickle
