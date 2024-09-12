@@ -175,7 +175,7 @@ if __name__ == "__main__":
         # Calculate Lagrangian properties
         if args.lagrangian_props:
             def wrapper(pid):
-                method_list = [2, 7, 8]
+                method_list = ['empirical', 'predicted', 'pred_xis', 'pred_be']
                 for method in method_list:
                     s.select_cores(method)
                     if pid in s.cores:
@@ -228,7 +228,7 @@ if __name__ == "__main__":
         if args.plot_core_evolution:
             print(f"draw core evolution plots for model {mdl}")
             for pid in pids:
-                for method in [1, 2]:
+                for method in ['empirical', 'predicted']:
                     s.select_cores(method)
                     if pid not in s.good_cores():
                         continue
@@ -271,10 +271,10 @@ if __name__ == "__main__":
                                 srcdir])
             prefix = config.PLOT_PREFIX_CORE_EVOLUTION
             for pid in pids:
-                for method in [1, 2]:
+                for method in ['empirical', 'predicted']:
                     s.select_cores(method)
                     if pid not in s.good_cores():
                         continue
-                    prf = f"{prefix}.par{pid}.ver{method}"
+                    prf = f"{prefix}.par{pid}.tcrit_{method}"
                     subprocess.run(["make_movie", "-p", prf, "-s", srcdir,
                                     "-d", srcdir])

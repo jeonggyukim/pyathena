@@ -333,9 +333,9 @@ def prj_radial_profile(s, num, pids, overwrite=False):
         rprf.to_netcdf(ofname)
 
 
-def lagrangian_props(s, pid, method=1, overwrite=False):
+def lagrangian_props(s, pid, method='empirical', overwrite=False):
     # Check if file exists
-    ofname = Path(s.savdir, 'cores', f'lprops_ver{method}.par{pid}.p')
+    ofname = Path(s.savdir, 'cores', f'lprops_tcrit_{method}.par{pid}.p')
     ofname.parent.mkdir(exist_ok=True)
     if ofname.exists() and not overwrite:
         print('[lagrangian_props] file already exists. Skipping...')
@@ -475,7 +475,7 @@ def resample_hdf5(s, level=0):
     uniform.main(**kwargs)
 
 
-def plot_core_evolution(s, pid, num, method=1, overwrite=False, rmax=None):
+def plot_core_evolution(s, pid, num, method='empirical', overwrite=False, rmax=None):
     """Creates multi-panel plot for t_coll core properties
 
     Parameters
@@ -489,13 +489,13 @@ def plot_core_evolution(s, pid, num, method=1, overwrite=False, rmax=None):
     overwrite : str, optional
         If true, overwrite output files.
     """
-    fname = Path(s.savdir, 'figures', "{}.par{}.ver{}.{:05d}.png".format(
-        config.PLOT_PREFIX_CORE_EVOLUTION, pid, method, num))
+    fname = Path(s.savdir, 'figures', "{}.par{}.tcrit_{}.{:05d}.png".format(
+                 config.PLOT_PREFIX_CORE_EVOLUTION, pid, method, num))
     fname.parent.mkdir(exist_ok=True)
     if fname.exists() and not overwrite:
         print('[plot_core_evolution] file already exists. Skipping...')
         return
-    print(f'[plot_core_evolution] processing model {s.basename} pid {pid} num {num}, ver{method}')
+    print(f'[plot_core_evolution] processing model {s.basename} pid: {pid} num: {num}, tcrit_method: {method}')
     s.select_cores(method)
     fig = plots.plot_core_evolution(s, pid, num, rmax=rmax)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
