@@ -136,7 +136,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             # Load derived core informations using various alternative critical times
             self.cores_dict = {}
-            for mtd in ['empirical', 'predicted', 'pred_xis', 'pred_be']:
+            for mtd in ['empirical', 'predicted', 'pred_xis']:
                 try:
                     # Calculate derived core properties using the predicted critical time
                     savdir = Path(self.savdir, 'cores')
@@ -197,7 +197,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             return pickle.load(handle)
 
     def select_cores(self, method):
-        method_list = {'empirical', 'predicted', 'pred_xis', 'pred_be'}
+        method_list = {'empirical', 'predicted', 'pred_xis'}
         if method not in method_list:
             raise Exception("Method must be one of {}".format(sorted(method_list)))
         self.cores = self.cores_dict[method].copy()
@@ -248,10 +248,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             else:
                 core = cores.loc[ncrit]
                 rprf = rprofs.sel(num=ncrit)
-                if method == 'pred_be':
-                    rcore = 1.82*self.cs/np.sqrt(self.gconst*core.center_density)
-                else:
-                    rcore = core.critical_radius
+                rcore = core.critical_radius
                 if rcore > rprf.r.max()[()]:
                     msg = f"Core radius exceeds the maximum rprof radius for model {self.basename}, par {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
                     self.logger.warning(msg)
