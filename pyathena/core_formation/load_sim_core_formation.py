@@ -248,7 +248,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             else:
                 core = cores.loc[ncrit]
                 rprf = rprofs.sel(num=ncrit)
-                rcore = core.critical_radius
+                if method == 'pred_be':
+                    rcore = 1.82*self.cs/np.sqrt(self.gconst*core.center_density)
+                else:
+                    rcore = core.critical_radius
                 if rcore > rprf.r.max()[()]:
                     msg = f"Core radius exceeds the maximum rprof radius for model {self.basename}, par {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
                     self.logger.warning(msg)
