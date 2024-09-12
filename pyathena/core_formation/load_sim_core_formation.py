@@ -53,7 +53,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         All preimages of t_coll cores.
     """
 
-    def __init__(self, basedir_or_Mach=None, method=2, savdir=None,
+    def __init__(self, basedir_or_Mach=None, method='empirical', savdir=None,
                  load_method='pyathena', verbose=False, force_override=False):
         """The constructor for LoadSimCoreFormation class
 
@@ -62,7 +62,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         basedir_or_Mach : str or float
             Path to the directory where all data is stored;
             Alternatively, Mach number
-        method : int
+        method : str
             Which definition of t_crit to use.
         savdir : str
             Name of the directory where pickled data and figures will be saved.
@@ -134,15 +134,16 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.logger.warning("Failed to load radial profiles")
                 pass
 
+            # Load derived core informations using various alternative critical times
             self.cores_dict = {}
-            for i in [2, 7, 8]:
+            for mtd in ['empirical', 'predicted', 'pred_xis', 'pred_be']:
                 try:
                     # Calculate derived core properties using the predicted critical time
                     savdir = Path(self.savdir, 'cores')
-                    self.cores_dict[i] = self.update_core_props(method=i, prefix=f'cores{i}',
+                    self.cores_dict[mtd] = self.update_core_props(method=mtd, prefix=f'cores_tcrit_{mtd}',
                                                          savdir=savdir, force_override=force_override)
                 except (AttributeError, KeyError):
-                    self.logger.warning(f"Failed to update core properties for model {self.basename}, method {i}")
+                    self.logger.warning(f"Failed to update core properties for model {self.basename}, method {mtd}")
 
             try:
                 self.select_cores(method)
@@ -196,7 +197,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             return pickle.load(handle)
 
     def select_cores(self, method):
-        method_list = {1, 2, 3, 4, 5, 6, 7, 8}
+        method_list = {'empirical', 'predicted', 'pred_xis', 'pred_be'}
         if method not in method_list:
             raise Exception("Method must be one of {}".format(sorted(method_list)))
         self.cores = self.cores_dict[method].copy()
@@ -250,8 +251,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 rprf = rprofs.sel(num=ncrit)
                 rcore = core.critical_radius
                 if rcore > rprf.r.max()[()]:
-                    # TODO for method=2 or 3, this can happen; later, we need to calculate
-                    # radial profiles to larger radius
                     msg = f"Core radius exceeds the maximum rprof radius for model {self.basename}, par {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
                     self.logger.warning(msg)
                     continue
@@ -276,7 +275,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             # Load Lagrangian props
             if tools.test_resolved_core(self, cores, ncells_min//2) and cores.attrs['isolated']:
-                fname = Path(self.savdir, 'cores', f'lprops_ver{method}.par{pid}.p')
+                fname = Path(self.savdir, 'cores', f'lprops_tcrit_{method}.par{pid}.p')
                 if fname.exists():
                     lprops = pd.read_pickle(fname).sort_index()
                     if set(lprops.columns).issubset(cores.columns):
@@ -554,7 +553,7 @@ class LoadSimCoreFormationAll(object):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, method=2, savdir=None,
+    def set_model(self, model, method='empirical', savdir=None,
                   load_method='pyathena', verbose=False,
                   reset=False, force_override=False):
         self.model = model

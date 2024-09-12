@@ -917,7 +917,7 @@ def column_density(rcyl, frho, rmax):
     return dcol
 
 
-def critical_time(s, pid, method=1):
+def critical_time(s, pid, method='empirical'):
     cores = s.cores[pid].copy()
     if len(cores) == 0:
         return np.nan
@@ -926,10 +926,14 @@ def critical_time(s, pid, method=1):
 
     ncrit = None
 
-    if method in {1, 2}:
-        # For these method, check conditions from t_coll,
-        # marching backward in time.
+    if method == 'empirical':
+        # Earliest time after which the net force integrated within r_crit
+        # remains negative until the end of the collapse.
+        # To find this "empirical critical time", we start from t_coll
+        # and march backward in time.
         for num, core in cores.sort_index(ascending=False).iterrows():
+            # Exclude t_coll snapshot at which the turbulence has amplified
+            # to produce nagative linewidth-size slope.
             if num in cores.index[-2:]:
                 if np.isnan(core.critical_radius):
                     n2coll = cores.attrs['numcoll'] - num
@@ -941,55 +945,22 @@ def critical_time(s, pid, method=1):
                     continue
             rprf = rprofs.sel(num=num)
 
-            if method == 1:
-                # Critical conditions are satisfied after critical time,
-                # throughout the collapse.
-                if np.isfinite(core.critical_radius):
-                    menc = rprf.menc.interp(r=core.critical_radius).data[()]
-                else:
-                    menc = np.nan
-                cond1 = core.tidal_radius >= core.critical_radius
-                cond2 = menc >= core.critical_mass
-                cond = cond1 and cond2
-                if not cond:
-                    ncrit = num + 1
-                    break
-            elif method == 2:
-                # Net force at the critical radius is negative after the
-                # critical time, throughout the collapse.
-                if np.isfinite(core.critical_radius):
-                    fnet = (rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani
-                            - rprf.Fgrv)
-                    fnet = fnet.interp(r=core.critical_radius).data[()]
-                else:
-                    fnet = np.nan
-                if not fnet < 0:
-                    ncrit = num + 1
-                    break
-    elif method in {4, 5, 6, 7, 8}:
+            # Net force at the critical radius is negative after the
+            # critical time, throughout the collapse.
+            if np.isfinite(core.critical_radius):
+                fnet = (rprf.Fthm + rprf.Ftrb + rprf.Fcen + rprf.Fani
+                        - rprf.Fgrv)
+                fnet = fnet.interp(r=core.critical_radius).data[()]
+            else:
+                fnet = np.nan
+            if not fnet < 0:
+                ncrit = num + 1
+                break
+    elif method in ['predicted', 'pred_xis', 'pred_be']:
         for num, core in cores.sort_index(ascending=True).iterrows():
-            if method == 4:
-                # Predicted critical time using R_tidal_max
-                cond = core.tidal_radius >= core.critical_radius
-                if cond:
-                    ncrit = num
-                    break
-            elif method == 5:
-                # Predicted critical time using R_tidal_min
-                cond = core.leaf_radius >= core.critical_radius
-                if cond:
-                    ncrit = num
-                    break
-            elif method == 6:
-                # Predicted critical time using R_tidal_avg
-                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius)
-                cond = rtidal_avg >= core.critical_radius
-                if cond:
-                    ncrit = num
-                    break
-            elif method == 7:
-                rprf = rprofs.sel(num=num)
+            if method == 'predicted':
                 # Predicted critical time using R_tidal_avg and Menc
+                rprf = rprofs.sel(num=num)
                 if np.isfinite(core.critical_radius):
                     menc = rprf.menc.interp(r=core.critical_radius).data[()]
                 else:
@@ -1000,15 +971,26 @@ def critical_time(s, pid, method=1):
                 if cond1 and cond2:
                     ncrit = num
                     break
-            elif method == 8:
+            elif method == 'pred_xis':
                 # Predicted critical time using xi_s
                 r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
                 xi_s = core.sonic_radius / r0
-                cond = xi_s > 9.1
+                cond = xi_s > 8.99  # r_crit = r_s at xi_s = 8.99 for p=0.5
                 if cond:
                     ncrit = num
                     break
-
+            elif method == 'pred_be':
+                # Predicted critical time using BE critical radius/mass.
+                rprf = rprofs.sel(num=num)
+                rbe = 1.82*s.cs/np.sqrt(s.gconst*core.center_density)
+                mbe = 4.43*s.cs**3/s.gconst**1.5/np.sqrt(core.center_density)
+                menc = rprf.menc.interp(r=mbe).data[()]
+                rtidal_avg = 0.5*(core.leaf_radius + core.tidal_radius)
+                cond1 = rtidal_avg >= rbe
+                cond2 = menc >= mbe
+                if cond1 and cond2:
+                    ncrit = num
+                    break
 
     if ncrit is None or ncrit == cores.index[-1] + 1:
         # If the critical condition is satisfied for all time, or is not
