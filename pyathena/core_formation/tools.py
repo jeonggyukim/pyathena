@@ -379,7 +379,7 @@ def calculate_critical_tes(s, rprf, core):
             dcrit = np.exp(ts.ucrit)
             rcrit = ts.rcrit*r0
             mcrit = ts.mcrit*m0
-        except ValueError:
+        except UserWarning:
             dcrit = rcrit = mcrit = np.nan
 
     res = dict(tidal_mass=mtidal, center_density=rhoc,
@@ -976,8 +976,9 @@ def critical_time(s, pid, method='empirical'):
                 # Predicted critical time using xi_s
                 r0 = s.cs / np.sqrt(4*np.pi*s.gconst*core.center_density)
                 xi_s = core.sonic_radius / r0
-                cond = xi_s > 8.99  # r_crit = r_s at xi_s = 8.99 for p=0.5
-                if cond:
+                cond1 = xi_s > 8.99  # r_crit = r_s at xi_s = 8.99 for p=0.5
+                cond2 = core.pindex > 0 and core.pindex < 1
+                if cond1 and cond2:
                     ncrit = num
                     break
 
