@@ -599,7 +599,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
                 r_M = np.inf
             else:
                 r_M = brentq(lambda x: rprof.menc.interp(r=x) - mcore,
-                                           rprof.r.isel(r=0), rprof.r.isel(r=-1))
+                             rprof.r.isel(r=0), rprof.r.isel(r=-1))
             radius.append(r_M)
             # enclosed mass within the critical radius
             if np.isnan(core.critical_radius):
