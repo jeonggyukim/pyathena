@@ -1,9 +1,10 @@
 import os
 import os.path as osp
-import pathlib
+from pathlib import Path
 import pandas as pd
 import numpy as np
 import xarray as xr
+import pickle
 
 from ..load_sim import LoadSim
 from ..util.units import Units
@@ -79,13 +80,27 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         except:
             self.rprof = None
 
+    def load_dendro(self, num):
+        """Load pickled dendrogram object
+
+        Parameters
+        ----------
+        num : int
+            Snapshot number.
+        """
+        fname = Path(self.savdir, 'GRID',
+                     'dendrogram.{:04d}.p'.format(num))
+
+        with open(fname, 'rb') as handle:
+            return pickle.load(handle)
+
     @LoadSim.Decorators.check_pickle
     def load_prfm(self, prefix='prfm_quantities', savdir=None,
                   force_override=False):
         """Load prfm quantities"""
         prfm = []
         for num in self.nums[config.NUM_START:]:
-            fname = pathlib.Path(self.basedir, 'prfm_quantities',
+            fname = Path(self.basedir, 'prfm_quantities',
                                  'prfm.{:04}.nc'.format(num))
             time = self.load_vtk(num).domain['time']*self.u.Myr
             ds = xr.open_dataset(fname, engine='netcdf4').expand_dims(dict(t=[time]))
@@ -99,7 +114,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         """Load radial profiles"""
         rprofs = []
         for num in self.nums:
-            fname = pathlib.Path(self.basedir, 'azimuthal_averages_warmcold',
+            fname = Path(self.basedir, 'azimuthal_averages_warmcold',
                                  'gc_azimuthal_average.{:04}.nc'.format(num))
             time = self.load_vtk(num).domain['time']*self.u.Myr
             ds = xr.open_dataset(fname, engine='netcdf4').expand_dims(dict(t=[time]))
