@@ -29,6 +29,8 @@ if __name__ == "__main__":
                         help="Overwrite everything")
     parser.add_argument("--run-grid", action="store_true",
                         help="Run GRID-dendro")
+    parser.add_argument("--linewidth-size", action="store_true",
+                        help="Calculate linwdith-size relation")
     parser.add_argument("--prfm", action="store_true",
                         help="Write prfm quantities")
     parser.add_argument("--azimuthal-average", action="store_true",
@@ -55,6 +57,14 @@ if __name__ == "__main__":
             def wrapper(num):
                 tasks.run_grid(s, num, overwrite=args.overwrite)
             print(f"Run GRID-dendro for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums[config.NUM_START:], 1)
+
+        # Run GRID-dendro.
+        if args.linewidth_size:
+            def wrapper(num):
+                tasks.linewidth_size_grid_dendro(s, num, overwrite=args.overwrite)
+            print(f"Calculate linewidth-size relation for model {mdl}")
             with Pool(args.np) as p:
                 p.map(wrapper, s.nums[config.NUM_START:], 1)
 
