@@ -59,36 +59,6 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
             self.logger.warning("Failed to load node information")
             pass
 
-        try:
-            rprof = xr.open_dataset('{}/radial_profile_warmcold.nc'.format(self.basedir), engine='netcdf4')
-            Rring = self.par['problem']['Rring']
-            rprof.coords['eta'] = np.sqrt((rprof.R - Rring)**2 + rprof.z**2)
-            eta0 = 200
-            for ax in (1,2,3):
-                rprof['B'+str(ax)] *= u.muG
-                rprof['B_squared'+str(ax)] *= u.muG**2
-                rprof['mass_flux'+str(ax)] *= u.Msun/u.pc**2/u.Myr/1e6 # Msun / pc^2 / yr
-            rprof['mdot_in'] *= u.Msun/u.Myr/1e6     # Msun / yr
-            rprof['mdot_in_mid'] *= u.Msun/u.Myr/1e6
-            rprof['mdot_Reynolds'] *= u.Msun/u.Myr/1e6
-            rprof['mdot_Maxwell'] *= u.Msun/u.Myr/1e6
-            rprof['mdot_dLdt'] *= u.Msun/u.Myr/1e6
-            rprof['mdot_coriolis'] *= u.Msun/u.Myr/1e6
-            rprof['surface_density'] *= u.Msun / u.pc**2
-            rprof['pressure'] *= u.pok
-            rprof['turbulent_pressure'] *= u.pok
-            rprof['Breg1'] = (rprof.B1.where(rprof.eta<eta0)).weighted(rprof.density).mean(dim=['R','z'])
-            rprof['Btrb1'] = np.sqrt(rprof.B_squared1 - rprof.B1**2).where(rprof.eta<eta0).weighted(rprof.density).mean(dim=['R','z'])
-            rprof['Breg2'] = (rprof.B2.where(rprof.eta<eta0)).weighted(rprof.density).mean(dim=['R','z'])
-            rprof['Btrb2'] = np.sqrt(rprof.B_squared2 - rprof.B2**2).where(rprof.eta<eta0).weighted(rprof.density).mean(dim=['R','z'])
-            rprof['Breg3'] = (rprof.B3.where(rprof.eta<eta0)).weighted(rprof.density).mean(dim=['R','z'])
-            rprof['Btrb3'] = np.sqrt(rprof.B_squared3 - rprof.B3**2).where(rprof.eta<eta0).weighted(rprof.density).mean(dim=['R','z'])
-            rprof['Breg'] = np.sqrt(rprof.Breg1**2 + rprof.Breg2**2 + rprof.Breg3**2)
-            rprof['Btrb'] = np.sqrt(rprof.Btrb1**2 + rprof.Btrb2**2 + rprof.Btrb3**2)
-            self.rprof = rprof
-        except:
-            self.rprof = None
-
     def load_dendro(self, num):
         """Load pickled dendrogram object
 
@@ -124,7 +94,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         prfm = []
         for num in self.nums[config.NUM_START:]:
             fname = Path(self.basedir, 'prfm_quantities',
-                                 'prfm.{:04}.nc'.format(num))
+                        'prfm.{:04}.nc'.format(num))
             time = self.load_vtk(num).domain['time']*self.u.Myr
             ds = xr.open_dataset(fname, engine='netcdf4').expand_dims(dict(t=[time]))
             prfm.append(ds)
@@ -138,7 +108,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         rprofs = []
         for num in self.nums:
             fname = Path(self.basedir, 'azimuthal_averages_warmcold',
-                                 'gc_azimuthal_average.{:04}.nc'.format(num))
+                         'gc_azimuthal_average.{:04}.nc'.format(num))
             time = self.load_vtk(num).domain['time']*self.u.Myr
             ds = xr.open_dataset(fname, engine='netcdf4').expand_dims(dict(t=[time]))
             rprofs.append(ds)
