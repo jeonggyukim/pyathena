@@ -50,12 +50,14 @@ class LognormalPDF:
                                                    / (2*self.var))
         return f
 
+    def probability_between(self, dl, du):
+        return self.mfrac_above(dl) - self.mfrac_above(du)
+
     def mfrac_above(self, rhothr):
         """Return the mass fraction above density rhothr"""
         xthr = np.log(rhothr)
         tthr = (xthr - self.mu) / np.sqrt(2*self.var)
         return 0.5*erfc(tthr)
-
 
     def get_contrast(self, frac):
         """Calculates density contrast for given mass coverage
