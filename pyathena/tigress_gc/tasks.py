@@ -45,6 +45,61 @@ def run_grid(s, num, overwrite=False):
         pickle.dump(gd, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+def linewidth_size_grid_dendro(s, num, overwrite=False):
+    """Calculate linewidth-size relation for GRID-dendro nodes
+
+    Parameters
+    ----------
+    s : LoadSimTIGRESSGC
+        Simulation metadata.
+    num : int
+        Snapshot number.
+    """
+    # Check if file exists
+    ofname = Path(s.savdir, 'linewidth_size',
+                  'grid_dendro.{:04d}.p'.format(num))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[linewidth_size_grid_dendro] file already exists. Skipping...')
+        return
+
+    # Load data and construct dendrogram
+    print('[linewidth_size_grid_dendro] processing model {} num {}'.format(s.basename, num))
+    gd = s.load_dendro(num)
+    ds = s.load_vtk(num)
+    dat = ds.get_field(['density', 'pressure', 'velocity'])
+    tools.add_derived_fields(s, dat, 'temperature')
+
+    # Calculate velocity dispersion and size of the GRID-dendro nodes.
+    reff, sigma_z, sigma_x, sigma_y = [], [], [], []
+    for nd in gd.nodes:
+        temp = gd.filter_data(dat.temperature, nd, drop=True)
+        warmcold = temp < 2e4
+        rho = gd.filter_data(dat.density, nd, drop=True)[warmcold]
+        vx = gd.filter_data(dat.velocity1, nd, drop=True)[warmcold]
+        vy = gd.filter_data(dat.velocity2, nd, drop=True)[warmcold]
+        vz = gd.filter_data(dat.velocity3, nd, drop=True)[warmcold]
+        reff.append((3*gd.len(nd)*s.dx**3 / (4*np.pi))**(1./3.))
+        sigma_x.append(np.sqrt(np.average(vx**2, weights=rho) - np.average(vx, weights=rho)**2))
+        sigma_y.append(np.sqrt(np.average(vy**2, weights=rho) - np.average(vy, weights=rho)**2))
+        sigma_z.append(np.sqrt(np.average(vz**2, weights=rho) - np.average(vz, weights=rho)**2))
+    reff = np.array(reff)
+    sigma_x = np.array(sigma_x)
+    sigma_y = np.array(sigma_y)
+    sigma_z = np.array(sigma_z)
+
+    res = dict(num=num,
+               time=ds.domain['time']*s.u.Myr,
+               radius=reff,
+               veldisp_x=sigma_x,
+               veldisp_y=sigma_y,
+               veldisp_z=sigma_z)
+
+    # Write to file
+    with open(ofname, 'wb') as handle:
+        pickle.dump(res, handle, protocol=pickle.HIGHEST_PROTOCOL)
+
+
 def save_ring_averages(s, Rmax, mf_crit=0.9, overwrite=False):
     """Calculates ring masked averages and save to file
 
