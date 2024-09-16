@@ -79,7 +79,7 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
 
         res = []
         for num in self.nums[config.NUM_START:]:
-            fname = Path(self.savdir, 'linewidth-size',
+            fname = Path(self.savdir, 'linewidth_size',
                          'grid_dendro.{:04d}.p'.format(num))
             with open(fname, 'rb') as handle:
                 res.append(pickle.load(handle))
