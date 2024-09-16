@@ -25,6 +25,10 @@ if __name__ == "__main__":
                         help="List of models to process")
     parser.add_argument("--np", type=int, default=1,
                         help="Number of processors")
+    parser.add_argument("-o", "--overwrite", action="store_true",
+                        help="Overwrite everything")
+    parser.add_argument("--run-grid", action="store_true",
+                        help="Run GRID-dendro")
     parser.add_argument("--prfm", action="store_true",
                         help="Write prfm quantities")
     parser.add_argument("--azimuthal-average", action="store_true",
@@ -33,8 +37,6 @@ if __name__ == "__main__":
                         help="Calculate ring masked averages")
     parser.add_argument("--time-average", action="store_true",
                         help="Produce time averaged snapshots")
-    parser.add_argument("-o", "--overwrite", action="store_true",
-                        help="Overwrite everything")
 
     args = parser.parse_args()
 
@@ -47,6 +49,14 @@ if __name__ == "__main__":
     # Select models
     for mdl in args.models:
         s = sa.set_model(mdl)
+
+        # Run GRID-dendro.
+        if args.run_grid:
+            def wrapper(num):
+                tasks.run_grid(s, num, overwrite=args.overwrite)
+            print(f"Run GRID-dendro for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums[config.NUM_START:], 1)
 
         # Calculate PRFM quantities
         if args.prfm:

@@ -1,13 +1,48 @@
 """Module containing functions that are not generally reusable"""
 
 # python modules
+import pyathena as pa
 from pathlib import Path
 import numpy as np
 import xarray as xr
 import pandas as pd
+import pickle
+from grid_dendro import dendrogram
 
 # pyathena modules
 from pyathena.tigress_gc import tools
+
+
+def run_grid(s, num, overwrite=False):
+    """Run GRID-dendro
+
+    Parameters
+    ----------
+    s : LoadSimTIGRESSGC
+        Simulation metadata.
+    num : int
+        Snapshot number.
+    """
+    # Check if file exists
+    ofname = Path(s.savdir, 'GRID',
+                  'dendrogram.{:04d}.p'.format(num))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[run_grid] file already exists. Skipping...')
+        return
+
+    # Load data and construct dendrogram
+    print('[run_grid] processing model {} num {}'.format(s.basename, num))
+    fpath = Path(s.basedir, 'postproc_gravity', f'gc.{num:04d}.vtk')
+    ds = pa.io.read_vtk.read_vtk(fpath)
+    phi = ds.get_field('Phi').Phi.transpose('z', 'y', 'x').to_numpy()
+    gd = dendrogram.Dendrogram(phi, verbose=False)
+    gd.construct()
+    gd.prune()
+
+    # Write to file
+    with open(ofname, 'wb') as handle:
+        pickle.dump(gd, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
 def save_ring_averages(s, Rmax, mf_crit=0.9, overwrite=False):
