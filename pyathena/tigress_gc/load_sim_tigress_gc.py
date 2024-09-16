@@ -16,7 +16,8 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
     """LoadSim class for analyzing TIGRESS-GC simulations.
     """
 
-    def __init__(self, basedir, savdir=None, load_method='pyathena', verbose=False):
+    def __init__(self, basedir, savdir=None, load_method='pyathena',
+                 verbose=False, force_override=False):
         """The constructor for LoadSimTIGRESSGC class
 
         Parameters
@@ -50,6 +51,14 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         u = Units(muH=self.muH)
         self.u = u
         self.dx, self.dy, self.dz = self.domain['dx']
+
+        try:
+            savdir = Path(self.savdir, 'GRID')
+            self.nodes = self._load_nodes(savdir=savdir, force_override=force_override)
+        except FileNotFoundError:
+            self.logger.warning("Failed to load node information")
+            pass
+
         try:
             rprof = xr.open_dataset('{}/radial_profile_warmcold.nc'.format(self.basedir), engine='netcdf4')
             Rring = self.par['problem']['Rring']
@@ -93,6 +102,20 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
 
         with open(fname, 'rb') as handle:
             return pickle.load(handle)
+
+    @LoadSim.Decorators.check_pickle
+    def _load_nodes(self, prefix='nodes', savdir=None, force_override=False):
+        """Load pickled linewidth-sized rel."""
+
+        res = []
+        for num in self.nums[config.NUM_START:]:
+            fname = Path(self.savdir, 'linewidth-size',
+                         'grid_dendro.{:04d}.p'.format(num))
+            with open(fname, 'rb') as handle:
+                res.append(pickle.load(handle))
+        if len(res) > 0:
+            res = pd.DataFrame(res).set_index('num').sort_index()
+        return res
 
     @LoadSim.Decorators.check_pickle
     def load_prfm(self, prefix='prfm_quantities', savdir=None,
@@ -142,13 +165,21 @@ class LoadSimTIGRESSGCAll(object):
                 self.basedirs[mdl] = basedir
 
 
-    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+    def set_model(self, model, savdir=None, load_method='pyathena',
+                  verbose=False, reset=False, force_override=False):
         self.model = model
-        try:
-            self.sim = self.simdict[model]
-        except KeyError:
+        if reset or force_override:
             self.sim = LoadSimTIGRESSGC(self.basedirs[model], savdir=savdir,
-                                        load_method=load_method, verbose=verbose)
+                                        load_method=load_method, verbose=verbose,
+                                        force_override=force_override)
             self.simdict[model] = self.sim
+        else:
+            try:
+                self.sim = self.simdict[model]
+            except KeyError:
+                self.sim = LoadSimTIGRESSGC(self.basedirs[model], savdir=savdir,
+                                            load_method=load_method, verbose=verbose,
+                                            force_override=force_override)
+                self.simdict[model] = self.sim
 
         return self.sim
