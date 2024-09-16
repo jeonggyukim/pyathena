@@ -213,10 +213,10 @@ if __name__ == "__main__":
                 with Pool(args.np) as p:
                     p.map(wrapper, np.arange(1000))
 
-#                def wrapper2(pid):
-#                    tasks.calculate_linewidth_size(s, num, pid=pid, overwrite=args.overwrite, ds=ds)
-#                with Pool(args.np) as p:
-#                    p.map(wrapper2, s.good_cores())
+                def wrapper2(pid):
+                    tasks.calculate_linewidth_size(s, num, pid=pid, overwrite=args.overwrite, ds=ds)
+                with Pool(args.np) as p:
+                    p.map(wrapper2, s.good_cores())
 
 #            def wrapper2(pid):
 #                ncrit = s.cores[pid].attrs['numcrit']
@@ -264,7 +264,7 @@ if __name__ == "__main__":
             srcdir = Path(s.savdir, "figures")
             plot_prefix = [
 #                    config.PLOT_PREFIX_PDF_PSPEC,
-                    config.PLOT_PREFIX_SINK_HISTORY,
+#                    config.PLOT_PREFIX_SINK_HISTORY,
                           ]
             for prefix in plot_prefix:
                 subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
