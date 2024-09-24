@@ -76,7 +76,8 @@ class Zprof(ReadZprofBase):
         if 'B1' in zp:
             momzp['dPimag']=((zp['dPB1']+zp['dPB2']-zp['dPB3'])*u.pok)
             momzp['oPimag']=0.5*(zp['B1']**2+zp['B2']**2-zp['B3']**2)*u.pok
-            momzp['Pimag'] = momzp['dPimag'] + momzp['oPimag']
+            # momzp['Pimag'] = momzp['dPimag'] + momzp['oPimag']
+            momzp['Pimag'] = ((zp['PB1']+zp['PB2']-zp['PB3'])*u.pok)
         else:
             momzp['dPimag']=xr.zeros_like(zp['P'])
             momzp['oPimag']=xr.zeros_like(zp['P'])
