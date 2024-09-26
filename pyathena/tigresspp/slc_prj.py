@@ -25,6 +25,8 @@ cmap_def = dict(
     T=cmap_shift(mpl.cm.RdYlBu_r, midpoint=3.0 / 7.0),
     pok=plt.cm.plasma,
     vz=plt.cm.bwr,
+    vy=plt.cm.bwr,
+    vx=plt.cm.bwr,
     chi_FUV=plt.cm.viridis,
     Erad_LyC=plt.cm.viridis,
     xi_CR=plt.cm.viridis,
@@ -39,6 +41,8 @@ norm_def = dict(
     T=LogNorm(1e1, 1e7),
     pok=LogNorm(1.0e2, 1.0e6),
     vz=SymLogNorm(1, vmin=-1000, vmax=1000),
+    vy=SymLogNorm(1, vmin=-1000, vmax=1000),
+    vx=SymLogNorm(1, vmin=-1000, vmax=1000),
     chi_FUV=LogNorm(1e-2, 1e2),
     Erad_LyC=LogNorm(1e-16, 5e-13),
     xi_CR=LogNorm(5e-17, 1e-15),
@@ -53,6 +57,9 @@ cpp_to_cc = {
     "vel1": "velocity1",
     "vel2": "velocity2",
     "vel3": "velocity3",
+}
+
+cpp_to_cc_mag = {
     "Bcc1": "cell_centered_B1",
     "Bcc2": "cell_centered_B2",
     "Bcc3": "cell_centered_B3",
@@ -81,6 +88,8 @@ class SliceProj:
         axes = np.atleast_1d(axes)
 
         ds = self.load_hdf5(num=num).rename(cpp_to_cc)
+        if "Bcc1" in ds:
+            ds = ds.rename(cpp_to_cc_mag)
 
         if "cell_centered_B1" in ds:
             self.mhd = True
@@ -268,14 +277,13 @@ class SliceProj:
     def plt_snapshot(
         self,
         num,
-        fields_xy=("Sigma_gas", "nH", "T", "pok"),
-        fields_xz=(
+        fields_xy=["Sigma_gas", "nH", "T", "pok", "vx", "vy"],
+        fields_xz=[
             "Sigma_gas",
             "nH",
             "T",
             "vz",
-            "Bmag",
-        ),
+        ],
         xwidth=2,
         norm_factor=5.0,
         agemax=40.0,
@@ -387,7 +395,10 @@ class SliceProj:
             num, savdir=savdir_pkl, force_override=force_override
         )
         time = dat["slc"]["time"] * self.u.Myr
-        sp = self.load_parbin(num)
+        if len(self.files["parbin"]) != 0:
+            sp = self.load_parbin(num)
+        else:
+            sp = None
 
         extent = dat["prj"]["extent"]["z"]
 
@@ -425,7 +436,7 @@ class SliceProj:
                 jshift=jshift,
             )
 
-            if i == 0:
+            if (i == 0) & (sp is not None):
                 scatter_sp(
                     sp,
                     ax,
@@ -457,7 +468,7 @@ class SliceProj:
         for i, (ax, f) in enumerate(zip(g2, fields_xz)):
             ax.set_aspect(self.domain["Lx"][2] / self.domain["Lx"][0])
             self.plt_slice(ax, dat[kind[f]], "y", f, cmap=cmap_def[f], norm=norm_def[f])
-            if i == 0:
+            if (i == 0) & (sp is not None):
                 scatter_sp(
                     sp,
                     ax,

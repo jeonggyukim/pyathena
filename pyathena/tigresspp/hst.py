@@ -41,7 +41,8 @@ class Hst:
         hst = read_hst(self.files["hst"], force_override=force_override)
 
         h = pd.DataFrame()
-
+        for k in hst:
+            h[k] = hst[k]
         if "1ME" in hst:
             mhd = True
         else:
@@ -107,12 +108,13 @@ class Hst:
         self.hst = h
 
         # SN data
-        if osp.exists(self.files["sn"]):
-            sn = pd.read_csv(self.files["sn"])
-            snr = get_snr(sn["time"] * self.u.Myr, hst["time"] * self.u.Myr)
+        if "sn" in self.files:
+            if osp.exists(self.files["sn"]):
+                sn = pd.read_csv(self.files["sn"])
+                snr = get_snr(sn["time"] * self.u.Myr, hst["time"] * self.u.Myr)
 
-            self.sn = sn
-            self.snr = snr / LxLy
+                self.sn = sn
+                self.snr = snr / LxLy
 
         return h
 
