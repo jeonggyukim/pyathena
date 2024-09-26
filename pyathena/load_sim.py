@@ -789,7 +789,7 @@ class LoadSim(object):
                     self.hdf5_outid = []
                     self.hdf5_outvar = []
                     for k in self.par.keys():
-                        if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
+                        if k.startswith('output') and self.par[k]['file_type'] == 'hdf5' and (self.par[k]['dt'] != -1):
                             self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
                             self.hdf5_outvar.append(self.par[k]['variable'])
                     for i,v in zip(self.hdf5_outid,self.hdf5_outvar):

@@ -48,7 +48,11 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
         if self.par["cooling"]["coolftn"] == "tigress":
             # cooltbl_file1 = osp.join(basedir,self.par["cooling"]["coolftn_file"])
             cooltbl_file2 = osp.join(basedir, "cool_ftn.runtime.csv")
-            cooltbl = pd.read_csv(cooltbl_file2)
+            try:
+                cooltbl = pd.read_csv(cooltbl_file2)
+            except FileNotFoundError:
+                # cooltbl = pd.read_csv(cooltbl_file1)
+                return
             from scipy.interpolate import interp1d
 
             logLam = interp1d(
@@ -64,7 +68,8 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
         if self.par["feedback"]["pop_synth"] == "KO17":
             # pop_synth_file1 = osp.join(basedir,self.par["feedback"]["pop_synth_file"])
             pop_synth_file2 = osp.join(basedir, "pop_synth.runtime.csv")
-            self.pop_synth = pd.read_csv(pop_synth_file2)
+            if osp.isfile(pop_synth_file2):
+                self.pop_synth = pd.read_csv(pop_synth_file2)
 
     def calc_deltay(self, time):
         """
