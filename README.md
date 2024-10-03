@@ -25,7 +25,10 @@ Below is an example of how you can set up pyathena. It assumes that you have alr
    ```sh
    conda activate pyathena
    ```
-5. Add pyathena directory to your python startup file (optional but recommended).
+5. Install pyathena
+   ```sh
+   pip install .
+   ```
 
 Sometimes `yt` and other installed packages (e.g., numpy) may have compatibility issues. In this case, you can downgrade packages to more stable, older versions. For example,
 ```sh
