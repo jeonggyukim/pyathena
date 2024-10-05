@@ -643,8 +643,11 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
             ds['vel2'] = ds.mom2/ds.dens
             ds['vel3'] = ds.mom3/ds.dens
 
+        if len(np.unique(s.domain['Nx'])) > 1:
+            raise ValueError("Cubic domain is assumed, but the domain is not cubic")
+        Nx = s.domain['Nx'][0]  # Assume cubic domain
         rng = np.random.default_rng(seed)
-        i, j, k = rng.integers(low=0, high=511, size=(3))
+        i, j, k = rng.integers(low=0, high=Nx-1, size=(3))
         origin = (ds.x.isel(x=i).data[()],
                   ds.y.isel(y=j).data[()],
                   ds.z.isel(z=k).data[()])
