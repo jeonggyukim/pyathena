@@ -405,13 +405,13 @@ document.write(`
 <p>Below is an example of how you can set up pyathena. It assumes that you have already installed <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a> or anaconda on your system.</p>
 <ol class="arabic">
 <li><p>Clone the pyathena repo</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>git@github.com:jeonggyukim/pyathena.git
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/jeonggyukim/pyathena.git
 </pre></div>
 </div>
 </li>
 <li><p>Create an environment from the env.yml file</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="nb">cd</span><span class="w"> </span>pyathena/
-conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>env.yml
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>update<span class="w"> </span>conda
+conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>path_to_pyathena/env.yml
 </pre></div>
 </div>
 </li>
@@ -420,8 +420,21 @@ conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> <
 </pre></div>
 </div>
 </li>
-<li><p>Add pyathena directory to your python startup file (optional but recommended).</p></li>
+<li><p>Install pyathena</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>.
+</pre></div>
+</div>
+</li>
 </ol>
+<p>Sometimes <code class="docutils literal notranslate"><span class="pre">yt</span></code> and other installed packages (e.g., numpy) may have compatibility issues. In this case, you can downgrade packages to more stable, older versions. For example,</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span><span class="nv">numpy</span><span class="o">=</span><span class="m">1</span>.26.4
+</pre></div>
+</div>
+<p>To update the existing pyathena environment with an updated env.yml file</p>
+<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>activate<span class="w"> </span>pyathena
+conda<span class="w"> </span>env<span class="w"> </span>update<span class="w"> </span>--file<span class="w"> </span>env.yml<span class="w"> </span>--prune
+</pre></div>
+</div>
 </section>
 <section class="tex2jax_ignore mathjax_ignore" id="mpi-setup-for-stellar-princeton-cluster">
 <h1>MPI setup for stellar Princeton cluster<a class="headerlink" href="#mpi-setup-for-stellar-princeton-cluster" title="Permalink to this heading">#</a></h1>
