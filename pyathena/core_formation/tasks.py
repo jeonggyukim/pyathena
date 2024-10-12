@@ -681,8 +681,8 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
     else:
         raise ValueError("Provide either seed or pid")
 
-    d, origin = tools.recenter_dataset(ds, dict(x=origin[0], y=origin[1], z=origin[2]))
-    d.coords['r'] = np.sqrt((d.z - origin['z'])**2 + (d.y - origin['y'])**2 + (d.x - origin['x'])**2)
+    ds, origin = tools.recenter_dataset(ds, dict(x=origin[0], y=origin[1], z=origin[2]))
+    ds.coords['r'] = np.sqrt((ds.z - origin['z'])**2 + (ds.y - origin['y'])**2 + (ds.x - origin['x'])**2)
 
     rmax = s.Lbox/2
 
@@ -690,13 +690,27 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
     ledge = 0.5*s.dx
     redge = (nbin + 0.5)*s.dx
 
+    # Convert density and velocities to spherical coord.
+    vel = {}
+    for dim, axis in zip(['x', 'y', 'z'], [1, 2, 3]):
+        # Recenter velocity and calculate gravitational acceleration
+        vel_ = ds['vel{}'.format(axis)]
+        vel[dim] = vel_ - vel_.sel(x=origin['x'], y=origin['y'], z=origin['z'])
+
+    _, (ds['vels1'], ds['vels2'], ds['vels3'])\
+        = transform.to_spherical(vel.values(), origin.values())
+
     rprf = {}
     for cum_flag, suffix in zip([True, False], ['', '_sh']):
-        for k in ['vel1', 'vel2', 'vel3']:
-            rprf[k+suffix] = transform.fast_groupby_bins(d[k], 'r', ledge, redge, nbin, cumulative=cum_flag)
-            rprf[f'{k}_sq'+suffix] = transform.fast_groupby_bins(d[k]**2, 'r', ledge, redge, nbin, cumulative=cum_flag)
+        rprf['rho'+suffix] = transform.fast_groupby_bins(ds.dens, 'r', ledge, redge, nbin, cumulative=cum_flag)
+        for k in ['vel1', 'vel2', 'vel3', 'vels1', 'vels2', 'vels3']:
+            rprf[k+suffix] = transform.fast_groupby_bins(ds[k], 'r', ledge, redge, nbin, cumulative=cum_flag)
+            rprf[f'{k}_sq'+suffix] = transform.fast_groupby_bins(ds[k]**2, 'r', ledge, redge, nbin, cumulative=cum_flag)
             rprf[f'd{k}'+suffix] = np.sqrt(rprf[f'{k}_sq'+suffix] - rprf[k+suffix]**2)
-        rprf['rho'+suffix] = transform.fast_groupby_bins(d['dens'], 'r', ledge, redge, nbin, cumulative=cum_flag)
+            # Mass weighted
+            rprf[k+suffix+'_mw'] = transform.fast_groupby_bins(ds.dens*ds[k], 'r', ledge, redge, nbin, cumulative=cum_flag) / rprf['rho'+suffix]
+            rprf[f'{k}_sq'+suffix+'_mw'] = transform.fast_groupby_bins(ds.dens*ds[k]**2, 'r', ledge, redge, nbin, cumulative=cum_flag) / rprf['rho'+suffix]
+            rprf[f'd{k}'+suffix+'_mw'] = np.sqrt(rprf[f'{k}_sq'+suffix+'_mw'] - rprf[k+suffix+'_mw']**2)
     rprf = xr.Dataset(rprf)
 
     # write to file
