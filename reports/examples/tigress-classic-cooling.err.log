@@ -29,9 +29,6 @@ sys.path.insert(0,'../../')
 import pyathena as pa
 ------------------
 
------ stderr -----
-Matplotlib is building the font cache; this may take a moment.
-------------------
 
 [0;31m---------------------------------------------------------------------------[0m
 [0;31mModuleNotFoundError[0m                       Traceback (most recent call last)
