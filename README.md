@@ -8,6 +8,10 @@
 
 pyathena is a set of python scripts for reading and analyzing simulation data produced by the Athena-TIGRESS code.
 
+## Requirement
+
+Python version **3.10** or higher
+
 ## Installation
 
 Below is an example of how you can set up pyathena. It assumes that you have already installed [miniconda](https://docs.conda.io/en/latest/miniconda.html) or anaconda on your system.
