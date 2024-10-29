@@ -37,19 +37,17 @@ Cell [0;32mIn[1], line 9[0m
 [1;32m      8[0m sys[38;5;241m.[39mpath[38;5;241m.[39minsert([38;5;241m0[39m,[38;5;124m'[39m[38;5;124m../../[39m[38;5;124m'[39m)
 [0;32m----> 9[0m [38;5;28;01mimport[39;00m [38;5;21;01mpyathena[39;00m [38;5;28;01mas[39;00m [38;5;21;01mpa[39;00m
 
-File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/__init__.py:42[0m
-[1;32m      3[0m [38;5;66;03m# __all__ is taken to be the list of module names that should be imported when[39;00m
-[1;32m      4[0m [38;5;66;03m# from `package import *` is encountered[39;00m
-[1;32m      5[0m [38;5;66;03m# https://docs.python.org/3/tutorial/modules.html#importing-from-a-package[39;00m
+File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/__init__.py:15[0m
 [1;32m      7[0m __all__ [38;5;241m=[39m [
 [1;32m      8[0m            [38;5;66;03m# Units class[39;00m
 [1;32m      9[0m            [38;5;124m"[39m[38;5;124mUnits[39m[38;5;124m"[39m,
-[0;32m   (...)[0m
-[1;32m     39[0m            [38;5;124m"[39m[38;5;124mLoadSimCoreFormationAll[39m[38;5;124m"[39m,
-[1;32m     40[0m            ]
-[0;32m---> 42[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mio[39;00m[38;5;21;01m.[39;00m[38;5;21;01mread_vtk[39;00m [38;5;28;01mimport[39;00m read_vtk, AthenaDataSet
-[1;32m     43[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mio[39;00m[38;5;21;01m.[39;00m[38;5;21;01mread_athinput[39;00m [38;5;28;01mimport[39;00m read_athinput
-[1;32m     44[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mio[39;00m[38;5;21;01m.[39;00m[38;5;21;01mread_hst[39;00m [38;5;28;01mimport[39;00m read_hst
+[1;32m     10[0m            [38;5;66;03m# LoadSim[39;00m
+[1;32m     11[0m            [38;5;124m"[39m[38;5;124mLoadSim[39m[38;5;124m"[39m,
+[1;32m     12[0m            [38;5;124m"[39m[38;5;124mLoadSimAll[39m[38;5;124m"[39m]
+[1;32m     14[0m [38;5;66;03m# I/O[39;00m
+[0;32m---> 15[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mio[39;00m[38;5;21;01m.[39;00m[38;5;21;01mread_vtk[39;00m [38;5;28;01mimport[39;00m read_vtk, AthenaDataSet
+[1;32m     16[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mio[39;00m[38;5;21;01m.[39;00m[38;5;21;01mread_athinput[39;00m [38;5;28;01mimport[39;00m read_athinput
+[1;32m     17[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mio[39;00m[38;5;21;01m.[39;00m[38;5;21;01mread_hst[39;00m [38;5;28;01mimport[39;00m read_hst
 
 File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/io/read_vtk.py:17[0m
 [1;32m     13[0m [38;5;28;01mimport[39;00m [38;5;21;01mastropy[39;00m[38;5;21;01m.[39;00m[38;5;21;01munits[39;00m [38;5;28;01mas[39;00m [38;5;21;01mau[39;00m

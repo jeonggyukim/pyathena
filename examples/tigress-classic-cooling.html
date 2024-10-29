@@ -421,19 +421,17 @@ document.write(`
 <span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;../../&#39;</span><span class="p">)</span>
 <span class="ne">----&gt; </span><span class="mi">9</span> <span class="kn">import</span> <span class="nn">pyathena</span> <span class="k">as</span> <span class="nn">pa</span>
 
-<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">42</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="c1"># __all__ is taken to be the list of module names that should be imported when</span>
-<span class="g g-Whitespace">      </span><span class="mi">4</span> <span class="c1"># from `package import *` is encountered</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="c1"># https://docs.python.org/3/tutorial/modules.html#importing-from-a-package</span>
+<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">15</span>
 <span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span>
 <span class="g g-Whitespace">      </span><span class="mi">8</span>            <span class="c1"># Units class</span>
 <span class="g g-Whitespace">      </span><span class="mi">9</span>            <span class="s2">&quot;Units&quot;</span><span class="p">,</span>
-   <span class="p">(</span><span class="o">...</span><span class="p">)</span>
-<span class="g g-Whitespace">     </span><span class="mi">39</span>            <span class="s2">&quot;LoadSimCoreFormationAll&quot;</span><span class="p">,</span>
-<span class="g g-Whitespace">     </span><span class="mi">40</span>            <span class="p">]</span>
-<span class="ne">---&gt; </span><span class="mi">42</span> <span class="kn">from</span> <span class="nn">.io.read_vtk</span> <span class="kn">import</span> <span class="n">read_vtk</span><span class="p">,</span> <span class="n">AthenaDataSet</span>
-<span class="g g-Whitespace">     </span><span class="mi">43</span> <span class="kn">from</span> <span class="nn">.io.read_athinput</span> <span class="kn">import</span> <span class="n">read_athinput</span>
-<span class="g g-Whitespace">     </span><span class="mi">44</span> <span class="kn">from</span> <span class="nn">.io.read_hst</span> <span class="kn">import</span> <span class="n">read_hst</span>
+<span class="g g-Whitespace">     </span><span class="mi">10</span>            <span class="c1"># LoadSim</span>
+<span class="g g-Whitespace">     </span><span class="mi">11</span>            <span class="s2">&quot;LoadSim&quot;</span><span class="p">,</span>
+<span class="g g-Whitespace">     </span><span class="mi">12</span>            <span class="s2">&quot;LoadSimAll&quot;</span><span class="p">]</span>
+<span class="g g-Whitespace">     </span><span class="mi">14</span> <span class="c1"># I/O</span>
+<span class="ne">---&gt; </span><span class="mi">15</span> <span class="kn">from</span> <span class="nn">.io.read_vtk</span> <span class="kn">import</span> <span class="n">read_vtk</span><span class="p">,</span> <span class="n">AthenaDataSet</span>
+<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="kn">from</span> <span class="nn">.io.read_athinput</span> <span class="kn">import</span> <span class="n">read_athinput</span>
+<span class="g g-Whitespace">     </span><span class="mi">17</span> <span class="kn">from</span> <span class="nn">.io.read_hst</span> <span class="kn">import</span> <span class="n">read_hst</span>
 
 <span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="n">io</span><span class="o">/</span><span class="n">read_vtk</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">17</span>
 <span class="g g-Whitespace">     </span><span class="mi">13</span> <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">au</span>
