@@ -396,6 +396,14 @@ def add_derived_fields(s, dat, fields=[]):
     def _R():
         return np.sqrt(dat.y**2 + dat.x**2)
 
+    def _eta():
+        if 'R' not in dat:
+            add_derived_fields(s, dat, 'R')
+        Rring = s.par['problem']['Rring']
+        eta = np.sqrt((dat.R - Rring)**2 + dat.z**2).transpose('z', 'y', 'x')
+        return eta
+
+
     def _ph():
         return np.arctan2(dat.y, dat.x)
 
