@@ -100,6 +100,55 @@ def linewidth_size_grid_dendro(s, num, overwrite=False):
         pickle.dump(res, handle, protocol=pickle.HIGHEST_PROTOCOL)
 
 
+def calculate_linewidth_size(s, num, seed, overwrite=False, dat=None):
+    # Check if file exists
+    ofname = Path(s.savdir, 'linewidth_size',
+                  'linewidth_size.{:04d}.{}.nc'.format(num, seed))
+    ofname.parent.mkdir(exist_ok=True)
+    if ofname.exists() and not overwrite:
+        print('[linewidth_size] file already exists. Skipping...')
+        return
+
+    msg = '[linewidth_size] processing model {} num {} seed {}'
+    print(msg.format(s.basename, num, seed))
+
+    if dat is None:
+        ds = s.load_vtk(num)
+        dat = ds.get_field(['density', 'pressure', 'velocity'])
+        tools.add_derived_fields(s, dat, ['temperature', 'eta'])
+
+    rng = np.random.default_rng(seed)
+    if len(np.unique(s.domain['Nx'])) > 1:
+        raise ValueError("Cubic domain is assumed, but the domain is not cubic")
+    Nx = s.domain['Nx'][0]  # Assume cubic domain
+    i, j, k = rng.integers(low=0, high=Nx-1, size=(3))
+    origin = (dat.x.isel(x=i).data[()],
+              dat.y.isel(y=j).data[()],
+              dat.z.isel(z=k).data[()])
+
+    dat.coords['r'] = np.sqrt((dat.z - origin['z'])**2 + (dat.y - origin['y'])**2 + (dat.x - origin['x'])**2)
+
+    rmax = s.Lbox/2
+
+    nbin = int(np.ceil(rmax/s.dx))
+    ledge = 0.5*s.dx
+    redge = (nbin + 0.5)*s.dx
+
+    rprf = {}
+    for cum_flag, suffix in zip([True, False], ['', '_sh']):
+        for k in ['vel1', 'vel2', 'vel3']:
+            rprf[k+suffix] = transform.fast_groupby_bins(dat[k], 'r', ledge, redge, nbin, cumulative=cum_flag)
+            rprf[f'{k}_sq'+suffix] = transform.fast_groupby_bins(dat[k]**2, 'r', ledge, redge, nbin, cumulative=cum_flag)
+            rprf[f'dat{k}'+suffix] = np.sqrt(rprf[f'{k}_sq'+suffix] - rprf[k+suffix]**2)
+        rprf['rho'+suffix] = transform.fast_groupby_bins(dat['dens'], 'r', ledge, redge, nbin, cumulative=cum_flag)
+    rprf = xr.Dataset(rprf)
+
+    # write to file
+    if ofname.exists():
+        ofname.unlink()
+    rprf.to_netcdf(ofname)
+
+
 def save_ring_averages(s, Rmax, mf_crit=0.9, overwrite=False):
     """Calculates ring masked averages and save to file
 
