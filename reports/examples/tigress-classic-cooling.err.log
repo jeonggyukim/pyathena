@@ -49,12 +49,12 @@ File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/__init__.py:15
 [1;32m     16[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mio[39;00m[38;5;21;01m.[39;00m[38;5;21;01mread_athinput[39;00m [38;5;28;01mimport[39;00m read_athinput
 [1;32m     17[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mio[39;00m[38;5;21;01m.[39;00m[38;5;21;01mread_hst[39;00m [38;5;28;01mimport[39;00m read_hst
 
-File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/io/read_vtk.py:17[0m
-[1;32m     13[0m [38;5;28;01mimport[39;00m [38;5;21;01mastropy[39;00m[38;5;21;01m.[39;00m[38;5;21;01munits[39;00m [38;5;28;01mas[39;00m [38;5;21;01mau[39;00m
-[1;32m     15[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mathena_read[39;00m [38;5;28;01mimport[39;00m vtk
-[0;32m---> 17[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01m.[39;00m[38;5;21;01mutil[39;00m[38;5;21;01m.[39;00m[38;5;21;01munits[39;00m [38;5;28;01mimport[39;00m Units
-[1;32m     19[0m [38;5;28;01mdef[39;00m [38;5;21mread_vtk_athenapp[39m(filenames):
-[1;32m     20[0m     x1f [38;5;241m=[39m []
+File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/io/read_vtk.py:16[0m
+[1;32m     12[0m [38;5;28;01mimport[39;00m [38;5;21;01mastropy[39;00m[38;5;21;01m.[39;00m[38;5;21;01munits[39;00m [38;5;28;01mas[39;00m [38;5;21;01mau[39;00m
+[1;32m     14[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mathena_read[39;00m [38;5;28;01mimport[39;00m vtk
+[0;32m---> 16[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01m.[39;00m[38;5;21;01mutil[39;00m[38;5;21;01m.[39;00m[38;5;21;01munits[39;00m [38;5;28;01mimport[39;00m Units
+[1;32m     18[0m [38;5;28;01mdef[39;00m [38;5;21mread_vtk_athenapp[39m(filenames):
+[1;32m     19[0m     x1f [38;5;241m=[39m []
 
 File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/util/__init__.py:4[0m
 [1;32m      2[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01munits[39;00m [38;5;28;01mimport[39;00m Units, ac, au
@@ -63,12 +63,11 @@ File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/util/__init__.
 [1;32m      5[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mpiecewisepowerlaw[39;00m [38;5;28;01mimport[39;00m PiecewisePowerlaw
 [1;32m      6[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01msb99[39;00m [38;5;28;01mimport[39;00m SB99
 
-File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/util/mass_to_lum.py:4[0m
-[1;32m      1[0m [38;5;28;01mfrom[39;00m [38;5;21;01m__future__[39;00m [38;5;28;01mimport[39;00m print_function
-[1;32m      3[0m [38;5;28;01mimport[39;00m [38;5;21;01mnumpy[39;00m [38;5;28;01mas[39;00m [38;5;21;01mnp[39;00m
-[0;32m----> 4[0m [38;5;28;01mfrom[39;00m [38;5;21;01mscipy[39;00m[38;5;21;01m.[39;00m[38;5;21;01minterpolate[39;00m [38;5;28;01mimport[39;00m interp1d
-[1;32m      6[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mpiecewisepowerlaw[39;00m [38;5;28;01mimport[39;00m PiecewisePowerlaw
-[1;32m      8[0m [38;5;28;01mclass[39;00m [38;5;21;01mmass_to_lum[39;00m([38;5;28mobject[39m):
+File [0;32m~/work/pyathena/pyathena/docs/examples/../../pyathena/util/mass_to_lum.py:3[0m
+[1;32m      2[0m [38;5;28;01mimport[39;00m [38;5;21;01mnumpy[39;00m [38;5;28;01mas[39;00m [38;5;21;01mnp[39;00m
+[0;32m----> 3[0m [38;5;28;01mfrom[39;00m [38;5;21;01mscipy[39;00m[38;5;21;01m.[39;00m[38;5;21;01minterpolate[39;00m [38;5;28;01mimport[39;00m interp1d
+[1;32m      5[0m [38;5;28;01mfrom[39;00m [38;5;21;01m.[39;00m[38;5;21;01mpiecewisepowerlaw[39;00m [38;5;28;01mimport[39;00m PiecewisePowerlaw
+[1;32m      7[0m [38;5;28;01mclass[39;00m [38;5;21;01mmass_to_lum[39;00m([38;5;28mobject[39m):
 
 [0;31mModuleNotFoundError[0m: No module named 'scipy'
 
