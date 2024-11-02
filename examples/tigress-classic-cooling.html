@@ -413,45 +413,6 @@ document.write(`
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">9</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="kn">import</span> <span class="nn">sys</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;../../&#39;</span><span class="p">)</span>
-<span class="ne">----&gt; </span><span class="mi">9</span> <span class="kn">import</span> <span class="nn">pyathena</span> <span class="k">as</span> <span class="nn">pa</span>
-
-<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">19</span>
-<span class="g g-Whitespace">     </span><span class="mi">17</span> <span class="kn">from</span> <span class="nn">.io.read_athinput</span> <span class="kn">import</span> <span class="n">read_athinput</span>
-<span class="g g-Whitespace">     </span><span class="mi">18</span> <span class="kn">from</span> <span class="nn">.io.read_timeit</span> <span class="kn">import</span> <span class="n">read_timeit</span>
-<span class="ne">---&gt; </span><span class="mi">19</span> <span class="kn">from</span> <span class="nn">.io.read_vtk</span> <span class="kn">import</span> <span class="n">read_vtk</span><span class="p">,</span> <span class="n">AthenaDataSet</span>
-<span class="g g-Whitespace">     </span><span class="mi">20</span> <span class="kn">from</span> <span class="nn">.io.read_rst</span> <span class="kn">import</span> <span class="n">read_rst</span><span class="p">,</span> <span class="n">RestartHandler</span>
-<span class="g g-Whitespace">     </span><span class="mi">21</span> <span class="kn">from</span> <span class="nn">.io.read_zprof</span> <span class="kn">import</span> <span class="n">read_zprof</span><span class="p">,</span> <span class="n">read_zprof_all</span>
-
-<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="n">io</span><span class="o">/</span><span class="n">read_vtk</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">16</span>
-<span class="g g-Whitespace">     </span><span class="mi">12</span> <span class="kn">import</span> <span class="nn">astropy.units</span> <span class="k">as</span> <span class="nn">au</span>
-<span class="g g-Whitespace">     </span><span class="mi">14</span> <span class="kn">from</span> <span class="nn">.athena_read</span> <span class="kn">import</span> <span class="n">vtk</span>
-<span class="ne">---&gt; </span><span class="mi">16</span> <span class="kn">from</span> <span class="nn">..util.units</span> <span class="kn">import</span> <span class="n">Units</span>
-<span class="g g-Whitespace">     </span><span class="mi">18</span> <span class="k">def</span> <span class="nf">read_vtk_athenapp</span><span class="p">(</span><span class="n">filenames</span><span class="p">):</span>
-<span class="g g-Whitespace">     </span><span class="mi">19</span>     <span class="n">x1f</span> <span class="o">=</span> <span class="p">[]</span>
-
-<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="n">util</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">4</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">from</span> <span class="nn">.units</span> <span class="kn">import</span> <span class="n">Units</span><span class="p">,</span> <span class="n">ac</span><span class="p">,</span> <span class="n">au</span>
-<span class="g g-Whitespace">      </span><span class="mi">3</span> <span class="kn">from</span> <span class="nn">.rebin</span> <span class="kn">import</span> <span class="n">rebin_xyz</span><span class="p">,</span> <span class="n">rebin_xy</span>
-<span class="ne">----&gt; </span><span class="mi">4</span> <span class="kn">from</span> <span class="nn">.mass_to_lum</span> <span class="kn">import</span> <span class="n">mass_to_lum</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="kn">from</span> <span class="nn">.piecewisepowerlaw</span> <span class="kn">import</span> <span class="n">PiecewisePowerlaw</span>
-<span class="g g-Whitespace">      </span><span class="mi">6</span> <span class="kn">from</span> <span class="nn">.sb99</span> <span class="kn">import</span> <span class="n">SB99</span>
-
-<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="n">util</span><span class="o">/</span><span class="n">mass_to_lum</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">3</span>
-<span class="g g-Whitespace">      </span><span class="mi">2</span> <span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="ne">----&gt; </span><span class="mi">3</span> <span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
-<span class="g g-Whitespace">      </span><span class="mi">5</span> <span class="kn">from</span> <span class="nn">.piecewisepowerlaw</span> <span class="kn">import</span> <span class="n">PiecewisePowerlaw</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="k">class</span> <span class="nc">mass_to_lum</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-
-<span class="ne">ModuleNotFoundError</span>: No module named &#39;scipy&#39;
-</pre></div>
-</div>
-</div>
 </div>
 <section class="tex2jax_ignore mathjax_ignore" id="cooling-in-tigress-classic">
 <h1>Cooling in TIGRESS-classic<a class="headerlink" href="#cooling-in-tigress-classic" title="Permalink to this heading">#</a></h1>
@@ -511,7 +472,7 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/18917a320b2b159568179e921942a82e81040bd3c7aeb3766ba21ec566d26f78.png" src="../_images/18917a320b2b159568179e921942a82e81040bd3c7aeb3766ba21ec566d26f78.png" />
+<img alt="../_images/9bbb85d6502c90f57d69afeb30a386a5d35d6752f8290789ceb908870bacb4e0.png" src="../_images/9bbb85d6502c90f57d69afeb30a386a5d35d6752f8290789ceb908870bacb4e0.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -537,7 +498,7 @@ document.write(`
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0.5, 1.0, &#39;Thermal Equilibrium for $\\Gamma=\\Gamma_0$&#39;)
 </pre></div>
 </div>
-<img alt="../_images/b281e3024f9a9d4b5d11473d4fdf4c5d0605a83050f670ab8bc42f54fe43be01.png" src="../_images/b281e3024f9a9d4b5d11473d4fdf4c5d0605a83050f670ab8bc42f54fe43be01.png" />
+<img alt="../_images/082761ae4f9f9d8a2c82d94c214020494e5aff9bff468c264641f6d1faae9b72.png" src="../_images/082761ae4f9f9d8a2c82d94c214020494e5aff9bff468c264641f6d1faae9b72.png" />
 </div>
 </div>
 </section>
