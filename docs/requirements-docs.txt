@@ -4,6 +4,7 @@ numpy
 astropy
 pandas
 xarray
+h5py
 netCDF4
 healpy
 cmasher
