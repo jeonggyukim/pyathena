@@ -19,7 +19,7 @@ class ZprofFromVTK:
     @check_netcdf_zprof_vtk
     def read_zprof_from_vtk(self, num,
                             fields=['nH','ne','nHI','nesq','xHII','xe',
-                                    'T','Uion','Erad_LyC','Erad_PE','Erad_LW'],
+                                    'T','Uion','Erad_LyC','Erad_PE','Erad_LW', 'xi_CR'],
                             weights=['nH','ne','nesq'], phase_set_name='ncrrad',
                             prefix='zprof_vtk', savdir=None, force_override=False):
 
@@ -106,9 +106,9 @@ class ZprofFromVTK:
         return zpa
 
     @check_netcdf_zprof_vtk
-    def read_zprof_from_vtk_all(self, nums=None, phase_set_name='ncrrad',
-                                prefix='zprof_vtk_all',
-                                force_override=False,
+    def read_zprof_from_vtk_all(self, nums=None, phase_set_name='default_rad',
+                                prefix='zprof_vtk_all', force_override=False,
+                                merge_with_hst=True, merge_with_hst_src=True,
                                 read_zprof_from_vtk_kwargs=None):
         if read_zprof_from_vtk_kwargs is None:
             read_zprof_from_vtk_kwargs = dict(phase_set_name=phase_set_name,
@@ -120,6 +120,8 @@ class ZprofFromVTK:
                         "phase_set_name in keyword argements different!")
             else:
                 read_zprof_from_vtk_kwargs['phase_set_name'] = phase_set_name
+        if nums is None:
+            nums = self.nums
 
         zplist = []
         for num in nums:
@@ -132,24 +134,103 @@ class ZprofFromVTK:
 
         # Use concat.
         # Merge is much slower and uses more memory leading to crash.
-        return xr.concat(zplist, dim='time')
+        zpa = xr.concat(zplist, dim='time')
 
-    def merge_zprof_with_hst(self, zpa):
-        h = self.read_hst_rad()
+        # Post-processing is added below
+        # Scale height
+        try:
+            zpa['H_nH'] = np.sqrt((zpa['nH']*zpa['z']**2).sum(dim='z')/\
+                                  zpa['nH'].sum(dim='z'))
+            zpa['H_nesq'] = np.sqrt((zpa['nesq']*zpa['z']**2).sum(dim='z')/\
+                                    zpa['nesq'].sum(dim='z'))
+        except KeyError:
+            pass
+
+        zpa = self._zprof_post_process(zpa)
+        if merge_with_hst:
+            zpa = self.merge_zprof_with_hst(zpa, force_override=force_override)
+        if merge_with_hst_src:
+            zpa = self.merge_zprof_with_hst_src(zpa, force_override=force_override)
+
+        return zpa
+
+    def merge_zprof_with_hst(self, zpa, force_override=True):
+        h = self.read_hst_rad(force_override=force_override)
         columns = h.columns
         for c in columns:
             f = interp1d(h['time'], h[c], fill_value='extrapolate', bounds_error=False)
-            assign_kwargs = {c:(['time'], f(zpa['time']))}
-            zpa = zpa.assign(**assign_kwargs) #fesc_LyC=(['time'], f(zpa['time'])))
+            assign_kwargs = {'hst_' + c: (['time'], f(zpa['time']))}
+            zpa = zpa.assign(**assign_kwargs)
 
-        return zpa, h
+        Sigma_PE_over_4pi = zpa['hst_Sigma_PE']/\
+            (4.0*np.pi)*(ac.L_sun/ac.pc**2).cgs.value
+        Sigma_LW_over_4pi = zpa['hst_Sigma_LW']/\
+            (4.0*np.pi)*(ac.L_sun/ac.pc**2).cgs.value
+        Sigma_FUV_over_4pi = zpa['hst_Sigma_FUV']/\
+            (4.0*np.pi)*(ac.L_sun/ac.pc**2).cgs.value
+        vv = [v for v in zpa.variables if v.startswith('J_FUV')]
+        for v_J in vv:
+            if v_J.count('J_FUV') > 1:
+                raise ValueError('Multiple "J_FUV" found in variable name.' +\
+                                 'Be careful with conversion..')
+            v_calJ = v_J.replace('J_FUV', 'calJ_FUV')
+            zpa[v_calJ] = zpa[v_J]/Sigma_FUV_over_4pi
 
+        return zpa
 
+    def merge_zprof_with_hst_src(self, zpa, force_override=True):
+        r = self.get_source_info(self.nums, force_override=force_override)
+        hs = r['spa']
+        columns = hs.columns
+        cc = [c for c in columns if c not in ['time', 'nstars', 'isrc', 'sp_src', 'sp']]
+        for c in cc:
+            f = interp1d(hs['time'], hs[c], fill_value='extrapolate', bounds_error=False)
+            assign_kwargs = {'src_' + c: (['time'], f(zpa['time']))}
+            zpa = zpa.assign(**assign_kwargs)
+
+        return zpa
+
+    def _zprof_post_process(self, zpa):
+        # Convert Erad_LyC to zeta_pi
+        sigma_pi_H = self.par['opacity']['sigma_HI_PH']
+        hnu = (self.par['radps']['hnu_PH']*au.eV).cgs.value
+        conv = sigma_pi_H/hnu*ac.c.cgs.value
+        vv = [v for v in list(zpa.variables) if v.startswith('Erad_LyC') and\
+              not v.startswith('Erad_LyC_mask') and v not in list(zpa.coords)]
+        for v in vv:
+            zpa[v.replace('Erad_LyC', 'zeta_pi')]= zpa[v]*conv
+
+        # Convert Erad_FUV to J_FUV and chi_FUV
+        Erad_PE0 = self.par['cooling']['Erad_PE0']
+        Erad_LW0 = self.par['cooling']['Erad_LW0']
+        Erad_FUV0 = Erad_LW0 + Erad_PE0
+        vv = [v for v in zpa.variables if v.startswith('Erad_LW')]
+        for v_ELW in vv:
+            if v.count('Erad_LW') > 1:
+                raise ValueError('Multiple "Erad_LW" found in variable name.' +\
+                                 'Be careful with conversion..')
+
+            v_EPE = v_ELW.replace('Erad_LW', 'Erad_PE')
+            v_EFUV = v_ELW.replace('Erad_LW', 'Erad_FUV')
+            zpa[v_EFUV] = zpa[v_ELW] + zpa[v_EPE]
+
+            # Mean intensity
+            v_JLW = v_ELW.replace('Erad_LW', 'J_LW')
+            v_JPE = v_EPE.replace('Erad_PE', 'J_PE')
+            v_JFUV = v_EFUV.replace('Erad_FUV', 'J_FUV')
+            zpa[v_JLW] = ac.c.cgs.value/(4.0*np.pi)*zpa[v_ELW]
+            zpa[v_JPE] = ac.c.cgs.value/(4.0*np.pi)*zpa[v_EPE]
+            zpa[v_JFUV] = ac.c.cgs.value/(4.0*np.pi)*zpa[v_EFUV]
+
+            # Normalized mean intensity
+            v_chiFUV = v_EFUV.replace('Erad_FUV', 'chi_FUV')
+            zpa[v_chiFUV] = zpa[v_EFUV]/Erad_FUV0
+
+        return zpa
 
 def get_zprof_classic(basedir='/projects/EOSTRIKE/TIGRESS-classic/R8_8pc_newacc',
                       savdir='/tigress/jk11/NCR-RAD/TIGRESS-classic',
                       force_override=False):
-
     s = LoadSim(basedir)
     fname = osp.join(savdir, '{0:s}-zprof-Twarm.p'.format(s.basename))
     if not force_override and osp.exists(fname):
@@ -170,10 +251,8 @@ def get_zprof_classic(basedir='/projects/EOSTRIKE/TIGRESS-classic/R8_8pc_newacc'
         time.append(ds.domain['time'])
 
     x, y, z = cc_arr(ds.domain)
-    r = dict(time=np.array(time),
-             Tw_mean=Tmean, Tbdry=[6e3, 1.5e4],
-             basedir=s.basedir, z=z,
-             domain=s.domain)
+    r = dict(time=np.array(time), Tw_mean=Tmean, Tbdry=[6e3, 1.5e4], basedir=s.basedir,
+             z=z, domain=s.domain)
 
     pickle.dump(r, open(fname, 'wb'))
     print('Result dumped to {0:s}'.format(fname))

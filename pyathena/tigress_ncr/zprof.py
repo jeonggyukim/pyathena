@@ -51,56 +51,139 @@ class Zprof(ReadZprofBase):
 
         return ds
 
-    def load_zprof_for_sfr(self):
-        """Process zprof data for pressure/weight analysis
-        """
-        if hasattr(self,'zp_pw'):
+    def load_zprof_for_sfr(self, fromfile=True, tofile=True):
+        """Process zprof data for pressure/weight analysis"""
+        if fromfile:
+            try:
+                with xr.open_dataset(
+                    os.path.join(self.savdir, "zprof", "zprof_sfr.nc")
+                ) as zp_pw:
+                    self.logger.info("zprof_sfr.nc is loaded")
+                    self.zp_pw = zp_pw
+            except OSError:
+                self.logger.warning("file not found: load from zprof")
+                pass
+
+        if hasattr(self, "zp_pw"):
             return self.zp_pw
-        zp = self.read_zprof(phase=['2p','h','whole'])
 
-        zplist=[]
+        zp = self.read_zprof(phase=["2p", "h", "whole"])
+
+        zplist = []
         for ph in zp:
-            zplist.append(zp[ph].expand_dims('phase').assign_coords(phase=[ph]))
+            zplist.append(zp[ph].expand_dims("phase").assign_coords(phase=[ph]))
 
-        zp=xr.concat(zplist,dim='phase')
-        rename_dict = {'h':'hot'}
-        zp = zp.to_array().to_dataset('phase').rename(rename_dict)
-        zp = zp.to_array('phase').to_dataset('variable')
+        zp = xr.concat(zplist, dim="phase")
+        rename_dict = {"h": "hot"}
+        zp = zp.to_array().to_dataset("phase").rename(rename_dict)
+        zp = zp.to_array("phase").to_dataset("variable")
 
-        dm=self.domain
-        u=self.u
-        momzp=xr.Dataset()
-        momzp['Pthm']=(zp['P']*u.pok)
-        momzp['Ptrb']=(2.0*zp['Ek3']*u.pok)
-        if 'B1' in zp:
-            momzp['dPimag']=((zp['dPB1']+zp['dPB2']-zp['dPB3'])*u.pok)
-            momzp['oPimag']=0.5*(zp['B1']**2+zp['B2']**2-zp['B3']**2)*u.pok
-            momzp['Pimag'] = momzp['dPimag'] + momzp['oPimag']
+        dm = self.domain
+        u = self.u
+        momzp = xr.Dataset()
+        momzp["Pthm"] = zp["P"] * u.pok
+        momzp["Ptrb"] = 2.0 * zp["Ek3"] * u.pok
+        if "B1" in zp:
+            momzp["dPimag"] = (zp["dPB1"] + zp["dPB2"] - zp["dPB3"]) * u.pok
+            momzp["oPimag"] = (
+                0.5 * (zp["B1"] ** 2 + zp["B2"] ** 2 - zp["B3"] ** 2) * u.pok
+            )
+            momzp["Pimag"] = momzp["dPimag"] + momzp["oPimag"]
         else:
-            momzp['dPimag']=xr.zeros_like(zp['P'])
-            momzp['oPimag']=xr.zeros_like(zp['P'])
-            momzp['Pimag']=xr.zeros_like(zp['P'])
+            momzp["dPimag"] = xr.zeros_like(zp["P"])
+            momzp["oPimag"] = xr.zeros_like(zp["P"])
+            momzp["Pimag"] = xr.zeros_like(zp["P"])
 
-        momzp['Ptot']=momzp['Pthm']+momzp['Ptrb']+momzp['Pimag']
+        momzp["Ptot"] = momzp["Pthm"] + momzp["Ptrb"] + momzp["Pimag"]
 
-        momzp['uWext']=(zp['dWext'].sel(z=slice(0,dm['re'][2]))[:,::-1].\
-                        cumsum(dim='z')[:,::-1]*u.pok*dm['dx'][2])
-        momzp['lWext']=(-zp['dWext'].sel(z=slice(dm['le'][2],0)).\
-                        cumsum(dim='z')*u.pok*dm['dx'][2])
-        momzp['Wext']=(momzp['uWext'].fillna(0.)+momzp['lWext'].fillna(0.))
-        if 'dWsg' in zp:
-            momzp['uWsg']=(zp['dWsg'].sel(z=slice(0,dm['re'][2]))[:,::-1].\
-                           cumsum(dim='z')[:,::-1]*u.pok*dm['dx'][2])
-            momzp['lWsg']=(-zp['dWsg'].sel(z=slice(dm['le'][2],0)).\
-                           cumsum(dim='z')*u.pok*dm['dx'][2])
-            momzp['Wsg']=(momzp['uWsg'].fillna(0.)+momzp['lWsg'].fillna(0.))
+        momzp["uWext"] = (
+            zp["dWext"].sel(z=slice(0, dm["re"][2]))[:, ::-1].cumsum(dim="z")[:, ::-1]
+            * u.pok
+            * dm["dx"][2]
+        )
+        momzp["lWext"] = (
+            -zp["dWext"].sel(z=slice(dm["le"][2], 0)).cumsum(dim="z")
+            * u.pok
+            * dm["dx"][2]
+        )
+        momzp["Wext"] = momzp["uWext"].fillna(0.0) + momzp["lWext"].fillna(0.0)
+        if "dWsg" in zp:
+            momzp["uWsg"] = (
+                zp["dWsg"]
+                .sel(z=slice(0, dm["re"][2]))[:, ::-1]
+                .cumsum(dim="z")[:, ::-1]
+                * u.pok
+                * dm["dx"][2]
+            )
+            momzp["lWsg"] = (
+                -zp["dWsg"].sel(z=slice(dm["le"][2], 0)).cumsum(dim="z")
+                * u.pok
+                * dm["dx"][2]
+            )
+            momzp["Wsg"] = momzp["uWsg"].fillna(0.0) + momzp["lWsg"].fillna(0.0)
         else:
-            momzp['Wsg']=xr.zeros_like(zp['P'])
-        momzp['W']=momzp['Wext']+momzp['Wsg']
-        momzp['A']=zp['A']
+            momzp["Wsg"] = xr.zeros_like(zp["P"])
+        momzp["W"] = momzp["Wext"] + momzp["Wsg"]
+        momzp["A"] = zp["A"]
 
         self.zp_pw = momzp
+
+        if tofile:
+            momzp.to_netcdf(os.path.join(self.savdir, "zprof", "zprof_sfr.nc"))
+            self.logger.info("zprof_sfr.nc is saved")
+
         return momzp
+
+    # def load_zprof_for_sfr(self):
+    #     """Process zprof data for pressure/weight analysis
+    #     """
+    #     if hasattr(self,'zp_pw'):
+    #         return self.zp_pw
+    #     zp = self.read_zprof(phase=['2p','h','whole'])
+
+    #     zplist=[]
+    #     for ph in zp:
+    #         zplist.append(zp[ph].expand_dims('phase').assign_coords(phase=[ph]))
+
+    #     zp=xr.concat(zplist,dim='phase')
+    #     rename_dict = {'h':'hot'}
+    #     zp = zp.to_array().to_dataset('phase').rename(rename_dict)
+    #     zp = zp.to_array('phase').to_dataset('variable')
+
+    #     dm=self.domain
+    #     u=self.u
+    #     momzp=xr.Dataset()
+    #     momzp['Pthm']=(zp['P']*u.pok)
+    #     momzp['Ptrb']=(2.0*zp['Ek3']*u.pok)
+    #     if 'B1' in zp:
+    #         momzp['dPimag']=((zp['dPB1']+zp['dPB2']-zp['dPB3'])*u.pok)
+    #         momzp['oPimag']=0.5*(zp['B1']**2+zp['B2']**2-zp['B3']**2)*u.pok
+    #         momzp['Pimag'] = momzp['dPimag'] + momzp['oPimag']
+    #     else:
+    #         momzp['dPimag']=xr.zeros_like(zp['P'])
+    #         momzp['oPimag']=xr.zeros_like(zp['P'])
+    #         momzp['Pimag']=xr.zeros_like(zp['P'])
+
+    #     momzp['Ptot']=momzp['Pthm']+momzp['Ptrb']+momzp['Pimag']
+
+    #     momzp['uWext']=(zp['dWext'].sel(z=slice(0,dm['re'][2]))[:,::-1].\
+    #                     cumsum(dim='z')[:,::-1]*u.pok*dm['dx'][2])
+    #     momzp['lWext']=(-zp['dWext'].sel(z=slice(dm['le'][2],0)).\
+    #                     cumsum(dim='z')*u.pok*dm['dx'][2])
+    #     momzp['Wext']=(momzp['uWext'].fillna(0.)+momzp['lWext'].fillna(0.))
+    #     if 'dWsg' in zp:
+    #         momzp['uWsg']=(zp['dWsg'].sel(z=slice(0,dm['re'][2]))[:,::-1].\
+    #                        cumsum(dim='z')[:,::-1]*u.pok*dm['dx'][2])
+    #         momzp['lWsg']=(-zp['dWsg'].sel(z=slice(dm['le'][2],0)).\
+    #                        cumsum(dim='z')*u.pok*dm['dx'][2])
+    #         momzp['Wsg']=(momzp['uWsg'].fillna(0.)+momzp['lWsg'].fillna(0.))
+    #     else:
+    #         momzp['Wsg']=xr.zeros_like(zp['P'])
+    #     momzp['W']=momzp['Wext']+momzp['Wsg']
+    #     momzp['A']=zp['A']
+
+    #     self.zp_pw = momzp
+    #     return momzp
 
     def load_zprof_for_wind(self):
         """Process zprof data for pressure/weight analysis

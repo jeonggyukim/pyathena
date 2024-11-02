@@ -2,13 +2,48 @@ import numpy as np
 from scipy.optimize import brentq
 from scipy.interpolate import interp1d
 
-from ..sixray_test import sixray_test
+# from ..sixray_test import sixray_test
 from .cool import heatCR, heatPE
+from .cool import coeff_kcoll_H, coeff_alpha_rr_H
 from .cool_rosen95 import CoolRosen95
 from ..util.rad_uvb import f_sshld_R13
 
-from .cool import get_xn_eq
 from ..util import rad_uvb
+
+def get_xn_eq(T, nH, zeta_pi=0.0, zeta_cr=0.0, coll_ion=True):
+    """Function to compute equilibrium neutral fraction
+    """
+    T = np.atleast_1d(T)
+    nH = np.atleast_1d(nH)
+    if coll_ion:
+        zeta_ci = nH*coeff_kcoll_H(T)
+    else:
+        zeta_ci = 0.0
+
+    zeta_rec = nH*coeff_alpha_rr_H(T)
+
+    aa = 1.0 + zeta_ci/zeta_rec
+    bb = -(2.0 + (zeta_pi + zeta_cr + zeta_ci)/zeta_rec)
+    x = -bb/(2.0*aa)*(1 - (np.lib.scimath.sqrt(1 - 4.0*aa/bb**2)).real)
+
+    return x
+
+def get_xe_mol(nH, xH2, xe, T=20.0, xi_cr=1e-16, Z_g=1.0, Z_d=1.0):
+    xe_max = 1.2006199779862501
+    k1620 = 1e-14 * Z_d
+    k1622 = 1e-14 * Z_d
+    k1621 = 1e-9
+    k1619 = 1.0e-7 * (T * 1e-2) ** (-0.5)
+    phi_s = (1.0 - xe / xe_max) * 0.67 / (1.0 + xe / 0.05)
+    xS = 5.3e-6 * Z_g  # From Draine's Table 9.5 (Diffuse H2)
+    A = k1619 * (1.0 + k1621 / k1622 * xS)
+    B = k1620 + k1621 * xS
+    return (
+        2.0
+        * xH2
+        * ((B**2 + 4.0 * A * xi_cr * (1.0 + phi_s) / nH) ** 0.5 - B)
+        / (2.0 * k1619)
+    )
 
 def get_equil(f_Lambda, z=0.0, manual=True, Gamma_pe0=None,
               heating_pi_UVB=True, heating_pe=True, heating_cr=False,
@@ -110,37 +145,37 @@ def get_equil(f_Lambda, z=0.0, manual=True, Gamma_pe0=None,
 
     return res
 
-def get_f_Lambda_newcool_grackle_rosen(newcool=True, grackle=True, Rosen95=True):
+# def get_f_Lambda_newcool_grackle_rosen(newcool=True, grackle=True, Rosen95=True):
 
-    r = dict()
+#     r = dict()
 
-    if newcool:
-        models = dict(
-            Unshld_CRvar_Z1='/tigress/jk11/NEWCOOL-TESTS/SIXRAY-TEST-UNSHIELDED/Unshld.CRvar.Zg1.0.Zd1.0/'
-        )
-        sa, da = sixray_test.load_sixray_test_all(models=models, cool=True)
-        d = da['Unshld_CRvar_Z1'].sel(log_chi_PE=0.0, method='nearest')
-        idx = np.diff(d['T'],prepend=0) > 0.0
-        f_newcool = interp1d(d['T'][~idx][:-2:], d['cool_rate'][~idx][:-2:]/d['nH'][~idx][:-2:]**2,
-                            bounds_error=False, fill_value='extrapolate')
+#     if newcool:
+#         models = dict(
+#             Unshld_CRvar_Z1='/tigress/jk11/NEWCOOL-TESTS/SIXRAY-TEST-UNSHIELDED/Unshld.CRvar.Zg1.0.Zd1.0/'
+#         )
+#         sa, da = sixray_test.load_sixray_test_all(models=models, cool=True)
+#         d = da['Unshld_CRvar_Z1'].sel(log_chi_PE=0.0, method='nearest')
+#         idx = np.diff(d['T'],prepend=0) > 0.0
+#         f_newcool = interp1d(d['T'][~idx][:-2:], d['cool_rate'][~idx][:-2:]/d['nH'][~idx][:-2:]**2,
+#                             bounds_error=False, fill_value='extrapolate')
 
-        r['f_newcool'] = f_newcool
+#         r['f_newcool'] = f_newcool
 
-    if Rosen95:
-        cr = CoolRosen95()
-        f_rosen95 = interp1d(cr.T_extrapolate, cr.LambdaRosen95(cr.T_extrapolate),
-                             bounds_error=False, fill_value='extrapolate')
-        r['f_rosen95'] = f_rosen95
+#     if Rosen95:
+#         cr = CoolRosen95()
+#         f_rosen95 = interp1d(cr.T_extrapolate, cr.LambdaRosen95(cr.T_extrapolate),
+#                              bounds_error=False, fill_value='extrapolate')
+#         r['f_rosen95'] = f_rosen95
 
-    if grackle:
-        fname = '/tigress/changgoo/cooling-curves/grackle_3.2_cooling_curve_Z1.txt'
-        nH,dens,temp,Ne,LambdaG = np.loadtxt(fname)
-        T = np.logspace(0.3,4.2,3000)
-        # Cutoff weird part
-        f_grackle = interp1d(temp[75:], LambdaG[75:], bounds_error=False, fill_value='extrapolate')
-        r['f_grackle'] = f_grackle
+#     if grackle:
+#         fname = '/tigress/changgoo/cooling-curves/grackle_3.2_cooling_curve_Z1.txt'
+#         nH,dens,temp,Ne,LambdaG = np.loadtxt(fname)
+#         T = np.logspace(0.3,4.2,3000)
+#         # Cutoff weird part
+#         f_grackle = interp1d(temp[75:], LambdaG[75:], bounds_error=False, fill_value='extrapolate')
+#         r['f_grackle'] = f_grackle
 
-    return r
+#     return r
 
 
 def plt_equil(axes_, rr, plt_kwargs):

@@ -14,20 +14,24 @@ from .slc_prj import SliceProj
 from .starpar import StarPar
 from .snapshot_HIH2EM import Snapshot_HIH2EM
 from .profile_1d import Profile1D
+
 from .rad_and_pionized import RadiationAndPartiallyIonized
+
 from .phase_set import Phase, PhaseSet
 from .phase_set import create_phase_set_with_LyC_mask
 from .phase_set import create_phase_set_with_density_bins
 from .zprof_from_vtk import ZprofFromVTK
-from .rad_hst import ReadHstRadiation
 
-class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
-                        StarPar, PDF, Hist2d, H2, Profile1D, Snapshot_HIH2EM,
-                        RadiationAndPartiallyIonized,
-                        ReadHstRadiation):
-    """LoadSim class for analyzing TIGRESS-RT simulations.
+from .rad_hst import RadiationHst
+from .rad_source import RadiationSource
+from .rad_slice import RadiationSlice
+
+class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj, StarPar, PDF,
+                        Hist2d, H2, Profile1D, Snapshot_HIH2EM,
+                        RadiationAndPartiallyIonized, RadiationHst, RadiationSource,
+                        RadiationSlice):
+    """LoadSim class for analyzing TIGRESS-NCR simulations.
     """
-
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  muH=1.4271, verbose=False):
         """The constructor for LoadSimTIGRESSNCR class
@@ -63,16 +67,65 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj,
         self.u = Units(muH=muH)
         self.domain = self._get_domain_from_par(self.par)
         self.phase_set = self.get_phase_sets()
+        if self.test_newcool():
+            self.test_newcool_params()
 
     def test_newcool(self):
         try:
-            if self.par['configure']['new_cooling'] == 'ON':
+            if self.par["configure"]["new_cooling"] == "ON":
                 newcool = True
             else:
                 newcool = False
         except KeyError:
             newcool = False
         return newcool
+
+    def test_spiralarm(self):
+        try:
+            if self.par["configure"]["SpiralArm"] == "yes":
+                arm = True
+            else:
+                arm = False
+        except KeyError:
+            arm = False
+        return arm
+
+    def test_newcool_params(self):
+        s = self
+        try:
+            s.iCoolH2colldiss = s.par["cooling"]["iCoolH2colldiss"]
+        except KeyError:
+            s.iCoolH2colldiss = 0
+
+        try:
+            s.iCoolH2rovib = s.par["cooling"]["iCoolH2rovib"]
+        except KeyError:
+            s.iCoolH2rovib = 0
+
+        try:
+            s.ikgr_H2 = s.par["cooling"]["ikgr_H2"]
+        except KeyError:
+            s.ikgr_H2 = 0
+
+        # s.config_time = pd.to_datetime(s.par["configure"]["config_date"])
+        # if "PDT" in s.par["configure"]["config_date"]:
+        #     s.config_time = s.config_time.tz_localize("US/Pacific")
+        if s.config_time < pd.to_datetime("2021-06-30 20:29:36 -04:00"):
+            s.iCoolHIcollion = 0
+        else:
+            s.iCoolHIcollion = 1
+
+        # check this is run with corrected CR heating
+        # 85a7857bb7c797686a4e9630cba71f326e1097cd
+        if s.config_time < pd.to_datetime("2022-05-23 22:23:43 -04:00"):
+            s.oldCRheating = 1
+        else:
+            s.oldCRheating = 0
+
+        try:
+            s.iH2heating = s.par["cooling"]["iH2heating"]
+        except KeyError:
+            s.iH2heating = -1
 
     def calc_deltay(self, time):
         """

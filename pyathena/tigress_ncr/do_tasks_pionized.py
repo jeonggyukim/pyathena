@@ -17,18 +17,21 @@ from pyathena.tigress_ncr.rad_load_all import load_sim_ncr_rad_all
 if __name__ == '__main__':
     COMM = MPI.COMM_WORLD
 
-    # sa, df = load_sim_ncr_rad_all(model_set='lowZ', verbose=False)
-    models = sa.models
-
-    # models = ['R8_Z1']
-    # mdl = 'LGR8_S05_Z1'
-    # mdl = 'LGR8_S05_Z01'
-
-    sa, df = load_sim_ncr_rad_all(model_set='radiation_paper', verbose=False)
-    models = sa.models
-    #models = ['R8_4pc']
+    flag_zprof_from_vtk = False
+    flag_slice = True
 
     force_override = True
+    # sa, df = load_sim_ncr_rad_all(model_set='lowZ', zprof_summary=False,
+    #                               verbose=False)
+    # models = sa.models
+    # models = ['S150_Om200_Z1r', 'S150_Om200_Z1']
+
+    sa, df = load_sim_ncr_rad_all(model_set='radiation_paper', zprof_summary=False,
+                                  verbose=False)
+    models = sa.models
+    models = ['R8_4pc', 'LGR4_2pc']
+    # models = ['LGR4_2pc']
+
     for mdl in models:
         nums = df.loc[mdl]['nums']
         s = sa.simdict[mdl]
@@ -43,16 +46,21 @@ if __name__ == '__main__':
         print('[rank, mynums]:', COMM.rank, mynums)
 
         time0 = time.time()
-        for phase_set_name in s.phase_set.keys():
-        # for phase_set_name in ['default_rad', 'warm_eq_LyC_ma']:
+        if flag_zprof_from_vtk:
+            for phase_set_name in ['default_rad','warm_eq_LyC_ma']:
+                for num in mynums:
+                    print(num, end=' ')
+                    rr = s.read_zprof_from_vtk(num, phase_set_name=phase_set_name,
+                                               force_override=force_override)
+                    n = gc.collect()
+                    print('Unreachable objects:', n, end=' ')
+                    print('Remaining Garbage:', end=' ')
+                    pprint.pprint(gc.garbage)
+
+        if flag_slice:
             for num in mynums:
                 print(num, end=' ')
-                rr = s.read_zprof_from_vtk(num, phase_set_name=phase_set_name,
-                                           force_override=force_override)
-                n = gc.collect()
-                print('Unreachable objects:', n, end=' ')
-                print('Remaining Garbage:', end=' ')
-                pprint.pprint(gc.garbage)
+                rr = s.read_slice(num, force_override=force_override)
 
         COMM.barrier()
         if COMM.rank == 0:

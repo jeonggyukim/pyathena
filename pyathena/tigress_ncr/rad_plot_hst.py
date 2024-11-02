@@ -4,16 +4,14 @@ import matplotlib as mpl
 
 from .rad_load_all import load_sim_ncr_rad_all, read_zpa_and_hst
 
-def get_fig_axes_caxes(nrow=7, ncol=2, ncaxes=3):
+def get_fig_axes_caxes(nrow=6, ncol=2, ncaxes=3):
     fig = plt.figure(figsize=(16, 2.5*nrow),
                      constrained_layout=False)
     gs = fig.add_gridspec(nrow, ncol, width_ratios=(50, 1),
                           height_ratios=np.repeat(1, nrow),
                           wspace=0.05, hspace=0.12)
-                      # left=0.1, right=0.9, bottom=0.1, top=0.9,
     axes = [fig.add_subplot(gs[i, 0]) for i in range(nrow)]
     caxes = [fig.add_subplot(gs[i+1, 1]) for i in range(ncaxes)]
-
     return fig, axes, caxes
 
 def plot_hst(model_set, model,
@@ -34,15 +32,14 @@ def plot_hst(model_set, model,
     zpa = zpa.rename(dict(time='time_code'))
     zpa = zpa.assign_coords(tMyr=zpa.time_code*u.Myr)
     zpa = zpa.swap_dims(dict(time_code='tMyr'))
-
-    # zpa = zpa.rename(dict(z='z_pc'))
     zpa = zpa.assign_coords(z_kpc=zpa.z*u.kpc)
-    # zpa = zpa.swap_dims(dict(time_code='tMyr'))
 
     zp_eq = zpa.sel(phase='w1_eq_noLyC')
+    # Non-equilibrium
     zp_pi = zpa.sel(phase='w1_eq_LyC_pi') + zpa.sel(phase='w1_eq_LyC')
     # Exposed to strong radiation only
     zp_pi_strong = zpa.sel(phase='w1_eq_LyC_pi')
+    # Non-equilibrium
     zp_neq = zpa.sel(phase='w1_geq_noLyC') +\
         zpa.sel(phase='w1_geq_LyC') + zpa.sel(phase='w1_geq_LyC_pi')
 
@@ -117,10 +114,6 @@ def plot_hst(model_set, model,
                   dict(c=cmap[1](c)), dict(c=cmap[1](c), ls='--', lw=1.5),
                   dict(c=cmap[2](c)), dict(c=cmap[2](c), ls='--', lw=1.5)]
 
-    # zps = [zp_pi_lo, zp_pi_hi, zp_neq_lo, zp_neq_hi]
-    # plt_kwargs = [dict(c='C0'), dict(c='C0', ls='--'),
-    #               dict(c='C1'), dict(c='C1', ls='--')]
-
     plot_hist_one(axes[4], zps, 'tMyr', 'frac_w_nesq', plt_kwargs=plt_kwargs)
     plt.setp(axes[4], ylim=(0, 1.1), ylabel=r'$f_{n_e^2}$')
 
@@ -128,15 +121,13 @@ def plot_hst(model_set, model,
     plt.setp(axes[5], yscale='linear', ylim=(0, 1.1),
              ylabel=r'$\langle x_{\rm H^+} \rangle_{n_{\rm e}^2}$')
 
-    plot_hist_one(axes[6], zps, 'tMyr', 'T_w_nesq', 'frac_w_nesq', plt_kwargs)
-
-    if s.par['problem']['Z_gas'] == 1.0:
-        ylim = (5e3, 1.2e4)
-    else:
-        ylim = (5e3, 1.5e4)
-
-    plt.setp(axes[6], yscale='linear', ylim=ylim,
-             ylabel=r'$\langle T \rangle_{n_{\rm e}^2}\;[{\rm K}]$')
+    # plot_hist_one(axes[6], zps, 'tMyr', 'T_w_nesq', 'frac_w_nesq', plt_kwargs)
+    # if s.par['problem']['Z_gas'] == 1.0:
+    #     ylim = (5e3, 1.2e4)
+    # else:
+    #     ylim = (5e3, 1.5e4)
+    # plt.setp(axes[6], yscale='linear', ylim=ylim,
+    #          ylabel=r'$\langle T \rangle_{n_{\rm e}^2}\;[{\rm K}]$')
 
     plt.setp(axes, xlim=xlim)
     plt.setp(axes[-1], xlabel=r'${\rm time}\;[{\rm Myr}]$')

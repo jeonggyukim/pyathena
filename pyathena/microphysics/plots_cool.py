@@ -111,16 +111,18 @@ def get_cool_eq(nH, cgi_xe_He, cgi_xe_mHHe, cgi_metal, cgi_He, xCstd=1.6e-4, xOs
 
     return res
 
-def get_heat_eq(rr, dhnu_pi_HI=3.4):
+def get_heat_eq(rr, dhnu_pi_HI=3.5, dust=True):
     """Heating per H [erg s^-1 H^-1] ignoring H2-related processes
 
     Cooling by grain-assisted recombination is included as a negative heating
     """
     rr['Gamma_pi'] = rr['xHI_eq']*rr['zeta_pi']*(dhnu_pi_HI*au.eV).cgs.value
     rr['Gamma_cr'] = heatCR(rr['nH'], rr['xe_eq'], rr['xHI_eq'], rr['xH2'], rr['xi_CR'])
-    rr['Gamma_pe'] = heatPE(rr['nH'], rr['T'], rr['xe_eq'], rr['Z_d'], rr['G_PE'])
-    rr['Gamma_grRec'] = -coolRec(rr['nH'], rr['T'], rr['xe_eq'], rr['Z_d'], rr['G_PE'])
-    rr['Gamma_tot'] = rr['Gamma_pi'] + rr['Gamma_cr'] + rr['Gamma_pe'] + rr['Gamma_grRec']
+    rr['Gamma_tot'] = rr['Gamma_pi'] + rr['Gamma_cr']
+    if dust:
+        rr['Gamma_pe'] = heatPE(rr['nH'], rr['T'], rr['xe_eq'], rr['Z_d'], rr['G_PE'])
+        # rr['Gamma_grRec'] = -coolRec(rr['nH'], rr['T'], rr['xe_eq'], rr['Z_d'], rr['G_PE'])
+        rr['Gamma_tot'] += rr['Gamma_pe'] # + rr['Gamma_grRec']
 
     return rr
 

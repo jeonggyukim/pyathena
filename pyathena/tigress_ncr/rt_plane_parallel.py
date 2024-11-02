@@ -139,18 +139,18 @@ def calc_Jrad(z, S4pi, zstar, fp, fm, dz_pc):
     for S4pi_, zstar_ in zip(S4pi, zstar):
         Dz = 0.2*dz_pc
         tau_SF = fp(zstar_ + Dz) - fp(zstar_ - Dz)
-        #print(tau_SF)
+        print(tau_SF)
         if z >= zstar_ + Dz:
             tau = fp(z) - fp(zstar_)
-            J += S4pi_*0.5*expn(1, tau)
-            #J += SFUV4pi_*J_over_JUV_outside_slab(tau, tau_SF)
+            # J += S4pi_*0.5*expn(1, tau)
+            J += S4pi_*J_over_JUV_outside_slab(tau, tau_SF)
         elif z <= zstar_ - Dz:
             tau = fm(z) - fm(zstar_)
-            J += S4pi_*0.5*expn(1, tau)
-            #J += SFUV4pi_*J_over_JUV_outside_slab(tau, tau_SF)
+            # J += S4pi_*0.5*expn(1, tau)
+            J += S4pi_*J_over_JUV_outside_slab(tau, tau_SF)
         else:
-            J += S4pi_*J_over_JUV_avg_slab(tau_SF)
-            #J += SFUV4pi_*J_over_JUV_inside_slab(0.0, tau_SF)
+            # J += S4pi_*J_over_JUV_avg_slab(tau_SF)
+            J += S4pi_*J_over_JUV_inside_slab(0.0, tau_SF)
             pass
 
     return J
