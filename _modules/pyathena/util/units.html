@@ -370,9 +370,15 @@ document.write(`
 
 <span class="sd">        Example</span>
 <span class="sd">        -------</span>
-<span class="sd">        &gt;&gt;&gt; u = Units(kind=&#39;LV&#39;, muH=1.4271) # Athena-TIGRESS with classic cooling</span>
+<span class="sd">        Athena-TIGRESS with classic cooling</span>
 
-<span class="sd">        &gt;&gt;&gt; u = Units(kind=&#39;LV&#39;, muH=1.4) # Athena-TIGRESS with NCR cooling</span>
+<span class="sd">        &gt;&gt;&gt; u = Units(kind=&#39;LV&#39;, muH=1.4271)</span>
+
+<span class="sd">        Athena-TIGRESS with NCR cooling</span>
+
+<span class="sd">        &gt;&gt;&gt; u = Units(kind=&#39;LV&#39;, muH=1.4)</span>
+
+<span class="sd">        TIGRIS &quot;ism&quot; unit system or any other custom unit system</span>
 
 <span class="sd">        &gt;&gt;&gt; units_dict = {&#39;units_system&#39;: &#39;ism&#39;,</span>
 <span class="sd">                          &#39;mass_cgs&#39;: 4.91615563682836e+31,</span>
@@ -380,7 +386,6 @@ document.write(`
 <span class="sd">                          &#39;time_cgs&#39;: 30856780000000,</span>
 <span class="sd">                          &#39;mean_mass_per_hydrogen&#39;: 2.34262e-24}</span>
 <span class="sd">        &gt;&gt;&gt; u = Units(&#39;custom&#39;, units_dict=units_dict)</span>
-<span class="sd">        # TIGRIS &quot;ism&quot; unit system or any other custom unit system</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">mH</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.008</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">u</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;g&#39;</span><span class="p">)</span>
         <span class="c1"># If code units, set [L]=[M]=[T]=1 and return.</span>
@@ -430,6 +435,7 @@ document.write(`
         <span class="c1"># mass unit set here if not &quot;custom&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;mass&#39;</span><span class="p">):</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">mass</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">muH</span><span class="o">*</span><span class="n">mH</span><span class="o">*</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;cm&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span><span class="p">)</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Msun&#39;</span><span class="p">)</span>
+
         <span class="bp">self</span><span class="o">.</span><span class="n">density</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">length</span><span class="o">**</span><span class="mi">3</span><span class="p">)</span><span class="o">.</span><span class="n">cgs</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">momentum</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Msun km s-1&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">energy</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">mass</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">velocity</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span><span class="o">.</span><span class="n">cgs</span>
