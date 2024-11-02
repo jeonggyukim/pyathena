@@ -28,17 +28,17 @@ class Units(object):
 
         Example
         -------
-        # Athena-TIGRESS with classic cooling
-        >>> u = Units(kind='LV', muH=1.4271)
-        # Athena-TIGRESS with NCR cooling
-        >>> u = Units(kind='LV', muH=1.4)
-        # TIGRIS "ism" unit system or any other custom unit system
+        >>> u = Units(kind='LV', muH=1.4271) # Athena-TIGRESS with classic cooling
+
+        >>> u = Units(kind='LV', muH=1.4) # Athena-TIGRESS with NCR cooling
+
         >>> units_dict = {'units_system': 'ism',
                           'mass_cgs': 4.91615563682836e+31,
                           'length_cgs': 3.085678e+18,
                           'time_cgs': 30856780000000,
                           'mean_mass_per_hydrogen': 2.34262e-24}
         >>> u = Units('custom', units_dict=units_dict)
+        # TIGRIS "ism" unit system or any other custom unit system
         """
         mH = (1.008*au.u).to('g')
         # If code units, set [L]=[M]=[T]=1 and return.
