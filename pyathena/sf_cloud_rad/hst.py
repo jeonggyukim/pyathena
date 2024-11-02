@@ -153,8 +153,21 @@ class Hst:
                 hst[f'Mof_cl_{ph}_dot'] = hst[c]
                 hst[f'Mof_cl_{ph}'] = integrate.cumtrapz(
                     hst[c], hst['time'], initial=0.0)
+
+            c = f'Mr_{ph}_out_xcm'
+            if c in hst.columns:
+                hst[c] *= vol*u.Msun*u.kms/u.Myr
+                hst[f'Mr_{ph}_out_xcm'] = hst[c]
+                hst[f'pr_{ph}_out_xcm'] = integrate.cumtrapz(hst[f'Mr_{ph}_out_xcm'],
+                                                             hst['time'], initial=0.0)
         try:
             hst['Mof_cl'] = hst['Mof_cl_H2'] + hst['Mof_cl_HI'] + hst['Mof_cl_HII']
+        except KeyError:
+            pass
+
+        try:
+            hst['Mr_out_xcm'] = hst['Mr_H2_out_xcm'] + hst['Mr_HI_out_xcm'] + hst['Mr_HII_out_xcm']
+            hst['pr_out_xcm'] = hst['pr_H2_out_xcm'] + hst['pr_HI_out_xcm'] + hst['pr_HII_out_xcm']
         except KeyError:
             pass
 

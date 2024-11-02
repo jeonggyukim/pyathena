@@ -151,6 +151,12 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
         df['eps_of_H2'] = max(h['Mof_H2'].values)/df['M']
         df['eps_of_HII'] = max(h['Mof_HII'].values)/df['M']
 
+        # Outflow momentum
+        df['pr_out_xcm'] = max(h['pr_out_xcm'].values)
+
+        # Outflow momentum per stellar mass
+        df['pstar_over_mstar'] = df['pr_out_xcm']/df['Mstar_final']
+
         idx_SF0, = h['Mstar'].to_numpy().nonzero()
         if len(idx_SF0):
             df['t_*'] = h['time'][idx_SF0[0]-1]
@@ -365,10 +371,9 @@ class LoadSimSFCloudRadAll(Compare):
                 self.basedirs[mdl] = basedir
 
     def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
-
         self.model = model
         self.sim = LoadSimSFCloudRad(self.basedirs[model], savdir=savdir,
-                                  load_method=load_method, verbose=verbose)
+                                     load_method=load_method, verbose=verbose)
         return self.sim
 
 
@@ -474,6 +479,7 @@ def load_all_sf_cloud_rad(force_override=False):
         # B16S1='/tigress/jk11/SF-CLOUD-RAD/M1E5R20.R.B16.A2.S1.N256.old',
         )
 
+    print('LoadSimAll')
     sa = LoadSimSFCloudRadAll(models)
 
     markers = ['o','v','^','s','*']
@@ -481,6 +487,7 @@ def load_all_sf_cloud_rad(force_override=False):
     # Check if pickle exists
     fpkl = osp.join('/tigress/jk11/SF-CLOUD-RAD/pickles/alphabeta.p')
     if not force_override and osp.isfile(fpkl):
+        print('Read summary from pickle')
         r = pd.read_pickle(fpkl)
         return sa, r
 
