@@ -9,7 +9,8 @@ import astropy.units as au
 from matplotlib.colors import Normalize, LogNorm
 
 from ..plt_tools.cmap import cmap_apply_alpha,cmap_shift
-from ..microphysics.cool import get_xe_mol, get_xn_eq, coeff_alpha_rr_H
+from ..microphysics.cool import coeff_alpha_rr_H
+from ..microphysics.get_equil import get_xe_mol, get_xn_eq, coeff_alpha_rr_H
 
 from .xray_emissivity import get_xray_emissivity
 
