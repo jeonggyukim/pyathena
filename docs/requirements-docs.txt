@@ -6,6 +6,7 @@ pandas
 xarray
 h5py
 netCDF4
+scipy
 healpy
 cmasher
 cmocean
