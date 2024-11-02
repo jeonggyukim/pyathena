@@ -439,19 +439,19 @@ See examples for other cases.</p></li>
 </dd>
 </dl>
 <p class="rubric">Example</p>
-<p># Athena-TIGRESS with classic cooling
-&gt;&gt;&gt; u = Units(kind=’LV’, muH=1.4271)
-# Athena-TIGRESS with NCR cooling
-&gt;&gt;&gt; u = Units(kind=’LV’, muH=1.4)
-# TIGRIS “ism” unit system or any other custom unit system
-&gt;&gt;&gt; units_dict = {‘units_system’: ‘ism’,</p>
-<blockquote>
-<div><p>‘mass_cgs’: 4.91615563682836e+31,
-‘length_cgs’: 3.085678e+18,
-‘time_cgs’: 30856780000000,
-‘mean_mass_per_hydrogen’: 2.34262e-24}</p>
-</div></blockquote>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Units</span><span class="p">(</span><span class="s1">&#39;custom&#39;</span><span class="p">,</span> <span class="n">units_dict</span><span class="o">=</span><span class="n">units_dict</span><span class="p">)</span>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Units</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;LV&#39;</span><span class="p">,</span> <span class="n">muH</span><span class="o">=</span><span class="mf">1.4271</span><span class="p">)</span> <span class="c1"># Athena-TIGRESS with classic cooling</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Units</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;LV&#39;</span><span class="p">,</span> <span class="n">muH</span><span class="o">=</span><span class="mf">1.4</span><span class="p">)</span> <span class="c1"># Athena-TIGRESS with NCR cooling</span>
+</pre></div>
+</div>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">units_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;units_system&#39;</span><span class="p">:</span> <span class="s1">&#39;ism&#39;</span><span class="p">,</span>
+<span class="go">                  &#39;mass_cgs&#39;: 4.91615563682836e+31,</span>
+<span class="go">                  &#39;length_cgs&#39;: 3.085678e+18,</span>
+<span class="go">                  &#39;time_cgs&#39;: 30856780000000,</span>
+<span class="go">                  &#39;mean_mass_per_hydrogen&#39;: 2.34262e-24}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Units</span><span class="p">(</span><span class="s1">&#39;custom&#39;</span><span class="p">,</span> <span class="n">units_dict</span><span class="o">=</span><span class="n">units_dict</span><span class="p">)</span>
+<span class="go"># TIGRIS &quot;ism&quot; unit system or any other custom unit system</span>
 </pre></div>
 </div>
 </dd></dl>
