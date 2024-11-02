@@ -8,12 +8,8 @@ from scipy.integrate import quad
 from scipy.interpolate import interp1d
 from pathlib import Path
 from pyathena.util import transform
-from pyathena.core_formation import load_sim_core_formation
 from pyathena.core_formation import config
-try:
-    from turb_sphere import utils, tes
-except ModuleNotFoundError:
-    pass
+from turb_sphere import utils, tes
 
 class LognormalPDF:
     """Lognormal probability distribution function"""
