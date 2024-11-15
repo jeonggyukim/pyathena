@@ -12,7 +12,7 @@ from matplotlib.colors import Normalize, LogNorm
 import astropy.constants as ac
 import astropy.units as au
 from scipy import integrate
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid as cumtrapz
 
 from ..io.read_hst import read_hst
 from ..load_sim import LoadSim

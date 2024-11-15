@@ -1,31 +1,30 @@
 from pathlib import Path
+import numpy as np
 import argparse
 import subprocess
 from multiprocessing import Pool
 import pyathena as pa
-from pyathena.core_formation.tasks import *
-from pyathena.core_formation.config import *
+from pyathena.core_formation import config, tasks, tools
 
 if __name__ == "__main__":
     # load all models
-    models = dict(M10J2P0N512='/scratch/gpfs/sm69/cores/M10.J2.P0.N512',
-                  M10J4P0N512='/scratch/gpfs/sm69/cores/M10.J4.P0.N512',
-                  M10J4P1N512='/scratch/gpfs/sm69/cores/M10.J4.P1.N512',
-                  M10J4P2N512='/scratch/gpfs/sm69/cores/M10.J4.P2.N512',
-                  M10J4P0N1024='/scratch/gpfs/sm69/cores/M10.J4.P0.N1024',
-                  M10J4P1N1024='/scratch/gpfs/sm69/cores/M10.J4.P1.N1024',
-                  M10J4P2N1024='/scratch/gpfs/sm69/cores/M10.J4.P2.N1024',
-                  M75J3P0N512='/scratch/gpfs/sm69/cores/M7.5.J3.P0.N512',
-                  M75J3P1N512='/scratch/gpfs/sm69/cores/M7.5.J3.P1.N512',
-                  M75J3P2N512='/scratch/gpfs/sm69/cores/M7.5.J3.P2.N512',
-                  M5J2P0N256='/scratch/gpfs/sm69/cores/M5.J2.P0.N256',
-                  M5J2P1N256='/scratch/gpfs/sm69/cores/M5.J2.P1.N256',
-                  M5J2P2N256='/scratch/gpfs/sm69/cores/M5.J2.P2.N256',
-                  M5J2P0N512='/scratch/gpfs/sm69/cores/M5.J2.P0.N512',
-                  M5J2P1N512='/scratch/gpfs/sm69/cores/M5.J2.P1.N512',
-                  M5J2P2N512='/scratch/gpfs/sm69/cores/M5.J2.P2.N512',
-                  M5J2P3N512='/scratch/gpfs/sm69/cores/M5.J2.P3.N512',
-                  M5J2P4N512='/scratch/gpfs/sm69/cores/M5.J2.P4.N512')
+    m1 = {f"M5J2P{iseed}N512": f"/scratch/gpfs/sm69/cores/hydro/M5.J2.P{iseed}.N512" for iseed in range(0, 40)}
+    m2 = {f"M10J4P{iseed}N1024": f"/scratch/gpfs/sm69/cores/hydro/M10.J4.P{iseed}.N1024" for iseed in range(0, 7)}
+    m3 = {f"M5J2P{iseed}N256": f"/scratch/gpfs/sm69/cores/hydro/M5.J2.P{iseed}.N256" for iseed in range(0, 1)}
+    models = {**m1, **m2, **m3}
+
+    # MHD models
+    for iseed in [1,]:
+        models[f"M5B4P{iseed}base"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.base"
+        models[f"M5B4P{iseed}uct0strict0"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct0.strict0"
+        models[f"M5B4P{iseed}uct0strict1"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct0.strict1"
+        models[f"M5B4P{iseed}uct1strict0"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct1.strict0"
+        models[f"M5B4P{iseed}uct1strict1"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct1.strict1"
+
+    # Experimental
+    models['M3J4P1N1024'] = "/tigress/sm69/cores/hydro/M3.J4.P1.N1024"
+    models['M30J4P1N1024'] = "/tigress/sm69/cores/hydro/M30.J4.P1.N1024"
+    models['M15J2P1N1024'] = "/tigress/sm69/cores/hydro/M15.J2.P1.N1024"
     sa = pa.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
@@ -33,126 +32,249 @@ if __name__ == "__main__":
                         help="List of models to process")
     parser.add_argument("--pids", nargs='+', type=int,
                         help="List of particle ids to process")
-
-    parser.add_argument("--np", type=int, help="Number of processors")
-
-    parser.add_argument("-j", "--join-partab", action="store_true",
-                        help="Join partab files")
-    parser.add_argument("-g", "--grid-dendro", action="store_true",
-                        help="Run GRID-dendro")
-    parser.add_argument("-c", "--core-tracking", action="store_true",
-                        help="Eulerian core tracking")
-    parser.add_argument("-r", "--radial-profile", action="store_true",
-                        help="Calculate radial profiles of each cores")
-    parser.add_argument("-t", "--critical-tes", action="store_true",
-                        help="Calculate critical TES of each cores")
-    parser.add_argument("-p", "--make-plots", action="store_true",
-                        help="Create various plots")
-    parser.add_argument("-o", "--overwrite-all", action="store_true",
+    parser.add_argument("--np", type=int, default=1,
+                        help="Number of processors")
+    parser.add_argument("-o", "--overwrite", action="store_true",
                         help="Overwrite everything")
-    parser.add_argument("-m", "--make-movie", action="store_true",
+    parser.add_argument("--combine-partab", action="store_true",
+                        help="Join partab files")
+    parser.add_argument("--combine-partab-full", action="store_true",
+                        help="Join partab files including last output")
+    parser.add_argument("--run-grid", action="store_true",
+                        help="Run GRID-dendro")
+    parser.add_argument("--prune", action="store_true",
+                        help="Prune dendrogram")
+    parser.add_argument("--track-cores", action="store_true",
+                        help="Perform reverse core tracking (prestellar phase)")
+    parser.add_argument("--track-protostellar-cores", action="store_true",
+                        help="Perform forward core tracking (protostellar phase)")
+    parser.add_argument("--radial-profile", action="store_true",
+                        help="Calculate radial profiles of each cores")
+    parser.add_argument("--critical-tes", action="store_true",
+                        help="Calculate critical TES of each cores")
+    parser.add_argument("--lagrangian-props", action="store_true",
+                        help="Calculate Lagrangian properties of cores")
+    parser.add_argument("--projections", action="store_true",
+                        help="Calculate projections")
+    parser.add_argument("--prj-radial-profile", action="store_true",
+                        help="Calculate radial profiles of each cores")
+    parser.add_argument("--observables", action="store_true",
+                        help="Calculate observable properties of cores")
+    parser.add_argument("--linewidth-size", action="store_true",
+                        help="Calculate linewidth-size relation")
+    parser.add_argument("--make-movie", action="store_true",
                         help="Create movies")
-
-    parser.add_argument("--overwrite-grid", action="store_true",
-                        help="Overwrite GRID-dendro output")
-    parser.add_argument("--overwrite-cores", action="store_true",
-                        help="Overwrite prestellar cores")
-    parser.add_argument("--overwrite-radial-profiles", action="store_true",
-                        help="Overwrite radial profiles of prestellar cores")
-    parser.add_argument("--overwrite-critical-tes", action="store_true",
-                        help="Overwrite critical turbulent equilibrium spheres"
-                             " for prestellar cores")
-    parser.add_argument("--overwrite-plot-core-evolution", action="store_true",
-                        help="Overwrite core evolution plots")
-    parser.add_argument("--overwrite-sink-history", action="store_true",
-                        help="Overwrite sink history plots")
-    parser.add_argument("--overwrite-pdf-pspecs", action="store_true",
-                        help="Overwrite PDF_Pspecs plots")
-    parser.add_argument("--overwrite-rhoc-evolution", action="store_true",
-                        help="Overwrite central density evolution plots")
+    parser.add_argument("--plot-core-evolution", action="store_true",
+                        help="Create core evolution plots")
+    parser.add_argument("--plot-sink-history", action="store_true",
+                        help="Create sink history plots")
+    parser.add_argument("--plot-pdfs", action="store_true",
+                        help="Create density pdf and velocity power spectrum")
+    parser.add_argument("--plot-diagnostics", action="store_true",
+                        help="Create diagnostics plot for each core")
+    parser.add_argument("--pid-start", type=int)
+    parser.add_argument("--pid-end", type=int)
 
     args = parser.parse_args()
 
-    if args.overwrite_all:
-        args.overwrite_grid = True
-        args.overwrite_cores = True
-        args.overwrite_radial_profiles = True
-        args.overwrite_critical_tes = True
-        args.overwrite_plot_core_evolution = True
-        args.overwrite_sink_history = True
-        args.overwrite_pdf_pspecs = True
-        args.overwrite_rhoc_evolution = True
-
     # Select models
     for mdl in args.models:
-        s = sa.set_model(mdl)
+        s = sa.set_model(mdl, force_override=True)
+
+        if args.pid_start is not None and args.pid_end is not None:
+            pids = np.arange(args.pid_start, args.pid_end+1)
+        else:
+            pids = s.pids
+        if args.pids:
+            pids = args.pids
+        pids = sorted(list(set(s.pids) & set(pids)))
 
         # Combine output files.
-        if args.join_partab:
-            print(f"Combine partab files for model {mdl}", flush=True)
-            combine_partab(s, remove=True)
+        if args.combine_partab:
+            print(f"Combine partab files for model {mdl}")
+            tasks.combine_partab(s, remove=True, include_last=False)
+
+        if args.combine_partab_full:
+            print(f"Combine all partab files for model {mdl}")
+            tasks.combine_partab(s, remove=True, include_last=True)
 
         # Run GRID-dendro.
-        if args.grid_dendro:
-            print(f"Run GRID-dendro for model {mdl}", flush=True)
-            def run_GRID_wrapper(num):
-                run_GRID(s, num, overwrite=args.overwrite_grid)
+        if args.run_grid:
+            def wrapper(num):
+                tasks.run_grid(s, num, overwrite=args.overwrite)
+            print(f"Run GRID-dendro for model {mdl}")
             with Pool(args.np) as p:
-                p.map(run_GRID_wrapper, s.nums[GRID_NUM_START:], 1)
+                p.map(wrapper, s.nums[config.GRID_NUM_START:], 1)
+
+        # Run GRID-dendro.
+        if args.prune:
+            def wrapper(num):
+                tasks.prune(s, num, overwrite=args.overwrite)
+            print(f"Run GRID-dendro for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums[config.GRID_NUM_START:], 1)
 
         # Find t_coll cores and save their GRID-dendro node ID's.
-        if args.core_tracking:
-            print(f"find t_coll cores for model {mdl}", flush=True)
-            find_and_save_cores(s, pids=args.pids, overwrite=args.overwrite_cores)
-            try:
-                s._load_cores()
-            except FileNotFoundError:
-                pass
+        if args.track_cores:
+            def wrapper(pid):
+                tasks.core_tracking(s, pid, overwrite=args.overwrite)
+            print(f"Perform core tracking for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, pids)
+
+        # Perform forward core tracking (only for good cores).
+        if args.track_protostellar_cores:
+            def wrapper(pid):
+                tasks.core_tracking(s, pid, protostellar=True, overwrite=args.overwrite)
+            print(f"Perform protostellar core tracking for model {mdl}")
+            # Only select resolved cores.
+            pids = sorted(set(pids) & set(s.good_cores()))
+            with Pool(args.np) as p:
+                p.map(wrapper, pids)
+
+        # Calculate radial profiles of t_coll cores and pickle them.
+        if args.projections:
+            msg = ("calculate and save projections for " f"model {mdl}")
+            print(msg)
+            def wrapper(num):
+                tasks.projections(s, num, overwrite=args.overwrite)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.radial_profile:
-            msg = "calculate and save radial profiles of t_coll cores for model {}"
-            print(msg.format(mdl), flush=True)
-            save_radial_profiles(s, pids=args.pids, overwrite=args.overwrite_radial_profiles)
-            try:
-                s._load_radial_profiles()
-            except FileNotFoundError:
-                pass
+            msg = ("calculate and save radial profiles for "
+                   f"model {mdl}")
+            print(msg)
+            def wrapper(num):
+                tasks.radial_profile(s, num, pids, overwrite=args.overwrite,
+                                     full_radius=True, days_overwrite=96)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
+
+        # Calculate radial profiles of t_coll cores and pickle them.
+        if args.prj_radial_profile:
+            msg = ("calculate and save projected radial profiles for "
+                   f"model {mdl}")
+            print(msg)
+            def wrapper(num):
+                tasks.prj_radial_profile(s, num, pids, overwrite=args.overwrite)
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
 
         # Find critical tes
         if args.critical_tes:
-            print(f"find critical tes for t_coll cores for model {mdl}", flush=True)
-            save_critical_tes(s, pids=args.pids, overwrite=args.overwrite_critical_tes)
-            try:
-                s._load_cores()
-            except FileNotFoundError:
-                pass
+            print(f"find critical tes for cores for model {mdl}")
+            for pid in pids:
+                cores = s.cores[pid]
+                def wrapper(num):
+                    tasks.critical_tes(s, pid, num, overwrite=args.overwrite)
+                with Pool(args.np) as p:
+                    p.map(wrapper, cores.index)
+
+        # Calculate Lagrangian properties
+        if args.lagrangian_props:
+            def wrapper(pid):
+                method_list = [2, 7]
+                for method in method_list:
+                    s.select_cores(method)
+                    if pid in s.cores:
+                        tasks.lagrangian_props(s, pid, method=method, overwrite=args.overwrite)
+            print(f"Calculate Lagrangian properties for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, pids)
+
+        # Find observables
+        if args.observables:
+            print(f"Calculate observable core properties for model {mdl}")
+            pids = sorted(set(pids) & set(s.good_cores()))
+            for pid in pids:
+                cores = s.cores[pid]
+                cores = cores.loc[:cores.attrs['numcoll']]
+                def wrapper(num):
+                    tasks.observables(s, pid, num, overwrite=args.overwrite)
+                with Pool(args.np) as p:
+                    p.map(wrapper, cores.index)
+
 
         # Resample AMR data into uniform grid
-#        print(f"resample AMR to uniform for model {mdl}", flush=True)
-#        resample_hdf5(s)
+#        print(f"resample AMR to uniform for model {mdl}")
+#        tasks.resample_hdf5(s)
+
+        # Calculate radial profiles of t_coll cores and pickle them.
+        if args.linewidth_size:
+            for num in [30, 40, 50, 60]:
+                ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'])
+                ds['vel1'] = ds.mom1/ds.dens
+                ds['vel2'] = ds.mom2/ds.dens
+                ds['vel3'] = ds.mom3/ds.dens
+                def wrapper(seed):
+                    tasks.calculate_linewidth_size(s, num, seed=seed, overwrite=args.overwrite, ds=ds)
+                with Pool(args.np) as p:
+                    p.map(wrapper, np.arange(1000))
+
+                def wrapper2(pid):
+                    tasks.calculate_linewidth_size(s, num, pid=pid, overwrite=args.overwrite, ds=ds)
+                with Pool(args.np) as p:
+                    p.map(wrapper2, s.good_cores())
+
+            def wrapper2(pid):
+                ncrit = s.cores[pid].attrs['numcrit']
+                tasks.calculate_linewidth_size(s, ncrit, pid=pid, overwrite=args.overwrite)
+            with Pool(args.np) as p:
+                p.map(wrapper2, s.good_cores())
 
         # make plots
-        if args.make_plots:
-            print(f"draw t_coll cores plots for model {mdl}", flush=True)
-            make_plots_core_evolution(s, pids=args.pids, overwrite=args.overwrite_plot_core_evolution)
+        if args.plot_core_evolution:
+            print(f"draw core evolution plots for model {mdl}")
+            for pid in pids:
+                for method in [1, 2]:
+                    s.select_cores(method)
+                    if pid not in s.good_cores():
+                        continue
+                    cores = s.cores[pid]
+                    def wrapper(num):
+                        tasks.plot_core_evolution(s, pid, num, method=method,
+                                                  overwrite=args.overwrite)
+                    with Pool(args.np) as p:
+                        p.map(wrapper, cores.index)
 
-            print(f"draw sink history plots for model {mdl}", flush=True)
-            make_plots_sinkhistory(s, overwrite=args.overwrite_sink_history)
+        if args.plot_sink_history:
+            def wrapper(num):
+                tasks.plot_sink_history(s, num, overwrite=args.overwrite)
+            print(f"draw sink history plots for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
 
-            print(f"draw PDF-power spectrum plots for model {mdl}", flush=True)
-            make_plots_PDF_Pspec(s, overwrite=args.overwrite_pdf_pspecs)
+        if args.plot_pdfs:
+            def wrapper(num):
+                tasks.plot_pdfs(s, num, overwrite=args.overwrite)
+            print(f"draw PDF-power spectrum plots for model {mdl}")
+            with Pool(args.np) as p:
+                p.map(wrapper, s.nums)
 
-            print(f"draw central density evolution plot for model {mdl}", flush=True)
-            make_plots_central_density_evolution(s, overwrite=args.overwrite_rhoc_evolution)
+        if args.plot_diagnostics:
+            print(f"draw diagnostics plots for model {mdl}")
+            for pid in s.good_cores():
+                tasks.plot_diagnostics(s, pid, overwrite=args.overwrite)
 
         # make movie
         if args.make_movie:
-            print(f"create movies for model {mdl}", flush=True)
-            srcdir = Path(s.basedir, "figures")
-            plot_prefix = [PLOT_PREFIX_SINK_HISTORY, PLOT_PREFIX_PDF_PSPEC]
+            print(f"create movies for model {mdl}")
+            srcdir = Path(s.savdir, "figures")
+            plot_prefix = [
+#                    config.PLOT_PREFIX_PDF_PSPEC,
+                    config.PLOT_PREFIX_SINK_HISTORY,
+                          ]
             for prefix in plot_prefix:
-                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
-            for pid in s.pids:
-                prefix = "{}.par{}".format(PLOT_PREFIX_TCOLL_CORES, pid)
-                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d", srcdir])
+                subprocess.run(["make_movie", "-p", prefix, "-s", srcdir, "-d",
+                                srcdir])
+            prefix = config.PLOT_PREFIX_CORE_EVOLUTION
+            for pid in pids:
+                for method in [1, 2]:
+                    s.select_cores(method)
+                    if pid not in s.good_cores():
+                        continue
+                    prf = f"{prefix}.par{pid}.ver{method}"
+                    subprocess.run(["make_movie", "-p", prf, "-s", srcdir,
+                                    "-d", srcdir])

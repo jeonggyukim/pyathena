@@ -2,7 +2,6 @@
 Read athena log file timeit.txt using pandas
 """
 
-from __future__ import print_function
 
 import os
 import re

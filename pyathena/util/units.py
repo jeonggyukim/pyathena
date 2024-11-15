@@ -28,11 +28,16 @@ class Units(object):
 
         Example
         -------
-        # Athena-TIGRESS with classic cooling
+        Athena-TIGRESS with classic cooling
+
         >>> u = Units(kind='LV', muH=1.4271)
-        # Athena-TIGRESS with NCR cooling
+
+        Athena-TIGRESS with NCR cooling
+
         >>> u = Units(kind='LV', muH=1.4)
-        # TIGRIS "ism" unit system or any other custom unit system
+
+        TIGRIS "ism" unit system or any other custom unit system
+
         >>> units_dict = {'units_system': 'ism',
                           'mass_cgs': 4.91615563682836e+31,
                           'length_cgs': 3.085678e+18,
@@ -88,6 +93,7 @@ class Units(object):
         # mass unit set here if not "custom"
         if not hasattr(self, 'mass'):
             self.mass = (self.muH*mH*(self.length.to('cm').value)**3).to('Msun')
+
         self.density = (self.mass/self.length**3).cgs
         self.momentum = (self.mass*self.velocity).to('Msun km s-1')
         self.energy = (self.mass*self.velocity**2).cgs

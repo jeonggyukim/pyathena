@@ -10,7 +10,7 @@ from ..io.read_hst import read_hst
 from ..load_sim import LoadSim
 
 from scipy import integrate
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid as cumtrapz
 
 class Hst:
 
