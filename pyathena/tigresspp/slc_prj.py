@@ -31,6 +31,8 @@ cmap_def = dict(
     Erad_LyC=plt.cm.viridis,
     xi_CR=plt.cm.viridis,
     Bmag=plt.cm.cividis,
+    rmetal=plt.cm.cool,
+    rSN=plt.cm.cool,
 )
 
 norm_def = dict(
@@ -47,6 +49,8 @@ norm_def = dict(
     Erad_LyC=LogNorm(1e-16, 5e-13),
     xi_CR=LogNorm(5e-17, 1e-15),
     Bmag=LogNorm(1.0e-2, 1.0e2),
+    rmetal=LogNorm(0.02,0.2),
+    rSN=LogNorm(1.e-5,1)
 )
 
 tiny = 1.0e-30
@@ -172,7 +176,10 @@ class SliceProj:
                     if f in fieldlist:
                         newslc[k][f] = data[f]
                     elif f in self.dfi:
-                        newslc[k][f] = self.dfi[f]["func"](data, self.u)
+                        try:
+                            newslc[k][f] = self.dfi[f]["func"](data, self.u)
+                        except KeyError:
+                            continue
                     else:
                         print("{} is not available".format(f))
         return newslc
@@ -277,12 +284,14 @@ class SliceProj:
     def plt_snapshot(
         self,
         num,
-        fields_xy=["Sigma_gas", "nH", "T", "pok", "vx", "vy"],
+        fields_xy=["Sigma_gas", "T", "pok", "nH", "Bmag", "rSN"],
         fields_xz=[
             "Sigma_gas",
             "nH",
             "T",
             "vz",
+            "Bmag",
+            "rmetal"
         ],
         xwidth=2,
         norm_factor=5.0,
@@ -335,6 +344,8 @@ class SliceProj:
             Erad_LyC=r"$\mathcal{E}_{\rm LyC}$",
             xi_CR=r"$\xi_{\rm CR}$",
             Bmag=r"$|B|$",
+            rmetal=r"$Z$",
+            rSN=r"$f_{\rm SN}$"
         )
 
         kind = dict(
@@ -351,6 +362,8 @@ class SliceProj:
             Erad_LyC="slc",
             xi_CR="slc",
             Bmag="slc",
+            rmetal="slc",
+            rSN="slc"
         )
         nxy = len(fields_xy)
         nxz = len(fields_xz)
