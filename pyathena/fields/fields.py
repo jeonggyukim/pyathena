@@ -249,7 +249,10 @@ def set_derived_fields_def(par, x0, newcool):
 
     # Cooling related fields
     if "configure" in par:
-        cooling = par['configure']['cooling'] == 'ON'
+        try:
+            cooling = par['configure']['cooling'] == 'ON'
+        except KeyError:
+            cooling = False
     else:
         # should find a way to check this for athena++
         cooling = False

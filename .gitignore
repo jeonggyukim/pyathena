@@ -13,4 +13,5 @@ docs/_static
 tags
 job*
 *.png
-
+build
+pyathena.egg-info

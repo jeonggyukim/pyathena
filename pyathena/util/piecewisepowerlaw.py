@@ -33,7 +33,7 @@ class PiecewisePowerlaw(object):
 
     Total integral:
 
-    .. math:: I_{tot} = \sum_0^N I_n
+    .. math:: I_{tot} = \\sum_0^N I_n
 
     """
 

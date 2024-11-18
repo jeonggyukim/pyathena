@@ -308,7 +308,7 @@ def parbin(fname, verbose=False):
             realprop = np.array(realprop).reshape(npartot, nreal)
 
         da1 = xr.DataArray(
-            intprop, dims=["pid", "var"], coords=[intprop[:, 0], header[:nint]]
+            intprop[:,1:], dims=["pid", "var"], coords=[intprop[:, 0], header[1:nint]]
         )
         da2 = xr.DataArray(
             realprop, dims=["pid", "var"], coords=[intprop[:, 0], header[nint:]]
