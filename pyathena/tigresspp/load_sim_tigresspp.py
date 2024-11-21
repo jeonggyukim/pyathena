@@ -45,31 +45,34 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
         self.domain = self._get_domain_from_par(self.par)
         self.dfi = DerivedFields(self.par).dfi
 
-        if self.par["cooling"]["coolftn"] == "tigress":
-            # cooltbl_file1 = osp.join(basedir,self.par["cooling"]["coolftn_file"])
-            cooltbl_file2 = osp.join(basedir, "cool_ftn.runtime.csv")
-            try:
-                cooltbl = pd.read_csv(cooltbl_file2)
-            except FileNotFoundError:
-                # cooltbl = pd.read_csv(cooltbl_file1)
-                return
-            from scipy.interpolate import interp1d
+        try:
+            if self.par["cooling"]["coolftn"] == "tigress":
+                # cooltbl_file1 = osp.join(basedir,self.par["cooling"]["coolftn_file"])
+                cooltbl_file2 = osp.join(basedir, "cool_ftn.runtime.csv")
+                try:
+                    cooltbl = pd.read_csv(cooltbl_file2)
+                except FileNotFoundError:
+                    # cooltbl = pd.read_csv(cooltbl_file1)
+                    return
+                from scipy.interpolate import interp1d
 
-            logLam = interp1d(
-                cooltbl["logT1"], np.log10(cooltbl["Lambda"]), fill_value="extrapolate"
-            )
-            logGam = interp1d(
-                cooltbl["logT1"], np.log10(cooltbl["Gamma"]), fill_value="extrapolate"
-            )
-            mu = interp1d(cooltbl["logT1"], cooltbl["mu"], fill_value="extrapolate")
-            self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
-            self.dfi["T"] = self.temperature_dfi()
+                logLam = interp1d(
+                    cooltbl["logT1"], np.log10(cooltbl["Lambda"]), fill_value="extrapolate"
+                )
+                logGam = interp1d(
+                    cooltbl["logT1"], np.log10(cooltbl["Gamma"]), fill_value="extrapolate"
+                )
+                mu = interp1d(cooltbl["logT1"], cooltbl["mu"], fill_value="extrapolate")
+                self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
+                self.dfi["T"] = self.temperature_dfi()
 
-        if self.par["feedback"]["pop_synth"] == "KO17":
-            # pop_synth_file1 = osp.join(basedir,self.par["feedback"]["pop_synth_file"])
-            pop_synth_file2 = osp.join(basedir, "pop_synth.runtime.csv")
-            if osp.isfile(pop_synth_file2):
-                self.pop_synth = pd.read_csv(pop_synth_file2)
+            if self.par["feedback"]["pop_synth"] == "KO17":
+                # pop_synth_file1 = osp.join(basedir,self.par["feedback"]["pop_synth_file"])
+                pop_synth_file2 = osp.join(basedir, "pop_synth.runtime.csv")
+                if osp.isfile(pop_synth_file2):
+                    self.pop_synth = pd.read_csv(pop_synth_file2)
+        except KeyError:
+            pass
 
     def calc_deltay(self, time):
         """

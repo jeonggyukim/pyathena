@@ -40,7 +40,7 @@ norm_def = dict(
     Sigma_H2=LogNorm(1e-2, 1e2),
     EM=LogNorm(1e0, 1e5),
     nH=LogNorm(1e-4, 1e3),
-    T=LogNorm(1e1, 1e7),
+    T=LogNorm(1e1, 1e8),
     pok=LogNorm(1.0e2, 1.0e6),
     vz=SymLogNorm(1, vmin=-1000, vmax=1000),
     vy=SymLogNorm(1, vmin=-1000, vmax=1000),
@@ -49,8 +49,8 @@ norm_def = dict(
     Erad_LyC=LogNorm(1e-16, 5e-13),
     xi_CR=LogNorm(5e-17, 1e-15),
     Bmag=LogNorm(1.0e-2, 1.0e2),
-    rmetal=LogNorm(0.02,0.2),
-    rSN=LogNorm(1.e-5,1)
+    rmetal=LogNorm(0.01,0.2),
+    rSN=Normalize(0,1)
 )
 
 tiny = 1.0e-30

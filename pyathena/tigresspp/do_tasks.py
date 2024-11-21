@@ -13,6 +13,7 @@ import argparse
 import pickle
 
 import pyathena as pa
+from pyathena.tigresspp.load_sim_tigresspp import LoadSimTIGRESSPP
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
 
@@ -34,7 +35,7 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     locals().update(args)
 
-    s = pa.LoadSimTIGRESSPP(basedir, verbose=False)
+    s = LoadSimTIGRESSPP(basedir, verbose=False)
     nums = s.nums
 
     plt.rcParams["figure.dpi"] = 200
