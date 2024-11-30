@@ -3,7 +3,7 @@
 
 title: pyathena
 author: Jeong-Gyu Kim, Chang-Goo Kim, Sanghyuk Moon
-# logo: tigress_logo.jpg
+logo: tigress_logo.jpg
 only_build_toc_files        : true
 
 # Force re-execution of notebooks on each build.
