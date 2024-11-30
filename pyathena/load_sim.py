@@ -1,4 +1,3 @@
-
 import os
 import sys
 import glob, re
@@ -14,6 +13,9 @@ import pickle
 import yt
 import tarfile
 import shutil
+from inherit_docstring import inherit_docstring
+
+from .load_sim_base import LoadSimBase
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
@@ -29,95 +31,82 @@ from .util.units import Units
 from .fields.fields import DerivedFields
 from .plt_tools.make_movie import make_movie
 
-class LoadSim(object):
-    """Class to prepare Athena simulation data analysis. Read input parameters,
-    find simulation output (vtk, starpar_vtk, hst, sn, zprof) files.
-
-    Properties
-    ----------
-        basedir : str
-            base directory of simulation output
-        basename : str
-            basename (tail) of basedir
-        files : dict
-            output file paths for vtk, starpar, hst, sn, zprof
-        problem_id : str
-            prefix for (vtk, starpar, hst, zprof) output
-        par : dict
-            input parameters and configure options read from log file
-        ds : AthenaDataSet or yt DataSet
-            class for reading vtk file
-        domain : dict
-            info about dimension, cell size, time, etc.
-        load_method : str
-            'pyathena' or 'yt' or 'pyathenaclassic'
-        num : list of int
-            vtk output numbers
-        u : Units object
-            simulation unit
-        dfi : dict
-            derived field information
-
-    Methods
-    -------
-        load_vtk() :
-            reads vtk file using pythena or yt and returns DataSet object
-        load_starpar_vtk() :
-            reads starpar vtk file and returns pandas DataFrame object
-        print_all_properties() :
-            prints all attributes and callable methods
+@inherit_docstring
+class LoadSim(LoadSimBase):
+    """Class to prepare Athena simulation data analysis. Read input parameters and find
+    simulation output files.
 
     Parameters
     ----------
-        basedir : str
-            Name of the directory where all data is stored
-        savdir : str
-            Name of the directory where pickled data and figures will be saved.
-            Default value is basedir.
-        load_method : str
-            Load vtk using 'pyathena', 'pythena_classic', or 'yt'.
-            Default value is 'pyathena'.
-            If None, savdir=basedir. Default value is None.
-        verbose : bool or str or int
-            Print verbose messages using logger. If True/False, set logger
-            level to 'DEBUG'/'WARNING'. If string, it should be one of the string
-            representation of python logging package:
-            ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
-            Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
-            accepted.
+    basedir : str
+        Directory where simulation output files are stored.
+    savdir : str, optional
+        Directory where pickles and figures are saved. Defaults to `basedir`.
+    load_method : str
+        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic', or 'yt'. Defaults to
+        'pyathena'.
+    verbose : bool or str or int
+        Print verbose messages using logger. If True/False, set logger level to
+        'DEBUG'/'WARNING'. If string, it should be one of the string representation of
+        python logging package: ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR',
+        'CRITICAL') Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
+        accepted.
+
+    Attributes
+    ----------
+    files : dict
+        Output file paths for vtk, starpar, hst, sn, zprof
+    problem_id : str
+        Prefix for (vtk, starpar, hst, zprof) output
+    par : dict
+        Input parameters and configure options read from log file
+    ds : AthenaDataSet or yt DataSet
+        Class for reading vtk file
+    domain : dict
+        info about dimension, cell size, time, etc.
+    num : list of int
+        vtk output numbers
+    u : Units object
+        simulation unit
+    dfi : dict
+        derived field information
+
+    Methods
+    -------
+    load_vtk() :
+        reads vtk file using pythena or yt and returns DataSet object
+    load_starpar_vtk() :
+        reads starpar vtk file and returns pandas DataFrame object
+    print_all_properties() :
+        prints all attributes and callable methods
 
     Examples
     --------
-        >>> s = LoadSim('/Users/jgkim/Documents/R4_8pc.RT.nowind', verbose=True)
-        LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind
-        LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt
-        LoadSim-INFO: problem_id: R4
-        LoadSim-INFO: hst: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.hst
-        LoadSim-INFO: sn: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.sn
-        LoadSim-WARNING: No vtk files are found in /Users/jgkim/Documents/R4_8pc.RT.nowind.
-        LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600
-        LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600
-        LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt
+    >>> s = LoadSim('/Users/jgkim/Documents/R4_8pc.RT.nowind', verbose=True)
+    LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind
+    LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt
+    LoadSim-INFO: problem_id: R4
+    LoadSim-INFO: hst: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.hst
+    LoadSim-INFO: sn: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.sn
+    LoadSim-WARNING: No vtk files are found in /Users/jgkim/Documents/R4_8pc.RT.nowind.
+    LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600
+    LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600
+    LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt
+
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
-        """Constructor for LoadSim class.
-
-        """
-
-        self.basedir = basedir.rstrip('/')
-        self.basename = osp.basename(self.basedir)
-
-        self.load_method = load_method
         self.logger = self._get_logger(verbose=verbose)
 
-        if savdir is None:
-            self.savdir = self.basedir
-        else:
-            self.savdir = savdir
+        self._basedir = basedir.rstrip('/')
+        self._basename = osp.basename(self.basedir)
 
+        self.savdir = savdir
+        self.load_method = load_method
+
+        self.logger.info('basedir: {0:s}'.format(self.basedir))
         self.logger.info('savdir : {:s}'.format(self.savdir))
 
         self._find_files()
@@ -705,8 +694,6 @@ class LoadSim(object):
 
         tasktime_patterns = [('*.task_time.txt',),]
 
-        self.logger.info('basedir: {0:s}'.format(self.basedir))
-
         # Read athinput files
         # Throw warning if not found
         fathinput = self._find_match(athinput_patterns)
@@ -1160,7 +1147,7 @@ class LoadSim(object):
         return fparhst
 
     def _get_logger(self, verbose=False):
-        """Function to set logger and default verbosity.
+        """Private method to initialize logger and set default verbosity.
 
         Parameters
         ----------
@@ -1168,7 +1155,7 @@ class LoadSim(object):
             Set logging level to "INFO"/"WARNING" if True/False.
         """
 
-        levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+        levels = ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
         if verbose is True:
             self.loglevel = 'INFO'
