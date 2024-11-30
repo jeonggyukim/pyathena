@@ -4,7 +4,7 @@ import argparse
 import subprocess
 from multiprocessing import Pool
 import pyathena as pa
-from pyathena.core_formation import config, tasks, tools
+from pyathena.core_formation import config, tasks, tools, load_sim_core_formation
 
 if __name__ == "__main__":
     # load all models
@@ -26,7 +26,7 @@ if __name__ == "__main__":
     models['M3J4P1N1024'] = "/tigress/sm69/cores/hydro/M3.J4.P1.N1024"
     models['M30J4P1N1024'] = "/tigress/sm69/cores/hydro/M30.J4.P1.N1024"
     models['M15J2P1N1024'] = "/tigress/sm69/cores/hydro/M15.J2.P1.N1024"
-    sa = pa.LoadSimCoreFormationAll(models)
+    sa = load_sim_core_formation.LoadSimCoreFormationAll(models)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("models", nargs='+', type=str,
