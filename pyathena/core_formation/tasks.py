@@ -693,9 +693,11 @@ def calculate_linewidth_size(s, num, seed=None, pid=None, overwrite=False, ds=No
     # Convert density and velocities to spherical coord.
     vel = {}
     for dim, axis in zip(['x', 'y', 'z'], [1, 2, 3]):
-        # Recenter velocity and calculate gravitational acceleration
+        # Recenter velocity
         vel_ = ds['vel{}'.format(axis)]
-        vel[dim] = vel_ - vel_.sel(x=origin['x'], y=origin['y'], z=origin['z'])
+        dvel_ = vel_ - vel_.sel(x=origin['x'], y=origin['y'], z=origin['z'])
+        ds[f'vel{axis}'] = dvel_
+        vel[dim] = dvel_
 
     _, (ds['vels1'], ds['vels2'], ds['vels3'])\
         = transform.to_spherical(vel.values(), origin.values())
