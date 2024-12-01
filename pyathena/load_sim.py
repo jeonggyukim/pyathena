@@ -49,10 +49,12 @@ class LoadSimBase(ABC):
     savdir : str
         Directory where pickles and figures are saved.
     basename : str
-        basename (last component) of `basedir`
+        basename (last component) of `basedir`.
     load_method : str
         Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic' (vtk only), or
         'yt'. Defaults to 'pyathena'.
+    problem_id : str
+        Prefix for output files.
     """
 
     @property
@@ -86,6 +88,10 @@ class LoadSimBase(ABC):
         else:
             raise ValueError('Unrecognized load_method: ', value)
 
+    @property
+    def problem_id(self):
+        return self._problem_id
+
 @inherit_docstring
 class LoadSim(LoadSimBase):
     """Class to prepare Athena simulation data analysis. Read input parameters and find
@@ -111,8 +117,6 @@ class LoadSim(LoadSimBase):
     ----------
     files : dict
         Output file paths for vtk, starpar, hst, sn, zprof
-    problem_id : str
-        Prefix for (vtk, starpar, hst, zprof) output
     par : dict
         Input parameters and configure options read from log file
     ds : AthenaDataSet or yt DataSet
@@ -188,7 +192,10 @@ class LoadSim(LoadSimBase):
                 'nums_id0', 'nums_tar', 'nums_vtk_all']
             for attr in attrs_transfer:
                 if hasattr(self.ff, attr):
-                    setattr(self, attr, getattr(self.ff, attr))
+                    if attr in ['problem_id']:
+                        setattr(self, '_'+attr, getattr(self.ff, attr))
+                    else:
+                        setattr(self, attr, getattr(self.ff, attr))
                 else:
                     pass
                     # self.logger.warning(f'Attribute {attr} does not exist in FindFiles '\
