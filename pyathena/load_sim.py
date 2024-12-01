@@ -80,7 +80,8 @@ class LoadSimBase(ABC):
 
     @load_method.setter
     def load_method(self, value):
-        if value in ['pyathena', 'pyatheha_classic', 'yt']:
+        # xarray instead of pyathena?
+        if value in ['pyathena', 'pyathena_classic', 'yt']:
             self._load_method = value
         else:
             raise ValueError('Unrecognized load_method: ', value)
