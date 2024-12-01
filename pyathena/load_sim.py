@@ -171,13 +171,17 @@ class LoadSim(LoadSimBase):
                 'nums',
                 # particle (Athena++)
                 'nums_partab','partags', '_partab_partag_def', 'pids',
-                # hdf5
+                # hdf5 (Athena++)
                 'nums_hdf5', 'hdf5_outid', 'hdf5_outvar', '_hdf5_outid_def',
                 '_hdf5_outvar_def',
                 # zprof
                 'nums_zprof', 'phase',
+                # rst
+                'nums_rst'
                 # starpar (Athena)
                 'nums_starpar',  'nums_sphst',
+                # vtk (Athena++)
+                'nums_vtk',
                 # vtk (Athena)
                 'nums_id0', 'nums_tar', 'nums_vtk_all']
             for attr in attrs_transfer:

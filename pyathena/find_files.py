@@ -81,6 +81,8 @@ class FindFiles(object):
 
     patterns['tasktime'] = [('*.task_time.txt',),]
 
+    # patterns for restart defined in find_rst()
+
     def __init__(self, basedir, verbose=False):
         if not osp.isdir(basedir):
             raise FileNotFoundError('Basedir {0:s} does not exist.'.format(basedir))
@@ -112,6 +114,8 @@ class FindFiles(object):
         self.find_vtk()
         if self.athena_pp:
             self.find_hdf5()
+
+        self.find_rst()
 
         if not self.athena_pp:
             self.find_timeit()
@@ -428,6 +432,33 @@ class FindFiles(object):
                             self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
             # Set nums array
             self.nums = self.nums_hdf5[self._hdf5_outvar_def]
+
+    def find_rst(self):
+        # Find rst files
+        if 'rst' in self.out_fmt:
+            if hasattr(self, 'problem_id'):
+                rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
+                                ('rst','{}.*.tar'.format(self.problem_id)),
+                                ('id0','{}.*.rst'.format(self.problem_id)),
+                                ('{}.*.rst'.format(self.problem_id),)]
+                frst = self.find_match(rst_patterns)
+                if frst:
+                    self.files['rst'] = frst
+                    if self.athena_pp:
+                        numbered_rstfiles = [f for f in self.files['rst'] if 'final' not in f]
+                        self.nums_rst = [int(f[-9:-4]) for f in numbered_rstfiles]
+                    else:
+                        self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
+                    msg = 'rst: {0:s}'.format(osp.dirname(self.files['rst'][0]))
+                    if len(self.nums_rst) > 0:
+                        msg += ' nums: {0:d}-{1:d}'.format(
+                                self.nums_rst[0], self.nums_rst[-1])
+                    if np.any(['final' in f for f in self.files['rst']]):
+                        msg += ' final: yes'
+                    self.logger.info(msg)
+                else:
+                    self.logger.warning(
+                        'rst files not found in {0:s}.'.format(self.basedir))
 
     def find_timeit(self):
         # Find timeit.txt
