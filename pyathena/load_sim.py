@@ -1,10 +1,9 @@
 import os
 import sys
-import glob, re
+import glob
+import re
 import getpass
 import warnings
-import logging
-import os.path as osp
 import functools
 import numpy as np
 import pandas as pd
@@ -13,9 +12,14 @@ import pickle
 import yt
 import tarfile
 import shutil
-from inherit_docstring import inherit_docstring
 
-from .load_sim_base import LoadSimBase
+import os.path as osp
+
+from inherit_docstring import inherit_docstring
+from abc import ABC
+
+from .find_files import FindFiles
+from .logger import create_logger
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
@@ -30,6 +34,56 @@ from .io.athena_read import athinput
 from .util.units import Units
 from .fields.fields import DerivedFields
 from .plt_tools.make_movie import make_movie
+
+
+class LoadSimBase(ABC):
+    """Common properties to all LoadSim classes
+
+    Parameters
+    ----------
+
+    Attributes
+    ----------
+    basedir : str
+        Directory where simulation output files are stored.
+    savdir : str
+        Directory where pickles and figures are saved.
+    basename : str
+        basename (last component) of `basedir`
+    load_method : str
+        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic' (vtk only), or
+        'yt'. Defaults to 'pyathena'.
+    """
+
+    @property
+    def basedir(self):
+        return self._basedir
+
+    @property
+    def basename(self):
+        return self._basename
+
+    @property
+    def savdir(self):
+        return self._savdir
+
+    @savdir.setter
+    def savdir(self, value):
+        if value is None:
+            self._savdir = self._basedir
+        else:
+            self._savdir = value
+
+    @property
+    def load_method(self):
+        return self._load_method
+
+    @load_method.setter
+    def load_method(self, value):
+        if value in ['pyathena', 'pyatheha_classic', 'yt']:
+            self._load_method = value
+        else:
+            raise ValueError('Unrecognized load_method: ', value)
 
 @inherit_docstring
 class LoadSim(LoadSimBase):
@@ -98,7 +152,9 @@ class LoadSim(LoadSimBase):
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
-        self.logger = self._get_logger(verbose=verbose)
+        # self.logger = self._get_logger(verbose=verbose)
+        self.logger = create_logger(self.__class__.__name__.split('.')[-1],
+                                    verbose=verbose)
 
         self._basedir = basedir.rstrip('/')
         self._basename = osp.basename(self.basedir)
@@ -106,10 +162,40 @@ class LoadSim(LoadSimBase):
         self.savdir = savdir
         self.load_method = load_method
 
+        try:
+            self.ff = FindFiles(self.basedir, verbose)
+            # Transfer attributes of FindFiles to LoadSim
+            # TODO : Some of these attributes don't need to be transferred.
+            attrs_transfer = [
+                'files', 'athena_pp', 'par', 'problem_id', 'out_fmt',
+                'nums',
+                # particle (Athena++)
+                'nums_partab','partags', '_partab_partag_def', 'pids',
+                # hdf5
+                'nums_hdf5', 'hdf5_outid', 'hdf5_outvar', '_hdf5_outid_def',
+                '_hdf5_outvar_def',
+                # zprof
+                'nums_zprof', 'phase',
+                # starpar (Athena)
+                'nums_starpar',  'nums_sphst',
+                # vtk (Athena)
+                'nums_id0', 'nums_tar', 'nums_vtk_all']
+            for attr in attrs_transfer:
+                if hasattr(self.ff, attr):
+                    setattr(self, attr, getattr(self.ff, attr))
+                else:
+                    pass
+                    # self.logger.warning(f'Attribute {attr} does not exist in FindFiles '\
+                    #                     'instance')
+
+        except OSError as e:
+            raise OSError(e)
+
         self.logger.info('basedir: {0:s}'.format(self.basedir))
         self.logger.info('savdir : {:s}'.format(self.savdir))
+        self.logger.info('load_method : {:s}'.format(self.load_method))
 
-        self._find_files()
+        # self._find_files()
 
         # Get domain info
         try:
@@ -977,7 +1063,7 @@ class LoadSim(LoadSimBase):
             else:
                 self.pids = []
                 self.logger.warning(
-                    'parhst files not found in {0:s}.'.format(self.basedir))
+                    'parhst files not found in {0:s}'.format(self.basedir))
 
         # Find zprof files
         # Multiple zprof files for each snapshot.
@@ -1010,7 +1096,7 @@ class LoadSim(LoadSimBase):
 
             else:
                 self.logger.warning(
-                    'zprof files not found in {0:s}.'.format(self.basedir))
+                    'zprof files not found in {0:s}'.format(self.basedir))
 
         # 2d vtk files
         self._fmt_vtk2d_not_found = []
@@ -1146,52 +1232,52 @@ class LoadSim(LoadSimBase):
 
         return fparhst
 
-    def _get_logger(self, verbose=False):
-        """Private method to initialize logger and set default verbosity.
+    # def _get_logger(self, verbose=False):
+    #     """Private method to initialize logger and set default verbosity.
 
-        Parameters
-        ----------
-        verbose: bool or str or int
-            Set logging level to "INFO"/"WARNING" if True/False.
-        """
+    #     Parameters
+    #     ----------
+    #     verbose: bool or str or int
+    #         Set logging level to "INFO"/"WARNING" if True/False.
+    #     """
 
-        levels = ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+    #     levels = ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
 
-        if verbose is True:
-            self.loglevel = 'INFO'
-        elif verbose is False:
-            self.loglevel = 'WARNING'
-        elif verbose in levels + [l.lower() for l in levels]:
-            self.loglevel = verbose.upper()
-        elif isinstance(verbose, int):
-            self.loglevel = verbose
-        else:
-            raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
+    #     if verbose is True:
+    #         self.loglevel = 'INFO'
+    #     elif verbose is False:
+    #         self.loglevel = 'WARNING'
+    #     elif verbose in levels + [l.lower() for l in levels]:
+    #         self.loglevel = verbose.upper()
+    #     elif isinstance(verbose, int):
+    #         self.loglevel = verbose
+    #     else:
+    #         raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
 
-        l = logging.getLogger(self.__class__.__name__.split('.')[-1])
+    #     l = logging.getLogger(self.__class__.__name__.split('.')[-1])
 
-        try:
-            if not l.hasHandlers():
-                h = logging.StreamHandler()
-                f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
-                # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-                h.setFormatter(f)
-                l.addHandler(h)
-                l.setLevel(self.loglevel)
-            else:
-                l.setLevel(self.loglevel)
-        except AttributeError: # for python 2 compatibility
-            if not len(l.handlers):
-                h = logging.StreamHandler()
-                f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
-                # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-                h.setFormatter(f)
-                l.addHandler(h)
-                l.setLevel(self.loglevel)
-            else:
-                l.setLevel(self.loglevel)
+    #     try:
+    #         if not l.hasHandlers():
+    #             h = logging.StreamHandler()
+    #             f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
+    #             # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    #             h.setFormatter(f)
+    #             l.addHandler(h)
+    #             l.setLevel(self.loglevel)
+    #         else:
+    #             l.setLevel(self.loglevel)
+    #     except AttributeError: # for python 2 compatibility
+    #         if not len(l.handlers):
+    #             h = logging.StreamHandler()
+    #             f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
+    #             # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
+    #             h.setFormatter(f)
+    #             l.addHandler(h)
+    #             l.setLevel(self.loglevel)
+    #         else:
+    #             l.setLevel(self.loglevel)
 
-        return l
+    #     return l
 
     class Decorators(object):
         """Class containing a collection of decorators for prompt reading of analysis
