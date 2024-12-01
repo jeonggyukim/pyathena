@@ -112,6 +112,9 @@ class FindFiles(object):
         self.find_zprof()
 
         self.find_vtk()
+        if not self.athena_pp:
+            self.find_vtk2d()
+
         if self.athena_pp:
             self.find_hdf5()
 
@@ -459,6 +462,28 @@ class FindFiles(object):
                 else:
                     self.logger.warning(
                         'rst files not found in {0:s}.'.format(self.basedir))
+
+    def find_vtk2d(self):
+        # 2d vtk files
+        self._fmt_vtk2d_not_found = []
+        for fmt in self.out_fmt:
+            if '.vtk' in fmt:
+                fmt = fmt.split('.')[0]
+                vtk2d_patterns = [('id0', '*.????.{0:s}.vtk'.format(fmt)),
+                                  ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
+                files = self.find_match(vtk2d_patterns)
+                if files:
+                    self.files[f'{fmt}'] = files
+                    setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
+                                                  for f in self.files[f'{fmt}']])
+                else:
+                    # Some 2d vtk files may not be found in id0 folder (e.g., slices)
+                    self._fmt_vtk2d_not_found.append(fmt)
+
+        if self._fmt_vtk2d_not_found:
+            self.logger.info('These vtk files need to be found ' + \
+                             'using find_files_vtk2d() method: ' + \
+                             ', '.join(self._fmt_vtk2d_not_found))
 
     def find_timeit(self):
         # Find timeit.txt

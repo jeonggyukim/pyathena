@@ -183,6 +183,7 @@ class LoadSim(LoadSimBase):
                 # vtk (Athena++)
                 'nums_vtk',
                 # vtk (Athena)
+                '_fmt_vtk2d_not_found',
                 'nums_id0', 'nums_tar', 'nums_vtk_all']
             for attr in attrs_transfer:
                 if hasattr(self.ff, attr):
@@ -1122,6 +1123,7 @@ class LoadSim(LoadSimBase):
             self.logger.info('These vtk files need to be found ' + \
                              'using find_files_vtk2d() method: ' + \
                              ', '.join(self._fmt_vtk2d_not_found))
+
         # Find rst files
         if 'rst' in self.out_fmt:
             if hasattr(self,'problem_id'):
