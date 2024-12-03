@@ -12,6 +12,8 @@ from .io.athena_read import athinput
 
 class FindFiles(object):
 
+    # Default patterns
+    # TODO: more explicit glob patterns using problem_id as in rst?
     patterns = dict()
 
     patterns['athinput'] = [
@@ -156,10 +158,10 @@ class FindFiles(object):
                 self.logger.warning('Try again with athena_read.athinput')
                 self.par = athena_read.athinput(self.files['athinput'])
 
-            # TODO(JGKIM): deal with another failure?
+            # TODO: deal with another failure?
 
             # Determine if it is Athena++ or Athena
-            # TODO(JGKIM): determine athena_pp even when par is unavailable
+            # TODO: determine athena_pp even when par is unavailable
             if 'mesh' in self.par:
                 self.athena_pp = True
                 self.logger.info('athena_pp simulation')
@@ -221,7 +223,7 @@ class FindFiles(object):
             self.par = None
             self.logger.warning('athinput not found in {0:s}'.\
                                 format(self.basedir))
-            # TODO(JGKIM): manually find out_fmt based on existing file extension?
+            # TODO: manually find out_fmt based on existing file extension?
             self.out_fmt = ['hst', 'vtk']
 
     def find_hst(self):
@@ -317,7 +319,7 @@ class FindFiles(object):
                     self.pids[0], self.pids[-1]))
             else:
                 self.pids = []
-                # TODO : issue warning only when parhst is turned on?
+                # TODO: issue warning only when parhst is turned on?
                 self.logger.warning(
                     'parhst files not found in {0:s}'.format(self.basedir))
 

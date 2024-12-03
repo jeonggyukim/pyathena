@@ -5,15 +5,15 @@ import re
 import getpass
 import warnings
 import functools
-import numpy as np
-import pandas as pd
-import xarray as xr
 import pickle
 import yt
 import tarfile
 import shutil
 import dateutil
 
+import numpy as np
+import pandas as pd
+import xarray as xr
 import os.path as osp
 
 from inherit_docstring import inherit_docstring
@@ -62,6 +62,7 @@ class LoadSimBase(ABC):
         Date and time when the athena code is configured.
     """
 
+    # TODO: Can use pathlib.Path but there is a backward compatibility risk.
     @property
     def basedir(self):
         return self._basedir
@@ -87,7 +88,7 @@ class LoadSimBase(ABC):
 
     @load_method.setter
     def load_method(self, value):
-        # xarray instead of pyathena?
+        # NOTE: xarray instead of pyathena?
         if value in ['pyathena', 'pyathena_classic', 'yt']:
             self._load_method = value
         else:
@@ -98,12 +99,12 @@ class LoadSimBase(ABC):
         return self._problem_id
 
     @property
-    def config_time(self):
-        return self._config_time
-
-    @property
     def domain(self):
         return self._domain
+
+    @property
+    def config_time(self):
+        return self._config_time
 
 @inherit_docstring
 class LoadSim(LoadSimBase):
