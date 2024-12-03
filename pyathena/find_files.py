@@ -1,6 +1,8 @@
 import glob
-import os.path as osp
+import os
 import re
+import os.path as osp
+import numpy as np
 
 from .logger import create_logger
 
@@ -95,12 +97,11 @@ class FindFiles(object):
 
     def find_all(self):
         self.files = dict()
+
         self.get_basic_info()
-
-        if 'hst' in self.out_fmt:
-            self.find_hst()
-
+        self.find_hst()
         self.find_sn()
+        self.find_zprof()
 
         if not self.athena_pp:
             self.find_sphst()
@@ -109,14 +110,12 @@ class FindFiles(object):
             self.find_partab()
             self.find_parhst()
 
-        self.find_zprof()
+        if self.athena_pp:
+            self.find_hdf5()
 
         self.find_vtk()
         if not self.athena_pp:
             self.find_vtk2d()
-
-        if self.athena_pp:
-            self.find_hdf5()
 
         self.find_rst()
 
@@ -216,17 +215,18 @@ class FindFiles(object):
             self.out_fmt = ['hst', 'vtk']
 
     def find_hst(self):
-        # Find history dump and extract problem_id (prefix for output file names)
-        # Caution: Assumes that problem_id does not contain '.'
-        fhst = self.find_match(self.patterns['hst'])
-        if fhst:
-            self.files['hst'] = fhst[0]
-            if not hasattr(self, 'problem_id'):
-                self.problem_id = osp.basename(self.files['hst']).split('.')[:-1]
-                self.logger.info('hst: {0:s}'.format(self.files['hst']))
-        else:
-            self.logger.warning('hst file not found in {0:s}'.\
-                                format(self.basedir))
+        if 'hst' in self.out_fmt:
+            # Find history dump and extract problem_id (prefix for output file names)
+            # Caution: Assumes that problem_id does not contain '.'
+            fhst = self.find_match(self.patterns['hst'])
+            if fhst:
+                self.files['hst'] = fhst[0]
+                if not hasattr(self, 'problem_id'):
+                    self.problem_id = osp.basename(self.files['hst']).split('.')[:-1]
+                    self.logger.info('hst: {0:s}'.format(self.files['hst']))
+            else:
+                self.logger.warning('hst file not found in {0:s}'.\
+                                    format(self.basedir))
 
     def find_sn(self):
         # Find sn dump
@@ -338,9 +338,9 @@ class FindFiles(object):
                     self.nums_zprof[self.phase[0]][0],
                 self.nums_zprof[self.phase[0]][-1]))
         else:
-            # TODO : issue warning only when zprof is in out_fmt?
-            self.logger.warning(
-                'zprof files not found in {0:s}'.format(self.basedir))
+            if 'zprof' in self.out_fmt:
+                self.logger.warning(
+                    'zprof files not found in {0:s}'.format(self.basedir))
 
     def find_vtk(self):
         # Find vtk files
@@ -355,6 +355,8 @@ class FindFiles(object):
                     'vtk files not found in {0:s}'.format(self.basedir))
                 self.nums = None
                 self.nums_id0 = None
+                self.nums_tar = None
+                self.nums_vtk_all = None
             else:
                 self.nums = [int(f[-8:-4]) for f in self.files['vtk']]
                 self.nums_id0 = [int(f[-8:-4]) for f in self.files['vtk_id0']]
@@ -380,8 +382,9 @@ class FindFiles(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(self.files['vtk_tar'][0]).split('.')[-2:]
                     self.nums = self.nums_tar
-            self.nums_vtk_all = list(set(self.nums)|set(self.nums_id0)|set(self.nums_tar))
-            self.nums_vtk_all.sort()
+
+                self.nums_vtk_all = list(set(self.nums)|set(self.nums_id0)|set(self.nums_tar))
+                self.nums_vtk_all.sort()
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
@@ -461,7 +464,7 @@ class FindFiles(object):
                     self.logger.info(msg)
                 else:
                     self.logger.warning(
-                        'rst files not found in {0:s}.'.format(self.basedir))
+                        'rst files in out_fmt but not found.'.format(self.basedir))
 
     def find_vtk2d(self):
         # 2d vtk files
