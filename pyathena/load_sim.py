@@ -12,6 +12,7 @@ import pickle
 import yt
 import tarfile
 import shutil
+import dateutil
 
 import os.path as osp
 
@@ -55,6 +56,10 @@ class LoadSimBase(ABC):
         'yt'. Defaults to 'pyathena'.
     problem_id : str
         Prefix for output files.
+    domain : dict
+        Domain information such as box size and number of cells.
+    config_time : pandas.Timestamp
+        Date and time when the athena code is configured.
     """
 
     @property
@@ -92,6 +97,14 @@ class LoadSimBase(ABC):
     def problem_id(self):
         return self._problem_id
 
+    @property
+    def config_time(self):
+        return self._config_time
+
+    @property
+    def domain(self):
+        return self._domain
+
 @inherit_docstring
 class LoadSim(LoadSimBase):
     """Class to prepare Athena simulation data analysis. Read input parameters and find
@@ -121,8 +134,6 @@ class LoadSim(LoadSimBase):
         Input parameters and configure options read from log file
     ds : AthenaDataSet or yt DataSet
         Class for reading vtk file
-    domain : dict
-        info about dimension, cell size, time, etc.
     num : list of int
         vtk output numbers
     u : Units object
@@ -211,26 +222,22 @@ class LoadSim(LoadSimBase):
         # self._find_files()
 
         # Get domain info
-        try:
-            self.domain = self._get_domain_from_par(self.par)
-        except:
-            pass
+        self._domain = self._get_domain_from_par(self.par)
 
-        # Get config time
-        try:
-            config_time = self.par['configure']['config_date']
-            # Avoid un-recognized timezone FutureWarning
-            config_time = config_time.replace('PDT ', '')
-            config_time = config_time.replace('EDT ', '')
-            self.config_time = pd.to_datetime(config_time).tz_localize('US/Pacific')
+        self._config_time = pd.to_datetime(dateutil.parser.parse(
+            self.par['configure']['config_date'])).tz_convert('US/Pacific')
+
+        # print(config_time)
+        # self.config_time = pd.to_datetime(config_time).tz_localize('US/Pacific')
+        #self.config_time = pd.to_datetime(config_time).tz_convert('US/Pacific')
             #self.config_time = self.config_time
-        except:
-            try:
-                # set it using hst file creation time
-                self.config_time = pd.to_datetime(osp.getctime(self.files['hst']),
-                                                  unit='s')
-            except:
-                self.config_time = None
+        # except:
+        #     try:
+        #         # set it using hst file creation time
+        #         self.config_time = pd.to_datetime(osp.getctime(self.files['hst']),
+        #                                           unit='s')
+        #     except:
+        #         self.config_time = None
 
         if not self.athena_pp:
             try:
@@ -324,13 +331,13 @@ class LoadSim(LoadSimBase):
         if self.fname.endswith('vtk'):
             if self.load_method == 'pyathena':
                 self.ds = AthenaDataSet(self.fname, units=self.u, dfi=self.dfi)
-                self.domain = self.ds.domain
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
 
             elif self.load_method == 'pyathena_classic':
                 self.ds = AthenaDataSetClassic(self.fname)
-                self.domain = self.ds.domain
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
 
@@ -346,7 +353,7 @@ class LoadSim(LoadSimBase):
         elif self.fname.endswith('tar'):
             if self.load_method == 'pyathena':
                 self.ds = AthenaDataSetTar(self.fname, units=self.u, dfi=self.dfi)
-                self.domain = self.ds.domain
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
             elif self.load_method == 'yt':
@@ -694,7 +701,6 @@ class LoadSim(LoadSimBase):
         domain['dx'] = domain['Lx']/domain['Nx']
         domain['center'] = 0.5*(domain['le'] + domain['re'])
         domain['time'] = None
-        self.domain = domain
 
         return domain
 
