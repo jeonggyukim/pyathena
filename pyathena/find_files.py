@@ -223,7 +223,7 @@ class FindFiles(object):
             self.par = None
             self.logger.warning('athinput not found in {0:s}'.\
                                 format(self.basedir))
-            # TODO: manually find out_fmt based on existing file extension?
+            # TODO: Manually find out_fmt based on existing file extension.
             self.out_fmt = ['hst', 'vtk']
 
     def find_hst(self):
