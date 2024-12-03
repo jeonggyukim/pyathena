@@ -153,31 +153,60 @@ class LoadSim(LoadSimBase):
 
     Examples
     --------
-    >>> s = LoadSim('/Users/jgkim/Documents/R4_8pc.RT.nowind', verbose=True)
-    LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind
-    LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt
-    LoadSim-INFO: problem_id: R4
-    LoadSim-INFO: hst: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.hst
-    LoadSim-INFO: sn: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.sn
-    LoadSim-WARNING: No vtk files are found in /Users/jgkim/Documents/R4_8pc.RT.nowind.
-    LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600
-    LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600
-    LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt
+    s = pa.LoadSim('/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/',
+                   verbose=True)
 
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
-        # self.logger = self._get_logger(verbose=verbose)
+
         self.logger = create_logger(self.__class__.__name__.split('.')[-1],
                                     verbose=verbose)
-
+        self.verbose = verbose
         self._basedir = basedir.rstrip('/')
         self._basename = osp.basename(self.basedir)
-
         self.savdir = savdir
         self.load_method = load_method
+
+        self.logger.info('basedir: {0:s}'.format(self.basedir))
+        self.logger.info('savdir: {:s}'.format(self.savdir))
+        self.logger.info('load_method: {:s}'.format(self.load_method))
+
+        self.find_files(verbose)
+
+        # Set metadata
+        self._get_domain_from_par(self.par)
+        self._config_time = pd.to_datetime(dateutil.parser.parse(
+            self.par['configure']['config_date'])).tz_convert('US/Pacific')
+
+        # Set units and derived field infomation
+        if not self.athena_pp:
+            try:
+                muH = self.par['problem']['muH']
+                self.u = Units(kind='LV', muH=muH)
+            except KeyError:
+                try:
+                    # Some old simulations run with new cooling may not have muH
+                    # parameter printed out
+                    if self.par['problem']['Z_gas'] != 1.0:
+                        self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
+                                            format(self.par['problem']['Z_gas']) +
+                                            'Caution with muH={0:s}'.format(muH))
+                    self.u = units
+                except:
+                    self.u = units
+                    pass
+
+            # TODO(SMOON) Make DerivedFields work with athena++
+            self.dfi = DerivedFields(self.par).dfi
+        else:
+            self.u = Units(kind='custom', units_dict=self.par['units'])
+
+    def find_files(self, verbose=None):
+        if verbose is None:
+            verbose = self.verbose
 
         try:
             self.ff = FindFiles(self.basedir, verbose)
@@ -213,38 +242,6 @@ class LoadSim(LoadSimBase):
                     setattr(self, attr, getattr(self.ff, attr))
             else:
                 pass
-
-        self.logger.info('basedir: {0:s}'.format(self.basedir))
-        self.logger.info('savdir : {:s}'.format(self.savdir))
-        self.logger.info('load_method : {:s}'.format(self.load_method))
-
-        # Get domain info
-        self._get_domain_from_par(self.par)
-
-        self._config_time = pd.to_datetime(dateutil.parser.parse(
-            self.par['configure']['config_date'])).tz_convert('US/Pacific')
-
-        if not self.athena_pp:
-            try:
-                muH = self.par['problem']['muH']
-                self.u = Units(kind='LV', muH=muH)
-            except KeyError:
-                try:
-                    # Some old simulations run with new cooling may not have muH
-                    # parameter printed out
-                    if self.par['problem']['Z_gas'] != 1.0:
-                        self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
-                                            format(self.par['problem']['Z_gas']) +
-                                            'Caution with muH={0:s}'.format(muH))
-                    self.u = units
-                except:
-                    self.u = units
-                    pass
-
-            # TODO(SMOON) Make DerivedFields work with athena++
-            self.dfi = DerivedFields(self.par).dfi
-        else:
-            self.u = Units(kind='custom', units_dict=self.par['units'])
 
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
         """Function to read Athena vtk file using pythena or yt and
