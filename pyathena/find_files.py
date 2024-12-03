@@ -101,6 +101,7 @@ class FindFiles(object):
         self.files = dict()
 
         self.get_basic_info()
+
         self.find_hst()
         self.find_sn()
         self.find_zprof()
@@ -149,25 +150,24 @@ class FindFiles(object):
         fathinput = self.find_match(self.patterns['athinput'])
         if fathinput:
             self.files['athinput'] = fathinput[0]
-            self.logger.info('athinput: {0:s}'.format(self.files['athinput']))
+            self.logger.info(f'athinput: {fathinput[0]}')
             try:
                 self.par = read_athinput(self.files['athinput'])
             except Exception as e:
                 self.logger.warning(f'An error occured: {e}')
-                self.logger.warning('read_athinput failed to read parameters')
-                self.logger.warning('Try again with athena_read.athinput')
+                self.logger.warning('Failed to read parameters with read_athinput.' +\
+                                    'Try again with athena_read.athinput')
                 self.par = athena_read.athinput(self.files['athinput'])
-
-            # TODO: deal with another failure?
+                # TODO: deal with another failure?
 
             # Determine if it is Athena++ or Athena
             # TODO: determine athena_pp even when par is unavailable
             if 'mesh' in self.par:
                 self.athena_pp = True
-                self.logger.info('athena_pp simulation')
+                self.logger.info('athena_pp: True')
             else:
                 self.athena_pp = False
-                self.logger.info('athena simulation')
+                self.logger.info('athena_pp: False')
 
             self.out_fmt = []
             self.partags = []
@@ -220,6 +220,7 @@ class FindFiles(object):
             self.problem_id = self.par['job']['problem_id']
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
+            # athinput unavailabe
             self.par = None
             self.logger.warning('athinput not found in {0:s}'.\
                                 format(self.basedir))
@@ -507,7 +508,7 @@ class FindFiles(object):
 
     def find_timeit(self):
         # Find timeit.txt
-        ftimeit = self.find_match('timeit')
+        ftimeit = self.find_match(self.patterns['timeit'])
         if ftimeit:
             self.files['timeit'] = ftimeit[0]
             self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
