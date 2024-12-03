@@ -124,6 +124,16 @@ class FindFiles(object):
         else:
             self.find_looptime_tasktime()
 
+        # Remove empty file lists
+        kdel = [k for k, v in self.files.items() if v == []]
+        for k in kdel:
+            del self.files[k]
+
+        # Remove empty nums (backward compatibility risk?)
+        for attr, v in list(vars(self).items()):
+            if attr.startswith('nums') and v == []:
+                delattr(self, attr)
+
     def find_match(self, patterns):
         glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
         for p in patterns:
