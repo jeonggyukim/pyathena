@@ -366,7 +366,7 @@ class FindFiles(object):
                 self.nums = None
                 self.nums_id0 = None
                 self.nums_tar = None
-                self.nums_vtk_all = None
+                self.nums_vtk = None
             else:
                 self.nums = [int(f[-8:-4]) for f in self.files['vtk']]
                 self.nums_id0 = [int(f[-8:-4]) for f in self.files['vtk_id0']]
@@ -376,13 +376,14 @@ class FindFiles(object):
                         osp.dirname(self.files['vtk_id0'][0]),
                         self.nums_id0[0], self.nums_id0[-1]))
                     if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(self.files['vtk_id0'][0]).split('.')[-2:]
+                        self.problem_id = osp.basename(
+                            self.files['vtk_id0'][0]).split('.')[-2:]
                 if self.nums:
                     self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
-                        osp.dirname(self.files['vtk'][0]),
-                        self.nums[0], self.nums[-1]))
+                        osp.dirname(self.files['vtk'][0]), self.nums[0], self.nums[-1]))
                     if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(self.files['vtk'][0]).split('.')[-2:]
+                        self.problem_id = osp.basename(
+                            self.files['vtk'][0]).split('.')[-2:]
                 else:
                     self.nums = self.nums_id0
                 if self.nums_tar:
@@ -390,11 +391,13 @@ class FindFiles(object):
                         osp.dirname(self.files['vtk_tar'][0]),
                         self.nums_tar[0], self.nums_tar[-1]))
                     if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(self.files['vtk_tar'][0]).split('.')[-2:]
+                        self.problem_id = osp.basename(
+                            self.files['vtk_tar'][0]).split('.')[-2:]
                     self.nums = self.nums_tar
 
-                self.nums_vtk_all = list(set(self.nums)|set(self.nums_id0)|set(self.nums_tar))
-                self.nums_vtk_all.sort()
+                self.nums_vtk = list(set(self.nums) | set(self.nums_id0) |
+                                         set(self.nums_tar))
+                self.nums_vtk.sort()
 
             # Check (joined) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk']]
