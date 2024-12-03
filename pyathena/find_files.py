@@ -443,11 +443,13 @@ class FindFiles(object):
         # Find rst files
         if 'rst' in self.out_fmt:
             if hasattr(self, 'problem_id'):
-                rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
-                                ('rst','{}.*.tar'.format(self.problem_id)),
-                                ('id0','{}.*.rst'.format(self.problem_id)),
-                                ('{}.*.rst'.format(self.problem_id),)]
-                frst = self.find_match(rst_patterns)
+                self.patterns['rst'] = [
+                    ('rst','{}.*.rst'.format(self.problem_id)),
+                    ('rst','????','{}.*.rst'.format(self.problem_id)),
+                    ('rst','{}.*.tar'.format(self.problem_id)),
+                    ('id0','{}.*.rst'.format(self.problem_id)),
+                    ('{}.*.rst'.format(self.problem_id),)]
+                frst = self.find_match(self.patterns['rst'])
                 if frst:
                     self.files['rst'] = frst
                     if self.athena_pp:
