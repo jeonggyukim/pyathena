@@ -222,7 +222,7 @@ class LoadSim(LoadSimBase):
         # self._find_files()
 
         # Get domain info
-        self._domain = self._get_domain_from_par(self.par)
+        self._get_domain_from_par(self.par)
 
         self._config_time = pd.to_datetime(dateutil.parser.parse(
             self.par['configure']['config_date'])).tz_convert('US/Pacific')
@@ -702,7 +702,7 @@ class LoadSim(LoadSimBase):
         domain['center'] = 0.5*(domain['le'] + domain['re'])
         domain['time'] = None
 
-        return domain
+        self._domain = domain
 
     # def _find_match(self, patterns):
     #     glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
