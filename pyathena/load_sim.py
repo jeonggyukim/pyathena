@@ -193,7 +193,7 @@ class LoadSim(LoadSimBase):
                 # zprof
                 'nums_zprof', 'phase',
                 # rst
-                'nums_rst'
+                'nums_rst',
                 # starpar (Athena)
                 'nums_starpar',  'nums_sphst',
                 # vtk (Athena++)
