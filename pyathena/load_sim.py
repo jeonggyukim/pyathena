@@ -18,6 +18,7 @@ import os.path as osp
 
 from inherit_docstring import inherit_docstring
 from abc import ABC
+from collections.abc import Mapping
 
 from .find_files import FindFiles
 from .logger import create_logger, _verbose_to_level
@@ -37,6 +38,36 @@ from .fields.fields import DerivedFields
 from .plt_tools.make_movie import make_movie
 
 
+class ReadOnlyDict(Mapping):
+    def __init__(self, data):
+        self._data = dict(data)
+
+    def __getitem__(self, key):
+        return self._data[key]
+
+    def __iter__(self):
+        return iter(self._data)
+
+    def __len__(self):
+        return len(self._data)
+
+    def __str__(self):
+        return str(self._data)
+
+    def __repr__(self):
+        return repr(self._data)
+
+    def keys(self):
+        return self._data.keys()
+
+    def values(self):
+        return self._data.values()
+
+    def items(self):
+        return self._data.items()
+
+
+
 class LoadSimBase(ABC):
     """Common properties to all LoadSim classes
 
@@ -54,10 +85,17 @@ class LoadSimBase(ABC):
     load_method : str
         Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic' (vtk only),
         or 'yt'. Defaults to 'pyathena'.
+    athena_pp : bool
+        True if athena++ simulation
     problem_id : str
         Prefix for output files.
     domain : dict
         Domain information such as box size and number of cells.
+    files : dict
+        Dictionary containing output file paths.
+    par : dict
+        Dictionary of dictionaries containing input parameters and configure
+        options read from log fileoutput file names.
     config_time : pandas.Timestamp
         Date and time when the athena code is configured.
     verbose : bool or str or int
@@ -105,12 +143,24 @@ class LoadSimBase(ABC):
         return self._problem_id
 
     @property
+    def athena_pp(self):
+        return self._athena_pp
+
+    @property
     def domain(self):
         return self._domain
 
     @property
     def config_time(self):
         return self._config_time
+
+    @property
+    def par(self):
+        return self._par
+
+    @property
+    def files(self):
+        return self._files
 
     @property
     def verbose(self):
@@ -120,16 +170,16 @@ class LoadSimBase(ABC):
     def verbose(self, value):
         if hasattr(self, 'logger'):
             self.logger.setLevel(_verbose_to_level(value))
-        if hasattr(self, 'find_files'):
+        if hasattr(self, 'ff'):
             if hasattr(self, 'logger'):
-                self.find_files.logger.setLevel(_verbose_to_level(value))
+                self.ff.logger.setLevel(_verbose_to_level(value))
 
         self._verbose = value
 
 @inherit_docstring
 class LoadSim(LoadSimBase):
-    """Class to prepare Athena simulation data analysis. Read input parameters and find
-    simulation output files.
+    """Class to prepare Athena simulation data analysis. Read input parameters
+    and find simulation output files.
 
     Parameters
     ----------
@@ -138,23 +188,25 @@ class LoadSim(LoadSimBase):
     savdir : str, optional
         Directory where pickles and figures are saved. Defaults to `basedir`.
     load_method : str
-        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic', or 'yt'. Defaults to
-        'pyathena'.
+        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic', or 'yt'.
+        Defaults to 'pyathena'.
+    verbose : bool or str or int
+        If True/False, set logging level to 'INFO'/'WARNING'.
+        Otherwise, one of valid logging levels
+        ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+        or their numerical values (0, 10, 20, 30, 40, 50).
+        (see https://docs.python.org/3/library/logging.html#logging-levels)
 
     Attributes
     ----------
-    files : dict
-        Output file paths for vtk, starpar, hst, sn, zprof
-    par : dict
-        Input parameters and configure options read from log file
     ds : AthenaDataSet or yt DataSet
         Class for reading vtk file
     num : list of int
         vtk output numbers
     u : Units object
-        simulation unit
+        Simulation unit
     dfi : dict
-        derived field information
+        Derived field information
 
     Methods
     -------
@@ -169,7 +221,19 @@ class LoadSim(LoadSimBase):
     --------
     s = pa.LoadSim('/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/',
                    verbose=True)
-
+    [LoadSim-INFO] basedir: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0
+    [LoadSim-INFO] savdir: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0
+    [LoadSim-INFO] load_method: pyathena
+    [FindFiles-INFO] athinput: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/out.txt
+    [FindFiles-INFO] athena_pp: False
+    [FindFiles-INFO] problem_id: R8_8pc_NCR
+    [FindFiles-INFO] vtk in tar: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/vtk nums: 200-668
+    [FindFiles-INFO] hst: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/hst/R8_8pc_NCR.hst
+    [FindFiles-INFO] sn: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/hst/R8_8pc_NCR.sn
+    [FindFiles-INFO] zprof: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/zprof nums: 200-668
+    [FindFiles-INFO] starpar_vtk: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/starpar nums: 200-668
+    [FindFiles-INFO] rst: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/rst/0010 nums: 10-34
+    [FindFiles-INFO] timeit: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/timeit.txt
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
@@ -205,9 +269,10 @@ class LoadSim(LoadSimBase):
                     # Some old simulations run with new cooling may not have muH
                     # parameter printed out
                     if self.par['problem']['Z_gas'] != 1.0:
-                        self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
-                                            format(self.par['problem']['Z_gas']) +
-                                            'Caution with muH={0:s}'.format(muH))
+                        self.logger.warning(
+                            'Z_gas={0:g} but muH is not found in par. '.\
+                            format(self.par['problem']['Z_gas']) +
+                            'Caution with muH={0:s}'.format(muH))
                     self.u = units
                 except:
                     self.u = units
@@ -219,11 +284,23 @@ class LoadSim(LoadSimBase):
             self.u = Units(kind='custom', units_dict=self.par['units'])
 
     def find_files(self, verbose=None):
+        """Find output files under base directory and update the `files`
+        attribute.
+
+        Parameters
+        ----------
+        verbose : bool or str or int
+            If True/False, set logging level to 'INFO'/'WARNING'.
+            Otherwise, one of valid logging levels
+            ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+            or their numerical values (0, 10, 20, 30, 40, 50).
+            (see https://docs.python.org/3/library/logging.html#logging-levels)
+        """
         if verbose is None:
             verbose = self.verbose
 
         try:
-            self.find_files = FindFiles(self.basedir, verbose)
+            self.ff = FindFiles(self.basedir, verbose)
         except OSError as e:
             raise OSError(e)
 
@@ -243,17 +320,19 @@ class LoadSim(LoadSimBase):
             'nums_rst',
             # starpar (Athena)
             'nums_starpar',  'nums_sphst',
-            # vtk (Athena++)
-            'nums_vtk',
-            # vtk (Athena)
-            '_fmt_vtk2d_not_found',
-            'nums_id0', 'nums_tar', 'nums_vtk']
+            # vtk
+            'nums_vtk', 'nums_id0', 'nums_tar', 'nums_vtk',
+            '_fmt_vtk2d_not_found']
         for attr in attrs_transfer:
-            if hasattr(self.find_files, attr):
-                if attr in ['problem_id']:
-                    setattr(self, '_'+attr, getattr(self.find_files, attr))
+            if hasattr(self.ff, attr):
+                if attr in ['files', 'athena_pp', 'problem_id']:
+                    setattr(self, '_' + attr, getattr(self.ff, attr))
+                elif attr in ['par']:
+                    tmp = {k: ReadOnlyDict(v) \
+                           for k, v in getattr(self.ff, attr).items()}
+                    setattr(self, '_' + attr, ReadOnlyDict(tmp))
                 else:
-                    setattr(self, attr, getattr(self.find_files, attr))
+                    setattr(self, attr, getattr(self.ff, attr))
             else:
                 pass
 
@@ -327,13 +406,13 @@ class LoadSim(LoadSimBase):
         if self.fname.endswith('vtk'):
             if self.load_method == 'pyathena':
                 self.ds = AthenaDataSet(self.fname, units=self.u, dfi=self.dfi)
-                self._domain = self.ds.domain
+                self._domain = ReadOnlyDict(self.ds.domain)
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
 
             elif self.load_method == 'pyathena_classic':
                 self.ds = AthenaDataSetClassic(self.fname)
-                self._domain = self.ds.domain
+                self._domain = ReadOnlyDict(self.ds.domain)
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
 
@@ -345,11 +424,13 @@ class LoadSim(LoadSimBase):
                 self.ds = yt.load(self.fname, units_override=units_override)
             else:
                 self.logger.error('load_method "{0:s}" not recognized.'.format(
-                    self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
+                    self.load_method) + \
+                    ' Use either "yt", "pyathena", "pyathena_classic".')
         elif self.fname.endswith('tar'):
             if self.load_method == 'pyathena':
-                self.ds = AthenaDataSetTar(self.fname, units=self.u, dfi=self.dfi)
-                self._domain = self.ds.domain
+                self.ds = AthenaDataSetTar(self.fname, units=self.u,
+                                           dfi=self.dfi)
+                self._domain = ReadOnlyDict(self.ds.domain)
                 self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
             elif self.load_method == 'yt':
@@ -376,8 +457,8 @@ class LoadSim(LoadSimBase):
         ihdf5 : int
            Read i-th file in the hdf5 file list. Overrides num if both are given.
         outvar : str
-           variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim' or 'cons'.
-           Overrides outid.
+           Variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim'
+           or 'cons'. Overrides outid.
         outid : int
            output block number (output[n] in the input file).
         load_method : str
@@ -386,7 +467,6 @@ class LoadSim(LoadSimBase):
         Returns
         -------
         ds : xarray AthenaDataSet or yt datasets
-
 
         Examples
         --------
@@ -698,7 +778,7 @@ class LoadSim(LoadSimBase):
         domain['center'] = 0.5*(domain['le'] + domain['re'])
         domain['time'] = None
 
-        self._domain = domain
+        self._domain = ReadOnlyDict(domain)
 
     def find_files_vtk2d(self):
 

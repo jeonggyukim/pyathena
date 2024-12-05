@@ -102,6 +102,13 @@ class FindFiles(object):
 
         self.get_basic_info()
 
+        if self.athena_pp:
+            self.find_hdf5()
+
+        self.find_vtk()
+        if not self.athena_pp:
+            self.find_vtk2d()
+
         self.find_hst()
         self.find_sn()
         self.find_zprof()
@@ -112,13 +119,6 @@ class FindFiles(object):
         else:
             self.find_partab()
             self.find_parhst()
-
-        if self.athena_pp:
-            self.find_hdf5()
-
-        self.find_vtk()
-        if not self.athena_pp:
-            self.find_vtk2d()
 
         self.find_rst()
 
@@ -236,7 +236,8 @@ class FindFiles(object):
                 self.files['hst'] = fhst[0]
                 if not hasattr(self, 'problem_id'):
                     self.problem_id = osp.basename(self.files['hst']).split('.')[:-1]
-                    self.logger.info('hst: {0:s}'.format(self.files['hst']))
+
+                self.logger.info('hst: {0:s}'.format(self.files['hst']))
             else:
                 self.logger.warning('hst file not found in {0:s}'.\
                                     format(self.basedir))
