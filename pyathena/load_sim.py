@@ -38,36 +38,6 @@ from .fields.fields import DerivedFields
 from .plt_tools.make_movie import make_movie
 
 
-class ReadOnlyDict(Mapping):
-    def __init__(self, data):
-        self._data = dict(data)
-
-    def __getitem__(self, key):
-        return self._data[key]
-
-    def __iter__(self):
-        return iter(self._data)
-
-    def __len__(self):
-        return len(self._data)
-
-    def __str__(self):
-        return str(self._data)
-
-    def __repr__(self):
-        return repr(self._data)
-
-    def keys(self):
-        return self._data.keys()
-
-    def values(self):
-        return self._data.values()
-
-    def items(self):
-        return self._data.items()
-
-
-
 class LoadSimBase(ABC):
     """Common properties to all LoadSim classes
 
@@ -325,12 +295,8 @@ class LoadSim(LoadSimBase):
             '_fmt_vtk2d_not_found']
         for attr in attrs_transfer:
             if hasattr(self.ff, attr):
-                if attr in ['files', 'athena_pp', 'problem_id']:
+                if attr in ['files', 'par', 'athena_pp', 'problem_id']:
                     setattr(self, '_' + attr, getattr(self.ff, attr))
-                elif attr in ['par']:
-                    tmp = {k: ReadOnlyDict(v) \
-                           for k, v in getattr(self.ff, attr).items()}
-                    setattr(self, '_' + attr, ReadOnlyDict(tmp))
                 else:
                     setattr(self, attr, getattr(self.ff, attr))
             else:
@@ -406,13 +372,13 @@ class LoadSim(LoadSimBase):
         if self.fname.endswith('vtk'):
             if self.load_method == 'pyathena':
                 self.ds = AthenaDataSet(self.fname, units=self.u, dfi=self.dfi)
-                self._domain = ReadOnlyDict(self.ds.domain)
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
 
             elif self.load_method == 'pyathena_classic':
                 self.ds = AthenaDataSetClassic(self.fname)
-                self._domain = ReadOnlyDict(self.ds.domain)
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
 
@@ -430,7 +396,7 @@ class LoadSim(LoadSimBase):
             if self.load_method == 'pyathena':
                 self.ds = AthenaDataSetTar(self.fname, units=self.u,
                                            dfi=self.dfi)
-                self._domain = ReadOnlyDict(self.ds.domain)
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
             elif self.load_method == 'yt':
@@ -778,7 +744,7 @@ class LoadSim(LoadSimBase):
         domain['center'] = 0.5*(domain['le'] + domain['re'])
         domain['time'] = None
 
-        self._domain = ReadOnlyDict(domain)
+        self._domain = domain
 
     def find_files_vtk2d(self):
 
