@@ -20,7 +20,7 @@ from inherit_docstring import inherit_docstring
 from abc import ABC
 
 from .find_files import FindFiles
-from .logger import create_logger
+from .logger import create_logger, _verbose_to_level
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
@@ -52,14 +52,20 @@ class LoadSimBase(ABC):
     basename : str
         basename (last component) of `basedir`.
     load_method : str
-        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic' (vtk only), or
-        'yt'. Defaults to 'pyathena'.
+        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic' (vtk only),
+        or 'yt'. Defaults to 'pyathena'.
     problem_id : str
         Prefix for output files.
     domain : dict
         Domain information such as box size and number of cells.
     config_time : pandas.Timestamp
         Date and time when the athena code is configured.
+    verbose : bool or str or int
+        If True/False, set logging level to 'INFO'/'WARNING'.
+        Otherwise, one of valid logging levels
+        ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+        or their numerical values (0, 10, 20, 30, 40, 50).
+        (see https://docs.python.org/3/library/logging.html#logging-levels)
     """
 
     # TODO: Can use pathlib.Path but there is a backward compatibility risk.
@@ -106,6 +112,20 @@ class LoadSimBase(ABC):
     def config_time(self):
         return self._config_time
 
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, value):
+        if hasattr(self, 'logger'):
+            self.logger.setLevel(_verbose_to_level(value))
+        if hasattr(self, 'find_files'):
+            if hasattr(self, 'logger'):
+                self.find_files.logger.setLevel(_verbose_to_level(value))
+
+        self._verbose = value
+
 @inherit_docstring
 class LoadSim(LoadSimBase):
     """Class to prepare Athena simulation data analysis. Read input parameters and find
@@ -120,12 +140,6 @@ class LoadSim(LoadSimBase):
     load_method : str
         Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic', or 'yt'. Defaults to
         'pyathena'.
-    verbose : bool or str or int
-        Print verbose messages using logger. If True/False, set logger level to
-        'DEBUG'/'WARNING'. If string, it should be one of the string representation of
-        python logging package: ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR',
-        'CRITICAL') Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
-        accepted.
 
     Attributes
     ----------
@@ -162,9 +176,9 @@ class LoadSim(LoadSimBase):
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
 
-        self.logger = create_logger(self.__class__.__name__.split('.')[-1],
-                                    verbose=verbose)
         self.verbose = verbose
+        self.logger = create_logger(self.__class__.__name__.split('.')[-1],
+                                    verbose)
         self._basedir = basedir.rstrip('/')
         self._basename = osp.basename(self.basedir)
         self.savdir = savdir
@@ -209,7 +223,7 @@ class LoadSim(LoadSimBase):
             verbose = self.verbose
 
         try:
-            self.ff = FindFiles(self.basedir, verbose)
+            self.find_files = FindFiles(self.basedir, verbose)
         except OSError as e:
             raise OSError(e)
 
@@ -235,11 +249,11 @@ class LoadSim(LoadSimBase):
             '_fmt_vtk2d_not_found',
             'nums_id0', 'nums_tar', 'nums_vtk']
         for attr in attrs_transfer:
-            if hasattr(self.ff, attr):
+            if hasattr(self.find_files, attr):
                 if attr in ['problem_id']:
-                    setattr(self, '_'+attr, getattr(self.ff, attr))
+                    setattr(self, '_'+attr, getattr(self.find_files, attr))
                 else:
-                    setattr(self, attr, getattr(self.ff, attr))
+                    setattr(self, attr, getattr(self.find_files, attr))
             else:
                 pass
 
@@ -280,13 +294,13 @@ class LoadSim(LoadSimBase):
             fnames = filter_vtk_files('vtk', num)
             return read_vtk_athenapp(fnames)
 
-        if not self.files['vtk_id0']:
+        if not 'vtk_id0' in self.files.keys():
             id0 = False
 
         if id0:
             kind = ['vtk_id0', 'vtk', 'vtk_tar']
         else:
-            if self.files['vtk']:
+            if 'vtk' in self.files.keys():
                 kind = ['vtk', 'vtk_tar', 'vtk_id0']
             else:
                 kind = ['vtk_tar', 'vtk', 'vtk_id0']
@@ -706,6 +720,7 @@ class LoadSim(LoadSimBase):
         """Get file path
         """
 
+        # TODO: can be moved to FindFiles?
         try:
             dirname = osp.dirname(self.files[kind][0])
         except IndexError:
@@ -773,53 +788,6 @@ class LoadSim(LoadSimBase):
         fparhst = osp.join(dirname, fpattern.format(self.problem_id, pid))
 
         return fparhst
-
-    # def _get_logger(self, verbose=False):
-    #     """Private method to initialize logger and set default verbosity.
-
-    #     Parameters
-    #     ----------
-    #     verbose: bool or str or int
-    #         Set logging level to "INFO"/"WARNING" if True/False.
-    #     """
-
-    #     levels = ['NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-
-    #     if verbose is True:
-    #         self.loglevel = 'INFO'
-    #     elif verbose is False:
-    #         self.loglevel = 'WARNING'
-    #     elif verbose in levels + [l.lower() for l in levels]:
-    #         self.loglevel = verbose.upper()
-    #     elif isinstance(verbose, int):
-    #         self.loglevel = verbose
-    #     else:
-    #         raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
-
-    #     l = logging.getLogger(self.__class__.__name__.split('.')[-1])
-
-    #     try:
-    #         if not l.hasHandlers():
-    #             h = logging.StreamHandler()
-    #             f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
-    #             # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    #             h.setFormatter(f)
-    #             l.addHandler(h)
-    #             l.setLevel(self.loglevel)
-    #         else:
-    #             l.setLevel(self.loglevel)
-    #     except AttributeError: # for python 2 compatibility
-    #         if not len(l.handlers):
-    #             h = logging.StreamHandler()
-    #             f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
-    #             # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-    #             h.setFormatter(f)
-    #             l.addHandler(h)
-    #             l.setLevel(self.loglevel)
-    #         else:
-    #             l.setLevel(self.loglevel)
-
-    #     return l
 
     class Decorators(object):
         """Class containing a collection of decorators for prompt reading of analysis
