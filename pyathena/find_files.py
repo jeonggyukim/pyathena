@@ -309,7 +309,8 @@ class FindFiles(object):
                         self.nums_partab[partag][0], self.nums_partab[partag][-1]))
 
     def find_parhst(self):
-        if any(['particle' in k for k in self.par.keys()]):
+        if [k for k in self.par.keys() if k.startswith('particle') and
+            self.par[k]['type'] != 'none']:
             fparhst = self.find_match(self.patterns['parhst'])
             if fparhst:
                 self.files['parhst'] = fparhst
