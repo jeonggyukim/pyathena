@@ -226,8 +226,12 @@ class LoadSim(LoadSimBase):
 
         # Set metadata
         self._get_domain_from_par(self.par)
-        self._config_time = pd.to_datetime(dateutil.parser.parse(
-            self.par['configure']['config_date'])).tz_convert('US/Pacific')
+        try:
+            k = 'Configure_date' if self.athena_pp else 'config_date'
+            self._config_time = pd.to_datetime(dateutil.parser.parse(
+            self.par['configure'][k])).tz_convert('US/Pacific')
+        except:
+            self._config_time = None
 
         # Set units and derived field infomation
         if not self.athena_pp:
