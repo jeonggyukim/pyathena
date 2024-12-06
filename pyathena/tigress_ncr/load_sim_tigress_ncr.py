@@ -55,7 +55,6 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, SliceProj,
             pass
         self.muH = muH
         self.u = Units(muH=muH)
-        self.domain = self._get_domain_from_par(self.par)
 
     def test_newcool(self):
         try:
