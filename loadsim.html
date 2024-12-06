@@ -150,8 +150,14 @@
   
   
   
+    
+    
+      
+    
+    
+    <img src="_static/tigress_logo.jpg" class="logo__image only-light" alt="pyathena - Home"/>
+    <script>document.write(`<img src="_static/tigress_logo.jpg" class="logo__image only-dark" alt="pyathena - Home"/>`);</script>
   
-    <p class="title logo__title">pyathena</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -190,6 +196,7 @@
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="examples/quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples/tigress-classic-cooling.html">Cooling in TIGRESS-classic</a></li>
 </ul>
 
@@ -245,7 +252,7 @@
       
       
       
-      <li><a href="https://github.com/changgoo/pyathena-1" target="_blank"
+      <li><a href="https://github.com/jeonggyukim/pyathena" target="_blank"
    class="btn btn-sm btn-source-repository-button dropdown-item"
    title="Source repository"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -262,7 +269,7 @@
       
       
       
-      <li><a href="https://github.com/changgoo/pyathena-1/issues/new?title=Issue%20on%20page%20%2Floadsim.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2Floadsim.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -363,9 +370,7 @@ document.write(`
   </button>
 `);
 </script>
-<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
-    <span class="fa-solid fa-list"></span>
-</button>
+
 </div></div>
       
     </div>
@@ -381,26 +386,6 @@ document.write(`
     <div id="print-main-content">
         <div id="jb-print-toc">
             
-            <div>
-                <h2> Contents </h2>
-            </div>
-            <nav aria-label="Page">
-                <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim"><code class="docutils literal notranslate"><span class="pre">LoadSim</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.Decorators"><code class="docutils literal notranslate"><span class="pre">LoadSim.Decorators</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.create_tar"><code class="docutils literal notranslate"><span class="pre">LoadSim.create_tar()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_hdf5"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_hdf5()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_parhst"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_parhst()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_partab"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_partab()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_starpar_vtk"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_starpar_vtk()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_vtk"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_vtk()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.move_to_tardir"><code class="docutils literal notranslate"><span class="pre">LoadSim.move_to_tardir()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.print_all_properties"><code class="docutils literal notranslate"><span class="pre">LoadSim.print_all_properties()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSimAll"><code class="docutils literal notranslate"><span class="pre">LoadSimAll</span></code></a></li>
-</ul>
-            </nav>
         </div>
     </div>
 </div>
@@ -412,276 +397,6 @@ document.write(`
                   
   <section id="loadsim">
 <h1>LoadSim<a class="headerlink" href="#loadsim" title="Permalink to this heading">#</a></h1>
-<dl class="py class">
-<dt class="sig sig-object py" id="pyathena.LoadSim">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.</span></span><span class="sig-name descname"><span class="pre">LoadSim</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basedir</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">savdir=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_method='pyathena'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units=&lt;pyathena.util.units.Units</span> <span class="pre">object&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim" title="Permalink to this definition">#</a></dt>
-<dd><p>Class to prepare Athena simulation data analysis. Read input parameters,
-find simulation output (vtk, starpar_vtk, hst, sn, zprof) files.</p>
-<section id="properties">
-<h2>Properties<a class="headerlink" href="#properties" title="Permalink to this heading">#</a></h2>
-<blockquote>
-<div><dl class="simple">
-<dt>basedir<span class="classifier">str</span></dt><dd><p>base directory of simulation output</p>
-</dd>
-<dt>basename<span class="classifier">str</span></dt><dd><p>basename (tail) of basedir</p>
-</dd>
-<dt>files<span class="classifier">dict</span></dt><dd><p>output file paths for vtk, starpar, hst, sn, zprof</p>
-</dd>
-<dt>problem_id<span class="classifier">str</span></dt><dd><p>prefix for (vtk, starpar, hst, zprof) output</p>
-</dd>
-<dt>par<span class="classifier">dict</span></dt><dd><p>input parameters and configure options read from log file</p>
-</dd>
-<dt>ds<span class="classifier">AthenaDataSet or yt DataSet</span></dt><dd><p>class for reading vtk file</p>
-</dd>
-<dt>domain<span class="classifier">dict</span></dt><dd><p>info about dimension, cell size, time, etc.</p>
-</dd>
-<dt>load_method<span class="classifier">str</span></dt><dd><p>‘pyathena’ or ‘yt’ or ‘pyathenaclassic’</p>
-</dd>
-<dt>num<span class="classifier">list of int</span></dt><dd><p>vtk output numbers</p>
-</dd>
-<dt>u<span class="classifier">Units object</span></dt><dd><p>simulation unit</p>
-</dd>
-<dt>dfi<span class="classifier">dict</span></dt><dd><p>derived field information</p>
-</dd>
-</dl>
-</div></blockquote>
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">load_vtk()</span> <span class="pre">:</span></span></dt>
-<dd><p>reads vtk file using pythena or yt and returns DataSet object</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">load_starpar_vtk()</span> <span class="pre">:</span></span></dt>
-<dd><p>reads starpar vtk file and returns pandas DataFrame object</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py">
-<span class="sig-name descname"><span class="pre">print_all_properties()</span> <span class="pre">:</span></span></dt>
-<dd><p>prints all attributes and callable methods</p>
-</dd></dl>
-
-<dl class="field-list simple">
-<dt class="field-odd">param basedir</dt>
-<dd class="field-odd"><p>Name of the directory where all data is stored</p>
-</dd>
-<dt class="field-even">type basedir</dt>
-<dd class="field-even"><p>str</p>
-</dd>
-<dt class="field-odd">param savdir</dt>
-<dd class="field-odd"><p>Name of the directory where pickled data and figures will be saved.
-Default value is basedir.</p>
-</dd>
-<dt class="field-even">type savdir</dt>
-<dd class="field-even"><p>str</p>
-</dd>
-<dt class="field-odd">param load_method</dt>
-<dd class="field-odd"><p>Load vtk using ‘pyathena’, ‘pythena_classic’, or ‘yt’.
-Default value is ‘pyathena’.
-If None, savdir=basedir. Default value is None.</p>
-</dd>
-<dt class="field-even">type load_method</dt>
-<dd class="field-even"><p>str</p>
-</dd>
-<dt class="field-odd">param verbose</dt>
-<dd class="field-odd"><p>Print verbose messages using logger. If True/False, set logger
-level to ‘DEBUG’/’WARNING’. If string, it should be one of the string
-representation of python logging package:
-(‘NOTSET’, ‘DEBUG’, ‘INFO’, ‘WARNING’, ‘ERROR’, ‘CRITICAL’)
-Numerical values from 0 (‘NOTSET’) to 50 (‘CRITICAL’) are also
-accepted.</p>
-</dd>
-<dt class="field-even">type verbose</dt>
-<dd class="field-even"><p>bool or str or int</p>
-</dd>
-</dl>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">LoadSim</span><span class="p">(</span><span class="s1">&#39;/Users/jgkim/Documents/R4_8pc.RT.nowind&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="go">LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind</span>
-<span class="go">LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt</span>
-<span class="go">LoadSim-INFO: problem_id: R4</span>
-<span class="go">LoadSim-INFO: hst: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.hst</span>
-<span class="go">LoadSim-INFO: sn: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.sn</span>
-<span class="go">LoadSim-WARNING: No vtk files are found in /Users/jgkim/Documents/R4_8pc.RT.nowind.</span>
-<span class="go">LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600</span>
-<span class="go">LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600</span>
-<span class="go">LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt</span>
-</pre></div>
-</div>
-<p>Constructor for LoadSim class.</p>
-<dl class="py class">
-<dt class="sig sig-object py" id="pyathena.LoadSim.Decorators">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">Decorators</span></span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.Decorators"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.Decorators" title="Permalink to this definition">#</a></dt>
-<dd><p>Class containing a collection of decorators for prompt reading of analysis
-output, (reprocessed) hst, and zprof. Used in child classes.</p>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.LoadSim.create_tar">
-<span class="sig-name descname"><span class="pre">create_tar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">remove_original</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'vtk'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.create_tar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.create_tar" title="Permalink to this definition">#</a></dt>
-<dd><p>Creating tarred vtk/rst from rearranged output</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>num</strong> (<em>int</em>) – Snapshot number, e.g., /basedir/vtk/xxxx</p></li>
-<li><p><strong>remove_original</strong> (<em>bool</em>) – Remove original after tar it if True</p></li>
-<li><p><strong>kind</strong> (<em>string</em>) – vtk or rst</p></li>
-</ul>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.LoadSim.load_hdf5">
-<span class="sig-name descname"><span class="pre">load_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ihdf5</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outvar</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">outid</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_hdf5" title="Permalink to this definition">#</a></dt>
-<dd><p>Function to read Athena hdf5 file using pythena or yt and
-return DataSet object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>num</strong> (<em>int</em>) – Snapshot number, e.g., /basedir/problem_id.out?.?????.athdf</p></li>
-<li><p><strong>ihdf5</strong> (<em>int</em>) – Read i-th file in the hdf5 file list. Overrides num if both are given.</p></li>
-<li><p><strong>outvar</strong> (<em>str</em>) – variable name, e.g, ‘prim’, ‘cons’, ‘uov’. Default value is ‘prim’ or ‘cons’.
-Overrides outid.</p></li>
-<li><p><strong>outid</strong> (<em>int</em>) – output block number (output[n] in the input file).</p></li>
-<li><p><strong>load_method</strong> (<em>str</em>) – ‘pyathena’ or ‘yt’</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>ds</strong></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>xarray AthenaDataSet or yt datasets</p>
-</dd>
-</dl>
-<p class="rubric">Examples</p>
-<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyathena.load_sim</span> <span class="kn">import</span> <span class="n">LoadSim</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">LoadSim</span><span class="p">(</span><span class="s2">&quot;/path/to/basedir&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load everything at snapshot number 30.</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">load_hdf5</span><span class="p">(</span><span class="mi">30</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Read the domain information only, without loading the fields.</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">load_hdf5</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">header_only</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load the selected fields.</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">load_hdf5</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">quantities</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;dens&#39;</span><span class="p">,</span> <span class="s1">&#39;mom1&#39;</span><span class="p">,</span> <span class="s1">&#39;mom2&#39;</span><span class="p">,</span> <span class="s1">&#39;mom3&#39;</span><span class="p">])</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="c1"># Load the selected region.</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">load_hdf5</span><span class="p">(</span><span class="mi">30</span><span class="p">,</span> <span class="n">x1_min</span><span class="o">=-</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">x1_max</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">x2_min</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">x2_max</span><span class="o">=</span><span class="mf">1.2</span><span class="p">)</span>
-</pre></div>
-</div>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.LoadSim.load_parhst">
-<span class="sig-name descname"><span class="pre">load_parhst</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">pid</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_parhst"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_parhst" title="Permalink to this definition">#</a></dt>
-<dd><p>Read Athena++ individual particle history</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>pid</strong> (<em>int</em>) – Particle id, e.g., /basedir/partab/problem_id.pid.csv</p>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>phst</strong> – Individual particle history</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>pandas.DataFrame</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.LoadSim.load_partab">
-<span class="sig-name descname"><span class="pre">load_partab</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ipartab</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">partag</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_partab"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_partab" title="Permalink to this definition">#</a></dt>
-<dd><p>Read Athena++ partab file.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>num</strong> (<em>int</em>) – Snapshot number.
-e.g., /basedir/partab/problem_id.out?.num.par?.tab.</p></li>
-<li><p><strong>ipartab</strong> (<em>int</em>) – Read i-th file in the partab file list.
-Overrides num if both are given.</p></li>
-<li><p><strong>partag</strong> (<em>int</em>) – Particle id in the input file. Default value is ‘par0’</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>pds</strong> – Particle data</p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>pandas.DataFrame</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.LoadSim.load_starpar_vtk">
-<span class="sig-name descname"><span class="pre">load_starpar_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ivtk</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">force_override</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_starpar_vtk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_starpar_vtk" title="Permalink to this definition">#</a></dt>
-<dd><p>Function to read Athena starpar_vtk file using pythena and
-return DataFrame object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>num</strong> (<em>int</em>) – Snapshot number, e.g., /basedir/starpar/problem_id.xxxx.starpar.vtk</p></li>
-<li><p><strong>ivtk</strong> (<em>int</em>) – Read i-th file in the vtk file list. Overrides num if both are given.</p></li>
-<li><p><strong>force_override</strong> (<em>bool</em>) – Flag to force read of starpar_vtk file even when pickle exists</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>sp</strong></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p>Pandas DataFrame object</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.LoadSim.load_vtk">
-<span class="sig-name descname"><span class="pre">load_vtk</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ivtk</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">id0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">load_method</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.load_vtk"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.load_vtk" title="Permalink to this definition">#</a></dt>
-<dd><p>Function to read Athena vtk file using pythena or yt and
-return DataSet object.</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>num</strong> (<em>int</em>) – Snapshot number, e.g., /basedir/vtk/problem_id.xxxx.vtk</p></li>
-<li><p><strong>ivtk</strong> (<em>int</em>) – Read i-th file in the vtk file list. Overrides num if both are given.</p></li>
-<li><p><strong>id0</strong> (<em>bool</em>) – Read vtk file in /basedir/id0. Default value is True.</p></li>
-<li><p><strong>load_method</strong> (<em>str</em>) – ‘pyathena’, ‘pyathena_classic’ or ‘yt’</p></li>
-</ul>
-</dd>
-<dt class="field-even">Returns</dt>
-<dd class="field-even"><p><strong>ds</strong></p>
-</dd>
-<dt class="field-odd">Return type</dt>
-<dd class="field-odd"><p><a class="reference internal" href="athenadataset.html#pyathena.AthenaDataSet" title="pyathena.AthenaDataSet">AthenaDataSet</a> or yt datasets</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.LoadSim.move_to_tardir">
-<span class="sig-name descname"><span class="pre">move_to_tardir</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">num</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'vtk'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.move_to_tardir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.move_to_tardir" title="Permalink to this definition">#</a></dt>
-<dd><p>Move vtk files from id* to vtk/XXXX</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>num</strong> (<em>int</em>) – Snapshot number, e.g., /basedir/vtk/xxxx</p>
-</dd>
-</dl>
-</dd></dl>
-
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.LoadSim.print_all_properties">
-<span class="sig-name descname"><span class="pre">print_all_properties</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSim.print_all_properties"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.print_all_properties" title="Permalink to this definition">#</a></dt>
-<dd><p>Print all attributes and callable methods</p>
-</dd></dl>
-
-</section>
-</dd></dl>
-
-<dl class="py class">
-<dt class="sig sig-object py" id="pyathena.LoadSimAll">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.</span></span><span class="sig-name descname"><span class="pre">LoadSimAll</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">models</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/load_sim.html#LoadSimAll"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSimAll" title="Permalink to this definition">#</a></dt>
-<dd><p>Class to load multiple simulations</p>
-</dd></dl>
-
 </section>
 
     <script type="text/x-thebe-config">
@@ -738,33 +453,6 @@ return DataSet object.</p>
             </div>
             
             
-              
-                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
-
-
-  <div class="sidebar-secondary-item">
-  <div class="page-toc tocsection onthispage">
-    <i class="fa-solid fa-list"></i> Contents
-  </div>
-  <nav class="bd-toc-nav page-toc">
-    <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim"><code class="docutils literal notranslate"><span class="pre">LoadSim</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.Decorators"><code class="docutils literal notranslate"><span class="pre">LoadSim.Decorators</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.create_tar"><code class="docutils literal notranslate"><span class="pre">LoadSim.create_tar()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_hdf5"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_hdf5()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_parhst"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_parhst()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_partab"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_partab()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_starpar_vtk"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_starpar_vtk()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.load_vtk"><code class="docutils literal notranslate"><span class="pre">LoadSim.load_vtk()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.move_to_tardir"><code class="docutils literal notranslate"><span class="pre">LoadSim.move_to_tardir()</span></code></a></li>
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSim.print_all_properties"><code class="docutils literal notranslate"><span class="pre">LoadSim.print_all_properties()</span></code></a></li>
-</ul>
-</li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.LoadSimAll"><code class="docutils literal notranslate"><span class="pre">LoadSimAll</span></code></a></li>
-</ul>
-  </nav></div>
-
-</div></div>
               
             
           </div>
