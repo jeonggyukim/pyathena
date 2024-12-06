@@ -157,7 +157,7 @@ class LoadSim(LoadSimBase):
         Directory where simulation output files are stored.
     savdir : str, optional
         Directory where pickles and figures are saved. Defaults to `basedir`.
-    load_method : str
+    load_method : {'pyathena', 'pyathena_classic', 'yt'}, optional
         Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic', or 'yt'.
         Defaults to 'pyathena'.
     verbose : bool or str or int
@@ -171,8 +171,8 @@ class LoadSim(LoadSimBase):
     ----------
     ds : AthenaDataSet or yt DataSet
         Class for reading vtk file
-    num : list of int
-        vtk output numbers
+    nums : list of int
+        vtk/hdf5 output numbers
     u : Units object
         Simulation unit
     dfi : dict
@@ -189,21 +189,8 @@ class LoadSim(LoadSimBase):
 
     Examples
     --------
-    s = pa.LoadSim('/tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/',
-                   verbose=True)
-    [LoadSim-INFO] basedir: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0
-    [LoadSim-INFO] savdir: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0
-    [LoadSim-INFO] load_method: pyathena
-    [FindFiles-INFO] athinput: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/out.txt
-    [FindFiles-INFO] athena_pp: False
-    [FindFiles-INFO] problem_id: R8_8pc_NCR
-    [FindFiles-INFO] vtk in tar: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/vtk nums: 200-668
-    [FindFiles-INFO] hst: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/hst/R8_8pc_NCR.hst
-    [FindFiles-INFO] sn: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/hst/R8_8pc_NCR.sn
-    [FindFiles-INFO] zprof: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/zprof nums: 200-668
-    [FindFiles-INFO] starpar_vtk: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/starpar nums: 200-668
-    [FindFiles-INFO] rst: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/rst/0010 nums: 10-34
-    [FindFiles-INFO] timeit: /tigress/changgoo/TIGRESS-NCR/R8_8pc_NCR.full.xy2048.eps0.0/timeit.txt
+    >>> import pyathena as pa
+    >>> s = pa.LoadSim('/path/to/basedir", verbose=True)
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
