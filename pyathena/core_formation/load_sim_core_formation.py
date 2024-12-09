@@ -99,7 +99,6 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 self.nums = self.nums_partab['par0']
 
             # Set domain
-            self.domain = self._get_domain_from_par(self.par)
             Lbox = set(self.domain['Lx'])
             self.dx, self.dy, self.dz = self.domain['dx']
             self.dV = self.dx*self.dy*self.dz

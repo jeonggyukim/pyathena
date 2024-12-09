@@ -51,7 +51,6 @@ class LoadSimFeedbackTest(LoadSim, Hst, DustPol, Profile1D):
             pass
         self.muH = muH
         self.u = Units(muH=muH)
-        self.domain = self._get_domain_from_par(self.par)
         if self.test_newcool():
             self.test_newcool_params()
 
