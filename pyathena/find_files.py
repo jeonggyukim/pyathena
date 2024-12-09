@@ -291,7 +291,7 @@ class FindFiles(object):
             self.nums_partab = dict()
             for partag in self.partags:
                 partab_patterns_ = []
-                for p in patterns['partab']:
+                for p in self.patterns['partab']:
                     p = list(p)
                     p[-1] = p[-1].replace('par?', partag)
                     partab_patterns_.append(tuple(p))
