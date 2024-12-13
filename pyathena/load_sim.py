@@ -1467,19 +1467,42 @@ class LoadSimAll(object):
     """Class to load multiple simulations
 
     """
-    def __init__(self, models):
-
-        self.models = list(models.keys())
+    def __init__(self, models, load_sim_class=LoadSim):
+        # Default models
+        if models is None:
+            models = dict()
+        self.models = []
         self.basedirs = dict()
-
+        self.simdict = dict()
+        self.load_sim_class = load_sim_class
         for mdl, basedir in models.items():
-            self.basedirs[mdl] = basedir
+            if not osp.exists(basedir):
+                print(
+                    "[LoadSimTurbAll]: Model {0:s} doesn't exist: {1:s}".format(
+                        mdl, basedir
+                    )
+                )
+            else:
+                self.models.append(mdl)
+                self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena',
+    def set_model(self, model, savdir=None,
+                  load_method='pyathena',
+                  load_sim_class=None,
                   units=Units(kind='LV', muH=1.4271),
                   verbose=False):
+        if load_sim_class is None:
+            load_sim_class = self.load_sim_class
+        try:
+            self.sim = self.simdict[model]
+        except KeyError:
+            self.sim = load_sim_class(
+                self.basedirs[model],
+                savdir=savdir,
+                load_method=load_method,
+                verbose=verbose,
+                units=units
+            )
+            self.simdict[model] = self.sim
         self.model = model
-        self.sim = LoadSim(self.basedirs[model], savdir=savdir,
-                           load_method=load_method,
-                           units=units, verbose=verbose)
         return self.sim
