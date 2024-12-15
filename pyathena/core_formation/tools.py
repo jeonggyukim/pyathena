@@ -856,7 +856,7 @@ def calculate_observables(s, core, rprf):
                 rmax2 = np.nan
 
             # Loop over different plane-of-sky radius definitions
-            for rcore_pos, method in zip([rfwhm, rmax, rmax2], ['fwhm', 'background', 'filling']):
+            for rcore_pos, method in zip([obsprops[f'{ax}_radius'], rfwhm, rmax, rmax2], ['fwhm_dust', 'fwhm', 'f0', 'f50']):
                 obsprops[f'{ax}_pos_radius_{method}_nc{nthr}'] = rcore_pos
                 if np.isfinite(rcore_pos):
                     obsprops[f'{ax}_velocity_dispersion_{method}_nc{nthr}'] =\
