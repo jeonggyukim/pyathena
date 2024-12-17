@@ -21,9 +21,9 @@ def euler_rotation(vec, angles):
     angles = np.array(angles)
     r = Rotation.from_euler('zyx', -angles, degrees=False)
     rotmat = r.as_matrix()
-    vxp = rotmat[0, 0]*vec[0] + rotmat[0, 1]*vec[1] + rotmat[0, 2]*vec[2]
-    vyp = rotmat[1, 0]*vec[0] + rotmat[1, 1]*vec[1] + rotmat[1, 2]*vec[2]
-    vzp = rotmat[2, 0]*vec[0] + rotmat[2, 1]*vec[1] + rotmat[2, 2]*vec[2]
+    vxp = rotmat[0, 2]*vec[2] + rotmat[0, 1]*vec[1] + rotmat[0, 0]*vec[0]
+    vyp = rotmat[1, 2]*vec[2] + rotmat[1, 1]*vec[1] + rotmat[1, 0]*vec[0]
+    vzp = rotmat[2, 2]*vec[2] + rotmat[2, 1]*vec[1] + rotmat[2, 0]*vec[0]
     return (vxp, vyp, vzp)
 
 
