@@ -48,7 +48,6 @@ class LoadSimTIGRESSGC(LoadSim, Hst, SliceProj):
         self.muH = config.muH
         u = Units(muH=self.muH)
         self.u = u
-        self.domain = self._get_domain_from_par(self.par)
         self.dx, self.dy, self.dz = self.domain['dx']
         try:
             rprof = xr.open_dataset('{}/radial_profile_warmcold.nc'.format(self.basedir), engine='netcdf4')
