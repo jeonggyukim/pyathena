@@ -76,11 +76,12 @@ def to_spherical(vec, origin, newz=None):
     sin_th, cos_th = R/r, z/r
     sin_ph, cos_ph = y/R, x/R
 
-    # Avoid singularity
+    # Break degeneracy by choosing arbitrary theta and phi at coordinate singularities
+    # \theta = 0 at r = 0, and \phi = 0 at R = 0.
     sin_th = sin_th.where(r != 0, other=0)
-    cos_th = cos_th.where(r != 0, other=0)
+    cos_th = cos_th.where(r != 0, other=1)
     sin_ph = sin_ph.where(R != 0, other=0)
-    cos_ph = cos_ph.where(R != 0, other=0)
+    cos_ph = cos_ph.where(R != 0, other=1)
 
     # Transform Cartesian (vx, vy, vz) ->  spherical (v_r, v_th, v_phi)
     v_r = (vx*sin_th*cos_ph + vy*sin_th*sin_ph + vz*cos_th).rename('v_r')
@@ -131,10 +132,11 @@ def to_cylindrical(vec, origin):
     # Move branch cut [-pi, pi] -> [0, 2pi]
     ph = ph.where(ph >= 0, other=ph + 2*np.pi)
     sin_ph, cos_ph = (y-y0)/R, (x-x0)/R
-    # Avoid singularity
+    # Break degeneracy by choosing arbitrary theta and phi at coordinate singularities
+    # \phi = 0 at R = 0.
     if x0 in x and y0 in y:
         sin_ph.loc[dict(x=x0, y=y0)] = 0
-        cos_ph.loc[dict(x=x0, y=y0)] = 0
+        cos_ph.loc[dict(x=x0, y=y0)] = 1
 
     # Transform Cartesian (vx, vy, vz) ->  cylindrical (v_R, v_phi, v_z)
     v_R = (vx*cos_ph + vy*sin_ph).rename('v_R')
