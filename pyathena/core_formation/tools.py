@@ -434,40 +434,39 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
                 z=slice(origin[2] - redge, origin[2] + redge))
 
     # Convert density and velocities to spherical coord.
-    vel, gacc = {}, {}
+    gacc = {}
     for dim, axis in zip(['x', 'y', 'z'], [1, 2, 3]):
         # Recenter velocity and calculate gravitational acceleration
-        vel_ = ds['mom{}'.format(axis)]/ds.dens
-        vel[dim] = vel_ - vel_.sel(x=origin[0], y=origin[1], z=origin[2])
+        vel_ = ds[f'mom{axis}']/ds.dens
+        ds[f'vel{dim}'] = vel_ - vel_.sel(x=origin[0], y=origin[1], z=origin[2])
         gacc[dim] = -ds.phi.differentiate(dim)
 
-    ds_sph = {}
-    r, (ds_sph['vel1'], ds_sph['vel2'], ds_sph['vel3'])\
-        = transform.to_spherical(vel.values(), origin, lvec)
-    _, (ds_sph['gacc1'], ds_sph['gacc2'], ds_sph['gacc3'])\
+    _, (ds['vel1'], ds['vel2'], ds['vel3'])\
+        = transform.to_spherical((ds.velx, ds.vely, ds.velz), origin, lvec)
+    _, (ds['gacc1'], _, _)\
         = transform.to_spherical(gacc.values(), origin, lvec)
-    ds_sph['rho'] = ds.dens.assign_coords(dict(r=r))
-    ds_sph['phi'] = ds.phi.assign_coords(dict(r=r))
+    ds = ds.drop_vars(['mom1', 'mom2', 'mom3'])
+    ds = ds.rename_vars(dict(dens='rho'))
 
     # Perform radial binnings
     rprofs = {}
 
     # Volume-weighted averages
     for k in ['rho']:
-        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])
-        rprf = transform.fast_groupby_bins(ds_sph[k], 'r', ledge, redge, nbin)
+        rprf_c = ds[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])
+        rprf = transform.fast_groupby_bins(ds[k], 'r', ledge, redge, nbin)
         rprofs[k] = xr.concat([rprf_c, rprf], 'r')
 
     # Mass-weighted averages
-    for k in ['gacc1', 'vel1', 'vel2', 'vel3', 'phi']:
-        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])
-        rprf = transform.fast_groupby_bins(ds_sph['rho']*ds_sph[k], 'r', ledge, redge, nbin) / rprofs['rho']
+    for k in ['gacc1', 'velx', 'vely', 'velz', 'vel1', 'vel2', 'vel3', 'phi']:
+        rprf_c = ds[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])
+        rprf = transform.fast_groupby_bins(ds.rho*ds[k], 'r', ledge, redge, nbin) / rprofs['rho']
         rprofs[k+'_mw'] = xr.concat([rprf_c, rprf], 'r')
 
-    # RMS averages
-    for k in ['vel1', 'vel2', 'vel3']:
-        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])**2
-        rprf = transform.fast_groupby_bins(ds_sph['rho']*ds_sph[k]**2, 'r', ledge, redge, nbin) / rprofs['rho']
+    # Mass-weighted average of the quantity squared
+    for k in ['velx', 'vely', 'velz', 'vel1', 'vel2', 'vel3']:
+        rprf_c = ds[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])**2
+        rprf = transform.fast_groupby_bins(ds.rho*ds[k]**2, 'r', ledge, redge, nbin) / rprofs['rho']
         rprofs[k+'_sq_mw'] = xr.concat([rprf_c, rprf], 'r')
 
     rprofs = xr.Dataset(rprofs)
