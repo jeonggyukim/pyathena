@@ -254,9 +254,9 @@ def radial_profile(s, num, pids, overwrite=False, full_radius=False, days_overwr
         y = ds.y - center['y']
         z = ds.z - center['z']
         r = np.sqrt(x**2 + y**2 + z**2)
-        lx = (y*ds.mom3 - z*ds.mom2).where(r < core.tidal_radius).sum().data[()]*s.dV
-        ly = (z*ds.mom1 - x*ds.mom3).where(r < core.tidal_radius).sum().data[()]*s.dV
-        lz = (x*ds.mom2 - y*ds.mom1).where(r < core.tidal_radius).sum().data[()]*s.dV
+        lx = (y*ds.mom3 - z*ds.mom2).where(r < core.tidal_radius, drop=True).sum().data[()]*s.dV
+        ly = (z*ds.mom1 - x*ds.mom3).where(r < core.tidal_radius, drop=True).sum().data[()]*s.dV
+        lz = (x*ds.mom2 - y*ds.mom1).where(r < core.tidal_radius, drop=True).sum().data[()]*s.dV
         lvec = np.array([lx, ly, lz])
 
         # Calculate radial profile
