@@ -64,7 +64,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'utils';</script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Quickstart" href="examples/quickstart.html" />
+    <link rel="next" title="Cooling in TIGRESS-classic" href="examples/tigress-classic-cooling.html" />
     <link rel="prev" title="Readers" href="readers.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -152,14 +152,8 @@
   
   
   
-    
-    
-      
-    
-    
-    <img src="_static/tigress_logo.jpg" class="logo__image only-light" alt="pyathena - Home"/>
-    <script>document.write(`<img src="_static/tigress_logo.jpg" class="logo__image only-dark" alt="pyathena - Home"/>`);</script>
   
+    <p class="title logo__title">pyathena</p>
   
 </a></div>
         <div class="sidebar-primary-item">
@@ -198,7 +192,6 @@
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="examples/quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="examples/tigress-classic-cooling.html">Cooling in TIGRESS-classic</a></li>
 </ul>
 
@@ -254,7 +247,7 @@
       
       
       
-      <li><a href="https://github.com/jeonggyukim/pyathena" target="_blank"
+      <li><a href="https://github.com/changgoo/pyathena-1" target="_blank"
    class="btn btn-sm btn-source-repository-button dropdown-item"
    title="Source repository"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -271,7 +264,7 @@
       
       
       
-      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2Futils.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/changgoo/pyathena-1/issues/new?title=Issue%20on%20page%20%2Futils.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -395,6 +388,7 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.Units"><code class="docutils literal notranslate"><span class="pre">Units</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99"><code class="docutils literal notranslate"><span class="pre">SB99</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.plt_spec_sigmad"><code class="docutils literal notranslate"><span class="pre">SB99.plt_spec_sigmad()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.read_quanta"><code class="docutils literal notranslate"><span class="pre">SB99.read_quanta()</span></code></a></li>
@@ -421,6 +415,49 @@ document.write(`
                   
   <section id="utilities">
 <h1>Utilities<a class="headerlink" href="#utilities" title="Permalink to this heading">#</a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.Units">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.</span></span><span class="sig-name descname"><span class="pre">Units</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'LV'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">muH</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.4271</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">units_dict</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/util/units.html#Units"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.Units" title="Permalink to this definition">#</a></dt>
+<dd><p>Simple class for simulation unit.</p>
+<p>Msun, Lsun, etc.: physical constants in code unit</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>kind</strong> (<em>str</em>) – “LV” for (pc, km/s) or “LT” for (pc, Myr) or “cgs” for (cm, s), or
+“code” for code unit. For athena++ simulations, set to “custom”
+and provide units_dict (&lt;units&gt; block in athinput file)</p></li>
+<li><p><strong>muH</strong> (<em>float</em>) – Mean particle mass per H. Default value is 1.4271 (TIGRESS-classic).
+See examples for other cases.</p></li>
+<li><p><strong>units_dict</strong> (<em>dict</em>) – Dictionary containing &lt;units&gt; block in tigris athinput file.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>u</strong> – Units instance</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+<p class="rubric">Example</p>
+<p>Athena-TIGRESS with classic cooling</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Units</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;LV&#39;</span><span class="p">,</span> <span class="n">muH</span><span class="o">=</span><span class="mf">1.4271</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Athena-TIGRESS with NCR cooling</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Units</span><span class="p">(</span><span class="n">kind</span><span class="o">=</span><span class="s1">&#39;LV&#39;</span><span class="p">,</span> <span class="n">muH</span><span class="o">=</span><span class="mf">1.4</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>TIGRIS “ism” unit system or any other custom unit system</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">units_dict</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;units_system&#39;</span><span class="p">:</span> <span class="s1">&#39;ism&#39;</span><span class="p">,</span>
+<span class="go">                  &#39;mass_cgs&#39;: 4.91615563682836e+31,</span>
+<span class="go">                  &#39;length_cgs&#39;: 3.085678e+18,</span>
+<span class="go">                  &#39;time_cgs&#39;: 30856780000000,</span>
+<span class="go">                  &#39;mean_mass_per_hydrogen&#39;: 2.34262e-24}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">u</span> <span class="o">=</span> <span class="n">Units</span><span class="p">(</span><span class="s1">&#39;custom&#39;</span><span class="p">,</span> <span class="n">units_dict</span><span class="o">=</span><span class="n">units_dict</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
 <dl class="py class">
 <dt class="sig sig-object py" id="pyathena.util.SB99">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.util.</span></span><span class="sig-name descname"><span class="pre">SB99</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basedir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV00_dt01'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="_modules/pyathena/util/sb99.html#SB99"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99" title="Permalink to this definition">#</a></dt>
@@ -582,11 +619,11 @@ Data taken from Table 1 in Parravano et al. (2003).</p>
       </div>
     </a>
     <a class="right-next"
-       href="examples/quickstart.html"
+       href="examples/tigress-classic-cooling.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Quickstart</p>
+        <p class="prev-next-title">Cooling in TIGRESS-classic</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -606,6 +643,7 @@ Data taken from Table 1 in Parravano et al. (2003).</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.Units"><code class="docutils literal notranslate"><span class="pre">Units</span></code></a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99"><code class="docutils literal notranslate"><span class="pre">SB99</span></code></a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.plt_spec_sigmad"><code class="docutils literal notranslate"><span class="pre">SB99.plt_spec_sigmad()</span></code></a></li>
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.read_quanta"><code class="docutils literal notranslate"><span class="pre">SB99.read_quanta()</span></code></a></li>
