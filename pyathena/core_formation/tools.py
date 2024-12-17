@@ -454,19 +454,19 @@ def calculate_radial_profile(s, ds, origin, rmax, lvec=None):
 
     # Volume-weighted averages
     for k in ['rho']:
-        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop(['x', 'y', 'z'])
+        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])
         rprf = transform.fast_groupby_bins(ds_sph[k], 'r', ledge, redge, nbin)
         rprofs[k] = xr.concat([rprf_c, rprf], 'r')
 
     # Mass-weighted averages
     for k in ['gacc1', 'vel1', 'vel2', 'vel3', 'phi']:
-        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop(['x', 'y', 'z'])
+        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])
         rprf = transform.fast_groupby_bins(ds_sph['rho']*ds_sph[k], 'r', ledge, redge, nbin) / rprofs['rho']
         rprofs[k+'_mw'] = xr.concat([rprf_c, rprf], 'r')
 
     # RMS averages
     for k in ['vel1', 'vel2', 'vel3']:
-        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop(['x', 'y', 'z'])**2
+        rprf_c = ds_sph[k].sel(x=origin[0], y=origin[1], z=origin[2]).drop_vars(['x', 'y', 'z'])**2
         rprf = transform.fast_groupby_bins(ds_sph['rho']*ds_sph[k]**2, 'r', ledge, redge, nbin) / rprofs['rho']
         rprofs[k+'_sq_mw'] = xr.concat([rprf_c, rprf], 'r')
 
