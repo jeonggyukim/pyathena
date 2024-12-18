@@ -64,7 +64,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'examples/tigress-classic-cooling';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="Quickstart" href="quickstart.html" />
+    <link rel="prev" title="Population Synthesis" href="../content/pop_synth.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -184,20 +184,22 @@
         </ul>
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Basics</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../content/install.html">Installation</a></li>
 
+<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API References</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../loadsim.html">LoadSim</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../athenadataset.html">AthenaDataSet</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../readers.html">Readers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../content/loadsim.html">LoadSim</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../content/athenadataset.html">AthenaDataSet</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../content/readers.html">Readers</a></li>
 
-<li class="toctree-l1"><a class="reference internal" href="../utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../content/units.html">Units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../content/utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../content/pop_synth.html">Population Synthesis</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul class="current nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="quickstart.html">Quickstart</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Cooling in TIGRESS-classic</a></li>
 </ul>
 
@@ -420,32 +422,6 @@ document.write(`
 </pre></div>
 </div>
 </div>
-<div class="cell_output docutils container">
-<div class="output traceback highlight-ipythontb notranslate"><div class="highlight"><pre><span></span><span class="gt">---------------------------------------------------------------------------</span>
-<span class="ne">ModuleNotFoundError</span><span class="g g-Whitespace">                       </span>Traceback (most recent call last)
-<span class="n">Cell</span> <span class="n">In</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">line</span> <span class="mi">9</span>
-<span class="g g-Whitespace">      </span><span class="mi">7</span> <span class="kn">import</span> <span class="nn">sys</span>
-<span class="g g-Whitespace">      </span><span class="mi">8</span> <span class="n">sys</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">insert</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="s1">&#39;../../&#39;</span><span class="p">)</span>
-<span class="ne">----&gt; </span><span class="mi">9</span> <span class="kn">import</span> <span class="nn">pyathena</span> <span class="k">as</span> <span class="nn">pa</span>
-
-<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="fm">__init__</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">28</span>
-<span class="g g-Whitespace">     </span><span class="mi">25</span> <span class="kn">from</span> <span class="nn">.classic.vtk_reader</span> <span class="kn">import</span> <span class="n">AthenaDataSet</span> <span class="k">as</span> <span class="n">AthenaDataSetClassic</span>
-<span class="g g-Whitespace">     </span><span class="mi">27</span> <span class="c1"># LoadSim classes</span>
-<span class="ne">---&gt; </span><span class="mi">28</span> <span class="kn">from</span> <span class="nn">.load_sim</span> <span class="kn">import</span> <span class="n">LoadSim</span><span class="p">,</span> <span class="n">LoadSimAll</span>
-<span class="g g-Whitespace">     </span><span class="mi">30</span> <span class="c1"># Utils</span>
-<span class="g g-Whitespace">     </span><span class="mi">31</span> <span class="kn">from</span> <span class="nn">.util.units</span> <span class="kn">import</span> <span class="n">Units</span>
-
-<span class="n">File</span> <span class="o">~/</span><span class="n">work</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">pyathena</span><span class="o">/</span><span class="n">docs</span><span class="o">/</span><span class="n">examples</span><span class="o">/../../</span><span class="n">pyathena</span><span class="o">/</span><span class="n">load_sim</span><span class="o">.</span><span class="n">py</span><span class="p">:</span><span class="mi">19</span>
-<span class="g g-Whitespace">     </span><span class="mi">16</span> <span class="kn">import</span> <span class="nn">xarray</span> <span class="k">as</span> <span class="nn">xr</span>
-<span class="g g-Whitespace">     </span><span class="mi">17</span> <span class="kn">import</span> <span class="nn">os.path</span> <span class="k">as</span> <span class="nn">osp</span>
-<span class="ne">---&gt; </span><span class="mi">19</span> <span class="kn">from</span> <span class="nn">inherit_docstring</span> <span class="kn">import</span> <span class="n">inherit_docstring</span>
-<span class="g g-Whitespace">     </span><span class="mi">20</span> <span class="kn">from</span> <span class="nn">abc</span> <span class="kn">import</span> <span class="n">ABC</span>
-<span class="g g-Whitespace">     </span><span class="mi">21</span> <span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Mapping</span>
-
-<span class="ne">ModuleNotFoundError</span>: No module named &#39;inherit_docstring&#39;
-</pre></div>
-</div>
-</div>
 </div>
 <section class="tex2jax_ignore mathjax_ignore" id="cooling-in-tigress-classic">
 <h1>Cooling in TIGRESS-classic<a class="headerlink" href="#cooling-in-tigress-classic" title="Permalink to this heading">#</a></h1>
@@ -568,12 +544,12 @@ document.write(`
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="quickstart.html"
+       href="../content/pop_synth.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">Quickstart</p>
+        <p class="prev-next-title">Population Synthesis</p>
       </div>
     </a>
 </div>

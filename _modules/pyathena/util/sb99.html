@@ -182,20 +182,22 @@
         </ul>
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Basics</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../../install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/install.html">Installation</a></li>
 
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart.html">Quickstart</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API References</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../../loadsim.html">LoadSim</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../athenadataset.html">AthenaDataSet</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../readers.html">Readers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/loadsim.html">LoadSim</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/athenadataset.html">AthenaDataSet</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/readers.html">Readers</a></li>
 
-<li class="toctree-l1"><a class="reference internal" href="../../../utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/units.html">Units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/pop_synth.html">Population Synthesis</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart.html">Quickstart</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/tigress-classic-cooling.html">Cooling in TIGRESS-classic</a></li>
 </ul>
 
@@ -368,7 +370,7 @@ document.write(`
 
 <span class="n">local</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span>
 
-<div class="viewcode-block" id="SB99"><a class="viewcode-back" href="../../../utils.html#pyathena.util.SB99">[docs]</a><span class="k">class</span> <span class="nc">SB99</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="SB99"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99">[docs]</a><span class="k">class</span> <span class="nc">SB99</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basedir</span><span class="o">=</span><span class="s1">&#39;/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV00_dt01&#39;</span><span class="p">,</span>
                  <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
@@ -388,7 +390,7 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">_find_files</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_read_params</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_find_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SB99._find_files"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99._find_files">[docs]</a>    <span class="k">def</span> <span class="nf">_find_files</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="n">ff</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">)</span>
         <span class="n">prefixes</span> <span class="o">=</span> <span class="p">[]</span>
@@ -403,9 +405,9 @@ document.write(`
             <span class="n">name</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="kc">None</span></div>
 
-    <span class="k">def</span> <span class="nf">_read_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SB99._read_params"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99._read_params">[docs]</a>    <span class="k">def</span> <span class="nf">_read_params</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Read some important parameters</span>
 <span class="sd">        Full information contained in self.par</span>
 <span class="sd">        &quot;&quot;&quot;</span>
@@ -436,9 +438,9 @@ document.write(`
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;continuous SF&#39;</span><span class="p">)</span>
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SFR:&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SFR</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="n">l</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="n">l</span></div>
 
-<div class="viewcode-block" id="SB99.read_sn"><a class="viewcode-back" href="../../../utils.html#pyathena.util.SB99.read_sn">[docs]</a>    <span class="k">def</span> <span class="nf">read_sn</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SB99.read_sn"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_sn">[docs]</a>    <span class="k">def</span> <span class="nf">read_sn</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read snr1 (supernova rate) output</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -463,7 +465,7 @@ document.write(`
 
         <span class="k">return</span> <span class="n">df</span></div>
 
-    <span class="k">def</span> <span class="nf">read_yield</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SB99.read_yield"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_yield">[docs]</a>    <span class="k">def</span> <span class="nf">read_yield</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_H&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_He&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_C&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_N&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;Mdot_O&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Mg&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Si&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_S&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Fe&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;Mdot_wind&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_sn&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_wind_sn&#39;</span><span class="p">,</span><span class="s1">&#39;M_tot&#39;</span><span class="p">]</span>
@@ -480,9 +482,9 @@ document.write(`
         <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time_yr&#39;</span><span class="p">]</span><span class="o">*</span><span class="mf">1e-6</span>
         <span class="c1"># df.set_index(&#39;time_Myr&#39;, inplace=True)</span>
 
-        <span class="k">return</span> <span class="n">df</span>
+        <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="SB99.read_wind"><a class="viewcode-back" href="../../../utils.html#pyathena.util.SB99.read_wind">[docs]</a>    <span class="k">def</span> <span class="nf">read_wind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SB99.read_wind"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_wind">[docs]</a>    <span class="k">def</span> <span class="nf">read_wind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read power1 (stellar wind power) output</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -533,7 +535,7 @@ document.write(`
 
         <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="SB99.read_rad"><a class="viewcode-back" href="../../../utils.html#pyathena.util.SB99.read_rad">[docs]</a>    <span class="k">def</span> <span class="nf">read_rad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SB99.read_rad"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_rad">[docs]</a>    <span class="k">def</span> <span class="nf">read_rad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read SB99 spectrum data and mean dust opacity</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
@@ -777,7 +779,7 @@ document.write(`
 
         <span class="k">return</span> <span class="n">r</span></div>
 
-<div class="viewcode-block" id="SB99.read_quanta"><a class="viewcode-back" href="../../../utils.html#pyathena.util.SB99.read_quanta">[docs]</a>    <span class="k">def</span> <span class="nf">read_quanta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<div class="viewcode-block" id="SB99.read_quanta"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_quanta">[docs]</a>    <span class="k">def</span> <span class="nf">read_quanta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read ionizing photon rate</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;time_yr&#39;</span><span class="p">,</span> <span class="s1">&#39;Q_HI&#39;</span><span class="p">,</span> <span class="s1">&#39;Lfrac_HI&#39;</span><span class="p">,</span> <span class="s1">&#39;Q_HeI&#39;</span><span class="p">,</span> <span class="s1">&#39;Lfrac_HeI&#39;</span><span class="p">,</span>
@@ -796,7 +798,7 @@ document.write(`
 
         <span class="k">return</span> <span class="n">df</span></div>
 
-<div class="viewcode-block" id="SB99.plt_spec_sigmad"><a class="viewcode-back" href="../../../utils.html#pyathena.util.SB99.plt_spec_sigmad">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="SB99.plt_spec_sigmad"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_spec_sigmad">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">plt_spec_sigmad</span><span class="p">(</span><span class="n">rr</span><span class="p">,</span> <span class="n">lambda_Llambda</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plt_isrf</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">nstride</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to plot SB99 spectrum</span>
 
@@ -915,7 +917,7 @@ document.write(`
 
         <span class="k">return</span> <span class="n">fig</span></div>
 
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="SB99.plt_lum_evol"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_lum_evol">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">plt_lum_evol</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">plt_sn</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
 
         <span class="c1">#pa.set_plt_fancy()</span>
@@ -940,9 +942,9 @@ document.write(`
         <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$L/M_{\ast} \;[L_{\odot}\,M_{\odot}^{-1}]$&#39;</span><span class="p">)</span>
         <span class="c1">#plt.legend(fontsize=&#39;small&#39;, loc=4)</span>
 
-        <span class="k">return</span> <span class="n">ax</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
 
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="SB99.plt_pdot_evol"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_pdot_evol">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">plt_pdot_evol</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
 
         <span class="n">plt</span><span class="o">.</span><span class="n">sca</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
@@ -962,9 +964,9 @@ document.write(`
         <span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;$\dot</span><span class="si">{p}</span><span class="s1">/M_{\ast} \;[{\rm km}\,{\rm s}^{-1}\,{\rm Myr}^{-1}]$&#39;</span><span class="p">)</span>
         <span class="c1">#plt.legend()</span>
 
-        <span class="k">return</span> <span class="n">ax</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
 
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="SB99.plt_lum_cumul"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_lum_cumul">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">plt_lum_cumul</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plt_sn</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
 
         <span class="n">integrate_L_cum</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">L</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">cumtrapz</span><span class="p">((</span><span class="n">L</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">L_sun</span><span class="p">)</span><span class="o">.</span><span class="n">cgs</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
@@ -1008,9 +1010,9 @@ document.write(`
         <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">1e47</span><span class="p">,</span> <span class="mf">2e51</span><span class="p">)</span>
         <span class="c1"># plt.legend()</span>
 
-        <span class="k">return</span> <span class="n">ax</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
 
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="SB99.plt_pdot_cumul"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_pdot_cumul">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">plt_pdot_cumul</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plt_sn</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
 
         <span class="n">integrate_pdot</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">pdot</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">cumtrapz</span><span class="p">(</span>
@@ -1057,9 +1059,9 @@ document.write(`
         <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">5e-1</span><span class="p">,</span><span class="mf">5e2</span><span class="p">)</span>
         <span class="c1"># plt.legend()</span>
 
-        <span class="k">return</span> <span class="n">ax</span>
+        <span class="k">return</span> <span class="n">ax</span></div>
 
-    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="SB99.plt_Edot_pdot_evol_cumul"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_Edot_pdot_evol_cumul">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span> <span class="nf">plt_Edot_pdot_evol_cumul</span><span class="p">(</span><span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">plt_sn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
@@ -1096,7 +1098,7 @@ document.write(`
                     <span class="sa">r</span><span class="s1">&#39;Supernovae&#39;</span><span class="p">,</span>
                     <span class="p">],</span> <span class="n">loc</span><span class="o">=</span><span class="mi">4</span><span class="p">,</span> <span class="n">fontsize</span><span class="o">=</span><span class="s1">&#39;small&#39;</span><span class="p">)</span>
 
-        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span></div>
+        <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span></div></div>
 
 
 <span class="k">def</span> <span class="nf">plt_nuJnu_mid_plane_parallel</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span>
