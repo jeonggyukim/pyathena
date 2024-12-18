@@ -6,13 +6,16 @@ root: intro
 parts:
   - caption: Basics
     chapters:
-    - file: install
+    - file: content/install
+    - file: examples/quickstart.ipynb
   - caption: API References
     chapters:
-    - file: loadsim
-    - file: athenadataset
-    - file: readers
-    - file: utils
+    - file: content/loadsim
+    - file: content/athenadataset
+    - file: content/readers
+    - file: content/units
+    - file: content/utils
+    - file: content/pop_synth
   - caption: Examples
     chapters:
-    - glob: examples/*
+    - file: examples/tigress-classic-cooling.ipynb
