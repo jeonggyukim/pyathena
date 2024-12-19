@@ -621,12 +621,12 @@ def calculate_lagrangian_props(s, cores, rprofs):
             sigma_mw.append(sigmw)
 
             # Mass-weighted 1D velocity dispersion from 3D average
-            sig1d = np.sqrt((rprf.vel1_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
-                           + rprf.vel2_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
-                           + rprf.vel3_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
-                           - rprf.vel1_mw.weighted(rprf.r**2*rprf.rho).mean()
-                           - rprf.vel2_mw.weighted(rprf.r**2*rprf.rho).mean()
-                           - rprf.vel3_mw.weighted(rprf.r**2*rprf.rho).mean()).data[()]/3)
+            sig1d = np.sqrt((rprf.velx_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
+                           + rprf.vely_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
+                           + rprf.velz_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
+                           - rprf.velx_mw.weighted(rprf.r**2*rprf.rho).mean()
+                           - rprf.vely_mw.weighted(rprf.r**2*rprf.rho).mean()
+                           - rprf.velz_mw.weighted(rprf.r**2*rprf.rho).mean()).data[()]/3)
             sigma_1d.append(sig1d)
 
 
