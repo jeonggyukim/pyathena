@@ -453,6 +453,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         """
         rprofs_dict = {}
         pids_not_found = []
+        pids_not_found_prj = []
         for pid in self.pids:
             cores = self.cores[pid]
             rprofs, nums = [], []
@@ -501,7 +502,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                     prj_rprofs.append(rprf)
                     nums.append(num)
                 except FileNotFoundError:
-                    pids_not_found.append(pid)
+                    pids_not_found_prj.append(pid)
                     break
             if len(prj_rprofs) > 0:
                 prj_rprofs = xr.concat(prj_rprofs, 't')
@@ -517,6 +518,10 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
         if len(pids_not_found) > 0:
             msg = f"Some radial profiles are missing for pid {pids_not_found}."
             self.logger.warning(msg)
+        if len(pids_not_found_prj) > 0:
+            msg = f"Some projected radial profiles are missing for pid {pids_not_found_prj}."
+            self.logger.warning(msg)
+
         return rprofs_dict
 
 
