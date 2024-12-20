@@ -179,7 +179,7 @@ if __name__ == "__main__":
         # Calculate Lagrangian properties
         if args.lagrangian_props:
             def wrapper(pid):
-                method_list = ['empirical', 'predicted', 'pred_xis']
+                method_list = ['empirical', 'predicted']
                 for method in method_list:
                     s.select_cores(method)
                     if pid in s.cores:
