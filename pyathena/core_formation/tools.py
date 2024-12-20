@@ -365,7 +365,7 @@ def calculate_critical_tes(s, rprf, core):
     vr = np.sqrt(rprf.dvel1_sq_mw.sel(r=slice(rmin_fit, rmax_fit)).data)
 
     res = linregress(np.log(rds), np.log(vr/s.cs))
-    pindex = res.slope
+    pindex = min(res.slope, 0.9999)  # Apply ceiling to pindex
     intercept = res.intercept
 
     if pindex <= 0:
@@ -574,6 +574,22 @@ def calculate_prj_radial_profile(s, num, origin):
 
 
 def calculate_lagrangian_props(s, cores, rprofs):
+    """Calculate Lagrangian properties of cores
+
+    Parameters
+    ----------
+    s : LoadSimCoreFormation
+        Object containing simulation metadata.
+    cores : pandas.DataFrame
+        Object containing core informations.
+    rprofs : xarray.Dataset
+        Object containing radial profiles.
+
+    Returns
+    -------
+    lprops : pandas.DataFrame
+        Object containing Lagrangian properties of cores.
+    """
     # Slice cores that have corresponding radial profiles
     common_indices = sorted(set(cores.index) & set(rprofs.num.data))
     cores = cores.loc[common_indices]
