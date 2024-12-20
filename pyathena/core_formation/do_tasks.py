@@ -37,6 +37,8 @@ if __name__ == "__main__":
                         help="Number of processors")
     parser.add_argument("-o", "--overwrite", action="store_true",
                         help="Overwrite everything")
+    parser.add_argument("-r", "--reverse", action="store_true",
+                        help="Loop through nums in revserse direction")
     parser.add_argument("--combine-partab", action="store_true",
                         help="Join partab files")
     parser.add_argument("--combine-partab-full", action="store_true",
@@ -150,8 +152,9 @@ if __name__ == "__main__":
             def wrapper(num):
                 tasks.radial_profile(s, num, pids, overwrite=args.overwrite,
                                      full_radius=True, days_overwrite=96)
+            nums = s.nums[::-1] if args.reverse else s.nums
             with Pool(args.np) as p:
-                p.map(wrapper, s.nums)
+                p.map(wrapper, nums)
 
         # Calculate radial profiles of t_coll cores and pickle them.
         if args.prj_radial_profile:
