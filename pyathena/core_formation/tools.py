@@ -359,7 +359,7 @@ def calculate_critical_tes(s, rprf, core):
     mean_tidal_density = mtidal / (4*np.pi*core.tidal_radius**3/3)
 
     rmin_fit = 0.5*s.dx
-    rmax_fit = max(core.tidal_radius, 4.5*s.dx)
+    rmax_fit = max(core.tidal_radius, 16.5*s.dx)
     # Select data for sonic radius fit
     rds = rprf.r.sel(r=slice(rmin_fit, rmax_fit)).data
     vr = np.sqrt(rprf.dvel1_sq_mw.sel(r=slice(rmin_fit, rmax_fit)).data)
@@ -976,6 +976,10 @@ def critical_time(s, pid, method='empirical'):
                 fnet = fnet.interp(r=core.critical_radius).data[()]
             else:
                 fnet = np.nan
+            # Whatever fnet is, if it is not negative, we should break.
+            # That is, when rcrit = NaN or inf, we should break.
+            # However, NaN can be artificial, we can probably impose
+            # the upper limit on p.
             if not fnet < 0:
                 ncrit = num + 1
                 break
