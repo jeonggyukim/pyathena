@@ -136,7 +136,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
             # Load derived core informations using various alternative critical times
             self.cores_dict = {}
-            for mtd in ['empirical', 'predicted', 'pred_xis']:
+            for mtd in ['empirical', 'predicted']:  # retire experimental pred_xis
                 try:
                     # Calculate derived core properties using the predicted critical time
                     savdir = Path(self.savdir, 'cores')
@@ -246,7 +246,11 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 rprf = rprofs.sel(num=ncrit)
                 rcore = core.critical_radius
                 if rcore > rprf.r.max()[()]:
-                    msg = f"Core radius exceeds the maximum rprof radius for model {self.basename}, par {pid}. rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
+                    msg = (
+                        f"Core radius exceeds the maximum rprof radius for "
+                        f"model {self.basename}, par {pid}. ncrit = {ncrit}, "
+                        f"rcore = {rcore:.2f}; rprf_max = {rprf.r.max().data[()]:.2f}"
+                    )
                     self.logger.warning(msg)
                     continue
                 mcore = rprf.menc.interp(r=rcore).data[()]
@@ -385,7 +389,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
         # Try reading the go15 mass
         try:
-            fname = Path(self.savdir) / 'mcore_go15.p'
+            fname = Path(savdir, 'mcore_go15.p')
             with open(fname, 'rb') as f:
                 mcore_go15 = pickle.load(f)
             mcore_go15_found = True
@@ -394,7 +398,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
 
 
         for pid in self.pids:
-            fname = Path(self.savdir, 'cores', 'cores.par{}.p'.format(pid))
+            fname = Path(savdir, f'cores.par{pid}.p')
             cores = pd.read_pickle(fname).sort_index()
 
             prestellar_cores = cores.loc[:cores.attrs['numcoll']]
@@ -407,8 +411,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 for num in cores.index:
                     try:
                         fname = Path(self.savdir, 'critical_tes',
-                                     'critical_tes.par{}.{:05d}.p'
-                                     .format(pid, num))
+                                     f'critical_tes.par{pid}.{num:05d}.p')
                         tes_crit.append(pd.read_pickle(fname))
                     except FileNotFoundError:
                         pids_not_found.append(pid)
@@ -460,9 +463,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             min_nr = None
             for num in cores.index:
                 try:
-                    fname = Path(self.savdir, 'radial_profile',
-                                 'radial_profile.par{}.{:05d}.nc'
-                                 .format(pid, num))
+                    fname = Path(savdir,
+                                 f'radial_profile.par{pid}.{num:05d}.nc')
                     rprf = xr.open_dataset(fname)
                     if min_nr is None:
                         min_nr = rprf.sizes['r']
@@ -491,9 +493,8 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             min_nr = None
             for num in cores.index:
                 try:
-                    fname = Path(self.savdir, 'radial_profile',
-                                 'prj_radial_profile.par{}.{:05d}.nc'
-                                 .format(pid, num))
+                    fname = Path(savdir,
+                                 f'prj_radial_profile.par{pid}.{num:05d}.nc')
                     rprf = xr.open_dataset(fname)
                     if min_nr is None:
                         min_nr = rprf.sizes['R']
