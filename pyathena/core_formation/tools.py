@@ -600,11 +600,11 @@ def calculate_lagrangian_props(s, cores, rprofs):
 
     if np.isnan(ncrit):
         radius = menc_crit = rhoe = rhoavg = np.nan
-        vinfall = sigma_mw = sigma_1d = np.nan
+        vinfall = sigma_mw = sigma_1d = sigma_1d_trb =sigma_1d_blk = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
         radius, menc_crit, rhoe, rhoavg = [], [], [], []
-        vinfall, sigma_mw, sigma_1d = [], [], []
+        vinfall, sigma_mw, sigma_1d, sigma_1d_trb, sigma_1d_blk = [], [], [], [], []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
         for num, core in cores.iterrows():
             rprof = rprofs.sel(num=num)
@@ -633,18 +633,33 @@ def calculate_lagrangian_props(s, cores, rprofs):
 
             # Mass-weighted velocity dispersion
             rprf = rprof.sel(r=slice(0, r_M))
+
             sigmw = np.sqrt(rprf.dvel1_sq_mw.weighted(rprf.r**2*rprf.rho).mean().data[()])
             sigma_mw.append(sigmw)
+
+            vx_com = rprf.velx_mw.weighted(rprf.r**2*rprf.rho).mean()
+            vy_com = rprf.vely_mw.weighted(rprf.r**2*rprf.rho).mean()
+            vz_com = rprf.velz_mw.weighted(rprf.r**2*rprf.rho).mean()
+
 
             # Mass-weighted 1D velocity dispersion from 3D average
             sig1d = np.sqrt((rprf.velx_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
                            + rprf.vely_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
                            + rprf.velz_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
-                           - rprf.velx_mw.weighted(rprf.r**2*rprf.rho).mean()
-                           - rprf.vely_mw.weighted(rprf.r**2*rprf.rho).mean()
-                           - rprf.velz_mw.weighted(rprf.r**2*rprf.rho).mean()).data[()]/3)
+                           - vx_com**2 - vy_com**2 - vz_com**2).data[()]/3)
             sigma_1d.append(sig1d)
 
+            # turbulent component of 1D velocity dispersion
+            sig1d = np.sqrt((rprf.dvel1_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
+                           + rprf.dvel2_sq_mw.weighted(rprf.r**2*rprf.rho).mean()
+                           + rprf.dvel3_sq_mw.weighted(rprf.r**2*rprf.rho).mean()).data[()]/3)
+            sigma_1d_trb.append(sig1d)
+
+            # bulk component of 1D velocity dispersion
+            sig1d = np.sqrt(((rprf.vel1_mw**2).weighted(rprf.r**2*rprf.rho).mean()
+                           + (rprf.vel2_mw**2).weighted(rprf.r**2*rprf.rho).mean()
+                           + (rprf.vel3_mw**2).weighted(rprf.r**2*rprf.rho).mean()).data[()]/3)
+            sigma_1d_blk.append(sig1d)
 
             # select r = r_M
             rprf = rprof.interp(r=r_M)
@@ -656,7 +671,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
             Fani.append(rprf.Fani.data[()])
             Fgrv.append(rprf.Fgrv.data[()])
     lprops = pd.DataFrame(data = dict(radius=radius, menc_crit=menc_crit, edge_density=rhoe, mean_density=rhoavg,
-                                      vinfall=vinfall, sigma_mw=sigma_mw, sigma_1d=sigma_1d,
+                                      vinfall=vinfall, sigma_mw=sigma_mw, sigma_1d=sigma_1d, sigma_1d_trb=sigma_1d_trb, sigma_1d_blk=sigma_1d_blk,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
 
@@ -665,11 +680,14 @@ def calculate_lagrangian_props(s, cores, rprofs):
     if np.isnan(ncrit):
         sigma_r = np.nan
         sigma_1d = np.nan
+        sigma_1d_trb = np.nan
     else:
         sigma_r = lprops.loc[ncrit].sigma_mw
         sigma_1d = lprops.loc[ncrit].sigma_1d
+        sigma_1d_trb = lprops.loc[ncrit].sigma_1d_trb
     lprops.attrs['sigma_r'] = sigma_r
     lprops.attrs['sigma_1d'] = sigma_1d
+    lprops.attrs['sigma_1d_trb'] = sigma_1d_trb
 
     # Free-fall time at t_coll
     lprops.attrs['tff_coll'] = tfreefall(lprops.loc[ncoll].mean_density, s.gconst)
