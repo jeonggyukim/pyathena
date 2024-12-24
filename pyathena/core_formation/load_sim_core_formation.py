@@ -480,7 +480,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 rprofs = rprofs.assign_coords(dict(num=('t', nums)))
                 # Slice data to common range in r.
                 rprofs = rprofs.isel(r=slice(0, min_nr))
-                for axis in [1, 2, 3]:
+                for axis in [1, 2, 3, 'x', 'y', 'z']:
                     rprofs[f'dvel{axis}_sq_mw'] = (rprofs[f'vel{axis}_sq_mw']
                                                  - rprofs[f'vel{axis}_mw']**2)
                 rprofs['menc'] = (4*np.pi*rprofs.r**2*rprofs.rho
