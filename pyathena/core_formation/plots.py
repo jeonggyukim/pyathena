@@ -428,8 +428,9 @@ def plot_core_evolution(s, pid, num, rmax=None):
         # 2. Zoom-in projections
         plt.sca(axs['zoom'][i])
         plot_projection(s, d, axis=prj_axis, add_colorbar=False)
-        plot_grid_dendro_contours(s, gd, gd.sibling(core.leaf_id), ds.coords, axis=prj_axis,
-                                  recenter=dict(x=xc, y=yc, z=zc), select=sel, color='k')
+        if core.leaf_id != gd.trunk:
+            plot_grid_dendro_contours(s, gd, gd.sibling(core.leaf_id), ds.coords, axis=prj_axis,
+                                      recenter=dict(x=xc, y=yc, z=zc), select=sel, color='k')
         plot_grid_dendro_contours(s, gd, core.leaf_id, ds.coords, axis=prj_axis,
                                   recenter=dict(x=xc, y=yc, z=zc), select=sel, color='g')
         if rtidal <= np.sqrt(2)*hw:
