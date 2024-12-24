@@ -234,8 +234,6 @@ if __name__ == "__main__":
             for pid in pids:
                 for method in ['empirical', 'predicted']:
                     s.select_cores(method)
-                    if pid not in s.good_cores():
-                        continue
                     cores = s.cores[pid]
                     def wrapper(num):
                         tasks.plot_core_evolution(s, pid, num, method=method,
