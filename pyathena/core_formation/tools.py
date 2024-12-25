@@ -600,11 +600,11 @@ def calculate_lagrangian_props(s, cores, rprofs):
 
     if np.isnan(ncrit):
         radius = menc_crit = rhoe = rhoavg = np.nan
-        vinfall = sigma_mw = sigma_1d = sigma_1d_trb =sigma_1d_blk = np.nan
+        vinfall = vcom = sigma_mw = sigma_1d = sigma_1d_trb = sigma_1d_blk = np.nan
         Fthm = Ftrb = Fcen = Fani = Fgrv = np.nan
     else:
         radius, menc_crit, rhoe, rhoavg = [], [], [], []
-        vinfall, sigma_mw, sigma_1d, sigma_1d_trb, sigma_1d_blk = [], [], [], [], []
+        vinfall, vcom, sigma_mw, sigma_1d, sigma_1d_trb, sigma_1d_blk = [], [], [], [], [], []
         Fthm, Ftrb, Fcen, Fani, Fgrv = [], [], [], [], []
         for num, core in cores.iterrows():
             rprof = rprofs.sel(num=num)
@@ -640,6 +640,7 @@ def calculate_lagrangian_props(s, cores, rprofs):
             vx_com = rprf.velx_mw.weighted(rprf.r**2*rprf.rho).mean()
             vy_com = rprf.vely_mw.weighted(rprf.r**2*rprf.rho).mean()
             vz_com = rprf.velz_mw.weighted(rprf.r**2*rprf.rho).mean()
+            vcom.append(np.sqrt(vx_com**2 + vy_com**2 + vz_com**2).data[()])
 
 
             # Mass-weighted 1D velocity dispersion from 3D average
@@ -671,20 +672,23 @@ def calculate_lagrangian_props(s, cores, rprofs):
             Fani.append(rprf.Fani.data[()])
             Fgrv.append(rprf.Fgrv.data[()])
     lprops = pd.DataFrame(data = dict(radius=radius, menc_crit=menc_crit, edge_density=rhoe, mean_density=rhoavg,
-                                      vinfall=vinfall, sigma_mw=sigma_mw, sigma_1d=sigma_1d, sigma_1d_trb=sigma_1d_trb, sigma_1d_blk=sigma_1d_blk,
+                                      vinfall=vinfall, vcom=vcom, sigma_mw=sigma_mw, sigma_1d=sigma_1d, sigma_1d_trb=sigma_1d_trb, sigma_1d_blk=sigma_1d_blk,
                                       Fthm=Fthm, Ftrb=Ftrb, Fcen=Fcen, Fani=Fani, Fgrv=Fgrv),
                           index = cores.index)
 
     # Attach some attributes
     # Velocity dispersion at t_crit
     if np.isnan(ncrit):
+        vcom = np.nan
         sigma_r = np.nan
         sigma_1d = np.nan
         sigma_1d_trb = np.nan
     else:
+        vcom = lprops.loc[ncrit].vcom
         sigma_r = lprops.loc[ncrit].sigma_mw
         sigma_1d = lprops.loc[ncrit].sigma_1d
         sigma_1d_trb = lprops.loc[ncrit].sigma_1d_trb
+    lprops.attrs['vcom'] = vcom
     lprops.attrs['sigma_r'] = sigma_r
     lprops.attrs['sigma_1d'] = sigma_1d
     lprops.attrs['sigma_1d_trb'] = sigma_1d_trb
