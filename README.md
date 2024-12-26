@@ -1,12 +1,8 @@
 <div id="top"></div>
-<!--
-*** README.md template Shamelessly taken from
-*** https://raw.githubusercontent.com/othneildrew/Best-README-Template/master/README.md
--->
 
 ## About
 
-pyathena is a set of python scripts for reading and analyzing simulation data produced by the Athena-TIGRESS code.
+pyathena is a set of python scripts for reading and analyzing simulation data produced by the Athena-TIGRESS and TIGRIS codes.
 
 ## Requirement
 
@@ -45,9 +41,14 @@ conda activate pyathena
 conda env update --file env.yml --prune
 ```
 
+To remove pyathena environment
+```sh
+conda remove --name pyathena --all
+```
+
 ## Example Usage
 
-See example [notebooks](notebook).
+See example [notebooks](notebook) and [documentation](https://jeonggyukim.github.io/pyathena/intro.html).
 
 ## Contributing
 
