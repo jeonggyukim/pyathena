@@ -69,6 +69,10 @@ cpp_to_cc_mag = {
     "Bcc3": "cell_centered_B3",
 }
 
+cc_to_cpp = {
+    "specific_scalar[0]": "rmetal",
+    "specific_scalar[1]": "rSN",
+}
 
 class SliceProj:
     @staticmethod
@@ -91,25 +95,16 @@ class SliceProj:
     ):
         axes = np.atleast_1d(axes)
 
-        ds = self.load_hdf5(num=num).rename(cpp_to_cc)
-        if "Bcc1" in ds:
-            ds = ds.rename(cpp_to_cc_mag)
-
-        if "cell_centered_B1" in ds:
-            self.mhd = True
-        else:
-            self.mhd = False
-
         res = dict()
-        res["time"] = ds.attrs["Time"]
         res["extent"] = self._get_extent(self.domain)
         res["center"] = dict(
             x=self.domain["center"][0],
             y=self.domain["center"][1],
             z=self.domain["center"][2],
         )
+
         for ax in axes:
-            dat = ds.sel({ax: res["center"][ax]}, method="nearest")
+            dat = self.get_slice(num, ax, res["center"][ax])
             res[ax] = dict()
             for f in dat:
                 if f in ["velocity", "cell_centered_B"]:
@@ -117,12 +112,17 @@ class SliceProj:
                         res[ax][f + ivec] = dat[f + ivec].data
                 else:
                     res[ax][f] = dat[f].data
+        res["time"] = dat.attrs["time"]
+        if "cell_centered_B1" in dat:
+            self.mhd = True
+        else:
+            self.mhd = False
 
         for zpos, zlab in zip(
             [-1000, -500, -200, 200, 500, 1000],
             ["zn10", "zn05", "zn02", "zp02", "zp05", "zp10"],
         ):
-            dat = ds.sel(z=zpos, method="nearest")
+            dat = self.get_slice(num, "z", zpos)
             res[zlab] = dict()
             for f in dat:
                 if f in ["velocity", "cell_centered_B"]:
@@ -189,13 +189,13 @@ class SliceProj:
         self, num, axes=["x", "y", "z"], prefix="prj", savdir=None, force_override=False
     ):
         axtoi = dict(x=0, y=1, z=2)
-        fields = ["rho"]
         axes = np.atleast_1d(axes)
-
-        dat = self.load_hdf5(num=num, quantities=fields)
 
         res = dict()
         res["extent"] = self._get_extent(self.domain)
+
+        dat = self.get_data(num, fields=["density"])
+        res["time"] = dat.attrs["time"]
 
         for ax in axes:
             i = axtoi[ax]
@@ -203,7 +203,7 @@ class SliceProj:
             conv_Sigma = (dx * self.u.density).to("Msun/pc**2")
 
             res[ax] = dict()
-            res[ax]["Sigma_gas"] = (np.sum(dat["rho"], axis=2 - i) * conv_Sigma).data
+            res[ax]["Sigma_gas"] = (np.sum(dat["density"], axis=2 - i) * conv_Sigma).data
 
         return res
 
@@ -281,256 +281,263 @@ class SliceProj:
         except KeyError:
             pass
 
-    def plt_snapshot(
-        self,
-        num,
-        fields_xy=["Sigma_gas", "T", "pok", "nH", "Bmag", "rSN"],
-        fields_xz=[
-            "Sigma_gas",
-            "nH",
-            "T",
-            "vz",
-            "Bmag",
-            "rmetal"
-        ],
-        xwidth=2,
-        norm_factor=5.0,
-        agemax=40.0,
-        agemax_sn=40.0,
-        runaway=False,
-        suptitle=None,
-        savdir_pkl=None,
-        savdir=None,
-        force_override=False,
-        savefig=True,
-    ):
-        """Plot 12-panel projection, slice plots in the z and y directions
+def plt_snapshot(
+    sim,
+    num,
+    fields_xy=["Sigma_gas", "T", "pok", "nH", "Bmag", "rmetal"],
+    fields_xz=[
+        "Sigma_gas",
+        "nH",
+        "T",
+        "vz",
+        "Bmag",
+        "rmetal"
+    ],
+    xwidth=2,
+    norm_factor=5.0,
+    agemax=40.0,
+    agemax_sn=40.0,
+    runaway=False,
+    suptitle=None,
+    savdir_pkl=None,
+    savdir=None,
+    force_override=False,
+    savefig=True,
+):
+    """Plot 12-panel projection, slice plots in the z and y directions
 
-        Parameters
-        ----------
-        num : int
-            vtk snapshot number
-        fields_xy: list of str
-            Field names for z projections and slices
-        fields_xz: list of str
-            Field names for y projections and slices
-        norm_factor : float
-            Normalization factor for starpar size. Smaller norm_factor for bigger size.
-        agemax : float
-            Maximum age of radiation source particles [Myr]
-        agemax_sn : float
-            Maximum age of sn particles [Myr]
-        runaway : bool
-            If True, show runaway star particles
-        suptitle : str
-            Suptitle for snapshot
-        savdir_pkl : str
-            Path to which save (from which load) projections and slices
-        savdir : str
-            Path to which save (from which load) projections and slices
-        """
+    Parameters
+    ----------
+    num : int
+        vtk snapshot number
+    fields_xy: list of str
+        Field names for z projections and slices
+    fields_xz: list of str
+        Field names for y projections and slices
+    norm_factor : float
+        Normalization factor for starpar size. Smaller norm_factor for bigger size.
+    agemax : float
+        Maximum age of radiation source particles [Myr]
+    agemax_sn : float
+        Maximum age of sn particles [Myr]
+    runaway : bool
+        If True, show runaway star particles
+    suptitle : str
+        Suptitle for snapshot
+    savdir_pkl : str
+        Path to which save (from which load) projections and slices
+    savdir : str
+        Path to which save (from which load) projections and slices
+    """
 
-        label = dict(
-            Sigma_gas=r"$\Sigma$",
-            Sigma_H2=r"$\Sigma_{\rm H_2}$",
-            EM=r"${\rm EM}$",
-            nH=r"$n_{\rm H}$",
-            T=r"$T$",
-            pok=r"$P/k_B$",
-            vz=r"$v_z$",
-            vy=r"$v_y$",
-            vx=r"$v_x$",
-            chi_FUV=r"$\mathcal{E}_{\rm FUV}$",
-            Erad_LyC=r"$\mathcal{E}_{\rm LyC}$",
-            xi_CR=r"$\xi_{\rm CR}$",
-            Bmag=r"$|B|$",
-            rmetal=r"$Z$",
-            rSN=r"$f_{\rm SN}$"
-        )
+    label = dict(
+        Sigma_gas=r"$\Sigma$",
+        Sigma_H2=r"$\Sigma_{\rm H_2}$",
+        EM=r"${\rm EM}$",
+        nH=r"$n_{\rm H}$",
+        T=r"$T$",
+        pok=r"$P/k_B$",
+        vz=r"$v_z$",
+        vy=r"$v_y$",
+        vx=r"$v_x$",
+        chi_FUV=r"$\mathcal{E}_{\rm FUV}$",
+        Erad_LyC=r"$\mathcal{E}_{\rm LyC}$",
+        xi_CR=r"$\xi_{\rm CR}$",
+        Bmag=r"$|B|$",
+        rmetal=r"$Z$",
+        rSN=r"$f_{\rm SN}$"
+    )
 
-        kind = dict(
-            Sigma_gas="prj",
-            Sigma_H2="prj",
-            EM="prj",
-            nH="slc",
-            T="slc",
-            pok="slc",
-            vz="slc",
-            vy="slc",
-            vx="slc",
-            chi_FUV="slc",
-            Erad_LyC="slc",
-            xi_CR="slc",
-            Bmag="slc",
-            rmetal="slc",
-            rSN="slc"
-        )
-        nxy = len(fields_xy)
-        nxz = len(fields_xz)
-        LzoLx = self.domain["Lx"][2] / self.domain["Lx"][0]
-        ysize = LzoLx * xwidth
-        xsize = ysize / nxy * 4 + nxz * xwidth
-        x1 = 0.90 * (ysize * 4 / nxy / xsize)
-        x2 = 0.90 * (nxz * xwidth / xsize)
+    kind = dict(
+        Sigma_gas="prj",
+        Sigma_H2="prj",
+        EM="prj",
+        nH="slc",
+        T="slc",
+        pok="slc",
+        vz="slc",
+        vy="slc",
+        vx="slc",
+        chi_FUV="slc",
+        Erad_LyC="slc",
+        xi_CR="slc",
+        Bmag="slc",
+        rmetal="slc",
+        rSN="slc"
+    )
+    nxy = len(fields_xy)
+    nxz = len(fields_xz)
+    LzoLx = sim.domain["Lx"][2] / sim.domain["Lx"][0]
+    ysize = LzoLx * xwidth
+    xsize = ysize / nxy * 4 + nxz * xwidth
+    x1 = 0.90 * (ysize * 4 / nxy / xsize)
+    x2 = 0.90 * (nxz * xwidth / xsize)
 
-        fig = plt.figure(figsize=(xsize, ysize))  # , constrained_layout=True)
-        g1 = ImageGrid(
-            fig,
-            [0.02, 0.05, x1, 0.94],
-            (nxy // 2, 2),
-            axes_pad=0.1,
-            aspect=True,
-            share_all=True,
-            direction="column",
-        )
-        g2 = ImageGrid(
-            fig,
-            [x1 + 0.07, 0.05, x2, 0.94],
-            (1, nxz),
-            axes_pad=0.1,
-            aspect=True,
-            share_all=True,
-        )
+    fig = plt.figure(figsize=(xsize, ysize))  # , constrained_layout=True)
+    g1 = ImageGrid(
+        fig,
+        [0.02, 0.05, x1, 0.94],
+        (nxy // 2, 2),
+        axes_pad=0.1,
+        aspect=True,
+        share_all=True,
+        direction="column",
+    )
+    g2 = ImageGrid(
+        fig,
+        [x1 + 0.07, 0.05, x2, 0.94],
+        (1, nxz),
+        axes_pad=0.1,
+        aspect=True,
+        share_all=True,
+    )
 
-        slc_fields = []
-        for f in fields_xy:
-            if kind[f] == "slc":
-                slc_fields += [f]
-        for f in fields_xz:
-            if kind[f] == "slc":
-                slc_fields += [f]
-        slc_fields = list(set(slc_fields))
-        dat = dict()
-        dat["slc"] = self.read_slc_from_allslc(
-            num, fields=slc_fields, savdir=savdir_pkl, force_override=force_override
-        )
-        dat["prj"] = self.read_prj(
-            num, savdir=savdir_pkl, force_override=force_override
-        )
-        time = dat["slc"]["time"] * self.u.Myr
-        if len(self.files["parbin"]) != 0:
-            sp = self.load_parbin(num)
-        else:
+    slc_fields = []
+    for f in fields_xy:
+        if kind[f] == "slc":
+            slc_fields += [f]
+    for f in fields_xz:
+        if kind[f] == "slc":
+            slc_fields += [f]
+    slc_fields = list(set(slc_fields))
+    dat = dict()
+    dat["slc"] = sim.read_slc_from_allslc(
+        num, fields=slc_fields, savdir=savdir_pkl, force_override=force_override
+    )
+    dat["prj"] = sim.read_prj(
+        num, savdir=savdir_pkl, force_override=force_override
+    )
+    time = dat["slc"]["time"] * sim.u.Myr
+    sp = None
+    if "parbin" in sim.files:
+        try:
+            sp = sim.load_parbin(num)
+        except:
+            sp = None
+    elif "starpar_vtk" in sim.files:
+        try:
+            sp = sim.load_starpar_vtk(num)
+        except:
             sp = None
 
-        extent = dat["prj"]["extent"]["z"]
+    extent = dat["prj"]["extent"]["z"]
 
-        # spiral arm model -- rolling y position
-        # if self.test_spiralarm():
-        #     Om = self.par["orbital_advection"]["Omega"]
-        #     pattern = self.par["problem"]["pattern"]
-        #     vy0 = self.par["problem"]["R0"] * (1 - pattern) * Om
-        #     Ly = ds.domain["Lx"][1]
-        #     dy = ds.domain["dx"][1]
-        #     ymin = ds.domain["le"][1]
-        #     yshift = np.mod(vy0 * ds.domain["time"], Ly)
-        #     jshift = yshift / dy
-        #     ynew = sp["x2"].copy()
-        #     ynew -= ymin + yshift
-        #     negy = ynew.loc[ynew < 0].copy()
-        #     ynew.loc[ynew < 0] = negy + Ly
-        #     sp["x2"] = ynew + ymin
-        #     self.logger.info(
-        #         "[plt_snapshot] y-position will be rolled "
-        #         + "with vy0={0} and yshift={1}".format(vy0, yshift)
-        #     )
-        # else:
-        jshift = 0
+    # spiral arm model -- rolling y position
+    # if self.test_spiralarm():
+    #     Om = self.par["orbital_advection"]["Omega"]
+    #     pattern = self.par["problem"]["pattern"]
+    #     vy0 = self.par["problem"]["R0"] * (1 - pattern) * Om
+    #     Ly = ds.domain["Lx"][1]
+    #     dy = ds.domain["dx"][1]
+    #     ymin = ds.domain["le"][1]
+    #     yshift = np.mod(vy0 * ds.domain["time"], Ly)
+    #     jshift = yshift / dy
+    #     ynew = sp["x2"].copy()
+    #     ynew -= ymin + yshift
+    #     negy = ynew.loc[ynew < 0].copy()
+    #     ynew.loc[ynew < 0] = negy + Ly
+    #     sp["x2"] = ynew + ymin
+    #     self.logger.info(
+    #         "[plt_snapshot] y-position will be rolled "
+    #         + "with vy0={0} and yshift={1}".format(vy0, yshift)
+    #     )
+    # else:
+    jshift = 0
 
-        for i, (ax, f) in enumerate(zip(g1, fields_xy)):
-            ax.set_aspect(self.domain["Lx"][1] / self.domain["Lx"][0])
-            self.plt_slice(
-                ax,
-                dat[kind[f]],
-                "z",
-                f,
-                cmap=cmap_def[f],
-                norm=norm_def[f],
-                jshift=jshift,
-            )
-
-            if (i == 0) & (sp is not None):
-                scatter_sp(
-                    sp,
-                    ax,
-                    "z",
-                    kind="prj",
-                    kpc=False,
-                    norm_factor=norm_factor / 2,
-                    agemax=agemax,
-                    agemax_sn=agemax_sn,
-                    runaway=runaway,
-                    cmap=plt.cm.cool_r,
-                )
-            ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
-            ax.text(
-                0.5,
-                0.92,
-                label[f],
-                **texteffect(fontsize="x-large"),
-                ha="center",
-                transform=ax.transAxes,
-            )
-            if i == (nxy // 2 - 1):
-                ax.set(xlabel="x [pc]", ylabel="y [pc]")
-            else:
-                ax.axes.get_xaxis().set_visible(False)
-                ax.axes.get_yaxis().set_visible(False)
-
-        extent = dat["prj"]["extent"]["y"]
-        for i, (ax, f) in enumerate(zip(g2, fields_xz)):
-            ax.set_aspect(self.domain["Lx"][2] / self.domain["Lx"][0])
-            self.plt_slice(ax, dat[kind[f]], "y", f, cmap=cmap_def[f], norm=norm_def[f])
-            if (i == 0) & (sp is not None):
-                scatter_sp(
-                    sp,
-                    ax,
-                    "y",
-                    kind="prj",
-                    kpc=False,
-                    norm_factor=norm_factor,
-                    agemax=agemax,
-                    cmap=plt.cm.cool_r,
-                )
-            ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
-            ax.text(
-                0.5,
-                0.97,
-                label[f],
-                **texteffect(fontsize="x-large"),
-                ha="center",
-                transform=ax.transAxes,
-            )
-            if i == 0:
-                ax.set(xlabel="x [pc]", ylabel="z [pc]")
-            else:
-                ax.axes.get_xaxis().set_visible(False)
-                ax.axes.get_yaxis().set_visible(False)
-
-        if suptitle is None:
-            suptitle = self.basename
-        # fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
-        #              va='center', ha='center', **texteffect(fontsize='xx-large'))
-        fig.suptitle(
-            f"Model: {suptitle}  time={time:8.1f} Myr",
-            x=0.4,
-            y=1.02,
-            va="center",
-            ha="center",
-            **texteffect(fontsize="xx-large"),
+    for i, (ax, f) in enumerate(zip(g1, fields_xy)):
+        ax.set_aspect(sim.domain["Lx"][1] / sim.domain["Lx"][0])
+        sim.plt_slice(
+            ax,
+            dat[kind[f]],
+            "z",
+            f,
+            cmap=cmap_def[f],
+            norm=norm_def[f],
+            jshift=jshift,
         )
-        # plt.subplots_adjust(top=0.95)
 
-        if savefig:
-            if savdir is None:
-                savdir = osp.join(self.savdir, "snapshot")
-            if not osp.exists(savdir):
-                os.makedirs(savdir, exist_ok=True)
+        if (i == 0) & (sp is not None):
+            scatter_sp(
+                sp,
+                ax,
+                "z",
+                kind="prj",
+                kpc=False,
+                norm_factor=norm_factor / 2,
+                agemax=agemax,
+                agemax_sn=agemax_sn,
+                runaway=runaway,
+                cmap=plt.cm.cool_r,
+            )
+        ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
+        ax.text(
+            0.5,
+            0.92,
+            label[f],
+            **texteffect(fontsize="x-large"),
+            ha="center",
+            transform=ax.transAxes,
+        )
+        if i == (nxy // 2 - 1):
+            ax.set(xlabel="x [pc]", ylabel="y [pc]")
+        else:
+            ax.axes.get_xaxis().set_visible(False)
+            ax.axes.get_yaxis().set_visible(False)
 
-            savname = osp.join(savdir, "{0:s}_{1:04d}.png".format(self.basename, num))
-            plt.savefig(savname, dpi=200, bbox_inches="tight")
+    extent = dat["prj"]["extent"]["y"]
+    for i, (ax, f) in enumerate(zip(g2, fields_xz)):
+        ax.set_aspect(sim.domain["Lx"][2] / sim.domain["Lx"][0])
+        sim.plt_slice(ax, dat[kind[f]], "y", f, cmap=cmap_def[f], norm=norm_def[f])
+        if (i == 0) & (sp is not None):
+            scatter_sp(
+                sp,
+                ax,
+                "y",
+                kind="prj",
+                kpc=False,
+                norm_factor=norm_factor,
+                agemax=agemax,
+                cmap=plt.cm.cool_r,
+            )
+        ax.set(xlim=(extent[0], extent[1]), ylim=(extent[2], extent[3]))
+        ax.text(
+            0.5,
+            0.97,
+            label[f],
+            **texteffect(fontsize="x-large"),
+            ha="center",
+            transform=ax.transAxes,
+        )
+        if i == 0:
+            ax.set(xlabel="x [pc]", ylabel="z [pc]")
+        else:
+            ax.axes.get_xaxis().set_visible(False)
+            ax.axes.get_yaxis().set_visible(False)
 
-        return fig
+    if suptitle is None:
+        suptitle = sim.basename
+    # fig.suptitle(suptitle + ' t=' + str(int(ds.domain['time'])), x=0.4, y=1.02,
+    #              va='center', ha='center', **texteffect(fontsize='xx-large'))
+    fig.suptitle(
+        f"Model: {suptitle}  time={time:8.1f} Myr",
+        x=0.4,
+        y=1.02,
+        va="center",
+        ha="center",
+        **texteffect(fontsize="xx-large"),
+    )
+    # plt.subplots_adjust(top=0.95)
+
+    if savefig:
+        if savdir is None:
+            savdir = osp.join(sim.savdir, "snapshot")
+        if not osp.exists(savdir):
+            os.makedirs(savdir, exist_ok=True)
+
+        savname = osp.join(savdir, "{0:s}_{1:04d}.png".format(sim.basename, num))
+        plt.savefig(savname, dpi=200, bbox_inches="tight")
+
+    return fig
 
 
 def slc_to_xarray(slc, axis="z"):

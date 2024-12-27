@@ -14,7 +14,7 @@ class Fields:
         mydfi["field_dep"] = ["density", "pressure"]
 
         def _T(d, u):
-            T1 = (d["pressure"] / d["density"] * u.temperature_mu).value
+            T1 = d["pressure"] / d["density"] * (u.temperature_mu).value
             logT1 = np.log10(T1)
             mu = self.coolftn["mu"](logT1)
             return mu * T1

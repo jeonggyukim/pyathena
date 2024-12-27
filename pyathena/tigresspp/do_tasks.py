@@ -12,10 +12,10 @@ import argparse
 # import sys
 import pickle
 
-import pyathena as pa
 from pyathena.tigresspp.load_sim_tigresspp import LoadSimTIGRESSPP
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
+from pyathena.tigresspp.phase import recal_nP, PDF1D
 
 if __name__ == "__main__":
     COMM = MPI.COMM_WORLD
@@ -37,13 +37,15 @@ if __name__ == "__main__":
 
     s = LoadSimTIGRESSPP(basedir, verbose=False)
     nums = s.nums
+    s.pdf = PDF1D(s)
 
     plt.rcParams["figure.dpi"] = 200
     if COMM.rank == 0:
         f1 = s.plt_hst()
         f1.savefig("sfr.png", bbox_inches="tight")
-        f2 = s.plt_timing()
-        f2.savefig("timing.png", bbox_inches="tight")
+        if "loop_time" in s.files:
+            f2 = s.plt_timing()
+            f2.savefig("timing.png", bbox_inches="tight")
 
         print("basedir, nums", s.basedir, nums)
         nums = split_container(nums, COMM.size)
@@ -62,15 +64,40 @@ if __name__ == "__main__":
                 num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True
             )
             plt.close(fig)
-            # fig = s.plt_pdf2d_all(num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir)
-            # plt.close(fig)
         except (EOFError, KeyError, pickle.UnpicklingError):
             fig = s.plt_snapshot(
                 num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True
             )
             plt.close(fig)
-            # fig = s.plt_pdf2d_all(num, plt_zprof=False, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True)
-            # plt.close(fig)
+
+        # 2d pdf
+        try:
+            npfile = os.path.join(
+                s.basedir, "np_pdf", "{}.{:04d}.np_pdf.nc".format(s.basename, num)
+            )
+            if not os.path.isdir(os.path.dirname(npfile)):
+                os.makedirs(os.path.dirname(npfile))
+            if not os.path.isfile(npfile):
+                ds = s.load_vtk(num)
+                flist = ["nH", "pok", "T"]
+                if s.test_newcool():
+                    flist.append(
+                        ["xe", "xHI", "xHII", "xH2", "cool_rate", "net_cool_rate"]
+                    )
+                dchunk = ds.get_field(flist)
+                dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
+                dchunk = dchunk.sel(z=slice(-300, 300))
+                print(" creating nP ", end=" ")
+                pdf_dset = recal_nP(dchunk, NCR=s.test_newcool())
+                pdf_dset.to_netcdf(npfile)
+                ds.close()
+            else:
+                print(" skipping nP ", end=" ")
+        except IOError:
+            print(" passing nP ", end=" ")
+
+        # 1d pdfs
+        s.pdf.recal_1Dpdfs(num, force_override=False)
 
         n = gc.collect()
         print("Unreachable objects:", n, end=" ")
