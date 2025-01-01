@@ -12,10 +12,11 @@ import argparse
 # import sys
 import pickle
 
-from pyathena.tigresspp.load_sim_tigresspp import LoadSimTIGRESSPP
+from pyathena.tigresspp.load_sim_tigresspp import LoadSimTIGRESSPP,LoadSimTIGRESSClassic
 from pyathena.util.split_container import split_container
 from pyathena.plt_tools.make_movie import make_movie
 from pyathena.tigresspp.phase import recal_nP, PDF1D
+from pyathena.tigresspp.slc_prj import plt_snapshot
 
 if __name__ == "__main__":
     COMM = MPI.COMM_WORLD
@@ -35,7 +36,10 @@ if __name__ == "__main__":
     args = vars(parser.parse_args())
     locals().update(args)
 
-    s = LoadSimTIGRESSPP(basedir, verbose=False)
+    if "newacc" in basedir:
+        s = LoadSimTIGRESSClassic(basedir, verbose=False)
+    else:
+        s = LoadSimTIGRESSPP(basedir, verbose=False)
     nums = s.nums
     s.pdf = PDF1D(s)
 
@@ -60,12 +64,12 @@ if __name__ == "__main__":
         print(num, end=" ")
 
         try:
-            fig = s.plt_snapshot(
+            fig = plt_snapshot(s,
                 num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True
             )
             plt.close(fig)
         except (EOFError, KeyError, pickle.UnpicklingError):
-            fig = s.plt_snapshot(
+            fig = plt_snapshot(s,
                 num, savdir_pkl=savdir_pkl, savdir=savdir, force_override=True
             )
             plt.close(fig)
@@ -78,19 +82,17 @@ if __name__ == "__main__":
             if not os.path.isdir(os.path.dirname(npfile)):
                 os.makedirs(os.path.dirname(npfile))
             if not os.path.isfile(npfile):
-                ds = s.load_vtk(num)
                 flist = ["nH", "pok", "T"]
                 if s.test_newcool():
                     flist.append(
                         ["xe", "xHI", "xHII", "xH2", "cool_rate", "net_cool_rate"]
                     )
-                dchunk = ds.get_field(flist)
+                dchunk = s.get_data(num,flist)
                 dchunk["T1"] = dchunk["pok"] / dchunk["nH"]
                 dchunk = dchunk.sel(z=slice(-300, 300))
                 print(" creating nP ", end=" ")
                 pdf_dset = recal_nP(dchunk, NCR=s.test_newcool())
                 pdf_dset.to_netcdf(npfile)
-                ds.close()
             else:
                 print(" skipping nP ", end=" ")
         except IOError:

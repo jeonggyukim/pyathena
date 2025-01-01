@@ -539,7 +539,7 @@ def define_phase(s, kind="full", verbose=False):
         phdef.append(
             dict(
                 idx=i,
-                name="Hot",
+                name="HIM",
                 Tmin=Tlist[4],
                 Tmax=Tlist[6],
                 abundance=None,
