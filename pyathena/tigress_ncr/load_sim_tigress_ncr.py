@@ -65,7 +65,6 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj, StarPar, P
             pass
         self.muH = muH
         self.u = Units(muH=muH)
-        self.domain = self._get_domain_from_par(self.par)
         self.phase_set = self.get_phase_sets()
         if self.test_newcool():
             self.test_newcool_params()

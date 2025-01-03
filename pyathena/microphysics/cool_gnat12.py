@@ -52,7 +52,8 @@ class CoolGnat12(object):
         if abundance == 'Asplund09':
             a = AbundanceSolar(Zprime=1.0)
             for e in self.info.index:
-                self.info['abd'][e] = float(a.df.loc[a.df['X'] == e, 'NX_NH'].iloc[0])
+                self.info.loc[e, 'abd'] = float(a.df[a.df['X'] == e]['NX_NH'].iloc[0])
+                self.info.loc[e, 'mX_amu'] = float(a.df[a.df['X'] == e]['mX_amu'].iloc[0])
 
         # self.cool_cie_tot = self.get_cool_cie_total()
         self.get_cool_cie_total()
@@ -115,32 +116,65 @@ class CoolGnat12(object):
     def get_cool_cie_total(self,
             elements=['H','He','C','N','O','Ne','Mg','Si','S','Fe']):
 
+        # xi = n_ion/n_H
+        xi = dict()
+        xi_tot = np.zeros_like(self.temp)
+
+        # xe = n_e/n_H
         xe = dict()
         xe_tot = np.zeros_like(self.temp)
+
+        # Ion mass density (divided by amu)
+        rhoi = dict()
+        rhoi_tot = np.zeros_like(self.temp)
+
         cool = dict()
         cool_tot = np.zeros_like(self.temp)
 
-        # Elements for which CIE ion_frac is available
-
+        # Loop over elements for which CIE ion_frac is available
         for e in elements:
+            xi[e] = np.zeros_like(self.temp)
             xe[e] = np.zeros_like(self.temp)
+            rhoi[e] = np.zeros_like(self.temp)
             cool[e] = np.zeros_like(self.temp)
 
+        print('Element // Atomic number // amu')
         for e in elements:
+            # Number of possible (atomic+)ion states
             nstate = self.info.loc[e]['number'] + 1
+            # Elemental abundance
             A = self.info.loc[e]['abd']
-
+            # mass of element in atomic mass unit
+            amu = self.info.loc[e]['mX_amu']
+            print(e, ' // ', A, ' //', amu)
             for i in range(nstate):
-                xe[e] += A*i*self.ion_frac[e + str(i)].values
-                cool[e] += A*self.ion_frac[e + str(i)].values*self.cool_cie_per_ion[e][:,i]
+                if i != 0:
+                    xi[e] += A*self.ion_frac[e + str(i)].values
+                    rhoi[e] += amu*A*self.ion_frac[e + str(i)].values
 
+                xe[e] += i*A*self.ion_frac[e + str(i)].values
+                cool[e] += A*self.ion_frac[e + str(i)].values*\
+                    self.cool_cie_per_ion[e][:,i]
 
         for e in elements:
+            rhoi_tot += rhoi[e]
+            xi_tot += xi[e]
             xe_tot += xe[e]
             cool_tot += cool[e]
 
-        self.cool_tot = cool_tot
+        self.xi_tot = xi_tot
         self.xe_tot = xe_tot
+        self.cool_tot = cool_tot
+
+        self.rhoi_tot = rhoi_tot
+        self.xi_tot = xi_tot
+
+        # mu_i = Sum_s A_s*n_s / Sum_s n_s
+        #      = Sum_s A_s*x_s / Sum_s x_s
+        # where the sums are over all "ion" species s and A_s is the ion mass in amu
+        self.mui = self.rhoi_tot/self.xi_tot
+
+        self.xi = xi
         self.xe = xe
         self.cool = cool
 

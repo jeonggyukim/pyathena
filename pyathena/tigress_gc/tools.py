@@ -1,7 +1,7 @@
 from pathlib import Path
-from pygc.util import add_derived_fields
 from pygc.pot import MHubble, Plummer
 import numpy as np
+import pandas as pd
 import xarray as xr
 from scipy import optimize
 from pyathena.tigress_gc import config
@@ -218,6 +218,7 @@ def calculate_azimuthal_averages(s, num, warmcold=False):
 
     return dat
 
+
 def get_circular_velocity(s, x, y=0, z=0):
     bul = MHubble(rb=s.par['problem']['R_b'], rhob=s.par['problem']['rho_b'])
     bh = Plummer(Mc=s.par['problem']['M_c'], Rc=s.par['problem']['R_c'])
@@ -289,6 +290,7 @@ def find_snapshot_number(s, t0):
         print("WARNING: time offset is greater than 0.01 Myr")
     return num
 
+
 def _bracket_snapshot_number(s, t0):
     """Return snapshot numbers [ns, ns+1] such that t(ns) <= t0 < t(ns+1)
 
@@ -319,7 +321,8 @@ def _bracket_snapshot_number(s, t0):
             a = c
     return (a, b)
 
-def add_derived_fields(dat, fields=[]):
+
+def add_derived_fields(s, dat, fields=[]):
     """Add derived fields in a Dataset
 
     Parameters
@@ -329,51 +332,107 @@ def add_derived_fields(dat, fields=[]):
                ex) ['H', 'surf', 'T']
     """
 
-    try:
-        dx = (dat.x[1]-dat.x[0]).values[()]
-        dy = (dat.y[1]-dat.y[0]).values[()]
-        dz = (dat.z[1]-dat.z[0]).values[()]
-    except IndexError:
-        pass
-
-    d = dat.copy()
-
-    if 'sz' in fields:
-        sz2 = (dat.density*dat.velocity3**2).interp(z=0).sum()/dat.density.interp(z=0).sum()
-        d['sz'] = np.sqrt(sz2)
-
-    if 'cs' in fields:
-        cs2 = dat.pressure.interp(z=0).sum()/dat.density.interp(z=0).sum()
-        d['cs'] = np.sqrt(cs2)
-
-    if 'H' in fields:
-        H2 = (dat.density*dat.z**2).sum()/dat.density.sum()
-        d['H'] = np.sqrt(H2)
-
-    if 'surf' in fields:
-        d['surf'] = (dat.density*dz).sum(dim='z')
-
-    if 'R' in fields:
-        d.coords['R'] = np.sqrt(dat.y**2 + dat.x**2)
-
-    if 'phi' in fields:
-        d.coords['phi'] = np.arctan2(dat.y, dat.x)
-
-    if 'Pturb' in fields:
-        d['Pturb'] = dat.density*dat.velocity3**2
-
-    if 'T' in fields:
-        cf = cooling.coolftn()
-        pok = dat.pressure*u.pok
-        T1 = pok/(dat.density*u.muH) # muH = Dcode/mH
-        d['T'] = xr.DataArray(cf.get_temp(T1.values), coords=T1.coords,
-                dims=T1.dims)
-
-    if 'gz_sg' in fields:
-        phir = dat.gravitational_potential.shift(z=-1)
-        phil = dat.gravitational_potential.shift(z=1)
+    def _gz_self():
+        phir = dat.gravitational_potential.shift(z=-1, fill_value=np.nan)
+        phil = dat.gravitational_potential.shift(z=1, fill_value=np.nan)
         phir.loc[{'z':phir.z[-1]}] = 3*phir.isel(z=-2) - 3*phir.isel(z=-3) + phir.isel(z=-4)
         phil.loc[{'z':phir.z[0]}] = 3*phil.isel(z=1) - 3*phil.isel(z=2) + phil.isel(z=3)
-        d['gz_sg'] = (phil-phir)/(2*dz)
+        gz = (phil - phir) / (2*s.dz)
+        return gz
 
-    return d
+    def _gz_ext():
+        bul = MHubble(rb=s.par['problem']['R_b'], rhob=s.par['problem']['rho_b'])
+        bh = Plummer(Mc=s.par['problem']['M_c'], Rc=s.par['problem']['R_c'])
+        gz = (bul.gz(dat.x, dat.y, dat.z)
+              + bh.gz(dat.x, dat.y, dat.z)).transpose()
+        return gz
+
+    def _weight_self():
+        if 'gz_self' not in dat:
+            add_derived_fields(s, dat, 'gz_self')
+
+        wself = -(dat.density*dat.gz_self*s.dz
+                  ).sel(z=slice(0, s.domain['re'][2])).sum(dim='z')
+        return wself
+
+    def _weight_ext():
+        if 'gz_ext' not in dat:
+            add_derived_fields(s, dat, 'gz_ext')
+
+        wext = -(dat.density*dat.gz_ext*s.dz
+                 ).sel(z=slice(0, s.domain['re'][2])).sum(dim='z')
+        return wext
+
+    def _fwarm():
+        if 'temperature' not in dat:
+            add_derived_fields(s, dat, 'temperature')
+        fwarm = xr.where(dat.temperature < config.Twarm, True, False)
+        return fwarm
+
+    def _turbulent_pressure():
+        return dat.density*dat.velocity3**2
+
+    def _temperature():
+        cf = cooling.coolftn()
+        pok = dat.pressure*u.pok
+        t1 = pok/(dat.density*u.muH) # muH = Dcode/mH
+        temp = xr.DataArray(cf.get_temp(t1.values), coords=t1.coords,
+                            dims=t1.dims)
+        return temp
+
+    def _scale_height():
+        h = np.sqrt((dat.density*dat.z**2).sum()/dat.density.sum())
+        return h
+
+    def _surface_density():
+        surf = (dat.density*s.dz).sum(dim='z')
+        return surf
+
+    def _sfr40():
+        msp = grid_msp(s, dat.num, 0, 40)
+        sigsfr = msp*s.u.Msun/40/s.dx/s.dy
+        return sigsfr
+
+    def _R():
+        return np.sqrt(dat.y**2 + dat.x**2)
+
+    def _ph():
+        return np.arctan2(dat.y, dat.x)
+
+    if isinstance(fields, str):
+        fields = [fields]
+
+    for f in fields:
+        if f not in dat:
+            if f in ['R', 'ph']:
+                dat.coords[f] = locals()['_'+f]()
+            else:
+                dat[f] = locals()['_'+f]()
+
+
+def grid_msp(s, num, agemin, agemax):
+    """read starpar_vtk and remap starpar mass onto a grid"""
+    # domain information
+    le1, le2 = s.domain['le'][0], s.domain['le'][1]
+    re1, re2 = s.domain['re'][0], s.domain['re'][1]
+    dx1, dx2 = s.domain['dx'][0], s.domain['dx'][1]
+    Nx1, Nx2 = s.domain['Nx'][0], s.domain['Nx'][1]
+    i = np.arange(Nx1)
+    j = np.arange(Nx2)
+    x = np.linspace(le1+0.5*dx1, re1-0.5*dx1, Nx1)
+    y = np.linspace(le2+0.5*dx2, re2-0.5*dx2, Nx2)
+    # load starpar vtk
+    sp = s.load_starpar_vtk(num, force_override=True)[['x1','x2','mass','mage']]
+    # apply age cut
+    sp = sp[(sp.mage*s.u.Myr < agemax)&
+            (sp.mage*s.u.Myr >= agemin)]
+    # remap the starpar onto a grid
+    sp['i'] = np.floor((sp.x1-le1)/dx1).astype('int32')
+    sp['j'] = np.floor((sp.x2-le2)/dx2).astype('int32')
+    sp = sp.groupby(['j','i']).sum()
+    idx = pd.MultiIndex.from_product([j,i], names=['j','i'])
+    msp = pd.Series(np.zeros(Nx1*Nx2), index=idx)
+    msp[sp.index] = sp.mass
+    msp = msp.unstack().values
+    msp = xr.DataArray(msp, dims=['y','x'], coords=[y,x])
+    return msp

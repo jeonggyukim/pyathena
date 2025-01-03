@@ -91,7 +91,7 @@ class RestartHandler(object):
         ideg, iref = self.ideg, self.iref
         plist = par.split('\n')
         for i, p in enumerate(plist):
-            psp = re.split('\s+',p)
+            psp = re.split(r'\s+',p)
             pnew = p
             if(p.startswith('problem_id') & (pid is not None)):
                 pnew = p.replace(psp[2],'{:s}'.format(pid))

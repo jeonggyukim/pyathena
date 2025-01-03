@@ -1,7 +1,7 @@
 import numpy as np
 import xarray as xr
 from scipy.spatial.transform import Rotation
-
+import fast_histogram as fh
 
 def euler_rotation(vec, angles):
     """Rotate coordinate axes to transform the components of vector field `vec`
@@ -21,9 +21,9 @@ def euler_rotation(vec, angles):
     angles = np.array(angles)
     r = Rotation.from_euler('zyx', -angles, degrees=False)
     rotmat = r.as_matrix()
-    vxp = rotmat[0, 0]*vec[0] + rotmat[0, 1]*vec[1] + rotmat[0, 2]*vec[2]
-    vyp = rotmat[1, 0]*vec[0] + rotmat[1, 1]*vec[1] + rotmat[1, 2]*vec[2]
-    vzp = rotmat[2, 0]*vec[0] + rotmat[2, 1]*vec[1] + rotmat[2, 2]*vec[2]
+    vxp = rotmat[0, 2]*vec[2] + rotmat[0, 1]*vec[1] + rotmat[0, 0]*vec[0]
+    vyp = rotmat[1, 2]*vec[2] + rotmat[1, 1]*vec[1] + rotmat[1, 0]*vec[0]
+    vzp = rotmat[2, 2]*vec[2] + rotmat[2, 1]*vec[1] + rotmat[2, 0]*vec[0]
     return (vxp, vyp, vzp)
 
 
@@ -76,11 +76,12 @@ def to_spherical(vec, origin, newz=None):
     sin_th, cos_th = R/r, z/r
     sin_ph, cos_ph = y/R, x/R
 
-    # Avoid singularity
+    # Break degeneracy by choosing arbitrary theta and phi at coordinate singularities
+    # \theta = 0 at r = 0, and \phi = 0 at R = 0.
     sin_th = sin_th.where(r != 0, other=0)
-    cos_th = cos_th.where(r != 0, other=0)
+    cos_th = cos_th.where(r != 0, other=1)
     sin_ph = sin_ph.where(R != 0, other=0)
-    cos_ph = cos_ph.where(R != 0, other=0)
+    cos_ph = cos_ph.where(R != 0, other=1)
 
     # Transform Cartesian (vx, vy, vz) ->  spherical (v_r, v_th, v_phi)
     v_r = (vx*sin_th*cos_ph + vy*sin_th*sin_ph + vz*cos_th).rename('v_r')
@@ -131,10 +132,11 @@ def to_cylindrical(vec, origin):
     # Move branch cut [-pi, pi] -> [0, 2pi]
     ph = ph.where(ph >= 0, other=ph + 2*np.pi)
     sin_ph, cos_ph = (y-y0)/R, (x-x0)/R
-    # Avoid singularity
+    # Break degeneracy by choosing arbitrary theta and phi at coordinate singularities
+    # \phi = 0 at R = 0.
     if x0 in x and y0 in y:
         sin_ph.loc[dict(x=x0, y=y0)] = 0
-        cos_ph.loc[dict(x=x0, y=y0)] = 0
+        cos_ph.loc[dict(x=x0, y=y0)] = 1
 
     # Transform Cartesian (vx, vy, vz) ->  cylindrical (v_R, v_phi, v_z)
     v_R = (vx*cos_ph + vy*sin_ph).rename('v_R')
@@ -176,7 +178,7 @@ def groupby_bins(dat, coord, edges, cumulative=False):
     res: xarray.DataArray
         binned array
     """
-    dat = dat.transpose('z', 'y', 'x')
+    dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
     fc = dat[coord].data.flatten()  # flattened coordinates
     fd = dat.data.flatten()  # flattened data
     bin_sum = np.histogram(fc, edges, weights=fd)[0]
@@ -186,6 +188,56 @@ def groupby_bins(dat, coord, edges, cumulative=False):
         bin_cnt = np.cumsum(bin_cnt)
     res = bin_sum / bin_cnt
     # set new coordinates at the bin center
+    centers = 0.5*(edges[1:] + edges[:-1])
+    res = xr.DataArray(data=res, coords={coord: centers}, name=dat.name)
+    return res
+
+
+def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False, skipna=True):
+    """High performance version of groupby_bins using fast_histogram.
+
+    Although groupby_bins using np.histogram is significantly faster than
+    xr.groupby_bins, it is still too slow. Assuming equally spaced bins,
+    fast_histogram achieves order of magnitude higher performance.
+    This function implements groupby_bins based on fast_histogram.
+
+    Parameters
+    ----------
+    dat : xarray.DataArray
+        Input dataArray.
+    coord : str
+        Coordinate name along which data is binned.
+    ledge : float
+        Leftmost bin edge.
+    redge : float
+        Rightmost bin edge.
+    nbin : int
+        Number of bins (= number of edges - 1)
+    cumulative : bool
+        If True, perform cumulative binning, e.g.,
+          v_r_binned[i] = v_r( edge[0] <= r < edge[i+1] ).mean()
+        to calculate average velocity dispersion within radius r
+
+    Returns
+    ------
+    res: xarray.DataArray
+        binned array
+    """
+    dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
+    fc = dat[coord].data.flatten()  # flattened coordinates
+    fd = dat.data.flatten()  # flattened data
+    if skipna:
+        mask = ~np.isnan(fd)
+        fc = fc[mask]
+        fd = fd[mask]
+    bin_sum = fh.histogram1d(fc, nbin, (ledge, redge), weights=fd)
+    bin_cnt = fh.histogram1d(fc, nbin, (ledge, redge))
+    if cumulative:
+        bin_sum = np.cumsum(bin_sum)
+        bin_cnt = np.cumsum(bin_cnt)
+    res = bin_sum / bin_cnt
+    # set new coordinates at the bin center
+    edges = np.linspace(ledge, redge, nbin + 1)
     centers = 0.5*(edges[1:] + edges[:-1])
     res = xr.DataArray(data=res, coords={coord: centers}, name=dat.name)
     return res

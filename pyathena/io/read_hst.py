@@ -2,7 +2,6 @@
 Read athena history file using pandas
 """
 
-from __future__ import print_function
 
 import os
 import re
@@ -41,7 +40,7 @@ def read_hst(filename, force_override=False, verbose=False, incremental=True):
 
         # C engine is faster but python engine is currently more feature-complete
         hst = pd.read_csv(filename, names=vlist,
-                          comment='#', delim_whitespace=True, engine='python')
+                          comment='#', sep=r'\s+', engine='python')
         try:
             hst.to_pickle(fpkl)
         except IOError:

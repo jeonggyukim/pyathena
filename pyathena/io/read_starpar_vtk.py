@@ -2,7 +2,6 @@
 Read athena starpar vtk file using pandas, dictionary
 """
 
-from __future__ import print_function
 
 import os
 import struct

@@ -22,6 +22,22 @@ class TimingReader(object):
         if os.path.isfile(tt):
             self.fdict['task_time'] = tt
 
+    @staticmethod
+    def _read_block(block):
+        res = dict()
+        h = block[0].split(',')
+        res['ncycle'] = int(h[0].split('=')[1])
+        name = h[1].split('=')[1]
+        name_tlist = name
+        time = h[2].split('=')[1]
+        res[name] = float(time)
+        for line in block[1:]:
+            sp = line.split(',')
+            name = sp[0].replace(' ', '')
+            time = sp[1].split('=')[1]
+            res[name] = float(time)
+        return res, name_tlist
+
     def load_task_time(self, groups=None):
         """Read .task_time.txt file
 
@@ -34,22 +50,9 @@ class TimingReader(object):
 
         Returns
         -------
-        pandas.DataFrame
+        dictionary of pandas.DataFrame
             The breakdown of time taken by each task of the time integrator
         """
-        def from_block(block):
-            info = dict()
-            h = block[0].split(',')
-            info['ncycle'] = int(h[0].split('=')[1])
-            name = h[1].split('=')[1]
-            time = h[2].split('=')[1]
-            info[name] = float(time)
-            for line in block[1:]:
-                sp = line.split(',')
-                name = sp[0].replace(' ', '')
-                time = sp[1].split('=')[1]
-                info[name] = float(time)
-            return info
 
         with open(self.fdict['task_time']) as fp:
             lines = fp.readlines()
@@ -58,45 +61,31 @@ class TimingReader(object):
         for i, line in enumerate(lines):
             if line.startswith('#'):
                 block_idx.append(i)
-        timing = dict()
+        tt = {}
+        names = []
+        for i in range(len(block_idx)-1):
+            block, name = self._read_block(lines[block_idx[i]:block_idx[i+1]])
+            if not name in names:
+                names.append(name)
+                tt[name] = {}
+                for f in block.keys():
+                    tt[name][f] = []
 
-        # initialize
-        info = from_block(lines[0:block_idx[1]])
+            for k, v in block.items():
+                tt[name][k].append(v)
 
-        if groups is None:
-            for k in info:
-                timing[k] = []
-        else:
-            meta = set(['TimeIntegrator', 'ncycle'])
-            keys = set(info.keys()) - meta
-            members = dict()
-            for g in groups:
-                members[g] = []
-                for i, k in enumerate(info):
-                    if g in k:
-                        members[g].append(k)
-                        keys = keys - set([k])
-            members['Others'] = keys
-            for k in list(meta) + list(members.keys()):
-                timing[k] = []
+        dfa = {}
+        for name in names:
+            df = pd.DataFrame(tt[name])
+            df['All'] = df.loc[:, ~df.columns.str.contains('ncycle')].sum(axis=1)
+            if groups is not None:
+                df['Others'] = df.loc[:, ~df.columns.str.contains(
+                    '|'.join(groups + ['ncycle', 'All']))].sum(axis=1)
+                for g in groups:
+                    df[g] = df.filter(like=g).sum(axis=1)
+            dfa[name] = df
 
-        for i, j in zip(block_idx[:-1], block_idx[1:]):
-            info = from_block(lines[i:j])
-            if groups is None:
-                for k, v in info.items():
-                    timing[k].append(v)
-            else:
-                for g in members:
-                    gtime = 0
-                    for k in members[g]:
-                        gtime += info[k]
-                    timing[g].append(gtime)
-                for k in meta:
-                    timing[k].append(info[k])
-
-        for k in timing:
-            timing[k] = np.array(timing[k])
-        return pd.DataFrame(timing)
+        return dfa
 
     def load_loop_time(self):
         """Read .loop_time.txt file

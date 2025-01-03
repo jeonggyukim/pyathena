@@ -1,20 +1,27 @@
-from __future__ import print_function
-
 import os
 import sys
-import glob, re
+import glob
+import re
 import getpass
 import warnings
-import logging
-import os.path as osp
 import functools
-import numpy as np
-import pandas as pd
-import xarray as xr
 import pickle
 import yt
 import tarfile
 import shutil
+import dateutil
+
+import numpy as np
+import pandas as pd
+import xarray as xr
+import os.path as osp
+
+from inherit_docstring import inherit_docstring
+from abc import ABC
+from collections.abc import Mapping
+
+from .find_files import FindFiles
+from .logger import create_logger, _verbose_to_level
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
@@ -30,122 +37,190 @@ from .util.units import Units
 from .fields.fields import DerivedFields
 from .plt_tools.make_movie import make_movie
 
-class LoadSim(object):
-    """Class to prepare Athena simulation data analysis. Read input parameters,
-    find simulation output (vtk, starpar_vtk, hst, sn, zprof) files.
 
-    Properties
-    ----------
-        basedir : str
-            base directory of simulation output
-        basename : str
-            basename (tail) of basedir
-        files : dict
-            output file paths for vtk, starpar, hst, sn, zprof
-        problem_id : str
-            prefix for (vtk, starpar, hst, zprof) output
-        par : dict
-            input parameters and configure options read from log file
-        ds : AthenaDataSet or yt DataSet
-            class for reading vtk file
-        domain : dict
-            info about dimension, cell size, time, etc.
-        load_method : str
-            'pyathena' or 'yt' or 'pyathenaclassic'
-        num : list of int
-            vtk output numbers
-        u : Units object
-            simulation unit
-        dfi : dict
-            derived field information
-
-    Methods
-    -------
-        load_vtk() :
-            reads vtk file using pythena or yt and returns DataSet object
-        load_starpar_vtk() :
-            reads starpar vtk file and returns pandas DataFrame object
-        print_all_properties() :
-            prints all attributes and callable methods
+class LoadSimBase(ABC):
+    """Common properties to all LoadSim classes
 
     Parameters
     ----------
-        basedir : str
-            Name of the directory where all data is stored
-        savdir : str
-            Name of the directory where pickled data and figures will be saved.
-            Default value is basedir.
-        load_method : str
-            Load vtk using 'pyathena', 'pythena_classic', or 'yt'.
-            Default value is 'pyathena'.
-            If None, savdir=basedir. Default value is None.
-        verbose : bool or str or int
-            Print verbose messages using logger. If True/False, set logger
-            level to 'DEBUG'/'WARNING'. If string, it should be one of the string
-            representation of python logging package:
-            ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
-            Numerical values from 0 ('NOTSET') to 50 ('CRITICAL') are also
-            accepted.
+
+    Attributes
+    ----------
+    basedir : str
+        Directory where simulation output files are stored.
+    savdir : str
+        Directory where pickles and figures are saved.
+    basename : str
+        basename (last component) of `basedir`.
+    load_method : str
+        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic' (vtk only),
+        or 'yt'. Defaults to 'pyathena'.
+    athena_pp : bool
+        True if athena++ simulation
+    problem_id : str
+        Prefix for output files.
+    domain : dict
+        Domain information such as box size and number of cells.
+    files : dict
+        Dictionary containing output file paths.
+    par : dict
+        Dictionary of dictionaries containing input parameters and configure
+        options read from log fileoutput file names.
+    config_time : pandas.Timestamp
+        Date and time when the athena code is configured.
+    verbose : bool or str or int
+        If True/False, set logging level to 'INFO'/'WARNING'.
+        Otherwise, one of valid logging levels
+        ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+        or their numerical values (0, 10, 20, 30, 40, 50).
+        (see https://docs.python.org/3/library/logging.html#logging-levels)
+    """
+
+    # TODO: Can use pathlib.Path but there is a backward compatibility risk.
+    @property
+    def basedir(self):
+        return self._basedir
+
+    @property
+    def basename(self):
+        return self._basename
+
+    @property
+    def savdir(self):
+        return self._savdir
+
+    @savdir.setter
+    def savdir(self, value):
+        if value is None:
+            self._savdir = self._basedir
+        else:
+            self._savdir = value
+
+    @property
+    def load_method(self):
+        return self._load_method
+
+    @load_method.setter
+    def load_method(self, value):
+        # NOTE: xarray instead of pyathena?
+        if value in ['pyathena', 'pyathena_classic', 'yt']:
+            self._load_method = value
+        else:
+            raise ValueError('Unrecognized load_method: ', value)
+
+    @property
+    def problem_id(self):
+        return self._problem_id
+
+    @property
+    def athena_pp(self):
+        return self._athena_pp
+
+    @property
+    def domain(self):
+        return self._domain
+
+    @property
+    def config_time(self):
+        return self._config_time
+
+    @property
+    def par(self):
+        return self._par
+
+    @property
+    def files(self):
+        return self._files
+
+    @property
+    def verbose(self):
+        return self._verbose
+
+    @verbose.setter
+    def verbose(self, value):
+        if hasattr(self, 'logger'):
+            self.logger.setLevel(_verbose_to_level(value))
+        if hasattr(self, 'ff'):
+            if hasattr(self, 'logger'):
+                self.ff.logger.setLevel(_verbose_to_level(value))
+
+        self._verbose = value
+
+@inherit_docstring
+class LoadSim(LoadSimBase):
+    """Class to prepare Athena simulation data analysis. Read input parameters
+    and find simulation output files.
+
+    Parameters
+    ----------
+    basedir : str
+        Directory where simulation output files are stored.
+    savdir : str, optional
+        Directory where pickles and figures are saved. Defaults to `basedir`.
+    load_method : {'pyathena', 'pyathena_classic', 'yt'}, optional
+        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic', or 'yt'.
+        Defaults to 'pyathena'.
+    verbose : bool or str or int
+        If True/False, set logging level to 'INFO'/'WARNING'.
+        Otherwise, one of valid logging levels
+        ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+        or their numerical values (0, 10, 20, 30, 40, 50).
+        (see https://docs.python.org/3/library/logging.html#logging-levels)
+
+    Attributes
+    ----------
+    ds : AthenaDataSet or yt DataSet
+        Class for reading vtk file
+    nums : list of int
+        vtk/hdf5 output numbers
+    u : Units object
+        Simulation unit
+    dfi : dict
+        Derived field information
+
+    Methods
+    -------
+    load_vtk() :
+        reads vtk file using pythena or yt and returns DataSet object
+    load_starpar_vtk() :
+        reads starpar vtk file and returns pandas DataFrame object
+    print_all_properties() :
+        prints all attributes and callable methods
 
     Examples
     --------
-        >>> s = LoadSim('/Users/jgkim/Documents/R4_8pc.RT.nowind', verbose=True)
-        LoadSim-INFO: basedir: /Users/jgkim/Documents/R4_8pc.RT.nowind
-        LoadSim-INFO: athinput: /Users/jgkim/Documents/R4_8pc.RT.nowind/out.txt
-        LoadSim-INFO: problem_id: R4
-        LoadSim-INFO: hst: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.hst
-        LoadSim-INFO: sn: /Users/jgkim/Documents/R4_8pc.RT.nowind/hst/R4.sn
-        LoadSim-WARNING: No vtk files are found in /Users/jgkim/Documents/R4_8pc.RT.nowind.
-        LoadSim-INFO: starpar: /Users/jgkim/Documents/R4_8pc.RT.nowind/starpar nums: 0-600
-        LoadSim-INFO: zprof: /Users/jgkim/Documents/R4_8pc.RT.nowind/zprof nums: 0-600
-        LoadSim-INFO: timeit: /Users/jgkim/Documents/R4_8pc.RT.nowind/timeit.txt
+    >>> import pyathena as pa
+    >>> s = pa.LoadSim('/path/to/basedir", verbose=True)
     """
 
     def __init__(self, basedir, savdir=None, load_method='pyathena',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
-        """Constructor for LoadSim class.
 
-        """
-
-        self.basedir = basedir.rstrip('/')
-        self.basename = osp.basename(self.basedir)
-
+        self.verbose = verbose
+        self.logger = create_logger(self.__class__.__name__.split('.')[-1],
+                                    verbose)
+        self._basedir = basedir.rstrip('/')
+        self._basename = osp.basename(self.basedir)
+        self.savdir = savdir
         self.load_method = load_method
-        self.logger = self._get_logger(verbose=verbose)
 
-        if savdir is None:
-            self.savdir = self.basedir
-        else:
-            self.savdir = savdir
+        self.logger.info('basedir: {0:s}'.format(self.basedir))
+        self.logger.info('savdir: {:s}'.format(self.savdir))
+        self.logger.info('load_method: {:s}'.format(self.load_method))
 
-        self.logger.info('savdir : {:s}'.format(self.savdir))
+        self.find_files(verbose)
 
-        self._find_files()
-
-        # Get domain info
+        # Set metadata
+        self._get_domain_from_par(self.par)
         try:
-            self.domain = self._get_domain_from_par(self.par)
+            k = 'Configure_date' if self.athena_pp else 'config_date'
+            self._config_time = pd.to_datetime(dateutil.parser.parse(
+            self.par['configure'][k])).tz_convert('US/Pacific')
         except:
-            pass
+            self._config_time = None
 
-        # Get config time
-        try:
-            config_time = self.par['configure']['config_date']
-            # Avoid un-recognized timezone FutureWarning
-            config_time = config_time.replace('PDT ', '')
-            config_time = config_time.replace('EDT ', '')
-            config_time = config_time.replace('EST ', '')
-            self.config_time = pd.to_datetime(config_time).tz_localize('US/Pacific')
-            #self.config_time = self.config_time
-        except:
-            try:
-                # set it using hst file creation time
-                self.config_time = pd.to_datetime(osp.getctime(self.files['hst']),
-                                                  unit='s')
-            except:
-                self.config_time = None
-
+        # Set units and derived field infomation
         if not self.athena_pp:
             try:
                 muH = self.par['problem']['muH']
@@ -155,9 +230,10 @@ class LoadSim(object):
                     # Some old simulations run with new cooling may not have muH
                     # parameter printed out
                     if self.par['problem']['Z_gas'] != 1.0:
-                        self.logger.warning('Z_gas={0:g} but muH is not found in par. '.\
-                                            format(self.par['problem']['Z_gas']) +
-                                            'Caution with muH={0:s}'.format(muH))
+                        self.logger.warning(
+                            'Z_gas={0:g} but muH is not found in par. '.\
+                            format(self.par['problem']['Z_gas']) +
+                            'Caution with muH={0:s}'.format(muH))
                     self.u = units
                 except:
                     self.u = units
@@ -167,6 +243,55 @@ class LoadSim(object):
             self.dfi = DerivedFields(self.par).dfi
         else:
             self.u = Units(kind='custom', units_dict=self.par['units'])
+
+    def find_files(self, verbose=None):
+        """Find output files under base directory and update the `files`
+        attribute.
+
+        Parameters
+        ----------
+        verbose : bool or str or int
+            If True/False, set logging level to 'INFO'/'WARNING'.
+            Otherwise, one of valid logging levels
+            ('NOTSET', 'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL')
+            or their numerical values (0, 10, 20, 30, 40, 50).
+            (see https://docs.python.org/3/library/logging.html#logging-levels)
+        """
+        if verbose is None:
+            verbose = self.verbose
+
+        try:
+            self.ff = FindFiles(self.basedir, verbose)
+        except OSError as e:
+            raise OSError(e)
+
+        # Transfer attributes of FindFiles to LoadSim
+        # TODO: Some of these attributes don't need to be transferred.
+        attrs_transfer = [
+            'files', 'athena_pp', 'par', 'problem_id', 'out_fmt',
+            'nums',
+            # particle (Athena++)
+            'nums_partab','partags', '_partab_partag_def', 'pids', 'partab_outid',
+            # hdf5 (Athena++)
+            'nums_hdf5', 'hdf5_outid', 'hdf5_outvar', '_hdf5_outid_def',
+            '_hdf5_outvar_def',
+            # zprof
+            'nums_zprof', 'phase',
+            # rst
+            'nums_rst',
+            # starpar (Athena)
+            'nums_starpar',  'nums_sphst',
+            # vtk
+            'nums_vtk', 'nums_id0', 'nums_tar', 'nums_vtk',
+            '_fmt_vtk2d_not_found']
+        for attr in attrs_transfer:
+            if hasattr(self.ff, attr):
+                if attr in ['files', 'par', 'athena_pp', 'problem_id']:
+                    setattr(self, '_' + attr, getattr(self.ff, attr))
+                else:
+                    setattr(self, attr, getattr(self.ff, attr))
+            else:
+                pass
 
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
         """Function to read Athena vtk file using pythena or yt and
@@ -205,13 +330,13 @@ class LoadSim(object):
             fnames = filter_vtk_files('vtk', num)
             return read_vtk_athenapp(fnames)
 
-        if not self.files['vtk_id0']:
+        if not 'vtk_id0' in self.files.keys():
             id0 = False
 
         if id0:
             kind = ['vtk_id0', 'vtk', 'vtk_tar']
         else:
-            if self.files['vtk']:
+            if 'vtk' in self.files.keys():
                 kind = ['vtk', 'vtk_tar', 'vtk_id0']
             else:
                 kind = ['vtk_tar', 'vtk', 'vtk_id0']
@@ -238,13 +363,13 @@ class LoadSim(object):
         if self.fname.endswith('vtk'):
             if self.load_method == 'pyathena':
                 self.ds = AthenaDataSet(self.fname, units=self.u, dfi=self.dfi)
-                self.domain = self.ds.domain
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
 
             elif self.load_method == 'pyathena_classic':
                 self.ds = AthenaDataSetClassic(self.fname)
-                self.domain = self.ds.domain
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
 
@@ -256,11 +381,13 @@ class LoadSim(object):
                 self.ds = yt.load(self.fname, units_override=units_override)
             else:
                 self.logger.error('load_method "{0:s}" not recognized.'.format(
-                    self.load_method) + ' Use either "yt", "pyathena", "pyathena_classic".')
+                    self.load_method) + \
+                    ' Use either "yt", "pyathena", "pyathena_classic".')
         elif self.fname.endswith('tar'):
             if self.load_method == 'pyathena':
-                self.ds = AthenaDataSetTar(self.fname, units=self.u, dfi=self.dfi)
-                self.domain = self.ds.domain
+                self.ds = AthenaDataSetTar(self.fname, units=self.u,
+                                           dfi=self.dfi)
+                self._domain = self.ds.domain
                 self.logger.info('[load_vtk_tar]: {0:s}. Time: {1:f}'.format(\
                     osp.basename(self.fname), self.ds.domain['time']))
             elif self.load_method == 'yt':
@@ -287,8 +414,8 @@ class LoadSim(object):
         ihdf5 : int
            Read i-th file in the hdf5 file list. Overrides num if both are given.
         outvar : str
-           variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim' or 'cons'.
-           Overrides outid.
+           Variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim'
+           or 'cons'. Overrides outid.
         outid : int
            output block number (output[n] in the input file).
         load_method : str
@@ -297,7 +424,6 @@ class LoadSim(object):
         Returns
         -------
         ds : xarray AthenaDataSet or yt datasets
-
 
         Examples
         --------
@@ -608,471 +734,8 @@ class LoadSim(object):
         domain['dx'] = domain['Lx']/domain['Nx']
         domain['center'] = 0.5*(domain['le'] + domain['re'])
         domain['time'] = None
-        self.domain = domain
 
-        return domain
-
-    def _find_match(self, patterns):
-        glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
-        for p in patterns:
-            f = glob_match(p)
-            if f:
-                break
-
-        return f
-
-    def _find_files(self):
-        """Function to find all output files under basedir and create "files" dictionary.
-
-        hst: problem_id.hst
-
-        (athena only)
-        vtk: problem_id.num.vtk
-        sn: problem_id.sn (file format identical to hst)
-        vtk_tar: problem_id.num.tar
-        starpar_vtk: problem_id.num.starpar.vtk
-        zprof: problem_id.num.phase.zprof
-        sphst: *.star
-        timeit: timtit.txt
-
-        (athena_pp only)
-        hdf5: problem_id.out?.num.athdf
-        partab: problem_id.out?.num.par?.tab
-        parhst: problem_id.pid.csv
-        loop_time: problem_id.loop_time.txt
-        task_time: problem_id.task_time.txt
-        """
-
-        self._out_fmt_def = ['hst', 'vtk']
-
-        if not osp.isdir(self.basedir):
-            raise IOError('basedir {0:s} does not exist.'.format(self.basedir))
-
-        self.files = dict()
-
-        athinput_patterns = [
-            ('athinput.runtime',),
-            ('out.txt',),
-            ('out*.txt',),
-            ('stdout.txt',),
-            ('log.txt',),
-            ('*.par',),
-            ('*.out',),
-            ('athinput.*',),
-            ('slurm-*',)]
-
-        hst_patterns = [('id0', '*.hst'),
-                        ('hst', '*.hst'),
-                        ('*.hst',)]
-
-        sphst_patterns = [('id0', '*.star'),
-                          ('hst', '*.star'),
-                          ('*.star',)]
-
-        sn_patterns = [('id0', '*.sn'),
-                       ('hst', '*.sn'),
-                       ('*.sn',)]
-
-        vtk_patterns = [('vtk', '*.????.vtk'),
-                        ('*.????.vtk',)]
-
-        vtk_id0_patterns = [('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
-                            ('id0', '*.' + '[0-9]'*4 + '.vtk')]
-
-        vtk_tar_patterns = [('vtk', '*.????.tar')]
-
-        vtk_athenapp_patterns = [('*.block*.out*.?????.vtk',),
-                                 ('*.joined.out*.?????.vtk',)]
-
-        hdf5_patterns = [('hdf5', '*.out?.?????.athdf'),
-                         ('*.out?.?????.athdf',)]
-
-        starpar_patterns = [('starpar', '*.????.starpar.vtk'),
-                            ('id0', '*.????.starpar.vtk'),
-                            ('*.????.starpar.vtk',)]
-
-        partab_patterns = [('partab', '*.out?.?????.par?.tab'),
-                         ('*.out?.?????.par?.tab',)]
-
-        parhst_patterns = [('parhst', '*.par*.csv'),
-                         ('*.par*.csv',)]
-
-        zprof_patterns = [('zprof', '*.zprof'),
-                          ('id0', '*.zprof')]
-
-        timeit_patterns = [('timeit.txt',),
-                           ('timeit', 'timeit.txt')]
-
-        looptime_patterns = [('*.loop_time.txt',),]
-
-        tasktime_patterns = [('*.task_time.txt',),]
-
-        self.logger.info('basedir: {0:s}'.format(self.basedir))
-
-        # Read athinput files
-        # Throw warning if not found
-        fathinput = self._find_match(athinput_patterns)
-        if fathinput:
-            self.files['athinput'] = fathinput[0]
-            try:
-                self.par = read_athinput(self.files['athinput'])
-            except:
-                self.par = athinput(self.files['athinput'])
-            self.logger.info('athinput: {0:s}'.format(self.files['athinput']))
-            # self.out_fmt = [self.par[k]['out_fmt'] for k in self.par.keys() \
-            #                 if 'output' in k]
-            # Determine if this is Athena++ or Athena data
-            if 'mesh' in self.par:
-                self.athena_pp = True
-                self.logger.info('athena_pp simulation')
-            else:
-                self.athena_pp = False
-                self.logger.info('athena simulation')
-
-            self.out_fmt = []
-            self.partags = []
-            if self.athena_pp:
-                # read output blocks
-                for k in self.par.keys():
-                    if k.startswith('output'):
-                        self.out_fmt.append(self.par[k]['file_type'])
-
-                    # Save particle output tags
-                    if k.startswith('particle'):
-                        par_id = int(k.strip('particle')) - 1
-                        partag = 'par{}'.format(par_id)
-                        self.partags.append(partag)
-                        self._partab_partag_def = partag
-
-                # if there are hdf5 outputs, save some info
-                if self.out_fmt.count('hdf5') > 0:
-                    self.hdf5_outid = []
-                    self.hdf5_outvar = []
-                    for k in self.par.keys():
-                        if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
-                            self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
-                            self.hdf5_outvar.append(self.par[k]['variable'])
-                    for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
-                        if 'prim' in v or 'cons' in v:
-                            self._hdf5_outid_def = i
-                            self._hdf5_outvar_def = v
-
-                # if there are partab outputs, save some info
-                if 'partab' in self.out_fmt:
-                    for k in self.par.keys():
-                        if k.startswith('output') and self.par[k]['file_type'] == 'partab':
-                            self.partab_outid = int(re.split(r'(\d+)',k)[1])
-
-            else:
-                for k in self.par.keys():
-                    if k.startswith('output'):
-                        # Skip if the block number XX (<outputXX>) is greater than maxout
-                        if int(k.replace('output','')) > self.par['job']['maxout']:
-                            continue
-                        if self.par[k]['out_fmt'] == 'vtk' and \
-                           not (self.par[k]['out'] == 'prim' or self.par[k]['out'] == 'cons'):
-                            self.out_fmt.append(self.par[k]['id'] + '.' + \
-                                                self.par[k]['out_fmt'])
-                        else:
-                            self.out_fmt.append(self.par[k]['out_fmt'])
-
-            self.problem_id = self.par['job']['problem_id']
-            self.logger.info('problem_id: {0:s}'.format(self.problem_id))
-        else:
-            self.par = None
-            self.logger.warning('Could not find athinput file in {0:s}'.\
-                                format(self.basedir))
-            self.out_fmt = self._out_fmt_def
-
-        if not self.athena_pp:
-            # Find timeit.txt
-            ftimeit = self._find_match(timeit_patterns)
-            if ftimeit:
-                self.files['timeit'] = ftimeit[0]
-                self.logger.info('timeit: {0:s}'.format(self.files['timeit']))
-            else:
-                self.logger.info('timeit.txt not found.')
-
-        if self.athena_pp:
-            # Find problem_id.loop_time.txt
-            flooptime = self._find_match(looptime_patterns)
-            if flooptime:
-                self.files['loop_time'] = flooptime[0]
-                self.logger.info('loop_time: {0:s}'.format(self.files['loop_time']))
-            else:
-                self.logger.info('{}.loop_time.txt not found.'.format(self.problem_id))
-
-            # Find problem_id.task_time.txt
-            ftasktime = self._find_match(tasktime_patterns)
-            if ftasktime:
-                self.files['task_time'] = ftasktime[0]
-                self.logger.info('task_time: {0:s}'.format(self.files['task_time']))
-            else:
-                self.logger.info('{}.task_time.txt not found.'.format(self.problem_id))
-
-        # Find history dump and
-        # Extract problem_id (prefix for output file names)
-        # Assumes that problem_id does not contain '.'
-        if 'hst' in self.out_fmt:
-            fhst = self._find_match(hst_patterns)
-            if fhst:
-                self.files['hst'] = fhst[0]
-                if not hasattr(self, 'problem_id'):
-                    self.problem_id = osp.basename(self.files['hst']).split('.')[:-1]
-                self.logger.info('hst: {0:s}'.format(self.files['hst']))
-            else:
-                self.logger.warning('Could not find hst file in {0:s}'.\
-                                    format(self.basedir))
-
-        # Find sn dump
-        if self.athena_pp:
-            fsn = self._find_match(sn_patterns)
-            if fsn:
-                self.files['sn'] = fsn[0]
-                self.logger.info('sn: {0:s}'.format(self.files['sn']))
-            else:
-                if self.par is not None:
-                    # Issue warning only if iSN is nonzero
-                    try:
-                        if self.par['feedback']['iSN'] != 0:
-                            self.logger.warning('Could not find sn file in {0:s},' +
-                            ' but <feedback>/iSN={1:d}'.\
-                            format(self.basedir, self.par['feedback']['iSN']))
-                    except KeyError:
-                        pass
-
-            # Find sphst dump
-            fsphst = self._find_match(sphst_patterns)
-            if fsphst:
-                self.files['sphst'] = fsphst
-                self.nums_sphst = [int(f[-10:-5]) for f in self.files['sphst']]
-                self.logger.info('sphst: {0:s} nums: {1:d}-{2:d}'.format(
-                    osp.dirname(self.files['sphst'][0]),
-                    self.nums_sphst[0], self.nums_sphst[-1]))
-
-        # Find vtk files
-        # vtk files in both basedir (joined) and in basedir/id0
-        if 'vtk' in self.out_fmt and not self.athena_pp:
-            self.files['vtk'] = self._find_match(vtk_patterns)
-            self.files['vtk_id0'] = self._find_match(vtk_id0_patterns)
-            self.files['vtk_tar'] = self._find_match(vtk_tar_patterns)
-            if not self.files['vtk'] and not self.files['vtk_id0'] and \
-               not self.files['vtk_tar']:
-                self.logger.warning(
-                    'vtk files not found in {0:s}'.format(self.basedir))
-                self.nums = None
-                self.nums_id0 = None
-            else:
-                self.nums = [int(f[-8:-4]) for f in self.files['vtk']]
-                self.nums_id0 = [int(f[-8:-4]) for f in self.files['vtk_id0']]
-                self.nums_tar = [int(f[-8:-4]) for f in self.files['vtk_tar']]
-                if self.nums_id0:
-                    self.logger.info('vtk in id0: {0:s} nums: {1:d}-{2:d}'.format(
-                        osp.dirname(self.files['vtk_id0'][0]),
-                        self.nums_id0[0], self.nums_id0[-1]))
-                    if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(self.files['vtk_id0'][0]).split('.')[-2:]
-                if self.nums:
-                    self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
-                        osp.dirname(self.files['vtk'][0]),
-                        self.nums[0], self.nums[-1]))
-                    if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(self.files['vtk'][0]).split('.')[-2:]
-                else:
-                    self.nums = self.nums_id0
-                if self.nums_tar:
-                    self.logger.info('vtk in tar: {0:s} nums: {1:d}-{2:d}'.format(
-                        osp.dirname(self.files['vtk_tar'][0]),
-                        self.nums_tar[0], self.nums_tar[-1]))
-                    if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(self.files['vtk_tar'][0]).split('.')[-2:]
-                    self.nums = self.nums_tar
-            try:
-                self.nums_vtk_all = list(set(self.nums)|
-                                         set(self.nums_id0)|
-                                         set(self.nums_tar))
-                self.nums_vtk_all.sort()
-            except TypeError:
-                self.nums_vtk_all = []
-
-            # Check (joined) vtk file size
-            sizes = [os.stat(f).st_size for f in self.files['vtk']]
-            if len(set(sizes)) > 1:
-                size = max(set(sizes), key=sizes.count)
-                flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
-                self.logger.warning('Vtk file size is not unique.')
-                for f in flist:
-                   self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
-
-            # Check (tarred) vtk file size
-            sizes = [os.stat(f).st_size for f in self.files['vtk_tar']]
-            if len(set(sizes)) > 1:
-                size = max(set(sizes), key=sizes.count)
-                flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
-                self.logger.warning('Vtk file size is not unique.')
-                for f in flist:
-                   self.logger.debug('vtk num:', f[0], 'size [MB]:', f[1])
-        elif 'vtk' in self.out_fmt and self.athena_pp:
-            # Athena++ vtk files
-            self.files['vtk'] = self._find_match(vtk_athenapp_patterns)
-            self.nums_vtk = list(set([int(f[-9:-4]) for f in self.files['vtk']]))
-            self.nums_vtk.sort()
-
-        # Find hdf5 files
-        # hdf5 files in basedir
-        if 'hdf5' in self.out_fmt:
-            self.files['hdf5'] = dict()
-            self.nums_hdf5 = dict()
-            for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
-                hdf5_patterns_ = []
-                for p in hdf5_patterns:
-                    p = list(p)
-                    p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
-                    hdf5_patterns_.append(tuple(p))
-                self.files['hdf5'][v] = self._find_match(hdf5_patterns_)
-                if not self.files['hdf5'][v]:
-                    self.logger.warning(
-                        'hdf5 ({0:s}) files not found in {1:s}'.\
-                        format(v,self.basedir))
-                    self.nums_hdf5[v] = None
-                else:
-                    self.nums_hdf5[v] = [int(f[-11:-6]) \
-                                              for f in self.files['hdf5'][v]]
-                    self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        v, osp.dirname(self.files['hdf5'][v][0]),
-                        self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
-                    if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(
-                            self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
-            # Set nums array
-            self.nums = self.nums_hdf5[self._hdf5_outvar_def]
-
-        # Find starpar files
-        if 'starpar_vtk' in self.out_fmt:
-            fstarpar = self._find_match(starpar_patterns)
-            if fstarpar:
-                self.files['starpar_vtk'] = fstarpar
-                self.nums_starpar = [int(f[-16:-12]) for f in self.files['starpar_vtk']]
-                self.logger.info('starpar_vtk: {0:s} nums: {1:d}-{2:d}'.format(
-                    osp.dirname(self.files['starpar_vtk'][0]),
-                    self.nums_starpar[0], self.nums_starpar[-1]))
-            else:
-                self.logger.warning(
-                    'starpar files not found in {0:s}.'.format(self.basedir))
-
-        # Find partab files
-        if 'partab' in self.out_fmt:
-            self.files['partab'] = dict()
-            self.nums_partab = dict()
-            for partag in self.partags:
-                partab_patterns_ = []
-                for p in partab_patterns:
-                    p = list(p)
-                    p[-1] = p[-1].replace('par?', partag)
-                    partab_patterns_.append(tuple(p))
-                self.files['partab'][partag] = self._find_match(partab_patterns_)
-                if not self.files['partab'][partag]:
-                    self.logger.warning(
-                        'partab ({0:s}) files not found in {1:s}'.\
-                        format(partag, self.basedir))
-                    self.nums_partab[partag] = None
-                else:
-                    self.nums_partab[partag] = [int(f[-14:-9])
-                                                 for f in self.files['partab'][partag]]
-                    self.logger.info('partab ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        partag, osp.dirname(self.files['partab'][partag][0]),
-                        self.nums_partab[partag][0], self.nums_partab[partag][-1]))
-
-        # Find parhst files
-        if self.athena_pp and any(['particle' in k for k in self.par.keys()]):
-            fparhst = self._find_match(parhst_patterns)
-            if fparhst:
-                self.files['parhst'] = fparhst
-                self.pids = [int(f.split('/')[-1].split('.')[1].strip('par'))
-                            for f in self.files['parhst']]
-                self.pids.sort()
-                self.logger.info('parhst: {0:s} pids: {1:d}-{2:d}'.format(
-                    osp.dirname(self.files['parhst'][0]),
-                    self.pids[0], self.pids[-1]))
-            else:
-                self.pids = []
-                self.logger.warning(
-                    'parhst files not found in {0:s}.'.format(self.basedir))
-
-        # Find zprof files
-        # Multiple zprof files for each snapshot.
-        if 'zprof' in self.out_fmt:
-            fzprof = self._find_match(zprof_patterns)
-            if fzprof:
-                self.files['zprof'] = fzprof
-                self.nums_zprof = dict()
-                self.phase = []
-                for f in self.files['zprof']:
-                    _, num, ph, _ = osp.basename(f).split('.')[-4:]
-                    try:
-                        self.nums_zprof[ph].append(int(num))
-                    except KeyError:
-                        self.phase.append(ph)
-                        self.nums_zprof[ph] = []
-                        self.nums_zprof[ph].append(int(num))
-
-                # Check if number of files for each phase matches
-                num = [len(self.nums_zprof[ph]) for ph in self.nums_zprof.keys()]
-                if not all(num):
-                    self.logger.warning('Number of zprof files doesn\'t match.')
-                    self.logger.warning(', '.join(['{0:s}: {1:d}'.format(ph, \
-                        len(self.nums_zprof[ph])) for ph in self.phase][:-1]))
-                else:
-                    self.logger.info('zprof: {0:s} nums: {1:d}-{2:d}'.format(
-                    osp.dirname(self.files['zprof'][0]),
-                    self.nums_zprof[self.phase[0]][0],
-                    self.nums_zprof[self.phase[0]][-1]))
-
-            else:
-                self.logger.warning(
-                    'zprof files not found in {0:s}.'.format(self.basedir))
-
-        # 2d vtk files
-        self._fmt_vtk2d_not_found = []
-        for fmt in self.out_fmt:
-            if '.vtk' in fmt:
-                fmt = fmt.split('.')[0]
-                patterns = [('id0', '*.????.{0:s}.vtk'.format(fmt)),
-                    ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
-                files = self._find_match(patterns)
-                if files:
-                    self.files[f'{fmt}'] = files
-                    setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
-                                                  for f in self.files[f'{fmt}']])
-                else:
-                    # Some 2d vtk files may not be found in id0 folder (e.g., slices)
-                    self._fmt_vtk2d_not_found.append(fmt)
-
-        if self._fmt_vtk2d_not_found:
-            self.logger.info('These vtk files need to be found ' + \
-                             'using find_files_vtk2d() method: ' + \
-                             ', '.join(self._fmt_vtk2d_not_found))
-        # Find rst files
-        if 'rst' in self.out_fmt:
-            if hasattr(self,'problem_id'):
-                rst_patterns = [('rst','{}.*.rst'.format(self.problem_id)),
-                                ('rst','{}.*.tar'.format(self.problem_id)),
-                                ('id0','{}.*.rst'.format(self.problem_id)),
-                                ('{}.*.rst'.format(self.problem_id),)]
-                frst = self._find_match(rst_patterns)
-                if frst:
-                    self.files['rst'] = frst
-                    if self.athena_pp:
-                        numbered_rstfiles = [f for f in self.files['rst'] if 'final' not in f]
-                        self.nums_rst = [int(f[-9:-4]) for f in numbered_rstfiles]
-                    else:
-                        self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
-                    self.logger.info('rst: {0:s} nums: {1:d}-{2:d}'.format(
-                                     osp.dirname(self.files['rst'][0]),
-                                     self.nums_rst[0], self.nums_rst[-1]))
-                else:
-                    self.logger.info(
-                        'rst files not found in {0:s}.'.format(self.basedir))
+        self._domain = domain
 
     def find_files_vtk2d(self):
 
@@ -1094,6 +757,7 @@ class LoadSim(object):
         """Get file path
         """
 
+        # TODO: can be moved to FindFiles?
         try:
             dirname = osp.dirname(self.files[kind][0])
         except IndexError:
@@ -1162,53 +826,6 @@ class LoadSim(object):
 
         return fparhst
 
-    def _get_logger(self, verbose=False):
-        """Function to set logger and default verbosity.
-
-        Parameters
-        ----------
-        verbose: bool or str or int
-            Set logging level to "INFO"/"WARNING" if True/False.
-        """
-
-        levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
-
-        if verbose is True:
-            self.loglevel = 'INFO'
-        elif verbose is False:
-            self.loglevel = 'WARNING'
-        elif verbose in levels + [l.lower() for l in levels]:
-            self.loglevel = verbose.upper()
-        elif isinstance(verbose, int):
-            self.loglevel = verbose
-        else:
-            raise ValueError('Cannot recognize option {0:s}.'.format(verbose))
-
-        l = logging.getLogger(self.__class__.__name__.split('.')[-1])
-
-        try:
-            if not l.hasHandlers():
-                h = logging.StreamHandler()
-                f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
-                # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-                h.setFormatter(f)
-                l.addHandler(h)
-                l.setLevel(self.loglevel)
-            else:
-                l.setLevel(self.loglevel)
-        except AttributeError: # for python 2 compatibility
-            if not len(l.handlers):
-                h = logging.StreamHandler()
-                f = logging.Formatter('[%(name)s-%(levelname)s] %(message)s')
-                # f = logging.Formatter('%(asctime)s %(levelname)s %(message)s')
-                h.setFormatter(f)
-                l.addHandler(h)
-                l.setLevel(self.loglevel)
-            else:
-                l.setLevel(self.loglevel)
-
-        return l
-
     class Decorators(object):
         """Class containing a collection of decorators for prompt reading of analysis
         output, (reprocessed) hst, and zprof. Used in child classes.
@@ -1256,14 +873,16 @@ class LoadSim(object):
 
                 if not force_override and osp.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
-                    res = pickle.load(open(fpkl, 'rb'))
+                    with open(fpkl, 'rb') as fb:
+                        res = pickle.load(fb)
                     return res
                 else:
                     cls.logger.info('[check_pickle]: Read original dump.')
                     # If we are here, force_override is True or history file is updated.
                     res = read_func(cls, **kwargs)
                     try:
-                        pickle.dump(res, open(fpkl, 'wb'))
+                        with open(fpkl, 'wb') as fb:
+                            pickle.dump(res, fb)
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not pickle to {0:s}.'.format(fpkl))
                     return res
