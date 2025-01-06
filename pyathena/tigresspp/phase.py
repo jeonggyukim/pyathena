@@ -32,10 +32,10 @@ def recal_nP(dchunk, xf="nH", yf="pok", NCR=True, Nx=601, Ny=501):
     for xs in alist:
         for wf in wlist:
             if xf == "nH":
-                xbins = np.logspace(-6, 6, Nx)
+                xbins = np.logspace(-8, 6, Nx)
             elif xf == "T":
-                xbins = np.logspace(1, 8, Nx)
-            ybins = np.logspace(0, 10, Ny)
+                xbins = np.logspace(0, 8, Nx)
+            ybins = np.logspace(-4, 10, Ny)
             if xs is None:
                 cond = dchunk["nH"] > 0.0
             elif xs == "xHI":
