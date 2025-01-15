@@ -350,18 +350,18 @@ document.write(`
                   
   <h1>Source code for pyathena.util.mass_to_lum</h1><div class="highlight"><pre>
 <span></span>
-<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">scipy.interpolate</span> <span class="kn">import</span> <span class="n">interp1d</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">scipy.interpolate</span><span class="w"> </span><span class="kn">import</span> <span class="n">interp1d</span>
 
-<span class="kn">from</span> <span class="nn">.piecewisepowerlaw</span> <span class="kn">import</span> <span class="n">PiecewisePowerlaw</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.piecewisepowerlaw</span><span class="w"> </span><span class="kn">import</span> <span class="n">PiecewisePowerlaw</span>
 
-<div class="viewcode-block" id="mass_to_lum"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.mass_to_lum">[docs]</a><span class="k">class</span> <span class="nc">mass_to_lum</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<div class="viewcode-block" id="mass_to_lum"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.mass_to_lum">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">mass_to_lum</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">    Simple class for calculating mass-to-light conversion factor</span>
 
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;Padova&#39;</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;Padova&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize a mass_to_lum object.</span>
 
@@ -377,11 +377,11 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
 
     <span class="nd">@property</span>
-    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_model</span>
 
     <span class="nd">@model</span><span class="o">.</span><span class="n">setter</span>
-    <span class="k">def</span> <span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">model</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_model</span> <span class="o">=</span> <span class="n">model</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">LtoM_FUV_SB99</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">LtoM_PE_SB99</span><span class="p">,</span> \
             <span class="bp">self</span><span class="o">.</span><span class="n">LtoM_LW_SB99</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">QtoM_EUV_SB99</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_MtoL_SB99</span><span class="p">()</span>
@@ -392,11 +392,11 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">calc_LH2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_Qi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_MtoL_Padova</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">calc_ZAMS_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_age_to_mass</span><span class="p">()</span>
 
-    <span class="k">def</span> <span class="nf">_get_age_to_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_age_to_mass</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="n">mass_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">,</span> <span class="mf">9.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">,</span> <span class="mf">120.0</span><span class="p">])</span>
         <span class="n">age_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calc_tMS</span><span class="p">(</span><span class="n">mass_range</span><span class="p">))</span>
 
-        <span class="k">def</span> <span class="nf">age_to_mass</span><span class="p">(</span><span class="n">age</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">age_to_mass</span><span class="p">(</span><span class="n">age</span><span class="p">):</span>
             <span class="c1"># Isn&#39;t there more elegant way of doing this??</span>
             <span class="n">age</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
             <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
@@ -421,7 +421,7 @@ document.write(`
 
         <span class="k">return</span> <span class="n">age_to_mass</span>
 
-    <span class="k">def</span> <span class="nf">_get_MtoL_Padova</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_MtoL_Padova</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Initialize power-law functions for model &#39;Padova&#39;</span>
 
@@ -442,8 +442,8 @@ document.write(`
         <span class="n">pp</span> <span class="o">=</span> <span class="n">PiecewisePowerlaw</span><span class="p">(</span><span class="n">mass_range</span><span class="p">,</span> <span class="n">powers</span><span class="p">,</span> <span class="n">coeff</span><span class="p">,</span>
                                <span class="n">norm</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">externalval</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
-        <span class="k">def</span> <span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
-            <span class="k">def</span> <span class="nf">wrapper</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">decorator</span><span class="p">(</span><span class="n">fn</span><span class="p">):</span>
+            <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="n">x</span><span class="p">):</span>
                 <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
                 <span class="n">y</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
                 <span class="n">y</span><span class="p">[</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="mf">12.0</span><span class="p">]</span> <span class="o">+=</span> <span class="mf">2.3</span> <span class="o">+</span> <span class="mf">0.5</span>
@@ -475,19 +475,19 @@ document.write(`
 
         <span class="k">return</span> <span class="n">tMS</span><span class="p">,</span> <span class="n">LFUV</span><span class="p">,</span> <span class="n">LH2</span><span class="p">,</span> <span class="n">Qi</span>
 
-    <span class="k">def</span> <span class="nf">calc_LFUV_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calc_LFUV_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">mass</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">LtoM_FUV_SB99</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">calc_LPE_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calc_LPE_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">mass</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">LtoM_PE_SB99</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">calc_LLW_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calc_LLW_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">mass</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">LtoM_LW_SB99</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">calc_Qi_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">calc_Qi_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mass</span><span class="p">,</span> <span class="n">age</span><span class="o">=</span><span class="mf">0.0</span><span class="p">):</span>
         <span class="k">return</span> <span class="n">mass</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">QtoM_EUV_SB99</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
 
-    <span class="k">def</span> <span class="nf">_get_SNrate_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_SNrate_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="n">_SNrate</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.00000000e+00</span><span class="p">,</span>   <span class="mf">0.00000000e+00</span><span class="p">,</span>   <span class="mf">0.00000000e+00</span><span class="p">,</span>
                    <span class="mf">0.00000000e+00</span><span class="p">,</span>   <span class="mf">0.00000000e+00</span><span class="p">,</span>   <span class="mf">0.00000000e+00</span><span class="p">,</span>
@@ -564,7 +564,7 @@ document.write(`
         <span class="n">SNrate</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">age</span><span class="p">,</span> <span class="n">_SNrate</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">SNrate</span>
 
-    <span class="k">def</span> <span class="nf">_get_MtoL_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_MtoL_SB99</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="n">_Psi_PE</span> <span class="o">=</span> <span class="p">[</span>
               <span class="mf">276.73506145</span><span class="p">,</span> <span class="mf">283.29918113</span><span class="p">,</span> <span class="mf">289.59841897</span><span class="p">,</span> <span class="mf">296.81613976</span><span class="p">,</span>
