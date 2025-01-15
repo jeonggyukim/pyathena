@@ -11,6 +11,7 @@ from io import open  # Consistent binary I/O from Python 2 and 3
 
 # Other Python modules
 import numpy as np
+import pandas as pd
 
 check_nan_flag = False
 
@@ -211,10 +212,8 @@ def tab(filename, raw=False, dimensions=None):
 # ========================================================================================
 
 def partab(filename, raw=False, time=None):
-    """Read par?.tab files and return dict or array.
+    """Read par?.tab files and return pandas DataFrame.
     """
-    import pandas as pd
-
     if raw:
         return pd.read_csv(filename, sep=r'\s+', skiprows=2)
     else:
@@ -224,6 +223,91 @@ def partab(filename, raw=False, time=None):
         # time = eval(l1.split(' ')[-1])
         names = l2.split(' ')[1:-1:2]
         return pd.read_csv(filename, names=names, sep=r'\s+', skiprows=2)
+
+
+# ========================================================================================
+
+def parbin(fname, verbose=False):
+    """Read par?.bin files and return pandas DataFrame.
+    """
+    if verbose:
+        print(f"reading in file {fname}")
+
+    with open(fname, "rb") as fp:
+        line = fp.readline().decode("utf-8")
+        if verbose:
+            print(line)
+        line = fp.readline().decode("utf-8")
+        if verbose:
+            print(line)
+        header = line[2:].split(",")
+        header = header[:-1]
+
+        # read header
+        def read_var(fp, dtype="i", ndata=1):
+            dsize = ndata * struct.calcsize(dtype)
+            data = fp.read(dsize)
+
+            if ndata == 1:
+                (rval,) = struct.unpack("<" + ndata * dtype, data)
+            else:
+                rval = np.asarray(struct.unpack("<" + ndata * dtype, data))
+            return rval
+
+        # particle header
+        nint = read_var(fp, "i")
+        nreal = read_var(fp, "i")
+        if verbose:
+            print(f"nint={nint}, nreal={nreal}")
+
+        # header
+        nbtotal = read_var(fp)
+        root_level = read_var(fp)
+        mesh_xmin = read_var(fp, "d", 3)
+        mesh_xmax = read_var(fp, "d", 3)
+        mesh_len = read_var(fp, "d", 3)
+        mesh_rat = read_var(fp, "d", 3)
+        nx = read_var(fp, "i", 3)
+        buf = read_var(fp)
+        time = read_var(fp, "d")
+        dt = read_var(fp, "d")
+        ncycle = read_var(fp)
+        mesh_size = dict(level=root_level,
+                         xmin=mesh_xmin, xmax=mesh_xmax,
+                         len=mesh_len, rat=mesh_rat,
+                         nx=nx, buf=buf)
+        if verbose:
+            print(f"time={time}, dt={dt}, ncycle={ncycle}")
+            print(mesh_size)
+
+        intprop = []
+        realprop = []
+        npartot = 0
+        for n in range(nbtotal):
+            npar = read_var(fp, "i")
+            idmax = read_var(fp, "i")
+            if npar > 0:
+                if verbose:
+                    print(npar, idmax)
+                npartot += npar
+
+                intprop.append(read_var(fp, "i", npar * nint).reshape((nint, npar)).T)
+                realprop.append(
+                    read_var(fp, "d", npar * nreal).reshape((nreal, npar)).T
+                )
+        if verbose:
+            print(npartot)
+            print(np.concatenate(intprop))
+        if npartot > 0:
+            intprop = np.concatenate(intprop).reshape(npartot, nint)
+            realprop = np.concatenate(realprop).reshape(npartot, nreal)
+        else:
+            intprop = np.array(intprop).reshape(npartot, nint)
+            realprop = np.array(realprop).reshape(npartot, nreal)
+        df_intprop = pd.DataFrame(data=intprop, columns=header[:nint])
+        df_realprop = pd.DataFrame(data=realprop, columns=header[nint:])
+        pds = df_intprop.join(df_realprop).set_index("pid").sort_index()
+        return pds
 
 
 # ========================================================================================
