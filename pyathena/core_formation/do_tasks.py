@@ -275,8 +275,6 @@ if __name__ == "__main__":
             for pid in pids:
                 for method in ['empirical', 'predicted']:
                     s.select_cores(method)
-                    if pid not in s.good_cores():
-                        continue
                     prf = f"{prefix}.par{pid}.tcrit_{method}"
                     subprocess.run(["make_movie", "-p", prf, "-s", srcdir,
                                     "-d", srcdir])
