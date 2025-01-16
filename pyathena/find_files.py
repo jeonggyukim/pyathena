@@ -182,7 +182,6 @@ class FindFiles(object):
                         par_id = int(k.strip('particle')) - 1
                         partag = 'par{}'.format(par_id)
                         self.partags.append(partag)
-                        self._partab_partag_def = partag
 
                 # if there are hdf5 outputs, save some info
                 if self.out_fmt.count('hdf5') > 0:

@@ -271,7 +271,7 @@ class LoadSim(LoadSimBase):
             'files', 'athena_pp', 'par', 'problem_id', 'out_fmt',
             'nums',
             # particle (Athena++)
-            'nums_partab','partags', '_partab_partag_def', 'pids', 'partab_outid',
+            'nums_partab', 'partags', 'pids', 'partab_outid',
             # hdf5 (Athena++)
             'nums_hdf5', 'hdf5_outid', 'hdf5_outvar', '_hdf5_outid_def',
             '_hdf5_outvar_def',
@@ -493,7 +493,7 @@ class LoadSim(LoadSimBase):
         return self.ds
 
     def load_partab(self, num=None, ipartab=None,
-                    partag=None, **kwargs):
+                    partag='par0', **kwargs):
         """Read Athena++ partab file.
 
         Parameters
@@ -514,9 +514,6 @@ class LoadSim(LoadSimBase):
         """
         if num is None and ipartab is None:
             raise ValueError('Specify either num or ipartab')
-
-        if partag is None:
-            partag = self._partab_partag_def
 
         self.fpartab = self._get_fpartab(self.partab_outid, partag, num, ipartab)
         if self.fpartab is None or not osp.exists(self.fpartab):
