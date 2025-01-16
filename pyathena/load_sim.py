@@ -27,7 +27,7 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
-from .io.read_particles import read_partab, read_parhst
+from .io.read_particles import read_partab, read_parbin, read_parhst
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -271,7 +271,8 @@ class LoadSim(LoadSimBase):
             'files', 'athena_pp', 'par', 'problem_id', 'out_fmt',
             'nums',
             # particle (Athena++)
-            'nums_partab', 'partags', 'pids', 'partab_outid',
+            'nums_partab', 'nums_parbin', 'partags', 'pids',
+            'partab_outid', 'parbin_outid',
             # hdf5 (Athena++)
             'nums_hdf5', 'hdf5_outid', 'hdf5_outvar', '_hdf5_outid_def',
             '_hdf5_outvar_def',
@@ -523,13 +524,45 @@ class LoadSim(LoadSimBase):
 
         return self.pds
 
+    def load_parbin(self, num=None, iparbin=None,
+                    partag='par0', **kwargs):
+        """Read Athena++ parbin file.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number.
+           e.g., /basedir/parbin/problem_id.out?.num.par?.parbin.
+        iparbin : int
+           Read i-th file in the parbin file list.
+           Overrides num if both are given.
+        partag : int
+           Particle id in the input file. Default value is 'par0'
+
+        Returns
+        -------
+        pds : pandas.DataFrame
+            Particle data
+        """
+        if num is None and iparbin is None:
+            raise ValueError('Specify either num or iparbin')
+
+        self.fparbin = self._get_fparbin(self.parbin_outid, partag, num, iparbin)
+        if self.fparbin is None or not osp.exists(self.fparbin):
+            self.logger.info('[load_parbin]: parbin file does not exist. ')
+
+        self.pds = read_parbin(self.fparbin, **kwargs)
+
+        return self.pds
+
+
     def load_parhst(self, pid, **kwargs):
         """Read Athena++ individual particle history
 
         Parameters
         ----------
         pid : int
-           Particle id, e.g., /basedir/partab/problem_id.pid.csv
+           Particle id, e.g., /basedir/parhst/problem_id.pid.csv
 
         Returns
         -------
@@ -809,6 +842,23 @@ class LoadSim(LoadSimBase):
                 self.problem_id, outid, num, partag))
 
         return fpartab
+
+    def _get_fparbin(self, outid, partag, num=None, iparbin=None):
+        """Get parbin file path
+        """
+
+        try:
+            dirname = osp.dirname(self.files['parbin'][partag][0])
+        except IndexError:
+            return None
+        if iparbin is not None:
+            fparbin = self.files['parbin'][partag][iparbin]
+        else:
+            fpattern = '{0:s}.out{1:d}.{2:05d}.{3:s}.parbin'
+            fparbin = osp.join(dirname, fpattern.format(
+                self.problem_id, outid, num, partag))
+
+        return fparbin
 
     def _get_fparhst(self, pid):
         """Get parhst file path

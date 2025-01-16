@@ -1,7 +1,7 @@
 """Module containing particle output readers"""
 
 
-from .athena_read import partab
+from .athena_read import partab, parbin
 from pandas import read_csv
 
 def read_partab(filename, **kwargs):
@@ -24,6 +24,28 @@ def read_partab(filename, **kwargs):
     ds.set_index('pid', inplace=True)
 
     return ds
+
+def read_parbin(filename, **kwargs):
+    """Read particle output
+
+    Parameters
+    ----------
+    filename : str
+        Data filename
+    **kwargs : dict, optional
+        Extra arguments passed to parbin. Refer to parbin documentation for
+        a list of all possible arguments.
+
+    Returns
+    -------
+    ds : pandas.DataFrame
+        Particle data
+    """
+    ds = parbin(filename, **kwargs)
+    ds.set_index('pid', inplace=True)
+
+    return ds
+
 
 def read_parhst(filename, **kwargs):
     """Read individual particle history

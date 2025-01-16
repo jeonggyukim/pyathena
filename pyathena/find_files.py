@@ -69,6 +69,10 @@ class FindFiles(object):
         ('partab', '*.out?.?????.par?.tab'),
         ('*.out?.?????.par?.tab',)]
 
+    patterns['parbin'] = [
+        ('parbin', '*.out?.?????.par?.parbin'),
+        ('*.out?.?????.par?.parbin',)]
+
     patterns['parhst'] = [
         ('parhst', '*.par*.csv'),
         ('*.par*.csv',)]
@@ -118,6 +122,7 @@ class FindFiles(object):
             self.find_starpar_vtk()
         else:
             self.find_partab()
+            self.find_parbin()
             self.find_parhst()
 
         self.find_rst()
@@ -201,6 +206,12 @@ class FindFiles(object):
                     for k in self.par.keys():
                         if k.startswith('output') and self.par[k]['file_type'] == 'partab':
                             self.partab_outid = int(re.split(r'(\d+)',k)[1])
+
+                # if there are parbin outputs, save some info
+                if 'parbin' in self.out_fmt:
+                    for k in self.par.keys():
+                        if k.startswith('output') and self.par[k]['file_type'] == 'parbin':
+                            self.parbin_outid = int(re.split(r'(\d+)',k)[1])
 
             else:
                 for k in self.par.keys():
@@ -306,6 +317,30 @@ class FindFiles(object):
                     self.logger.info('partab ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
                         partag, osp.dirname(self.files['partab'][partag][0]),
                         self.nums_partab[partag][0], self.nums_partab[partag][-1]))
+
+    def find_parbin(self):
+        # Find parbin files
+        if 'parbin' in self.out_fmt:
+            self.files['parbin'] = dict()
+            self.nums_parbin = dict()
+            for partag in self.partags:
+                parbin_patterns_ = []
+                for p in self.patterns['parbin']:
+                    p = list(p)
+                    p[-1] = p[-1].replace('par?', partag)
+                    parbin_patterns_.append(tuple(p))
+                self.files['parbin'][partag] = self.find_match(parbin_patterns_)
+                if not self.files['parbin'][partag]:
+                    self.logger.warning(
+                        'parbin ({0:s}) files not found in {1:s}'.\
+                        format(partag, self.basedir))
+                    self.nums_parbin[partag] = None
+                else:
+                    self.nums_parbin[partag] = [int(f[-17:-12])
+                                                 for f in self.files['parbin'][partag]]
+                    self.logger.info('parbin ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        partag, osp.dirname(self.files['parbin'][partag][0]),
+                        self.nums_parbin[partag][0], self.nums_parbin[partag][-1]))
 
     def find_parhst(self):
         if [k for k in self.par.keys() if k.startswith('particle') and
