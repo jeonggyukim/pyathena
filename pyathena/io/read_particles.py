@@ -22,6 +22,7 @@ def read_partab(filename, **kwargs):
     """
     ds = partab(filename, **kwargs)
     ds.set_index('pid', inplace=True)
+    ds.sort_index(inplace=True)
 
     return ds
 
@@ -43,9 +44,9 @@ def read_parbin(filename, **kwargs):
     """
     ds = parbin(filename, **kwargs)
     ds.set_index('pid', inplace=True)
+    ds.sort_index(inplace=True)
 
     return ds
-
 
 def read_parhst(filename, **kwargs):
     """Read individual particle history

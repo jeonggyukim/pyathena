@@ -306,7 +306,7 @@ def parbin(fname, verbose=False):
             realprop = np.array(realprop).reshape(npartot, nreal)
         df_intprop = pd.DataFrame(data=intprop, columns=header[:nint])
         df_realprop = pd.DataFrame(data=realprop, columns=header[nint:])
-        pds = df_intprop.join(df_realprop).set_index("pid").sort_index()
+        pds = df_intprop.join(df_realprop)
         return pds
 
 
