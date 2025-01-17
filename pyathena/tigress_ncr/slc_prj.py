@@ -62,14 +62,19 @@ class SliceProj:
     def read_slc(self, num, axes=['x', 'y', 'z'], fields=None, prefix='slc',
                  savdir=None, force_override=False):
 
-        fields_def = ['nH', 'nH2', 'ne', 'vz', 'T', 'cs', 'vx', 'vy', 'vz', 'pok']
-        if self.par['configure']['radps'] == 'ON':
-            if (self.par['cooling']['iCR_attenuation']):
-                fields_def += ['xi_CR']
-            if self.par['radps']['iPhotIon'] == 1:
-                fields_def += ['Erad_LyC']
-            if self.par['cooling']['iPEheating'] == 1:
-                fields_def += ['chi_FUV']
+        fields_def = ['nH', 'vz', 'T', 'cs', 'vx', 'vy', 'vz', 'pok']
+        if self.test_newcool():
+            fields_def += ['ne', 'nH2']
+        try:
+            if self.par['configure']['radps'] == 'ON':
+                if (self.par['cooling']['iCR_attenuation']):
+                    fields_def += ['xi_CR']
+                if self.par['radps']['iPhotIon'] == 1:
+                    fields_def += ['Erad_LyC']
+                if self.par['cooling']['iPEheating'] == 1:
+                    fields_def += ['chi_FUV']
+        except KeyError:
+            pass
         if self.par['configure']['gas'] == 'mhd':
             fields_def += ['Bx','By','Bz','Bmag']
 
