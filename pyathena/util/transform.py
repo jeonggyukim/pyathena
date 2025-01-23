@@ -241,3 +241,53 @@ def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False, skipna=T
     centers = 0.5*(edges[1:] + edges[:-1])
     res = xr.DataArray(data=res, coords={coord: centers}, name=dat.name)
     return res
+
+def fast_groupby_bins2d(dat, coord1, coord2, range1, range2, bins, skipna=True):
+    """High performance version of groupby_bins using fast_histogram.
+
+    Although groupby_bins using np.histogram is significantly faster than
+    xr.groupby_bins, it is still too slow. Assuming equally spaced bins,
+    fast_histogram achieves order of magnitude higher performance.
+    This function implements groupby_bins based on fast_histogram.
+
+    Parameters
+    ----------
+    dat : xarray.DataArray
+        Input dataArray.
+    coord : str
+        Coordinate name along which data is binned.
+    ledge : float
+        Leftmost bin edge.
+    redge : float
+        Rightmost bin edge.
+    nbin : int
+        Number of bins (= number of edges - 1)
+    cumulative : bool
+        If True, perform cumulative binning, e.g.,
+          v_r_binned[i] = v_r( edge[0] <= r < edge[i+1] ).mean()
+        to calculate average velocity dispersion within radius r
+
+    Returns
+    ------
+    res: xarray.DataArray
+        binned array
+    """
+    dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
+    fc1 = dat[coord1].data.flatten()  # flattened coordinates
+    fc2 = dat[coord2].data.flatten()  # flattened coordinates
+    fd = dat.data.flatten()  # flattened data
+    if skipna:
+        mask = ~np.isnan(fd)
+        fc1 = fc1[mask]
+        fc2 = fc2[mask]
+        fd = fd[mask]
+    bin_sum = fh.histogram2d(fc1, fc2, bins=bins, range=(range1, range2), weights=fd)
+    bin_cnt = fh.histogram2d(fc1, fc2, bins=bins, range=(range1, range2))
+    res = bin_sum / bin_cnt
+    # set new coordinates at the bin center
+    edges1 = np.linspace(range1[0], range1[1], bins[0] + 1)
+    edges2 = np.linspace(range2[0], range2[1], bins[1] + 1)
+    centers1 = 0.5*(edges1[1:] + edges1[:-1])
+    centers2 = 0.5*(edges2[1:] + edges2[:-1])
+    res = xr.DataArray(data=res, coords={coord1: centers1, coord2: centers2}, name=dat.name)
+    return res
