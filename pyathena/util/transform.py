@@ -66,8 +66,8 @@ def to_spherical(vec, origin, newz=None):
         x, y, z = euler_rotation((x, y, z), [alpha, beta, 0])
 
     # Calculate spherical coordinates
-    R = np.sqrt(x**2 + y**2)
-    r = np.sqrt(R**2 + z**2)
+    R = np.sqrt(y**2 + x**2)
+    r = np.sqrt(z**2 + R**2)
     th = np.arctan2(R, z)
     ph = np.arctan2(y, x)
 
