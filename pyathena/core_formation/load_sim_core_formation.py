@@ -117,11 +117,12 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
                 # Load cores
                 savdir = Path(self.savdir, 'cores')
                 self.cores = self._load_cores(savdir=savdir, force_override=force_override)
-                # Remove bud nodes
-                pids = self.pids.copy()
-                for pid in pids:
-                    if not self.cores[pid].attrs['tcoll_resolved']:
-                        self.pids.remove(pid)
+                # Remove bud nodes TODO(SMOON) Is this really necessary?
+                if len(self.cores) > 0:
+                    pids = self.pids.copy()
+                    for pid in pids:
+                        if not self.cores[pid].attrs['tcoll_resolved']:
+                            self.pids.remove(pid)
             except FileNotFoundError:
                 self.logger.warning("Failed to load core information")
                 pass
