@@ -94,9 +94,9 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             LognormalPDF.__init__(self, self.Mach)
             TimingReader.__init__(self, self.basedir, self.problem_id)
 
-            # Set nums dictionary (when hdf5 is stored in elsewhere for storage reasons)
-            if self.nums is None:
-                self.nums = self.nums_partab['par0']
+#            # Set nums dictionary (when hdf5 is stored in elsewhere for storage reasons)
+#            if self.nums is None:
+#                self.nums = self.nums_partab['par0']
 
             # Set domain
             Lbox = set(self.domain['Lx'])
