@@ -4,29 +4,10 @@ import argparse
 import subprocess
 from multiprocessing import Pool
 import pyathena as pa
-from pyathena.core_formation import config, tasks, tools, load_sim_core_formation
+from pyathena.core_formation import config, tasks, tools, models, load_sim_core_formation
 
 if __name__ == "__main__":
-    # load all models
-    m1 = {f"M5J2P{iseed}N512": f"/scratch/gpfs/sm69/cores/hydro/M5.J2.P{iseed}.N512" for iseed in range(0, 40)}
-    m2 = {f"M10J4P{iseed}N1024": f"/scratch/gpfs/sm69/cores/hydro/M10.J4.P{iseed}.N1024" for iseed in range(0, 3)}
-    m3 = {f"M10J4P{iseed}N1024": f"/projects2/EOSTRIKE/coreform_MO2024/M10.J4.P{iseed}.N1024" for iseed in range(3, 7)}
-    m4 = {f"M5J2P{iseed}N256": f"/scratch/gpfs/sm69/cores/hydro/M5.J2.P{iseed}.N256" for iseed in range(0, 1)}
-    models = {**m1, **m2, **m3, **m4}
-
-    # MHD models
-    for iseed in [1,]:
-        models[f"M5B4P{iseed}base"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.base"
-        models[f"M5B4P{iseed}uct0strict0"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct0.strict0"
-        models[f"M5B4P{iseed}uct0strict1"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct0.strict1"
-        models[f"M5B4P{iseed}uct1strict0"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct1.strict0"
-        models[f"M5B4P{iseed}uct1strict1"] = f"/scratch/gpfs/sm69/cores/mhd/M5.J2.B4.P{iseed}.N512.rst.uct1.strict1"
-
-    # Experimental
-    models['M3J4P1N1024'] = "/tigress/sm69/cores/hydro/M3.J4.P1.N1024"
-    models['M30J4P1N1024'] = "/tigress/sm69/cores/hydro/M30.J4.P1.N1024"
-    models['M15J2P1N1024'] = "/tigress/sm69/cores/hydro/M15.J2.P1.N1024"
-    sa = load_sim_core_formation.LoadSimCoreFormationAll(models)
+    sa = load_sim_core_formation.LoadSimCoreFormationAll(models.models)
 
     parser = argparse.ArgumentParser()
     parser.add_argument("models", nargs='+', type=str,
