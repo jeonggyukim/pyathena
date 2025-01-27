@@ -333,6 +333,8 @@ class LoadSim(object):
             outid = self.hdf5_outid[idx]
 
         self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
+        outpar = self.par[f"output{outid}"]
+
         if self.fhdf5 is None or not osp.exists(self.fhdf5):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
 
@@ -345,12 +347,17 @@ class LoadSim(object):
                 # This part needs to be improved later.
                 refinement = 'none'
 
+            if hasattr(self, 'nghost'):
+                if "ghost_zones" in outpar:
+                    out_num_ghost = self.nghost if outpar["ghost_zones"] == "true" else 0
+                else:
+                    out_num_ghost = 0
             if refinement != 'none':
                 self.logger.error('load_method "{0:s}" does not support mesh\
                         refinement data. Use "yt" instead'.format(self.load_method))
                 self.ds = None
             else:
-                self.ds = read_hdf5(self.fhdf5, **kwargs)
+                self.ds = read_hdf5(self.fhdf5, num_ghost=out_num_ghost, **kwargs)
 
         elif self.load_method == 'yt':
             if hasattr(self, 'u'):
