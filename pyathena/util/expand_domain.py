@@ -20,14 +20,28 @@ def expand_x(sim, data):
     ds = sim.ds
 
     # is this a shearing-box simulation?
-    try:
+    if "ShearingBox" in sim.par["configure"]:
         shear = sim.par["configure"]["ShearingBox"] == "yes"
-    except KeyError:
+        qshear = sim.par["problem"]["qshear"]
+        Omega = sim.par["problem"]["Omega"]
+    elif "orbital_advection" in sim.par:
+        shear = sim.par["mesh"]["ix1_bc"] == "shear_periodic"
+        qshear = sim.par["orbital_advection"]["qshear"]
+        Omega = sim.par["orbital_advection"]["Omega0"]
+    else:
         shear = False
 
+    # domain
+    if hasattr(sim,"domain"):
+        domain = sim.domain
+    elif hasattr(ds,"domain"):
+        domain = ds.domain
+    else:
+        raise ValueError("domain information is not available")
+
     # get domain information
-    Lx, Ly, Lz = ds.domain["Lx"]
-    dx, dy, dz = ds.domain["dx"]
+    Lx, Ly, Lz = domain["Lx"]
+    dx, dy, dz = domain["dx"]
 
     # exapnd in x assuming periodic BC
     data_left = data.copy(deep=True).assign_coords(x=data.coords["x"] - Lx)
@@ -36,8 +50,8 @@ def expand_x(sim, data):
     # exapnd in x assuming shear-periodic BC
     if shear:
         # get shear related parameters
-        qOmL = sim.par["problem"]["qshear"] * sim.par["problem"]["Omega"] * Lx
-        time = ds.domain["time"]
+        qOmL = qshear * Omega * Lx
+        time = domain["time"]
         qOmLt = qOmL * time
         dims = data.to_array("variable").dims
         ndims = len(dims) - 1
@@ -83,8 +97,16 @@ def expand_y(sim, data):
     # retrive the AthenaDataset class
     ds = sim.ds
 
+    # domain
+    if hasattr(sim,"domain"):
+        domain = sim.domain
+    elif hasattr(ds,"domain"):
+        domain = ds.domain
+    else:
+        raise ValueError("domain information is not available")
+
     # get domain information
-    Lx, Ly, Lz = ds.domain["Lx"]
+    Lx, Ly, Lz = domain["Lx"]
 
     # exapnd in x assuming periodic BC
     data_bot = data.copy(deep=True).assign_coords(y=data.coords["y"] - Ly)
