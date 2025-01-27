@@ -114,7 +114,10 @@ if __name__ == "__main__":
             os.mkdir(osp.join(s.basedir, "movies"))
         fin = osp.join(s.basedir, "snapshot/*.png")
         fout = osp.join(s.basedir, "movies/{0:s}_snapshot.mp4".format(s.basename))
-        make_movie(fin, fout, fps_in=15, fps_out=15)
+        try:
+            make_movie(fin, fout, fps_in=15, fps_out=15)
+        except FileNotFoundError:
+            pass
         # from shutil import copyfile
         # copyfile(fout, osp.join('/tigress/changgoo/public_html/temporary_movies/TIGRESS-NCR',
         # osp.basename(fout)))

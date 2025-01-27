@@ -200,7 +200,7 @@ class SliceProj:
         for ax in axes:
             i = axtoi[ax]
             dx = self.domain["dx"][i] * self.u.length
-            conv_Sigma = (dx * self.u.density).to("Msun/pc**2")
+            conv_Sigma = (dx * self.u.density).to("Msun/pc**2").value
 
             res[ax] = dict()
             res[ax]["Sigma_gas"] = (np.sum(dat["density"], axis=2 - i) * conv_Sigma).data

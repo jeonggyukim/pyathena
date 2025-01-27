@@ -195,6 +195,9 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
                 pop_synth_file2 = osp.join(basedir, "pop_synth.runtime.csv")
                 if osp.isfile(pop_synth_file2):
                     self.pop_synth = pd.read_csv(pop_synth_file2)
+
+            if "configure" in self.par:
+                self.nghost = self.par["configure"]["Number_of_ghost_cells"]
         except KeyError:
             pass
 
@@ -246,6 +249,7 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
         rename_dict = {k: v for k, v in cpp_to_cc.items() if k in ds}
         ds = ds.rename(rename_dict)
         ds.attrs["time"] = ds.attrs["Time"]
+        self.domain["time"] = ds.attrs["Time"]
         if fields is not None:
             ds = self.update_dfi(ds,fields)
         return ds
