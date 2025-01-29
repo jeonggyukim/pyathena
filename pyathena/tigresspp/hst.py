@@ -126,6 +126,38 @@ class Hst:
 
         return h
 
+    def read_hst_phase(self):
+        hstfile_base=f"{self.files['hst']}.phase"
+
+        phasenames = ['cold','unstable','warm','warmhot','hot']
+        colors = ['blue','cyan','green','orange','red']
+        cdict = dict()
+
+        hst = dict()
+        for iph,(name,color) in enumerate(zip(phasenames,colors)):
+            hst[name] = read_hst(f"{hstfile_base}{iph}")
+            cdict[name] = color
+
+        # sum all phases
+        hst['all'] = hst['cold'].copy()
+        for name in phasenames[1:]:
+            hst['all'] += hst[name]
+        hst['all']['time'] = hst['cold']['time']
+        hst['all']['dt'] = hst['cold']['dt']
+        phasenames += ["all"]
+        cdict["all"] = "black"
+
+        for j,var in enumerate(["vol","mass"]):
+            for iph,name in enumerate(phasenames):
+                hst[name][f"{var}_frac"] = hst[name][var]/hst["all"][var]
+
+        for j,var in enumerate(["1KE","2KE","3KE"]):
+            for iph,name in enumerate(phasenames):
+                hst[name][f"v{var[0]}"] = np.sqrt(2.0*hst[name][var]/hst[name]["mass"])
+
+        self.hst_phase = hst
+        self.cdict_phase = cdict
+
     def plt_hst(self):
         h = self.read_hst()
         if "mass_loss_upper" in h:
