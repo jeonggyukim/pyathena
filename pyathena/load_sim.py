@@ -6,7 +6,10 @@ import getpass
 import warnings
 import functools
 import pickle
-import yt
+try:
+    import yt
+except ModuleNotFoundError:
+    pass
 import tarfile
 import shutil
 import dateutil
