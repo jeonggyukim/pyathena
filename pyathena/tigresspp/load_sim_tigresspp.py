@@ -1,4 +1,5 @@
 import os.path as osp
+import glob
 import numpy as np
 import pandas as pd
 
@@ -30,6 +31,7 @@ cc_to_cpp = {
     "specific_scalar[0]": "rmetal",
     "specific_scalar[1]": "rSN",
 }
+
 
 class LoadSimTIGRESSClassic(LoadSim, Hst, SliceProj, Fields):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena-Cversion"""
@@ -63,7 +65,7 @@ class LoadSimTIGRESSClassic(LoadSim, Hst, SliceProj, Fields):
         self.dfi = DerivedFields(self.par).dfi
 
         try:
-            cooltbl_file = osp.join(base_path,"./cool_ftn.runtime.csv")
+            cooltbl_file = osp.join(base_path, "./cool_ftn.runtime.csv")
             cooltbl = pd.read_csv(cooltbl_file)
 
             from scipy.interpolate import interp1d
@@ -78,7 +80,7 @@ class LoadSimTIGRESSClassic(LoadSim, Hst, SliceProj, Fields):
             self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
             self.dfi["T"] = self.temperature_dfi()
 
-            pop_synth_file = osp.join(base_path,"./pop_synth.runtime.csv")
+            pop_synth_file = osp.join(base_path, "./pop_synth.runtime.csv")
 
             self.pop_synth = pd.read_csv(pop_synth_file)
         except KeyError:
@@ -95,7 +97,7 @@ class LoadSimTIGRESSClassic(LoadSim, Hst, SliceProj, Fields):
             newcool = False
         return newcool
 
-    def get_data(self,num,fields=None):
+    def get_data(self, num, fields=None):
         """
         a warpper function to make data reading easier
         """
@@ -111,7 +113,7 @@ class LoadSimTIGRESSClassic(LoadSim, Hst, SliceProj, Fields):
         data.attrs["time"] = ds.domain["time"]
         return data
 
-    def get_slice(self,num,ax,pos,fields=None):
+    def get_slice(self, num, ax, pos, fields=None):
         """
         a warpper function to make data reading easier
         """
@@ -137,6 +139,7 @@ class LoadSimTIGRESSClassic(LoadSim, Hst, SliceProj, Fields):
     @staticmethod
     def get_phase_T1list():
         return [500, 6000, 13000, 24000, 1.0e6]
+
 
 class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
@@ -181,10 +184,14 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
                 from scipy.interpolate import interp1d
 
                 logLam = interp1d(
-                    cooltbl["logT1"], np.log10(cooltbl["Lambda"]), fill_value="extrapolate"
+                    cooltbl["logT1"],
+                    np.log10(cooltbl["Lambda"]),
+                    fill_value="extrapolate",
                 )
                 logGam = interp1d(
-                    cooltbl["logT1"], np.log10(cooltbl["Gamma"]), fill_value="extrapolate"
+                    cooltbl["logT1"],
+                    np.log10(cooltbl["Gamma"]),
+                    fill_value="extrapolate",
                 )
                 mu = interp1d(cooltbl["logT1"], cooltbl["mu"], fill_value="extrapolate")
                 self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
@@ -237,7 +244,7 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
             newcool = False
         return newcool
 
-    def get_data(self,num,fields=None):
+    def get_data(self, num, fields=None):
         """
         a warpper function to make data reading easier
         """
@@ -245,16 +252,16 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
             flist = self.get_fields(fields)
         else:
             flist = None
-        ds = self.load_hdf5(num=num,quantities=flist)
+        ds = self.load_hdf5(num=num, quantities=flist)
         rename_dict = {k: v for k, v in cpp_to_cc.items() if k in ds}
         ds = ds.rename(rename_dict)
         ds.attrs["time"] = ds.attrs["Time"]
         self.domain["time"] = ds.attrs["Time"]
         if fields is not None:
-            ds = self.update_dfi(ds,fields)
+            ds = self.update_dfi(ds, fields)
         return ds
 
-    def get_slice(self,num,ax,pos,fields=None):
+    def get_slice(self, num, ax, pos, fields=None):
         """
         a warpper function to make data reading easier
         """
@@ -262,17 +269,16 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
             flist = self.get_fields(fields)
         else:
             flist = None
-        ds = self.load_hdf5(num=num,quantities=flist)
+        ds = self.load_hdf5(num=num, quantities=flist)
         rename_dict = {k: v for k, v in cpp_to_cc.items() if k in ds}
         ds = ds.rename(rename_dict)
         data = ds.sel({ax: pos}, method="nearest")
         data.attrs["time"] = ds.attrs["Time"]
-        if (fields is not None):
-            data = self.update_dfi(data,fields)
+        if fields is not None:
+            data = self.update_dfi(data, fields)
         return data
 
-
-    def get_fields(self,flist):
+    def get_fields(self, flist):
         dflist = set()
         for f in np.atleast_1d(flist):
             if f in self.dfi:
@@ -285,14 +291,14 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
 
         if "velocity" in dflist:
             dflist = set(dflist) - {"velocity"}
-            dflist |= {"velocity1","velocity2","velocity3"}
+            dflist |= {"velocity1", "velocity2", "velocity3"}
         if "cell_centered_B" in dflist:
             dflist = set(dflist) - {"cell_centered_B"}
-            dflist |= {"cell_centered_B1","cell_centered_B2","cell_centered_B3"}
+            dflist |= {"cell_centered_B1", "cell_centered_B2", "cell_centered_B3"}
         flist = [k for k, v in cpp_to_cc.items() if v in list(dflist)]
         return flist
 
-    def update_dfi(self,data,fields):
+    def update_dfi(self, data, fields):
         loaded_flist = list(data.keys())
         dfilist = set(fields) - set(loaded_flist)
         for f in dfilist:
@@ -301,6 +307,19 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
             else:
                 print("{} is not available".format(f))
         return data[fields]
+
+    def load_parcsv(self):
+        par_pattern = osp.join(self.basedir, f"{self.problem_id}.par*.csv")
+        self.files["parcsv"] = glob.glob(par_pattern)
+        self.num_parcsv = sorted(
+            [int(f[f.rfind(".par") + 4 : -4]) for f in self.files["parcsv"]]
+        )
+        parlist = []
+        for i in self.num_parcsv:
+            parname = osp.join(self.basedir, f"TIGRESS.par{i}.csv")
+            par = pd.read_csv(parname)
+            parlist.append(par)
+        return parlist
 
     @staticmethod
     def get_phase_Tlist(kind="ncr"):
@@ -312,6 +331,7 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
     @staticmethod
     def get_phase_T1list():
         return [500, 6000, 13000, 24000, 1.0e6]
+
 
 class LoadSimTIGRESSPPAll(object):
     """Class to load multiple simulations"""
