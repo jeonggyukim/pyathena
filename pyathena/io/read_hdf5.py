@@ -108,26 +108,32 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512)):
     nblock_per_chunk = np.array(chunksize) // block_size
     chunksize_read = (1, nblock_per_chunk.prod(), *block_size)
 
-    # lazy load from HDF5 and concatenate hydro variables and magnetic fields
+    # lazy load from HDF5
     ds = []
     for dsetname in f.attrs['DatasetNames']:
-        ds.append(da.from_array(f[dsetname], chunks=chunksize_read))
-    ds = da.concatenate(ds)
+        darr = da.from_array(f[dsetname], chunks=chunksize_read)
+        if len(darr.shape) != 5:
+            # Expected shape: (nvar, nblock, z, y, x)
+            raise ValueError("Invalid shape of the dataset")
+        ds += [var for var in darr]
 
-    # Loop over the MeshBlocks and place them to correct logical locations
-    # in 3D Cartesian space.
-    reordered = np.empty(num_blocks[::-1], dtype=object)
-    for gid in range(num_blocks.prod()):
-        lx1, lx2, lx3 = logical_loc[gid]  # Correct Cartesian coordinates
-        reordered[lx3, lx2, lx1] = ds[:, gid, ...]  # Assign the correct block
-
-    # Stack them together properly
-    ds = da.block(reordered.tolist())  # Merge into a single array
-    ds = ds.rechunk([ds.shape[0], *chunksize])
+    def _reorder_rechunk(var):
+        """
+        Loop over the MeshBlocks and place them to correct logical locations
+        in 3D Cartesian space. Then, merge them into a single dask array.
+        """
+        reordered = np.empty(num_blocks[::-1], dtype=object)
+        for gid in range(num_blocks.prod()):
+            lx1, lx2, lx3 = logical_loc[gid]  # Correct Cartesian coordinates
+            reordered[lx3, lx2, lx1] = var[gid, ...]  # Assign the correct block
+        # Merge into a single array
+        return da.block(reordered.tolist()).rechunk(chunksize)
+    # Apply the rechunking function to all variables
+    ds = list(map(_reorder_rechunk, ds))
 
     # Convert to xarray object
     varnames = list(map(lambda x: x.decode('ASCII'), f.attrs['VariableNames']))
-    variables = [(['z', 'y', 'x'], ds[i]) for i, _ in enumerate(varnames)]
+    variables = [(['z', 'y', 'x'], d) for d in ds]
     coordnames = ['x1v', 'x2v', 'x3v']
 
     # Calculate coordinates
@@ -152,6 +158,5 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512)):
         coords=dict(x=coords['x1v'], y=coords['x2v'], z=coords['x3v']),
         attrs=attrs
     )
-
 
     return ds
