@@ -8,14 +8,14 @@ def euler_rotation(vec, angles):
 
     Parameters
     ----------
-    vec : tuple-like
+    vec : tuple, list, or numpy.ndarray of xarray.DataArray or numpy.ndarray
         (vx, vy, vz) representing Cartesian vector components
-    angles : array
+    angles : tuple, list, or numpy.ndarray
         Euler angles [alpha, beta, gamma] in radian
 
     Returns
     -------
-    tuple
+    tuple of xarray.DataArray or numpy.ndarray matching the input type
         Cartesian components of the rotated vector.
     """
     angles = np.array(angles)
@@ -28,31 +28,43 @@ def euler_rotation(vec, angles):
 
 
 def to_spherical(vec, origin, newz=None):
-    """Transform vector components from Cartesian to spherical coordinates
+    """Transform vector components from Cartesian to spherical coordinates.
 
-    Assumes vec is a tuple of xarray.DataArray.
+    Supports numpy.ndarray and xarray.DataArray (both dask and numpy-backed).
 
     Parameters
     ----------
-    vec : tuple-like
-        (vx, vy, vz) representing Cartesian vector components
-    origin : tuple-like
+    vec : tuple, list, or numpy.ndarray of xarray.DataArray
+        (vx, vy, vz) representing Cartesian vector components.
+    origin : tuple, list, or numpy.ndarray
         (x0, y0, z0) representing the origin of the spherical coords.
-    newz : array, optional
+    newz : tuple, list, or numpy.ndarray, optional
         Cartesian components of the z-axis vector for the spherical
         coordinates. If not given, it is assumed to be (0, 0, 1).
 
     Returns
     -------
-    r : array
+    r : xarray.DataArray
         Binned radius
-    vec_sph : tuple-like
+    vec_sph : tuple
         (v_r, v_th, v_ph) representing the three components of
         velocities in spherical coords.
     """
     vx, vy, vz = vec
     x0, y0, z0 = origin
-    x, y, z = vx.x - x0, vx.y - y0, vx.z - z0
+    if not vx.chunksizes == vy.chunksizes == vz.chunksizes:
+        raise ValueError("All input arrays should have the same chunk sizes")
+    else:
+        # Note that if vx, vy, vz are numpy-backed xarray.DataArray, then
+        # vx.chunksizes is an empty dictionary. In this case, _chunk_like
+        # simply returns the input arrays.
+        chunks = vx.chunksizes
+    # Workaround for xarray being unable to chunk coordinates
+    # see https://github.com/pydata/xarray/issues/6204
+    # The workaround is provided by _chunk_like helper function introduced in
+    # xclim. See https://github.com/Ouranosinc/xclim/pull/1542
+    x, y, z = _chunk_like(vx.x, vx.y, vx.z, chunks=chunks)
+    x, y, z = x - x0, y - y0, z - z0
 
     if newz is not None:
         if ((np.array(newz)**2).sum() == 0):
@@ -66,8 +78,8 @@ def to_spherical(vec, origin, newz=None):
         x, y, z = euler_rotation((x, y, z), [alpha, beta, 0])
 
     # Calculate spherical coordinates
-    R = np.sqrt(x**2 + y**2)
-    r = np.sqrt(R**2 + z**2)
+    R = np.sqrt(y**2 + x**2)
+    r = np.sqrt(z**2 + R**2)
     th = np.arctan2(R, z)
     ph = np.arctan2(y, x)
 
@@ -105,7 +117,10 @@ def to_spherical(vec, origin, newz=None):
 def to_cylindrical(vec, origin):
     """Transform vector components from Cartesian to cylindrical coords.
 
-    Assumes vec is a tuple of xarray.DataArray.
+    TODO
+    ----
+    - Add support for dask arrays
+    - Make structure identical to to_spherical
 
     Parameters
     ----------
@@ -241,3 +256,28 @@ def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False, skipna=T
     centers = 0.5*(edges[1:] + edges[:-1])
     res = xr.DataArray(data=res, coords={coord: centers}, name=dat.name)
     return res
+
+
+def _chunk_like(*inputs: xr.DataArray | xr.Dataset, chunks: dict[str, int] | None):
+    """Helper function that (re-)chunks inputs according to a single chunking dictionary.
+    Will also ensure passed inputs are not IndexVariable types, so that they can be chunked.
+
+    Copy-pasted from Ouranosinc/xclim
+    See https://github.com/Ouranosinc/xclim/pull/1542
+    """
+    if not chunks:
+        return tuple(inputs)
+
+    outputs = []
+    for da in inputs:
+        if isinstance(da, xr.DataArray) and isinstance(
+            da.variable, xr.core.variable.IndexVariable
+        ):
+            da = xr.DataArray(da, dims=da.dims, coords=da.coords, name=da.name)
+        if not isinstance(da, (xr.DataArray, xr.Dataset)):
+            outputs.append(da)
+        else:
+            outputs.append(
+                da.chunk(**{d: c for d, c in chunks.items() if d in da.dims})
+            )
+    return tuple(outputs)
