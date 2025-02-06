@@ -59,8 +59,6 @@
     <script src="../_static/design-tabs.js"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
     <script async="async" src="../_static/sphinx-thebe.js"></script>
-    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
-    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'content/utils';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -398,13 +396,7 @@ document.write(`
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transform">Transform</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#piecewisepowerlaw">PiecewisePowerlaw</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.PiecewisePowerlaw"><code class="docutils literal notranslate"><span class="pre">PiecewisePowerlaw</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.PiecewisePowerlaw.integrate"><code class="docutils literal notranslate"><span class="pre">PiecewisePowerlaw.integrate()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#piecewisepowerlaw">PiecewisePowerlaw</a></li>
 </ul>
             </nav>
         </div>
@@ -423,62 +415,6 @@ document.write(`
 </section>
 <section id="piecewisepowerlaw">
 <h2>PiecewisePowerlaw<a class="headerlink" href="#piecewisepowerlaw" title="Permalink to this heading">#</a></h2>
-<dl class="py class">
-<dt class="sig sig-object py" id="pyathena.util.PiecewisePowerlaw">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.util.</span></span><span class="sig-name descname"><span class="pre">PiecewisePowerlaw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">limits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">powers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">externalval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/piecewisepowerlaw.html#PiecewisePowerlaw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.PiecewisePowerlaw" title="Permalink to this definition">#</a></dt>
-<dd><p>A piecewise powerlaw function.</p>
-<p>You can specify the intervals and power indices, and this class
-will figure out the coefficients needed to make the function
-continuous and normalized to unit integral.</p>
-<p class="rubric">Notes</p>
-<p>Intervals are defined by an array l</p>
-<p>Powerlaw indicies by and array p</p>
-<p>a_n are the coefficients.</p>
-<div class="math notranslate nohighlight">
-\[f(x) = a_n x^{p_n} \textrm{ for } l_{n-1} &lt;= x &lt; l_n\]</div>
-<p>Recursion relation for continuity:</p>
-<div class="math notranslate nohighlight">
-\[a_n = a_{n-1} l_n^{p_{n-1} - p_n}\]</div>
-<p>Integral of a piece:</p>
-<div class="math notranslate nohighlight">
-\[I_n = a_n p_n (l_{n+1}^{p_n - 1} - l_n^{p_n - 1})\]</div>
-<p>Total integral:</p>
-<div class="math notranslate nohighlight">
-\[I_{tot} = \sum_0^N I_n\]</div>
-<p>Defined a piecewise powerlaw.</p>
-<p>If coefficients is None then the coefficients are determined
-by requiring the function to be continuous and normalized to
-an integral of one.</p>
-<p>The function is composed of N powerlaws, where N = len(powers).</p>
-<p>len(limits) must be one greated than len(powers)</p>
-<dl class="field-list simple">
-<dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><ul class="simple">
-<li><p><strong>limits</strong> (<em>array</em><em> (</em><em>length n+1</em><em>)</em>) – boundaries of the specified powerlaws. Must be one greater in
-length than coefficents and powers. Specify -numpy.infty for
-the first limit or numpy.infty for the last limit for
-unbounded powerlaws.</p></li>
-<li><p><strong>coefficients</strong> (<em>optional array</em><em> (</em><em>length n</em><em>)</em>) – values of the coefficient a_i</p></li>
-<li><p><strong>powers</strong> (<em>array</em><em> (</em><em>length n</em><em>)</em>) – values of the powerlaw indices p_i</p></li>
-<li><p><strong>externalval</strong> (<em>scalar</em>) – Value to return outside the defined domain. None
-correspons to ‘NaN’.</p></li>
-<li><p><strong>norm</strong> (<em>boolean</em>) – Whether to normalize the integral of the function over the
-defined domain to unity.</p></li>
-<li><p><strong>single</strong> (<em>The resulting function takes a</em>) – </p></li>
-<li><p><strong>of</strong> (<em>one-dimensional array</em>) – </p></li>
-<li><p><strong>operate.</strong> (<em>values on which to</em>) – </p></li>
-</ul>
-</dd>
-</dl>
-<dl class="py method">
-<dt class="sig sig-object py" id="pyathena.util.PiecewisePowerlaw.integrate">
-<span class="sig-name descname"><span class="pre">integrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">low</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_power</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/piecewisepowerlaw.html#PiecewisePowerlaw.integrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.PiecewisePowerlaw.integrate" title="Permalink to this definition">#</a></dt>
-<dd><p>Integrate the function from low to high.</p>
-<p>Optionally weight the integral by x^weight_power.</p>
-</dd></dl>
-
-</dd></dl>
-
 </section>
 </section>
 
@@ -547,13 +483,7 @@ defined domain to unity.</p></li>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transform">Transform</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#piecewisepowerlaw">PiecewisePowerlaw</a><ul class="nav section-nav flex-column">
-<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.PiecewisePowerlaw"><code class="docutils literal notranslate"><span class="pre">PiecewisePowerlaw</span></code></a><ul class="nav section-nav flex-column">
-<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.PiecewisePowerlaw.integrate"><code class="docutils literal notranslate"><span class="pre">PiecewisePowerlaw.integrate()</span></code></a></li>
-</ul>
-</li>
-</ul>
-</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#piecewisepowerlaw">PiecewisePowerlaw</a></li>
 </ul>
   </nav></div>
 
