@@ -105,7 +105,6 @@ class LoadSimBase(ABC):
 
     @load_method.setter
     def load_method(self, value):
-        # NOTE: xarray instead of pyathena?
         if value in ['xarray', 'pyathena_classic', 'yt']:
             self._load_method = value
         else:
