@@ -10,7 +10,12 @@ from matplotlib.colors import Normalize, LogNorm
 
 from ..plt_tools.cmap import cmap_apply_alpha,cmap_shift
 from ..microphysics.cool import get_xe_mol
-from .xray_emissivity import get_xray_emissivity
+try:
+    # xray_emissivity requires yt.
+    # If yt is not installed, skip importing xray_emissivity.
+    from .xray_emissivity import get_xray_emissivity
+except ModuleNotFoundError:
+    pass
 
 def static_vars(**kwargs):
     def decorate(func):
@@ -753,7 +758,6 @@ def set_derived_fields_newcool(par, x0):
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-
 def set_derived_fields_sixray(par, x0):
 
     func = dict()
@@ -1215,7 +1219,6 @@ def set_derived_fields_wind(par, x0):
     return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_xray(par, x0, newcool):
-
     func = dict()
     field_dep = dict()
     label = dict()
@@ -1251,7 +1254,6 @@ def set_derived_fields_xray(par, x0, newcool):
     take_log[f] = True
 
     return func, field_dep, label, cmap, vminmax, take_log
-
 
 class DerivedFields(object):
 

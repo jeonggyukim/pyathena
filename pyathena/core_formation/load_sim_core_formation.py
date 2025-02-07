@@ -54,7 +54,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
     """
 
     def __init__(self, basedir_or_Mach=None, method=2, savdir=None,
-                 load_method='pyathena', verbose=False, force_override=False):
+                 load_method='xarray', verbose=False, force_override=False):
         """The constructor for LoadSimCoreFormation class
 
         Parameters
@@ -68,7 +68,7 @@ class LoadSimCoreFormation(LoadSim, Hst, SliceProj, LognormalPDF,
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
         load_method : str
-            Load hdf5 using 'pyathena' or 'yt'. Default value is 'pyathena'.
+            Load hdf5 using 'xarray' or 'yt'. Default value is 'xarray'.
         verbose : bool or str or int
             Print verbose messages using logger. If True/False, set logger
             level to 'DEBUG'/'WARNING'. If string, it should be one of the
@@ -552,7 +552,7 @@ class LoadSimCoreFormationAll(object):
                 self.basedirs[mdl] = basedir
 
     def set_model(self, model, method=2, savdir=None,
-                  load_method='pyathena', verbose=False,
+                  load_method='xarray', verbose=False,
                   reset=False, force_override=False):
         self.model = model
         if reset or force_override:

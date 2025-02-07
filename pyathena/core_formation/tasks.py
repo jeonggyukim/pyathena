@@ -408,7 +408,7 @@ def run_grid(s, num, overwrite=False):
     # Load data and construct dendrogram
     print('[run_grid] processing model {} num {}'.format(s.basename, num))
     ds = s.load_hdf5(num, quantities=['phi',],
-                     load_method='pyathena').transpose('z', 'y', 'x')
+                     load_method='xarray').transpose('z', 'y', 'x')
     phi = ds.phi.to_numpy()
     gd = dendrogram.Dendrogram(phi, verbose=False)
     gd.construct()
@@ -532,7 +532,7 @@ def plot_sink_history(s, num, overwrite=False):
     if fname.exists() and not overwrite:
         print('[plot_sink_history] file already exists. Skipping...')
         return
-    ds = s.load_hdf5(num, quantities=['dens',], load_method='pyathena')
+    ds = s.load_hdf5(num, quantities=['dens',], load_method='xarray')
     pds = s.load_partab(num)
     fig = plots.plot_sinkhistory(s, ds, pds)
     fig.savefig(fname, bbox_inches='tight', dpi=200)
@@ -745,7 +745,7 @@ def plot_pdfs(s, num, overwrite=False):
     ax1_twiny = axs[1].twiny()
 
     ds = s.load_hdf5(num, quantities=['dens', 'mom1', 'mom2', 'mom3'],
-                     load_method='pyathena')
+                     load_method='xarray')
     plots.plot_PDF(s, ds, axs[0])
     plots.plot_Pspec(s, ds, axs[1], ax1_twiny)
     fig.tight_layout()
