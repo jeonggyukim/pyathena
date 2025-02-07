@@ -56,8 +56,8 @@ class LoadSimBase(ABC):
     basename : str
         basename (last component) of `basedir`.
     load_method : str
-        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic' (vtk only),
-        or 'yt'. Defaults to 'pyathena'.
+        Load vtk/hdf5 snapshots using 'xarray', 'pythena_classic' (vtk only),
+        or 'yt'. Defaults to 'xarray'.
     athena_pp : bool
         True if athena++ simulation
     problem_id : str
@@ -106,7 +106,7 @@ class LoadSimBase(ABC):
     @load_method.setter
     def load_method(self, value):
         # NOTE: xarray instead of pyathena?
-        if value in ['pyathena', 'pyathena_classic', 'yt']:
+        if value in ['xarray', 'pyathena_classic', 'yt']:
             self._load_method = value
         else:
             raise ValueError('Unrecognized load_method: ', value)
@@ -160,9 +160,9 @@ class LoadSim(LoadSimBase):
         Directory where simulation output files are stored.
     savdir : str, optional
         Directory where pickles and figures are saved. Defaults to `basedir`.
-    load_method : {'pyathena', 'pyathena_classic', 'yt'}, optional
-        Load vtk/hdf5 snapshots using 'pyathena', 'pythena_classic', or 'yt'.
-        Defaults to 'pyathena'.
+    load_method : {'xarray', 'pyathena_classic', 'yt'}, optional
+        Load vtk/hdf5 snapshots using 'xarray', 'pythena_classic', or 'yt'.
+        Defaults to 'xarray'.
     verbose : bool or str or int
         If True/False, set logging level to 'INFO'/'WARNING'.
         Otherwise, one of valid logging levels
@@ -196,7 +196,7 @@ class LoadSim(LoadSimBase):
     >>> s = pa.LoadSim('/path/to/basedir", verbose=True)
     """
 
-    def __init__(self, basedir, savdir=None, load_method='pyathena',
+    def __init__(self, basedir, savdir=None, load_method='xarray',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
 
@@ -310,7 +310,7 @@ class LoadSim(LoadSimBase):
         id0 : bool
            Read vtk file in /basedir/id0. Default value is True.
         load_method : str
-           'pyathena', 'pyathena_classic' or 'yt'
+           'xarray', 'pyathena_classic' or 'yt'
 
         Returns
         -------
@@ -365,7 +365,7 @@ class LoadSim(LoadSimBase):
                     break
 
         if self.fname.endswith('vtk'):
-            if self.load_method == 'pyathena':
+            if self.load_method == 'xarray':
                 self.ds = AthenaDataSet(self.fname, units=self.u, dfi=self.dfi)
                 self._domain = self.ds.domain
                 self.logger.info('[load_vtk]: {0:s}. Time: {1:f}'.format(\
@@ -388,7 +388,7 @@ class LoadSim(LoadSimBase):
                     self.load_method) + \
                     ' Use either "yt", "pyathena", "pyathena_classic".')
         elif self.fname.endswith('tar'):
-            if self.load_method == 'pyathena':
+            if self.load_method == 'xarray':
                 self.ds = AthenaDataSetTar(self.fname, units=self.u,
                                            dfi=self.dfi)
                 self._domain = self.ds.domain
@@ -423,7 +423,7 @@ class LoadSim(LoadSimBase):
         outid : int
            output block number (output[n] in the input file).
         load_method : str
-           'pyathena' or 'yt'
+           'xarray' or 'yt'
 
         Returns
         -------
@@ -468,7 +468,7 @@ class LoadSim(LoadSimBase):
         if self.fhdf5 is None or not osp.exists(self.fhdf5):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
 
-        if self.load_method == 'pyathena':
+        if self.load_method == 'xarray':
             try:
                 refinement = self.par['mesh']['refinement']
             except KeyError:
@@ -1060,7 +1060,7 @@ class LoadSimAll(object):
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena',
+    def set_model(self, model, savdir=None, load_method='xarray',
                   units=Units(kind='LV', muH=1.4271),
                   verbose=False):
         self.model = model
