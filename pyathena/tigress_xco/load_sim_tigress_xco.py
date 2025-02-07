@@ -10,7 +10,7 @@ class LoadSimTIGRESSXCO(LoadSim, Hst):
     """LoadSim class for analyzing TIGRESS simulations.
     """
 
-    def __init__(self, basedir, savdir=None, load_method='pyathena',
+    def __init__(self, basedir, savdir=None, load_method='xarray',
                  muH=1.4271, verbose=False):
         """The constructor for LoadSimRPS class
 
@@ -22,7 +22,7 @@ class LoadSimTIGRESSXCO(LoadSim, Hst):
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
         load_method : str
-            Load vtk using 'pyathena' or 'yt'. Default value is 'pyathena'.
+            Load vtk using 'xarray' or 'yt'. Default value is 'xarray'.
             If None, savdir=basedir. Default value is None.
         verbose : bool or str or int
             Print verbose messages using logger. If True/False, set logger
@@ -90,7 +90,7 @@ class LoadSimTIGRESSXCOAll(object):
         for mdl, basedir in models.items():
             self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+    def set_model(self, model, savdir=None, load_method='xarray', verbose=False):
 
         self.model = model
         self.sim = LoadSimTIGRESSXCO(self.basedirs[model], savdir=savdir,

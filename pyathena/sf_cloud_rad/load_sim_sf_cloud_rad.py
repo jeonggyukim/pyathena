@@ -36,7 +36,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
     """LoadSim class for analyzing sf_cloud simulations.
     """
 
-    def __init__(self, basedir, savdir=None, load_method='pyathena',
+    def __init__(self, basedir, savdir=None, load_method='xarray',
                  units=Units(kind='LV', muH=1.4271),
                  verbose=False):
         """The constructor for LoadSimSFCloudRad class
@@ -49,7 +49,7 @@ class LoadSimSFCloudRad(LoadSim, Hst, StarPar, SliceProj, PDF,
             Name of the directory where pickled data and figures will be saved.
             Default value is basedir.
         load_method : str
-            Load vtk using 'pyathena' or 'yt'. Default value is 'pyathena'.
+            Load vtk using 'xarray' or 'yt'. Default value is 'xarray'.
             If None, savdir=basedir. Default value is None.
         verbose : bool or str or int
             Print verbose messages using logger. If True/False, set logger
@@ -364,7 +364,7 @@ class LoadSimSFCloudRadAll(Compare):
                 self.models.append(mdl)
                 self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='pyathena', verbose=False):
+    def set_model(self, model, savdir=None, load_method='xarray', verbose=False):
 
         self.model = model
         self.sim = LoadSimSFCloudRad(self.basedirs[model], savdir=savdir,
