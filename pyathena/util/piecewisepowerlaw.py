@@ -6,7 +6,7 @@ http://pydoc.net/CosmoloPy/0.1.104/cosmolopy.utils/
 import numpy as np
 
 class PiecewisePowerlaw(object):
-    """A piecewise powerlaw function.
+    r"""A piecewise powerlaw function.
 
     You can specify the intervals and power indices, and this class
     will figure out the coefficients needed to make the function
