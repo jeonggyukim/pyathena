@@ -194,8 +194,8 @@ def groupby_bins(dat, coord, edges, cumulative=False):
         binned array
     """
     dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
-    fc = dat[coord].data.flatten()  # flattened coordinates
-    fd = dat.data.flatten()  # flattened data
+    fc = dat[coord].data  # coordinates
+    fd = dat.data  # data
     bin_sum = np.histogram(fc, edges, weights=fd)[0]
     bin_cnt = np.histogram(fc, edges)[0]
     if cumulative:
