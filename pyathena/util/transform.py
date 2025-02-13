@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 from scipy.spatial.transform import Rotation
 import fast_histogram as fh
+import warnings
 
 def euler_rotation(vec, angles):
     """Rotate coordinate axes to transform the components of vector field `vec`
@@ -172,7 +173,7 @@ def to_cylindrical(vec, origin):
     return R, vec_cyl
 
 
-def groupby_bins(dat, coord, edges, cumulative=False):
+def groupby_bins(dat, coord, bins, range=None, cumulative=False):
     """Alternative to xr.groupby_bins, which is very slow
 
     Parameters
@@ -181,8 +182,12 @@ def groupby_bins(dat, coord, edges, cumulative=False):
         input dataArray
     coord : str
         coordinate name along which data is binned
-    edges : array-like
-        bin edges
+    bins : int or sequence of scalars
+        If bins is an int, it defines the number of equal-width bins in the given range.
+        If bins is a sequence, it defines the bin edges, including the rightmost edge,
+        allowing for non-uniform bin widths.
+    range : (float, float), optional
+        The lower and upper range of the bins.
     cumulative : bool
         if True, perform cumulative binning, e.g.,
           v_r_binned[i] = v_r( edge[0] <= r < edge[i+1] ).mean()
@@ -193,11 +198,20 @@ def groupby_bins(dat, coord, edges, cumulative=False):
     res: xarray.DataArray
         binned array
     """
+    if isinstance(bins, int):
+        if range is None:
+            raise ValueError("range should be provided when bins is an int")
+        # if bins is an int, then it defines the number of equal-spaced bins
+        # where the leftmost and rightmost bin edges are determined by the
+        # "range" parameter.
+        edges = np.linspace(range[0], range[1], bins + 1)
+    else:
+        edges = bins
     dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
     fc = dat[coord].data  # coordinates
     fd = dat.data  # data
-    bin_sum = np.histogram(fc, edges, weights=fd)[0]
-    bin_cnt = np.histogram(fc, edges)[0]
+    bin_sum = np.histogram(fc, bins=bins, range=range, weights=fd)[0]
+    bin_cnt = np.histogram(fc, bins=bins, range=range)[0]
     if cumulative:
         bin_sum = np.cumsum(bin_sum)
         bin_cnt = np.cumsum(bin_cnt)
@@ -215,6 +229,13 @@ def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False, skipna=T
     xr.groupby_bins, it is still too slow. Assuming equally spaced bins,
     fast_histogram achieves order of magnitude higher performance.
     This function implements groupby_bins based on fast_histogram.
+
+    .. warning::
+        Feb 13, 2025: In fact, np.histogram already optimizes for the uniform bin size.
+        To use the optimized version, one just needs to pass integer "bins" and provide
+        "range". Still, fast_histogram is slightly faster, but the difference is not
+        significant. with 1024^3 data, the speedup is only x1.25. Moreover, fast_histogram
+        is not compatible with dask arrays.
 
     Parameters
     ----------
@@ -238,6 +259,11 @@ def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False, skipna=T
     res: xarray.DataArray
         binned array
     """
+    warnings.warn(
+        "fast_groupby_bins will be deprecated. Use groupby_bins instead.",
+        DeprecationWarning,
+        stacklevel=2
+    )
     dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
     fc = dat[coord].data.flatten()  # flattened coordinates
     fd = dat.data.flatten()  # flattened data
