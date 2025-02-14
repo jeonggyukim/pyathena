@@ -1,5 +1,6 @@
 import numpy as np
 import xarray as xr
+import dask.array as da
 from scipy.spatial.transform import Rotation
 import fast_histogram as fh
 import warnings
@@ -7,24 +8,37 @@ import warnings
 def euler_rotation(vec, angles):
     """Rotate coordinate axes to transform the components of vector field `vec`
 
+    This assumes "passive" rotation where the vector itself is not rotated geometrically,
+    but the coordinate axes are rotated. The euler angles take the "intrinsic" convention
+    where the subsequent rotations are applied about the rotated axes.
+
     Parameters
     ----------
     vec : tuple, list, or numpy.ndarray of xarray.DataArray or numpy.ndarray
-        (vx, vy, vz) representing Cartesian vector components
+        (vx, vy, vz) representing Cartesian vector field components.
     angles : tuple, list, or numpy.ndarray
-        Euler angles [alpha, beta, gamma] in radian
+        Euler angles [alpha, beta, gamma] in radian.
 
     Returns
     -------
     tuple of xarray.DataArray or numpy.ndarray matching the input type
         Cartesian components of the rotated vector.
     """
-    angles = np.array(angles)
-    r = Rotation.from_euler('zyx', -angles, degrees=False)
-    rotmat = r.as_matrix()
-    vxp = rotmat[0, 2]*vec[2] + rotmat[0, 1]*vec[1] + rotmat[0, 0]*vec[0]
-    vyp = rotmat[1, 2]*vec[2] + rotmat[1, 1]*vec[1] + rotmat[1, 0]*vec[0]
-    vzp = rotmat[2, 2]*vec[2] + rotmat[2, 1]*vec[1] + rotmat[2, 0]*vec[0]
+    alpha, beta, gamma = angles
+    ca = np.cos(alpha)
+    cb = np.cos(beta)
+    cr = np.cos(gamma)
+    sa = np.sin(alpha)
+    sb = np.sin(beta)
+    sr = np.sin(gamma)
+    rotmat = [[ ca*cr - sa*cb*sr,  sa*cr + ca*cb*sr, sb*sr],
+              [-ca*sr - sa*cb*cr, -sa*sr + ca*cb*cr, sb*cr],
+              [ sa*sb           , -ca*sb           ,    cb]]
+    # The order is important here. To utilize xarray broadcasting rule,
+    # we compute [2, 1, 0] order to preserve (z, y, x) layout for Athena data
+    vxp = rotmat[0][2]*vec[2] + rotmat[0][1]*vec[1] + rotmat[0][0]*vec[0]
+    vyp = rotmat[1][2]*vec[2] + rotmat[1][1]*vec[1] + rotmat[1][0]*vec[0]
+    vzp = rotmat[2][2]*vec[2] + rotmat[2][1]*vec[1] + rotmat[2][0]*vec[0]
     return (vxp, vyp, vzp)
 
 
@@ -39,7 +53,7 @@ def to_spherical(vec, origin, newz=None):
         (vx, vy, vz) representing Cartesian vector components.
     origin : tuple, list, or numpy.ndarray
         (x0, y0, z0) representing the origin of the spherical coords.
-    newz : tuple, list, or numpy.ndarray, optional
+    newz : tuple or list, or numpy.ndarray, optional
         Cartesian components of the z-axis vector for the spherical
         coordinates. If not given, it is assumed to be (0, 0, 1).
 
