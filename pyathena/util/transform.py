@@ -49,11 +49,11 @@ def to_spherical(vec, origin, newz=None):
 
     Parameters
     ----------
-    vec : tuple, list, or numpy.ndarray of xarray.DataArray
+    vec : tuple or list of xarray.DataArray
         (vx, vy, vz) representing Cartesian vector components.
-    origin : tuple, list, or numpy.ndarray
+    origin : tuple or list
         (x0, y0, z0) representing the origin of the spherical coords.
-    newz : tuple or list, or numpy.ndarray, optional
+    newz : tuple or list, optional
         Cartesian components of the z-axis vector for the spherical
         coordinates. If not given, it is assumed to be (0, 0, 1).
 
@@ -63,7 +63,7 @@ def to_spherical(vec, origin, newz=None):
         Binned radius
     vec_sph : tuple
         (v_r, v_th, v_ph) representing the three components of
-        velocities in spherical coords.
+        vector in spherical coords.
     """
     vx, vy, vz = vec
     x0, y0, z0 = origin
@@ -82,13 +82,14 @@ def to_spherical(vec, origin, newz=None):
     x, y, z = x - x0, y - y0, z - z0
 
     if newz is not None:
-        if ((np.array(newz)**2).sum() == 0):
-            raise ValueError("new z axis vector should not be a null vector")
+        # Let's avoid eager computation at the cost of safety.
+#        if ((np.array(newz)**2).sum() == 0):
+#            raise ValueError("new z axis vector should not be a null vector")
 
         # Rotate to align z axis
-        zhat = np.array([0, 0, 1])
-        alpha = np.arctan2(newz[1], newz[0])
-        beta = np.arccos(np.dot(newz, zhat) / np.sqrt(np.dot(newz, newz)))
+        newz_mag = np.sqrt(newz[0]**2 + newz[1]**2 + newz[2]**2)
+        alpha = np.arccos(-newz[1] / np.sqrt(newz_mag**2 - newz[2]**2))
+        beta = np.arccos(newz[2] / newz_mag)
         vx, vy, vz = euler_rotation((vx, vy, vz), [alpha, beta, 0])
         x, y, z = euler_rotation((x, y, z), [alpha, beta, 0])
 
