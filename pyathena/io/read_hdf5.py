@@ -86,72 +86,72 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512)):
     chunksize : tuple of int, optional
         Dask chunk size along (x, y, z) directions. Default is (512, 512, 512).
     """
+    f = h5py.File(filename, 'r')
 
-    with h5py.File(filename, 'r') as f:
-        # Read Mesh information
-        block_size = f.attrs['MeshBlockSize']
-        mesh_size = f.attrs['RootGridSize']
-        num_blocks = mesh_size // block_size  # Assuming uniform grid
+    # Read Mesh information
+    block_size = f.attrs['MeshBlockSize']
+    mesh_size = f.attrs['RootGridSize']
+    num_blocks = mesh_size // block_size  # Assuming uniform grid
 
-        if num_blocks.prod() != f.attrs['NumMeshBlocks']:
-            raise ValueError("Number of blocks does not match the attribute")
+    if num_blocks.prod() != f.attrs['NumMeshBlocks']:
+        raise ValueError("Number of blocks does not match the attribute")
 
-        # Array of logical locations, arranged by Z-ordering
-        # (lx1, lx2, lx3)
-        # (  0,   0,   0)
-        # (  1,   0,   0)
-        # (  0,   1,   0)
-        # ...
-        logical_loc = f['LogicalLocations']
+    # Array of logical locations, arranged by Z-ordering
+    # (lx1, lx2, lx3)
+    # (  0,   0,   0)
+    # (  1,   0,   0)
+    # (  0,   1,   0)
+    # ...
+    logical_loc = f['LogicalLocations']
 
-        # Number of MeshBlocks per chunk along each dimension.
-        nblock_per_chunk = np.array(chunksize) // block_size
-        chunksize_read = (1, nblock_per_chunk.prod(), *block_size)
+    # Number of MeshBlocks per chunk along each dimension.
+    nblock_per_chunk = np.array(chunksize) // block_size
+    chunksize_read = (1, nblock_per_chunk.prod(), *block_size)
 
-        # lazy load from HDF5
-        ds = []
-        for dsetname in f.attrs['DatasetNames']:
-            darr = da.from_array(f[dsetname], chunks=chunksize_read)
-            if len(darr.shape) != 5:
-                # Expected shape: (nvar, nblock, z, y, x)
-                raise ValueError("Invalid shape of the dataset")
-            ds += [var for var in darr]
+    # lazy load from HDF5
+    ds = []
+    for dsetname in f.attrs['DatasetNames']:
+        darr = da.from_array(f[dsetname], chunks=chunksize_read)
+        if len(darr.shape) != 5:
+            # Expected shape: (nvar, nblock, z, y, x)
+            raise ValueError("Invalid shape of the dataset")
+        ds += [var for var in darr]
 
-        def _reorder_rechunk(var):
-            """
-            Loop over the MeshBlocks and place them to correct logical locations
-            in 3D Cartesian space. Then, merge them into a single dask array.
-            """
-            reordered = np.empty(num_blocks[::-1], dtype=object)
-            for gid in range(num_blocks.prod()):
-                lx1, lx2, lx3 = logical_loc[gid]  # Correct Cartesian coordinates
-                reordered[lx3, lx2, lx1] = var[gid, ...]  # Assign the correct block
-            # Merge into a single array
-            return da.block(reordered.tolist()).rechunk(chunksize)
-        # Apply the rechunking function to all variables
-        ds = list(map(_reorder_rechunk, ds))
+    def _reorder_rechunk(var):
+        """
+        Loop over the MeshBlocks and place them to correct logical locations
+        in 3D Cartesian space. Then, merge them into a single dask array.
+        """
+        reordered = np.empty(num_blocks[::-1], dtype=object)
+        for gid in range(num_blocks.prod()):
+            lx1, lx2, lx3 = logical_loc[gid]  # Correct Cartesian coordinates
+            reordered[lx3, lx2, lx1] = var[gid, ...]  # Assign the correct block
+        # Merge into a single array
+        return da.block(reordered.tolist()).rechunk(chunksize)
+    # Apply the rechunking function to all variables
+    ds = list(map(_reorder_rechunk, ds))
 
-        # Convert to xarray object
-        varnames = list(map(lambda x: x.decode('ASCII'), f.attrs['VariableNames']))
-        variables = [(['z', 'y', 'x'], d) for d in ds]
-        coordnames = ['x1v', 'x2v', 'x3v']
+    # Convert to xarray object
+    varnames = list(map(lambda x: x.decode('ASCII'), f.attrs['VariableNames']))
+    variables = [(['z', 'y', 'x'], d) for d in ds]
+    coordnames = ['x1v', 'x2v', 'x3v']
 
-        # Calculate coordinates
-        # Borrowed and slightly modified from pyathena.io.athdf
-        coords = {}
-        for i, (nrbx, xv) in enumerate(zip(num_blocks, coordnames)):
-            coords[xv] = np.empty(mesh_size[i])
-            for n_block in range(nrbx):
-                sample_block = np.where(logical_loc[:, i] == n_block)[0][0]
-                index_low = n_block * block_size[i]
-                index_high = index_low + block_size[i]
-                coords[xv][index_low:index_high] = f[xv][sample_block, :]
+    # Calculate coordinates
+    # Borrowed and slightly modified from pyathena.io.athdf
+    coords = {}
+    for i, (nrbx, xv) in enumerate(zip(num_blocks, coordnames)):
+        coords[xv] = np.empty(mesh_size[i])
+        for n_block in range(nrbx):
+            sample_block = np.where(logical_loc[:, i] == n_block)[0][0]
+            index_low = n_block * block_size[i]
+            index_high = index_low + block_size[i]
+            coords[xv][index_low:index_high] = f[xv][sample_block, :]
 
-        # If uniform grid, store cell spacing.
-        attrs = dict(f.attrs)
-        attrs['dx1'] = np.diff(f.attrs['RootGridX1'])[0] / mesh_size[0]
-        attrs['dx2'] = np.diff(f.attrs['RootGridX2'])[0] / mesh_size[1]
-        attrs['dx3'] = np.diff(f.attrs['RootGridX3'])[0] / mesh_size[2]
+    # If uniform grid, store cell spacing.
+    attrs = dict(f.attrs)
+    attrs['dx1'] = np.diff(f.attrs['RootGridX1'])[0] / mesh_size[0]
+    attrs['dx2'] = np.diff(f.attrs['RootGridX2'])[0] / mesh_size[1]
+    attrs['dx3'] = np.diff(f.attrs['RootGridX3'])[0] / mesh_size[2]
 
     ds = xr.Dataset(
         data_vars=dict(zip(varnames, variables)),
