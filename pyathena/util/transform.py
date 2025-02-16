@@ -86,9 +86,9 @@ def to_spherical(vec, origin, newz=None):
 #        if ((np.array(newz)**2).sum() == 0):
 #            raise ValueError("new z axis vector should not be a null vector")
 
-        # Rotate to align z axis
+        # Obtain Euler angles to rotate z-axis to newz
         newz_mag = np.sqrt(newz[0]**2 + newz[1]**2 + newz[2]**2)
-        alpha = np.arccos(-newz[1] / np.sqrt(newz_mag**2 - newz[2]**2))
+        alpha = (np.arctan2(newz[1], newz[0]) + np.pi/2) % (2*np.pi)
         beta = np.arccos(newz[2] / newz_mag)
         vx, vy, vz = euler_rotation((vx, vy, vz), [alpha, beta, 0])
         x, y, z = euler_rotation((x, y, z), [alpha, beta, 0])
