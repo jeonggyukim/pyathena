@@ -10,6 +10,12 @@ from tqdm import tqdm
 
 class PopSynthParsec(object):
 
+    urls = {
+        'photons': 'https://stev.oapd.inaf.it/PARSEC/Database/PARSECv2.0_VMS/all_photons.zip',
+        'ejecta': 'https://stev.oapd.inaf.it/PARSEC/Database/PARSECv2.0_VMS/all_ejecta.zip',
+        'tracks': 'https://stev.oapd.inaf.it/PARSEC/Database/PARSECv2.0_VMS/all_tracks.zip'
+    }
+
     def __init__(self, rootdir=None, model_def='Z0.014', force_download=False):
         if rootdir is None:
             rootdir = Path(__file__).parent.absolute() / '../../data/pop_synth'
@@ -19,11 +25,6 @@ class PopSynthParsec(object):
         self.rootdir = Path(rootdir)
         self.dirs = dict()
         self.force_download = force_download
-        self.url = {
-            'photons': 'https://stev.oapd.inaf.it/PARSEC/Database/PARSECv2.0_VMS/all_photons.zip',
-            'ejecta': 'https://stev.oapd.inaf.it/PARSEC/Database/PARSECv2.0_VMS/all_ejecta.zip',
-            'tracks': 'https://stev.oapd.inaf.it/PARSEC/Database/PARSECv2.0_VMS/all_tracks.zip'
-        }
         self.files_zip = {
             'photons': self.rootdir / 'all_photons.zip',
             'ejecta': self.rootdir / 'all_ejecta.zip',
@@ -38,19 +39,8 @@ class PopSynthParsec(object):
                 self.unzip_one(self.files_zip[k], self.dirs[k])
                 self.unzip_all(self.dirs[k])
 
-        # self.files = self.get_all_files(self.dirs['photons'])
         self._find_models_and_dirs()
-
-        # self.M = dict()
-        # self.files = dict()
-        # for mdl in self.models:
-        #     self.get_M_and_files(mdl)
-
-        # self.dfa = dict()
-        # for mdl in self.models:
-        #     self.dfa[mdl] = pd.DataFrame({'M': self.M[mdl], 'fname': self.files[mdl]})
-
-        # self.set_model(model_def)
+        self.set_model(model_def)
 
     def set_model(self, model):
         if model not in self.models:
@@ -62,7 +52,7 @@ class PopSynthParsec(object):
 
     def download_file(self, kind, force_download=False):
         fname = self.files_zip[kind]
-        url = self.url[kind]
+        url = PopSynthParsec.urls[kind]
         if not osp.exists(fname) or force_download:
             print('Downloading {0:s} tables from PAdova TRieste Stellar Evolutionary Code.'.\
                   format(kind))
@@ -115,10 +105,17 @@ class PopSynthParsec(object):
                     self.unzip_one(fname, extractdir, delete_zip)
 
     @staticmethod
-    def get_all_files(dirname):
+    def get_all_files(kind, dirname):
         """Returns a list of all file names
         """
-        return [f for f in Path(dirname).rglob('*.QH') if f.is_file()]
+        if kind == 'photons':
+            suffix = 'QH'
+        elif kind == 'tracks':
+            suffix = 'TAB'
+        else:
+            raise ValueError('Unrecognized kind {0:s}'.format(kind))
+
+        return [f for f in Path(dirname).rglob(f'*.{suffix}') if f.is_file()]
 
     def _find_models_and_dirs(self):
         self.dfa = dict()
@@ -131,25 +128,20 @@ class PopSynthParsec(object):
             self.M[k] = dict()
             self.files[k] = dict()
             self.models[k] = []
-            self.dirs['models_' + k] = dict()
             for d in sorted(Path(self.dirs[k]).iterdir()):
                 if d.is_dir():
                     mdl = d.name.split('_', 1)[0]
+                    # Fix model name inconsistency
                     if 'D-' in mdl:
                         dnew = d.with_name(d.name.replace('D-', 'E-'))
                         d.rename(dnew)
                         mdl = mdl.replace('D-', 'E-')
 
                     self.models[k].append(mdl)
-                    self.dirs['models_' + k][mdl] = d
-
-                    files = self.get_all_files(self.dirs['models_' + k][mdl])
-                    M = []
-                    for f in files:
-                        name = f.stem
-                        M_ = float(name.split('_')[2].removesuffix('.TAB').removeprefix('M'))
-                        M.append(M_)
-
+                    files = self.get_all_files(k, d)
+                    # Get a list of mass in float
+                    M = [float(f.stem.split('_')[2].removesuffix('.TAB').\
+                               removeprefix('M')) for f in files]
                     sidx = np.argsort(M)
                     self.M[k][mdl] = np.array(M)[sidx]
                     self.files[k][mdl] = np.array(files)[sidx]
@@ -163,23 +155,11 @@ class PopSynthParsec(object):
                                                  'fname': self.files[k][mdl]})
 
 
-    # def get_M_and_files(self, mdl):
-    #     files = self.get_all_files(self.dirs['models'][mdl])
-    #     M = []
-    #     for f in files:
-    #         name = f.stem
-    #         M_ = float(name.split('_')[2].removesuffix('.TAB').removeprefix('M'))
-    #         M.append(M_)
-
-    #     sidx = np.argsort(M)
-    #     self.M[mdl] = np.array(M)[sidx]
-    #     self.files[mdl] = np.array(files)[sidx]
-
     def read_track(self, M, model=None):
         if model is not None:
             self.set_model(model)
 
-        d = self.df['photons'].loc[(self.df['photons']['M'] - M).abs().idxmin()]
+        d = self.df['tracks'].loc[(self.df['tracks']['M'] - M).abs().idxmin()]
         return self.read_photon_file(d['fname'])
 
     def read_photon(self, M, model=None):
