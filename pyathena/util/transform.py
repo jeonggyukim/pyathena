@@ -140,50 +140,63 @@ def to_cylindrical(vec, origin):
 
     Parameters
     ----------
-    vec : tuple-like
-        (vx, vy, vz) representing Cartesian vector components
-    origin : tuple-like
-        (x0, y0, z0) representing the origin of the cylindrical coords.
+    vec : tuple or list of xarray.DataArray
+        (vx, vy, vz) representing Cartesian vector components.
+    origin : tuple or list
+        (x0, y0, z0) representing the origin of the spherical coords.
 
     Returns
     -------
-    R : array
+    R : xarray.DataArray
         Binned radius
-    vec_cyl : tuple-like
+    vec_cyl : tuple
         (v_R, v_ph, v_z) representing the three components of
         velocities in cylindrical coords.
     """
     vx, vy, vz = vec
     x0, y0, z0 = origin
-    x, y, z = vx.x, vx.y, vx.z
+    if not vx.chunksizes == vy.chunksizes == vz.chunksizes:
+        raise ValueError("All input arrays should have the same chunk sizes")
+    else:
+        # Note that if vx, vy, vz are numpy-backed xarray.DataArray, then
+        # vx.chunksizes is an empty dictionary. In this case, _chunk_like
+        # simply returns the input arrays.
+        chunks = vx.chunksizes
+    # Workaround for xarray being unable to chunk coordinates
+    # see https://github.com/pydata/xarray/issues/6204
+    # The workaround is provided by _chunk_like helper function introduced in
+    # xclim. See https://github.com/Ouranosinc/xclim/pull/1542
+    x, y, z = _chunk_like(vx.x, vx.y, vx.z, chunks=chunks)
+    x, y, z = x - x0, y - y0, z - z0
 
     # Calculate cylindrical coordinates
-    R = np.sqrt((x-x0)**2 + (y-y0)**2)
-    ph = np.arctan2(y-y0, x-x0)
+    R = np.sqrt(y**2 + x**2)
+    ph = np.arctan2(y, x)
+
     # Move branch cut [-pi, pi] -> [0, 2pi]
     ph = ph.where(ph >= 0, other=ph + 2*np.pi)
-    sin_ph, cos_ph = (y-y0)/R, (x-x0)/R
+    sin_ph, cos_ph = y/R, x/R
+
     # Break degeneracy by choosing arbitrary theta and phi at coordinate singularities
     # \phi = 0 at R = 0.
-    if x0 in x and y0 in y:
-        sin_ph.loc[dict(x=x0, y=y0)] = 0
-        cos_ph.loc[dict(x=x0, y=y0)] = 1
+    sin_ph = sin_ph.where(R != 0, other=0)
+    cos_ph = cos_ph.where(R != 0, other=1)
 
     # Transform Cartesian (vx, vy, vz) ->  cylindrical (v_R, v_phi, v_z)
     v_R = (vx*cos_ph + vy*sin_ph).rename('v_R')
     v_ph = (-vx*sin_ph + vy*cos_ph).rename('v_phi')
     v_z = vz
 
-    # assign spherical coordinates
+    # assign cylindrical coordinates
     v_R.coords['R'] = R
     v_ph.coords['R'] = R
     v_z.coords['R'] = R
     v_R.coords['ph'] = ph
     v_ph.coords['ph'] = ph
     v_z.coords['ph'] = ph
-    v_R.coords['z'] = z - z0
-    v_ph.coords['z'] = z - z0
-    v_z.coords['z'] = z - z0
+    v_R.coords['z'] = z
+    v_ph.coords['z'] = z
+    v_z.coords['z'] = z
     vec_cyl = (v_R, v_ph, v_z)
     return R, vec_cyl
 
