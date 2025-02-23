@@ -194,9 +194,9 @@ def to_cylindrical(vec, origin):
     v_R.coords['ph'] = ph
     v_ph.coords['ph'] = ph
     v_z.coords['ph'] = ph
-    v_R.coords['z'] = z
-    v_ph.coords['z'] = z
-    v_z.coords['z'] = z
+    v_R.coords['z'] = vx.z  # Note that we do not want to set z coordinate z - z0.
+    v_ph.coords['z'] = vx.z # Use original z coordinates.
+    v_z.coords['z'] = vx.z
     vec_cyl = (v_R, v_ph, v_z)
     return R, vec_cyl
 
