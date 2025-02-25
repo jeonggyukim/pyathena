@@ -21,7 +21,7 @@ class RecRate(object):
     def _read_data(self):
 
         basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
-                           '../data/microphysics')
+                           '../../data/microphysics')
 
         self.fname_dr_C = os.path.join(basedir, 'badnell_dr_C_2023.dat')
         self.fname_dr_E = os.path.join(basedir, 'badnell_dr_E_2023.dat')

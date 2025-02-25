@@ -13,7 +13,7 @@ class CollIonRate(object):
     def _read_data(self, max_rows=465):
 
         basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
-                           '../data/microphysics/cloudy')
+                           '../../data/microphysics/cloudy')
         self.fname = os.path.join(basedir, 'coll_ion.dat')
         lines = np.loadtxt(self.fname, unpack=True, skiprows=1, max_rows=max_rows)
 
