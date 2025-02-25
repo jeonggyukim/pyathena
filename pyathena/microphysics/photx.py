@@ -6,7 +6,7 @@ import pathlib
 import astropy.units as au
 import astropy.constants as ac
 
-__all__ = ['PhotX']
+__all__ = ['PhotX', 'get_sigma_pi_H2']
 
 class PhotX(object):
     """
@@ -15,7 +15,7 @@ class PhotX(object):
     Original python code from Rabacus implementation
     https://github.com/galtay/rabacus/tree/master/rabacus/atomic/verner/photox
     (Released under GNU GPL3 v.30;
-    JKIM: is it okay to copy snippets of their code? what to do with license?)
+    JKIM: okay to copy snippets of their code?)
     """
 
     def __init__(self, datadir=None):
