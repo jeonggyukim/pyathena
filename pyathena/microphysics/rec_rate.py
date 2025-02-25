@@ -12,18 +12,20 @@ class RecRate(object):
     Draine (2011)'s recombination rates
     """
 
-    def __init__(self):
+    def __init__(self, caseB=True):
         # read data
         self._read_data()
+        # Use Draine's caseB for hydrogen
+        self.caseB = caseB
 
     def _read_data(self):
 
         basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
-                           '../../data/microphysics')
+                           '../data/microphysics')
 
-        self.fname_dr_C = os.path.join(basedir, 'badnell_dr_C.dat')
-        self.fname_dr_E = os.path.join(basedir, 'badnell_dr_E.dat')
-        self.fname_rr = os.path.join(basedir, 'badnell_rr.dat')
+        self.fname_dr_C = os.path.join(basedir, 'badnell_dr_C_2023.dat')
+        self.fname_dr_E = os.path.join(basedir, 'badnell_dr_E_2023.dat')
+        self.fname_rr = os.path.join(basedir, 'badnell_rr_2023.dat')
 
         # Read dielectronic recombination rate data
         with open(self.fname_dr_C, 'r') as fp:
@@ -122,7 +124,7 @@ class RecRate(object):
             Temperature [K]
         M : int
             Initial metastable levels (M=1 for the ground state) of the ground
-            and metastable terms. The defualt value is 1.
+            and metastable terms. The default value is 1.
 
         Returns
         -------
@@ -154,14 +156,14 @@ class RecRate(object):
         Parameters
         ----------
         Z : int
-            Nuclear Charge
+            Nuclear charge
         N : int
             Number of electrons of the initial target ion (before recombination)
         T : array of floats
             Temperature [K]
         M : int
             Initial metastable levels (M=1 for the ground state) of the ground
-            and metastable terms. The defualt value is 1.
+            and metastable terms. The default value is 1.
 
         Returns
         -------
@@ -197,10 +199,10 @@ class RecRate(object):
             Temperature [K]
         M : int
             Initial metastable levels (M=1 for the ground state) of the ground
-            and metastable terms. The defualt value is 1.
+            and metastable terms. The default value is 1.
         kind : str
             Set to 'badnell' to use fits Badnell fits or 'dr11' to use
-            Draine (2011)'s formula.
+            Draine (2011)'s formula. This keyword is ignored if caseB is turned on.
 
         Returns
         -------
@@ -209,7 +211,9 @@ class RecRate(object):
         """
 
         if kind == 'badnell':
-            if Z == 1: # No dielectronic recombination
+            if Z == 1 and self.caseB: # Ignore kind keyword
+                return self.get_rec_rate_H_caseB_Dr11(T)
+            elif Z == 1 or N == 0: # No dielectronic recombination
                 return self.get_rr_rate(Z, N, T, M=M)
             else:
                 return self.get_rr_rate(Z, N, T, M=M) + \
