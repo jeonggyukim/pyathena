@@ -66,12 +66,12 @@ def read_FG20():
     idx_FUV = np.logical_and(r['wav'].value < 2000.0, r['wav'].value > 912.0)
     idx_LyC = np.logical_and(r['wav'].value < 912.0, r['wav'].value > 0.0)
     idx_Xray = np.logical_and(r['wav'].value < 100.0, r['wav'].value > 0.0)
-    r['J_FUV'] = -integrate.trapz(r['nu'][idx_FUV]*r['ds']['Jnu'][:,idx_FUV],
+    r['J_FUV'] = -integrate.trapezoid(r['nu'][idx_FUV]*r['ds']['Jnu'][:,idx_FUV],
                                        x=np.log(r['nu'][idx_FUV]))
-    r['J_LyC'] = -integrate.trapz(r['nu'][idx_LyC]*r['ds']['Jnu'][:,idx_LyC],
-                                  x=np.log(r['nu'][idx_LyC]))
-    r['J_Xray'] = -integrate.trapz(r['nu'][idx_Xray]*r['ds']['Jnu'][:,idx_Xray],
-                                   x=np.log(r['nu'][idx_Xray]))
+    r['J_LyC'] = -integrate.trapezoid(r['nu'][idx_LyC]*r['ds']['Jnu'][:,idx_LyC],
+                                       x=np.log(r['nu'][idx_LyC]))
+    r['J_Xray'] = -integrate.trapezoid(r['nu'][idx_Xray]*r['ds']['Jnu'][:,idx_Xray],
+                                        x=np.log(r['nu'][idx_Xray]))
     r['idx_FUV'] = idx_FUV
     r['idx_LyC'] = idx_LyC
     r['idx_Xray'] = idx_Xray
@@ -95,19 +95,19 @@ def read_FG20():
     # $n_{\rm HI} q_{\rm pi,H}\zeta_{\rm pi,H} = n_{\rm H}\Gamma_{\rm pi} =
     # n_{\rm HI}\int_{\nu_0}^{\infty} \frac{4\pi J_{\nu}}{h\nu} \sigma_{\rm pi,\nu}(h\nu - h\nu_0) d\nu$
 
-    zeta_pi_H = -integrate.trapz(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]*\
+    zeta_pi_H = -integrate.trapezoid(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]*\
                                  sigma_pi_H_LyC/(E_LyC*au.eV).cgs.value,
                                  x=r['nu'][idx_LyC])
-    q_zeta_pi_H = -integrate.trapz(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]*\
+    q_zeta_pi_H = -integrate.trapezoid(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]*\
                                    sigma_pi_H_LyC/(E_LyC*au.eV).cgs.value*\
                                    (E_LyC*au.eV - Eth_H*au.eV).cgs.value,
                                    x=r['nu'][idx_LyC])
     q_pi_H = (q_zeta_pi_H/zeta_pi_H*au.erg).to('eV')
-    sigma_mean_pi_H = -zeta_pi_H/(integrate.trapz(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]/\
+    sigma_mean_pi_H = -zeta_pi_H/(integrate.trapezoid(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]/\
                                                   (E_LyC*au.eV).cgs.value,
                                                   x=r['nu'][idx_LyC]))
 
-    zeta_pi_H_Xray = -integrate.trapz(4.0*np.pi*r['ds']['Jnu'][:,idx_Xray]*\
+    zeta_pi_H_Xray = -integrate.trapezoid(4.0*np.pi*r['ds']['Jnu'][:,idx_Xray]*\
                                       sigma_pi_H_Xray/(E_Xray*au.eV).cgs.value,
                                       x=r['nu'][idx_Xray])
 
@@ -128,7 +128,7 @@ def read_FG20():
     E = np.linspace(6,13.6, 1000)*au.eV
     nuJnu_ISRF = nuJnu_Dr78(E)
     wav = (ac.h*ac.c/E).to('angstrom')
-    J_FUV_ISRF = integrate.trapz(nuJnu_ISRF, x=np.log((ac.c/wav).to('Hz').value))
+    J_FUV_ISRF = integrate.trapezoid(nuJnu_ISRF, x=np.log((ac.c/wav).to('Hz').value))
 
     r['ISRF_Dr'] = dict()
     r['ISRF_Dr']['E'] = E
