@@ -170,12 +170,12 @@ class SB99(object):
 
         # Time averaged energy, momentum injection rates \int_0^t q dt / \int_0^t dt
         for v in ('all', 'OB','RSG', 'LBV', 'WR'):
-            df['Edot_' + v + '_avg'] = cumtrapz(df['Edot_'+v], x=df['time_Myr'], initial=0.0)/\
-                    cumtrapz(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
-            df['pdot_' + v + '_avg'] = cumtrapz(df['pdot_'+v], x=df['time_Myr'], initial=0.0)/\
-                    cumtrapz(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
-            df['Edot_' + v + '_avg'].iloc[0] = df['Edot_' + v + '_avg'].iloc[1]
-            df['pdot_' + v + '_avg'].iloc[0] = df['pdot_' + v + '_avg'].iloc[1]
+            denom = cumtrapz(np.repeat(1.0,len(df['time_Myr'])), x=df['time_Myr'], initial=0.0)
+            denom[denom == 0] = np.nan
+            df['Edot_' + v + '_avg'] = cumtrapz(df['Edot_'+v], x=df['time_Myr'], initial=0.0) / denom
+            df['pdot_' + v + '_avg'] = cumtrapz(df['pdot_'+v], x=df['time_Myr'], initial=0.0) / denom
+            df.loc[0, 'Edot_' + v + '_avg'] = df['Edot_' + v + '_avg'].iloc[1]
+            df.loc[0, 'pdot_' + v + '_avg'] = df['pdot_' + v + '_avg'].iloc[1]
 
         # Move time to the first column
         cols = df.columns.tolist()
@@ -248,13 +248,13 @@ class SB99(object):
             idx4 = np.logical_and(wav <= wav4, wav > wav3) # IR
             idx5 = np.logical_and(wav <= wav2, wav > wav0) # FUV
 
-            L_tot.append(simps(10.0**(df_.logf - self.logM), df_.wav)/Lsun_cgs)
-            L_LyC.append(simps(10.0**(df_.logf[idx0] - self.logM), df_.wav[idx0])/Lsun_cgs)
-            L_LW.append(simps(10.0**(df_.logf[idx1] - self.logM), df_.wav[idx1])/Lsun_cgs)
-            L_PE.append(simps(10.0**(df_.logf[idx2] - self.logM), df_.wav[idx2])/Lsun_cgs)
-            L_OPT.append(simps(10.0**(df_.logf[idx3] - self.logM), df_.wav[idx3])/Lsun_cgs)
-            L_IR.append(simps(10.0**(df_.logf[idx4] - self.logM), df_.wav[idx4])/Lsun_cgs)
-            L_FUV.append(simps(10.0**(df_.logf[idx5] - self.logM), df_.wav[idx5])/Lsun_cgs)
+            L_tot.append(simps(10.0**(df_.logf - self.logM), x=df_.wav)/Lsun_cgs)
+            L_LyC.append(simps(10.0**(df_.logf[idx0] - self.logM), x=df_.wav[idx0])/Lsun_cgs)
+            L_LW.append(simps(10.0**(df_.logf[idx1] - self.logM), x=df_.wav[idx1])/Lsun_cgs)
+            L_PE.append(simps(10.0**(df_.logf[idx2] - self.logM), x=df_.wav[idx2])/Lsun_cgs)
+            L_OPT.append(simps(10.0**(df_.logf[idx3] - self.logM), x=df_.wav[idx3])/Lsun_cgs)
+            L_IR.append(simps(10.0**(df_.logf[idx4] - self.logM), x=df_.wav[idx4])/Lsun_cgs)
+            L_FUV.append(simps(10.0**(df_.logf[idx5] - self.logM), x=df_.wav[idx5])/Lsun_cgs)
 
             # wavelength in micron
             l = wav*1e-4
@@ -281,14 +281,14 @@ class SB99(object):
                     hnu[k] = []
 
             for k in w.keys():
-                Cext[k].append(simps(10.0**f_Cext(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], w[k])/ \
-                               simps(10.0**f_J(np.log10(w[k]))*w[k], w[k]))
-                Cabs[k].append(simps(10.0**f_Cabs(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], w[k])/ \
-                               simps(10.0**f_J(np.log10(w[k]))*w[k], w[k]))
-                Crpr[k].append(simps(10.0**f_Crpr(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], w[k])/ \
-                               simps(10.0**f_J(np.log10(w[k]))*w[k], w[k]))
-                hnu[k].append(simps(10.0**f_J(np.log10(w[k])), w[k])/ \
-                               simps(10.0**f_J(np.log10(w[k]))*w[k], w[k])*hc_cgs/(1.0*au.eV).cgs.value*1e4)
+                Cext[k].append(simps(10.0**f_Cext(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], x=w[k])/ \
+                               simps(10.0**f_J(np.log10(w[k]))*w[k], x=w[k]))
+                Cabs[k].append(simps(10.0**f_Cabs(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], x=w[k])/ \
+                               simps(10.0**f_J(np.log10(w[k]))*w[k], x=w[k]))
+                Crpr[k].append(simps(10.0**f_Crpr(np.log10(w[k]))*10.0**f_J(np.log10(w[k]))*w[k], x=w[k])/ \
+                               simps(10.0**f_J(np.log10(w[k]))*w[k], x=w[k]))
+                hnu[k].append(simps(10.0**f_J(np.log10(w[k])), x=w[k])/ \
+                               simps(10.0**f_J(np.log10(w[k]))*w[k], x=w[k])*hc_cgs/(1.0*au.eV).cgs.value*1e4)
 
         for k in w.keys():
             Cext[k] = np.array(Cext[k])
@@ -367,15 +367,15 @@ class SB99(object):
 
             Jl = 10.0**(df_.logf[idx0] - self.logM)
             l = df_[idx0].wav
-            int_Jl_dl = simps(Jl, l)
-            int_lJl_dl = simps(Jl*l, l)
-            int_sigma_H_lJl_dl = simps(Jl*l*sigma_pi_H_l, l)
-            int_sigma_H2_lJl_dl = simps(Jl*l*sigma_pi_H2_l, l)
+            int_Jl_dl = simps(Jl, x=l)
+            int_lJl_dl = simps(Jl*l, x=l)
+            int_sigma_H_lJl_dl = simps(Jl*l*sigma_pi_H_l, x=l)
+            int_sigma_H2_lJl_dl = simps(Jl*l*sigma_pi_H2_l, x=l)
             hnu_LyC.append(hc_cgs*1e8*int_Jl_dl/int_lJl_dl/eV_cgs)
             sigma_pi_H.append(int_sigma_H_lJl_dl/int_lJl_dl)
             sigma_pi_H2.append(int_sigma_H2_lJl_dl/int_lJl_dl)
-            dhnu_H_LyC.append(1e8*hc_cgs*simps(Jl*l*sigma_pi_H_l*(1/l - 1/l_th_H), l)/int_sigma_H_lJl_dl/eV_cgs)
-            dhnu_H2_LyC.append(1e8*hc_cgs*simps(Jl*l*sigma_pi_H2_l*(1/l - 1/l_th_H2), l)/int_sigma_H2_lJl_dl/eV_cgs)
+            dhnu_H_LyC.append(1e8*hc_cgs*simps(Jl*l*sigma_pi_H_l*(1/l - 1/l_th_H), x=l)/int_sigma_H_lJl_dl/eV_cgs)
+            dhnu_H2_LyC.append(1e8*hc_cgs*simps(Jl*l*sigma_pi_H2_l*(1/l - 1/l_th_H2), x=l)/int_sigma_H2_lJl_dl/eV_cgs)
 
         dhnu_H_LyC = np.array(dhnu_H_LyC)
         dhnu_H2_LyC = np.array(dhnu_H2_LyC)
@@ -402,28 +402,32 @@ class SB99(object):
         for kk in ['L','Q']:
             r[kk+'_avg'] = dict()
             for k in r[kk].keys():
-                r[kk+'_avg'][k] = cumtrapz(r[kk][k], x=r['time_Myr'], initial=0.0)/\
-                                cumtrapz(np.repeat(1.0,len(r['time_Myr'])), x=r['time_Myr'], initial=0.0)
+                denom = cumtrapz(np.repeat(1.0, len(r['time_Myr'])), x=r['time_Myr'], initial=0.0)
+                denom[denom == 0] = np.nan
+                r[kk+'_avg'][k] = cumtrapz(r[kk][k], x=r['time_Myr'], initial=0.0) / denom
                 r[kk+'_avg'][k][0] = r[kk+'_avg'][k][1]
 
         for kk in ['hnu','Cabs','Cext','Crpr']:
             r[kk+'_Lavg'] = dict()
             for k in r[kk].keys():
-                r[kk+'_Lavg'][k] = cumtrapz(r[kk][k]*r['L'][k], x=r['time_Myr'], initial=0.0)/\
-                                cumtrapz(r['L'][k], x=r['time_Myr'], initial=0.0)
+                denom = cumtrapz(r['L'][k], x=r['time_Myr'], initial=0.0)
+                denom[denom == 0] = np.nan
+                r[kk+'_Lavg'][k] = cumtrapz(r[kk][k]*r['L'][k], x=r['time_Myr'], initial=0.0) / denom
                 r[kk+'_Lavg'][k][0] = r[kk+'_Lavg'][k][1]
 
         for kk in ['hnu','Cabs','Cext','Crpr']:
             r[kk+'_Qavg'] = dict()
             for k in r[kk].keys():
-                r[kk+'_Qavg'][k] = cumtrapz(r[kk][k]*r['Q'][k], x=r['time_Myr'], initial=0.0)/\
-                                cumtrapz(r['Q'][k], x=r['time_Myr'], initial=0.0)
+                denom = cumtrapz(r['Q'][k], x=r['time_Myr'], initial=0.0)
+                denom[denom == 0] = np.nan
+                r[kk+'_Qavg'][k] = cumtrapz(r[kk][k]*r['Q'][k], x=r['time_Myr'], initial=0.0) / denom
                 r[kk+'_Qavg'][k][0] = r[kk+'_Qavg'][k][1]
 
         # Q-weighted average for quantities related to ionizing radiation
         for k in ['dhnu_H_LyC','dhnu_H2_LyC','sigma_pi_H','sigma_pi_H2']:
-            r[k+'_Qavg'] = cumtrapz(r[k]*r['Q']['LyC'], x=r['time_Myr'], initial=0.0)/\
-                cumtrapz(r['Q']['LyC'], x=r['time_Myr'], initial=0.0)
+            denom = cumtrapz(r['Q']['LyC'], x=r['time_Myr'], initial=0.0)
+            denom[denom == 0] = np.nan
+            r[k+'_Qavg'] = cumtrapz(r[k]*r['Q']['LyC'], x=r['time_Myr'], initial=0.0) / denom
             r[k+'_Qavg'][0] = r[k+'_Qavg'][1]
 
         return r
