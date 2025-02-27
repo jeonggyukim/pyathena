@@ -21,13 +21,22 @@ class PopSynthMIST(object):
     urls = {
         'EEPS_v1.2_vvcrit0.4_feh_m4.00_afe_p0.0':
         'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_m4.00_afe_p0.0_vvcrit0.4_EEPS.txz',
-        'EEPS_v1.2_vvcrit0.4_feh_m3.50_afe_p0.0':
-        'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_m3.50_afe_p0.0_vvcrit0.4_EEPS.txz',
         'EEPS_v1.2_vvcrit0.4_feh_m3.00_afe_p0.0':
-        'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_m3.00_afe_p0.0_vvcrit0.4_EEPS.txz'
+        'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_m3.00_afe_p0.0_vvcrit0.4_EEPS.txz',
+        'EEPS_v1.2_vvcrit0.4_feh_m2.00_afe_p0.0':
+        'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_m2.00_afe_p0.0_vvcrit0.4_EEPS.txz',
+        'EEPS_v1.2_vvcrit0.4_feh_m1.00_afe_p0.0':
+        'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_m1.00_afe_p0.0_vvcrit0.4_EEPS.txz',
+        'EEPS_v1.2_vvcrit0.4_feh_p0.00_afe_p0.0':
+        'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_p0.00_afe_p0.0_vvcrit0.4_EEPS.txz',
+        'EEPS_v1.2_vvcrit0.4_feh_p0.50_afe_p0.0':
+        'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_p0.50_afe_p0.0_vvcrit0.4_EEPS.txz',
+        # Non-rotating models
+        'EEPS_v1.2_vvcrit0.0_feh_p0.00_afe_p0.0':
+        'https://waps.cfa.harvard.edu/MIST/data/tarballs_v1.2/MIST_v1.2_feh_p0.00_afe_p0.0_vvcrit0.0_EEPS.txz',
     }
 
-    def __init__(self, rootdir=None, model='feh_m3.00_afe_p0.0_vvcrit0.4', force_download=False):
+    def __init__(self, rootdir=None, model='feh_p0.00_afe_p0.0_vvcrit0.0', force_download=False):
         if rootdir is None:
             rootdir = Path(__file__).parent.absolute() / '../../data/pop_synth/mist'
             if not rootdir.is_dir():
@@ -39,9 +48,9 @@ class PopSynthMIST(object):
             message = f'Downloading {k} from MESA Isochrones & Stellar Tracks.\n'\
                 'https://waps.cfa.harvard.edu/MIST/model_grids.html'
             fname = self.rootdir / url.split('/')[-1]
-#            if fname.with_suffix('').exists():
-
             if not force_download:
+                if model not in url:
+                    continue
                 if not fname.with_suffix('').exists():
                     force_download = True
                 elif not is_valid_txz(fname):
@@ -53,7 +62,6 @@ class PopSynthMIST(object):
                 self.extract_one(fname, self.rootdir, delete_txz=False)
 
         self._find_models_and_dirs()
-        print(self.models)
         self.set_model(model)
 
     @staticmethod
@@ -86,7 +94,7 @@ class PopSynthMIST(object):
             self.set_model(model)
 
         d = self.df.loc[(self.df['M'] - M).abs().idxmin()]
-        eep = EEP(d['fname'].as_posix(), verbose=True)
+        eep = EEP(d['fname'].as_posix(), verbose=False)
         if as_pandas:
             return pd.DataFrame(eep.eeps)
         else:
