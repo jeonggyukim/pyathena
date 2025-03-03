@@ -66,13 +66,13 @@ def expand_x(sim, data):
             # shift for the left
             shifts = np.zeros(ndims)
             shifts[yidx] = qOmLt / dy
-            shifted_L = shift(data_left[var].data, shifts, mode="grid-wrap", order=1)
+            shifted_L = shift(data_left[var].data, shifts, mode="grid-wrap", order=2)
             # shift for the right
             shifts = np.zeros(ndims)
             shifts[yidx] = -qOmLt / dy
-            shifted_R = shift(data_right[var].data, shifts, mode="grid-wrap", order=1)
+            shifted_R = shift(data_right[var].data, shifts, mode="grid-wrap", order=2)
             # add shear velocity
-            if var == "vy":
+            if var in ["vy","velocity2"]:
                 shifted_L += qOmL
                 shifted_R -= qOmL
             # update L/R data
