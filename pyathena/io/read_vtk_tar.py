@@ -11,6 +11,9 @@ import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
 import tarfile
+import dask
+import dask.array as da
+
 from .read_vtk import AthenaDataSet,_parse_filename,_vtk_parse_line
 
 from ..util.units import Units
@@ -35,7 +38,6 @@ def read_vtk_tar(filename, id0_only=False):
     return AthenaDataSetTar(filename, id0_only=id0_only)
 
 class AthenaDataSetTar(AthenaDataSet):
-
     def __init__(self, filename, id0_only=False, units=Units(), dfi=None):
         """Class to read athena vtk file.
 
@@ -133,6 +135,113 @@ class AthenaDataSetTar(AthenaDataSet):
             ranklist.append(rank)
         return list(np.array(grid)[np.argsort(ranklist)])
 
+    def get_field_dask(self, field_list=None, le=None, re=None, chunksize=(64,64,64)):
+        """Lazy Read 3d fields data using Dask
+
+        Parameters
+        ----------
+        le : sequence of floats
+           Left edge. Default value is the domain left edge.
+        re : sequence of floats
+           Right edge. Default value is the domain right edge.
+        chunksize : tuple of int, optional
+            Dask chunk size along (x, y, z) directions. Default is (512, 512, 512).
+        Returns
+        -------
+        dat : xarray dataset
+            An xarray dataset containing fields.
+        """
+
+        self.set_region(le=le, re=re)
+
+        if field_list is None:
+            field_list = self.field_list
+        dall = self._get_array_dask(field_list,chunksize)
+
+        # save as xarray dataset
+        # Cell center positions
+        coords = dict()
+        for axis, le, re, dx in zip(('x', 'y', 'z'), \
+                self.region['gle'], self.region['gre'], self.domain['dx']):
+            # May not result in correct number of elements due to truncation error
+            # x[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)
+            coords[axis] = np.arange(le + 0.5*dx, re + 0.25*dx, dx)
+
+        dat = dict()
+        for k, v in dall.items():
+            if len(v.shape) > self.domain['ndim']:
+                for i in range(v.shape[0]):
+                    dat[k + str(i+1)] = (('z','y','x'), v[i,...])
+            else:
+                dat[k] = (('z','y','x'), v)
+
+        attrs = dict()
+        for k, v in self.domain.items():
+            attrs[k] = v
+            attrs['num'] = self.num
+        dset = xr.Dataset(dat, coords=coords, attrs=attrs)
+
+        return dset
+
+    def _get_array_dask(self,field_list,chunksize):
+        # Read Mesh information
+        block_size = self.grid[0]["Nx"]
+        mesh_size = self.domain["Nx"]
+        num_blocks = mesh_size // block_size  # Assuming uniform grid
+
+        if num_blocks.prod() != self.domain["ngrid"]:
+            raise ValueError("Number of blocks does not match the attribute")
+
+        dall = dict()
+        for field in field_list:
+            fm = self.grid[0]['field_map'][field]
+            vector = fm["nvar"] > 1
+            if vector:
+                reordered = np.empty((fm["nvar"],*num_blocks[::-1]), dtype=object)
+            else:
+                reordered = np.empty(num_blocks[::-1], dtype=object)
+
+            for gid in self.region["gidx"]:
+                grid = self.grid[gid]
+                fp = self.tarfile.extractfile(grid['tarinfo'])
+                fp.seek(fm['offset'])
+                fp.readline() # skip header
+                if fm['read_table']:
+                    fp.readline()
+                arr = readarr(fp, block_size, fm)
+                if vector:
+                    arr_shape = (*block_size, fm["nvar"])
+                else:
+                    arr_shape = block_size
+                x = da.from_delayed(arr, shape = arr_shape, dtype=fm["dtype"])
+                lx1,lx2,lx3 = np.array((grid["le"]-self.domain["le"])/
+                                       (self.domain["dx"]*grid["Nx"]),
+                                       dtype=int)
+                if vector:
+                    for i in range(fm["nvar"]):
+                        reordered[i, lx3, lx2, lx1] = x[...,i]
+                else:
+                    reordered[lx3, lx2, lx1] = x
+            if vector:
+                data = da.block(reordered.tolist()).rechunk((1,*chunksize))
+            else:
+                data = da.block(reordered.tolist()).rechunk(chunksize)
+            dall[field] = data
+        return dall
+
+@dask.delayed
+def readarr(fp,shape,field_map):
+    """read binary output lazily"""
+    dsize = field_map["dsize"]
+    dtype = field_map["dtype"]
+    arr = (np.frombuffer(buffer=fp.read(dsize),dtype=dtype)).newbyteorder()
+    if field_map['nvar'] == 1:
+        shape = np.flipud(shape)
+    else:
+        shape = (*np.flipud(shape), field_map['nvar'])
+    arr.shape = shape
+
+    return arr
 
 def _set_field_map(grid,tf):
     fp = tf.extractfile(grid['tarinfo'])
