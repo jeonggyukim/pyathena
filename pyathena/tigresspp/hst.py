@@ -59,12 +59,29 @@ class Hst:
 
         # Total gas mass in Msun
         h["mass"] = hst["mass"] * u.Msun
+        # sink mass history list
+        for head in ["msink","mstar"]:
+            for tail in ["","_old","10","40","100"]:
+                mf = f"{head}{tail}"
+                if mf in hst:
+                    h[mf] = hst[mf] * u.Msun
+                    h[f"Sigma_{mf}"] = h[mf] / (LxLy * u.pc**2)
         if "p0m" in hst:
             h["mass_sp"] = hst["p0m"] * u.Msun
             h["Sigma_sp"] = h["mass_sp"] / (LxLy * u.pc**2)
             if "msp_removed" in hst:
                 h["mass_sp_rm"] = hst["msp_removed"] * u.Msun
                 h["Sigma_sp_rm"] = h["mass_sp_rm"] / (LxLy * u.pc**2)
+            if "msp_star_removed" in hst:
+                h["mass_sp_rm"] = hst["msp_removed"] * u.Msun
+                h["Sigma_sp_rm"] = h["mass_sp_rm"] / (LxLy * u.pc**2)
+                h["mass_star_rm"] = hst["msp_star_removed"] * u.Msun
+                h["Sigma_star_rm"] = h["mass_star_rm"] / (LxLy * u.pc**2)
+                h["mass_sink_rm"] = hst["msp_removed"] * u.Msun
+                h["Sigma_sink_rm"] = h["mass_sink_rm"] / (LxLy * u.pc**2)
+        if "2scalar" in hst:
+            h["mass_return"] = hst["2scalar"] * u.Msun
+            h["Sigma_return"] = h["mass_return"] / (LxLy * u.pc**2)
         if "mass_loss_upper" in hst:
             h["mass_out"] = (hst["mass_loss_upper"]-hst["mass_loss_lower"]) * u.Msun
             h["Sigma_out"] = h["mass_out"] / (LxLy * u.pc**2)
@@ -104,10 +121,17 @@ class Hst:
         h["cs"] = np.sqrt(h["TE"] / hst["mass"]) * u.kms
 
         # Star formation rate per area [Msun/kpc^2/yr]
-        h["sfr10"] = hst["sfr10"]
-        h["sfr40"] = hst["sfr40"]
+        if "sfr10" in hst:
+            h["sfr10"] = hst["sfr10"]
+            h["sfr40"] = hst["sfr40"]
+        elif "mstar10" in hst:
+            h["sfr10"] = h["mstar10"]/(LxLy * u.pc**2)/10
+            h["sfr40"] = h["mstar40"].copy()/(LxLy * u.pc**2)/40
+
         if "SFUV" in h:
             h["SFUV"] = hst["SFUV"]  # L_sun/pc^2
+        elif "LFUV" in h:
+            h["SFUV"] = h["LFUV"].copy()/(LxLy * u.pc**2)  # L_sun/pc^2
         if "heat_ratio" in h:
             h["heat_ratio"] = hst["heat_ratio"]  # L_sun/pc^2
 
@@ -167,10 +191,15 @@ class Hst:
         axes = axes.flatten()
         plt.sca(axes[0])
         plt.plot(h["time"], h["Sigma_gas"], label="gas")
-        if "Sigma_sp" in h:
-            plt.plot(h["time"], h["Sigma_sp"], label="sink")
-        if "Sigma_sp" in h:
-            plt.plot(h["time"], h["Sigma_sp"]+h["Sigma_sp_rm"], label="sink,total")
+        if "Sigma_msink" in h:
+            plt.plot(h["time"], h["Sigma_msink"], label="sink")
+        else:
+            if "Sigma_sp" in h:
+                plt.plot(h["time"], h["Sigma_sp"], label="sink")
+            if "Sigma_sp_rm" in h:
+                plt.plot(h["time"], h["Sigma_sp"]+h["Sigma_sp_rm"], label="sink,total")
+        if "Sigma_mstar" in h:
+            plt.plot(h["time"], h["Sigma_mstar"], label="star")
         if "Sigma_out" in h:
             plt.plot(h["time"], h["Sigma_out"], label="out")
         plt.ylabel(r"$\Sigma$")
@@ -196,8 +225,14 @@ class Hst:
         if "mass_loss_upper" in h:
             dm = h["mass"]-h["mass"][0]
             mloss = h["mass_out"]
-            dmsp = h["mass_sp"] - h["mass_sp"][0]
-            dmsp_removed = h["mass_sp_rm"]
+            if "msink" in h:
+                dmsp = h["msink"] - h["msink"][0]
+            else:
+                dmsp = h["mass_sp"] - h["mass_sp"][0]
+            if "mass_sp_rm" in h:
+                dmsp_removed = h["mass_sp_rm"]
+            else:
+                dmsp_removed = np.zeros_like(h["time"])
             mtot = h["mass"][0]
 
             plt.sca(axes[3])
