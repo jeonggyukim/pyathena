@@ -196,8 +196,12 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
                 mu = interp1d(cooltbl["logT1"], cooltbl["mu"], fill_value="extrapolate")
                 self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
                 self.dfi["T"] = self.temperature_dfi()
+                self.dfi["pokCRsinj"] = self.pokCRscalar_inj_dfi()
+                self.dfi["pokCRs"] = self.pokCRscalar_dfi()
+                self.dfi["pokCR"] = self.pokCR_dfi()
 
-            if self.par["feedback"]["pop_synth"] == "KO17":
+
+            if self.par["feedback"]["pop_synth"] == "SB99":
                 # pop_synth_file1 = osp.join(basedir,self.par["feedback"]["pop_synth_file"])
                 pop_synth_file2 = osp.join(basedir, "pop_synth.runtime.csv")
                 if osp.isfile(pop_synth_file2):
@@ -311,11 +315,11 @@ class LoadSimTIGRESSPP(LoadSim, Hst, SliceProj, Fields, Timing):
     def load_parcsv(self):
         par_pattern = osp.join(self.basedir, f"{self.problem_id}.par*.csv")
         self.files["parcsv"] = glob.glob(par_pattern)
-        self.num_parcsv = sorted(
+        self.nums_parcsv = sorted(
             [int(f[f.rfind(".par") + 4 : -4]) for f in self.files["parcsv"]]
         )
         parlist = []
-        for i in self.num_parcsv:
+        for i in self.nums_parcsv:
             parname = osp.join(self.basedir, f"TIGRESS.par{i}.csv")
             par = pd.read_csv(parname)
             parlist.append(par)

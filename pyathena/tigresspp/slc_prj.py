@@ -31,7 +31,11 @@ cmap_def = dict(
     Erad_LyC=plt.cm.viridis,
     xi_CR=plt.cm.viridis,
     Bmag=plt.cm.cividis,
-    rmetal=plt.cm.cool,
+    rmetal=plt.cm.bone_r,
+    rCR=plt.cm.bone_r,
+    pokCRs=plt.cm.plasma,
+    pokCR=plt.cm.plasma,
+    rret=plt.cm.cool,
     rSN=plt.cm.cool,
 )
 
@@ -50,6 +54,10 @@ norm_def = dict(
     xi_CR=LogNorm(5e-17, 1e-15),
     Bmag=LogNorm(1.0e-2, 1.0e2),
     rmetal=LogNorm(0.01,0.2),
+    rCR=LogNorm(1.e2,1.e8),
+    pokCRs=LogNorm(1.e2,1.e6),
+    pokCR=LogNorm(1.e2,1.e6),
+    rret=Normalize(0,1),
     rSN=Normalize(0,1)
 )
 
@@ -284,14 +292,17 @@ class SliceProj:
 def plt_snapshot(
     sim,
     num,
-    fields_xy=["Sigma_gas", "T", "pok", "nH", "Bmag", "rmetal"],
+    fields_xy=["Sigma_gas", "T", "pok", "pokCR", "nH", "Bmag", "rmetal", "rSN"],
     fields_xz=[
         "Sigma_gas",
         "nH",
         "T",
         "vz",
         "Bmag",
-        "rmetal"
+        "pok",
+        "pokCR",
+        "rmetal",
+        "rSN"
     ],
     xwidth=2,
     norm_factor=5.0,
@@ -345,7 +356,10 @@ def plt_snapshot(
         xi_CR=r"$\xi_{\rm CR}$",
         Bmag=r"$|B|$",
         rmetal=r"$Z$",
-        rSN=r"$f_{\rm SN}$"
+        rret=r"$f_{\rm ret}$",
+        rSN=r"$f_{\rm SN}$",
+        pokCRs=r"$P_{\rm CR,s}/k_B$",
+        pokCR=r"$P_{\rm CR}/k_B$"
     )
 
     kind = dict(
@@ -363,7 +377,10 @@ def plt_snapshot(
         xi_CR="slc",
         Bmag="slc",
         rmetal="slc",
-        rSN="slc"
+        rret="slc",
+        rSN="slc",
+        pokCRs="slc",
+        pokCR="slc"
     )
     nxy = len(fields_xy)
     nxz = len(fields_xz)
