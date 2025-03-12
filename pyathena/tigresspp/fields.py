@@ -41,6 +41,34 @@ class Fields:
 
         return mydfi
 
+    def pokCR_dfi(self):
+        mydfi = dict()
+        mydfi["field_dep"] = ["0-Ec"]
+        gamma=4/3.
+
+        def _pokCR(d, u):
+            return d["0-Ec"]*(gamma-1)*(u.energy_density/ac.k_B).cgs.value
+
+        mydfi["func"] = _pokCR
+        mydfi["label"] = r'$P_{\rm CR}/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+        mydfi["cmap"] = 'inferno'
+        mydfi["vminmax"] = (1e2, 1e7)
+        mydfi["take_log"] = True
+
+        if mydfi["take_log"]:
+            mydfi["norm"] = LogNorm(*mydfi["vminmax"])
+            mydfi["scale"] = "log"
+        else:
+            mydfi["norm"] = Normalize(*mydfi["vminmax"])
+            mydfi["scale"] = "linear"
+        mydfi["imshow_args"] = dict(
+            norm=mydfi["norm"],
+            cmap=mydfi["cmap"],
+            cbar_kwargs=dict(label=mydfi["label"]),
+        )
+
+        return mydfi
+
     def pokCRscalar_inj_dfi(self):
         mydfi = dict()
         mydfi["field_dep"] = ["density", "rCR"]
@@ -79,34 +107,6 @@ class Fields:
         mydfi["label"] = r'$P_{\rm CR}/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
         mydfi["cmap"] = 'inferno'
         mydfi["vminmax"] = (1e2,1e7)
-        mydfi["take_log"] = True
-
-        if mydfi["take_log"]:
-            mydfi["norm"] = LogNorm(*mydfi["vminmax"])
-            mydfi["scale"] = "log"
-        else:
-            mydfi["norm"] = Normalize(*mydfi["vminmax"])
-            mydfi["scale"] = "linear"
-        mydfi["imshow_args"] = dict(
-            norm=mydfi["norm"],
-            cmap=mydfi["cmap"],
-            cbar_kwargs=dict(label=mydfi["label"]),
-        )
-
-        return mydfi
-
-    def pokCR_dfi(self):
-        mydfi = dict()
-        mydfi["field_dep"] = ["0-Ec"]
-        gamma=4/3.
-
-        def _pokCR(d, u):
-            return d["0-Ec"]*(gamma-1)*(u.energy_density/ac.k_B).cgs.value
-
-        mydfi["func"] = _pokCR
-        mydfi["label"] = r'$P_{\rm CR}/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
-        mydfi["cmap"] = 'inferno'
-        mydfi["vminmax"] = (1e2, 1e7)
         mydfi["take_log"] = True
 
         if mydfi["take_log"]:
