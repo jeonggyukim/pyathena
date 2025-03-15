@@ -10,7 +10,7 @@ import h5py
 from .athena_read import athdf
 
 
-def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
+def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, raw=False, **kwargs):
     """Read Athena hdf5 file and convert it to xarray Dataset
 
     Parameters
@@ -23,6 +23,9 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
         If provided, used to load the data into dask arrays.
     num_ghost : int, optional
         Number of ghost zones in the output. Default is 0.
+    raw : bool, optional
+        If True, do not merge MeshBlocks. The return data structure
+        depends on whether `chunks` is provided or not.
     **kwargs : dict, optional
         Extra arguments passed to athdf. Refer to athdf documentation for
         a list of all possible arguments.
@@ -48,7 +51,8 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
     """
     if chunks is not None:
         return read_hdf5_dask(
-            filename, (chunks["x"], chunks["y"], chunks["z"]), num_ghost=num_ghost
+            filename, (chunks['x'], chunks['y'], chunks['z']),
+            num_ghost=num_ghost, raw=raw,
         )
     else:
         if header_only:
@@ -58,7 +62,7 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
                     data[str(key)] = f.attrs[key]
                 return data
 
-        ds = athdf(filename, num_ghost=num_ghost, **kwargs)
+        ds = athdf(filename, num_ghost=num_ghost, raw=raw, **kwargs)
 
         # Convert to xarray object
         possibilities = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
@@ -81,8 +85,7 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
         )
         return ds
 
-
-def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
+def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0, raw=False):
     """Read Athena++ hdf5 file and convert it to dask-xarray Dataset
 
     Parameters
@@ -93,6 +96,9 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
         Dask chunk size along (x, y, z) directions. Default is (512, 512, 512).
     num_ghost : int, optional
         Number of ghost zones in the output. Default is 0.
+    raw : bool, optional
+        If True, do not merge MeshBlocks and return a dask array with the shape
+        [nvar, nblocks, z, y, x].
     """
     f = h5py.File(filename, 'r')
 
@@ -103,6 +109,7 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
     block_size_noghost = block_size - np.array([num_ghost*2]*3)
     mesh_size = f.attrs['RootGridSize']
     num_blocks = mesh_size // block_size_noghost  # Assuming uniform grid
+    varnames = list(map(lambda x: x.decode('ASCII'), f.attrs['VariableNames']))
 
     if num_blocks.prod() != f.attrs['NumMeshBlocks']:
         raise ValueError("Number of blocks does not match the attribute")
@@ -119,6 +126,7 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
     nblock_per_chunk = np.array(chunksize) // block_size_noghost
     chunksize_read = (1, nblock_per_chunk.prod(), *block_size)
 
+
     # lazy load from HDF5
     ds = []
     for dsetname in f.attrs['DatasetNames']:
@@ -131,6 +139,8 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
             # Expected shape: (nvar, nblock, z, y, x)
             raise ValueError("Invalid shape of the dataset")
         ds += [var for var in darr]
+    if raw:
+        return dict(zip(varnames, ds))
 
     def _reorder_rechunk(var):
         """
@@ -148,7 +158,6 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
     ds = list(map(_reorder_rechunk, ds))
 
     # Convert to xarray object
-    varnames = list(map(lambda x: x.decode('ASCII'), f.attrs['VariableNames']))
     variables = [(['z', 'y', 'x'], d) for d in ds]
     coordnames = ['x1v', 'x2v', 'x3v']
 
