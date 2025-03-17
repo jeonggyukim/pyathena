@@ -21,6 +21,8 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
         Flag to read only attributes, not data.
     chunks : (dict or None), default: None
         If provided, used to load the data into dask arrays.
+    num_ghost : int, optional
+        Number of ghost zones in the output. Default is 0.
     **kwargs : dict, optional
         Extra arguments passed to athdf. Refer to athdf documentation for
         a list of all possible arguments.
@@ -56,7 +58,7 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
                     data[str(key)] = f.attrs[key]
                 return data
 
-        ds = athdf(filename, **kwargs)
+        ds = athdf(filename, num_ghost=num_ghost, **kwargs)
 
         # Convert to xarray object
         possibilities = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
