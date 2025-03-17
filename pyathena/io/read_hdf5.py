@@ -85,15 +85,15 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, raw=False, 
         )
         return ds
 
-def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0, raw=False):
+def read_hdf5_dask(filename, chunksize, num_ghost=0, raw=False):
     """Read Athena++ hdf5 file and convert it to dask-xarray Dataset
 
     Parameters
     ----------
     filename : str
         Data filename
-    chunksize : tuple of int, optional
-        Dask chunk size along (x, y, z) directions. Default is (512, 512, 512).
+    chunksize : tuple of int
+        Dask chunk size along (x, y, z) directions.
     num_ghost : int, optional
         Number of ghost zones in the output. Default is 0.
     raw : bool, optional
