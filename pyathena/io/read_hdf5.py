@@ -88,6 +88,10 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, raw=False, 
 def read_hdf5_dask(filename, chunksize, num_ghost=0, raw=False):
     """Read Athena++ hdf5 file and convert it to dask-xarray Dataset
 
+    In most cases, this function is not needed to be called directly. Instead,
+    use `read_hdf5` with `chunks` argument. This function is used internally
+    by `read_hdf5` to read data into dask array.
+
     Parameters
     ----------
     filename : str
