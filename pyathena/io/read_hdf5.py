@@ -89,6 +89,8 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
         Data filename
     chunksize : tuple of int, optional
         Dask chunk size along (x, y, z) directions. Default is (512, 512, 512).
+    num_ghost : int, optional
+        Number of ghost zones in the output. Default is 0.
     """
     f = h5py.File(filename, 'r')
 
