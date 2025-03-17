@@ -9,7 +9,8 @@ import h5py
 
 from .athena_read import athdf
 
-def read_hdf5(filename, header_only=False, chunks=None, **kwargs):
+
+def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
     """Read Athena hdf5 file and convert it to xarray Dataset
 
     Parameters
@@ -44,7 +45,9 @@ def read_hdf5(filename, header_only=False, chunks=None, **kwargs):
     >>> ds = read_hdf5(s.files['hdf5']['prim'][30])
     """
     if chunks is not None:
-        return read_hdf5_dask(filename, (chunks['x'], chunks['y'], chunks['z']))
+        return read_hdf5_dask(
+            filename, (chunks["x"], chunks["y"], chunks["z"]), num_ghost=num_ghost
+        )
     else:
         if header_only:
             with h5py.File(filename, 'r') as f:
@@ -76,7 +79,8 @@ def read_hdf5(filename, header_only=False, chunks=None, **kwargs):
         )
         return ds
 
-def read_hdf5_dask(filename, chunksize=(512, 512, 512)):
+
+def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
     """Read Athena++ hdf5 file and convert it to dask-xarray Dataset
 
     Parameters
@@ -88,10 +92,13 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512)):
     """
     f = h5py.File(filename, 'r')
 
+    if num_ghost == 0 and np.array(f["x1v"]).min() < f.attrs["RootGridX1"][0]:
+        raise RuntimeError('Ghost zones detected but "num_ghost" keyword set to zero.')
     # Read Mesh information
     block_size = f.attrs['MeshBlockSize']
+    block_size_noghost = block_size - np.array([num_ghost*2]*3)
     mesh_size = f.attrs['RootGridSize']
-    num_blocks = mesh_size // block_size  # Assuming uniform grid
+    num_blocks = mesh_size // block_size_noghost  # Assuming uniform grid
 
     if num_blocks.prod() != f.attrs['NumMeshBlocks']:
         raise ValueError("Number of blocks does not match the attribute")
@@ -105,13 +112,17 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512)):
     logical_loc = f['LogicalLocations']
 
     # Number of MeshBlocks per chunk along each dimension.
-    nblock_per_chunk = np.array(chunksize) // block_size
+    nblock_per_chunk = np.array(chunksize) // block_size_noghost
     chunksize_read = (1, nblock_per_chunk.prod(), *block_size)
 
     # lazy load from HDF5
     ds = []
     for dsetname in f.attrs['DatasetNames']:
         darr = da.from_array(f[dsetname], chunks=chunksize_read)
+        if num_ghost > 0:
+            darr = darr[
+                :, :, num_ghost:-num_ghost, num_ghost:-num_ghost, num_ghost:-num_ghost
+            ]
         if len(darr.shape) != 5:
             # Expected shape: (nvar, nblock, z, y, x)
             raise ValueError("Invalid shape of the dataset")
@@ -128,6 +139,7 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512)):
             reordered[lx3, lx2, lx1] = var[gid, ...]  # Assign the correct block
         # Merge into a single array
         return da.block(reordered.tolist()).rechunk(chunksize)
+
     # Apply the rechunking function to all variables
     ds = list(map(_reorder_rechunk, ds))
 
@@ -143,9 +155,13 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512)):
         coords[xv] = np.empty(mesh_size[i])
         for n_block in range(nrbx):
             sample_block = np.where(logical_loc[:, i] == n_block)[0][0]
-            index_low = n_block * block_size[i]
-            index_high = index_low + block_size[i]
-            coords[xv][index_low:index_high] = f[xv][sample_block, :]
+            index_low = n_block * block_size_noghost[i]
+            index_high = index_low + block_size_noghost[i]
+            if num_ghost > 0:
+                coord_ = f[xv][sample_block, :][num_ghost:-(num_ghost)]
+            else:
+                coord_ = f[xv][sample_block, :]
+            coords[xv][index_low:index_high] = coord_
 
     # If uniform grid, store cell spacing.
     attrs = dict(f.attrs)
