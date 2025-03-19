@@ -7,6 +7,17 @@ from ..load_sim import LoadSim
 
 base_path = osp.dirname(__file__)
 
+cpp_to_cc = {
+    "rho": "density",
+    "press": "pressure",
+    "vel1": "velocity1",
+    "vel2": "velocity2",
+    "vel3": "velocity3",
+    "Bcc1": "cell_centered_B1",
+    "Bcc2": "cell_centered_B2",
+    "Bcc3": "cell_centered_B3",
+}
+
 class LoadSimTIGRESSPP(LoadSim):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
 
@@ -128,6 +139,10 @@ class LoadSimTIGRESSPP(LoadSim):
                             chunks=dict(x=mb["nx1"], y=mb["nx2"], z=mb["nx3"]))
         if "press" in ds:
             self.add_temperature(ds)
+        # rename the variables to match athena convention so that we can use
+        # the same derived fields as in athena
+        rename_dict = {k: v for k, v in cpp_to_cc.items() if k in ds}
+        ds = ds.rename(rename_dict)
         slc = ds.sel(**slc_kwargs)
         slc.attrs = dict(time=ds.attrs["Time"])
         return slc

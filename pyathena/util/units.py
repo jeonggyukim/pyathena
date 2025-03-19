@@ -104,6 +104,7 @@ class Units(object):
         self.momentum_flux = (self.density*self.velocity**2
                               ).to('Msun km s-1 kpc-2 yr-1')
         self.energy_flux = (self.density*self.velocity**3).to('erg kpc-2 yr-1')
+        self.temperature_mu = (self.pressure/self.density*mH/ac.k_B.cgs).to("K")
 
         # Define (physical constants in code units)^-1
         #
