@@ -938,6 +938,64 @@ class LoadSim(LoadSimBase):
 
             return wrapper
 
+        def check_netcdf(read_func):
+            @functools.wraps(read_func)
+            def wrapper(cls, *args, **kwargs):
+
+                # Convert positional args to keyword args
+                from inspect import getcallargs
+                call_args = getcallargs(read_func, cls, *args, **kwargs)
+                call_args.pop('self')
+                kwargs = call_args
+
+                try:
+                    prefix = kwargs['prefix']
+                except KeyError:
+                    print("previs must be provided")
+
+                if kwargs['savdir'] is not None:
+                    savdir = kwargs['savdir']
+                else:
+                    savdir = osp.join(cls.savdir, prefix)
+
+                force_override = kwargs['force_override']
+
+                # Create savdir if it doesn't exist
+                try:
+                    if not osp.exists(savdir):
+                        force_override = True
+                        os.makedirs(savdir)
+                except FileExistsError:
+                    print('Directory exists: {0:s}'.format(savdir))
+                except PermissionError as e:
+                    print('Permission Error: ', e)
+
+                if 'num' in kwargs:
+                    fnetcdf = osp.join(savdir, '{0:s}.{1:05d}.nc'.format(prefix, kwargs['num']))
+                else:
+                    fnetcdf = osp.join(savdir, '{0:s}.nc'.format(prefix))
+
+                if not force_override and osp.exists(fnetcdf):
+                    cls.logger.info('Read from existing netcdf: {0:s}'.format(fnetcdf))
+                    with xr.open_dataset(fnetcdf) as fb:
+                        res = fb.load()
+                    return res
+                else:
+                    cls.logger.info('[check_netcdf]: Read original dump.')
+                    # If we are here, force_override is True or history file is updated.
+                    res = read_func(cls, **kwargs)
+
+                    # Delete file first
+                    if osp.exists(fnetcdf):
+                        os.remove(fnetcdf)
+                    try:
+                        res.to_netcdf(fnetcdf)
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('Could not create {0:s}.'.format(fnetcdf))
+                    return res
+
+            return wrapper
+
         def check_pickle_hst(read_hst):
 
             @functools.wraps(read_hst)
