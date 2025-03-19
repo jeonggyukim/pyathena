@@ -21,21 +21,21 @@ def print_red(txt):
 
 
 # recalculate PDFs with finer bins
-def recal_nP(dchunk, xf="nH", yf="pok", NCR=True, Nx=601, Ny=501):
+def recal_nP(dchunk, xf="nH", yf="pok", NCR=True, wlist_extra=[], Nx=601, Ny=501):
     dset = xr.Dataset()
     alist = [None]
     if NCR:
         alist += ["xHI", "xHII", "neu", "pion", "ion"]
     wlist = ["vol", "nH"]
     if NCR:
-        wlist += ["net_cool_rate"]
+        wlist += wlist_extra
     for xs in alist:
         for wf in wlist:
             if xf == "nH":
                 xbins = np.logspace(-6, 6, Nx)
             elif xf == "T":
                 xbins = np.logspace(1, 8, Nx)
-            ybins = np.logspace(0, 10, Ny)
+            ybins = np.logspace(-5, 10, Ny)
             if xs is None:
                 cond = dchunk["nH"] > 0.0
             elif xs == "xHI":
@@ -90,7 +90,7 @@ def recal_nP(dchunk, xf="nH", yf="pok", NCR=True, Nx=601, Ny=501):
     return dset.assign_coords(time=dchunk.time)
 
 
-def recal_xT(dchunk):
+def recal_xT(dchunk,weight="nH"):
     dset = xr.Dataset()
     T = ["T", "T1"]
     xs = ["xHI", "xHII", "xe"]
@@ -109,7 +109,7 @@ def recal_xT(dchunk):
                 x, y, w = (
                     np.log10(dchunk[T_].data.flatten()),
                     dchunk[xs_].data.flatten(),
-                    dchunk["nH"].data.flatten(),
+                    dchunk[weight].data.flatten(),
                 )
                 yr = [0, 1.3]
                 if log_:
@@ -128,7 +128,7 @@ def recal_xT(dchunk):
                     dims=["logx" if log_ else "x", "T"],
                 )
                 dset[label] = da
-    dset = dset.assign_coords({"nH": dchunk["nH"].data.sum()})
+    dset = dset.assign_coords({weight: dchunk[weight].data.sum()})
     return dset.assign_coords(time=dchunk.time)
 
 

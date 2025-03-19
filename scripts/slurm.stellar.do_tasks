@@ -4,7 +4,7 @@
 #SBATCH --ntasks=24              # total number of tasks
 ##SBATCH --exclusive
 #SBATCH --cpus-per-task=1        # cpu-cores per task
-#SBATCH --time=00:30:00          # total run time limit (HH:MM:SS)
+#SBATCH --time=06:00:00          # total run time limit (HH:MM:SS)
 ##SBATCH --mem=1500G
 ##SBATCH --partition=bigmem
 

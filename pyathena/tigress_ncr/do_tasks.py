@@ -73,7 +73,7 @@ def scatter_nums(s, nums, COMM):
 
     return mynums
 
-def process_tar(s):
+def process_tar(s, COMM):
     if s.nums_rawtar is not None:
         mynums = scatter_nums(s, s.nums_rawtar, COMM)
 
@@ -169,7 +169,7 @@ if __name__ == "__main__":
     locals().update(args)
 
     s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
-    s = process_tar(s)
+    s = process_tar(s, COMM)
     # get my nums
     if s.nums is not None:
         mynums = scatter_nums(s, s.nums, COMM)

@@ -633,11 +633,14 @@ class SliceProj:
         )
 
         exclude_fields = []
-        if self.par["configure"]["radps"] == "ON":
-            if self.par["radps"]["iPhotIon"] == 0:
-                exclude_fields += ["Erad_LyC"]
-            if self.par["cooling"]["iPEheating"] == 0:
-                exclude_fields += ["chi_FUV"]
+        try:
+            if self.par["configure"]["radps"] == "ON":
+                if self.par["radps"]["iPhotIon"] == 0:
+                    exclude_fields += ["Erad_LyC"]
+                if self.par["cooling"]["iPEheating"] == 0:
+                    exclude_fields += ["chi_FUV"]
+        except KeyError:
+            pass
 
         slc_fields = []
         for f in fields_xy:

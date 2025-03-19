@@ -3,6 +3,7 @@ import os
 # import os.path as osp
 # import pandas as pd
 import numpy as np
+import xarray as xr
 
 # import astropy.constants as ac
 # import astropy.units as au
@@ -403,3 +404,33 @@ def draw_sorted_contribution(
             os.path.join(savdir, "{}.{}.tevol.png".format(s.problem_id, phname))
         )
     return fig
+
+def create_joint_pdf(s, force_override=False):
+    savdir = s.get_savdir_pdf(zrange=None)
+    outfile = os.path.join(savdir,'jointpdf_all.nc')
+
+    if os.path.isfile(outfile) and (not force_override):
+        print(f"{outfile} exists")
+        return xr.open_dataset(outfile)
+
+    # get time averaged PDFs
+    pdf = []
+    for num in s.nums_starpar:
+        pdf_cool, pdf_heat = s.get_coolheat_pdf(num,zrange=None)
+        pdf_cool = pdf_cool.rename(total='total_cooling')*pdf_cool.attrs['total_cooling']
+        pdf_heat = pdf_heat.rename(total='total_heating')*pdf_heat.attrs['total_heating']
+        pdf_cool.update(pdf_heat)
+        if not ('time' in pdf_cool):
+            ds = s.load_vtk(num)
+            pdf_cool = pdf_cool.assign_coords(time=ds.domain['time'])
+        pdf_cool = pdf_cool.assign_coords(cool = pdf_cool.attrs['total_cooling'],
+                                        heat = pdf_cool.attrs['total_heating'],
+                                        netcool = pdf_cool.attrs['total_netcool'])
+        pdf.append(pdf_cool)
+    pdf = xr.concat(pdf,dim='time')
+    pdf.to_netcdf(outfile)
+    pdf.close()
+
+    print(f"{outfile} is created")
+
+    return pdf
