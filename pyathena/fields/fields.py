@@ -250,6 +250,8 @@ def set_derived_fields_def(par, x0):
     cmap[f] = 'inferno'
     take_log[f] = True
 
+    return func, field_dep, label, cmap, vminmax, take_log
+
 def set_derived_fields_cooling(par, newcool):
     """
     Function to define derived fields info, for example,
@@ -416,8 +418,7 @@ def set_derived_fields_mag(par, x0):
     def _vAmag(d, u):
         return (d['cell_centered_B1']**2 +
                 d['cell_centered_B2']**2 +
-                d['cell_centered_B3']**2)**0.5*np.sqrt(u.energy_density.cgs.value)\
-            /np.sqrt(d['density']*u.density.cgs.value)/1e5
+                d['cell_centered_B3']**2)**0.5/np.sqrt(d['density'])*u.kms
 
     func[f] = _vAmag
     label[f] = r'$v_A\;[{\rm km}\,{\rm s}^{-1}]$'
@@ -1288,6 +1289,102 @@ def set_derived_fields_xray(par, x0, newcool):
     return func, field_dep, label, cmap, vminmax, take_log
 
 
+def set_derived_fields_cosmic_ray(par):
+    func = dict()
+    field_dep = dict()
+    label = dict()
+    cmap = dict()
+    vminmax = dict()
+    take_log = dict()
+
+    gamma_cr = 4./3.
+    vmax = par["cr"]["vmax"] # in km/s
+    # cr diffusion coefficient
+    f = 'sigma_para'
+    field_dep[f] = set(['0-Sigma_diff1'])
+
+    def _sigma_para(d, u):
+        units = (u.length**2/u.time).cgs.value
+        vmax_ = vmax/(u.cm/u.s)
+        return d['0-Sigma_diff1']/vmax_/units
+
+    func[f] = _sigma_para
+    label[f] = r'$\sigma_\parallel\;[{\rm cm^{-2}\,s}]$'
+    cmap[f] = "viridis"
+    vminmax[f] = [6e-30,1.5e-27]
+    take_log[f] = True
+
+    # cr pressure
+    f = 'pok_cr'
+    field_dep[f] = set(['0-Ec'])
+    def _pok_cr(d, u):
+        return d['0-Ec']*(gamma_cr-1)*(u.energy_density/ac.k_B).cgs.value
+    func[f] = _pok_cr
+    label[f] = r'$P_{\rm cr}/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'YlOrRd_r'
+    vminmax[f] = (7e1,1.35e4)
+    take_log[f] = True
+
+    # cr fluxes
+    f = 'Fcr1'
+    field_dep[f] = set(['0-Fc1'])
+    def _Fcr1(d, u):
+        vmax_ = vmax/(u.cm/u.s)
+        return d['0-Fc1']*vmax_*u.erg/u.kpc**2/(1.e6*u.Myr)
+    func[f] = _Fcr1
+    label[f] = r'$F_{\rm cr,x}\;[{\rm erg\,kpc^{-2}\,yr^{-1}}]$'
+    cmap[f] = 'pink'
+    vminmax[f] = (5e43,2.5e46)
+    take_log[f] = True
+
+    f = 'Fcr2'
+    field_dep[f] = set(['0-Fc2'])
+    def _Fcr2(d, u):
+        vmax_ = vmax/(u.cm/u.s)
+        return d['0-Fc2']*vmax_*u.erg/u.kpc**2/(1.e6*u.Myr)
+    func[f] = _Fcr2
+    label[f] = r'$F_{\rm cr,y}\;[{\rm erg\,kpc^{-2}\,yr^{-1}}]$'
+    cmap[f] = 'pink'
+    vminmax[f] = (5e43,2.5e46)
+    take_log[f] = True
+
+    f = 'Fcr3'
+    field_dep[f] = set(['0-Fc3'])
+    def _Fcr3(d, u):
+        vmax_ = vmax/(u.cm/u.s)
+        return d['0-Fc3']*vmax_*u.erg/u.kpc**2/(1.e6*u.Myr)
+    func[f] = _Fcr3
+    label[f] = r'$F_{\rm cr,z}\;[{\rm erg\,kpc^{-2}\,yr^{-1}}]$'
+    cmap[f] = 'pink'
+    vminmax[f] = (5e43,2.5e46)
+    take_log[f] = True
+
+    f = 'Fcr_mag'
+    field_dep[f] = set(['0-Fc1','0-Fc2','0-Fc3'])
+    def _Fcr_mag(d, u):
+        vmax_ = vmax/(u.cm/u.s)
+        Fmag = np.sqrt(d['0-Fc1']**2+d['0-Fc2']**2+d['0-Fc3']**2)
+        return Fmag*vmax_*u.erg/u.kpc**2/(1.e6*u.Myr)
+    func[f] = _Fcr_mag
+    label[f] = r'$F_{\rm cr}\;[{\rm erg\,kpc^{-2}\,yr^{-1}}]$'
+    cmap[f] = 'pink'
+    vminmax[f] = (5e43,2.5e46)
+    take_log[f] = True
+
+    # alfven speed
+    f = 'Vcr_mag'
+    field_dep[f] = set(['0-Vc1','0-Vc2','0-Vc3'])
+    def _Vcr_mag(d, u):
+        vmag = np.sqrt(d['0-Vc1']**2+d['0-Vc2']**2+d['0-Vc3']**2)
+        return vmag*u.kms
+    func[f] = _Vcr_mag
+    label[f] = r'$v_{\rm A,i}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'cool'
+    vminmax[f] = (2,250)
+    take_log[f] = True
+
+    return func, field_dep, label, cmap, vminmax, take_log
+
 class DerivedFields(object):
 
     def __init__(self, par, x0=np.array([0.0,0.0,0.0])):
@@ -1305,6 +1402,7 @@ class DerivedFields(object):
         sixray = False
         wind = False
         xray = False
+        cosmic_ray = False
 
         if athenapp:
             # Athena++ configuration
@@ -1320,6 +1418,11 @@ class DerivedFields(object):
 
             try:
                 cooling = par["cooling"]["cooling"] != "none"
+            except KeyError:
+                pass
+
+            try:
+                cosmic_ray = par["configure"]["Cosmic_Ray_Transport"] == "Multigroups"
             except KeyError:
                 pass
         else:
@@ -1401,6 +1504,11 @@ class DerivedFields(object):
         # Add X-ray emissivity if Wind or SN is turned on
         if xray:
             dicts_ = set_derived_fields_xray(par, x0, newcool)
+            for d, d_ in zip(dicts, dicts_):
+                d = d.update(d_)
+
+        if cosmic_ray:
+            dicts_ = set_derived_fields_cosmic_ray(par)
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
