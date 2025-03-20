@@ -2,6 +2,7 @@ import os.path as osp
 import glob
 import numpy as np
 import pandas as pd
+import xarray as xr
 
 from ..load_sim import LoadSim
 
@@ -17,6 +18,7 @@ cpp_to_cc = {
     "Bcc2": "cell_centered_B2",
     "Bcc3": "cell_centered_B3",
 }
+
 
 class LoadSimTIGRESSPP(LoadSim):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
@@ -77,7 +79,6 @@ class LoadSimTIGRESSPP(LoadSim):
                 # self.dfi["pokCRs"] = self.pokCRscalar_dfi()
                 # self.dfi["pokCR"] = self.pokCR_dfi()
 
-
             if self.par["feedback"]["pop_synth"] == "SB99":
                 # pop_synth_file1 = osp.join(basedir,self.par["feedback"]["pop_synth_file"])
                 pop_synth_file2 = osp.join(basedir, "pop_synth.runtime.csv")
@@ -124,9 +125,14 @@ class LoadSimTIGRESSPP(LoadSim):
         ds["temperature"] = mu * T1
 
     @LoadSim.Decorators.check_netcdf
-    def get_slice(self, num, prefix, slc_kwargs=dict(z=0,method="nearest"),
-                  savdir=None,
-                  force_override=False):
+    def get_slice(
+        self,
+        num,
+        prefix,
+        slc_kwargs=dict(z=0, method="nearest"),
+        savdir=None,
+        force_override=False,
+    ):
         """
         a warpper function to make data reading easier
         """
@@ -135,8 +141,11 @@ class LoadSimTIGRESSPP(LoadSim):
             nghost = self.nghost
         else:
             nghost = 0
-        ds = self.load_hdf5(num=num, num_ghost=nghost,
-                            chunks=dict(x=mb["nx1"], y=mb["nx2"], z=mb["nx3"]))
+        ds = self.load_hdf5(
+            num=num,
+            num_ghost=nghost,
+            chunks=dict(x=mb["nx1"], y=mb["nx2"], z=mb["nx3"]),
+        )
         if "press" in ds:
             self.add_temperature(ds)
         # rename the variables to match athena convention so that we can use
@@ -159,6 +168,39 @@ class LoadSimTIGRESSPP(LoadSim):
             par = pd.read_csv(parname)
             parlist.append(par)
         return parlist
+
+    @LoadSim.Decorators.check_netcdf
+    def load_zprof(self, prefix="merged_zprof", savdir=None, force_override=False):
+        dlist = dict()
+        for fname in self.files["zprof"]:
+            with open(fname, "r") as f:
+                header = f.readline()
+            data = pd.read_csv(fname, skiprows=1)
+            data.index = data.x3v
+            time = eval(
+                header[header.find("time") : header.find("cycle")]
+                .split("=")[-1]
+                .strip()
+            )
+            phase = (
+                header[header.find("phase") : header.find("variable")]
+                .split("=")[-1]
+                .strip()
+            )
+            for ph in self.phase:
+                if ph in fname:
+                    if phase not in dlist:
+                        dlist[phase] = []
+                    dlist[phase].append(
+                        data.to_xarray().assign_coords(time=time).rename(x3v="z")
+                    )
+
+        dset = []
+        for phase in dlist:
+            dset.append(xr.concat(dlist[phase], dim="time").assign_coords(phase=phase))
+        dset = xr.concat(dset, dim="phase")
+
+        return dset
 
     @staticmethod
     def get_phase_Tlist(kind="ncr"):

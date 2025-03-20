@@ -78,6 +78,7 @@ class FindFiles(object):
         ('*.par*.csv',)]
 
     patterns['zprof'] = [
+        ('*.zprof',),
         ('zprof', '*.zprof'),
         ('id0', '*.zprof')]
 
