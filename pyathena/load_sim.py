@@ -440,6 +440,10 @@ class LoadSim(LoadSimBase):
         >>> ds = s.load_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
         >>> # Load the selected region.
         >>> ds = s.load_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
+        >>> # Load everything at fifth snapshot with ghost cells
+        >>> num_ghost = s.par['configure']['Number_of_ghost_cells'] if \
+                 s.par[f'output{s.hdf5_outid[0]}']['ghost_zones'] == 'true' else 0
+        >>> ds = s.load_hdf5(ihdf5=5, num_ghost=num_ghost)
         """
 
         if num is None and ihdf5 is None:
