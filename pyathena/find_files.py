@@ -184,7 +184,7 @@ class FindFiles(object):
                         self.out_fmt.append(self.par[k]['file_type'])
 
                     # Save particle output tags
-                    if k.startswith('particle'):
+                    if k.startswith('particle') and self.par[k]['type'] != 'none':
                         par_id = int(k.strip('particle')) - 1
                         partag = 'par{}'.format(par_id)
                         self.partags.append(partag)
