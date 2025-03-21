@@ -217,8 +217,11 @@ class LoadSim(LoadSimBase):
         self._get_domain_from_par(self.par)
         try:
             k = 'Configure_date' if self.athena_pp else 'config_date'
-            self._config_time = pd.to_datetime(dateutil.parser.parse(
-            self.par['configure'][k])).tz_convert('US/Pacific')
+            tmp = self.par['configure'][k]
+            for tz in ['PDT', 'EST', 'UTC']:
+                tmp = tmp.replace(tz, '').strip()
+
+            self._config_time = pd.to_datetime(dateutil.parser.parse(tmp))
         except:
             self._config_time = None
 
@@ -440,6 +443,10 @@ class LoadSim(LoadSimBase):
         >>> ds = s.load_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
         >>> # Load the selected region.
         >>> ds = s.load_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
+        >>> # Load everything at fifth snapshot with ghost cells
+        >>> num_ghost = s.par['configure']['Number_of_ghost_cells'] if \
+                 s.par[f'output{s.hdf5_outid[0]}']['ghost_zones'] == 'true' else 0
+        >>> ds = s.load_hdf5(ihdf5=5, num_ghost=num_ghost)
         """
 
         if num is None and ihdf5 is None:
@@ -491,7 +498,7 @@ class LoadSim(LoadSimBase):
             self.ds = yt.load(self.fhdf5, units_override=units_override)
         else:
             self.logger.error('load_method "{0:s}" not recognized.'.format(
-                self.load_method) + ' Use either "yt" or "pyathena".')
+                self.load_method) + ' Use either "xarray" or "yt".')
 
         return self.ds
 
@@ -934,6 +941,64 @@ class LoadSim(LoadSimBase):
                             pickle.dump(res, fb)
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not pickle to {0:s}.'.format(fpkl))
+                    return res
+
+            return wrapper
+
+        def check_netcdf(read_func):
+            @functools.wraps(read_func)
+            def wrapper(cls, *args, **kwargs):
+
+                # Convert positional args to keyword args
+                from inspect import getcallargs
+                call_args = getcallargs(read_func, cls, *args, **kwargs)
+                call_args.pop('self')
+                kwargs = call_args
+
+                try:
+                    prefix = kwargs['prefix']
+                except KeyError:
+                    print("previs must be provided")
+
+                if kwargs['savdir'] is not None:
+                    savdir = kwargs['savdir']
+                else:
+                    savdir = osp.join(cls.savdir, prefix)
+
+                force_override = kwargs['force_override']
+
+                # Create savdir if it doesn't exist
+                try:
+                    if not osp.exists(savdir):
+                        force_override = True
+                        os.makedirs(savdir)
+                except FileExistsError:
+                    print('Directory exists: {0:s}'.format(savdir))
+                except PermissionError as e:
+                    print('Permission Error: ', e)
+
+                if 'num' in kwargs:
+                    fnetcdf = osp.join(savdir, '{0:s}.{1:05d}.nc'.format(prefix, kwargs['num']))
+                else:
+                    fnetcdf = osp.join(savdir, '{0:s}.nc'.format(prefix))
+
+                if not force_override and osp.exists(fnetcdf):
+                    cls.logger.info('Read from existing netcdf: {0:s}'.format(fnetcdf))
+                    with xr.open_dataset(fnetcdf) as fb:
+                        res = fb.load()
+                    return res
+                else:
+                    cls.logger.info('[check_netcdf]: Read original dump.')
+                    # If we are here, force_override is True or history file is updated.
+                    res = read_func(cls, **kwargs)
+
+                    # Delete file first
+                    if osp.exists(fnetcdf):
+                        os.remove(fnetcdf)
+                    try:
+                        res.to_netcdf(fnetcdf)
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('Could not create {0:s}.'.format(fnetcdf))
                     return res
 
             return wrapper
