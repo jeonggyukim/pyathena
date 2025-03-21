@@ -10,7 +10,12 @@ import h5py
 from .athena_read import athdf
 
 
-def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, raw=False, **kwargs):
+def read_hdf5(filename, header_only=False, chunks=None,
+              raw=False, data=None, quantities=None, dtype=None, level=None,
+              return_levels=False, subsample=False, fast_restrict=False, x1_min=None,
+              x1_max=None, x2_min=None, x2_max=None, x3_min=None, x3_max=None, vol_func=None,
+              vol_params=None, face_func_1=None, face_func_2=None, face_func_3=None,
+              center_func_1=None, center_func_2=None, center_func_3=None, num_ghost=0):
     """Read Athena hdf5 file and convert it to xarray Dataset
 
     Parameters
@@ -21,14 +26,46 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, raw=False, 
         Flag to read only attributes, not data.
     chunks : (dict or None), default: None
         If provided, used to load the data into dask arrays.
-    num_ghost : int, optional
-        Number of ghost zones in the output. Default is 0.
+
+    Other Parameters (parameters passed to athdf)
+    ---------------------------------------------
     raw : bool, optional
-        If True, do not merge MeshBlocks. The return data structure
-        depends on whether `chunks` is provided or not.
-    **kwargs : dict, optional
-        Extra arguments passed to athdf. Refer to athdf documentation for
-        a list of all possible arguments.
+        If True, return raw data without merging MeshBlocks into a single array.
+        Default is False.
+    data : dict, optional
+        A dictionary to store the extracted data. If None, a new dictionary is created.
+    quantities : list of str, optional
+        List of quantities to extract from the file. If None, all quantities are extracted.
+    dtype : numpy.dtype, optional
+        Data type for the extracted arrays. If None, the data type is inferred from the file.
+    level : int, optional
+        Refinement level of the data to extract. If None, the maximum level in the file is used.
+    return_levels : bool, optional
+        If True, include the refinement levels of the cells in the output data.
+        Default is False.
+    subsample : bool, optional
+        If True, subsample the data to the requested refinement level. Default is False.
+    fast_restrict : bool, optional
+        If True, use a fast restriction method for Cartesian grids. Default is False.
+    x1_min, x1_max : float, optional
+        Minimum and maximum bounds for the x1 (first spatial) dimension. Default is None.
+    x2_min, x2_max : float, optional
+        Minimum and maximum bounds for the x2 (second spatial) dimension. Default is None.
+    x3_min, x3_max : float, optional
+        Minimum and maximum bounds for the x3 (third spatial) dimension. Default is None.
+    vol_func : callable, optional
+        Custom function to compute cell volumes for non-standard coordinate systems.
+        Default is None.
+    vol_params : list, optional
+        Parameters to pass to the custom volume function. Default is None.
+    face_func_1, face_func_2, face_func_3 : callable, optional
+        Custom functions to compute face coordinates for the x1, x2, and x3 dimensions.
+        Default is None.
+    center_func_1, center_func_2, center_func_3 : callable, optional
+        Custom functions to compute cell center coordinates for the x1, x2, and x3 dimensions.
+        Default is None.
+    num_ghost : int, optional
+        Number of ghost zones to include in the data. Default is 0.
 
     Returns
     -------
@@ -49,6 +86,10 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, raw=False, 
     >>> s = LoadSim("/path/to/basedir")
     >>> ds = read_hdf5(s.files['hdf5']['prim'][30])
     """
+
+    # Collect all keyword arguments needed to call athdf
+    kwargs = {k: v for k, v in locals().items() if k not in {"filename", "header_only", "chunks"}}
+
     if chunks is not None:
         return read_hdf5_dask(
             filename, (chunks['x'], chunks['y'], chunks['z']),
@@ -62,7 +103,7 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, raw=False, 
                     data[str(key)] = f.attrs[key]
                 return data
 
-        ds = athdf(filename, num_ghost=num_ghost, raw=raw, **kwargs)
+        ds = athdf(filename, **kwargs)
 
         # Convert to xarray object
         possibilities = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
