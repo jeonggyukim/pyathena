@@ -217,8 +217,11 @@ class LoadSim(LoadSimBase):
         self._get_domain_from_par(self.par)
         try:
             k = 'Configure_date' if self.athena_pp else 'config_date'
-            self._config_time = pd.to_datetime(dateutil.parser.parse(
-            self.par['configure'][k])).tz_convert('US/Pacific')
+            tmp = self.par['configure'][k]
+            for tz in ['PDT', 'EST', 'UTC']:
+                tmp = tmp.replace(tz, '').strip()
+
+            self._config_time = pd.to_datetime(dateutil.parser.parse(tmp))
         except:
             self._config_time = None
 
