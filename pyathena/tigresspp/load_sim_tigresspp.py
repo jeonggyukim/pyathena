@@ -3,6 +3,7 @@ import glob
 import numpy as np
 import pandas as pd
 import xarray as xr
+import warnings
 
 from ..load_sim import LoadSim
 
@@ -62,16 +63,19 @@ class LoadSimTIGRESSPP(LoadSim):
                     return
                 from scipy.interpolate import interp1d
 
-                logLam = interp1d(
-                    cooltbl["logT1"],
-                    np.log10(cooltbl["Lambda"]),
-                    fill_value="extrapolate",
-                )
-                logGam = interp1d(
-                    cooltbl["logT1"],
-                    np.log10(cooltbl["Gamma"]),
-                    fill_value="extrapolate",
-                )
+                # Suppress divide-by-zero warning
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", category=RuntimeWarning)
+                    logLam = interp1d(
+                        cooltbl["logT1"],
+                        np.log10(cooltbl["Lambda"]),
+                        fill_value="extrapolate",
+                    )
+                    logGam = interp1d(
+                        cooltbl["logT1"],
+                        np.log10(cooltbl["Gamma"]),
+                        fill_value="extrapolate",
+                    )
                 mu = interp1d(cooltbl["logT1"], cooltbl["mu"], fill_value="extrapolate")
                 self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
                 # self.dfi["T"] = self.temperature_dfi()
