@@ -498,7 +498,7 @@ class LoadSim(LoadSimBase):
             self.ds = yt.load(self.fhdf5, units_override=units_override)
         else:
             self.logger.error('load_method "{0:s}" not recognized.'.format(
-                self.load_method) + ' Use either "yt" or "pyathena".')
+                self.load_method) + ' Use either "xarray" or "yt".')
 
         return self.ds
 
