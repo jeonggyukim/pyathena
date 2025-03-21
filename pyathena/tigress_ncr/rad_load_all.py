@@ -102,7 +102,7 @@ tMyr_range['LGR4_2pc'] = [250,350]
 tMyr_range['S05_Z1'] = [614,1703]
 tMyr_range['S05_Z01'] = [614,1830]
 
-# tMyr_range['R8_Z3'] = [438,977] # test
+tMyr_range['R8_Z3'] = [438,977]
 tMyr_range['R8_Z1'] = [438,977]
 tMyr_range['R8_Z03'] = [438,977]
 tMyr_range['R8_Z01'] = [438,977]
@@ -116,7 +116,7 @@ tMyr_range['R8_b10_Zg01_Zd0025'] = [438,977]
 tMyr_range['S30_Z1'] = [438,977]
 tMyr_range['S30_Z01'] = [438,977]
 
-# tMyr_range['LGR4_Z3'] = [204,360] # maybe running
+tMyr_range['LGR4_Z3'] = [204,444]
 # tMyr_range['LGR4_Z3_xy512'] = [204,450] # maybe running
 tMyr_range['LGR4_Z1'] = [204,488]
 tMyr_range['LGR4_Z03'] = [204,488]
