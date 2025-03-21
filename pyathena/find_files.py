@@ -410,8 +410,6 @@ class FindFiles(object):
                 size = max(set(sizes), key=sizes.count)
                 flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
                 self.logger.warning('Vtk file size is not unique.')
-                for f in flist:
-                   self.logger.warning('vtk num: {0:d}, size [MB]: {1:d}'.format(f[0], f[1]))
 
             # Check (tarred) vtk file size
             sizes = [os.stat(f).st_size for f in self.files['vtk_tar']]
@@ -419,8 +417,7 @@ class FindFiles(object):
                 size = max(set(sizes), key=sizes.count)
                 flist = [(i, s // 1024**2) for i, s in enumerate(sizes) if s != size]
                 self.logger.warning('Vtk file size is not unique.')
-                for f in flist:
-                   self.logger.warning('vtk num: {0:d}, size [MB]: {1:d}'.format(f[0], f[1]))
+
         elif 'vtk' in self.out_fmt and self.athena_pp:
             # Athena++ vtk files
             self.files['vtk'] = self.find_match(self.patterns['vtk_athenapp'])
