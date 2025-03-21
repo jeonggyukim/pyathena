@@ -109,14 +109,14 @@ class LoadSimTIGRESSNCR(LoadSim, Hst, Zprof, ZprofFromVTK, SliceProj, StarPar, P
         # s.config_time = pd.to_datetime(s.par["configure"]["config_date"])
         # if "PDT" in s.par["configure"]["config_date"]:
         #     s.config_time = s.config_time.tz_localize("US/Pacific")
-        if s.config_time < pd.to_datetime("2021-06-30 20:29:36 -04:00"):
+        if s.config_time < pd.to_datetime("2021-06-30 20:29:36"):
             s.iCoolHIcollion = 0
         else:
             s.iCoolHIcollion = 1
 
         # check this is run with corrected CR heating
         # 85a7857bb7c797686a4e9630cba71f326e1097cd
-        if s.config_time < pd.to_datetime("2022-05-23 22:23:43 -04:00"):
+        if s.config_time < pd.to_datetime("2022-05-23 22:23:43"):
             s.oldCRheating = 1
         else:
             s.oldCRheating = 0
