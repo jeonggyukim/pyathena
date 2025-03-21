@@ -154,16 +154,7 @@ def plot_slices(sim, num, savefig=True):
 
 if __name__ == "__main__":
     spp = LoadSimTIGRESSPP(sys.argv[1])
-    dfi = DerivedFields(spp.par)
-    dfi.dfi["T"]["imshow_args"]["cmap"] = "Spectral_r"
-    dfi.dfi["T"]["imshow_args"]["norm"] = LogNorm(vmin=1e2, vmax=1e8)
-    dfi.dfi["nH"]["imshow_args"]["cmap"] = cmr.rainforest
-    dfi.dfi["nH"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
-    dfi.dfi["vmag"]["imshow_args"]["cmap"] = dfi.dfi["Vcr_mag"]["imshow_args"]["cmap"]
-    dfi.dfi["vmag"]["imshow_args"]["norm"] = dfi.dfi["Vcr_mag"]["imshow_args"]["norm"]
-    dfi.dfi["pok"]["imshow_args"]["cmap"] = dfi.dfi["pok_cr"]["imshow_args"]["cmap"]
-    dfi.dfi["pok"]["imshow_args"]["norm"] = dfi.dfi["pok_cr"]["imshow_args"]["norm"]
-    spp.dfi = dfi.dfi
+    spp.update_derived_fields()
 
     COMM = MPI.COMM_WORLD
     mynums = [spp.nums[i] for i in range(len(spp.nums)) if i % COMM.size == COMM.rank]

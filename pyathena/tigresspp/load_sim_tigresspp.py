@@ -4,8 +4,11 @@ import numpy as np
 import pandas as pd
 import xarray as xr
 import warnings
+from matplotlib.colors import Normalize, LogNorm, SymLogNorm
+import cmasher as cmr
 
 from ..load_sim import LoadSim
+from pyathena.fields.fields import DerivedFields
 
 base_path = osp.dirname(__file__)
 
@@ -205,6 +208,18 @@ class LoadSimTIGRESSPP(LoadSim):
         dset = xr.concat(dset, dim="phase")
 
         return dset
+
+    def update_derived_fields(self):
+        dfi = DerivedFields(self.par)
+        dfi.dfi["T"]["imshow_args"]["cmap"]="Spectral_r"
+        dfi.dfi["T"]["imshow_args"]["norm"]=LogNorm(vmin=1e2,vmax=1e8)
+        dfi.dfi["nH"]["imshow_args"]["cmap"]=cmr.rainforest
+        dfi.dfi["nH"]["imshow_args"]["norm"]=LogNorm(vmin=1e-4,vmax=1e2)
+        dfi.dfi["vmag"]["imshow_args"]["cmap"]=dfi.dfi["Vcr_mag"]["imshow_args"]["cmap"]
+        dfi.dfi["vmag"]["imshow_args"]["norm"]=dfi.dfi["Vcr_mag"]["imshow_args"]["norm"]
+        dfi.dfi["pok"]["imshow_args"]["cmap"]=dfi.dfi["pok_cr"]["imshow_args"]["cmap"]
+        dfi.dfi["pok"]["imshow_args"]["norm"]=dfi.dfi["pok_cr"]["imshow_args"]["norm"]
+        self.dfi = dfi.dfi
 
     @staticmethod
     def get_phase_Tlist(kind="ncr"):
