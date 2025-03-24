@@ -10,7 +10,8 @@ import h5py
 from .athena_read import athdf
 
 
-def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
+def read_hdf5(filename, header_only=False, chunks=None, raw=False,
+              num_ghost=0, **kwargs):
     """Read Athena hdf5 file and convert it to xarray Dataset
 
     Parameters
@@ -21,11 +22,14 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
         Flag to read only attributes, not data.
     chunks : (dict or None), default: None
         If provided, used to load the data into dask arrays.
+    raw : bool, optional
+        If True, return raw data without merging MeshBlocks into a single array.
+        Default is False.
     num_ghost : int, optional
-        Number of ghost zones in the output. Default is 0.
+        Number of ghost zones to include in the data. Default is 0.
     **kwargs : dict, optional
-        Extra arguments passed to athdf. Refer to athdf documentation for
-        a list of all possible arguments.
+         Extra arguments passed to athdf. Refer to athdf documentation for
+         a list of all possible arguments.
 
     Returns
     -------
@@ -46,9 +50,11 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
     >>> s = LoadSim("/path/to/basedir")
     >>> ds = read_hdf5(s.files['hdf5']['prim'][30])
     """
+
     if chunks is not None:
         return read_hdf5_dask(
-            filename, (chunks["x"], chunks["y"], chunks["z"]), num_ghost=num_ghost
+            filename, (chunks['x'], chunks['y'], chunks['z']),
+            num_ghost=num_ghost, raw=raw,
         )
     else:
         if header_only:
@@ -58,7 +64,7 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
                     data[str(key)] = f.attrs[key]
                 return data
 
-        ds = athdf(filename, num_ghost=num_ghost, **kwargs)
+        ds = athdf(filename, raw=raw, num_ghost=num_ghost, **kwargs)
 
         # Convert to xarray object
         possibilities = set(map(lambda x: x.decode('ASCII'), ds['VariableNames']))
@@ -81,18 +87,24 @@ def read_hdf5(filename, header_only=False, chunks=None, num_ghost=0, **kwargs):
         )
         return ds
 
-
-def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
+def read_hdf5_dask(filename, chunksize, num_ghost=0, raw=False):
     """Read Athena++ hdf5 file and convert it to dask-xarray Dataset
+
+    In most cases, this function is not needed to be called directly. Instead,
+    use `read_hdf5` with `chunks` argument. This function is used internally
+    by `read_hdf5` to read data into dask array.
 
     Parameters
     ----------
     filename : str
         Data filename
-    chunksize : tuple of int, optional
-        Dask chunk size along (x, y, z) directions. Default is (512, 512, 512).
+    chunksize : tuple of int
+        Dask chunk size along (x, y, z) directions.
     num_ghost : int, optional
         Number of ghost zones in the output. Default is 0.
+    raw : bool, optional
+        If True, do not merge MeshBlocks and return a dask array with the shape
+        [nvar, nblocks, z, y, x].
     """
     f = h5py.File(filename, 'r')
 
@@ -103,6 +115,7 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
     block_size_noghost = block_size - np.array([num_ghost*2]*3)
     mesh_size = f.attrs['RootGridSize']
     num_blocks = mesh_size // block_size_noghost  # Assuming uniform grid
+    varnames = list(map(lambda x: x.decode('ASCII'), f.attrs['VariableNames']))
 
     if num_blocks.prod() != f.attrs['NumMeshBlocks']:
         raise ValueError("Number of blocks does not match the attribute")
@@ -119,6 +132,7 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
     nblock_per_chunk = np.array(chunksize) // block_size_noghost
     chunksize_read = (1, nblock_per_chunk.prod(), *block_size)
 
+
     # lazy load from HDF5
     ds = []
     for dsetname in f.attrs['DatasetNames']:
@@ -131,6 +145,8 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
             # Expected shape: (nvar, nblock, z, y, x)
             raise ValueError("Invalid shape of the dataset")
         ds += [var for var in darr]
+    if raw:
+        return dict(zip(varnames, ds))
 
     def _reorder_rechunk(var):
         """
@@ -148,7 +164,6 @@ def read_hdf5_dask(filename, chunksize=(512, 512, 512), num_ghost=0):
     ds = list(map(_reorder_rechunk, ds))
 
     # Convert to xarray object
-    varnames = list(map(lambda x: x.decode('ASCII'), f.attrs['VariableNames']))
     variables = [(['z', 'y', 'x'], d) for d in ds]
     coordnames = ['x1v', 'x2v', 'x3v']
 
