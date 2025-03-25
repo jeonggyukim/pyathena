@@ -17,6 +17,8 @@ try:
 except ModuleNotFoundError:
     pass
 
+import cmasher as cmr
+
 def static_vars(**kwargs):
     def decorate(func):
         for k in kwargs:
@@ -1298,7 +1300,7 @@ def set_derived_fields_cosmic_ray(par):
     take_log = dict()
 
     gamma_cr = 4./3.
-    vmax = par["cr"]["vmax"] # in km/s
+    vmax = par["cr"]["vmax"] # in cm/s
     # cr diffusion coefficient
     f = 'sigma_para'
     field_dep[f] = set(['0-Sigma_diff1'])
@@ -1322,7 +1324,7 @@ def set_derived_fields_cosmic_ray(par):
     func[f] = _pok_cr
     label[f] = r'$P_{\rm cr}/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
     cmap[f] = 'YlOrRd_r'
-    vminmax[f] = (7e1,1.35e4)
+    vminmax[f] = (1,5e4)
     take_log[f] = True
 
     # cr fluxes
@@ -1383,7 +1385,82 @@ def set_derived_fields_cosmic_ray(par):
     vminmax[f] = (2,250)
     take_log[f] = True
 
+    # CR scalar
+    f = "rCR"
+    field_dep[f] = set(["rCR"])
+    def _rCR(d, u):
+        return d["rCR"]*(gamma_cr-1)*u.pok
+    func[f] = _rCR
+    label[f] = r'$P_{\rm CR,inj}/k_B\;[{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'YlOrRd_r'
+    vminmax[f] = (1,5e4)
+    take_log[f] = True
+
+    # CR injection
+    f = "pok_cr_inj"
+    field_dep[f] = set(["eCRinj"])
+    def _pok_CR_inj(d, u):
+        return d["eCRinj"]*(gamma_cr-1)*u.pok
+    func[f] = _pok_CR_inj
+    label[f] = r'$P_{\rm CR,inj}/k_B\;[{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'YlOrRd_r'
+    vminmax[f] = (1,5e4)
+    take_log[f] = True
+
     return func, field_dep, label, cmap, vminmax, take_log
+
+
+def set_derived_fields_feedback_scalars(par):
+    func = dict()
+    field_dep = dict()
+    label = dict()
+    cmap = dict()
+    vminmax = dict()
+    take_log = dict()
+
+    Zsolar=0.02 # need to get from parameter
+
+    # metallicity
+    f = 'Zgas'
+    field_dep[f] = set(['rmetal'])
+
+    def _Zgas(d, u):
+        return d['rmetal']/Zsolar
+
+    func[f] = _Zgas
+    label[f] = r'$Z/Z_\odot$'
+    cmap[f] = cmr.pepper_r
+    vminmax[f] = [1,10]
+    take_log[f] = True
+
+    # SN ejecta mass fraction
+    f = 'rSN'
+    field_dep[f] = set(['rSN'])
+
+    def _rSN(d, u):
+        return d['rSN']
+
+    func[f] = _rSN
+    label[f] = r'$f_{\rm SN}$'
+    cmap[f] = cmr.bubblegum
+    vminmax[f] = [0,1]
+    take_log[f] = False
+
+    # mass return fraction
+    f = 'rret'
+    field_dep[f] = set(['rret'])
+
+    def _rret(d, u):
+        return d['rret']
+
+    func[f] = _rret
+    label[f] = r'$f_{\rm ret}$'
+    cmap[f] = cmr.bubblegum
+    vminmax[f] = [0,1]
+    take_log[f] = False
+
+    return func, field_dep, label, cmap, vminmax, take_log
+
 
 class DerivedFields(object):
 
@@ -1403,6 +1480,7 @@ class DerivedFields(object):
         wind = False
         xray = False
         cosmic_ray = False
+        feedback_scalars = False
 
         if athenapp:
             # Athena++ configuration
@@ -1423,6 +1501,11 @@ class DerivedFields(object):
 
             try:
                 cosmic_ray = par["configure"]["Cosmic_Ray_Transport"] == "Multigroups"
+            except KeyError:
+                pass
+
+            try:
+                feedback_scalars = par["configure"]["Number_of_feedback_scalar"] > 0
             except KeyError:
                 pass
         else:
@@ -1509,6 +1592,12 @@ class DerivedFields(object):
 
         if cosmic_ray:
             dicts_ = set_derived_fields_cosmic_ray(par)
+            for d, d_ in zip(dicts, dicts_):
+                d = d.update(d_)
+
+        # TIGRESS++ specific
+        if feedback_scalars:
+            dicts_ = set_derived_fields_feedback_scalars(par)
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
