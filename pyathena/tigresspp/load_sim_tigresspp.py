@@ -9,6 +9,7 @@ import cmasher as cmr
 
 from ..load_sim import LoadSim
 from pyathena.fields.fields import DerivedFields
+import pyathena as pa
 
 base_path = osp.dirname(__file__)
 
@@ -55,6 +56,10 @@ class LoadSimTIGRESSPP(LoadSim):
         # self.domain = self._get_domain_from_par(self.par)
         # self.dfi = DerivedFields(self.par).dfi
 
+        # set configure options boolean
+        self.check_configure_options()
+
+        # set cooling function
         try:
             if self.par["cooling"]["coolftn"] == "tigress":
                 # cooltbl_file1 = osp.join(basedir,self.par["cooling"]["coolftn_file"])
@@ -81,10 +86,6 @@ class LoadSimTIGRESSPP(LoadSim):
                     )
                 mu = interp1d(cooltbl["logT1"], cooltbl["mu"], fill_value="extrapolate")
                 self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
-                # self.dfi["T"] = self.temperature_dfi()
-                # self.dfi["pokCRsinj"] = self.pokCRscalar_inj_dfi()
-                # self.dfi["pokCRs"] = self.pokCRscalar_dfi()
-                # self.dfi["pokCR"] = self.pokCR_dfi()
 
             if self.par["feedback"]["pop_synth"] == "SB99":
                 # pop_synth_file1 = osp.join(basedir,self.par["feedback"]["pop_synth_file"])
@@ -94,6 +95,15 @@ class LoadSimTIGRESSPP(LoadSim):
 
             if "configure" in self.par:
                 self.nghost = self.par["configure"]["Number_of_ghost_cells"]
+        except KeyError:
+            pass
+
+        # set external gravity field
+        try:
+            if self.par["problem"]["ext_grav"] in ["force", "potential"]:
+                extgrav_file = osp.join(basedir, "extgrav.runtime.csv")
+                if osp.isfile(extgrav_file):
+                    self.extgrav = pd.read_csv(extgrav_file)
         except KeyError:
             pass
 
@@ -130,6 +140,23 @@ class LoadSimTIGRESSPP(LoadSim):
         else:
             mu = 1.27  # default for neutral 1.4/1.1
         ds["temperature"] = mu * T1
+
+    def get_data(self, num):
+        """a wrapper function to load data with automatically assigned
+        num_ghost and chunks"""
+
+        mb = self.par["meshblock"]
+        if self.par[f"output{self.hdf5_outid[0]}"]["ghost_zones"] == "true":
+            nghost = self.nghost
+        else:
+            nghost = 0
+        ds = self.load_hdf5(
+            num=num,
+            num_ghost=nghost,
+            chunks=dict(x=mb["nx1"], y=mb["nx2"], z=mb["nx3"]),
+        )
+
+        return ds
 
     @LoadSim.Decorators.check_netcdf
     def get_slice(
@@ -209,17 +236,208 @@ class LoadSimTIGRESSPP(LoadSim):
 
         return dset
 
+    def set_phase_history(self):
+        if "phase_hst" not in self.files:
+            self.files["phase_hst"] = sorted(glob.glob(self.files["hst"] + ".phase?"))
+        phlist = []
+        for fname in self.files["phase_hst"]:
+            with open(fname, "r") as fp:
+                line = fp.readline()
+                phname = line[line.find("phase") :].strip().split("=")[-1]
+            phlist.append(phname)
+        self.phlist = phlist
+
+    @LoadSim.Decorators.check_netcdf
+    def load_phase_hst(
+        self, prefix="merged_phase_hst", savdir=None, force_override=False
+    ):
+        if "phase_hst" not in self.files:
+            self.set_phase_history()
+
+        hst = dict()
+        for fname, ph in zip(self.files["phase_hst"], self.phlist):
+            h = pa.read_hst(fname)
+            h.index = h.pop("time")
+            hst[ph] = h
+
+        return xr.Dataset(hst).to_array("phase").to_dataset(dim="dim_1")
+
     def update_derived_fields(self):
         dfi = DerivedFields(self.par)
-        dfi.dfi["T"]["imshow_args"]["cmap"]="Spectral_r"
-        dfi.dfi["T"]["imshow_args"]["norm"]=LogNorm(vmin=1e2,vmax=1e8)
-        dfi.dfi["nH"]["imshow_args"]["cmap"]=cmr.rainforest
-        dfi.dfi["nH"]["imshow_args"]["norm"]=LogNorm(vmin=1e-4,vmax=1e2)
-        dfi.dfi["vmag"]["imshow_args"]["cmap"]=dfi.dfi["Vcr_mag"]["imshow_args"]["cmap"]
-        dfi.dfi["vmag"]["imshow_args"]["norm"]=dfi.dfi["Vcr_mag"]["imshow_args"]["norm"]
-        dfi.dfi["pok"]["imshow_args"]["cmap"]=dfi.dfi["pok_cr"]["imshow_args"]["cmap"]
-        dfi.dfi["pok"]["imshow_args"]["norm"]=dfi.dfi["pok_cr"]["imshow_args"]["norm"]
+        dfi.dfi["T"]["imshow_args"]["cmap"] = "Spectral_r"
+        dfi.dfi["T"]["imshow_args"]["norm"] = LogNorm(vmin=1e2, vmax=1e9)
+        dfi.dfi["nH"]["imshow_args"]["cmap"] = cmr.rainforest
+        dfi.dfi["nH"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+
+        if self.options["cosmic_ray"]:
+            dfi.dfi["vmag"]["imshow_args"]["cmap"] = dfi.dfi["Vcr_mag"]["imshow_args"][
+                "cmap"
+            ]
+            dfi.dfi["vmag"]["imshow_args"]["norm"] = dfi.dfi["Vcr_mag"]["imshow_args"][
+                "norm"
+            ]
+            dfi.dfi["pok"]["imshow_args"]["cmap"] = dfi.dfi["pok_cr"]["imshow_args"][
+                "cmap"
+            ]
+            dfi.dfi["pok"]["imshow_args"]["norm"] = dfi.dfi["pok_cr"]["imshow_args"][
+                "norm"
+            ]
         self.dfi = dfi.dfi
+
+    def get_pdf(
+        self,
+        dchunk,
+        xf,
+        yf,
+        wf,
+        xlim,
+        ylim,
+        Nx=128,
+        Ny=128,
+        logx=False,
+        logy=False,
+        phase=None,
+    ):
+        try:
+            xdata = dchunk[xf]
+        except KeyError:
+            xdata = self.dfi(dchunk, self.u)
+        try:
+            ydata = dchunk[yf]
+        except KeyError:
+            ydata = self.dfi(dchunk, self.u)
+        if wf is not None:
+            try:
+                wdata = dchunk[wf]
+            except KeyError:
+                wdata = self.dfi(dchunk, self.u)
+            if phase is not None:
+                wdata = wdata * phase.data.flatten()
+            name = f"{wf}-pdf"
+        else:
+            name = "vol-pdf"
+
+        if logx:
+            xdata = np.log10(xdata)
+            xf = f"log{xf}"
+        if logy:
+            ydata = np.log10(ydata)
+            yf = f"log{yf}"
+
+        b1 = np.linspace(xlim[0], xlim[1], Nx)
+        b2 = np.linspace(ylim[0], ylim[1], Ny)
+        h, b1, b2 = np.histogram2d(
+            xdata.data.flatten(),
+            ydata.data.flatten(),
+            weights=wdata.data.flatten() if wf is not None else None,
+            bins=[b1, b2],
+        )
+        dx = b1[1] - b1[0]
+        dy = b2[1] - b2[0]
+        pdf = h.T / dx / dy
+        da = xr.DataArray(
+            pdf,
+            coords=[0.5 * (b2[1:] + b2[:-1]), 0.5 * (b1[1:] + b1[:-1])],
+            dims=[yf, xf],
+            name=name,
+        )
+        return da
+
+    def check_configure_options(self):
+        par = self.par
+        athenapp = "mesh" in par
+
+        # default configuration
+        cooling = False
+        newcool = False
+        mhd = False
+        radps = False
+        sixray = False
+        wind = False
+        xray = False
+        cosmic_ray = False
+        feedback_scalars = False
+
+        if athenapp:
+            # Athena++ configuration
+            try:
+                mhd = par["configure"]["Magnetic_fields"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                newcool = par["photchem"]["mode"] == "ncr"
+            except KeyError:
+                pass
+
+            try:
+                cooling = par["cooling"]["cooling"] != "none"
+            except KeyError:
+                pass
+
+            try:
+                cosmic_ray = par["configure"]["Cosmic_Ray_Transport"] == "Multigroups"
+            except KeyError:
+                pass
+
+            try:
+                feedback_scalars = par["configure"]["Number_of_feedback_scalar"] > 0
+            except KeyError:
+                pass
+        else:
+            # Athena configuration
+            try:
+                newcool = par["configure"]["new_cooling"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                mhd = par["configure"]["gas"] == "mhd"
+            except KeyError:
+                pass
+
+            try:
+                cooling = par["configure"]["cooling"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                radps = par["configure"]["radps"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                sixray = par["configure"]["sixray"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                wind = par["feedback"]["iWind"] != 0
+            except KeyError:
+                pass
+
+            try:
+                xray = (
+                    (par["feedback"]["iSN"] > 0)
+                    or (par["feedback"]["iWind"] > 0)
+                    or (par["feedback"]["iEarly"] > 0)
+                )
+            except KeyError:
+                pass
+        options = dict(
+            athenapp=athenapp,
+            cooling=cooling,
+            newcool=newcool,
+            mhd=mhd,
+            radps=radps,
+            sixray=sixray,
+            wind=wind,
+            xray=xray,
+            cosmic_ray=cosmic_ray,
+            feedback_scalars=feedback_scalars,
+        )
+
+        self.options = options
 
     @staticmethod
     def get_phase_Tlist(kind="ncr"):
