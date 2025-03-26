@@ -163,13 +163,15 @@ class LoadSimTIGRESSPP(LoadSim):
         self,
         num,
         prefix,
-        slc_kwargs=dict(z=0, method="nearest"),
         savdir=None,
         force_override=False,
+        slc_kwargs=dict(z=0, method="nearest"),
+        dryrun=False
     ):
         """
         a warpper function to make data reading easier
         """
+
         mb = self.par["meshblock"]
         if self.par[f"output{self.hdf5_outid[0]}"]["ghost_zones"] == "true":
             nghost = self.nghost
@@ -180,6 +182,10 @@ class LoadSimTIGRESSPP(LoadSim):
             num_ghost=nghost,
             chunks=dict(x=mb["nx1"], y=mb["nx2"], z=mb["nx3"]),
         )
+
+        if dryrun:
+            return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
+
         if "press" in ds:
             self.add_temperature(ds)
         # rename the variables to match athena convention so that we can use
@@ -204,7 +210,13 @@ class LoadSimTIGRESSPP(LoadSim):
         return parlist
 
     @LoadSim.Decorators.check_netcdf
-    def load_zprof(self, prefix="merged_zprof", savdir=None, force_override=False):
+    def load_zprof(self, prefix="merged_zprof", savdir=None, force_override=False, dryrun=False):
+        if dryrun:
+            mtime = -1
+            for f in self.files["zprof"]:
+                mtime = max(osp.getmtime(f),mtime)
+            return max(mtime,osp.getmtime(__file__))
+
         dlist = dict()
         for fname in self.files["zprof"]:
             with open(fname, "r") as f:
@@ -249,10 +261,16 @@ class LoadSimTIGRESSPP(LoadSim):
 
     @LoadSim.Decorators.check_netcdf
     def load_phase_hst(
-        self, prefix="merged_phase_hst", savdir=None, force_override=False
+        self, prefix="merged_phase_hst", savdir=None, force_override=False, dryrun=False
     ):
         if "phase_hst" not in self.files:
             self.set_phase_history()
+
+        if dryrun:
+            mtime = -1
+            for f in self.files["phase_hst"]:
+                mtime = max(osp.getmtime(f),mtime)
+            return max(mtime,osp.getmtime(__file__))
 
         hst = dict()
         for fname, ph in zip(self.files["phase_hst"], self.phlist):
@@ -265,7 +283,7 @@ class LoadSimTIGRESSPP(LoadSim):
     def update_derived_fields(self):
         dfi = DerivedFields(self.par)
         dfi.dfi["T"]["imshow_args"]["cmap"] = "Spectral_r"
-        dfi.dfi["T"]["imshow_args"]["norm"] = LogNorm(vmin=1e2, vmax=1e9)
+        dfi.dfi["T"]["imshow_args"]["norm"] = LogNorm(vmin=1e2, vmax=1e8)
         dfi.dfi["nH"]["imshow_args"]["cmap"] = cmr.rainforest
         dfi.dfi["nH"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
 

@@ -120,7 +120,7 @@ def set_derived_fields_def(par, x0):
     func[f] = _vmag
     label[f] = r'$|\mathbf{v}|\;[{\rm km\,s^{-1}}]$'
     vminmax[f] = (0.1, 1000.0)
-    cmap[f] = 'cividis'
+    cmap[f] = cmr.guppy_r
     take_log[f] = True
 
     # Radial velocity w.r.t. x0 [km/s]
