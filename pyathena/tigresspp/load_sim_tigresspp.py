@@ -7,6 +7,8 @@ import warnings
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm
 import cmasher as cmr
 
+from .hst import Hst
+from .timing import Timing
 from ..load_sim import LoadSim
 from pyathena.fields.fields import DerivedFields
 import pyathena as pa
@@ -25,7 +27,7 @@ cpp_to_cc = {
 }
 
 
-class LoadSimTIGRESSPP(LoadSim):
+class LoadSimTIGRESSPP(LoadSim,Hst,Timing):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
 
     def __init__(self, basedir, savdir=None, load_method="xarray", verbose=False):
@@ -247,38 +249,6 @@ class LoadSimTIGRESSPP(LoadSim):
         dset = xr.concat(dset, dim="phase")
 
         return dset
-
-    def set_phase_history(self):
-        if "phase_hst" not in self.files:
-            self.files["phase_hst"] = sorted(glob.glob(self.files["hst"] + ".phase?"))
-        phlist = []
-        for fname in self.files["phase_hst"]:
-            with open(fname, "r") as fp:
-                line = fp.readline()
-                phname = line[line.find("phase") :].strip().split("=")[-1]
-            phlist.append(phname)
-        self.phlist = phlist
-
-    @LoadSim.Decorators.check_netcdf
-    def load_phase_hst(
-        self, prefix="merged_phase_hst", savdir=None, force_override=False, dryrun=False
-    ):
-        if "phase_hst" not in self.files:
-            self.set_phase_history()
-
-        if dryrun:
-            mtime = -1
-            for f in self.files["phase_hst"]:
-                mtime = max(osp.getmtime(f),mtime)
-            return max(mtime,osp.getmtime(__file__))
-
-        hst = dict()
-        for fname, ph in zip(self.files["phase_hst"], self.phlist):
-            h = pa.read_hst(fname)
-            h.index = h.pop("time")
-            hst[ph] = h
-
-        return xr.Dataset(hst).to_array("phase").to_dataset(dim="dim_1")
 
     def update_derived_fields(self):
         dfi = DerivedFields(self.par)
