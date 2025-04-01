@@ -1375,9 +1375,9 @@ def set_derived_fields_cosmic_ray(par):
 
     # alfven speed
     f = 'Vcr_mag'
-    field_dep[f] = set(['0-Vc1','0-Vc2','0-Vc3'])
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
     def _Vcr_mag(d, u):
-        vmag = np.sqrt(d['0-Vc1']**2+d['0-Vc2']**2+d['0-Vc3']**2)
+        vmag = np.sqrt(d['0-Vs1']**2+d['0-Vs2']**2+d['0-Vs3']**2)
         return vmag*u.kms
     func[f] = _Vcr_mag
     label[f] = r'$v_{\rm A,i}\;[{\rm km\,s^{-1}}]$'
