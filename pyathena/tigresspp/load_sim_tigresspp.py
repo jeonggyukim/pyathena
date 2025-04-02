@@ -10,25 +10,15 @@ import cmasher as cmr
 
 from .hst import Hst
 from .timing import Timing
+from .zprof import Zprof
+from .slc_prj import SliceProj
 from ..load_sim import LoadSim
 from pyathena.fields.fields import DerivedFields
 import pyathena as pa
 
 base_path = osp.dirname(__file__)
 
-cpp_to_cc = {
-    "rho": "density",
-    "press": "pressure",
-    "vel1": "velocity1",
-    "vel2": "velocity2",
-    "vel3": "velocity3",
-    "Bcc1": "cell_centered_B1",
-    "Bcc2": "cell_centered_B2",
-    "Bcc3": "cell_centered_B3",
-}
-
-
-class LoadSimTIGRESSPP(LoadSim,Hst,Timing):
+class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
 
     def __init__(self, basedir, savdir=None, load_method="xarray", verbose=False):
@@ -110,6 +100,9 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing):
         except KeyError:
             pass
 
+        # update dfi
+        self.update_derived_fields()
+
     def calc_deltay(self, time):
         """
         Function to calculate the y-offset at radial edges of the domain
@@ -163,105 +156,6 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing):
             self.add_temperature(ds)
         return ds
 
-    @LoadSim.Decorators.check_netcdf
-    def get_slice(
-        self,
-        num,
-        prefix,
-        savdir=None,
-        force_override=False,
-        filebase=None,
-        slc_kwargs=dict(z=0, method="nearest"),
-        dryrun=False
-    ):
-        """
-        a warpper function to make data reading easier
-        """
-        ds = self.get_data(num)
-
-        if dryrun:
-            return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
-
-        # rename the variables to match athena convention so that we can use
-        # the same derived fields as in athena
-        rename_dict = {k: v for k, v in cpp_to_cc.items() if k in ds}
-        ds = ds.rename(rename_dict)
-        slc = ds.sel(**slc_kwargs)
-        slc.attrs = dict(time=ds.attrs["Time"])
-        return slc
-
-    def set_prj_dfi(self):
-        prjkwargs = dict()
-        prjkwargs["Sigma"] = dict(norm=LogNorm(1.e-2,1.e2),cmap=cm.pink_r)
-        prjkwargs["mflux"] = dict(norm=SymLogNorm(1.e-4,vmin=-1.e-1,vmax=1.e-1),cmap=cmr.fusion_r)
-        prjkwargs["mZflux"] = prjkwargs["mflux"]
-        prjkwargs["teflux"] = dict(norm=SymLogNorm(1.e40,vmin=-1.e46,vmax=1.e46),cmap=cmr.viola)
-        prjkwargs["keflux"] = prjkwargs["teflux"]
-        prjkwargs["creflux"] = prjkwargs["teflux"]
-        prjkwargs["creflux_diff"] = prjkwargs["creflux"]
-        prjkwargs["creflux_adv"] = prjkwargs["creflux"]
-        prjkwargs["creflux_str"] = prjkwargs["creflux"]
-        labels = dict()
-        labels["Sigma"] = r"$\Sigma_{\rm gas}\,[{\rm M_\odot\,pc^{-2}}]$"
-        labels["mflux"] = r"$\mathcal{F}_{\rho}\,[{\rm M_\odot\,kpc^{-2}\,yr^{-1}}]$"
-        labels["mZflux"] = r"$\mathcal{F}_{\rho Z}\,[{\rm M_\odot\,kpc^{-2}\,yr^{-1}}]$"
-        labels["teflux"] = r"$\mathcal{F}_{e_{\rm th}}\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
-        labels["keflux"] = r"$\mathcal{F}_{e_{\rm kin}}\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
-        labels["creflux"] = r"$\mathcal{F}_{e_{\rm cr}}\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
-        labels["creflux_diff"] = r"$\mathcal{F}_{e_{\rm cr},{\rm diff}}\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
-        labels["creflux_adv"] = r"$\mathcal{F}_{e_{\rm cr},{\rm adv}}\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
-        labels["creflux_str"] = r"$\mathcal{F}_{e_{\rm cr},{\rm str}}\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
-        return prjkwargs,labels
-
-    @LoadSim.Decorators.check_netcdf
-    def get_prj(self,num,ax,
-            prefix,
-            savdir=None,
-            force_override=False,
-            filebase=None,
-            dryrun=False):
-        data = self.get_data(num)
-
-        if dryrun:
-            return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
-
-        axtoi = dict(x=0, y=1, z=2)
-
-        prjdata = xr.Dataset()
-        gamma = self.par["hydro"]["gamma"]
-        Lx = self.domain["Lx"]
-        conv_surf = (self.u.length*self.u.density).to("Msun/pc**2").value
-        conv_mflux = (self.u.density*self.u.velocity).to("Msun/(kpc2*yr)").value
-        conv_eflux = (self.u.energy_density*self.u.velocity).to("erg/(kpc2*yr)").value
-        prjdata["Sigma"] = data["rho"] * conv_surf
-        prjdata["mflux"] = data["rho"]*data["vel3"] * conv_mflux
-        prjdata["mZflux"] = data["rho"]*data["rmetal"]*data["vel3"] * conv_mflux
-        prjdata["teflux"] = gamma/(gamma-1)*data["press"]*data["vel3"] * conv_eflux
-        prjdata["keflux"] = 0.5*data["rho"]*data["vel3"]*(data["vel1"]**2+data["vel2"]**2+data["vel3"]**2) * conv_eflux
-        if self.options["cosmic_ray"]:
-            prjdata["creflux"] = data["0-Fc3"]*conv_eflux
-            prjdata["creflux_diff"] = data["0-Ec"]*data["0-Vd3"]*conv_eflux*4/3.
-            prjdata["creflux_adv"] = data["0-Ec"]*data["vel3"]*conv_eflux*4/3.
-            prjdata["creflux_str"] = data["0-Ec"]*data["0-Vs3"]*conv_eflux*4/3.
-
-        i = axtoi[ax]
-        dx = self.domain["dx"][i]
-        Lx = self.domain["Lx"][i]
-        res_ax = []
-        for phase in ["whole","hot","wc"]:
-            if phase == "hot":
-                cond = data["temperature"]>2.e4
-            elif phase == "wc":
-                cond = data["temperature"]<=2.e4
-            else:
-                cond = 1.0
-            prj = (prjdata*cond).sum(dim=ax)*dx/Lx
-            prj["Sigma"] *= Lx
-            res_ax.append(prj.assign_coords(phase=phase))
-        prj = xr.concat(res_ax,dim="phase")
-        prj.attrs = dict(time=data.attrs["Time"])
-        return prj
-
     def load_parcsv(self):
         par_pattern = osp.join(self.basedir, f"{self.problem_id}.par*.csv")
         self.files["parcsv"] = glob.glob(par_pattern)
@@ -274,76 +168,6 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing):
             par = pd.read_csv(parname)
             parlist.append(par)
         return parlist
-
-    @LoadSim.Decorators.check_netcdf
-    def load_zprof(self, prefix="merged_zprof", filebase=None,
-                   savdir=None, force_override=False, dryrun=False):
-        if dryrun:
-            mtime = -1
-            for f in self.files["zprof"]:
-                mtime = max(osp.getmtime(f),mtime)
-            return max(mtime,osp.getmtime(__file__))
-
-        if self.ff.zprof_separate_vz:
-            dlist_pvz = dict()
-            dlist_nvz = dict()
-        else:
-            dlist = dict()
-        for fname in self.files["zprof"]:
-            with open(fname, "r") as f:
-                header = f.readline()
-            data = pd.read_csv(fname, skiprows=1)
-            tmp = data.pop("k")
-            data.index = data.x3v
-            time = eval(
-                header[header.find("time") : header.find("cycle")]
-                .split("=")[-1]
-                .strip()
-            )
-            if self.ff.zprof_separate_vz:
-                phase = (
-                    header[header.find("phase") : header.find("vz_dir")]
-                    .split("=")[-1]
-                    .strip()
-                )
-                vz = eval(
-                    header[header.find("vz_dir") : header.find("variable")]
-                    .split("=")[-1]
-                    .strip()
-                )
-                if vz>0:
-                    dlist = dlist_pvz
-                else:
-                    dlist = dlist_nvz
-            else:
-                phase = (
-                    header[header.find("phase") : header.find("variable")]
-                    .split("=")[-1]
-                    .strip()
-                )
-            for ph in self.phase:
-                if ph in fname:
-                    if phase not in dlist:
-                        dlist[phase] = []
-                    dlist[phase].append(
-                        data.to_xarray().assign_coords(time=time).rename(x3v="z")
-                    )
-
-        if self.ff.zprof_separate_vz:
-            dset_vz = []
-            for vz_dir,dlist in zip([1,-1],[dlist_pvz,dlist_nvz]):
-                dset = []
-                for phase in dlist:
-                    dset.append(xr.concat(dlist[phase], dim="time").assign_coords(phase=phase))
-                dset_vz.append(xr.concat(dset, dim="phase").assign_coords(vz_dir=vz_dir))
-            dset = xr.concat(dset_vz, dim="vz_dir")
-        else:
-            dset = []
-            for phase in dlist:
-                dset.append(xr.concat(dlist[phase], dim="time").assign_coords(phase=phase))
-            dset = xr.concat(dset, dim="phase")
-
-        return dset
 
     def update_derived_fields(self):
         dfi = DerivedFields(self.par)
@@ -527,12 +351,19 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing):
         if kind == "ncr":
             return [500, 6000, 15000, 35000, 5.0e5]
         elif kind == "classic":
-            return [200, 5000, 15000, 20000, 5.0e5]
+            return [184, 5000, 20000, 5.0e5]
 
     @staticmethod
     def get_phase_T1list():
         return [500, 6000, 13000, 24000, 1.0e6]
 
+    def set_phase(self, data):
+        temp_cuts = self.get_phase_Tlist("classic")
+        phase = xr.zeros_like(data["temperature"]) + len(temp_cuts)
+        self.phlist = ["CNM","UNM","WNM","WHIM","HIM"]
+        for i,tcut in enumerate(temp_cuts):
+            phase = xr.where(data["temperature"] < tcut, phase-1, phase)
+        return phase
 
 class LoadSimTIGRESSPPAll(object):
     """Class to load multiple simulations"""

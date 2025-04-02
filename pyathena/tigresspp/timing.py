@@ -267,7 +267,7 @@ class Timing:
             whis=(5, 95),
             flierprops=dict(marker="+"),
         )
-        plt.xlim(1.0e4, 1.0e8)
+        plt.xlim(1.0e4, 1.0e7)
         plt.grid(True)
         plt.xscale("log")
         plt.xlabel("zcs")
