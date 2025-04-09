@@ -29,6 +29,9 @@ cpp_to_cc = {
     "Bcc1": "cell_centered_B1",
     "Bcc2": "cell_centered_B2",
     "Bcc3": "cell_centered_B3",
+    "rHI": "xHI",
+    "rH2": "xH2",
+    "rEL": "xe",
 }
 
 class SliceProj:
@@ -46,7 +49,7 @@ class SliceProj:
         """
         a warpper function to make data reading easier
         """
-        ds = self.get_data(num)
+        ds = self.get_data(num, load_derived=False)
 
         if dryrun:
             return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
@@ -62,6 +65,11 @@ class SliceProj:
     def set_prj_dfi(self):
         prjkwargs = dict()
         prjkwargs["Sigma"] = dict(norm=LogNorm(1.e-2,1.e2),cmap=cm.pink_r)
+        prjkwargs["Sigma_HI"] = prjkwargs["Sigma"]
+        prjkwargs["Sigma_HII"] = prjkwargs["Sigma"]
+        prjkwargs["Sigma_H2"] = prjkwargs["Sigma"]
+        prjkwargs["Sigma_EL"] = prjkwargs["Sigma"]
+        prjkwargs["EM"] = dict(norm=LogNorm(1.0e-2, 1.0e4), cmap=plt.cm.plasma)
         prjkwargs["mflux"] = dict(norm=SymLogNorm(1.e-4,vmin=-1.e-1,vmax=1.e-1),cmap=cmr.fusion_r)
         prjkwargs["mZflux"] = prjkwargs["mflux"]
         prjkwargs["teflux"] = dict(norm=SymLogNorm(1.e40,vmin=-1.e46,vmax=1.e46),cmap=cmr.viola)
@@ -72,6 +80,11 @@ class SliceProj:
         prjkwargs["creflux_str"] = prjkwargs["creflux"]
         labels = dict()
         labels["Sigma"] = r"$\Sigma_{\rm gas}\,[{\rm M_\odot\,pc^{-2}}]$"
+        labels["Sigma_HI"] = r"$\Sigma_{\rm gas,H}\,[{\rm M_\odot\,pc^{-2}}]$"
+        labels["Sigma_H2"] = r"$\Sigma_{\rm gas,H_2}\,[{\rm M_\odot\,pc^{-2}}]$"
+        labels["Sigma_HII"] = r"$\Sigma_{\rm gas,H^+}\,[{\rm M_\odot\,pc^{-2}}]$"
+        labels["Sigma_EL"] = r"$\Sigma_{\rm e}\,[{\rm M_\odot\,pc^{-2}}]$"
+        labels["EM"] = r"${\rm EM}\,[{\rm cm^{-6}\,pc}]$"
         labels["mflux"] = r"$\mathcal{F}_{\rho}\,[{\rm M_\odot\,kpc^{-2}\,yr^{-1}}]$"
         labels["mZflux"] = r"$\mathcal{F}_{\rho Z}\,[{\rm M_\odot\,kpc^{-2}\,yr^{-1}}]$"
         labels["teflux"] = r"$\mathcal{F}_{e_{\rm th}}\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
@@ -89,7 +102,7 @@ class SliceProj:
             force_override=False,
             filebase=None,
             dryrun=False):
-        data = self.get_data(num)
+        data = self.get_data(num, load_derived=False)
 
         if dryrun:
             return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
@@ -113,7 +126,12 @@ class SliceProj:
                 prjdata["creflux_diff"] = data["0-Ec"]*data["0-Vd3"]*conv_eflux*4/3.
                 prjdata["creflux_adv"] = data["0-Ec"]*data["vel3"]*conv_eflux*4/3.
                 prjdata["creflux_str"] = data["0-Ec"]*data["0-Vs3"]*conv_eflux*4/3.
-
+        if self.options["newcool"]:
+            prjdata["Sigma_HI"] = data["rho"]*data["rHI"] * conv_surf
+            prjdata["Sigma_H2"] = 2*data["rho"]*data["rH2"] * conv_surf
+            prjdata["Sigma_HII"] = data["rho"]*(1-data["rHI"]-2*data["rH2"]) * conv_surf
+            prjdata["Sigma_EL"] = data["rho"]*data["rEL"] * conv_surf
+            prjdata["EM"] = (data["rho"]*data["rEL"])**2
         i = axtoi[ax]
         dx = self.domain["dx"][i]
         Lx = self.domain["Lx"][i]
@@ -126,7 +144,9 @@ class SliceProj:
             else:
                 cond = 1.0
             prj = (prjdata*cond).sum(dim=ax)*dx/Lx
-            prj["Sigma"] *= Lx
+            for f in prjdata:
+                if f.startswith("Sigma") or f.startswith("EM"):
+                    prj[f] *= Lx
             res_ax.append(prj.assign_coords(phase=phase))
         prj = xr.concat(res_ax,dim="phase")
         prj.attrs = dict(time=data.attrs["Time"])

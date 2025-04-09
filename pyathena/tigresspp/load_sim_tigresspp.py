@@ -103,6 +103,21 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
         # update dfi
         self.update_derived_fields()
 
+        # set variable name conversion
+        self.cpp_to_cc = {
+            "rho": "density",
+            "press": "pressure",
+            "vel1": "velocity1",
+            "vel2": "velocity2",
+            "vel3": "velocity3",
+            "Bcc1": "cell_centered_B1",
+            "Bcc2": "cell_centered_B2",
+            "Bcc3": "cell_centered_B3",
+            "rHI": "xHI",
+            "rH2": "xH2",
+            "rEL": "xe",
+        }
+
     def calc_deltay(self, time):
         """
         Function to calculate the y-offset at radial edges of the domain
@@ -130,14 +145,17 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
 
     def add_temperature(self, ds):
         T1 = ds["press"] / ds["rho"] * (self.u.temperature_mu).value
-        if hasattr(self, "coolftn"):
-            logT1 = np.log10(T1)
-            mu = self.coolftn["mu"](logT1)
+        if self.options["newcool"]:
+            mu = 1.4/(1.1 + ds['rEL'] - ds['rH2'])
         else:
-            mu = 1.27  # default for neutral 1.4/1.1
+            if hasattr(self, "coolftn"):
+                logT1 = np.log10(T1)
+                mu = self.coolftn["mu"](logT1)
+            else:
+                mu = 1.27  # default for neutral 1.4/1.1
         ds["temperature"] = mu * T1
 
-    def get_data(self, num):
+    def get_data(self, num, load_derived=False):
         """a wrapper function to load data with automatically assigned
         num_ghost and chunks"""
 
@@ -154,6 +172,15 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
 
         if "press" in ds:
             self.add_temperature(ds)
+
+        if load_derived:
+            rename_dict = {k: v for k, v in self.cpp_to_cc.items() if k in ds}
+            ds = ds.rename(rename_dict)
+            for f in self.dfi:
+                try:
+                    ds[f] = self.dfi[f]["func"](ds, self.u)
+                except KeyError:
+                    continue
         return ds
 
     def load_parcsv(self):
@@ -171,10 +198,23 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
 
     def update_derived_fields(self):
         dfi = DerivedFields(self.par)
-        dfi.dfi["T"]["imshow_args"]["cmap"] = "Spectral_r"
-        dfi.dfi["T"]["imshow_args"]["norm"] = LogNorm(vmin=1e2, vmax=1e8)
+        # dfi.dfi["T"]["imshow_args"]["cmap"] = "Spectral_r"
+        # dfi.dfi["T"]["imshow_args"]["norm"] = LogNorm(vmin=1e2, vmax=1e8)
         dfi.dfi["nH"]["imshow_args"]["cmap"] = cmr.rainforest
         dfi.dfi["nH"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+        if self.options["newcool"]:
+            dfi.dfi["nHI"]["imshow_args"]["cmap"] = cmr.rainforest
+            dfi.dfi["nHI"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+            dfi.dfi["nHII"]["imshow_args"]["cmap"] = cmr.rainforest
+            dfi.dfi["nHII"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+            dfi.dfi["ne"]["imshow_args"]["cmap"] = cmr.rainforest
+            dfi.dfi["ne"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+            dfi.dfi["xe"]["imshow_args"]["norm"] = Normalize(0, 1.2)
+            dfi.dfi["xe"]["imshow_args"]["cmap"] = cm.ocean_r
+            dfi.dfi["cool_rate_cgs"]["imshow_args"]["cmap"] = cmr.get_sub_cmap(cmr.freeze_r, 0.0, 0.7)
+            dfi.dfi["cool_rate_cgs"]["imshow_args"]["norm"] = LogNorm(vmin=1e-30, vmax=1e-20)
+            dfi.dfi["heat_rate_cgs"]["imshow_args"]["cmap"] = cmr.get_sub_cmap(cmr.flamingo_r, 0.0, 0.7)
+            dfi.dfi["heat_rate_cgs"]["imshow_args"]["norm"] = LogNorm(vmin=1e-30, vmax=1e-20)
 
         if self.options["cosmic_ray"]:
             dfi.dfi["vmag"]["imshow_args"]["cmap"] = dfi.dfi["Vcr_mag"]["imshow_args"][
@@ -186,6 +226,7 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
             dfi.dfi["pok"]["imshow_args"]["cmap"] = dfi.dfi["pok_cr"]["imshow_args"][
                 "cmap"
             ]
+            dfi.dfi["pok_cr"]["imshow_args"]["norm"] = LogNorm(1.e2,5.e4)
             dfi.dfi["pok"]["imshow_args"]["norm"] = dfi.dfi["pok_cr"]["imshow_args"][
                 "norm"
             ]

@@ -91,7 +91,7 @@ def plot_slices(sim, num, savefig=True):
         None,
         None,
         "velocity",
-        "0-Vc",
+        "0-Vs",
         None,
         None,
         None,
@@ -167,6 +167,102 @@ def plot_slices(sim, num, savefig=True):
     return fig
     # plt.tight_layout()
 
+def plot_slices_ncr(sim, num, savefig=True):
+    slc_xy = sim.get_slice(num, "allslc.z", slc_kwargs=dict(z=0, method="nearest"))
+    slc_xz = sim.get_slice(num, "allslc.y", slc_kwargs=dict(y=0, method="nearest"))
+    xz_ratio = sim.domain["Lx"][2] / sim.domain["Lx"][1]
+    flist = [
+        "nH",
+        "xe",
+        "T",
+        "pok",
+        "vmag",
+        "Bmag",
+        "Zgas",
+        "rret",
+        "Lambda_cool",
+        "cool_rate_cgs",
+        "heat_rate_cgs",
+    ]
+    vectors = [
+        None,
+        None,
+        None,
+        None,
+        "velocity",
+        "cell_centered_B",
+        None,
+        None,
+        None,
+        None,
+        None
+    ]
+    nf = len(flist)
+    fig, axes = plt.subplots(
+        2,
+        nf,
+        figsize=(2 * nf, 2 * (1 + xz_ratio)),
+        gridspec_kw=dict(height_ratios=[xz_ratio, 1]),
+        constrained_layout=True,
+        num=0,
+    )
+    for ax, field, vec in zip(axes[0, :], flist, vectors):
+        plt.sca(ax)
+        im = plot_slice_xz(
+            sim,
+            slc_xz,
+            field,
+            sim.dfi,
+            vec=vec,
+            stream_kwargs=dict(color="w"),
+        )
+        if im is not None:
+            cbar = plt.colorbar(
+                im,
+                orientation="horizontal",
+                location="top",
+                pad=0.01,
+                shrink=0.8,
+                aspect=10,
+                label=sim.dfi[field]["label"],
+            )
+            ax.set_aspect("equal", adjustable="box")
+        # ax.set_title(field)
+        ax.axis("off")
+    for ax, field, vec in zip(axes[1, :], flist, vectors):
+        plt.sca(ax)
+        im = plot_slice_xy(
+            sim,
+            slc_xy,
+            field,
+            sim.dfi,
+            vec=vec,
+            stream_kwargs=dict(density=0.5, color="w"),
+        )
+        if im is not None:
+            ax.set_aspect("equal", adjustable="box")
+        ax.axis("off")
+    tMyr = slc_xy.attrs["time"] * sim.u.Myr
+    axes[0, 0].annotate(
+        f"t={tMyr:.2f} Myr",
+        (0.5, 0.99),
+        ha="center",
+        va="top",
+        xycoords="axes fraction",
+        fontsize="x-large",
+        bbox=dict(boxstyle="round,pad=0.2", fc="w", ec="k", lw=1),
+    )
+
+    if savefig:
+        savdir = osp.join(sim.savdir, "ncr_snapshot")
+        if not osp.exists(savdir):
+            os.makedirs(savdir, exist_ok=True)
+
+        savname = osp.join(savdir, "{0:s}_{1:04d}.png".format(sim.basename, num))
+        plt.savefig(savname, dpi=200, bbox_inches="tight")
+    return fig
+    # plt.tight_layout()
+
 def plot_projections(sim, num, savefig=True):
     prjdata = sim.get_prj(num,"y",prefix="prj.y")
     prjkwargs,labels = sim.set_prj_dfi()
@@ -231,6 +327,71 @@ def plot_projections(sim, num, savefig=True):
         plt.savefig(savname, dpi=200, bbox_inches="tight")
     return fig
 
+
+def plot_projections_ncr(sim, num, savefig=True):
+    prjdata = sim.get_prj(num,"y",prefix="prj.y")
+    prjkwargs,labels = sim.set_prj_dfi()
+    xz_ratio = sim.domain["Lx"][2] / sim.domain["Lx"][1]
+    flist = ["Sigma","Sigma_HI","Sigma_HII","EM","teflux","keflux"]
+    phlist = ["whole"]
+    nf = len(flist)
+    nphase = len(phlist)
+    vectors = [None]*nf
+    size = 2
+    fig, axes = plt.subplots(
+        1,
+        nf*nphase,
+        figsize=(size * nf * nphase , size * (xz_ratio)),
+        # gridspec_kw=dict(height_ratios=[xz_ratio, 1]),
+        constrained_layout=True,
+        num=0,
+    )
+
+    for i,phase in enumerate(phlist):
+        for ax, field, vec in zip(axes[i::nphase], flist, vectors):
+            plt.sca(ax)
+            ax.axis("off")
+            try:
+                prj = prjdata[field].sel(phase=phase)
+            except KeyError:
+                continue
+            im = plt.pcolormesh(
+                prj.x,
+                prj.z,
+                prj,
+                **prjkwargs[field]
+            )
+            if im is not None:
+                cbar = plt.colorbar(
+                    im,
+                    orientation="horizontal",
+                    location="top",
+                    pad=0.01,
+                    shrink=0.8,
+                    aspect=10,
+                    label=labels[field]+f"\n{phase}",
+                )
+                ax.set_aspect("equal", adjustable="box")
+    tMyr = prjdata.attrs["time"] * sim.u.Myr
+    axes[0].annotate(
+        f"t={tMyr:.2f} Myr",
+        (0.5, 0.99),
+        ha="center",
+        va="top",
+        xycoords="axes fraction",
+        fontsize="x-large",
+        bbox=dict(boxstyle="round,pad=0.2", fc="w", ec="k", lw=1),
+    )
+
+    if savefig:
+        savdir = osp.join(sim.savdir, "ncr_snapshot_prj")
+        if not osp.exists(savdir):
+            os.makedirs(savdir, exist_ok=True)
+
+        savname = osp.join(savdir, "{0:s}_{1:04d}.png".format(sim.basename, num))
+        plt.savefig(savname, dpi=200, bbox_inches="tight")
+    return fig
+
 if __name__ == "__main__":
     spp = LoadSimTIGRESSPP(sys.argv[1])
     spp.update_derived_fields()
@@ -241,10 +402,18 @@ if __name__ == "__main__":
 
     for num in mynums:
         print(num)
-        f = plot_slices(spp, num)
-        plt.close(f)
-        f = plot_projections(spp, num)
-        plt.close(f)
+        if spp.options["newcool"]:
+            f = plot_slices_ncr(spp, num)
+            plt.close(f)
+            f = plot_projections_ncr(spp, num)
+            plt.close(f)
+            head="ncr"
+        else:
+            f = plot_slices(spp, num)
+            plt.close(f)
+            f = plot_projections(spp, num)
+            plt.close(f)
+            head="cr"
 
 # Make movies
     COMM.barrier()
@@ -252,8 +421,8 @@ if __name__ == "__main__":
     if COMM.rank == 0:
         if not osp.isdir(osp.join(spp.basedir, "movies")):
             os.mkdir(osp.join(spp.basedir, "movies"))
-        fin = osp.join(spp.basedir, "cr_snapshot/*.png")
-        fout = osp.join(spp.basedir, "movies/{0:s}_cr_snapshot.mp4".format(spp.basename))
+        fin = osp.join(spp.basedir, f"{head}_snapshot/*.png")
+        fout = osp.join(spp.basedir, f"movies/{spp.basename}_{head}_snapshot.mp4")
         try:
             make_movie(fin, fout, fps_in=15, fps_out=15)
         except FileNotFoundError:
@@ -261,8 +430,8 @@ if __name__ == "__main__":
 
         if not osp.isdir(osp.join(spp.basedir, "movies")):
             os.mkdir(osp.join(spp.basedir, "movies"))
-        fin = osp.join(spp.basedir, "cr_snapshot_prj/*.png")
-        fout = osp.join(spp.basedir, "movies/{0:s}_cr_snapshot_prj.mp4".format(spp.basename))
+        fin = osp.join(spp.basedir, f"{head}_snapshot_prj/*.png")
+        fout = osp.join(spp.basedir, f"movies/{spp.basename}_{head}_snapshot_prj.mp4")
         try:
             make_movie(fin, fout, fps_in=15, fps_out=15)
         except FileNotFoundError:
