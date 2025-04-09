@@ -315,25 +315,25 @@ def set_derived_fields_cooling(par, newcool):
         take_log[f] = True
 
     # Cooling rate per volume [erg/s/cm^3] - nH^2*Lambda
-    f = 'cool_rate'
+    f = 'cool_rate_cgs'
     field_dep[f] = set(['cool_rate'])
     def _cool_rate(d, u):
-        return d['cool_rate']
+        return d['cool_rate']*(u.energy_density/u.time).cgs.value
     func[f] = _cool_rate
     label[f] = r'$\mathcal{L}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
     cmap[f] = 'cubehelix_r'
-    vminmax[f] = (1e-26,1e-18)
+    vminmax[f] = (1e-30,1e-20)
     take_log[f] = True
 
     # Heating rate per volume [erg/s/cm^3] - nH*Gamma
-    f = 'heat_rate'
+    f = 'heat_rate_cgs'
     field_dep[f] = set(['heat_rate'])
     def _heat_rate(d, u):
-        return d['heat_rate']
+        return d['heat_rate']*(u.energy_density/u.time).cgs.value
     func[f] = _heat_rate
     label[f] = r'$\mathcal{G}\;[{\rm erg}\,{\rm cm^{-3}}\,{\rm s}^{-1}]$'
     cmap[f] = 'cubehelix_r'
-    vminmax[f] = (1e-28,1e-20)
+    vminmax[f] = (1e-30,1e-20)
     take_log[f] = True
 
     # Net cooling rate per volume [erg/s/cm^3] - nH^2*Lambda - nH*Gamma
@@ -352,7 +352,7 @@ def set_derived_fields_cooling(par, newcool):
     f = 'Lambda_cool'
     field_dep[f] = set(['density','cool_rate'])
     def _Lambda_cool(d, u):
-        return d['cool_rate']/d['density']**2
+        return d['cool_rate']*(u.energy_density/u.time).cgs.value/d['density']**2
     func[f] = _Lambda_cool
     label[f] = r'$\Lambda\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
     cmap[f] = 'cubehelix_r'
@@ -363,7 +363,7 @@ def set_derived_fields_cooling(par, newcool):
     f = 'nHLambda_cool'
     field_dep[f] = set(['density','cool_rate'])
     def _nHLambda_cool(d, u):
-        return d['cool_rate']/d['density']
+        return d['cool_rate']*(u.energy_density/u.time).cgs.value/d['density']
     func[f] = _nHLambda_cool
     label[f] = r'$n_{\rm H}\Lambda\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
     cmap[f] = 'cubehelix_r'
@@ -374,7 +374,7 @@ def set_derived_fields_cooling(par, newcool):
     f = 'nHLambda_cool_net'
     field_dep[f] = set(['density','cool_rate','heat_rate'])
     def _nHLambda_cool_net(d, u):
-        return (d['cool_rate'] - d['heat_cool'])/d['density']
+        return (d['cool_rate'] - d['heat_cool'])*(u.energy_density/u.time).cgs.value/d['density']
     func[f] = _nHLambda_cool_net
     label[f] = r'$n_{\rm H}\Lambda_{\rm net}\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
     cmap[f] = 'cubehelix_r'
@@ -385,7 +385,7 @@ def set_derived_fields_cooling(par, newcool):
     f = 'Gamma_heat'
     field_dep[f] = set(['density','heat_rate'])
     def _Gamma_heat(d, u):
-        return d['heat_rate']/d['density']
+        return d['heat_rate']*(u.energy_density/u.time).cgs.value/d['density']
     func[f] = _Gamma_heat
     label[f] = r'$\Gamma_{\rm heat}\;[{\rm erg}\,{\rm s}^{-1}]$'
     cmap[f] = 'cubehelix_r'
@@ -514,20 +514,55 @@ def set_derived_fields_mag(par, x0):
     return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_newcool(par, x0):
-
-    try:
-        Erad_PE0 = par['cooling']['Erad_PE0']
-        Erad_LW0 = par['cooling']['Erad_LW0']
-    except KeyError:
-        Erad_PE0 = 7.613e-14
-        Erad_LW0 = 1.335e-14
-
     func = dict()
     field_dep = dict()
     label = dict()
     cmap = dict()
     vminmax = dict()
     take_log = dict()
+
+    # set metallicity and standard abundances
+    try:
+        Zgas = par['problem']['Z_gas']
+        Zdust = par['problem']['Z_dust']
+    except KeyError:
+        Zgas = 1.0
+        Zdust = 1.0
+
+    try:
+        xCstd = par['cooling']['xCstd']
+    except KeyError:
+        xCstd = 1.6e-4
+        print('xCstd not found. Use {:.2g}.'.format(xCstd))
+    xCtot = Zgas*xCstd
+    try:
+        xOstd = Zgas*par['cooling']['xOstd']
+    except KeyError:
+        xOstd = 3.2e-4
+        print('xOstd not found. Use {:.2g}.'.format(xOstd))
+    xOtot = Zgas*xOstd
+
+    # set xi_cr0
+    try:
+        if "photchem_ncr" in par:
+            xi_CR0= par["photchem_ncr"]["xi_cr0"]
+        else:
+            xi_CR0 = par['problem']['xi_CR0']
+    except KeyError:
+        xi_CR0 = 2.e-16
+        print('xi_CR0 not found. Use {:.2g}.'.format(xi_CR0))
+
+    # temperature
+    f = "T"
+    field_dep[f] = set(['density','pressure','xe','xH2'])
+    def _T(d, u):
+        return d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
+            (ac.k_B/u.energy_density).cgs.value
+    func[f] = _T
+    label[f] = r'$T\;[{\rm K}]$'
+    cmap[f] = cmap_shift(mpl.cm.RdYlBu_r, midpoint=3./7., name='cmap_pyathena_T')
+    vminmax[f] = (1e1,1e7)
+    take_log[f] = True
 
     # nH2 [cm^-3] (assume d=nH)
     f = 'nH2'
@@ -673,11 +708,6 @@ def set_derived_fields_newcool(par, x0):
     take_log[f] = True
 
     # xCI - atomic neutral carbon
-    try:
-        xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
-    except KeyError:
-        xCtot = 1.6e-4
-        print('xCtot not found. Use {:.1f}.'.format(xCtot))
     f = 'xCI'
     field_dep[f] = set(['xCI_over_xCtot'])
     def _xCI(d, u):
@@ -702,10 +732,6 @@ def set_derived_fields_newcool(par, x0):
 
     # xOII - single ionized oxygen
     f = 'xOII'
-    try:
-        xOtot = par['problem']['Z_gas']*par['cooling']['xOstd']
-    except KeyError:
-        xOtot = 3.2e-4*par['problem']['Z_gas']
     field_dep[f] = set(['xH2','xHI'])
     def _xOII(d, u):
         return xOtot*(1.0 - d['xHI'] - 2.0*d['xH2'])
@@ -719,19 +745,12 @@ def set_derived_fields_newcool(par, x0):
     # Use with caution.
     # (Do not apply to hot gas and depend on cooling implementation)
     f = 'xCII'
-    try:
-        xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
-        xOtot = par['problem']['Z_gas']*par['cooling']['xOstd']
-    except KeyError:
-        xCtot = 1.6e-4*par['problem']['Z_gas']
-        xOtot = 3.2e-4*par['problem']['Z_gas']
-
     field_dep[f] = set(['xe','xH2','xHI','pressure','density','CR_ionization_rate'])
     def _xCII(d, u):
         d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
             (ac.k_B/u.energy_density).cgs.value
         xe_mol = get_xe_mol(d['density'],d['xH2'],d['xe'],d['T'],d['CR_ionization_rate'],
-                            par['problem']['Z_gas'],par['problem']['Z_dust'])
+                            Zgas, Zdust)
         # Apply floor and ceiling
         return np.maximum(0.0,np.minimum(xCtot,
                     d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2'])*(1.0 + xOtot) - xe_mol))
@@ -745,19 +764,12 @@ def set_derived_fields_newcool(par, x0):
     # Use with caution.
     # (Do not apply to hot gas and depend on cooling implementation)
     f = 'xCII_alt'
-    try:
-        xCtot = par['problem']['Z_gas']*par['cooling']['xCstd']
-        xOtot = par['problem']['Z_gas']*par['cooling']['xOstd']
-    except KeyError:
-        xCtot = 1.6e-4*par['problem']['Z_gas']
-        xOtot = 3.2e-4*par['problem']['Z_gas']
-
     field_dep[f] = set(['xe','xH2','xHI','pressure','density'])
     def _xCII_alt(d, u):
         d['T'] = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
             (ac.k_B/u.energy_density).cgs.value
-        xe_mol = get_xe_mol(d['density'],d['xH2'],d['xe'],d['T'],par['problem']['xi_CR0'],
-                            par['problem']['Z_gas'],par['problem']['Z_dust'])
+        xe_mol = get_xe_mol(d['density'],d['xH2'],d['xe'],d['T'],xi_CR0,
+                            Zgas, Zdust)
         # Apply floor and ceiling
         return np.maximum(0.0,np.minimum(xCtot,
                     d['xe'] - (1.0 - d['xHI'] - 2.0*d['xH2'])*(1.0 + xOtot) - xe_mol))
@@ -1559,7 +1571,7 @@ class DerivedFields(object):
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
 
-        if cooling:
+        if cooling or newcool:
             dicts_ = set_derived_fields_cooling(par, newcool)
             for d, d_ in zip(dicts, dicts_):
                 d = d.update(d_)
