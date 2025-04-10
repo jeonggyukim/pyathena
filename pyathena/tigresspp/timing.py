@@ -223,14 +223,25 @@ class Timing:
             - set(op_scalarlist)
             if "Particle" in k
         ]
+        op_coolinglist = [            k
+            for k in set(optasklist)
+            - set(op_mhdlist)
+            - set(op_crlist)
+            - set(op_scalarlist)
+            - set(op_particlelist)
+            if ("Cooling" in k or "Photochemistry" in k)
+        ]
+
         op_otherlist = (
             set(optasklist)
             - set(op_mhdlist)
             - set(op_crlist)
             - set(op_scalarlist)
             - set(op_particlelist)
+            - set(op_coolinglist)
             - set(["Primitives"])
         )
+
         for name, sel in zip(
             ["MHD", "CR", "Scalar", "Particle", "Primitives", "Others"],
             [
@@ -244,6 +255,7 @@ class Timing:
         ):
             # print(name, tt["OperatorSplitTaskList"][list(sel)].mean().sum())
             timing[name] += tt["OperatorSplitTaskList"][list(sel)].sum(axis=1)
+        timing["Cooling"] = tt["OperatorSplitTaskList"][list(op_coolinglist)].sum(axis=1)
 
         fig, axes = plt.subplots(1, 2, figsize=(8, 3), num=1)
 
