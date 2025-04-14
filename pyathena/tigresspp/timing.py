@@ -166,7 +166,7 @@ class Timing:
         # plt.savefig("timing.png", bbox_inches="tight")
         return fig
 
-    def plt_timing(self):
+    def plt_timing(self, plot=True):
         tt = self.load_task_time()
         lt = self.load_loop_time()
         tasklist = list(tt["TimeIntegrator"].keys())
@@ -256,6 +256,10 @@ class Timing:
             # print(name, tt["OperatorSplitTaskList"][list(sel)].mean().sum())
             timing[name] += tt["OperatorSplitTaskList"][list(sel)].sum(axis=1)
         timing["Cooling"] = tt["OperatorSplitTaskList"][list(op_coolinglist)].sum(axis=1)
+
+        if not plot:
+            return timing
+
 
         fig, axes = plt.subplots(1, 2, figsize=(8, 3), num=1)
 
