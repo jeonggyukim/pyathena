@@ -226,7 +226,7 @@ def groupby_bins(dat, coord, bins, range=None, cumulative=False):
     res: xarray.DataArray
         binned array
     """
-    if isinstance(bins, int):
+    if isinstance(bins, (int, np.integer)):
         if range is None:
             raise ValueError("range should be provided when bins is an int")
         # if bins is an int, then it defines the number of equal-spaced bins
