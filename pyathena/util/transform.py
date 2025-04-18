@@ -201,7 +201,7 @@ def to_cylindrical(vec, origin):
     return R, vec_cyl
 
 
-def groupby_bins(dat, coord, bins, range=None, cumulative=False):
+def groupby_bins(dat, coord, bins, range=None, cumulative=False, skipna=False):
     """Alternative to xr.groupby_bins, which is very slow
 
     Parameters
@@ -238,6 +238,10 @@ def groupby_bins(dat, coord, bins, range=None, cumulative=False):
     dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
     fc = dat[coord].data  # coordinates
     fd = dat.data  # data
+    if skipna:
+        mask = ~np.isnan(fd)
+        fc = fc[mask]
+        fd = fd[mask]
     bin_sum = np.histogram(fc, bins=bins, range=range, weights=fd)[0]
     bin_cnt = np.histogram(fc, bins=bins, range=range)[0]
     if cumulative:
