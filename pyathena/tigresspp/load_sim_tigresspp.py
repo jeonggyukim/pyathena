@@ -5,26 +5,20 @@ import pandas as pd
 import xarray as xr
 import warnings
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm
+from matplotlib import cm
 import cmasher as cmr
 
+from .hst import Hst
+from .timing import Timing
+from .zprof import Zprof
+from .slc_prj import SliceProj
 from ..load_sim import LoadSim
 from pyathena.fields.fields import DerivedFields
+import pyathena as pa
 
 base_path = osp.dirname(__file__)
 
-cpp_to_cc = {
-    "rho": "density",
-    "press": "pressure",
-    "vel1": "velocity1",
-    "vel2": "velocity2",
-    "vel3": "velocity3",
-    "Bcc1": "cell_centered_B1",
-    "Bcc2": "cell_centered_B2",
-    "Bcc3": "cell_centered_B3",
-}
-
-
-class LoadSimTIGRESSPP(LoadSim):
+class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
 
     def __init__(self, basedir, savdir=None, load_method="xarray", verbose=False):
@@ -55,6 +49,10 @@ class LoadSimTIGRESSPP(LoadSim):
         # self.domain = self._get_domain_from_par(self.par)
         # self.dfi = DerivedFields(self.par).dfi
 
+        # set configure options boolean
+        self.check_configure_options()
+
+        # set cooling function
         try:
             if self.par["cooling"]["coolftn"] == "tigress":
                 # cooltbl_file1 = osp.join(basedir,self.par["cooling"]["coolftn_file"])
@@ -81,10 +79,6 @@ class LoadSimTIGRESSPP(LoadSim):
                     )
                 mu = interp1d(cooltbl["logT1"], cooltbl["mu"], fill_value="extrapolate")
                 self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
-                # self.dfi["T"] = self.temperature_dfi()
-                # self.dfi["pokCRsinj"] = self.pokCRscalar_inj_dfi()
-                # self.dfi["pokCRs"] = self.pokCRscalar_dfi()
-                # self.dfi["pokCR"] = self.pokCR_dfi()
 
             if self.par["feedback"]["pop_synth"] == "SB99":
                 # pop_synth_file1 = osp.join(basedir,self.par["feedback"]["pop_synth_file"])
@@ -96,6 +90,33 @@ class LoadSimTIGRESSPP(LoadSim):
                 self.nghost = self.par["configure"]["Number_of_ghost_cells"]
         except KeyError:
             pass
+
+        # set external gravity field
+        try:
+            if self.par["problem"]["ext_grav"] in ["force", "potential"]:
+                extgrav_file = osp.join(basedir, "extgrav.runtime.csv")
+                if osp.isfile(extgrav_file):
+                    self.extgrav = pd.read_csv(extgrav_file)
+        except KeyError:
+            pass
+
+        # update dfi
+        self.update_derived_fields()
+
+        # set variable name conversion
+        self.cpp_to_cc = {
+            "rho": "density",
+            "press": "pressure",
+            "vel1": "velocity1",
+            "vel2": "velocity2",
+            "vel3": "velocity3",
+            "Bcc1": "cell_centered_B1",
+            "Bcc2": "cell_centered_B2",
+            "Bcc3": "cell_centered_B3",
+            "rHI": "xHI",
+            "rH2": "xH2",
+            "rEL": "xe",
+        }
 
     def calc_deltay(self, time):
         """
@@ -124,25 +145,20 @@ class LoadSimTIGRESSPP(LoadSim):
 
     def add_temperature(self, ds):
         T1 = ds["press"] / ds["rho"] * (self.u.temperature_mu).value
-        if hasattr(self, "coolftn"):
-            logT1 = np.log10(T1)
-            mu = self.coolftn["mu"](logT1)
+        if self.options["newcool"]:
+            mu = 1.4/(1.1 + ds['rEL'] - ds['rH2'])
         else:
-            mu = 1.27  # default for neutral 1.4/1.1
+            if hasattr(self, "coolftn"):
+                logT1 = np.log10(T1)
+                mu = self.coolftn["mu"](logT1)
+            else:
+                mu = 1.27  # default for neutral 1.4/1.1
         ds["temperature"] = mu * T1
 
-    @LoadSim.Decorators.check_netcdf
-    def get_slice(
-        self,
-        num,
-        prefix,
-        slc_kwargs=dict(z=0, method="nearest"),
-        savdir=None,
-        force_override=False,
-    ):
-        """
-        a warpper function to make data reading easier
-        """
+    def get_data(self, num, load_derived=False):
+        """a wrapper function to load data with automatically assigned
+        num_ghost and chunks"""
+
         mb = self.par["meshblock"]
         if self.par[f"output{self.hdf5_outid[0]}"]["ghost_zones"] == "true":
             nghost = self.nghost
@@ -153,15 +169,19 @@ class LoadSimTIGRESSPP(LoadSim):
             num_ghost=nghost,
             chunks=dict(x=mb["nx1"], y=mb["nx2"], z=mb["nx3"]),
         )
+
         if "press" in ds:
             self.add_temperature(ds)
-        # rename the variables to match athena convention so that we can use
-        # the same derived fields as in athena
-        rename_dict = {k: v for k, v in cpp_to_cc.items() if k in ds}
-        ds = ds.rename(rename_dict)
-        slc = ds.sel(**slc_kwargs)
-        slc.attrs = dict(time=ds.attrs["Time"])
-        return slc
+
+        if load_derived:
+            rename_dict = {k: v for k, v in self.cpp_to_cc.items() if k in ds}
+            ds = ds.rename(rename_dict)
+            for f in self.dfi:
+                try:
+                    ds[f] = self.dfi[f]["func"](ds, self.u)
+                except KeyError:
+                    continue
+        return ds
 
     def load_parcsv(self):
         par_pattern = osp.join(self.basedir, f"{self.problem_id}.par*.csv")
@@ -176,62 +196,215 @@ class LoadSimTIGRESSPP(LoadSim):
             parlist.append(par)
         return parlist
 
-    @LoadSim.Decorators.check_netcdf
-    def load_zprof(self, prefix="merged_zprof", savdir=None, force_override=False):
-        dlist = dict()
-        for fname in self.files["zprof"]:
-            with open(fname, "r") as f:
-                header = f.readline()
-            data = pd.read_csv(fname, skiprows=1)
-            data.index = data.x3v
-            time = eval(
-                header[header.find("time") : header.find("cycle")]
-                .split("=")[-1]
-                .strip()
-            )
-            phase = (
-                header[header.find("phase") : header.find("variable")]
-                .split("=")[-1]
-                .strip()
-            )
-            for ph in self.phase:
-                if ph in fname:
-                    if phase not in dlist:
-                        dlist[phase] = []
-                    dlist[phase].append(
-                        data.to_xarray().assign_coords(time=time).rename(x3v="z")
-                    )
-
-        dset = []
-        for phase in dlist:
-            dset.append(xr.concat(dlist[phase], dim="time").assign_coords(phase=phase))
-        dset = xr.concat(dset, dim="phase")
-
-        return dset
-
     def update_derived_fields(self):
         dfi = DerivedFields(self.par)
-        dfi.dfi["T"]["imshow_args"]["cmap"]="Spectral_r"
-        dfi.dfi["T"]["imshow_args"]["norm"]=LogNorm(vmin=1e2,vmax=1e8)
-        dfi.dfi["nH"]["imshow_args"]["cmap"]=cmr.rainforest
-        dfi.dfi["nH"]["imshow_args"]["norm"]=LogNorm(vmin=1e-4,vmax=1e2)
-        dfi.dfi["vmag"]["imshow_args"]["cmap"]=dfi.dfi["Vcr_mag"]["imshow_args"]["cmap"]
-        dfi.dfi["vmag"]["imshow_args"]["norm"]=dfi.dfi["Vcr_mag"]["imshow_args"]["norm"]
-        dfi.dfi["pok"]["imshow_args"]["cmap"]=dfi.dfi["pok_cr"]["imshow_args"]["cmap"]
-        dfi.dfi["pok"]["imshow_args"]["norm"]=dfi.dfi["pok_cr"]["imshow_args"]["norm"]
+        # dfi.dfi["T"]["imshow_args"]["cmap"] = "Spectral_r"
+        # dfi.dfi["T"]["imshow_args"]["norm"] = LogNorm(vmin=1e2, vmax=1e8)
+        dfi.dfi["nH"]["imshow_args"]["cmap"] = cmr.rainforest
+        dfi.dfi["nH"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+        if self.options["newcool"]:
+            dfi.dfi["nHI"]["imshow_args"]["cmap"] = cmr.rainforest
+            dfi.dfi["nHI"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+            dfi.dfi["nHII"]["imshow_args"]["cmap"] = cmr.rainforest
+            dfi.dfi["nHII"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+            dfi.dfi["ne"]["imshow_args"]["cmap"] = cmr.rainforest
+            dfi.dfi["ne"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+            dfi.dfi["xe"]["imshow_args"]["norm"] = Normalize(0, 1.2)
+            dfi.dfi["xe"]["imshow_args"]["cmap"] = cm.ocean_r
+            dfi.dfi["cool_rate_cgs"]["imshow_args"]["cmap"] = cmr.get_sub_cmap(cmr.freeze_r, 0.0, 0.7)
+            dfi.dfi["cool_rate_cgs"]["imshow_args"]["norm"] = LogNorm(vmin=1e-30, vmax=1e-20)
+            dfi.dfi["heat_rate_cgs"]["imshow_args"]["cmap"] = cmr.get_sub_cmap(cmr.flamingo_r, 0.0, 0.7)
+            dfi.dfi["heat_rate_cgs"]["imshow_args"]["norm"] = LogNorm(vmin=1e-30, vmax=1e-20)
+
+        if self.options["cosmic_ray"]:
+            dfi.dfi["vmag"]["imshow_args"]["cmap"] = dfi.dfi["Vcr_mag"]["imshow_args"][
+                "cmap"
+            ]
+            dfi.dfi["vmag"]["imshow_args"]["norm"] = dfi.dfi["Vcr_mag"]["imshow_args"][
+                "norm"
+            ]
+            dfi.dfi["pok"]["imshow_args"]["cmap"] = dfi.dfi["pok_cr"]["imshow_args"][
+                "cmap"
+            ]
+            dfi.dfi["pok_cr"]["imshow_args"]["norm"] = LogNorm(1.e2,5.e4)
+            dfi.dfi["pok"]["imshow_args"]["norm"] = dfi.dfi["pok_cr"]["imshow_args"][
+                "norm"
+            ]
         self.dfi = dfi.dfi
+
+    def get_pdf(
+        self,
+        dchunk,
+        xf,
+        yf,
+        wf,
+        xlim,
+        ylim,
+        Nx=128,
+        Ny=128,
+        logx=False,
+        logy=False,
+        phase=None,
+    ):
+        try:
+            xdata = dchunk[xf]
+        except KeyError:
+            xdata = self.dfi(dchunk, self.u)
+        try:
+            ydata = dchunk[yf]
+        except KeyError:
+            ydata = self.dfi(dchunk, self.u)
+        if wf is not None:
+            try:
+                wdata = dchunk[wf]
+            except KeyError:
+                wdata = self.dfi(dchunk, self.u)
+            if phase is not None:
+                wdata = wdata * phase.data.flatten()
+            name = f"{wf}-pdf"
+        else:
+            name = "vol-pdf"
+
+        if logx:
+            xdata = np.log10(np.abs(xdata))
+            xf = f"log{xf}"
+        if logy:
+            ydata = np.log10(np.abs(ydata))
+            yf = f"log{yf}"
+
+        b1 = np.linspace(xlim[0], xlim[1], Nx)
+        b2 = np.linspace(ylim[0], ylim[1], Ny)
+        h, b1, b2 = np.histogram2d(
+            xdata.data.flatten(),
+            ydata.data.flatten(),
+            weights=wdata.data.flatten() if wf is not None else None,
+            bins=[b1, b2],
+        )
+        dx = b1[1] - b1[0]
+        dy = b2[1] - b2[0]
+        pdf = h.T / dx / dy
+        da = xr.DataArray(
+            pdf,
+            coords=[0.5 * (b2[1:] + b2[:-1]), 0.5 * (b1[1:] + b1[:-1])],
+            dims=[yf, xf],
+            name=name,
+        )
+        return da
+
+    def check_configure_options(self):
+        par = self.par
+        athenapp = "mesh" in par
+
+        # default configuration
+        cooling = False
+        newcool = False
+        mhd = False
+        radps = False
+        sixray = False
+        wind = False
+        xray = False
+        cosmic_ray = False
+        feedback_scalars = False
+
+        if athenapp:
+            # Athena++ configuration
+            try:
+                mhd = par["configure"]["Magnetic_fields"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                newcool = par["photchem"]["mode"] == "ncr"
+            except KeyError:
+                pass
+
+            try:
+                cooling = par["cooling"]["cooling"] != "none"
+            except KeyError:
+                pass
+
+            try:
+                cosmic_ray = par["configure"]["Cosmic_Ray_Transport"] == "Multigroups"
+            except KeyError:
+                pass
+
+            try:
+                feedback_scalars = par["configure"]["Number_of_feedback_scalar"] > 0
+            except KeyError:
+                pass
+        else:
+            # Athena configuration
+            try:
+                newcool = par["configure"]["new_cooling"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                mhd = par["configure"]["gas"] == "mhd"
+            except KeyError:
+                pass
+
+            try:
+                cooling = par["configure"]["cooling"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                radps = par["configure"]["radps"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                sixray = par["configure"]["sixray"] == "ON"
+            except KeyError:
+                pass
+
+            try:
+                wind = par["feedback"]["iWind"] != 0
+            except KeyError:
+                pass
+
+            try:
+                xray = (
+                    (par["feedback"]["iSN"] > 0)
+                    or (par["feedback"]["iWind"] > 0)
+                    or (par["feedback"]["iEarly"] > 0)
+                )
+            except KeyError:
+                pass
+        options = dict(
+            athenapp=athenapp,
+            cooling=cooling,
+            newcool=newcool,
+            mhd=mhd,
+            radps=radps,
+            sixray=sixray,
+            wind=wind,
+            xray=xray,
+            cosmic_ray=cosmic_ray,
+            feedback_scalars=feedback_scalars,
+        )
+
+        self.options = options
 
     @staticmethod
     def get_phase_Tlist(kind="ncr"):
         if kind == "ncr":
             return [500, 6000, 15000, 35000, 5.0e5]
         elif kind == "classic":
-            return [200, 5000, 15000, 20000, 5.0e5]
+            return [184, 5000, 20000, 5.0e5]
 
     @staticmethod
     def get_phase_T1list():
         return [500, 6000, 13000, 24000, 1.0e6]
 
+    def set_phase(self, data):
+        temp_cuts = self.get_phase_Tlist("classic")
+        phase = xr.zeros_like(data["temperature"]) + len(temp_cuts)
+        self.phlist = ["CNM","UNM","WNM","WHIM","HIM"]
+        for i,tcut in enumerate(temp_cuts):
+            phase = xr.where(data["temperature"] < tcut, phase-1, phase)
+        return phase
 
 class LoadSimTIGRESSPPAll(object):
     """Class to load multiple simulations"""

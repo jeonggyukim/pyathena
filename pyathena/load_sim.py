@@ -622,7 +622,7 @@ class LoadSim(LoadSimBase):
         return self.sp
 
     def load_rst(self, num=None, irst=None, verbose=False):
-        if num is None and ivtk is None:
+        if num is None and irst is None:
             raise ValueError('Specify either num or irst')
 
         # get starpar_vtk file name and check if it exist
@@ -910,6 +910,11 @@ class LoadSim(LoadSimBase):
                 else:
                     savdir = osp.join(cls.savdir, prefix)
 
+                if kwargs['filebase'] is not None:
+                    filebase = kwargs['filebase']
+                else:
+                    filebase = prefix
+
                 force_override = kwargs['force_override']
 
                 # Create savdir if it doesn't exist
@@ -923,9 +928,9 @@ class LoadSim(LoadSimBase):
                     print('Permission Error: ', e)
 
                 if 'num' in kwargs:
-                    fpkl = osp.join(savdir, '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
+                    fpkl = osp.join(savdir, f'{filebase}_{kwargs["num"]:04d}.p')
                 else:
-                    fpkl = osp.join(savdir, '{0:s}.p'.format(prefix))
+                    fpkl = osp.join(savdir, f'{filebase}.p')
 
                 if not force_override and osp.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
@@ -953,6 +958,7 @@ class LoadSim(LoadSimBase):
                 from inspect import getcallargs
                 call_args = getcallargs(read_func, cls, *args, **kwargs)
                 call_args.pop('self')
+                call_args.pop('dryrun')
                 kwargs = call_args
 
                 try:
@@ -965,7 +971,13 @@ class LoadSim(LoadSimBase):
                 else:
                     savdir = osp.join(cls.savdir, prefix)
 
+                if kwargs['filebase'] is not None:
+                    filebase = kwargs['filebase']
+                else:
+                    filebase = prefix
+
                 force_override = kwargs['force_override']
+                mtime = read_func(cls,dryrun=True,**kwargs)
 
                 # Create savdir if it doesn't exist
                 try:
@@ -978,11 +990,12 @@ class LoadSim(LoadSimBase):
                     print('Permission Error: ', e)
 
                 if 'num' in kwargs:
-                    fnetcdf = osp.join(savdir, '{0:s}.{1:05d}.nc'.format(prefix, kwargs['num']))
+                    fnetcdf = osp.join(savdir, f'{filebase}.{kwargs["num"]:05d}.nc')
                 else:
-                    fnetcdf = osp.join(savdir, '{0:s}.nc'.format(prefix))
+                    fnetcdf = osp.join(savdir, f'{filebase}.nc')
 
-                if not force_override and osp.exists(fnetcdf):
+                if not force_override and osp.exists(fnetcdf) and \
+                   osp.getmtime(fnetcdf) > mtime:
                     cls.logger.info('Read from existing netcdf: {0:s}'.format(fnetcdf))
                     with xr.open_dataset(fnetcdf) as fb:
                         res = fb.load()

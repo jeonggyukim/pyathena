@@ -369,6 +369,11 @@ class FindFiles(object):
             self.phase = []
             for f in self.files['zprof']:
                 _, num, ph, _ = osp.basename(f).split('.')[-4:]
+                if ph in ["pvz","nvz"]:
+                    _, num, ph, vz, _ = osp.basename(f).split('.')[-5:]
+                    self.zprof_separate_vz = True
+                else:
+                    self.zprof_separate_vz = False
                 try:
                     self.nums_zprof[ph].append(int(num))
                 except KeyError:
