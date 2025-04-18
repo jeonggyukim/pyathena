@@ -1401,12 +1401,12 @@ def set_derived_fields_cosmic_ray(par):
     f = "rCR"
     field_dep[f] = set(["rCR"])
     def _rCR(d, u):
-        return d["rCR"]*(gamma_cr-1)*u.pok
+        return d["rCR"]
     func[f] = _rCR
-    label[f] = r'$P_{\rm CR,inj}/k_B\;[{\rm cm^{-3}\,K}]$'
-    cmap[f] = 'YlOrRd_r'
-    vminmax[f] = (1,5e4)
-    take_log[f] = True
+    label[f] = r'$r_{\rm CR}$'
+    cmap[f] = cmr.ghostlight
+    vminmax[f] = (0, 1)
+    take_log[f] = False
 
     # CR injection
     f = "pok_cr_inj"
