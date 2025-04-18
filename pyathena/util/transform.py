@@ -254,68 +254,6 @@ def groupby_bins(dat, coord, bins, range=None, cumulative=False, skipna=False):
     return res
 
 
-def fast_groupby_bins(dat, coord, ledge, redge, nbin, cumulative=False, skipna=True):
-    """High performance version of groupby_bins using fast_histogram.
-
-    Although groupby_bins using np.histogram is significantly faster than
-    xr.groupby_bins, it is still too slow. Assuming equally spaced bins,
-    fast_histogram achieves order of magnitude higher performance.
-    This function implements groupby_bins based on fast_histogram.
-
-    .. warning::
-        Feb 13, 2025: In fact, np.histogram already optimizes for the uniform bin size.
-        To use the optimized version, one just needs to pass integer "bins" and provide
-        "range". Still, fast_histogram is slightly faster, but the difference is not
-        significant. with 1024^3 data, the speedup is only x1.25. Moreover, fast_histogram
-        is not compatible with dask arrays.
-
-    Parameters
-    ----------
-    dat : xarray.DataArray
-        Input dataArray.
-    coord : str
-        Coordinate name along which data is binned.
-    ledge : float
-        Leftmost bin edge.
-    redge : float
-        Rightmost bin edge.
-    nbin : int
-        Number of bins (= number of edges - 1)
-    cumulative : bool
-        If True, perform cumulative binning, e.g.,
-          v_r_binned[i] = v_r( edge[0] <= r < edge[i+1] ).mean()
-        to calculate average velocity dispersion within radius r
-
-    Returns
-    ------
-    res: xarray.DataArray
-        binned array
-    """
-    warnings.warn(
-        "fast_groupby_bins will be deprecated. Use groupby_bins instead.",
-        DeprecationWarning,
-        stacklevel=2
-    )
-    dat = dat.transpose(*sorted(list(dat.dims), reverse=True))
-    fc = dat[coord].data.flatten()  # flattened coordinates
-    fd = dat.data.flatten()  # flattened data
-    if skipna:
-        mask = ~np.isnan(fd)
-        fc = fc[mask]
-        fd = fd[mask]
-    bin_sum = fh.histogram1d(fc, nbin, (ledge, redge), weights=fd)
-    bin_cnt = fh.histogram1d(fc, nbin, (ledge, redge))
-    if cumulative:
-        bin_sum = np.cumsum(bin_sum)
-        bin_cnt = np.cumsum(bin_cnt)
-    res = bin_sum / bin_cnt
-    # set new coordinates at the bin center
-    edges = np.linspace(ledge, redge, nbin + 1)
-    centers = 0.5*(edges[1:] + edges[:-1])
-    res = xr.DataArray(data=res, coords={coord: centers}, name=dat.name)
-    return res
-
-
 def _chunk_like(*inputs: xr.DataArray | xr.Dataset, chunks: dict[str, int] | None):
     """Helper function that (re-)chunks inputs according to a single chunking dictionary.
     Will also ensure passed inputs are not IndexVariable types, so that they can be chunked.
