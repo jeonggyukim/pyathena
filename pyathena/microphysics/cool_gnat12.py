@@ -56,6 +56,7 @@ class CoolGnat12(object):
                 self.info.loc[e, 'mX_amu'] = float(a.df[a.df['X'] == e]['mX_amu'].iloc[0])
 
         # self.cool_cie_tot = self.get_cool_cie_total()
+        self.elements_cie = ['H','He','C','N','O','Ne','Mg','Si','S','Fe']
         self.get_cool_cie_total()
 
     def _read_ion_frac_table(self):
@@ -113,8 +114,7 @@ class CoolGnat12(object):
 
         return pd.DataFrame(r).T.sort_values('number')
 
-    def get_cool_cie_total(self,
-            elements=['H','He','C','N','O','Ne','Mg','Si','S','Fe']):
+    def get_cool_cie_total(self):
 
         # xi = n_ion/n_H
         xi = dict()
@@ -132,14 +132,14 @@ class CoolGnat12(object):
         cool_tot = np.zeros_like(self.temp)
 
         # Loop over elements for which CIE ion_frac is available
-        for e in elements:
+        for e in self.elements_cie:
             xi[e] = np.zeros_like(self.temp)
             xe[e] = np.zeros_like(self.temp)
             rhoi[e] = np.zeros_like(self.temp)
             cool[e] = np.zeros_like(self.temp)
 
         print('Element // Atomic number // amu')
-        for e in elements:
+        for e in self.elements_cie:
             # Number of possible (atomic+)ion states
             nstate = self.info.loc[e]['number'] + 1
             # Elemental abundance
@@ -156,7 +156,7 @@ class CoolGnat12(object):
                 cool[e] += A*self.ion_frac[e + str(i)].values*\
                     self.cool_cie_per_ion[e][:,i]
 
-        for e in elements:
+        for e in self.elements_cie:
             rhoi_tot += rhoi[e]
             xi_tot += xi[e]
             xe_tot += xe[e]
@@ -167,6 +167,7 @@ class CoolGnat12(object):
         self.cool_tot = cool_tot
 
         self.rhoi_tot = rhoi_tot
+        self.rhoi = rhoi
         self.xi_tot = xi_tot
 
         # mu_i = Sum_s A_s*n_s / Sum_s n_s
@@ -177,6 +178,12 @@ class CoolGnat12(object):
         self.xi = xi
         self.xe = xe
         self.cool = cool
+
+        self.xi_metal = 0.0
+        self.rhoi_metal = 0.0
+        for e in set(self.elements_cie) - set(['H', 'He']):
+            self.rhoi_metal += self.rhoi[e]
+            self.xi_metal += self.xi[e]
 
     def get_cool_cie(self, element):
         """
