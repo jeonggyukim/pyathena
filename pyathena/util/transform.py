@@ -246,7 +246,8 @@ def groupby_bins(dat, coord, bins, range=None, cumulative=False, skipna=False):
     if cumulative:
         bin_sum = np.cumsum(bin_sum)
         bin_cnt = np.cumsum(bin_cnt)
-    res = bin_sum / bin_cnt
+    res = np.divide(bin_sum, bin_cnt,
+                    out=np.full_like(bin_sum, np.nan), where=(bin_cnt!=0))
     # set new coordinates at the bin center
     centers = 0.5*(edges[1:] + edges[:-1])
     res = xr.DataArray(data=res, coords={coord: centers}, name=dat.name)

@@ -910,7 +910,7 @@ class LoadSim(LoadSimBase):
                 else:
                     savdir = osp.join(cls.savdir, prefix)
 
-                if kwargs['filebase'] is not None:
+                if 'filebase' in kwargs and kwargs['filebase'] is not None:
                     filebase = kwargs['filebase']
                 else:
                     filebase = prefix
