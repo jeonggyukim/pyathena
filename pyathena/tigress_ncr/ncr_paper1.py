@@ -368,7 +368,7 @@ class PaperIFigures:
         for i, m in enumerate(ms):
             c = mcolors[m]
             plt.annotate(
-                "               ",
+                "                   ",
                 (x0, y0 - dy * i),
                 xycoords="axes fraction",
                 ha="center",
