@@ -1275,7 +1275,11 @@ def set_derived_fields_xray(par, x0, newcool):
 
     # TODO-JKIM: Need Z_gas parameter in the problem block
     # Or metallicity field
-    Z_gas = par['problem']['Z_gas']
+    # set metallicity and standard abundances
+    try:
+        Z_gas = par['problem']['Z_gas']
+    except KeyError:
+        Z_gas = 1.0
     emin = 0.5 # keV
     emax = 7.0 # keV
     energy = True # If set to False, returns photon emissivity [#/s/cm^3]

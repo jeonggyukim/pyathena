@@ -202,7 +202,10 @@ class ReadZprofBase:
                    whole='whole')
 
         if phase == 'all':
-            phase = list(dct.keys()) + ['h', '2p', 'cu','HI']
+            if self.test_newcool():
+                phase = list(dct.keys()) + ['h', '2p', 'cu','HI']
+            else:
+                phase = list(dct.keys())[:5] + ['whole', 'h', '2p', 'cu']
         else:
             phase = np.atleast_1d(phase)
 
