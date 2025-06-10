@@ -13,4 +13,5 @@ docs/_static
 tags
 job*
 scripts/
-working_notebook/
+working_notebooks/
+pyathena.egg-info
