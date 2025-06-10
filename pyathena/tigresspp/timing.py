@@ -149,7 +149,7 @@ class Timing:
         keys = list(set(lt.keys()) - {"ncycle", "time", "Nblocks"})
         keys = list(lt[keys].median().sort_values(ascending=True).keys())
 
-        fig, axes = plt.subplots(1, 2, figsize=(8, 3), num=1)
+        fig, axes = plt.subplots(1, 2, figsize=(8, 3))
 
         plt.sca(axes[0])
         lt[keys].boxplot(vert=False, showfliers=False)
@@ -167,6 +167,10 @@ class Timing:
         return fig
 
     def plt_timing(self, plot=True):
+        if "ncycle_out_timing" in self.par["time"]:
+            dncycle = self.par["time"]["ncycle_out_timing"]
+        else:
+            dncycle = 1.0
         tt = self.load_task_time()
         lt = self.load_loop_time()
         tasklist = list(tt["TimeIntegrator"].keys())
@@ -204,7 +208,7 @@ class Timing:
             [mhdlist, crlist, scalarlist, particlelist, ["Primitives"], otherlist],
         ):
             # print(name, tt["TimeIntegrator"][list(sel)].mean().sum())
-            timing[name] = tt["TimeIntegrator"][list(sel)].sum(axis=1)
+            timing[name] = tt["TimeIntegrator"][list(sel)].sum(axis=1)/dncycle
 
         op_mhdlist = [
             k for k in optasklist if ("Hydro" in k or "Field" in k or "EMF" in k)
@@ -254,14 +258,14 @@ class Timing:
             ],
         ):
             # print(name, tt["OperatorSplitTaskList"][list(sel)].mean().sum())
-            timing[name] += tt["OperatorSplitTaskList"][list(sel)].sum(axis=1)
-        timing["Cooling"] = tt["OperatorSplitTaskList"][list(op_coolinglist)].sum(axis=1)
+            timing[name] += tt["OperatorSplitTaskList"][list(sel)].sum(axis=1)/dncycle
+        timing["Cooling"] = tt["OperatorSplitTaskList"][list(op_coolinglist)].sum(axis=1)/dncycle
 
         if not plot:
             return timing
 
 
-        fig, axes = plt.subplots(1, 2, figsize=(8, 3), num=1)
+        fig, axes = plt.subplots(1, 2, figsize=(8, 3))
 
         plt.sca(axes[0])
         plt.boxplot(
