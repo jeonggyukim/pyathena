@@ -49,11 +49,12 @@ class SliceProj:
         """
         a warpper function to make data reading easier
         """
-        ds = self.get_data(num, load_derived=False)
+        ds = self.load_hdf5(num=num, file_only=True)
 
         if dryrun:
             return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
 
+        ds = self.get_data(num, load_derived=False)
         # rename the variables to match athena convention so that we can use
         # the same derived fields as in athena
         rename_dict = {k: v for k, v in cpp_to_cc.items() if k in ds}
@@ -102,10 +103,12 @@ class SliceProj:
             force_override=False,
             filebase=None,
             dryrun=False):
-        data = self.get_data(num, load_derived=False)
+        data = self.load_hdf5(num=num, file_only=True)
 
         if dryrun:
             return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
+
+        data = self.get_data(num, load_derived=False)
 
         axtoi = dict(x=0, y=1, z=2)
 
@@ -151,3 +154,83 @@ class SliceProj:
         prj = xr.concat(res_ax,dim="phase")
         prj.attrs = dict(time=data.attrs["Time"])
         return prj
+
+    @LoadSim.Decorators.check_netcdf
+    def get_windpdf(self, num,
+            prefix,
+            savdir=None,
+            force_override=False,
+            filebase=None,
+            dryrun=False,
+            zlist = [500,1000,2000,3000], dz = 50):
+        ds = self.load_hdf5(num=num, file_only=True)
+
+        if dryrun:
+            return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
+
+        ds = self.get_data(num, load_derived=False)
+
+        pdf={"out":xr.Dataset(),"in":xr.Dataset()}
+
+        bin = np.logspace(0,4,201)
+        dbin = np.log10(bin[1]/bin[0])
+        bcc = np.log10(bin)[:-1] + dbin
+        munits = (self.u.density*self.u.velocity).to("Msun/(kpc**2*yr)").value
+        eunits = (self.u.energy_density*self.u.velocity).to("erg/(kpc**2*yr)").value
+        for z0 in zlist:
+            ds_sel = ds.sel(z=slice(z0-dz,z0+dz)).stack(xyz=["x","y","z"])
+            cs = np.sqrt(ds_sel["press"]/ds_sel["rho"])
+            zsgn= ds_sel.z/np.abs(ds_sel.z)
+            vout = ds_sel["vel3"]*zsgn
+            rho = ds_sel["rho"]
+
+            mflux_out = rho*vout
+            vsq = (ds_sel["vel1"]**2 + ds_sel["vel2"]**2 + ds_sel["vel3"]**2)
+            csq = self.par["hydro"]["gamma"]/(self.par["hydro"]["gamma"]-1)*cs**2
+            vBsq = vsq + csq
+            eflux_kin =0.5*mflux_out*vsq
+            eflux_th =mflux_out*csq
+            eflux = eflux_kin + eflux_th
+            if self.options["mhd"]:
+                Bout = ds_sel["Bcc3"]*zsgn
+                vAsq = (ds_sel["Bcc1"]**2 + ds_sel["Bcc2"]**2 + ds_sel["Bcc3"]**2)/rho
+                eflux_mag = mflux_out*vAsq
+                eflux_magt = (ds_sel["Bcc1"]*ds_sel["vel1"] + \
+                              ds_sel["Bcc2"]*ds_sel["vel2"] + \
+                              ds_sel["Bcc3"]*ds_sel["vel3"])*Bout
+                eflux += eflux_mag - eflux_magt
+
+
+            mZflux_out = mflux_out*ds_sel["rmetal"]
+            fluxlist = {
+                "mflux": mflux_out*munits,
+                "mZflux": mZflux_out*munits,
+                "teflux": eflux_th*eunits,
+                "keflux": eflux_kin*eunits,
+                "eflux": eflux*eunits,
+            }
+            if self.options["mhd"]:
+                fluxlist["meflux"] = (eflux_mag-eflux_magt)*eunits
+                fluxlist["meflux_p"] = eflux_mag*eunits
+                fluxlist["meflux_t"] = eflux_magt*eunits
+            outpdflist = []
+            inpdflist =[]
+            for f in fluxlist:
+                outpdf,_,_ = np.histogram2d(vout,cs,
+                                            bins=[bin,bin],
+                                            weights=fluxlist[f])
+                inpdf,_,_ = np.histogram2d(-vout,cs,
+                                            bins=[bin,bin],
+                                            weights=-fluxlist[f])
+
+                outpdf=xr.DataArray(outpdf.T,dims=["logcs","logvz"],coords=[bcc,bcc])
+                inpdf=xr.DataArray(inpdf.T,dims=["logcs","logvz"],coords=[bcc,bcc])
+                outpdflist.append(outpdf.assign_coords(flux=f))
+                inpdflist.append(inpdf.assign_coords(flux=f))
+            pdf["out"][z0]=xr.concat(outpdflist,dim="flux")
+            pdf["in"][z0]=xr.concat(inpdflist,dim="flux")
+
+        pdf["out"]=pdf["out"].to_array("z")
+        pdf["in"]=pdf["in"].to_array("z")
+
+        return xr.Dataset(pdf).assign_coords(time=ds.attrs["Time"])

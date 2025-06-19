@@ -409,7 +409,7 @@ class LoadSim(LoadSimBase):
         return self.ds
 
     def load_hdf5(self, num=None, ihdf5=None,
-                  outvar=None, outid=None, load_method=None, **kwargs):
+                  outvar=None, outid=None, load_method=None, file_only=False, **kwargs):
         """Function to read Athena hdf5 file using pythena or yt and
         return DataSet object.
 
@@ -474,6 +474,8 @@ class LoadSim(LoadSimBase):
         if self.fhdf5 is None or not osp.exists(self.fhdf5):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
 
+        if file_only:
+            return
         if self.load_method == 'xarray':
             try:
                 refinement = self.par['mesh']['refinement']
