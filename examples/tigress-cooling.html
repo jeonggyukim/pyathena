@@ -61,7 +61,7 @@
     <script async="async" src="../_static/sphinx-thebe.js"></script>
     <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
     <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/tigress-classic-cooling';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'examples/tigress-cooling';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="prev" title="Population Synthesis" href="../content/pop_synth.html" />
@@ -201,6 +201,7 @@
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul class="current nav bd-sidenav">
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Cooling in TIGRESS-classic</a></li>
+
 </ul>
 
     </div>
@@ -272,7 +273,7 @@
       
       
       
-      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2Fexamples/tigress-classic-cooling.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2Fexamples/tigress-cooling.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -302,7 +303,7 @@
       
       
       
-      <li><a href="../_sources/examples/tigress-classic-cooling.ipynb" target="_blank"
+      <li><a href="../_sources/examples/tigress-cooling.ipynb" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -396,8 +397,13 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Cooling in TIGRESS-classic</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tabulated-cooling-heating-coefficients">Tabulated cooling/heating coefficients</a></li>
 </ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#ion-by-ion-cie-cooling-function-table-from-gnat-sternberg-2012">Ion-by-ion CIE cooling function table from Gnat &amp; Sternberg (2012)</a></li>
+</ul>
+
             </nav>
         </div>
     </div>
@@ -481,7 +487,7 @@ document.write(`
 </div>
 </div>
 <div class="cell_output docutils container">
-<img alt="../_images/18917a320b2b159568179e921942a82e81040bd3c7aeb3766ba21ec566d26f78.png" src="../_images/18917a320b2b159568179e921942a82e81040bd3c7aeb3766ba21ec566d26f78.png" />
+<img alt="../_images/73fdde856db3f001b55445a5db782417836e3e751b76704d379044e6b8f82872.png" src="../_images/73fdde856db3f001b55445a5db782417836e3e751b76704d379044e6b8f82872.png" />
 </div>
 </div>
 <div class="cell docutils container">
@@ -507,10 +513,42 @@ document.write(`
 <div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Text(0.5, 1.0, &#39;Thermal Equilibrium for $\\Gamma=\\Gamma_0$&#39;)
 </pre></div>
 </div>
-<img alt="../_images/b281e3024f9a9d4b5d11473d4fdf4c5d0605a83050f670ab8bc42f54fe43be01.png" src="../_images/b281e3024f9a9d4b5d11473d4fdf4c5d0605a83050f670ab8bc42f54fe43be01.png" />
+<img alt="../_images/73da4b3f2d95d10d88a47863a32aabe3d4bbc4f471191db09fe90b61dc0aeeb4.png" src="../_images/73da4b3f2d95d10d88a47863a32aabe3d4bbc4f471191db09fe90b61dc0aeeb4.png" />
 </div>
 </div>
 </section>
+</section>
+<section class="tex2jax_ignore mathjax_ignore" id="ion-by-ion-cie-cooling-function-table-from-gnat-sternberg-2012">
+<h1>Ion-by-ion CIE cooling function table from Gnat &amp; Sternberg (2012)<a class="headerlink" href="#ion-by-ion-cie-cooling-function-table-from-gnat-sternberg-2012" title="Permalink to this heading">#</a></h1>
+<div class="cell docutils container">
+<div class="cell_input docutils container">
+<div class="highlight-ipython3 notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena.microphysics.cool_gnat12</span><span class="w"> </span><span class="kn">import</span> <span class="n">CoolGnat12</span>
+
+<span class="n">Zps</span> <span class="o">=</span> <span class="p">[</span><span class="mf">1e-3</span><span class="p">,</span> <span class="mf">1e-2</span><span class="p">,</span> <span class="mf">1e-1</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
+<span class="k">for</span> <span class="n">Zp</span> <span class="ow">in</span> <span class="n">Zps</span><span class="p">:</span>
+    <span class="n">cg</span> <span class="o">=</span> <span class="n">CoolGnat12</span><span class="p">(</span><span class="n">abundance</span><span class="o">=</span><span class="s1">&#39;Asplund09&#39;</span><span class="p">,</span> <span class="n">Zprime</span><span class="o">=</span><span class="n">Zp</span><span class="p">)</span>
+    <span class="n">cg</span><span class="o">.</span><span class="n">get_cool_cie_total</span><span class="p">()</span>
+    <span class="c1"># For ion-by-ion cooling, see cg.cool</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">cg</span><span class="o">.</span><span class="n">temp</span><span class="p">,</span> <span class="n">cg</span><span class="o">.</span><span class="n">cool_tot</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">Zp</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+    
+    <span class="c1"># Save cooling tables</span>
+    <span class="c1">#data = np.column_stack([cg.temp.values, cg.cool_tot])</span>
+    <span class="c1">#np.savetxt(f&#39;cooling_log10Zp{int(np.log10(Zp)):g}.csv&#39;, data,</span>
+    <span class="c1">#           delimiter=&#39;,&#39;, header=&#39;T,Lambda&#39;, comments=&#39;&#39;)</span>
+
+<span class="n">plt</span><span class="o">.</span><span class="n">legend</span><span class="p">(</span><span class="n">title</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$Z_g^{\prime}$&#39;</span><span class="p">)</span>
+<span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">(),</span> <span class="n">xlabel</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$T\;[{\rm }]$&#39;</span><span class="p">,</span> <span class="n">ylabel</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$\Lambda_{\rm Gnat+12}\;[{\rm erg}\,{\rm s}{^-1}]$&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="cell_output docutils container">
+<div class="output text_plain highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[Text(0.5, 0, &#39;$T\\;[{\\rm }]$&#39;),
+ Text(0, 0.5, &#39;$\\Lambda_{\\rm Gnat+12}\\;[{\\rm erg}\\,{\\rm s}{^-1}]$&#39;)]
+</pre></div>
+</div>
+<img alt="../_images/5b77efbb31d476346b238602e7bccf0414c45bff1572ec585dc798f416542f83.png" src="../_images/5b77efbb31d476346b238602e7bccf0414c45bff1572ec585dc798f416542f83.png" />
+</div>
+</div>
 </section>
 
     <script type="text/x-thebe-config">
@@ -568,8 +606,13 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Cooling in TIGRESS-classic</a><ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#tabulated-cooling-heating-coefficients">Tabulated cooling/heating coefficients</a></li>
 </ul>
+</li>
+<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#ion-by-ion-cie-cooling-function-table-from-gnat-sternberg-2012">Ion-by-ion CIE cooling function table from Gnat &amp; Sternberg (2012)</a></li>
+</ul>
+
   </nav></div>
 
 </div></div>
