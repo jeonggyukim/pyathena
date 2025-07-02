@@ -18,4 +18,4 @@ parts:
     - file: content/pop_synth
   - caption: Examples
     chapters:
-    - file: examples/tigress-classic-cooling.ipynb
+    - file: examples/tigress-cooling.ipynb
