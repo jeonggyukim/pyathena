@@ -284,8 +284,8 @@ def plot_zprof_quantile(ydata, quantile=True, **kwargs):
         )
 
 
-def plot_zprof(zprof, field, ph, line="median", quantile=True, **kwargs):
-    ydata = zprof[field].sel(phase=ph)
+def plot_zprof(zprof, field, ph, norm=1.0, line="median", quantile=True, **kwargs):
+    ydata = zprof[field].sel(phase=ph) / norm
     if ydata.phase.size > 1:
         ydata = ydata.sum(dim=["phase"])
     if line == "median":
@@ -1152,6 +1152,149 @@ def plot_flux_z(simgroup, gr, vz_dir=None):
     plt.savefig(osp.join(outdir, f"{gr}_flux_{vout_label}_z.pdf"))
 
 
+def plot_loading_z(simgroup, gr, vz_dir=None):
+    sims = simgroup[gr]
+    fig, axs = plt.subplots(
+        3, 1, figsize=(3, 6), sharey="row", sharex="col", constrained_layout=True
+    )
+    for m, s in sims.items():
+        Zsn = s.par["feedback"]["Z_SN"]
+        Mej = s.par["feedback"]["M_ej"]
+        dt = 0.1
+        mstar = 1 / np.sum(s.pop_synth["snrate"] * dt)
+        field = "sfr40"
+        h = s.read_hst()
+        sfr_avg = h[field].loc[150:].mean()
+        sfr_std = h[field].loc[150:].std()
+        ref_flux = dict(
+            mflux=sfr_avg / mstar * mstar,
+            pflux_MHD=sfr_avg / mstar * 1.25e5,
+            pflux_CR=sfr_avg / mstar * 1.25e5,
+            eflux_MHD=sfr_avg / mstar * 1.0e51,
+            eflux_CR=sfr_avg / mstar * 1.0e51,
+            mZflux=sfr_avg / mstar * Mej * Zsn,
+        )
+
+        color = model_color[m]
+        # dset = s.zp_ph.sum(dim="vz_dir").sel(time=slice(150,500))
+        if vz_dir is None:
+            dset = s.zp_ph.sum(dim="vz_dir").sel(time=slice(150, 500))
+            dset = update_stress(s, dset)
+        else:
+            dset_outin = []
+            for vz_dir_ in [1, -1]:
+                dset_upper = (
+                    s.zp_ph.sel(vz_dir=vz_dir_).sel(z=slice(0, s.domain["re"][2]))
+                    * vz_dir_
+                )
+                dset_lower = s.zp_ph.sel(vz_dir=-vz_dir_).sel(
+                    z=slice(s.domain["le"][2], 0)
+                ) * (-vz_dir_)
+                dset = xr.concat([dset_lower, dset_upper], dim="z")
+                dset_outin.append(update_stress(s, dset))
+
+        # for axs, ph in zip(axes.T, [["wc", "hot"],"hot"]):
+        ph = ["wc", "hot"]
+        plt.sca(axs[0])
+        # plt.title(f"phase={ph}")
+        if vz_dir == 1:
+            dset = dset_outin[0]
+        elif vz_dir == -1:
+            dset = dset_outin[1]
+        plot_zprof(
+            dset,
+            "mflux",
+            ph,
+            norm=ref_flux["mflux"],
+            line="mean",
+            color=color,
+            label=model_name[m],
+        )
+        plt.ylim(1.0e-2, 10)
+        plt.yscale("log")
+
+        plt.sca(axs[1])
+        plot_zprof(
+            dset,
+            "pflux_MHD",
+            ph,
+            norm=ref_flux["pflux_MHD"],
+            line="mean",
+            color=color,
+            label=model_name[m],
+        )
+        if s.options["cosmic_ray"]:
+            plot_zprof(
+                dset,
+                "pflux_CR",
+                ph,
+                norm=ref_flux["pflux_CR"],
+                line="mean",
+                color=color,
+                label="CR",
+                lw=1,
+                ls="--",
+            )
+        plt.yscale("log")
+        plt.ylim(1.0e-2, 1)
+
+        plt.sca(axs[2])
+        plot_zprof(
+            dset,
+            "eflux_MHD",
+            ph,
+            norm=ref_flux["eflux_MHD"],
+            line="mean",
+            color=color,
+            label="MHD",
+        )
+        if s.options["cosmic_ray"]:
+            plot_zprof(
+                dset,
+                "eflux_CR",
+                ph,
+                norm=ref_flux["eflux_CR"],
+                line="mean",
+                color=color,
+                label="CR",
+                lw=1,
+                ls="--",
+            )
+        plt.yscale("log")
+        plt.ylim(1.0e-3, 5.0)
+        plt.xlim(0, 4)
+    # axs = axes[:, 0]
+    plt.sca(axs[0])
+    plt.legend(fontsize="x-small")
+
+    # lines, labels = axs[0].get_legend_handles_labels()
+    # custom_lines = [lines[0], lines[1]]
+    # plt.legend(custom_lines, ["outflow", "inflow"], fontsize="x-small")
+    # plt.ylabel(r"$\langle n_H\rangle\,[{\rm cm^{-3}}]$")
+    # plt.sca(axs[1])
+    vout_label = "out" if vz_dir == 1 else ""
+    plt.ylabel(
+        f"$\\eta_M^{{\\rm {vout_label}}}$"
+        # r"$\,[M_\odot{\rm \,kpc^{-2}\,yr^{-1}}]$"
+    )
+    plt.sca(axs[1])
+    plt.ylabel(
+        f"$\\eta_p^{{\\rm {vout_label}}}$"
+        # r"$\,[M_\odot{\rm \,km/s\,kpc^{-2}\,yr^{-1}}]$"
+    )
+    plt.sca(axs[2])
+    plt.ylabel(
+        f"$\\eta_E^{{\\rm {vout_label}}}$"
+        # r"$\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
+    )
+    lines, labels = axs[2].get_legend_handles_labels()
+    custom_lines = [lines[0], lines[1]]
+    plt.legend(custom_lines, ["MHD flux", "CR flux"], fontsize="x-small")
+    plt.setp(axs[-1], "xlabel", r"$z\,[{\rm kpc}]$")
+
+    plt.savefig(osp.join(outdir, f"{gr}_loading_{vout_label}_z.pdf"))
+
+
 def plot_area_mass_fraction_z(simgroup, gr):
     sims = simgroup[gr]
     models = list(sims.keys())
@@ -1502,8 +1645,15 @@ def plot_vertical_equilibrium_t(simgroup, gr, ph="wc", exclude=[]):
 
 
 def plot_jointpdf(simgroup, gr):
-    fig, axes = plt.subplots(2, 4, figsize=(10, 4.8),
-                            sharey="row", sharex="col", constrained_layout=True,gridspec_kw={"hspace": 0.01, "wspace": 0.01})
+    fig, axes = plt.subplots(
+        2,
+        4,
+        figsize=(10, 4.8),
+        sharey="row",
+        sharex="col",
+        constrained_layout=True,
+        gridspec_kw={"hspace": 0.01, "wspace": 0.01},
+    )
     for (m, s), axs in zip(simgroup[gr].items(), axes):
         outflux = s.outflux
         dbin = outflux.logvz[1] - outflux.logvz[0]
@@ -1514,7 +1664,7 @@ def plot_jointpdf(simgroup, gr):
             plt.pcolormesh(
                 outflux.logvz,
                 outflux.logcs,
-                outflux.sel(z=z0, flux="mflux")/dbinsq,
+                outflux.sel(z=z0, flux="mflux") / dbinsq,
                 norm=LogNorm(1.0e-5, 1.0),
                 cmap=cmr.fall_r,
             )
@@ -1529,23 +1679,17 @@ def plot_jointpdf(simgroup, gr):
                     va="top",
                     color=model_color[m],
                 )
-            plt.xlim(0,3.5)
-            plt.ylim(0,3.3)
+            plt.xlim(0, 3.5)
+            plt.ylim(0, 3.3)
             ax.set_aspect("equal")
-    plt.setp(axes[:, 0],"ylabel",
-        r"$\log c_s\,[{\rm km/s}]$"
-    )
-    plt.setp(axes[1, :],"xlabel",
-        r"$\log v_{\rm out}\,[{\rm km/s}]$"
-    )
+    plt.setp(axes[:, 0], "ylabel", r"$\log c_s\,[{\rm km/s}]$")
+    plt.setp(axes[1, :], "xlabel", r"$\log v_{\rm out}\,[{\rm km/s}]$")
     plt.colorbar(
         mappable=axes[0, 0].collections[0],
         ax=axes[:, -1],
         label=r"$d^2\mathcal{F}_M/d\log v_{\rm out}d\log c_s\,[M_\odot\,{\rm kpc^{-2}\,yr^{-1}\,dex^{-2}}]$",
     )
     plt.savefig(osp.join(outdir, f"{gr}_jointpdfs.png"))
-
-
 
 
 def plot_voutpdf(simgroup, gr, savefig=True):
