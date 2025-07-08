@@ -966,7 +966,7 @@ class LoadSim(LoadSimBase):
                 try:
                     prefix = kwargs['prefix']
                 except KeyError:
-                    print("previs must be provided")
+                    print("prefix must be provided")
 
                 if kwargs['savdir'] is not None:
                     savdir = kwargs['savdir']
