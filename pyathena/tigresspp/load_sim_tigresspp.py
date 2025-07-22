@@ -191,7 +191,7 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
         )
         parlist = []
         for i in self.nums_parcsv:
-            parname = osp.join(self.basedir, f"TIGRESS.par{i}.csv")
+            parname = osp.join(self.basedir, f"{self.problem_id}.par{i}.csv")
             par = pd.read_csv(parname)
             parlist.append(par)
         return parlist
