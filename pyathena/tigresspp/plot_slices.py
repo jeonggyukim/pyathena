@@ -1,17 +1,16 @@
 import sys
 
-sys.path.insert(0, "../")
 import os
 import os.path as osp
 import matplotlib.pyplot as plt
-from matplotlib.colors import Normalize, LogNorm, SymLogNorm
-import cmasher as cmr
 import numpy as np
 
 from pyathena.tigresspp.load_sim_tigresspp import LoadSimTIGRESSPP
-from pyathena.fields.fields import DerivedFields
 from pyathena.plt_tools.make_movie import make_movie
+from pyathena.plt_tools.plt_starpar import scatter_sp
 
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+from mpl_toolkits.axes_grid1 import ImageGrid
 from mpi4py import MPI
 
 
@@ -392,6 +391,141 @@ def plot_projections_ncr(sim, num, savefig=True):
         plt.savefig(savname, dpi=200, bbox_inches="tight")
     return fig
 
+def plot_snapshot(sim, num,
+                fields_xy=('Sigma', 'nH', 'T', 'rret', 'pok', 'Bmag',),
+                fields_xz=('Sigma', 'nH', 'T', 'rret', 'pok', 'Bmag', 'vz'),
+                sink_fields=('Sigma', 'nH'),
+                norm_factor=5.0,
+                agemax=40.0,
+                savefig=False):
+    """Plot 12-panel projection/slice plots in the z and y directions
+
+    Parameters
+    ----------
+    num : int
+        vtk snapshot number
+    fields_xy: list of str
+        Field names for z projections and slices
+    fields_xz: list of str
+        Field names for y projections and slices
+    sink_fields: list of str
+        Field names on which sink particles are plotted
+    norm_factor : float
+        Normalization factor for starpar size. Smaller norm_factor for bigger size.
+    agemax : float
+        Maximum age of radiation source particles [Myr]
+    """
+    # setup figure and axes grid
+    nxy = len(fields_xy)
+    nxz = len(fields_xz)
+    LzoLx = sim.domain['Lx'][2]/sim.domain['Lx'][0]
+    xwidth = 1.5
+    ysize = LzoLx*xwidth
+    xsize = ysize/nxy*4 + nxz*xwidth
+    x1 = 0.90*(ysize*4/nxy/xsize)
+    x2 = 0.90*(nxz*xwidth/xsize)
+
+    fig = plt.figure(figsize=(xsize, ysize), num=0)
+    g1 = ImageGrid(fig, [0.02, 0.05, x1, 0.94], (nxy//2, 2), axes_pad=0.1,
+                aspect=True, share_all=True, direction='column')
+    g2 = ImageGrid(fig, [x1+0.07, 0.05, x2, 0.94], (1, nxz), axes_pad=0.1,
+                # cbar_mode="each",
+                # cbar_location="top",
+                # cbar_size="7%",
+                # cbar_pad="2%",
+                aspect=True, share_all=True)
+
+    # read slice/projection/star particle data
+    slc_xy = sim.get_slice(num, "allslc.z", slc_kwargs=dict(z=0, method="nearest"))
+    slc_xz = sim.get_slice(num, "allslc.y", slc_kwargs=dict(y=0, method="nearest"))
+    prj_xy = sim.get_prj(num, "z", prefix="prj.z")
+    prj_xz = sim.get_prj(num, "y", prefix="prj.y")
+    sp = sim.load_parbin(num)
+    prjkwargs,labels = sim.set_prj_dfi()
+
+    # get domain range
+    le = sim.domain["le"]
+    re = sim.domain["re"]
+
+    # loop over xy plots
+    for i, (ax, f) in enumerate(zip(g1, fields_xy)):
+        plt.sca(ax)
+        if f in prj_xy:
+            prj = prj_xy[f].sel(phase="whole")
+            im = plt.pcolormesh(
+                prj.x,
+                prj.y,
+                prj,
+                **prjkwargs[f]
+            )
+        else:
+            plot_slice_xy(sim,slc_xy,f,sim.dfi)
+
+        if f in sink_fields:
+            scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
+                    norm_factor=norm_factor, agemax=agemax,
+                    cmap=plt.cm.cool_r)
+        ax.set(xlim=(le[0],re[0]), ylim=(le[1],re[1]))
+        if i == 2:
+            ax.set(xlabel='x [pc]', ylabel='y [pc]')
+        else:
+            ax.axes.get_xaxis().set_visible(False)
+            ax.axes.get_yaxis().set_visible(False)
+
+    # loop over xz plots
+    for i, (ax, f) in enumerate(zip(g2, fields_xz)):
+        plt.sca(ax)
+        ax.set_aspect("equal", adjustable="box")
+        if f in prj_xz:
+            prj = prj_xz[f].sel(phase="whole")
+            im = plt.pcolormesh(
+                prj.x,
+                prj.z,
+                prj,
+                **prjkwargs[f]
+            )
+            label = labels[f]
+        else:
+            im = plot_slice_xz(sim,slc_xz,f,sim.dfi)
+            label=sim.dfi[f]["label"]
+        cax = inset_axes(ax, width="80%", height="2%", loc="upper center")
+
+        cbar = plt.colorbar(
+            im,
+            orientation="horizontal",
+            location="top",
+            cax=cax,
+            # cax=g2.cbar_axes[i],
+            pad=0.01,
+            shrink=0.8,
+            aspect=10,
+            label=label
+        )
+
+        if f in sink_fields:
+            scatter_sp(sp, ax, 'y', kind='prj', kpc=False,
+                    norm_factor=norm_factor, agemax=agemax,
+                    cmap=plt.cm.cool_r)
+        ax.set(xlim=(le[0],re[0]), ylim=(le[2],re[2]))
+        if i == 0:
+            ax.set(xlabel='x [pc]', ylabel='z [pc]')
+        else:
+            ax.axes.get_xaxis().set_visible(False)
+            ax.axes.get_yaxis().set_visible(False)
+
+    plt.sca(g1[0])
+    time = slc_xy.attrs["time"]
+    plt.annotate(f'Model: {sim.basename}  time={time*sim.u.Myr:6.1f} Myr',
+                (0,1.),xycoords="axes fraction",
+                va='bottom', ha='left')
+    if savefig:
+        savdir = osp.join(sim.savdir, 'snapshot')
+        os.makedirs(savdir,exist_ok=True)
+        savname = osp.join(savdir, f'snapshot_{num:05d}.png')
+        plt.savefig(savname, dpi=200, bbox_inches='tight')
+
+    return fig
+
 if __name__ == "__main__":
     spp = LoadSimTIGRESSPP(sys.argv[1])
     spp.update_derived_fields()
@@ -415,6 +549,10 @@ if __name__ == "__main__":
             plt.close(f)
             head="cr"
 
+        # basic snapshots
+        f = plot_snapshot(spp,num,savefig=True)
+        plt.close(f)
+
 # Make movies
     COMM.barrier()
 
@@ -432,6 +570,15 @@ if __name__ == "__main__":
             os.mkdir(osp.join(spp.basedir, "movies"))
         fin = osp.join(spp.basedir, f"{head}_snapshot_prj/*.png")
         fout = osp.join(spp.basedir, f"movies/{spp.basename}_{head}_snapshot_prj.mp4")
+        try:
+            make_movie(fin, fout, fps_in=15, fps_out=15)
+        except FileNotFoundError:
+            pass
+
+        if not osp.isdir(osp.join(spp.basedir, "movies")):
+            os.mkdir(osp.join(spp.basedir, "movies"))
+        fin = osp.join(spp.basedir, f"snapshot/*.png")
+        fout = osp.join(spp.basedir, f"movies/{spp.basename}_snapshot.mp4")
         try:
             make_movie(fin, fout, fps_in=15, fps_out=15)
         except FileNotFoundError:

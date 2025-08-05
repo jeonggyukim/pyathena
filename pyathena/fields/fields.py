@@ -171,7 +171,7 @@ def set_derived_fields_def(par, x0):
         return d['velocity3']*u.kms
     func[f] = _vz
     label[f] = r'$v_z\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
+    cmap[f] = 'RdBu_r'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 

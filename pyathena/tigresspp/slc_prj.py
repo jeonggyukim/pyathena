@@ -11,13 +11,9 @@ from matplotlib import cm
 # import astropy.units as au
 # import astropy.constants as ac
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm
-from mpl_toolkits.axes_grid1 import ImageGrid
 import xarray as xr
 
 from ..load_sim import LoadSim
-from ..plt_tools.cmap_shift import cmap_shift
-from ..plt_tools.plt_starpar import scatter_sp
-from ..classic.utils import texteffect
 
 
 cpp_to_cc = {

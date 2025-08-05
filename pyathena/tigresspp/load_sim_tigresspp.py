@@ -201,7 +201,9 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
         # dfi.dfi["T"]["imshow_args"]["cmap"] = "Spectral_r"
         # dfi.dfi["T"]["imshow_args"]["norm"] = LogNorm(vmin=1e2, vmax=1e8)
         dfi.dfi["nH"]["imshow_args"]["cmap"] = cmr.rainforest
-        dfi.dfi["nH"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)
+        dfi.dfi["nH"]["imshow_args"]["norm"] = LogNorm(vmin=1e-5, vmax=1e2)
+        dfi.dfi["pok"]["imshow_args"]["norm"] = LogNorm(vmin=1e1, vmax=1e7)
+        dfi.dfi["vz"]["imshow_args"]["norm"] = Normalize(vmin=-200, vmax=200)
         if self.options["newcool"]:
             dfi.dfi["nHI"]["imshow_args"]["cmap"] = cmr.rainforest
             dfi.dfi["nHI"]["imshow_args"]["norm"] = LogNorm(vmin=1e-4, vmax=1e2)

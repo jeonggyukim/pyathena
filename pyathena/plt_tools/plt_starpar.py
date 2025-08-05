@@ -73,11 +73,16 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
         # Runaways
         sp_ru = sp[runaways]
         # Sources have negative values of id
-        src_ru = (sp_ru['id'] < 0)
-        sp_ru_src = sp_ru[src_ru]
-        sp_ru_nonsrc = sp_ru[~src_ru]
+        nonsrc_runaway = runaway == True
+        src_runaway = runaway == True
+        if "id" in sp_ru:
+            src_ru = (sp_ru['id'] < 0)
+            sp_ru_src = sp_ru[src_ru]
+            sp_ru_nonsrc = sp_ru[~src_ru]
+            nonsrc_runaway = len(sp_ru_nonsrc) > 0 and nonsrc_runaway
+            src_runaway = len(sp_ru_src) > 0 and src_runaway
 
-        if len(sp_ru_nonsrc) > 0 and runaway:
+        if nonsrc_runaway:
             spx, spy, spz = projection(sp_ru_nonsrc, dim)
             spvx, spvy, spvz = projection_v(sp_ru_nonsrc, dim)
             if kpc:
@@ -90,7 +95,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
                        marker=marker, edgecolors=edgecolors, linewidths=linewidths,
                        alpha=alpha, s=10.0/norm_factor)
 
-        if len(sp_ru_src) > 0 and runaway:
+        if src_runaway:
             spx, spy, spz = projection(sp_ru_src, dim)
             spvx, spvy, spvz = projection_v(sp_ru_src, dim)
             if kpc:
