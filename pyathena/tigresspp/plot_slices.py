@@ -392,6 +392,7 @@ def plot_projections_ncr(sim, num, savefig=True):
     return fig
 
 def plot_snapshot(sim, num,
+                  outid=None,
                 fields_xy=('Sigma', 'nH', 'T', 'rret', 'pok', 'Bmag',),
                 fields_xz=('Sigma', 'nH', 'T', 'rret', 'pok', 'Bmag', 'vz'),
                 sink_fields=('Sigma', 'nH'),
@@ -415,6 +416,16 @@ def plot_snapshot(sim, num,
     agemax : float
         Maximum age of radiation source particles [Myr]
     """
+    # read slice/projection/star particle data
+    slc_xy = sim.get_slice(num, "allslc.z", outid=outid,
+                           slc_kwargs=dict(z=0, method="nearest"))
+    slc_xz = sim.get_slice(num, "allslc.y", outid=outid,
+                           slc_kwargs=dict(y=0, method="nearest"))
+    prj_xy = sim.get_prj(num, "z", prefix="prj.z", outid=outid)
+    prj_xz = sim.get_prj(num, "y", prefix="prj.y", outid=outid)
+    sp = sim.load_parbin(num)
+    prjkwargs,labels = sim.set_prj_dfi()
+
     # setup figure and axes grid
     nxy = len(fields_xy)
     nxz = len(fields_xz)
@@ -434,14 +445,6 @@ def plot_snapshot(sim, num,
                 # cbar_size="7%",
                 # cbar_pad="2%",
                 aspect=True, share_all=True)
-
-    # read slice/projection/star particle data
-    slc_xy = sim.get_slice(num, "allslc.z", slc_kwargs=dict(z=0, method="nearest"))
-    slc_xz = sim.get_slice(num, "allslc.y", slc_kwargs=dict(y=0, method="nearest"))
-    prj_xy = sim.get_prj(num, "z", prefix="prj.z")
-    prj_xz = sim.get_prj(num, "y", prefix="prj.y")
-    sp = sim.load_parbin(num)
-    prjkwargs,labels = sim.set_prj_dfi()
 
     # get domain range
     le = sim.domain["le"]
@@ -520,6 +523,8 @@ def plot_snapshot(sim, num,
                 va='bottom', ha='left')
     if savefig:
         savdir = osp.join(sim.savdir, 'snapshot')
+        if outid is not None:
+            savdir = osp.join(sim.savdir, f'snapshot_out{outid:d}')
         os.makedirs(savdir,exist_ok=True)
         savname = osp.join(savdir, f'snapshot_{num:05d}.png')
         plt.savefig(savname, dpi=200, bbox_inches='tight')
@@ -551,6 +556,8 @@ if __name__ == "__main__":
 
         # basic snapshots
         f = plot_snapshot(spp,num,savefig=True)
+        plt.close(f)
+        f = plot_snapshot(spp,num,outid=7,savefig=True)
         plt.close(f)
 
 # Make movies

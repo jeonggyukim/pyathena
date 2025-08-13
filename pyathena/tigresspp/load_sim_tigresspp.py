@@ -155,7 +155,7 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
                 mu = 1.27  # default for neutral 1.4/1.1
         ds["temperature"] = mu * T1
 
-    def get_data(self, num, load_derived=False):
+    def get_data(self, num, outid=None, load_derived=False):
         """a wrapper function to load data with automatically assigned
         num_ghost and chunks"""
 
@@ -167,6 +167,7 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
         ds = self.load_hdf5(
             num=num,
             num_ghost=nghost,
+            outid=outid,
             chunks=dict(x=mb["nx1"], y=mb["nx2"], z=mb["nx3"]),
         )
 

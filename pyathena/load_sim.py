@@ -977,6 +977,9 @@ class LoadSim(LoadSimBase):
                     filebase = kwargs['filebase']
                 else:
                     filebase = prefix
+                    if "outid" in kwargs:
+                        if kwargs["outid"] is not None:
+                            filebase += f'.out{kwargs["outid"]:d}'
 
                 force_override = kwargs['force_override']
                 mtime = read_func(cls,dryrun=True,**kwargs)

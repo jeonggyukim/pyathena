@@ -39,18 +39,19 @@ class SliceProj:
         savdir=None,
         force_override=False,
         filebase=None,
+        outid=None,
         slc_kwargs=dict(z=0, method="nearest"),
         dryrun=False
     ):
         """
         a warpper function to make data reading easier
         """
-        ds = self.load_hdf5(num=num, file_only=True)
+        ds = self.load_hdf5(num=num, outid=outid, file_only=True)
 
         if dryrun:
             return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
 
-        ds = self.get_data(num, load_derived=False)
+        ds = self.get_data(num, outid=outid, load_derived=False)
         # rename the variables to match athena convention so that we can use
         # the same derived fields as in athena
         rename_dict = {k: v for k, v in cpp_to_cc.items() if k in ds}
@@ -98,13 +99,14 @@ class SliceProj:
             savdir=None,
             force_override=False,
             filebase=None,
+            outid=None,
             dryrun=False):
-        data = self.load_hdf5(num=num, file_only=True)
+        data = self.load_hdf5(num=num, outid=outid, file_only=True)
 
         if dryrun:
             return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
 
-        data = self.get_data(num, load_derived=False)
+        data = self.get_data(num, outid=outid, load_derived=False)
 
         axtoi = dict(x=0, y=1, z=2)
 
@@ -115,10 +117,14 @@ class SliceProj:
         conv_mflux = (self.u.density*self.u.velocity).to("Msun/(kpc2*yr)").value
         conv_eflux = (self.u.energy_density*self.u.velocity).to("erg/(kpc2*yr)").value
         prjdata["Sigma"] = data["rho"] * conv_surf
-        prjdata["mflux"] = data["rho"]*data["vel3"] * conv_mflux
-        prjdata["mZflux"] = data["rho"]*data["rmetal"]*data["vel3"] * conv_mflux
-        prjdata["teflux"] = gamma/(gamma-1)*data["press"]*data["vel3"] * conv_eflux
-        prjdata["keflux"] = 0.5*data["rho"]*data["vel3"]*(data["vel1"]**2+data["vel2"]**2+data["vel3"]**2) * conv_eflux
+        if "vel3" in data:
+            prjdata["mflux"] = data["rho"]*data["vel3"] * conv_mflux
+            prjdata["teflux"] = gamma/(gamma-1)*data["press"]*data["vel3"] * conv_eflux
+            prjdata["keflux"] = 0.5*data["rho"]*data["vel3"]*(data["vel1"]**2+data["vel2"]**2+data["vel3"]**2) * conv_eflux
+            if "rmetal" in data:
+                prjdata["mZflux"] = data["rho"]*data["rmetal"]*data["vel3"] * conv_mflux
+
+
         if self.options["cosmic_ray"]:
             prjdata["creflux"] = data["0-Fc3"]*conv_eflux
             if "0-Vd3" in data:
