@@ -196,7 +196,7 @@ class Hst:
 
     @LoadSim.Decorators.check_netcdf
     def load_phase_hst(
-        self, prefix="merged_phase_hst", savdir=None, force_override=False, dryrun=False
+        self, prefix="merged_phase_hst", savdir=None, force_override=False, dryrun=False, filebase=None,
     ):
         if "phase_hst" not in self.files:
             self.set_phase_history()
