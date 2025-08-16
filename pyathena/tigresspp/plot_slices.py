@@ -557,7 +557,10 @@ if __name__ == "__main__":
         # basic snapshots
         f = plot_snapshot(spp,num,savefig=True)
         plt.close(f)
-        f = plot_snapshot(spp,num,outid=7,savefig=True)
+        f = plot_snapshot(spp,num,outid=7,
+                          fields_xy=('Sigma', 'nH', 'T', 'pok'),
+                          fields_xz=('Sigma', 'nH', 'T', 'pok'),
+                          savefig=True)
         plt.close(f)
 
 # Make movies
