@@ -78,13 +78,14 @@ def plot_slices(sim, num, savefig=True):
         "vmag",
         "Vcr_mag",
         "sigma_para",
-        "pok_cr_inj",
+        # "pok_cr_inj",
         "pok_cr",
+        "pok_trbz",
         "pok",
-        "Fcr3",
-        "Bmag",
-        "Zgas",
-        "rret"
+        # "Fcr3",
+        "pok_mag",
+        # "Zgas",
+        # "rret"
     ]
     vectors = [
         None,
@@ -92,13 +93,14 @@ def plot_slices(sim, num, savefig=True):
         "velocity",
         "0-Vs",
         None,
+        # None,
         None,
         None,
         None,
-        "0-Fc",
+        # "0-Fc",
         "cell_centered_B",
-        None,
-        None
+        # None,
+        # None
     ]
     nf = len(flist)
     fig, axes = plt.subplots(
@@ -117,7 +119,7 @@ def plot_slices(sim, num, savefig=True):
             field,
             sim.dfi,
             vec=vec,
-            stream_kwargs=dict(color="w" if field == "Bmag" else "k"),
+            stream_kwargs=dict(color="w" if field in ["Bmag","pok_mag"] else "k"),
         )
         if im is not None:
             cbar = plt.colorbar(
@@ -127,10 +129,17 @@ def plot_slices(sim, num, savefig=True):
                 pad=0.01,
                 shrink=0.8,
                 aspect=10,
-                label=sim.dfi[field]["label"],
+                label=sim.dfi[field]["label_unit"],
             )
             ax.set_aspect("equal", adjustable="box")
         # ax.set_title(field)
+            ax.annotate(sim.dfi[field]["label_name"],
+                (0.5, 1.01),
+                ha="center",
+                va="bottom",
+                xycoords="axes fraction",
+                fontsize=40,
+                bbox=dict(boxstyle="round,pad=0.2", fc="w", ec="k", lw=1,alpha=1),)
         ax.axis("off")
     for ax, field, vec in zip(axes[1, :], flist, vectors):
         plt.sca(ax)
@@ -140,7 +149,7 @@ def plot_slices(sim, num, savefig=True):
             field,
             sim.dfi,
             vec=vec,
-            stream_kwargs=dict(density=0.5, color="w" if field == "Bmag" else "k"),
+            stream_kwargs=dict(density=0.5, color="w" if field in ["Bmag","pok_mag"] else "k"),
         )
         if im is not None:
             ax.set_aspect("equal", adjustable="box")
@@ -157,7 +166,7 @@ def plot_slices(sim, num, savefig=True):
     )
 
     if savefig:
-        savdir = osp.join(sim.savdir, "cr_snapshot")
+        savdir = osp.join(sim.savdir, "cr_snapshot2")
         if not osp.exists(savdir):
             os.makedirs(savdir, exist_ok=True)
 
@@ -393,6 +402,7 @@ def plot_projections_ncr(sim, num, savefig=True):
 
 def plot_snapshot(sim, num,
                   outid=None,
+                  parnum=None,
                 fields_xy=('Sigma', 'nH', 'T', 'rret', 'pok', 'Bmag',),
                 fields_xz=('Sigma', 'nH', 'T', 'rret', 'pok', 'Bmag', 'vz'),
                 sink_fields=('Sigma', 'nH'),
@@ -423,7 +433,9 @@ def plot_snapshot(sim, num,
                            slc_kwargs=dict(y=0, method="nearest"))
     prj_xy = sim.get_prj(num, "z", prefix="prj.z", outid=outid)
     prj_xz = sim.get_prj(num, "y", prefix="prj.y", outid=outid)
-    sp = sim.load_parbin(num)
+    if parnum is None:
+        parnum = num
+    sp = sim.load_parbin(parnum)
     prjkwargs,labels = sim.set_prj_dfi()
 
     # setup figure and axes grid
@@ -490,7 +502,10 @@ def plot_snapshot(sim, num,
             label = labels[f]
         else:
             im = plot_slice_xz(sim,slc_xz,f,sim.dfi)
-            label=sim.dfi[f]["label"]
+            try:
+                label=sim.dfi[f]["label"]
+            except KeyError:
+                label = f
         cax = inset_axes(ax, width="80%", height="2%", loc="upper center")
 
         cbar = plt.colorbar(
@@ -534,6 +549,7 @@ def plot_snapshot(sim, num,
 if __name__ == "__main__":
     spp = LoadSimTIGRESSPP(sys.argv[1])
     spp.update_derived_fields()
+    spp.dt = [spp.par[f"output{i+1}"]["dt"] for i,v in enumerate(spp.out_fmt)]
 
     COMM = MPI.COMM_WORLD
     mynums = [spp.nums[i] for i in range(len(spp.nums)) if i % COMM.size == COMM.rank]
@@ -554,14 +570,22 @@ if __name__ == "__main__":
             plt.close(f)
             head="cr"
 
-        # basic snapshots
-        f = plot_snapshot(spp,num,savefig=True)
-        plt.close(f)
-        f = plot_snapshot(spp,num,outid=7,
-                          fields_xy=('Sigma', 'nH', 'T', 'pok'),
-                          fields_xz=('Sigma', 'nH', 'T', 'pok'),
-                          savefig=True)
-        plt.close(f)
+    for k, v in zip(spp.hdf5_outid, spp.hdf5_outvar):
+        nums = spp.nums_hdf5[v]
+        pardt = spp.dt[spp.parbin_outid-1]
+        mydt = spp.dt[k-1]
+
+        mynums = [nums[i] for i in range(len(nums)) if i % COMM.size == COMM.rank]
+        for num in mynums:
+            parnum = num//(pardt/mydt)
+            if (v == spp._hdf5_outvar_def):
+                f = plot_snapshot(spp,num,parnum=parnum,savefig=True)
+            else:
+                f = plot_snapshot(spp,num,outid=k,parnum=parnum,
+                                fields_xy=('Sigma', 'nH', 'T', 'pok'),
+                                fields_xz=('Sigma', 'nH', 'T', 'pok'),
+                                savefig=True)
+            plt.close(f)
 
 # Make movies
     COMM.barrier()
