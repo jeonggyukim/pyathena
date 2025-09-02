@@ -577,7 +577,7 @@ if __name__ == "__main__":
 
         mynums = [nums[i] for i in range(len(nums)) if i % COMM.size == COMM.rank]
         for num in mynums:
-            parnum = num//(pardt/mydt)
+            parnum = int(num//(pardt/mydt))
             if (v == spp._hdf5_outvar_def):
                 f = plot_snapshot(spp,num,parnum=parnum,savefig=True)
             else:
