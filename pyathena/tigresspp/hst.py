@@ -79,9 +79,22 @@ class Hst:
                 h["Sigma_star_rm"] = h["mass_star_rm"] / (LxLy * u.pc**2)
                 h["mass_sink_rm"] = hst["msp_removed"] * u.Msun
                 h["Sigma_sink_rm"] = h["mass_sink_rm"] / (LxLy * u.pc**2)
-        if "2scalar" in hst:
-            h["mass_return"] = hst["2scalar"] * u.Msun
-            h["Sigma_return"] = h["mass_return"] / (LxLy * u.pc**2)
+        if "scalar_indices" in par:
+            if "IRT" in par["scalar_indices"]:
+                IRT = par["scalar_indices"]["IRT"]
+                # Mass return
+                h["mass_return"] = hst[f"{IRT}scalar"] * u.Msun
+                h["Sigma_return"] = h["mass_return"] / (LxLy * u.pc**2)
+            if "ISN" in par["scalar_indices"]:
+                ISN = par["scalar_indices"]["ISN"]
+                # Mass return
+                h["mass_sn"] = hst[f"{ISN}scalar"] * u.Msun
+                h["Sigma_sn"] = h["mass_sn"] / (LxLy * u.pc**2)
+            if "IDZ" in par["scalar_indices"]:
+                IDZ = par["scalar_indices"]["IDZ"]
+                # Mass return
+                h["mass_metal"] = hst[f"{IDZ}scalar"] * u.Msun
+                h["Sigma_metal"] = h["mass_metal"] / (LxLy * u.pc**2)
         if "mass_loss_upper" in hst:
             h["mass_out"] = (hst["mass_loss_upper"] - hst["mass_loss_lower"]) * u.Msun
             h["Sigma_out"] = h["mass_out"] / (LxLy * u.pc**2)
@@ -101,11 +114,15 @@ class Hst:
 
         # Kinetic, thermal and magnetic energy
         h["KE"] = hst["1KE"] + hst["2KE"] + hst["3KE"]
-        h["TE"] = hst["totE"] - h["KE"]
+        if "totE" in h:
+            h["TE"] = hst["totE"] - h["KE"]
         if mhd:
             h["ME"] = hst["1ME"] + hst["2ME"] + hst["3ME"]
-            h["TE"] -= h["ME"]
-        h["pok"] = h["TE"] / 1.5 * u.pok  # assuming gamma=5/3
+            if "TE" in h:
+                h["TE"] -= h["ME"]
+        if "TE" in h:
+            h["pok"] = h["TE"] / 1.5 * u.pok  # assuming gamma=5/3
+            h["cs"] = np.sqrt(h["TE"] / hst["mass"]) * u.kms
 
         for ax in ("1", "2", "3"):
             Ekf = "{}KE".format(ax)
@@ -117,8 +134,6 @@ class Hst:
                 h["vA{}".format(ax)] = (
                     np.sqrt(2 * hst["{}ME".format(ax)] / hst["mass"]) * u.kms
                 )
-
-        h["cs"] = np.sqrt(h["TE"] / hst["mass"]) * u.kms
 
         # Star formation rate per area [Msun/kpc^2/yr]
         if "sfr10" in hst:
