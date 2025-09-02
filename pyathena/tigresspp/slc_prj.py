@@ -126,7 +126,8 @@ class SliceProj:
 
 
         if self.options["cosmic_ray"]:
-            prjdata["creflux"] = data["0-Fc3"]*conv_eflux
+            if "0-Fc3" in data:
+                prjdata["creflux"] = data["0-Fc3"]*conv_eflux
             if "0-Vd3" in data:
                 prjdata["creflux_diff"] = data["0-Ec"]*data["0-Vd3"]*conv_eflux*4/3.
                 prjdata["creflux_adv"] = data["0-Ec"]*data["vel3"]*conv_eflux*4/3.

@@ -23,7 +23,6 @@ model_name = {
     "crmhd-16pc-b1-diode-lngrad_out": "crmhd_v1",
     "crmhd_v2-16pc-b1-diode-lngrad_out": "crmhd_v2",
     "crmhd_v2-8pc-b1-diode-lngrad_out": "crmhd",
-    "crmhd-16pc-b1-diode-lngrad_out-sigma28": "σ28",
     "mhd-16pc-b1-diode": "mhd_v1",
     "mhd-16pc-b1-lngrad_out": "mhd_lngrad",
     "mhd_v2-16pc-b1-diode": "mhd_v2",
@@ -32,6 +31,13 @@ model_name = {
     "crmhd-16pc-b1-diode-lngrad_out-Vmax10": "Vmax10",
     "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma27": "σ27",
     "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma29": "σ29",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma28": "σ28",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma27_va0": "σ27_vA",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma28_va0": "σ28_vA",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma29_va0": "σ29_vA",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma27_va1": "σ27_vAi",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma28_va1": "σ28_vAi",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma29_va1": "σ29_vAi",
     "crmhd-16pc-b10-diode-lngrad_out": "b10",
     "crmhd-16pc-tallbox-b1-diode-lngrad_out": "tall",
     "crmhd-16pc-tallbox-b1-diode-diode": "tall-diode",
@@ -51,6 +57,12 @@ model_color = {
     "crmhd-16pc-b1-diode-lngrad_out-Vmax10": "orchid",
     "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma27": "sienna",
     "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma29": "darkorange",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma27_va0": "sienna",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma28_va0": "gold",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma29_va0": "darkorange",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma27_va1": "sienna",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma28_va1": "gold",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma29_va1": "darkorange",
     "crmhd-16pc-b10-diode-lngrad_out": "teal",
     "crmhd-16pc-tallbox-b1-diode-lngrad_out": "indigo",
     "crmhd-16pc-tallbox-b1-diode-diode": "violet",
@@ -82,9 +94,15 @@ model_beta = [
 ]
 model_sigma = [
     "crmhd-16pc-b1-diode-lngrad_out",
-    "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma27",
-    "crmhd-16pc-b1-diode-lngrad_out-sigma28",
-    "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma29",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma27_va1",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma28_va1",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma29_va1",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma27_va0",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma28_va0",
+    "crmhd-16pc-b1-diode-lngrad_out-sigma29_va0",
+    # "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma27",
+    # "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma29",
+    # "crmhd-16pc-b1-diode-lngrad_out-sigma28",
 ]
 model_tall = [
     "crmhd-16pc-b1-diode-lngrad_out",
@@ -157,11 +175,17 @@ def cr_data_load(
     basedir="/scratch/gpfs/EOST/changgoo/tigress_classic/", pattern="*mhd*"
 ):
     folders = sorted(glob.glob(osp.join(basedir, pattern)))
+    icolor = 0
     model_dict = dict()
     for folder in folders:
         name = os.path.basename(folder)
         name = name.replace("mhdbc_", "").replace("crbc_", "").replace("-icpx", "")
         model_dict[name] = folder
+        if name not in model_color:
+            print(name)
+            model_color[name] = f"C{icolor}"
+            model_name[name] = name
+            icolor += 1
 
     return model_dict
 
@@ -963,8 +987,8 @@ def update_stress(s, dset):
 
 def plot_cr_velocity_sigma(simgroup, gr):
     sims = simgroup[gr]
-    fig, axes = plt.subplots(4, 2, figsize=(6, 8), sharex=True, constrained_layout=True)
-
+    fig, axes = plt.subplots(5, 2, figsize=(6, 10), sharex=True, constrained_layout=True)
+    print(len(axes.T))
     for m, s in sims.items():
         color = model_color[m]
         if s.options["cosmic_ray"]:
@@ -979,7 +1003,16 @@ def plot_cr_velocity_sigma(simgroup, gr):
             dset["cr_heating"] = (
                 -dset["0-heating_cr"] * (s.u.energy_density / s.u.time).cgs.value
             )
+            if "0-work_cr" in dset:
+                dset["cr_work"] = (
+                    dset["0-work_cr"] * (s.u.energy_density / s.u.time).cgs.value
+                )
+            if m.endswith("va1"):
+                ls_sigma = "-"
+            else:
+                ls_sigma = ":"
             for axs, ph in zip(axes.T, ["wc", "hot"]):
+                len(axs)
                 plt.sca(axs[0])
                 for pfield, ls in zip(["Ceff", "vz"], ["-", ":"]):
                     plot_zprof(dset, pfield, ph, color=color, label=pfield, ls=ls)
@@ -990,7 +1023,10 @@ def plot_cr_velocity_sigma(simgroup, gr):
                 plt.sca(axs[2])
                 plot_zprof_field(dset, "kappa", ph, color=color, label=model_name[m])
                 plt.sca(axs[3])
-                plot_zprof_field(dset, "cr_heating", ph, color=color, label=ph)
+                plot_zprof_field(dset, "cr_heating", ph, color=color, label=ph,ls=ls_sigma)
+                plt.sca(axs[4])
+                if "cr_work" in dset:
+                    plot_zprof_field(dset, "cr_work", ph, color=color, label=ph)
     plt.sca(axes[0, 0])
     lines, labels = axes[0, 0].get_legend_handles_labels()
     custom_lines = [lines[0], lines[1]]
