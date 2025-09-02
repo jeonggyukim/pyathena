@@ -88,6 +88,11 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
 
             if "configure" in self.par:
                 self.nghost = self.par["configure"]["Number_of_ghost_cells"]
+
+            self.shear = self.par["mesh"]["ix1_bc"] == "shear_periodic"
+            if self.shear:
+                self.qshear = self.par["orbital_advection"]["qshear"]
+                self.Omega0 = self.par["orbital_advection"]["Omega0"]
         except KeyError:
             pass
 
@@ -226,13 +231,23 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
             dfi.dfi["vmag"]["imshow_args"]["norm"] = dfi.dfi["Vcr_mag"]["imshow_args"][
                 "norm"
             ]
-            dfi.dfi["pok"]["imshow_args"]["cmap"] = dfi.dfi["pok_cr"]["imshow_args"][
-                "cmap"
-            ]
             dfi.dfi["pok_cr"]["imshow_args"]["norm"] = LogNorm(1.e2,5.e4)
-            dfi.dfi["pok"]["imshow_args"]["norm"] = dfi.dfi["pok_cr"]["imshow_args"][
-                "norm"
-            ]
+            for pok_field in ["pok","pok_mag","pok_trbz","pok_cr"]:
+                # cmap = dfi.dfi["pok_cr"]["imshow_args"]["cmap"]
+                cmap = cm.plasma
+                dfi.dfi[pok_field]["imshow_args"]["cmap"] = cmap
+                norm = dfi.dfi["pok_cr"]["imshow_args"]["norm"]
+                dfi.dfi[pok_field]["imshow_args"]["norm"] = norm
+        for k in dfi.dfi:
+            sp = dfi.dfi[k]["label"].split(r"\;")
+            if len(sp) == 2:
+                name = sp[0]
+                unit = sp[1]
+                dfi.dfi[k]["label_name"]= name+"$"
+                dfi.dfi[k]["label_unit"]= "$" + unit
+            else:
+                dfi.dfi[k]["label_name"]= dfi.dfi[k]["label"]
+                dfi.dfi[k]["label_unit"]= ""
         self.dfi = dfi.dfi
 
     def get_pdf(

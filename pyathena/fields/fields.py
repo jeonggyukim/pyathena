@@ -81,7 +81,18 @@ def set_derived_fields_def(par, x0):
     def _pok(d, u):
         return d['pressure']*(u.energy_density/ac.k_B).cgs.value
     func[f] = _pok
-    label[f] = r'$P/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P\;[k_B\,{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'inferno'
+    vminmax[f] = (1e2,1e7)
+    take_log[f] = True
+
+    # P/kB [K cm^-3] - thermal pressure
+    f = 'pok_trbz'
+    field_dep[f] = set(['density','velocity'])
+    def _pok_trbz(d, u):
+        return d['density']*d['velocity3']**2*(u.energy_density/ac.k_B).cgs.value
+    func[f] = _pok_trbz
+    label[f] = r'$P_{\rm turb,z}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'inferno'
     vminmax[f] = (1e2,1e7)
     take_log[f] = True
@@ -511,6 +522,18 @@ def set_derived_fields_mag(par, x0):
     cmap[f] = 'cividis'
     take_log[f] = True
 
+    # Magnetic pressure magnitude [Pmag/kB]
+    f = 'pok_mag'
+    field_dep[f] = set(['cell_centered_B'])
+    def _pok_mag(d, u):
+        return (d['cell_centered_B1']**2 +
+                d['cell_centered_B2']**2 +
+                d['cell_centered_B3']**2)**0.5*(u.energy_density/ac.k_B).cgs.value
+    func[f] = _pok_mag
+    label[f] = r'$P_{\rm mag}\;[k_B\,{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'inferno'
+    vminmax[f] = (1e2,1e7)
+    take_log[f] = True
     return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_newcool(par, x0):
@@ -1338,7 +1361,7 @@ def set_derived_fields_cosmic_ray(par):
     def _pok_cr(d, u):
         return d['0-Ec']*(gamma_cr-1)*(u.energy_density/ac.k_B).cgs.value
     func[f] = _pok_cr
-    label[f] = r'$P_{\rm cr}/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P_{\rm cr}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'YlOrRd_r'
     vminmax[f] = (1,5e4)
     take_log[f] = True
@@ -1418,7 +1441,7 @@ def set_derived_fields_cosmic_ray(par):
     def _pok_CR_inj(d, u):
         return d["eCRinj"]*(gamma_cr-1)*u.pok
     func[f] = _pok_CR_inj
-    label[f] = r'$P_{\rm CR,inj}/k_B\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P_{\rm CR,inj}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'YlOrRd_r'
     vminmax[f] = (1,5e4)
     take_log[f] = True
