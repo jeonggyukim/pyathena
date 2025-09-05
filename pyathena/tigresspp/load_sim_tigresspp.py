@@ -12,13 +12,14 @@ from .hst import Hst
 from .timing import Timing
 from .zprof import Zprof
 from .slc_prj import SliceProj
+from .pdf import PDF
 from ..load_sim import LoadSim
 from pyathena.fields.fields import DerivedFields
 import pyathena as pa
 
 base_path = osp.dirname(__file__)
 
-class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
+class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
 
     def __init__(self, basedir, savdir=None, load_method="xarray", verbose=False):
@@ -285,10 +286,10 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj):
 
         if logx:
             xdata = np.log10(np.abs(xdata))
-            xf = f"log{xf}"
+            xf = f"log_{xf}"
         if logy:
             ydata = np.log10(np.abs(ydata))
-            yf = f"log{yf}"
+            yf = f"log_{yf}"
 
         b1 = np.linspace(xlim[0], xlim[1], Nx)
         b2 = np.linspace(ylim[0], ylim[1], Ny)

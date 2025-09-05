@@ -1007,10 +1007,7 @@ def plot_cr_velocity_sigma(simgroup, gr):
                 dset["cr_work"] = (
                     dset["0-work_cr"] * (s.u.energy_density / s.u.time).cgs.value
                 )
-            if m.endswith("va1"):
-                ls_sigma = "-"
-            else:
-                ls_sigma = ":"
+            ls_sigma = "-"
             for axs, ph in zip(axes.T, ["wc", "hot"]):
                 len(axs)
                 plt.sca(axs[0])
@@ -1060,12 +1057,22 @@ def plot_cr_velocity_sigma(simgroup, gr):
     plt.sca(axes[3, 0])
     plt.ylabel(r"$\tilde{\Gamma}_{\rm cr}[{\rm erg\,s^{-1}\,cm^{-3}}]$")
     plt.xlabel(r"$z\,[{\rm kpc}]$")
-    plt.ylim(0, 7.0e-28)
+    # plt.ylim(0, 7.0e-28)
     plt.xlim(-4, 4)
     plt.sca(axes[3, 1])
     plt.ylabel(r"$\tilde{\Gamma}_{\rm cr}[{\rm erg\,s^{-1}\,cm^{-3}}]$")
     plt.xlabel(r"$z\,[{\rm kpc}]$")
-    plt.ylim(0, 7.0e-28)
+    # plt.ylim(0, 7.0e-28)
+    plt.xlim(-4, 4)
+    plt.sca(axes[4, 0])
+    plt.ylabel(r"$\tilde{PdV}_{\rm cr}[{\rm erg\,s^{-1}\,cm^{-3}}]$")
+    plt.xlabel(r"$z\,[{\rm kpc}]$")
+    # plt.ylim(0, 7.0e-28)
+    plt.xlim(-4, 4)
+    plt.sca(axes[4, 1])
+    plt.ylabel(r"$\tilde{PdV}_{\rm cr}[{\rm erg\,s^{-1}\,cm^{-3}}]$")
+    plt.xlabel(r"$z\,[{\rm kpc}]$")
+    # plt.ylim(0, 7.0e-28)
     plt.xlim(-4, 4)
     plt.savefig(osp.join(outdir, f"{gr}_cr_velocity_sigma.pdf"))
 

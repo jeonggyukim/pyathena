@@ -580,11 +580,17 @@ if __name__ == "__main__":
             parnum = int(num//(pardt/mydt))
             if (v == spp._hdf5_outvar_def):
                 f = plot_snapshot(spp,num,parnum=parnum,savefig=True)
-            else:
+                nPpdf = spp.get_nPpdf(num,"pdf",filebase="nP")
+                nTpdf = spp.get_nPpdf(num,"pdf",filebase="nT",
+                                      yf="T",ylim=(0,10),Ny=128)
+            elif (v == "d,P,Ec"):
                 f = plot_snapshot(spp,num,outid=k,parnum=parnum,
                                 fields_xy=('Sigma', 'nH', 'T', 'pok'),
                                 fields_xz=('Sigma', 'nH', 'T', 'pok'),
                                 savefig=True)
+                nPpdf = spp.get_nPpdf(num,f"pdf_outid{k}",filebase="nP",outid=k)
+                nTpdf = spp.get_nPpdf(num,f"pdf_outid{k}",filebase="nT",outid=k,
+                                      yf="T",ylim=(0,10),Ny=128)
             plt.close(f)
 
 # Make movies
