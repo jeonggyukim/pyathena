@@ -309,6 +309,8 @@ def plot_zprof_quantile(ydata, quantile=True, **kwargs):
 
 
 def plot_zprof(zprof, field, ph, norm=1.0, line="median", quantile=True, **kwargs):
+    if field not in zprof:
+        return
     ydata = zprof[field].sel(phase=ph) / norm
     if ydata.phase.size > 1:
         ydata = ydata.sum(dim=["phase"])
@@ -319,6 +321,8 @@ def plot_zprof(zprof, field, ph, norm=1.0, line="median", quantile=True, **kwarg
 
 
 def plot_zprof_field(zprof, field, ph, line="median", quantile=True, **kwargs):
+    if field not in zprof:
+        return
     ydata = zprof[field].sel(phase=ph)
     area = zprof["area"].sel(phase=ph)
     if ydata.phase.size > 1:
@@ -334,6 +338,8 @@ def plot_zprof_field(zprof, field, ph, line="median", quantile=True, **kwargs):
 def plot_zprof_frac(
     zprof, field, ph, denominator="area", line="median", quantile=True, **kwargs
 ):
+    if field not in zprof:
+        return
     if "whole" in zprof.phase:
         area = zprof[denominator].sel(phase="whole")
     else:
@@ -994,15 +1000,18 @@ def plot_cr_velocity_sigma(simgroup, gr):
         if s.options["cosmic_ray"]:
             dset = s.zp_ph.sel(time=slice(150, 500)).sum(dim="vz_dir")
             dset["cs"] = np.sqrt(dset["press"] / dset["dens"])
-            dset["Cc"] = np.sqrt(dset["0-rhoCcr2"] / dset["dens"])
-            dset["Ceff"] = np.sqrt((dset["0-rhoCcr2"] + dset["press"]) / dset["dens"])
+            if "0-rhoCcr2" in dset:
+                dset["Cc"] = np.sqrt(dset["0-rhoCcr2"] / dset["dens"])
+                dset["Ceff"] = np.sqrt((dset["0-rhoCcr2"] + dset["press"]) / dset["dens"])
             dset["vz"] = np.sqrt(dset["Pturbz"] / dset["dens"])
             vmax_kms = s.par["cr"]["vmax"] / 1.0e5
             dset["sigma"] = dset["0-Sigma_diff1"] / vmax_kms / s.u.cm**2 * s.u.s
-            dset["kappa"] = dset["0-kappac"] * (s.u.cm**2 / s.u.s)
-            dset["cr_heating"] = (
-                -dset["0-heating_cr"] * (s.u.energy_density / s.u.time).cgs.value
-            )
+            if "0-kappac" in dset:
+                dset["kappa"] = dset["0-kappac"] * (s.u.cm**2 / s.u.s)
+            if "0-heating_cr" in dset:
+                dset["cr_heating"] = (
+                    -dset["0-heating_cr"] * (s.u.energy_density / s.u.time).cgs.value
+                )
             if "0-work_cr" in dset:
                 dset["cr_work"] = (
                     dset["0-work_cr"] * (s.u.energy_density / s.u.time).cgs.value
