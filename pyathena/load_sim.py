@@ -249,6 +249,10 @@ class LoadSim(LoadSimBase):
         else:
             self.u = Units(kind='custom', units_dict=self.par['units'])
 
+    # def __repr__(self):
+    #     """Return a hierarchical string representation of __dict__."""
+    #     return f"<{self.__class__.__name__}>\n basename: {self._basename}"
+
     def find_files(self, verbose=None):
         """Find output files under base directory and update the `files`
         attribute.
@@ -1134,19 +1138,42 @@ class LoadSimAll(object):
     """Class to load multiple simulations
 
     """
-    def __init__(self, models):
-
-        self.models = list(models.keys())
+    def __init__(self, models, load_sim_class=LoadSim):
+        # Default models
+        if models is None:
+            models = dict()
+        self.models = []
         self.basedirs = dict()
-
+        self.simdict = dict()
+        self.load_sim_class = load_sim_class
         for mdl, basedir in models.items():
-            self.basedirs[mdl] = basedir
+            if not osp.exists(basedir):
+                print(
+                    "[LoadSimAll]: Model {0:s} doesn't exist: {1:s}".format(
+                        mdl, basedir
+                    )
+                )
+            else:
+                self.models.append(mdl)
+                self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='xarray',
+    def set_model(self, model, savdir=None,
+                  load_method='xarray',
+                  load_sim_class=None,
                   units=Units(kind='LV', muH=1.4271),
                   verbose=False):
+        if load_sim_class is None:
+            load_sim_class = self.load_sim_class
+        try:
+            self.sim = self.simdict[model]
+        except KeyError:
+            self.sim = load_sim_class(
+                self.basedirs[model],
+                savdir=savdir,
+                load_method=load_method,
+                verbose=verbose,
+                units=units
+            )
+            self.simdict[model] = self.sim
         self.model = model
-        self.sim = LoadSim(self.basedirs[model], savdir=savdir,
-                           load_method=load_method,
-                           units=units, verbose=verbose)
         return self.sim

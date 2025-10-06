@@ -461,3 +461,24 @@ class LoadSimTIGRESSPPAll(object):
             self.simdict[model] = self.sim
 
         return self.sim
+
+    def __repr__(self):
+        """Return a hierarchical string representation of __dict__."""
+        def format_dict(d, indent=0):
+            lines = []
+            for k, v in d.items():
+                pad = '  ' * indent
+                if isinstance(v, dict):
+                    lines.append(f"{pad}{k}:")
+                    lines.extend(format_dict(v, indent + 1))
+                else:
+                    lines.append(f"{pad}{k}: {repr(v)}")
+            return lines
+        lines = format_dict(self.__dict__)
+        return f"<{self.__class__.__name__}>\n" + "\n".join(lines)
+
+    def __getattr__(self, key):
+        """Return the simulation object from simdict for the given key."""
+        if key in self.simdict:
+            return self.simdict[key]
+        raise AttributeError(f"{self.__class__.__name__} has no attribute '{key}'")

@@ -479,6 +479,7 @@ def plot_snapshot(sim, num,
         if f in sink_fields:
             scatter_sp(sp, ax, 'z', kind='prj', kpc=False,
                     norm_factor=norm_factor, agemax=agemax,
+                    runaway=True,
                     cmap=plt.cm.cool_r)
         ax.set(xlim=(le[0],re[0]), ylim=(le[1],re[1]))
         if i == 2:
@@ -523,6 +524,7 @@ def plot_snapshot(sim, num,
         if f in sink_fields:
             scatter_sp(sp, ax, 'y', kind='prj', kpc=False,
                     norm_factor=norm_factor, agemax=agemax,
+                    runaway=True,
                     cmap=plt.cm.cool_r)
         ax.set(xlim=(le[0],re[0]), ylim=(le[2],re[2]))
         if i == 0:

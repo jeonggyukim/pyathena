@@ -81,6 +81,10 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
             sp_ru_nonsrc = sp_ru[~src_ru]
             nonsrc_runaway = len(sp_ru_nonsrc) > 0 and nonsrc_runaway
             src_runaway = len(sp_ru_src) > 0 and src_runaway
+        else:
+            sp_ru_nonsrc = sp_ru
+            src_runaway = False
+            nonsrc_runaway = len(sp_ru_nonsrc) > 0 and nonsrc_runaway
 
         if nonsrc_runaway:
             spx, spy, spz = projection(sp_ru_nonsrc, dim)
