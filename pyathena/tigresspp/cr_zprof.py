@@ -466,18 +466,9 @@ def plot_flux_tz(simgroup, gr):
         cmap_outin = [cmr.ember, cmr.cosmic]
         for m, axs in zip(models, axes.T):
             s = sims[m]
-
             dset_outin = []
             for vz_dir in [1, -1]:
-                dset_upper = (
-                    s.zp_ph.sel(vz_dir=vz_dir).sel(z=slice(0, s.domain["re"][2]))
-                    * vz_dir
-                )
-                dset_lower = s.zp_ph.sel(vz_dir=-vz_dir).sel(
-                    z=slice(s.domain["le"][2], 0)
-                ) * (-vz_dir)
-                dset = xr.concat([dset_lower, dset_upper], dim="z")
-                dset_outin.append(update_stress(s, dset))
+                dset_outin.append(update_flux(s, s.zp_ph, vz_dir=vz_dir, both=False))
             flux_field = "mflux"
             ph = "wc"
             im_outin = []
@@ -929,35 +920,8 @@ def update_stress(s, dset):
         dset["Pi_B"] = (dset["Pmag1"] + dset["Pmag2"] - dset["Pmag3"]) * s.u.pok
         dset["Pok_B"] = (dset["Pmag1"] + dset["Pmag2"] + dset["Pmag3"]) * s.u.pok
         dset["Pok_tot"] += dset["Pi_B"]
-
-    # fluxes
-    # total area
-    area = np.prod(s.domain["Lx"][:-1])
-    mflux_units = (s.u.density * s.u.velocity).to("Msun/(kpc**2*yr)").value
-    pflux_units = (s.u.pressure).to("(Msun*km)/(kpc**2*yr*s)").value
-    eflux_units = (s.u.energy_density * s.u.velocity).to("(erg)/(kpc**2*yr)").value
-    dset["mflux"] = dset["mom3"] / area * mflux_units
-    dset["pflux_MHD"] = (dset["Pturbz"] + dset["press"]) / area * pflux_units
-    dset["eflux_MHD"] = (
-        (
-            dset["Ekin_flux1"]
-            + dset["Ekin_flux2"]
-            + dset["Ekin_flux3"]
-            + dset["Eth_flux"]
-        )
-        / area
-        * eflux_units
-    )
-    if s.options["mhd"]:
-        dset["pflux_MHD"] += (
-            (dset["Pmag1"] + dset["Pmag2"] - dset["Pmag3"]) / area * pflux_units
-        )
-        dset["eflux_MHD"] += (dset["Sz_Bpress"] + dset["Sz_Btens"]) / area * eflux_units
     if s.options["cosmic_ray"]:
-        vmax_kms = s.par["cr"]["vmax"] / 1.0e5
         dset["Pok_cr"] = dset["0-Ec"] / 3.0 * s.u.pok
-        dset["pflux_CR"] = dset["0-Ec"] / 3.0 / area * pflux_units
-        dset["eflux_CR"] = dset["0-Fc3"] * vmax_kms / area * eflux_units
 
     # weights
     gzext = np.interp(dset.z, s.extgrav["z"], s.extgrav["gz"])
@@ -990,6 +954,55 @@ def update_stress(s, dset):
 
     return dset
 
+def update_flux(s, dset_, vz_dir=None, both=False):
+    # fluxes
+    # total area
+    area = np.prod(s.domain["Lx"][:-1])
+    mflux_units = (s.u.density * s.u.velocity).to("Msun/(kpc**2*yr)").value
+    pflux_units = (s.u.pressure).to("(Msun*km)/(kpc**2*yr*s)").value
+    eflux_units = (s.u.energy_density * s.u.velocity).to("(erg)/(kpc**2*yr)").value
+    dset_upper = dset_.sel(z=slice(0, s.domain["re"][2]))
+    dset_lower = dset_.sel(z=slice(s.domain["le"][2], 0))
+    for zsgn, dset in zip([1,-1],[dset_upper, dset_lower]):
+        dset["mflux"] = dset["mom3"] / area * mflux_units * zsgn
+        dset["pflux_MHD"] = (dset["Pturbz"] + dset["press"]) / area * pflux_units
+        dset["eflux_MHD"] = (
+            (
+                dset["Ekin_flux1"]
+                + dset["Ekin_flux2"]
+                + dset["Ekin_flux3"]
+                + dset["Eth_flux"]
+            )
+            / area
+            * eflux_units
+            * zsgn
+        )
+        if s.options["mhd"]:
+            dset["pflux_MHD"] += (
+                (dset["Pmag1"] + dset["Pmag2"] - dset["Pmag3"]) / area * pflux_units
+            )
+            dset["eflux_MHD"] += (dset["Sz_Bpress"] + dset["Sz_Btens"]) / area * eflux_units * zsgn
+        if s.options["cosmic_ray"]:
+            vmax_kms = s.par["cr"]["vmax"] / 1.0e5
+            dset["pflux_CR"] = dset["0-Ec"] / 3.0 / area * pflux_units
+            dset["eflux_CR"] = dset["0-Fc3"] * vmax_kms / area * eflux_units * zsgn
+    if vz_dir is not None:
+        dset_upper = dset_upper.sel(vz_dir=vz_dir)*vz_dir
+        dset_lower = dset_lower.sel(vz_dir=-vz_dir)*vz_dir
+    if both:
+        # fold lower half
+        dset_lower = dset_lower.isel(z=slice(None,None,-1))
+        # reassign z coord
+        dset_lower = dset_lower.assign_coords(z=dset_lower.z*(-1))
+
+        dset = (dset_lower + dset_upper)
+    else:
+        dset = xr.concat([dset_lower, dset_upper], dim="z")
+
+    if vz_dir is None:
+        dset = dset.sum(dim="vz_dir")
+
+    return dset
 
 def plot_cr_velocity_sigma(simgroup, gr):
     sims = simgroup[gr]
@@ -1099,29 +1112,18 @@ def plot_cr_velocity_sigma(simgroup, gr):
 #         plt.legend(fontsize="x-small")
 
 
-def plot_flux_z(simgroup, gr, vz_dir=None):
+def plot_flux_z(simgroup, gr, both=True, vz_dir=None):
     sims = simgroup[gr]
     fig, axes = plt.subplots(
         3, 2, figsize=(8, 7), sharey="row", sharex="col", constrained_layout=True
     )
     for m, s in sims.items():
         color = model_color[m]
-        # dset = s.zp_ph.sum(dim="vz_dir").sel(time=slice(150,500))
-        if vz_dir is None:
-            dset = s.zp_ph.sum(dim="vz_dir").sel(time=slice(150, 500))
-            dset = update_stress(s, dset)
-        else:
-            dset_outin = []
-            for vz_dir_ in [1, -1]:
-                dset_upper = (
-                    s.zp_ph.sel(vz_dir=vz_dir_).sel(z=slice(0, s.domain["re"][2]))
-                    * vz_dir_
-                )
-                dset_lower = s.zp_ph.sel(vz_dir=-vz_dir_).sel(
-                    z=slice(s.domain["le"][2], 0)
-                ) * (-vz_dir_)
-                dset = xr.concat([dset_lower, dset_upper], dim="z")
-                dset_outin.append(update_stress(s, dset))
+        dset_ = s.zp_ph.sel(time=slice(150, 500))
+        dset = update_flux(s, dset_, vz_dir=vz_dir, both=both)
+        if vz_dir is not None:
+            dset_outin = [dset]
+            dset_outin.append(update_flux(s, dset_, vz_dir=-vz_dir, both=both))
 
         for axs, ph in zip(axes.T, ["wc", "hot"]):
             plt.sca(axs[0])
@@ -1175,9 +1177,10 @@ def plot_flux_z(simgroup, gr, vz_dir=None):
             plt.xlim(0, 4)
     axs = axes[:, 0]
     plt.sca(axs[0])
-    lines, labels = axs[0].get_legend_handles_labels()
-    custom_lines = [lines[0], lines[1]]
-    plt.legend(custom_lines, ["outflow", "inflow"], fontsize="x-small")
+    if vz_dir is not None:
+        lines, labels = axs[0].get_legend_handles_labels()
+        custom_lines = [lines[0], lines[1]]
+        plt.legend(custom_lines, ["outflow", "inflow"], fontsize="x-small")
     # plt.ylabel(r"$\langle n_H\rangle\,[{\rm cm^{-3}}]$")
     # plt.sca(axs[1])
     vout_label = "out" if vz_dir == 1 else "net"
@@ -1189,7 +1192,7 @@ def plot_flux_z(simgroup, gr, vz_dir=None):
     plt.legend(fontsize="x-small")
     plt.ylabel(
         f"$\\mathcal{{F}}_p^{{\\rm {vout_label}}}$"
-        r"$\,[M_\odot{\rm \,km/s\,kpc^{-2}\,yr^{-1}}]$"
+        r"$\,[M_\odot{\rm \,(km/s)\,kpc^{-2}\,yr^{-1}}]$"
     )
     plt.sca(axs[2])
     plt.ylabel(
@@ -1197,17 +1200,21 @@ def plot_flux_z(simgroup, gr, vz_dir=None):
         r"$\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
     )
     lines, labels = axs[2].get_legend_handles_labels()
-    custom_lines = [lines[0], lines[1]]
-    plt.legend(custom_lines, ["MHD flux", "CR flux"], fontsize="x-small")
-    plt.setp(axes[-1, :], "xlabel", r"$z\,[{\rm kpc}]$")
+    if len(lines)>2:
+        custom_lines = [lines[0], lines[1]]
+        plt.legend(custom_lines, ["MHD flux", "CR flux"], fontsize="x-small")
+    if both:
+        plt.setp(axes[-1, :], "xlabel", r"$|z|\,[{\rm kpc}]$")
+    else:
+        plt.setp(axes[-1, :], "xlabel", r"$z\,[{\rm kpc}]$")
 
     plt.savefig(osp.join(outdir, f"{gr}_flux_{vout_label}_z.pdf"))
 
 
-def plot_loading_z(simgroup, gr, vz_dir=None):
+def plot_loading_z(simgroup, gr, vz_dir=None, both=True):
     sims = simgroup[gr]
-    fig, axs = plt.subplots(
-        3, 1, figsize=(3, 6), sharey="row", sharex="col", constrained_layout=True
+    fig, axes = plt.subplots(
+        3, 2, figsize=(8, 7), sharey="row", sharex="col", constrained_layout=True
     )
     for m, s in sims.items():
         Zsn = s.par["feedback"]["Z_SN"]
@@ -1228,94 +1235,83 @@ def plot_loading_z(simgroup, gr, vz_dir=None):
         )
 
         color = model_color[m]
-        # dset = s.zp_ph.sum(dim="vz_dir").sel(time=slice(150,500))
-        if vz_dir is None:
-            dset = s.zp_ph.sum(dim="vz_dir").sel(time=slice(150, 500))
-            dset = update_stress(s, dset)
-        else:
-            dset_outin = []
-            for vz_dir_ in [1, -1]:
-                dset_upper = (
-                    s.zp_ph.sel(vz_dir=vz_dir_).sel(z=slice(0, s.domain["re"][2]))
-                    * vz_dir_
+        dset_ = s.zp_ph.sel(time=slice(150, 500))
+        dset = update_flux(s, dset_, vz_dir=vz_dir, both=both)
+        if vz_dir is not None:
+            dset_outin = [dset]
+            dset_outin.append(update_flux(s, dset_, vz_dir=-vz_dir, both=both))
+
+        for axs, ph in zip(axes.T, ["wc","hot"]):
+            # ph = ["wc", "hot"]
+            plt.sca(axs[0])
+            plt.title(f"phase={ph}")
+            if vz_dir == 1:
+                dset = dset_outin[0]
+            elif vz_dir == -1:
+                dset = dset_outin[1]
+            plot_zprof(
+                dset,
+                "mflux",
+                ph,
+                norm=ref_flux["mflux"],
+                line="mean",
+                color=color,
+                label=model_name[m],
+            )
+            plt.ylim(1.0e-2, 10)
+            plt.yscale("log")
+
+            plt.sca(axs[1])
+            plot_zprof(
+                dset,
+                "pflux_MHD",
+                ph,
+                norm=ref_flux["pflux_MHD"],
+                line="mean",
+                color=color,
+                label=model_name[m],
+            )
+            if s.options["cosmic_ray"]:
+                plot_zprof(
+                    dset,
+                    "pflux_CR",
+                    ph,
+                    norm=ref_flux["pflux_CR"],
+                    line="mean",
+                    color=color,
+                    label="CR",
+                    lw=1,
+                    ls="--",
                 )
-                dset_lower = s.zp_ph.sel(vz_dir=-vz_dir_).sel(
-                    z=slice(s.domain["le"][2], 0)
-                ) * (-vz_dir_)
-                dset = xr.concat([dset_lower, dset_upper], dim="z")
-                dset_outin.append(update_stress(s, dset))
+            plt.yscale("log")
+            plt.ylim(1.0e-2, 1)
 
-        # for axs, ph in zip(axes.T, [["wc", "hot"],"hot"]):
-        ph = ["wc", "hot"]
-        plt.sca(axs[0])
-        # plt.title(f"phase={ph}")
-        if vz_dir == 1:
-            dset = dset_outin[0]
-        elif vz_dir == -1:
-            dset = dset_outin[1]
-        plot_zprof(
-            dset,
-            "mflux",
-            ph,
-            norm=ref_flux["mflux"],
-            line="mean",
-            color=color,
-            label=model_name[m],
-        )
-        plt.ylim(1.0e-2, 10)
-        plt.yscale("log")
-
-        plt.sca(axs[1])
-        plot_zprof(
-            dset,
-            "pflux_MHD",
-            ph,
-            norm=ref_flux["pflux_MHD"],
-            line="mean",
-            color=color,
-            label=model_name[m],
-        )
-        if s.options["cosmic_ray"]:
+            plt.sca(axs[2])
             plot_zprof(
                 dset,
-                "pflux_CR",
+                "eflux_MHD",
                 ph,
-                norm=ref_flux["pflux_CR"],
+                norm=ref_flux["eflux_MHD"],
                 line="mean",
                 color=color,
-                label="CR",
-                lw=1,
-                ls="--",
+                label="MHD",
             )
-        plt.yscale("log")
-        plt.ylim(1.0e-2, 1)
-
-        plt.sca(axs[2])
-        plot_zprof(
-            dset,
-            "eflux_MHD",
-            ph,
-            norm=ref_flux["eflux_MHD"],
-            line="mean",
-            color=color,
-            label="MHD",
-        )
-        if s.options["cosmic_ray"]:
-            plot_zprof(
-                dset,
-                "eflux_CR",
-                ph,
-                norm=ref_flux["eflux_CR"],
-                line="mean",
-                color=color,
-                label="CR",
-                lw=1,
-                ls="--",
-            )
-        plt.yscale("log")
-        plt.ylim(1.0e-3, 5.0)
-        plt.xlim(0, 4)
-    # axs = axes[:, 0]
+            if s.options["cosmic_ray"]:
+                plot_zprof(
+                    dset,
+                    "eflux_CR",
+                    ph,
+                    norm=ref_flux["eflux_CR"],
+                    line="mean",
+                    color=color,
+                    label="CR",
+                    lw=1,
+                    ls="--",
+                )
+            plt.yscale("log")
+            plt.ylim(1.0e-3, 5.0)
+            plt.xlim(0, 4)
+    axs = axes[:, 0]
     plt.sca(axs[0])
     plt.legend(fontsize="x-small")
 
@@ -1324,7 +1320,7 @@ def plot_loading_z(simgroup, gr, vz_dir=None):
     # plt.legend(custom_lines, ["outflow", "inflow"], fontsize="x-small")
     # plt.ylabel(r"$\langle n_H\rangle\,[{\rm cm^{-3}}]$")
     # plt.sca(axs[1])
-    vout_label = "out" if vz_dir == 1 else ""
+    vout_label = "out" if vz_dir == 1 else "net"
     plt.ylabel(
         f"$\\eta_M^{{\\rm {vout_label}}}$"
         # r"$\,[M_\odot{\rm \,kpc^{-2}\,yr^{-1}}]$"
@@ -1342,7 +1338,11 @@ def plot_loading_z(simgroup, gr, vz_dir=None):
     lines, labels = axs[2].get_legend_handles_labels()
     custom_lines = [lines[0], lines[1]]
     plt.legend(custom_lines, ["MHD flux", "CR flux"], fontsize="x-small")
-    plt.setp(axs[-1], "xlabel", r"$z\,[{\rm kpc}]$")
+    # plt.setp(axs[-1], "xlabel", r"$z\,[{\rm kpc}]$")
+    if both:
+        plt.setp(axes[-1, :], "xlabel", r"$|z|\,[{\rm kpc}]$")
+    else:
+        plt.setp(axes[-1, :], "xlabel", r"$z\,[{\rm kpc}]$")
 
     plt.savefig(osp.join(outdir, f"{gr}_loading_{vout_label}_z.pdf"))
 
@@ -1519,8 +1519,9 @@ def plot_velocity_z(simgroup, gr):
     plt.ylabel(r"$\tilde{v}_{s,z}\,[{\rm km/s}]$")
     # adding custom legend for two line styles
     lines, labels = axes[1, 0].get_legend_handles_labels()
-    custom_lines = [lines[0], lines[1]]
-    plt.legend(custom_lines, ["out", "net"], fontsize="x-small")
+    if len(lines)>1:
+        custom_lines = [lines[0], lines[1]]
+        plt.legend(custom_lines, ["out", "net"], fontsize="x-small")
 
     plt.sca(axes[2, 0])
     plt.ylabel(r"$\tilde{v}_{d,z}\,[{\rm km/s}]$")

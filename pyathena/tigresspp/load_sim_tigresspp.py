@@ -8,18 +8,21 @@ from matplotlib.colors import Normalize, LogNorm, SymLogNorm
 from matplotlib import cm
 import cmasher as cmr
 
+import astropy.units as au
+
 from .hst import Hst
 from .timing import Timing
 from .zprof import Zprof
 from .slc_prj import SliceProj
 from .pdf import PDF
+from .cr_properties import CosmicRays
 from ..load_sim import LoadSim
 from pyathena.fields.fields import DerivedFields
 import pyathena as pa
 
 base_path = osp.dirname(__file__)
 
-class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF):
+class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF,CosmicRays):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
 
     def __init__(self, basedir, savdir=None, load_method="xarray", verbose=False):
@@ -68,15 +71,17 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF):
                 # Suppress divide-by-zero warning
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", category=RuntimeWarning)
+                    logL=np.log10(cooltbl["Lambda"])
+                    logG=np.log10(cooltbl["Gamma"])
                     logLam = interp1d(
                         cooltbl["logT1"],
-                        np.log10(cooltbl["Lambda"]),
-                        fill_value="extrapolate",
+                        logL,
+                        fill_value=(logL[0],"extrapolate"),
                     )
                     logGam = interp1d(
                         cooltbl["logT1"],
-                        np.log10(cooltbl["Gamma"]),
-                        fill_value="extrapolate",
+                        logG,
+                        fill_value=("extrapolate",logG[0]),
                     )
                 mu = interp1d(cooltbl["logT1"], cooltbl["mu"], fill_value="extrapolate")
                 self.coolftn = dict(logLambda=logLam, logGamma=logGam, mu=mu)
@@ -160,6 +165,17 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF):
             else:
                 mu = 1.27  # default for neutral 1.4/1.1
         ds["temperature"] = mu * T1
+
+    def add_coolheat(self, ds):
+        T1 = ds["press"] / ds["rho"] * (self.u.temperature_mu).value
+        density_to_nH = (self.u.density.cgs/(self.u.mH*self.u.muH/au.cm**3))
+        nH = ds["rho"] * density_to_nH
+        if hasattr(self, "coolftn"):
+            logT1 = np.log10(T1)
+            cool = 10**self.coolftn["logLambda"](logT1)
+            heat = 10**self.coolftn["logGamma"](logT1)
+        ds["cool_rate"] = cool*nH**2
+        ds["heat_rate"] = heat*nH
 
     def get_data(self, num, outid=None, load_derived=False):
         """a wrapper function to load data with automatically assigned
@@ -411,7 +427,7 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF):
         if kind == "ncr":
             return [500, 6000, 15000, 35000, 5.0e5]
         elif kind == "classic":
-            return [184, 5000, 20000, 5.0e5]
+            return [184, 5050, 20000, 5.0e5]
 
     @staticmethod
     def get_phase_T1list():
@@ -419,7 +435,7 @@ class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF):
 
     def set_phase(self, data):
         temp_cuts = self.get_phase_Tlist("classic")
-        phase = xr.zeros_like(data["temperature"]) + len(temp_cuts)
+        phase = xr.zeros_like(data["temperature"],dtype="int") + len(temp_cuts)
         self.phlist = ["CNM","UNM","WNM","WHIM","HIM"]
         for i,tcut in enumerate(temp_cuts):
             phase = xr.where(data["temperature"] < tcut, phase-1, phase)
@@ -482,3 +498,4 @@ class LoadSimTIGRESSPPAll(object):
         if key in self.simdict:
             return self.simdict[key]
         raise AttributeError(f"{self.__class__.__name__} has no attribute '{key}'")
+
