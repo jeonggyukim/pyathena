@@ -212,7 +212,7 @@ class CosmicRays:
         phname = ["CNM","UNM","WNM","WHIM","HIM"]
         zplist = []
         # get all CR properties
-        if self.options["cosmic_rays"]:
+        if self.options["cosmic_ray"]:
             crprops = self.get_all_crprop(data, ng=0)
         else:
             crprops = xr.Dataset()
