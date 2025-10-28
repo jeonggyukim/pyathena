@@ -425,8 +425,7 @@ class LoadSim(LoadSimBase):
         """
 
         if self.athena_variant == 'athenak':
-            self.logger.error('AthenaK hdf5 reading not implemented yet.')
-            ds = None
+            ds = self._load_hdf5_athenak(num=num, **kwargs)
         elif self.athena_variant == 'athena++':
             ds = self._load_hdf5_athenapp(num=num, **kwargs)
         else:
@@ -783,6 +782,21 @@ class LoadSim(LoadSimBase):
 
         return ds
 
+    def _load_hdf5_athenak(self, num, **kwargs):
+        num_output_vars = len(self.files['hdf5'].keys())
+        if num_output_vars == 1:
+            outvar = list(self.files['hdf5'].keys())[0]
+            fpattern = '{0:s}.{1:s}.{2:05d}.athdf'
+            dirname = osp.dirname(self.files['hdf5'][outvar][0])
+            fhdf5 = osp.join(dirname, fpattern.format(
+                             self.problem_id, outvar, num))
+        else:
+            self.logger.error('AthenaK hdf5 reading not implemented yet for\
+                              multiple output variables.')
+            return None
+        ds = read_hdf5(fhdf5, **kwargs)
+        return ds
+
     def _get_domain_from_par(self, par):
         """Get domain info from par['domain1']. Time is set to None.
         """
@@ -804,7 +818,6 @@ class LoadSim(LoadSimBase):
         self._domain = domain
 
     def find_files_vtk2d(self):
-
         self.logger.info('Find 2d vtk: {0:s}'.format(' '.join(self._fmt_vtk2d_not_found)))
         for fmt in self._fmt_vtk2d_not_found:
             fmt = fmt.split('.')[0]
