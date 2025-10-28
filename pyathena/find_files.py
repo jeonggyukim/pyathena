@@ -60,6 +60,10 @@ class FindFiles(object):
         ('hdf5', '*.out?.?????.athdf'),
         ('*.out?.?????.athdf',)]
 
+    patterns['hdf5_athenak'] = [
+        ('hdf5', '*.*.?????.athdf'),
+        ('*.*.?????.athdf',)]
+
     patterns['starpar_vtk'] = [
         ('starpar', '*.????.starpar.vtk'),
         ('id0', '*.????.starpar.vtk'),
@@ -121,7 +125,7 @@ class FindFiles(object):
             self.find_timeit()
         elif self.athena_variant == 'athenak':
             # TODO: implement athenak file finding
-            #self.find_hdf5()
+            self.find_hdf5()
             pass
         self.find_hst()
         self.find_sn()
@@ -180,6 +184,10 @@ class FindFiles(object):
                 for k in self.par.keys():
                     if k.startswith('output'):
                         self.out_fmt.append(self.par[k]['file_type'])
+                        if self.athena_variant == 'athenak' and self.par[k]['file_type'] == 'bin':
+                            # Check if there is converted hdf5 output file
+                            if len(self.find_match(self.patterns['hdf5_athenak'])) > 0:
+                                self.out_fmt.append('hdf5')
 
                     # Save particle output tags
                     if k.startswith('particle') and self.par[k]['type'] != 'none':
@@ -189,16 +197,27 @@ class FindFiles(object):
 
                 # if there are hdf5 outputs, save some info
                 if self.out_fmt.count('hdf5') > 0:
-                    self.hdf5_outid = []
-                    self.hdf5_outvar = []
-                    for k in self.par.keys():
-                        if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
-                            self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
-                            self.hdf5_outvar.append(self.par[k]['variable'])
-                    for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
-                        if 'prim' in v or 'cons' in v:
-                            self._hdf5_outid_def = i
-                            self._hdf5_outvar_def = v
+                    if self.athena_variant == 'athena++':
+                        self.hdf5_outid = []
+                        self.hdf5_outvar = []
+                        for k in self.par.keys():
+                            if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
+                                self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
+                                self.hdf5_outvar.append(self.par[k]['variable'])
+                        for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+                            if v in ['prim', 'cons']:
+                                self._hdf5_outid_def = i
+                                self._hdf5_outvar_def = v
+                    if self.athena_variant == 'athenak':
+                        self.hdf5_outvar = []
+                        for k in self.par.keys():
+                            # In this case, hdf5 files are converted from binary outputs
+                            # hence checking for file_type 'bin'
+                            if k.startswith('output') and self.par[k]['file_type'] == 'bin':
+                                self.hdf5_outvar.append(self.par[k]['variable'])
+                        for v in self.hdf5_outvar:
+                            if v in ['hydro_w', 'hydro_u']:
+                                self._hdf5_outvar_def = v
 
                 # if there are partab outputs, save some info
                 if 'partab' in self.out_fmt:
@@ -475,31 +494,52 @@ class FindFiles(object):
     def find_hdf5(self):
         # Find hdf5 files
         # hdf5 files in basedir
-        if 'hdf5' not in self.out_fmt:
-            return
-        self.files['hdf5'] = dict()
-        self.nums_hdf5 = dict()
-        for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
-            hdf5_patterns_ = []
-            for p in self.patterns['hdf5']:
-                p = list(p)
-                p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
-                hdf5_patterns_.append(tuple(p))
-            self.files['hdf5'][v] = self.find_match(self.patterns['hdf5'])
-            if not self.files['hdf5'][v]:
-                self.logger.warning(
-                    'hdf5 ({0:s}) files not found in {1:s}'.\
-                    format(v, self.basedir))
-                self.nums_hdf5[v] = None
-            else:
-                self.nums_hdf5[v] = [int(f[-11:-6]) \
-                                     for f in self.files['hdf5'][v]]
-                self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                    v, osp.dirname(self.files['hdf5'][v][0]),
-                    self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
-                if not hasattr(self, 'problem_id'):
-                    self.problem_id = osp.basename(
-                        self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
+        if 'hdf5' in self.out_fmt and self.athena_variant == 'athena++':
+            self.files['hdf5'] = dict()
+            self.nums_hdf5 = dict()
+            for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
+                hdf5_patterns_ = []
+                for p in self.patterns['hdf5']:
+                    p = list(p)
+                    p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
+                    hdf5_patterns_.append(tuple(p))
+                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5'])
+                if not self.files['hdf5'][v]:
+                    self.logger.warning(
+                        'hdf5 ({0:s}) files not found in {1:s}'.\
+                        format(v, self.basedir))
+                    self.nums_hdf5[v] = None
+                else:
+                    self.nums_hdf5[v] = [int(f[-11:-6]) \
+                                         for f in self.files['hdf5'][v]]
+                    self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        v, osp.dirname(self.files['hdf5'][v][0]),
+                        self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
+                    if not hasattr(self, 'problem_id'):
+                        self.problem_id = osp.basename(
+                            self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
+        elif self.athena_variant == 'athenak':
+            self.files['hdf5'] = dict()
+            self.nums_hdf5 = dict()
+            for v in self.hdf5_outvar:
+                hdf5_patterns_ = []
+                for p in self.patterns['hdf5_athenak']:
+                    p = list(p)
+                    p[-1] = '*.' + p[-1][2:].replace('*', v)
+                    hdf5_patterns_.append(tuple(p))
+                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5_athenak'])
+                if not self.files['hdf5'][v]:
+                    self.logger.warning(
+                        'hdf5 ({0:s}) files not found in {1:s}'.\
+                        format(v, self.basedir))
+                    self.nums_hdf5[v] = None
+                else:
+                    self.nums_hdf5[v] = [int(f[-11:-6]) \
+                                         for f in self.files['hdf5'][v]]
+                    self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        v, osp.dirname(self.files['hdf5'][v][0]),
+                        self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
+
         # Set nums array
         self.nums = self.nums_hdf5[self._hdf5_outvar_def]
 
