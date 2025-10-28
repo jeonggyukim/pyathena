@@ -58,8 +58,8 @@ class LoadSimBase(ABC):
     load_method : str
         Load vtk/hdf5 snapshots using 'xarray', 'pythena_classic' (vtk only),
         or 'yt'. Defaults to 'xarray'.
-    athena_pp : bool
-        True if athena++ simulation
+    athena_variant : str
+        [athena, athena++, athenak]
     problem_id : str
         Prefix for output files.
     domain : dict
@@ -115,8 +115,8 @@ class LoadSimBase(ABC):
         return self._problem_id
 
     @property
-    def athena_pp(self):
-        return self._athena_pp
+    def athena_variant(self):
+        return self._athena_variant
 
     @property
     def domain(self):
@@ -216,7 +216,13 @@ class LoadSim(LoadSimBase):
         # Set metadata
         self._get_domain_from_par(self.par)
         try:
-            k = 'Configure_date' if self.athena_pp else 'config_date'
+            if self.athena_variant == 'athena++':
+                k = 'Configure_date'
+            elif self.athena_variant == 'athena':
+                k = 'config_date'
+            elif self.athena_variant == 'athenak':
+                # TODO currently AthenaK does not print configure date
+                pass
             tmp = self.par['configure'][k]
             for tz in ['PDT', 'EST', 'UTC']:
                 tmp = tmp.replace(tz, '').strip()
@@ -226,7 +232,7 @@ class LoadSim(LoadSimBase):
             self._config_time = None
 
         # Set units and derived field infomation
-        if not self.athena_pp:
+        if self.athena_variant == 'athena':
             try:
                 muH = self.par['problem']['muH']
                 self.u = Units(kind='LV', muH=muH)
@@ -246,7 +252,7 @@ class LoadSim(LoadSimBase):
 
             # TODO(SMOON) Make DerivedFields work with athena++
             self.dfi = DerivedFields(self.par).dfi
-        else:
+        elif self.athena_variant == 'athena++':
             self.u = Units(kind='custom', units_dict=self.par['units'])
 
     def find_files(self, verbose=None):
@@ -264,7 +270,6 @@ class LoadSim(LoadSimBase):
         """
         if verbose is None:
             verbose = self.verbose
-
         try:
             self.ff = FindFiles(self.basedir, verbose)
         except OSError as e:
@@ -273,7 +278,7 @@ class LoadSim(LoadSimBase):
         # Transfer attributes of FindFiles to LoadSim
         # TODO: Some of these attributes don't need to be transferred.
         attrs_transfer = [
-            'files', 'athena_pp', 'par', 'problem_id', 'out_fmt',
+            'files', 'athena_variant', 'par', 'problem_id', 'out_fmt',
             'nums',
             # particle (Athena++)
             'nums_partab', 'nums_parbin', 'partags', 'pids',
@@ -292,7 +297,7 @@ class LoadSim(LoadSimBase):
             '_fmt_vtk2d_not_found']
         for attr in attrs_transfer:
             if hasattr(self.ff, attr):
-                if attr in ['files', 'par', 'athena_pp', 'problem_id']:
+                if attr in ['files', 'par', 'athena_variant', 'problem_id']:
                     setattr(self, '_' + attr, getattr(self.ff, attr))
                 else:
                     setattr(self, attr, getattr(self.ff, attr))
@@ -326,7 +331,7 @@ class LoadSim(LoadSimBase):
         if load_method is not None:
             self.load_method = load_method
 
-        if self.athena_pp:
+        if self.athena_variant == 'athena++':
             def filter_vtk_files(kind='vtk', num=None):
                 def func(num):
                     return lambda fname: '.{0:05d}.vtk'.format(num) in fname
@@ -760,10 +765,10 @@ class LoadSim(LoadSimBase):
         """Get domain info from par['domain1']. Time is set to None.
         """
         domain = dict()
-        if self.athena_pp:
+        if self.athena_variant in ['athena++', 'athenak']:
             d = par['mesh']
             domain['Nx'] = np.array([d['nx1'], d['nx2'], d['nx3']])
-        else:
+        elif self.athena_variant == 'athena':
             d = par['domain1']
             domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
         domain['ndim'] = np.sum(domain['Nx'] > 1)
