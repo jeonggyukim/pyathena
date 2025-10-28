@@ -475,32 +475,33 @@ class FindFiles(object):
     def find_hdf5(self):
         # Find hdf5 files
         # hdf5 files in basedir
-        if 'hdf5' in self.out_fmt:
-            self.files['hdf5'] = dict()
-            self.nums_hdf5 = dict()
-            for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
-                hdf5_patterns_ = []
-                for p in self.patterns['hdf5']:
-                    p = list(p)
-                    p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
-                    hdf5_patterns_.append(tuple(p))
-                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5'])
-                if not self.files['hdf5'][v]:
-                    self.logger.warning(
-                        'hdf5 ({0:s}) files not found in {1:s}'.\
-                        format(v, self.basedir))
-                    self.nums_hdf5[v] = None
-                else:
-                    self.nums_hdf5[v] = [int(f[-11:-6]) \
-                                         for f in self.files['hdf5'][v]]
-                    self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        v, osp.dirname(self.files['hdf5'][v][0]),
-                        self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
-                    if not hasattr(self, 'problem_id'):
-                        self.problem_id = osp.basename(
-                            self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
-            # Set nums array
-            self.nums = self.nums_hdf5[self._hdf5_outvar_def]
+        if 'hdf5' not in self.out_fmt:
+            return
+        self.files['hdf5'] = dict()
+        self.nums_hdf5 = dict()
+        for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
+            hdf5_patterns_ = []
+            for p in self.patterns['hdf5']:
+                p = list(p)
+                p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
+                hdf5_patterns_.append(tuple(p))
+            self.files['hdf5'][v] = self.find_match(self.patterns['hdf5'])
+            if not self.files['hdf5'][v]:
+                self.logger.warning(
+                    'hdf5 ({0:s}) files not found in {1:s}'.\
+                    format(v, self.basedir))
+                self.nums_hdf5[v] = None
+            else:
+                self.nums_hdf5[v] = [int(f[-11:-6]) \
+                                     for f in self.files['hdf5'][v]]
+                self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                    v, osp.dirname(self.files['hdf5'][v][0]),
+                    self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
+                if not hasattr(self, 'problem_id'):
+                    self.problem_id = osp.basename(
+                        self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
+        # Set nums array
+        self.nums = self.nums_hdf5[self._hdf5_outvar_def]
 
     def find_rst(self):
         # Find rst files
