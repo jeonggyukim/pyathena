@@ -100,11 +100,9 @@ class FindFiles(object):
                                     verbose)
         self.basedir = basedir
         self.patterns = FindFiles.patterns
-        self.find_all()
 
-    def find_all(self):
+        # Find all files
         self.files = dict()
-
         self.get_basic_info()
 
         if self.athena_pp:
