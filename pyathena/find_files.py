@@ -60,6 +60,10 @@ class FindFiles(object):
         ('hdf5', '*.out?.?????.athdf'),
         ('*.out?.?????.athdf',)]
 
+    patterns['hdf5_athenak'] = [
+        ('hdf5', '*.*.?????.athdf'),
+        ('*.*.?????.athdf',)]
+
     patterns['starpar_vtk'] = [
         ('starpar', '*.????.starpar.vtk'),
         ('id0', '*.????.starpar.vtk'),
@@ -100,38 +104,33 @@ class FindFiles(object):
                                     verbose)
         self.basedir = basedir
         self.patterns = FindFiles.patterns
-        self.find_all()
 
-    def find_all(self):
+        # Find all files
         self.files = dict()
-
+        self.athena_variant = None  # This is set by get_basic_info()
         self.get_basic_info()
 
-        if self.athena_pp:
+        if self.athena_variant == 'athena++':
             self.find_hdf5()
-
-        self.find_vtk()
-        if not self.athena_pp:
-            self.find_vtk2d()
-
-        self.find_hst()
-        self.find_sn()
-        self.find_zprof()
-
-        if not self.athena_pp:
-            self.find_sphst()
-            self.find_starpar_vtk()
-        else:
+            self.find_vtk()
             self.find_partab()
             self.find_parbin()
             self.find_parhst()
-
-        self.find_rst()
-
-        if not self.athena_pp:
-            self.find_timeit()
-        else:
             self.find_looptime_tasktime()
+        elif self.athena_variant == 'athena':
+            self.find_vtk()
+            self.find_vtk2d()
+            self.find_sphst()
+            self.find_starpar_vtk()
+            self.find_timeit()
+        elif self.athena_variant == 'athenak':
+            # TODO: implement athenak file finding
+            self.find_hdf5()
+            pass
+        self.find_hst()
+        self.find_sn()
+        self.find_zprof()
+        self.find_rst()
 
         # Remove empty file lists
         kdel = [k for k, v in self.files.items() if v == []]
@@ -167,21 +166,28 @@ class FindFiles(object):
                 # TODO: deal with another failure?
 
             # Determine if it is Athena++ or Athena
-            # TODO: determine athena_pp even when par is unavailable
-            if 'mesh' in self.par:
-                self.athena_pp = True
-                self.logger.info('athena_pp: True')
+            # TODO: determine athena_variant even when par is unavailable
+            if 'basename' in self.par['job']:
+                self.athena_variant = 'athenak'
+                self.logger.info('athena_variant: AthenaK')
+            elif 'mesh' in self.par:
+                self.athena_variant = 'athena++'
+                self.logger.info('athena_variant: Athena++')
             else:
-                self.athena_pp = False
-                self.logger.info('athena_pp: False')
+                self.athena_variant = 'athena'
+                self.logger.info('athena_variant: Athena')
 
             self.out_fmt = []
             self.partags = []
-            if self.athena_pp:
+            if self.athena_variant in ['athena++', 'athenak']:
                 # read output blocks
                 for k in self.par.keys():
                     if k.startswith('output'):
                         self.out_fmt.append(self.par[k]['file_type'])
+                        if self.athena_variant == 'athenak' and self.par[k]['file_type'] == 'bin':
+                            # Check if there is converted hdf5 output file
+                            if len(self.find_match(self.patterns['hdf5_athenak'])) > 0:
+                                self.out_fmt.append('hdf5')
 
                     # Save particle output tags
                     if k.startswith('particle') and self.par[k]['type'] != 'none':
@@ -191,16 +197,27 @@ class FindFiles(object):
 
                 # if there are hdf5 outputs, save some info
                 if self.out_fmt.count('hdf5') > 0:
-                    self.hdf5_outid = []
-                    self.hdf5_outvar = []
-                    for k in self.par.keys():
-                        if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
-                            self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
-                            self.hdf5_outvar.append(self.par[k]['variable'])
-                    for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
-                        if 'prim' in v or 'cons' in v:
-                            self._hdf5_outid_def = i
-                            self._hdf5_outvar_def = v
+                    if self.athena_variant == 'athena++':
+                        self.hdf5_outid = []
+                        self.hdf5_outvar = []
+                        for k in self.par.keys():
+                            if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
+                                self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
+                                self.hdf5_outvar.append(self.par[k]['variable'])
+                        for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+                            if v in ['prim', 'cons']:
+                                self._hdf5_outid_def = i
+                                self._hdf5_outvar_def = v
+                    if self.athena_variant == 'athenak':
+                        self.hdf5_outvar = []
+                        for k in self.par.keys():
+                            # In this case, hdf5 files are converted from binary outputs
+                            # hence checking for file_type 'bin'
+                            if k.startswith('output') and self.par[k]['file_type'] == 'bin':
+                                self.hdf5_outvar.append(self.par[k]['variable'])
+                        for v in self.hdf5_outvar:
+                            if v in ['hydro_w', 'hydro_u']:
+                                self._hdf5_outvar_def = v
 
                 # if there are partab outputs, save some info
                 if 'partab' in self.out_fmt:
@@ -214,7 +231,7 @@ class FindFiles(object):
                         if k.startswith('output') and self.par[k]['file_type'] == 'parbin':
                             self.parbin_outid = int(re.split(r'(\d+)',k)[1])
 
-            else:
+            elif self.athena_variant == 'athena':
                 for k in self.par.keys():
                     if k.startswith('output'):
                         # Skip if the block number XX (<outputXX>) is greater than maxout
@@ -227,8 +244,10 @@ class FindFiles(object):
                                                 self.par[k]['out_fmt'])
                         else:
                             self.out_fmt.append(self.par[k]['out_fmt'])
-
-            self.problem_id = self.par['job']['problem_id']
+            if self.athena_variant in ['athena++', 'athena']:
+                self.problem_id = self.par['job']['problem_id']
+            elif self.athena_variant == 'athenak':
+                self.problem_id = self.par['job']['basename']
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
             # athinput unavailabe
@@ -260,7 +279,7 @@ class FindFiles(object):
             self.files['sn'] = fsn[0]
             self.logger.info('sn: {0:s}'.format(self.files['sn']))
         else:
-            if not self.athena_pp:
+            if self.athena_variant == 'athena':
                 if self.par is not None:
                     # Issue warning only if iSN is nonzero
                     try:
@@ -400,7 +419,9 @@ class FindFiles(object):
     def find_vtk(self):
         # Find vtk files
         # vtk files in both basedir (joined) and in basedir/id0
-        if 'vtk' in self.out_fmt and not self.athena_pp:
+        if 'vtk' not in self.out_fmt:
+            return
+        if self.athena_variant == 'athena':
             self.files['vtk'] = self.find_match(self.patterns['vtk'])
             self.files['vtk_id0'] = self.find_match(self.patterns['vtk_id0'])
             self.files['vtk_tar'] = self.find_match(self.patterns['vtk_tar'])
@@ -461,16 +482,19 @@ class FindFiles(object):
                 self.logger.warning('Vtk file size is not unique.')
                 for f in flist:
                    self.logger.warning('vtk num: {0:d}, size [MB]: {1:d}'.format(f[0], f[1]))
-        elif 'vtk' in self.out_fmt and self.athena_pp:
+        elif self.athena_variant == 'athena++':
             # Athena++ vtk files
             self.files['vtk'] = self.find_match(self.patterns['vtk_athenapp'])
             self.nums_vtk = list(set([int(f[-9:-4]) for f in self.files['vtk']]))
             self.nums_vtk.sort()
+        elif self.athena_variant == 'athenak':
+            #TODO: implement athenak vtk file finding
+            pass
 
     def find_hdf5(self):
         # Find hdf5 files
         # hdf5 files in basedir
-        if 'hdf5' in self.out_fmt:
+        if 'hdf5' in self.out_fmt and self.athena_variant == 'athena++':
             self.files['hdf5'] = dict()
             self.nums_hdf5 = dict()
             for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
@@ -494,8 +518,30 @@ class FindFiles(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(
                             self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
-            # Set nums array
-            self.nums = self.nums_hdf5[self._hdf5_outvar_def]
+        elif self.athena_variant == 'athenak':
+            self.files['hdf5'] = dict()
+            self.nums_hdf5 = dict()
+            for v in self.hdf5_outvar:
+                hdf5_patterns_ = []
+                for p in self.patterns['hdf5_athenak']:
+                    p = list(p)
+                    p[-1] = '*.' + p[-1][2:].replace('*', v)
+                    hdf5_patterns_.append(tuple(p))
+                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5_athenak'])
+                if not self.files['hdf5'][v]:
+                    self.logger.warning(
+                        'hdf5 ({0:s}) files not found in {1:s}'.\
+                        format(v, self.basedir))
+                    self.nums_hdf5[v] = None
+                else:
+                    self.nums_hdf5[v] = [int(f[-11:-6]) \
+                                         for f in self.files['hdf5'][v]]
+                    self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        v, osp.dirname(self.files['hdf5'][v][0]),
+                        self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
+
+        # Set nums array
+        self.nums = self.nums_hdf5[self._hdf5_outvar_def]
 
     def find_rst(self):
         # Find rst files
@@ -510,11 +556,14 @@ class FindFiles(object):
                 frst = self.find_match(self.patterns['rst'])
                 if frst:
                     self.files['rst'] = frst
-                    if self.athena_pp:
+                    if self.athena_variant == 'athena++':
                         numbered_rstfiles = [f for f in self.files['rst'] if 'final' not in f]
                         self.nums_rst = [int(f[-9:-4]) for f in numbered_rstfiles]
-                    else:
+                    elif self.athena_variant == 'athena':
                         self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
+                    elif self.athena_variant == 'athenak':
+                        # TODO: implement athenak rst file num extraction
+                        pass
                     msg = 'rst: {0:s}'.format(osp.dirname(self.files['rst'][0]))
                     if len(self.nums_rst) > 0:
                         msg += ' nums: {0:d}-{1:d}'.format(

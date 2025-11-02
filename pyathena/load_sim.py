@@ -58,8 +58,8 @@ class LoadSimBase(ABC):
     load_method : str
         Load vtk/hdf5 snapshots using 'xarray', 'pythena_classic' (vtk only),
         or 'yt'. Defaults to 'xarray'.
-    athena_pp : bool
-        True if athena++ simulation
+    athena_variant : str
+        [athena, athena++, athenak]
     problem_id : str
         Prefix for output files.
     domain : dict
@@ -115,8 +115,8 @@ class LoadSimBase(ABC):
         return self._problem_id
 
     @property
-    def athena_pp(self):
-        return self._athena_pp
+    def athena_variant(self):
+        return self._athena_variant
 
     @property
     def domain(self):
@@ -216,7 +216,13 @@ class LoadSim(LoadSimBase):
         # Set metadata
         self._get_domain_from_par(self.par)
         try:
-            k = 'Configure_date' if self.athena_pp else 'config_date'
+            if self.athena_variant == 'athena++':
+                k = 'Configure_date'
+            elif self.athena_variant == 'athena':
+                k = 'config_date'
+            elif self.athena_variant == 'athenak':
+                # TODO currently AthenaK does not print configure date
+                pass
             tmp = self.par['configure'][k]
             for tz in ['PDT', 'EST', 'UTC']:
                 tmp = tmp.replace(tz, '').strip()
@@ -226,7 +232,7 @@ class LoadSim(LoadSimBase):
             self._config_time = None
 
         # Set units and derived field infomation
-        if not self.athena_pp:
+        if self.athena_variant == 'athena':
             try:
                 muH = self.par['problem']['muH']
                 self.u = Units(kind='LV', muH=muH)
@@ -246,7 +252,7 @@ class LoadSim(LoadSimBase):
 
             # TODO(SMOON) Make DerivedFields work with athena++
             self.dfi = DerivedFields(self.par).dfi
-        else:
+        elif self.athena_variant == 'athena++':
             self.u = Units(kind='custom', units_dict=self.par['units'])
 
     def find_files(self, verbose=None):
@@ -264,7 +270,6 @@ class LoadSim(LoadSimBase):
         """
         if verbose is None:
             verbose = self.verbose
-
         try:
             self.ff = FindFiles(self.basedir, verbose)
         except OSError as e:
@@ -273,7 +278,7 @@ class LoadSim(LoadSimBase):
         # Transfer attributes of FindFiles to LoadSim
         # TODO: Some of these attributes don't need to be transferred.
         attrs_transfer = [
-            'files', 'athena_pp', 'par', 'problem_id', 'out_fmt',
+            'files', 'athena_variant', 'par', 'problem_id', 'out_fmt',
             'nums',
             # particle (Athena++)
             'nums_partab', 'nums_parbin', 'partags', 'pids',
@@ -292,7 +297,7 @@ class LoadSim(LoadSimBase):
             '_fmt_vtk2d_not_found']
         for attr in attrs_transfer:
             if hasattr(self.ff, attr):
-                if attr in ['files', 'par', 'athena_pp', 'problem_id']:
+                if attr in ['files', 'par', 'athena_variant', 'problem_id']:
                     setattr(self, '_' + attr, getattr(self.ff, attr))
                 else:
                     setattr(self, attr, getattr(self.ff, attr))
@@ -326,7 +331,7 @@ class LoadSim(LoadSimBase):
         if load_method is not None:
             self.load_method = load_method
 
-        if self.athena_pp:
+        if self.athena_variant == 'athena++':
             def filter_vtk_files(kind='vtk', num=None):
                 def func(num):
                     return lambda fname: '.{0:05d}.vtk'.format(num) in fname
@@ -408,99 +413,27 @@ class LoadSim(LoadSimBase):
 
         return self.ds
 
-    def load_hdf5(self, num=None, ihdf5=None,
-                  outvar=None, outid=None, load_method=None, **kwargs):
-        """Function to read Athena hdf5 file using pythena or yt and
-        return DataSet object.
+    def load_hdf5(self, num=None, **kwargs):
+        """Wrapper function to read Athena/AthenaK hdf5 files
+
+        See documentation of `_load_hdf5_athenapp` and `_load_hdf5_atheanak` for details.
 
         Parameters
         ----------
         num : int
-           Snapshot number, e.g., /basedir/problem_id.out?.?????.athdf
-        ihdf5 : int
-           Read i-th file in the hdf5 file list. Overrides num if both are given.
-        outvar : str
-           Variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim'
-           or 'cons'. Overrides outid.
-        outid : int
-           output block number (output[n] in the input file).
-        load_method : str
-           'xarray' or 'yt'
-
-        Returns
-        -------
-        ds : xarray AthenaDataSet or yt datasets
-
-        Examples
-        --------
-        >>> from pyathena.load_sim import LoadSim
-        >>> s = LoadSim("/path/to/basedir")
-        >>> # Load everything at snapshot number 30.
-        >>> ds = s.load_hdf5(30)
-        >>> # Read the domain information only, without loading the fields.
-        >>> ds = s.load_hdf5(30, header_only=True)
-        >>> # Load the selected fields.
-        >>> ds = s.load_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
-        >>> # Load the selected region.
-        >>> ds = s.load_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
-        >>> # Load everything at fifth snapshot with ghost cells
-        >>> num_ghost = s.par['configure']['Number_of_ghost_cells'] if \
-                 s.par[f'output{s.hdf5_outid[0]}']['ghost_zones'] == 'true' else 0
-        >>> ds = s.load_hdf5(ihdf5=5, num_ghost=num_ghost)
+           Snapshot number
         """
 
-        if num is None and ihdf5 is None:
-            raise ValueError('Specify either num or ihdf5')
-
-        # Override load_method
-        if load_method is not None:
-            self.load_method = load_method
-
-        if outid is None and outvar is None:
-            outid = self._hdf5_outid_def
-            outvar = self._hdf5_outvar_def
-        elif outid is not None:
-            if not outid in self.hdf5_outid:
-                self.logger.error('Invalid hdf5 output id!')
-            idx = [i for i,v in enumerate(self.hdf5_outid) if v == outid][0]
-            outvar = self.hdf5_outvar[idx]
-        elif outvar is not None:
-            if not outvar in self.hdf5_outvar:
-                self.logger.error('Invalid hdf5 variable!')
-            idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
-            outid = self.hdf5_outid[idx]
-
-        self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
-        if self.fhdf5 is None or not osp.exists(self.fhdf5):
-            self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
-
-        if self.load_method == 'xarray':
-            try:
-                refinement = self.par['mesh']['refinement']
-            except KeyError:
-                # Cannot determine if refinement is turned on/off without reading the
-                # HDF5 file and without <refinement> block in athinput.
-                # This part needs to be improved later.
-                refinement = 'none'
-
-            if refinement != 'none':
-                self.logger.error('load_method "{0:s}" does not support mesh\
-                        refinement data. Use "yt" instead'.format(self.load_method))
-                self.ds = None
-            else:
-                self.ds = read_hdf5(self.fhdf5, **kwargs)
-
-        elif self.load_method == 'yt':
-            if hasattr(self, 'u'):
-                units_override = self.u.units_override
-            else:
-                units_override = None
-            self.ds = yt.load(self.fhdf5, units_override=units_override)
+        if self.athena_variant == 'athenak':
+            ds = self._load_hdf5_athenak(num=num, **kwargs)
+        elif self.athena_variant == 'athena++':
+            ds = self._load_hdf5_athenapp(num=num, **kwargs)
         else:
-            self.logger.error('load_method "{0:s}" not recognized.'.format(
-                self.load_method) + ' Use either "xarray" or "yt".')
+            self.logger.error('Athena hdf5 reading not implemented yet for '
+                              f'{self.athena_variant}.')
+            ds = None
 
-        return self.ds
+        return ds
 
     def load_partab(self, num=None, ipartab=None,
                     partag='par0', **kwargs):
@@ -563,7 +496,6 @@ class LoadSim(LoadSimBase):
         self.pds = read_parbin(self.fparbin, **kwargs)
 
         return self.pds
-
 
     def load_parhst(self, pid, **kwargs):
         """Read Athena++ individual particle history
@@ -756,14 +688,123 @@ class LoadSim(LoadSimBase):
         else:
             self.logger.info('File already exists: {0:s}'.format(fname_out))
 
+    def _load_hdf5_athenapp(self, num=None, ihdf5=None,
+                            outvar=None, outid=None, load_method=None, **kwargs):
+        """Function to read Athena hdf5 file using pythena or yt and
+        return DataSet object.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number, e.g., /basedir/problem_id.out?.?????.athdf
+        ihdf5 : int
+           Read i-th file in the hdf5 file list. Overrides num if both are given.
+        outvar : str
+           Variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim'
+           or 'cons'. Overrides outid.
+        outid : int
+           output block number (output[n] in the input file).
+        load_method : str
+           'xarray' or 'yt'
+
+        Returns
+        -------
+        ds : xarray AthenaDataSet or yt datasets
+
+        Examples
+        --------
+        >>> from pyathena.load_sim import LoadSim
+        >>> s = LoadSim("/path/to/basedir")
+        >>> # Load everything at snapshot number 30.
+        >>> ds = s.load_hdf5(30)
+        >>> # Read the domain information only, without loading the fields.
+        >>> ds = s.load_hdf5(30, header_only=True)
+        >>> # Load the selected fields.
+        >>> ds = s.load_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
+        >>> # Load the selected region.
+        >>> ds = s.load_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
+        >>> # Load everything at fifth snapshot with ghost cells
+        >>> num_ghost = s.par['configure']['Number_of_ghost_cells'] if \
+                 s.par[f'output{s.hdf5_outid[0]}']['ghost_zones'] == 'true' else 0
+        >>> ds = s.load_hdf5(ihdf5=5, num_ghost=num_ghost)
+        """
+
+        if num is None and ihdf5 is None:
+            raise ValueError('Specify either num or ihdf5')
+
+        # Override load_method
+        if load_method is not None:
+            self.load_method = load_method
+
+        if outid is None and outvar is None:
+            outid = self._hdf5_outid_def
+            outvar = self._hdf5_outvar_def
+        elif outid is not None:
+            if not outid in self.hdf5_outid:
+                self.logger.error('Invalid hdf5 output id!')
+            idx = [i for i,v in enumerate(self.hdf5_outid) if v == outid][0]
+            outvar = self.hdf5_outvar[idx]
+        elif outvar is not None:
+            if not outvar in self.hdf5_outvar:
+                self.logger.error('Invalid hdf5 variable!')
+            idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
+            outid = self.hdf5_outid[idx]
+
+        self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
+        if self.fhdf5 is None or not osp.exists(self.fhdf5):
+            self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
+
+        if self.load_method == 'xarray':
+            try:
+                refinement = self.par['mesh']['refinement']
+            except KeyError:
+                # Cannot determine if refinement is turned on/off without reading the
+                # HDF5 file and without <refinement> block in athinput.
+                # This part needs to be improved later.
+                refinement = 'none'
+
+            if refinement != 'none':
+                self.logger.error('load_method "{0:s}" does not support mesh\
+                        refinement data. Use "yt" instead'.format(self.load_method))
+                ds = None
+            else:
+                ds = read_hdf5(self.fhdf5, **kwargs)
+
+        elif self.load_method == 'yt':
+            if hasattr(self, 'u'):
+                units_override = self.u.units_override
+            else:
+                units_override = None
+            ds = yt.load(self.fhdf5, units_override=units_override)
+        else:
+            self.logger.error('load_method "{0:s}" not recognized.'.format(
+                self.load_method) + ' Use either "xarray" or "yt".')
+
+        return ds
+
+    def _load_hdf5_athenak(self, num, **kwargs):
+        num_output_vars = len(self.files['hdf5'].keys())
+        if num_output_vars == 1:
+            outvar = list(self.files['hdf5'].keys())[0]
+            fpattern = '{0:s}.{1:s}.{2:05d}.athdf'
+            dirname = osp.dirname(self.files['hdf5'][outvar][0])
+            fhdf5 = osp.join(dirname, fpattern.format(
+                             self.problem_id, outvar, num))
+        else:
+            self.logger.error('AthenaK hdf5 reading not implemented yet for\
+                              multiple output variables.')
+            return None
+        ds = read_hdf5(fhdf5, **kwargs)
+        return ds
+
     def _get_domain_from_par(self, par):
         """Get domain info from par['domain1']. Time is set to None.
         """
         domain = dict()
-        if self.athena_pp:
+        if self.athena_variant in ['athena++', 'athenak']:
             d = par['mesh']
             domain['Nx'] = np.array([d['nx1'], d['nx2'], d['nx3']])
-        else:
+        elif self.athena_variant == 'athena':
             d = par['domain1']
             domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
         domain['ndim'] = np.sum(domain['Nx'] > 1)
@@ -777,7 +818,6 @@ class LoadSim(LoadSimBase):
         self._domain = domain
 
     def find_files_vtk2d(self):
-
         self.logger.info('Find 2d vtk: {0:s}'.format(' '.join(self._fmt_vtk2d_not_found)))
         for fmt in self._fmt_vtk2d_not_found:
             fmt = fmt.split('.')[0]
@@ -790,7 +830,6 @@ class LoadSim(LoadSimBase):
                                               for f in self.files[f'{fmt}']])
             else:
                 self.logger.info('{0:s} files not found '.format(fmt))
-
 
     def _get_filename(self, kind, num=None, ivtk=None):
         """Get file path
