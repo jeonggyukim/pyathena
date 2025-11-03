@@ -190,7 +190,7 @@ class FindFiles(object):
                                 self.out_fmt.append('hdf5')
 
                     # Save particle output tags
-                    if k.startswith('particle') and self.par[k]['type'] != 'none':
+                    if self.athena_variant=='athena++' and k.startswith('particle') and self.par[k]['type'] != 'none':
                         par_id = int(k.strip('particle')) - 1
                         partag = 'par{}'.format(par_id)
                         self.partags.append(partag)
@@ -209,14 +209,17 @@ class FindFiles(object):
                                 self._hdf5_outid_def = i
                                 self._hdf5_outvar_def = v
                     if self.athena_variant == 'athenak':
+                        self.hdf5_outid = []
                         self.hdf5_outvar = []
                         for k in self.par.keys():
                             # In this case, hdf5 files are converted from binary outputs
                             # hence checking for file_type 'bin'
                             if k.startswith('output') and self.par[k]['file_type'] == 'bin':
+                                self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
                                 self.hdf5_outvar.append(self.par[k]['variable'])
                         for v in self.hdf5_outvar:
                             if v in ['hydro_w', 'hydro_u']:
+                                self._hdf5_outid_def = i
                                 self._hdf5_outvar_def = v
 
                 # if there are partab outputs, save some info
@@ -541,7 +544,11 @@ class FindFiles(object):
                         self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
 
         # Set nums array
-        self.nums = self.nums_hdf5[self._hdf5_outvar_def]
+        try:
+            self.nums = self.nums_hdf5[self._hdf5_outvar_def]
+        except AttributeError:
+            self.logger.warning('Could not set nums from hdf5 files.'
+                                'Perhaps no hydro output')
 
     def find_rst(self):
         # Find rst files
