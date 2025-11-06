@@ -64,6 +64,10 @@ class FindFiles(object):
         ('hdf5', '*.*.?????.athdf'),
         ('*.*.?????.athdf',)]
 
+    patterns['parvtk_athenak'] = [
+        ('pvtk', '*.*.?????.part.vtk'),
+        ('*.*.?????.part.vtk',)]
+
     patterns['starpar_vtk'] = [
         ('starpar', '*.????.starpar.vtk'),
         ('id0', '*.????.starpar.vtk'),
@@ -126,6 +130,7 @@ class FindFiles(object):
         elif self.athena_variant == 'athenak':
             # TODO: implement athenak file finding
             self.find_hdf5()
+#            self.find_parvtk()
             pass
         self.find_hst()
         self.find_sn()
