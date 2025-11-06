@@ -497,7 +497,12 @@ class FindFiles(object):
     def find_hdf5(self):
         # Find hdf5 files
         # hdf5 files in basedir
-        if 'hdf5' in self.out_fmt and self.athena_variant == 'athena++':
+        if 'hdf5' not in self.out_fmt:
+            return
+
+        if self.athena_variant == 'athena':
+            raise NotImplementedError('hdf5 is not supported in Athena-Cversion.')
+        elif self.athena_variant == 'athena++':
             self.files['hdf5'] = dict()
             self.nums_hdf5 = dict()
             for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
