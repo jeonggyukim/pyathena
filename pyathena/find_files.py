@@ -64,10 +64,6 @@ class FindFiles(object):
         ('hdf5', '*.*.?????.athdf'),
         ('*.*.?????.athdf',)]
 
-    patterns['parvtk_athenak'] = [
-        ('pvtk', '*.*.?????.part.vtk'),
-        ('*.*.?????.part.vtk',)]
-
     patterns['starpar_vtk'] = [
         ('starpar', '*.????.starpar.vtk'),
         ('id0', '*.????.starpar.vtk'),
@@ -80,6 +76,10 @@ class FindFiles(object):
     patterns['parbin'] = [
         ('parbin', '*.out?.?????.par?.parbin'),
         ('*.out?.?????.par?.parbin',)]
+
+    patterns['pvtk'] = [
+        ('pvtk', '*.*.?????.part.vtk'),
+        ('*.*.?????.part.vtk',)]
 
     patterns['parhst'] = [
         ('parhst', '*.par*.csv'),
@@ -128,10 +128,8 @@ class FindFiles(object):
             self.find_starpar_vtk()
             self.find_timeit()
         elif self.athena_variant == 'athenak':
-            # TODO: implement athenak file finding
             self.find_hdf5()
-#            self.find_parvtk()
-            pass
+            self.find_prtcl('pvtk')
         self.find_hst()
         self.find_sn()
         self.find_zprof()
@@ -198,6 +196,10 @@ class FindFiles(object):
                     if self.athena_variant=='athena++' and k.startswith('particle') and self.par[k]['type'] != 'none':
                         par_id = int(k.strip('particle')) - 1
                         partag = 'par{}'.format(par_id)
+                        self.partags.append(partag)
+                    elif self.athena_variant=='athenak' and k=='particles':
+                        # Currently only one particle type is supported in AthenaK
+                        partag = 'par0'
                         self.partags.append(partag)
 
                 # if there are hdf5 outputs, save some info
@@ -325,7 +327,9 @@ class FindFiles(object):
     def find_prtcl(self, key):
         if key not in self.out_fmt:
             return
-        num_slice = dict(partab=slice(-14, -9), parbin=slice(-17, -12))
+        num_slice = dict(partab=slice(-14, -9),
+                         parbin=slice(-17, -12),
+                         pvtk=slice(-14, -9))
 
         self.files[key] = dict()
         self.__dict__[f'nums_{key}'] = dict()
