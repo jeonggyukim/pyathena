@@ -117,8 +117,8 @@ class FindFiles(object):
         if self.athena_variant == 'athena++':
             self.find_hdf5()
             self.find_vtk()
-            self.find_partab()
-            self.find_parbin()
+            self.find_prtcl('partab')
+            self.find_prtcl('parbin')
             self.find_parhst()
             self.find_looptime_tasktime()
         elif self.athena_variant == 'athena':
@@ -322,53 +322,30 @@ class FindFiles(object):
                 self.logger.warning(
                     'starpar files not found in {0:s}.'.format(self.basedir))
 
-    def find_partab(self):
-        # Find partab files
-        if 'partab' in self.out_fmt:
-            self.files['partab'] = dict()
-            self.nums_partab = dict()
-            for partag in self.partags:
-                partab_patterns_ = []
-                for p in self.patterns['partab']:
-                    p = list(p)
-                    p[-1] = p[-1].replace('par?', partag)
-                    partab_patterns_.append(tuple(p))
-                self.files['partab'][partag] = self.find_match(partab_patterns_)
-                if not self.files['partab'][partag]:
-                    self.logger.warning(
-                        'partab ({0:s}) files not found in {1:s}'.\
-                        format(partag, self.basedir))
-                    self.nums_partab[partag] = None
-                else:
-                    self.nums_partab[partag] = [int(f[-14:-9])
-                                                 for f in self.files['partab'][partag]]
-                    self.logger.info('partab ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        partag, osp.dirname(self.files['partab'][partag][0]),
-                        self.nums_partab[partag][0], self.nums_partab[partag][-1]))
+    def find_prtcl(self, key):
+        if key not in self.out_fmt:
+            return
+        num_slice = dict(partab=slice(-14, -9), parbin=slice(-17, -12))
 
-    def find_parbin(self):
-        # Find parbin files
-        if 'parbin' in self.out_fmt:
-            self.files['parbin'] = dict()
-            self.nums_parbin = dict()
-            for partag in self.partags:
-                parbin_patterns_ = []
-                for p in self.patterns['parbin']:
-                    p = list(p)
-                    p[-1] = p[-1].replace('par?', partag)
-                    parbin_patterns_.append(tuple(p))
-                self.files['parbin'][partag] = self.find_match(parbin_patterns_)
-                if not self.files['parbin'][partag]:
-                    self.logger.warning(
-                        'parbin ({0:s}) files not found in {1:s}'.\
-                        format(partag, self.basedir))
-                    self.nums_parbin[partag] = None
-                else:
-                    self.nums_parbin[partag] = [int(f[-17:-12])
-                                                 for f in self.files['parbin'][partag]]
-                    self.logger.info('parbin ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        partag, osp.dirname(self.files['parbin'][partag][0]),
-                        self.nums_parbin[partag][0], self.nums_parbin[partag][-1]))
+        self.files[key] = dict()
+        self.__dict__[f'nums_{key}'] = dict()
+        for partag in self.partags:
+            par_pattern = []
+            for p in self.patterns[key]:
+                p = list(p)
+                p[-1] = p[-1].replace('par?', partag)
+                par_pattern.append(tuple(p))
+
+            matches = self.find_match(par_pattern)
+            self.files[key][partag] = matches
+
+            if not matches:
+                self.logger.warning(f'{key} ({partag}) files not found in {self.basedir}')
+                self.__dict__[f'nums_{key}'][partag] = None
+            else:
+                nums = [int(f[num_slice[key]]) for f in matches]
+                self.__dict__[f'nums_{key}'][partag] = nums
+                self.logger.info(f'{key} ({partag}): {osp.dirname(matches[0])} nums: {nums[0]}-{nums[-1]}')
 
     def find_parhst(self):
         if [k for k in self.par.keys() if k.startswith('particle') and
