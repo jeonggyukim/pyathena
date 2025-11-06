@@ -31,6 +31,7 @@ from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
 from .io.read_particles import read_partab, read_parbin, read_parhst
+from .io.athenak import read_particle_vtk
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -280,9 +281,9 @@ class LoadSim(LoadSimBase):
         attrs_transfer = [
             'files', 'athena_variant', 'par', 'problem_id', 'out_fmt',
             'nums',
-            # particle (Athena++)
+            # particle (Athena++, AthenaK)
             'nums_partab', 'nums_parbin', 'partags', 'pids',
-            'partab_outid', 'parbin_outid',
+            'partab_outid', 'parbin_outid', 'pvtk_outvar',
             # hdf5 (Athena++)
             'nums_hdf5', 'hdf5_outid', 'hdf5_outvar', '_hdf5_outid_def',
             '_hdf5_outvar_def',
@@ -494,6 +495,37 @@ class LoadSim(LoadSimBase):
             self.logger.info('[load_parbin]: parbin file does not exist. ')
 
         self.pds = read_parbin(self.fparbin, **kwargs)
+
+        return self.pds
+
+    def load_pvtk(self, num=None, fidx=None,
+                  partag='par0', **kwargs):
+        """Read AthenaK particle vtk file.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number.
+           e.g., /basedir/pvtk/problem_id.outvar.num.part.vtk.
+        fidx : int
+           Read i-th file in the pvtk file list.
+           Overrides num if both are given.
+        partag : int
+           Particle id in the input file. Default value is 'par0'
+
+        Returns
+        -------
+        pds : pandas.DataFrame
+            Particle data
+        """
+        if num is None and fidx is None:
+            raise ValueError('Specify either num or fidx')
+
+        self.fpvtk = self._get_fpvtk(self.pvtk_outvar, partag, num, fidx)
+        if self.fpvtk is None or not osp.exists(self.fpvtk):
+            self.logger.info('[load_parbin]: parbin file does not exist. ')
+
+        self.pds = read_particle_vtk(self.fpvtk, **kwargs)
 
         return self.pds
 
@@ -907,6 +939,21 @@ class LoadSim(LoadSimBase):
                 self.problem_id, outid, num, partag))
 
         return fparbin
+
+    def _get_fpvtk(self, outvar, partag, num=None, idx=None):
+        """Get pvtk file path
+        """
+
+        try:
+            dirname = osp.dirname(self.files['pvtk'][partag][0])
+        except IndexError:
+            return None
+        if idx is not None:
+            fname = self.files['pvtk'][partag][idx]
+        else:
+            fpattern = f'{self.problem_id}.{outvar}.{num:05d}.part.vtk'
+            fname = osp.join(dirname, fpattern)
+        return fname
 
     def _get_fparhst(self, pid):
         """Get parhst file path

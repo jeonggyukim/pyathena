@@ -187,6 +187,9 @@ class FindFiles(object):
                 for k in self.par.keys():
                     if k.startswith('output'):
                         self.out_fmt.append(self.par[k]['file_type'])
+                        # Currently, AthenaK does not support native hdf5 output.
+                        # Instead, it provides a script to convert binary outputs to hdf5.
+                        # So here we check if there are converted hdf5 files for binary outputs.
                         if self.athena_variant == 'athenak' and self.par[k]['file_type'] == 'bin':
                             # Check if there is converted hdf5 output file
                             if len(self.find_match(self.patterns['hdf5_athenak'])) > 0:
@@ -240,6 +243,12 @@ class FindFiles(object):
                     for k in self.par.keys():
                         if k.startswith('output') and self.par[k]['file_type'] == 'parbin':
                             self.parbin_outid = int(re.split(r'(\d+)',k)[1])
+
+                # if there are pvtk outputs, save some info
+                if 'pvtk' in self.out_fmt:
+                    for k in self.par.keys():
+                        if k.startswith('output') and self.par[k]['file_type'] == 'pvtk':
+                            self.pvtk_outvar = self.par[k]['variable']
 
             elif self.athena_variant == 'athena':
                 for k in self.par.keys():
