@@ -229,7 +229,6 @@ class FindFiles(object):
                                 self.hdf5_outvar.append(self.par[k]['variable'])
                         for v in self.hdf5_outvar:
                             if v in ['hydro_w', 'hydro_u']:
-                                self._hdf5_outid_def = i
                                 self._hdf5_outvar_def = v
 
                 # if there are partab outputs, save some info
