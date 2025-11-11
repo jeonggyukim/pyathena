@@ -196,11 +196,11 @@ class FindFiles(object):
                                 self.out_fmt.append('hdf5')
 
                     # Save particle output tags
-                    if self.athena_variant=='athena++' and k.startswith('particle') and self.par[k]['type'] != 'none':
+                    if self.athena_variant == 'athena++' and k.startswith('particle') and self.par[k]['type'] != 'none':
                         par_id = int(k.strip('particle')) - 1
                         partag = 'par{}'.format(par_id)
                         self.partags.append(partag)
-                    elif self.athena_variant=='athenak' and k=='particles':
+                    elif self.athena_variant == 'athenak' and k == 'particles':
                         # Currently only one particle type is supported in AthenaK
                         partag = 'par0'
                         self.partags.append(partag)

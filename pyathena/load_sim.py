@@ -515,7 +515,7 @@ class LoadSim(LoadSimBase):
 
         Returns
         -------
-        pds : pandas.DataFrame
+        pds : dict
             Particle data
         """
         if num is None and fidx is None:
@@ -523,7 +523,7 @@ class LoadSim(LoadSimBase):
 
         self.fpvtk = self._get_fpvtk(self.pvtk_outvar, partag, num, fidx)
         if self.fpvtk is None or not osp.exists(self.fpvtk):
-            self.logger.info('[load_parbin]: parbin file does not exist. ')
+            self.logger.info('[load_pvtk]: pvtk file does not exist. ')
 
         self.pds = read_particle_vtk(self.fpvtk, **kwargs)
 
