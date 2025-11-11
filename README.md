@@ -26,9 +26,18 @@ Below is an example of how you can set up pyathena. It assumes that you have alr
    conda activate pyathena
    ```
 5. Install pyathena
+
+   For a standard installation:
    ```sh
    pip install .
    ```
+
+   For development (editable installation - recommended for contributors):
+   ```sh
+   pip install -e .
+   ```
+   
+   The `-e` flag creates an editable installation, which means changes to the source code will immediately be reflected without reinstalling the package.
 
 Sometimes `yt` and other installed packages (e.g., numpy) may have compatibility issues. In this case, you can downgrade packages to more stable, older versions. For example,
 ```sh
@@ -55,8 +64,23 @@ See example [notebooks](notebook) and [documentation](https://jeonggyukim.github
 If you have a suggestion that would make pyathena better, please fork the repo and create a pull request.
 Don't forget to give the project a star! Thanks again!
 
-1. Fork pyathena
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+### Development Setup
+
+For contributors, it's recommended to use an editable installation:
+
+1. Fork pyathena and clone your fork:
+   ```sh
+   git clone https://github.com/yourusername/pyathena.git
+   cd pyathena
+   ```
+2. Set up the development environment:
+   ```sh
+   conda env create -f env.yml
+   conda activate pyathena
+   pip install -e .
+   ```
+3. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+4. Make your changes and test them
+5. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+6. Push to the branch (`git push origin feature/AmazingFeature`)
+7. Open a Pull Request
