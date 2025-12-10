@@ -160,7 +160,7 @@ def set_derived_fields_def(par, x0):
         return d['velocity1']*u.kms
     func[f] = _vx
     label[f] = r'$v_x\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
+    cmap[f] = 'bwr'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
@@ -171,7 +171,7 @@ def set_derived_fields_def(par, x0):
         return d['velocity2']*u.kms
     func[f] = _vy
     label[f] = r'$v_y\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
+    cmap[f] = 'bwr'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
@@ -182,7 +182,7 @@ def set_derived_fields_def(par, x0):
         return d['velocity3']*u.kms
     func[f] = _vz
     label[f] = r'$v_z\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu_r'
+    cmap[f] = 'bwr'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
@@ -1413,13 +1413,56 @@ def set_derived_fields_cosmic_ray(par):
     take_log[f] = True
 
     # alfven speed
-    f = 'Vcr_mag'
+    f = 'VAi_mag'
     field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
-    def _Vcr_mag(d, u):
+    def _VAi_mag(d, u):
         vmag = np.sqrt(d['0-Vs1']**2+d['0-Vs2']**2+d['0-Vs3']**2)
         return vmag*u.kms
-    func[f] = _Vcr_mag
-    label[f] = r'$v_{\rm A,i}\;[{\rm km\,s^{-1}}]$'
+    func[f] = _VAi_mag
+    label[f] = r'$|v_{\rm A,i}|\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'managua_r'
+    vminmax[f] = (2,250)
+    take_log[f] = True
+
+    f = 'VAi1'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi1(d, u):
+        return d["0-Vs1"]*u.kms
+    func[f] = _VAi1
+    label[f] = r'$v_{\rm A,i,x}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    f = 'VAi2'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi2(d, u):
+        return d["0-Vs2"]*u.kms
+    func[f] = _VAi2
+    label[f] = r'$v_{\rm A,i,y}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    f = 'VAi3'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi3(d, u):
+        return d["0-Vs3"]*u.kms
+    func[f] = _VAi3
+    label[f] = r'$v_{\rm A,i,z}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    # Vcr
+    f = 'Vcr_mag'
+    field_dep[f] = set(['0-Fc1','0-Fc2','0-Fc3','0-Ec'])
+    def _Vcr(d, u):
+        vmax_ = vmax/(u.cm/u.s)
+        Fmag = np.sqrt(d['0-Fc1']**2+d['0-Fc2']**2+d['0-Fc3']**2)
+        return Fmag*vmax_/(4/3.*d['0-Ec'])*u.kms
+    func[f] = _Vcr
+    label[f] = r'$|v_{\rm eff}|\;[{\rm km\,s^{-1}}]$'
     cmap[f] = 'cool'
     vminmax[f] = (2,250)
     take_log[f] = True
