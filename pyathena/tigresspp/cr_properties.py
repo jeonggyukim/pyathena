@@ -2,6 +2,7 @@ import numpy as np
 import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
+from ..util.derivative import gradient
 
 # utilities for CR rotation
 def get_b_angle(Bcc1,Bcc2,Bcc3,tiny=1.e-7):
@@ -41,6 +42,40 @@ def inverse_rotate_vector(angles,vector):
     return v1,v2,v3
 
 class CosmicRays:
+    def Fcr_parallel(self, data):
+        """CR flux along B field direction
+        """
+        # B vector for angle
+        Bcc = [data[f] for f in ["Bcc1","Bcc2","Bcc3"]]
+
+        # vector to rotate
+        Fc = [data[f] for f in ["0-Fc1","0-Fc2","0-Fc3"]]
+
+        # rotation
+        angles = get_b_angle(*Bcc)
+        Fc_rot = rotate_vector(angles,Fc)
+
+        # final results
+        return Fc_rot[0]
+
+    def GradPcr_parallel_direct(self, data):
+        """CR pressure gradient along B field direction (non-steady state))
+        """
+        # B vector for angle
+        Bcc = [data[f] for f in ["Bcc1","Bcc2","Bcc3"]]
+
+        # vector to rotate
+        # Finite difference gradient
+        gradPcr = gradient(data['0-Ec'].data/3.0,
+                           data.x.data,data.y.data,data.z.data)
+
+        # rotation
+        angles = get_b_angle(*Bcc)
+        gradPcr_rot = rotate_vector(angles,gradPcr)
+
+        # final results
+        return gradPcr_rot[0]
+
     def Fcr_diff_parallel(self, data):
         """CR diffusion flux along B field direction
         """
@@ -184,6 +219,15 @@ class CosmicRays:
         else:
             return work_para + work_perp
 
+    def EffecitveCRvelocity(self, data, dir=1):
+        """Effective CR velocity along B field direction
+        """
+        # vmax in code units
+        vlim = self.par["cr"]["vmax"]/self.u.velocity.cgs.value
+
+        ec = data["0-Ec"]
+        return data[f"0-Fc{dir}"]*vlim/(4.0/3.0*ec)
+
     def GetAreaForPhaseAndVz(self, data, phase, np=0, vz_dir=1):
         """Area of the face where vz_dir*Vz>0 and phase=np
         np=0: cold, 1: cool, 2: warm, 3: ionized, 4: hot
@@ -204,6 +248,9 @@ class CosmicRays:
         results["CRwork_total"] = self.CRwork(data, ng=ng, split=False)
         results["CRwork_para"] = self.CRwork(data, ng=ng, split=True)[0]
         results["CRwork_perp"] = self.CRwork(data, ng=ng, split=True)[1]
+        results["0-Veff1"] = self.EffecitveCRvelocity(data, dir=1)
+        results["0-Veff2"] = self.EffecitveCRvelocity(data, dir=2)
+        results["0-Veff3"] = self.EffecitveCRvelocity(data, dir=3)
 
         return results
 

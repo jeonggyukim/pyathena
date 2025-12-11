@@ -786,6 +786,7 @@ def plot_slices_cr(sim, num, kpc=True, novectors=False, time=False,
                            sim.dfi[field]["label_unit"],size="large")
             ax.set_aspect("equal", adjustable="box")
         ax.axis("off")
+        plt.axhline(0,color="k",ls=":")
 
     for ax, field in zip(axes[1, :], flist):
         vec = vectors[field]
@@ -815,7 +816,7 @@ def plot_slices_cr(sim, num, kpc=True, novectors=False, time=False,
             ha="left",
             va="top",
             xycoords="axes fraction",
-            fontsize="x-large",
+            fontsize="large",
             bbox=dict(boxstyle="round,pad=0.2", fc="w", ec="k", lw=1),
         )
     return fig
