@@ -47,12 +47,12 @@ model_name = {
 model_color = {
     "crmhd-16pc-b1-diode-lngrad_out": "royalblue",
     "crmhd_v2-16pc-b1-diode-lngrad_out": "cornflowerblue",
-    "crmhd_v2-8pc-b1-diode-lngrad_out": "midnightblue",
+    "crmhd_v2-8pc-b1-diode-lngrad_out": "royalblue",
     "crmhd-16pc-b1-diode-lngrad_out-sigma28": "gold",
     "mhd-16pc-b1-diode": "crimson",
     "mhd-16pc-b1-lngrad_out": "salmon",
     "mhd_v2-16pc-b1-diode": "salmon",
-    "mhd_v2-8pc-b1-diode": "maroon",
+    "mhd_v2-8pc-b1-diode": "crimson",
     "crmhd-16pc-b0.1-diode-lngrad_out": "turquoise",
     "crmhd-16pc-b1-diode-lngrad_out-Vmax10": "orchid",
     "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma27": "sienna",
@@ -113,6 +113,48 @@ model_tall = [
 
 outdir = "./figures"
 
+# Add these imports at the top of cr_zprof.py (if not already present)
+from scipy.optimize import curve_fit
+from scipy.stats import linregress
+
+# Add this function to fit exponential profiles
+def fit_exponential_profile(z, P, return_all=False, zmin=0.1, zmax=1):
+    """Fit P(z) with exponential profile: P(z) = P0 * exp(-|z|/H)
+
+    Parameters
+    ----------
+    z : array-like
+        Height array (can be negative)
+    P : array-like
+        Pressure values corresponding to z
+    return_all : bool
+        If True, return dict with P0, H, and covariance
+
+    Returns
+    -------
+    popt : tuple (P0, H)
+        Fitted parameters
+    """
+    def exp_profile(z, P0, H):
+        return P0 * np.exp(-np.abs(z) / H)
+
+    # Remove NaN/inf values
+    mask = np.isfinite(P) & np.isfinite(z) & (np.abs(z)>zmin) & (np.abs(z)<zmax)
+    z_clean = z[mask]
+    P_clean = P[mask]
+
+    # Initial guess: P0 from midplane, H from scale height
+    P0_guess = P_clean[np.argmin(np.abs(z_clean))].values if hasattr(P_clean, 'values') else P_clean[np.argmin(np.abs(z_clean))]
+    H_guess = 1.0  # kpc
+
+    try:
+        popt, pcov = curve_fit(exp_profile, z_clean, P_clean, p0=[P0_guess, H_guess], maxfev=1000)
+        if return_all:
+            return {'P0': popt[0], 'H': popt[1], 'covariance': pcov}
+        return popt
+    except RuntimeError:
+        print("Fit failed")
+        return None
 
 def get_model_table_line(s):
     par = s.par
@@ -598,10 +640,37 @@ def plot_pressure_z(simgroup, gr, ph="wc"):
         c = model_color[m]
         dset = s.zp_ph.sel(time=slice(150, 500)).sum(dim="vz_dir")
         dset = update_stress(s, dset)
+        rho = (dset["rho"].sel(phase=ph)/dset["area"].sel(phase=ph)).mean(dim="time")
+        print(m, np.sqrt((rho*rho.z**2).sum(dim="z")/rho.sum(dim="z")).data,
+              ((rho*s.domain['dx'][-1]).sum(dim="z")/(2*rho.max(dim="z"))).data)
+        fit_params = fit_exponential_profile(rho.z.values/1.e3, rho.values,
+                                             return_all=True,
+                                             zmin=0., zmax=1.0)
+        if fit_params:
+            P0, H = fit_params['P0'], fit_params['H']
+            print(f"{m} rho: P0={P0:.2e}, H={H:.3f} kpc")
         for ax, pfield in zip(axes, ["Pok_cr", "Pok_th", "Pok_kin", "Pi_B"]):
             plt.sca(ax)
             if pfield in dset:
                 plot_zprof_field(dset, pfield, ph, color=c, label=model_name[m])
+                # fitting with an exponential profile
+
+                Pz = dset[pfield].sel(phase=ph).mean(dim="time")/dset["area"].sel(phase=ph).mean(dim="time")
+
+                z = Pz.z.values/1.e3
+                P = Pz.values
+
+                # Fit exponential profile
+                zmin = 1. if pfield == "Pok_cr" else 0.
+                zmax = 2. if pfield == "Pok_cr" else 1.
+                fit_params = fit_exponential_profile(z, P, return_all=True,
+                                                     zmin=zmin, zmax=zmax)
+                if fit_params:
+                    P0, H = fit_params['P0'], fit_params['H']
+                    z_fit = np.linspace(z.min(), z.max(), 100)
+                    P_fit = P0 * np.exp(-np.abs(z_fit) / H)
+                    plt.plot(z_fit, P_fit, '--', color=c, alpha=0.7, linewidth=0.5)
+                    print(f"{m} {pfield}: P0={P0:.2e}, H={H:.3f} kpc")
 
             lab = pfield.split("_")[-1]
             if pfield.startswith("Pok"):
@@ -1548,6 +1617,7 @@ def plot_history(simgroup, gr):
         std = h[field].loc[150:].std()
         plt.axhline(avg, color=color, lw=1, ls="--")
         plt.axhspan(avg - std, avg + std, color=color, alpha=0.1, lw=0)
+        print(m, avg, std)
 
     plt.sca(axes[1])
     for field, label, ls in zip(
