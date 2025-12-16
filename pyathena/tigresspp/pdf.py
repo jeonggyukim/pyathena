@@ -77,7 +77,7 @@ class PDF:
             force_override=False,
             filebase=None,
             dryrun=False,
-            zlist = [500,1000,2000,3000], dz = 50):
+            zlist = [-3000,-2000,-1000,-500,0,500,1000,2000,3000], dz = 50):
         ds = self.load_hdf5(num=num, file_only=True)
 
         if dryrun:
@@ -90,19 +90,32 @@ class PDF:
         bin = np.logspace(0,4,201)
         dbin = np.log10(bin[1]/bin[0])
         bcc = np.log10(bin)[:-1] + dbin
-        munits = (self.u.density*self.u.velocity).to("Msun/(kpc**2*yr)").value
-        eunits = (self.u.energy_density*self.u.velocity).to("erg/(kpc**2*yr)").value
+        mfunits = (self.u.density*self.u.velocity).to("Msun/(kpc**2*yr)").value
+        pfunits = (self.u.energy_density).to("(Msun*km)/(kpc**2*yr*s)").value
+        efunits = (self.u.energy_density*self.u.velocity).to("erg/(kpc**2*yr)").value
         for z0 in zlist:
             ds_sel = ds.sel(z=slice(z0-dz,z0+dz)).stack(xyz=["x","y","z"])
             cs = np.sqrt(ds_sel["press"]/ds_sel["rho"])
             zsgn= ds_sel.z/np.abs(ds_sel.z)
             vout = ds_sel["vel3"]*zsgn
+            vol = ds_sel["rho"]/ds_sel["rho"]
             rho = ds_sel["rho"]
+            press = ds_sel["press"]
 
+            # mass flux
             mflux_out = rho*vout
             vsq = (ds_sel["vel1"]**2 + ds_sel["vel2"]**2 + ds_sel["vel3"]**2)
             csq = self.par["hydro"]["gamma"]/(self.par["hydro"]["gamma"]-1)*cs**2
             vBsq = vsq + csq
+            # momentum flux
+            pflux_kin = mflux_out*vout
+            pflux_th = press
+            pflux = pflux_kin+pflux_th
+            if self.options["mhd"]:
+                pflux_mag = 0.5*(ds_sel["Bcc1"]**2+ds_sel["Bcc2"]**2-ds_sel["Bcc3"]**2)
+                pflux += pflux_mag
+
+            # energy flux
             eflux_kin =0.5*mflux_out*vsq
             eflux_th =mflux_out*csq
             eflux = eflux_kin + eflux_th
@@ -115,28 +128,35 @@ class PDF:
                               ds_sel["Bcc3"]*ds_sel["vel3"])*Bout
                 eflux += eflux_mag - eflux_magt
 
-
+            # metal flux
             mZflux_out = mflux_out*ds_sel["rmetal"]
             fluxlist = {
-                "mflux": mflux_out*munits,
-                "mZflux": mZflux_out*munits,
-                "teflux": eflux_th*eunits,
-                "keflux": eflux_kin*eunits,
-                "eflux": eflux*eunits,
+                "vol": vol,
+                "mass": rho,
+                "mflux": mflux_out*mfunits,
+                "mflux_Z": mZflux_out*mfunits,
+                "pflux": pflux*pfunits,
+                "eflux": eflux*efunits,
+                "pflux_kin": pflux_kin*pfunits,
+                "pflux_th": pflux_th*pfunits,
+                "eflux_kin": eflux_kin*efunits,
+                "eflux_th": eflux_th*efunits
             }
             if self.options["mhd"]:
-                fluxlist["meflux"] = (eflux_mag-eflux_magt)*eunits
-                fluxlist["meflux_p"] = eflux_mag*eunits
-                fluxlist["meflux_t"] = eflux_magt*eunits
+                fluxlist["eflux_mag"] = (eflux_mag-eflux_magt)*efunits
+                fluxlist["eflux_magp"] = eflux_mag*efunits
+                fluxlist["eflux_magt"] = eflux_magt*efunits
+                fluxlist["pflux_mag"] = pflux_mag*pfunits
             outpdflist = []
             inpdflist =[]
             for f in fluxlist:
                 outpdf,_,_ = np.histogram2d(vout,cs,
                                             bins=[bin,bin],
                                             weights=fluxlist[f])
+                vsgn = -1 if ("mflux" in f) or ("eflux" in f) else 1
                 inpdf,_,_ = np.histogram2d(-vout,cs,
                                             bins=[bin,bin],
-                                            weights=-fluxlist[f])
+                                            weights=vsgn*fluxlist[f])
 
                 outpdf=xr.DataArray(outpdf.T,dims=["logcs","logvz"],coords=[bcc,bcc])
                 inpdf=xr.DataArray(inpdf.T,dims=["logcs","logvz"],coords=[bcc,bcc])
