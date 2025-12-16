@@ -7,13 +7,14 @@ filepath = os.path.dirname(__file__)
 sys.path.insert(0, osp.join(filepath, "../"))
 
 import xarray as xr
-import astropy.constants as ac
+# import astropy.constants as ac
 
 import numpy as np
 import matplotlib.pyplot as plt
 
 from matplotlib.colors import Normalize, LogNorm, SymLogNorm
 import cmasher as cmr
+from scipy.optimize import curve_fit
 
 # import pyathena as pa
 from .load_sim_tigresspp import LoadSimTIGRESSPPAll
@@ -45,14 +46,14 @@ model_name = {
 }
 
 model_color = {
-    "crmhd-16pc-b1-diode-lngrad_out": "royalblue",
+    "crmhd-16pc-b1-diode-lngrad_out": "#0504aa",
     "crmhd_v2-16pc-b1-diode-lngrad_out": "cornflowerblue",
-    "crmhd_v2-8pc-b1-diode-lngrad_out": "royalblue",
+    "crmhd_v2-8pc-b1-diode-lngrad_out": "#E77500",
     "crmhd-16pc-b1-diode-lngrad_out-sigma28": "gold",
     "mhd-16pc-b1-diode": "crimson",
     "mhd-16pc-b1-lngrad_out": "salmon",
     "mhd_v2-16pc-b1-diode": "salmon",
-    "mhd_v2-8pc-b1-diode": "crimson",
+    "mhd_v2-8pc-b1-diode": "#000000",
     "crmhd-16pc-b0.1-diode-lngrad_out": "turquoise",
     "crmhd-16pc-b1-diode-lngrad_out-Vmax10": "orchid",
     "crmhd-16pc-b1-lngrad_out-lngrad_out-sigma27": "sienna",
@@ -113,10 +114,6 @@ model_tall = [
 
 outdir = "./figures"
 
-# Add these imports at the top of cr_zprof.py (if not already present)
-from scipy.optimize import curve_fit
-from scipy.stats import linregress
-
 # Add this function to fit exponential profiles
 def fit_exponential_profile(z, P, return_all=False, zmin=0.1, zmax=1):
     """Fit P(z) with exponential profile: P(z) = P0 * exp(-|z|/H)
@@ -155,6 +152,51 @@ def fit_exponential_profile(z, P, return_all=False, zmin=0.1, zmax=1):
     except RuntimeError:
         print("Fit failed")
         return None
+
+def load_zprof_postproc(s):
+    zpoutdir = osp.join(s.savdir,"zprof_postproc")
+    os.makedirs(zpoutdir,exist_ok=True)
+    zplist = []
+    for num in s.nums:
+        zpoutfile = osp.join(zpoutdir,f"{s.problem_id}.{num:05d}.zprof.nc")
+        if not os.path.isfile(zpoutfile):
+            print(zpoutfile)
+            ds = s.get_data(num)
+            ds.load()
+            zprof = s.construct_zprof(ds)
+            zprof = zprof.assign_coords(time=ds.attrs["Time"])
+            zprof.to_netcdf(zpoutfile)
+        else:
+            with xr.open_dataset(zpoutfile) as zprof:
+                zprof.load()
+        zplist.append(zprof)
+    s.zp_pp = xr.concat(zplist,dim="time")
+    if hasattr(s,"zprof"):
+        s.zp_pp = s.zp_pp.assign_coords(phase=s.zprof.phase[:-1])
+        s.zp_pp["area"] = s.zprof["area"].sel(phase=s.zp_pp.phase).interp(time=s.zp_pp["time"])
+
+        s.zp_pp_ph = xr.concat([s.zp_pp.sel(phase=["CNM", "UNM", "WNM"]).sum(dim="phase").assign_coords(phase="wc"),
+                               s.zp_pp.sel(phase=["WHIM","HIM"]).sum(dim="phase").assign_coords(phase="hot")],
+                              dim="phase")
+    return s.zp_pp
+
+def plot_injection(s,**kwargs):
+    import astropy.units as au
+    import astropy.constants as ac
+    import pandas as pd
+    import os.path as osp
+    import numpy as np
+    if "sn" in s.files:
+        if osp.exists(s.files["sn"]):
+            sn = pd.read_csv(s.files["sn"])
+    snsel = sn[sn["time"]>150]
+    nsn,zfc=np.histogram(snsel["x3_inj"],range=[s.domain["le"][2],s.domain["re"][2]],bins=s.domain["Nx"][2])
+    zcc = 0.5*(zfc[1:]+zfc[:-1])
+    dt = (500-150)*s.u.time
+    area = s.domain["Lx"][0]*s.domain["Lx"][1]*s.u.length**2
+    dz = s.domain["dx"][2]*s.u.length
+    crinj=nsn*1.e51*au.erg*0.1/area/dt/dz
+    plt.plot(zcc/1.e3,crinj.to("erg/(s*cm3)"),**kwargs)
 
 def get_model_table_line(s):
     par = s.par
@@ -277,21 +319,20 @@ def create_windpdf(simgroup, gr):
             pdf = s.get_windpdf(num, "windpdf")
             outpdf.append(pdf["out"])
             inpdf.append(pdf["in"])
-        outdir = os.path.join(s.savdir, "windpdf")
-        xr.concat(outpdf, dim="time").to_netcdf(os.path.join(outdir, "outpdf.nc"))
-        xr.concat(inpdf, dim="time").to_netcdf(os.path.join(outdir, "inpdf.nc"))
-        load_windpdf(s)
+        pdf_outdir = os.path.join(s.savdir, "windpdf")
+        xr.concat(outpdf, dim="time").to_netcdf(os.path.join(pdf_outdir, "outpdf.nc"))
+        xr.concat(inpdf, dim="time").to_netcdf(os.path.join(pdf_outdir, "inpdf.nc"))
 
 
 def load_windpdf(s):
-    outdir = os.path.join(s.savdir, "windpdf")
-    with xr.open_dataarray(os.path.join(outdir, "outpdf.nc")) as da:
+    pdf_outdir = os.path.join(s.savdir, "windpdf")
+    with xr.open_dataarray(os.path.join(pdf_outdir, "outpdf.nc")) as da:
         s.outpdf = (
             da.sel(flux=["mflux", "eflux", "mZflux"])
             .sel(time=slice(150, 500))
             .mean(dim="time")
         )
-    with xr.open_dataarray(os.path.join(outdir, "inpdf.nc")) as da:
+    with xr.open_dataarray(os.path.join(pdf_outdir, "inpdf.nc")) as da:
         s.inpdf = (
             da.sel(flux=["mflux", "eflux", "mZflux"])
             .sel(time=slice(150, 500))
@@ -894,7 +935,7 @@ def plot_mass_fraction_t(simgroup, gr):
         total_mass = dset["rho"].sel(phase="whole").sum(dim="z")
         for ph, color, label in zip(
             [["CNM", "UNM"], "WNM", "WHIM", "HIM"],
-            ["C0", "C1", "C3"],
+            ["tab:blue", "tab:olive", "tab:red"],
             ["Cold", "Warm", "Hot"],
         ):
             frac = dset["rho"].sel(phase=ph).sum(dim="phase").sum(dim="z") / total_mass
@@ -929,7 +970,7 @@ def plot_rho_z(simgroup, gr):
                 plot_zprof_field(dset, field, ph, color=color, lw=1)
                 plt.yscale("log")
             # plt.ylim(1.0e-5, 10)
-            # plt.title(f"phase={ph}")
+            # plt.title(f"ph={ph}")
     plt.sca(axes[0, 0])
     plt.ylabel(r"$\langle n_H \rangle\,[{\rm cm^{-3}}]$")
     plt.xlim(-4, 4)
@@ -1105,7 +1146,7 @@ def plot_cr_velocity_sigma(simgroup, gr):
                 for pfield, ls in zip(["Ceff", "vz"], ["-", ":"]):
                     plot_zprof(dset, pfield, ph, color=color, label=pfield, ls=ls)
                 plt.ylim(bottom=0)
-                plt.title(f"phase={ph}")
+                plt.title(f"ph={ph}")
                 plt.sca(axs[1])
                 plot_zprof_field(dset, "sigma", ph, color=color, label=model_name[m])
                 plt.sca(axs[2])
@@ -1196,7 +1237,7 @@ def plot_flux_z(simgroup, gr, both=True, vz_dir=None):
 
         for axs, ph in zip(axes.T, ["wc", "hot"]):
             plt.sca(axs[0])
-            plt.title(f"phase={ph}")
+            plt.title(f"ph={ph}")
             if vz_dir == 1:
                 dset = dset_outin[0]
             elif vz_dir == -1:
@@ -1270,7 +1311,7 @@ def plot_flux_z(simgroup, gr, both=True, vz_dir=None):
     )
     lines, labels = axs[2].get_legend_handles_labels()
     if len(lines)>2:
-        custom_lines = [lines[0], lines[1]]
+        custom_lines = [lines[1], lines[2]]
         plt.legend(custom_lines, ["MHD flux", "CR flux"], fontsize="x-small")
     if both:
         plt.setp(axes[-1, :], "xlabel", r"$|z|\,[{\rm kpc}]$")
@@ -1313,7 +1354,7 @@ def plot_loading_z(simgroup, gr, vz_dir=None, both=True):
         for axs, ph in zip(axes.T, ["wc","hot"]):
             # ph = ["wc", "hot"]
             plt.sca(axs[0])
-            plt.title(f"phase={ph}")
+            plt.title(f"ph={ph}")
             if vz_dir == 1:
                 dset = dset_outin[0]
             elif vz_dir == -1:
@@ -1405,7 +1446,7 @@ def plot_loading_z(simgroup, gr, vz_dir=None, both=True):
         # r"$\,[{\rm erg\,kpc^{-2}\,yr^{-1}}]$"
     )
     lines, labels = axs[2].get_legend_handles_labels()
-    custom_lines = [lines[0], lines[1]]
+    custom_lines = [lines[1], lines[2]]
     plt.legend(custom_lines, ["MHD flux", "CR flux"], fontsize="x-small")
     # plt.setp(axs[-1], "xlabel", r"$z\,[{\rm kpc}]$")
     if both:
@@ -1448,7 +1489,7 @@ def plot_area_mass_fraction_z(simgroup, gr):
             plt.sca(axs[i])
             for ph, color, label in zip(
                 [["CNM", "UNM"], "WNM", ["WHIM", "HIM"]],
-                ["C0", "limegreen", "C3"],
+                ["C0", "C2", "C1"],
                 ["CNM+UNM", "WNM", "WHIM+HIM"],
             ):
                 plot_zprof_frac(dset, field, ph, line="mean", color=color, label=label)
@@ -1525,78 +1566,101 @@ def plot_vertical_proflies_separate(simgroup, gr):
     plt.savefig(osp.join(outdir, f"{gr}_{field}_profile_z.pdf"))
 
 
-def plot_velocity_z(simgroup, gr):
+def plot_velocity_z(simgroup, gr, ph="wc", savefig=True):
     sims = simgroup[gr]
     models = list(sims.keys())
 
-    fig, axes = plt.subplots(
-        3, 1, figsize=(3, 6), sharex=True, constrained_layout=True, squeeze=False
+    fig, axs = plt.subplots(
+        4, 1, figsize=(3, 7), sharex=True, constrained_layout=True
     )
+
     for i, m in enumerate(models):
         s = sims[m]
         c = model_color[m]
+        if s.options["cosmic_ray"]:
+            crzp_net = s.zp_pp_ph.sel(time=slice(150, 500), z=slice(0, s.zp_ph.z.max())).sum(dim="vz_dir")
+            crzp_out = s.zp_pp_ph.sel(time=slice(150, 500), z=slice(0, s.zp_ph.z.max()), vz_dir=1)
         dnet = s.zp_ph.sel(time=slice(150, 500), z=slice(0, s.zp_ph.z.max())).sum(
             dim="vz_dir"
         )
         dout = s.zp_ph.sel(time=slice(150, 500), z=slice(0, s.zp_ph.z.max()), vz_dir=1)
-        for axs, ph in zip(axes.T, ["wc", "hot"]):
-            plt.sca(axs[0])
+
+        plt.sca(axs[0])
+        plot_zprof_field(
+            dout, "vel3", ph, color=c, line="median", label=model_name[m]
+        )
+        plot_zprof_field(
+            dnet, "vel3", ph, color=c, line="median", quantile=False, lw=1, ls=":"
+        )
+        # plt.ylim(-25, 75)
+        plt.title(f"ph={ph}")
+
+        plt.sca(axs[1])
+        if s.options["cosmic_ray"]:
+            plot_zprof_field(dout, "0-Vs3", ph, color=c, line="median", label="out")
             plot_zprof_field(
-                dout, "vel3", ph, color=c, line="median", label=model_name[m]
+                dnet,
+                "0-Vs3",
+                ph,
+                color=c,
+                line="median",
+                quantile=False,
+                lw=1,
+                ls=":",
+                label="net",
             )
+        # plt.ylim(0, 50)
+
+        plt.sca(axs[2])
+        if s.options["cosmic_ray"]:
+            plot_zprof_field(dout, "0-Vd3", ph, color=c, line="median")
             plot_zprof_field(
-                dnet, "vel3", ph, color=c, line="median", quantile=False, lw=1, ls=":"
+                dnet,
+                "0-Vd3",
+                ph,
+                color=c,
+                line="median",
+                quantile=False,
+                lw=1,
+                ls=":",
             )
-            # plt.ylim(-25, 75)
-            plt.title(f"phase={ph}")
+        plt.ylim(-50, 50)
 
-            plt.sca(axs[1])
-            if s.options["cosmic_ray"]:
-                plot_zprof_field(dout, "0-Vs3", ph, color=c, line="median", label="out")
-                plot_zprof_field(
-                    dnet,
-                    "0-Vs3",
-                    ph,
-                    color=c,
-                    line="median",
-                    quantile=False,
-                    lw=1,
-                    ls=":",
-                    label="net",
-                )
-            # plt.ylim(0, 50)
+        plt.sca(axs[3])
+        if s.options["cosmic_ray"]:
+            plot_zprof_field(crzp_out, "0-Veff3", ph, color=c, line="median", label="out")
+            plot_zprof_field(
+                crzp_net,
+                "0-Veff3",
+                ph,
+                color=c,
+                line="median",
+                quantile=False,
+                lw=1,
+                ls=":",
+                label="net",
+            )
 
-            plt.sca(axs[2])
-            if s.options["cosmic_ray"]:
-                plot_zprof_field(dout, "0-Vd3", ph, color=c, line="median")
-                plot_zprof_field(
-                    dnet,
-                    "0-Vd3",
-                    ph,
-                    color=c,
-                    line="median",
-                    quantile=False,
-                    lw=1,
-                    ls=":",
-                )
-            plt.ylim(-50, 50)
-
-    plt.sca(axes[0, 0])
-    plt.ylabel(r"$\tilde{v}_z\,[{\rm km/s}]$")
+    plt.sca(axs[0])
+    plt.ylabel(r"$\overline{v}_z\,[{\rm km/s}]$")
     plt.legend(fontsize="x-small")
-    plt.sca(axes[1, 0])
-    plt.ylabel(r"$\tilde{v}_{s,z}\,[{\rm km/s}]$")
+    plt.sca(axs[1])
+    plt.ylabel(r"$\overline{v}_{s,z}\,[{\rm km/s}]$")
     # adding custom legend for two line styles
-    lines, labels = axes[1, 0].get_legend_handles_labels()
+    lines, labels = axs[1].get_legend_handles_labels()
     if len(lines)>1:
         custom_lines = [lines[0], lines[1]]
         plt.legend(custom_lines, ["out", "net"], fontsize="x-small")
 
-    plt.sca(axes[2, 0])
-    plt.ylabel(r"$\tilde{v}_{d,z}\,[{\rm km/s}]$")
+    plt.sca(axs[2])
+    plt.ylabel(r"$\overline{v}_{d,z}\,[{\rm km/s}]$")
+
+    plt.sca(axs[3])
+    plt.ylabel(r"$\overline{v}_{{\rm eff},z}\,[{\rm km/s}]$")
     plt.xlabel(r"$z\,[{\rm kpc}]$")
     plt.xlim(0, 4)
-    plt.savefig(osp.join(outdir, f"{gr}_velocity_z.pdf"))
+    if savefig:
+        plt.savefig(osp.join(outdir, f"{gr}_velocity_z_{ph}.pdf"))
 
 
 def plot_history(simgroup, gr):
@@ -1731,7 +1795,8 @@ def plot_vertical_equilibrium_t(simgroup, gr, ph="wc", exclude=[]):
             + Ptot.sel(z=slice(-z0 - dz, -z0 + dz)).mean(dim="z")
         )
         delta = Ptot_mid - Ptot_1kpc
-        plt.plot(dset.time * s.u.Myr, delta * 1.0e-4, label=r"$P_{\rm tot}$")
+        plt.plot(dset.time * s.u.Myr, delta * 1.0e-4,
+                 label=r"$P_{\rm MHD}$")
 
         # total weight
         area_tot = s.domain["Lx"][0] * s.domain["Lx"][1]
@@ -1742,7 +1807,8 @@ def plot_vertical_equilibrium_t(simgroup, gr, ph="wc", exclude=[]):
             + Wtot.sel(z=slice(-z0 - dz, -z0 + dz)).mean(dim="z")
         )
         delta = Wtot_mid - Wtot_1kpc
-        plt.plot(dset.time * s.u.Myr, delta * 1.0e-4, label=r"$\mathcal{W}$")
+        plt.plot(dset.time * s.u.Myr, delta * 1.0e-4,
+                 label=r"$\mathcal{W}$")
 
         # CR
         if s.options["cosmic_ray"]:
@@ -1753,7 +1819,8 @@ def plot_vertical_equilibrium_t(simgroup, gr, ph="wc", exclude=[]):
                 + Pcr.sel(z=slice(-z0 - dz, -z0 + dz)).mean(dim="z")
             )
             delta = Pcr_mid - Pcr_1kpc
-            plt.plot(dset.time * s.u.Myr, delta * 1.0e-4, label=r"$P_{\rm cr}$")
+            plt.plot(dset.time * s.u.Myr, delta * 1.0e-4,
+                     label=r"$P_{\rm cr}$")
         # plt.yscale("log")
         # plt.ylim(5.0e2, 5.0e4)
         plt.xlabel(r"$t\,[{\rm Myr}]$")
@@ -1763,6 +1830,7 @@ def plot_vertical_equilibrium_t(simgroup, gr, ph="wc", exclude=[]):
         # r"$\,\langle \mathcal{W}_{\rm tot}\rangle^{\rm wc}$"
         r"$\Delta_{1{\rm kpc}} P\,[10^4 k_B{\rm cm^{-3}\,K}]$"
     )
+    plt.sca(axes[1])
     plt.legend(fontsize="small", loc=1)
     plt.savefig(osp.join(outdir, f"{gr}_vertical_equilibrium_t.pdf"))
 
@@ -1822,14 +1890,16 @@ def plot_voutpdf(simgroup, gr, savefig=True):
     for (m, s), axs in zip(simgroup[gr].items(), axes.T):
         outflux = s.outflux
         dbin = outflux.logvz[1] - outflux.logvz[0]
-
+        name = model_name[m]
+        color = model_color[m]
+        axs[0].set_title(name,color=color)
         for z0 in outflux.z:
             plt.sca(axs[0])
             plt.plot(
                 outflux.logvz,
                 outflux.sel(logcs=slice(0, 1.2), z=z0, flux="mflux").sum(dim="logcs")
                 / dbin,
-                color="tab:blue",
+                color="C0",
                 lw=z0 / 1.0e3,
                 label=f"${z0 / 1.0e3:3.1f} {{\\rm kpc}}$",
             )
@@ -1837,7 +1907,7 @@ def plot_voutpdf(simgroup, gr, savefig=True):
                 outflux.logvz,
                 outflux.sel(logcs=slice(1.2, 4), z=z0, flux="mflux").sum(dim="logcs")
                 / dbin,
-                color="tab:red",
+                color="C1",
                 lw=z0 / 1.0e3,
             )
             plt.yscale("log")
@@ -1847,7 +1917,7 @@ def plot_voutpdf(simgroup, gr, savefig=True):
                 outflux.logvz,
                 outflux.sel(logcs=slice(0, 1.2), z=z0, flux="eflux").sum(dim="logcs")
                 / dbin,
-                color="tab:blue",
+                color="C0",
                 lw=z0 / 1.0e3,
                 label="wc" if z0 == 3000 else None,
             )
@@ -1855,14 +1925,13 @@ def plot_voutpdf(simgroup, gr, savefig=True):
                 outflux.logvz,
                 outflux.sel(logcs=slice(1.2, 4), z=z0, flux="eflux").sum(dim="logcs")
                 / dbin,
-                color="tab:red",
+                color="C1",
                 lw=z0 / 1.0e3,
                 label="hot" if z0 == 3000 else None,
             )
             plt.yscale("log")
             plt.ylim(1.0e42, 5.0e46)
     plt.sca(axes[0, 0])
-    plt.title("crmhd")
     plt.ylabel(
         r"$d\mathcal{F}_M/d\log v_{\rm out}$"
         + "\n"
@@ -1871,7 +1940,6 @@ def plot_voutpdf(simgroup, gr, savefig=True):
     plt.legend(fontsize="x-small")
     plt.xlim(0, 3.5)
     plt.sca(axes[0, 1])
-    plt.title("mhd")
     plt.xlim(0, 3.5)
     plt.sca(axes[1, 0])
     plt.legend(fontsize="x-small")
@@ -1886,6 +1954,264 @@ def plot_voutpdf(simgroup, gr, savefig=True):
     if savefig:
         plt.savefig(osp.join(outdir, f"{gr}_voutpdf.pdf"))
 
+def plot_kappa_z(simgroup, gr, phases=["wc","hot"], savefig=True):
+    nph = len(phases)
+    sims = simgroup[gr]
+    fig, axes = plt.subplots(2, nph, figsize=(2.5*nph+1, 4),
+                             sharex="col", sharey="row",
+                             constrained_layout=True)
+    for m, s in sims.items():
+        color = model_color[m]
+        if s.options["cosmic_ray"]:
+            if phases[0] == "wc" and phases[1] == "hot":
+                dset_pp = s.zp_pp_ph.sel(time=slice(150, 500)).sum(dim="vz_dir")
+            else:
+                dset_pp = s.zp_pp.sel(time=slice(150, 500)).sum(dim="vz_dir")
+            dset = s.zp_ph.sel(time=slice(150, 500)).sum(dim="vz_dir")
+            vmax_kms = s.par["cr"]["vmax"] / 1.0e5
+            dset_pp["kappa_eff"] = (dset_pp["Fcr_diff_parallel"]/
+                                    dset_pp["GradPcr_parallel"]*
+                                    dset_pp["area"]) * (s.u.cm**2 / s.u.s)
+            dset_pp["sigma_eff"] = (dset_pp["GradPcr_parallel"]/
+                                    dset_pp["Fcr_diff_parallel"]*
+                                    dset_pp["area"]) / (s.u.cm**2 / s.u.s)
+            dset["sigma"] = dset["0-Sigma_diff1"] / vmax_kms / s.u.cm**2 * s.u.s
+            dset["kappa"] = dset["0-kappac"] * (s.u.cm**2 / s.u.s)
+            for axs, ph in zip(axes.T, phases):
+                plt.sca(axs[0])
+                if type(ph) is list:
+                    plt.title(f"ph={"+".join(ph)}")
+                else:
+                    plt.title(f"ph={ph}")
+
+                plot_zprof_field(dset_pp, "kappa_eff", ph, color=color, label=r"$\kappa_{\rm eff}$")
+                plt.sca(axs[1])
+                plot_zprof_field(dset_pp, "sigma_eff", ph, color=color, label=r"$\kappa_{\rm eff}^{-1}$")
+
+    plt.sca(axes[0, 0])
+    plt.ylabel(r"${\kappa}_{\parallel, {\rm avg}}[{\rm cm^{2}\,s^{-1}}]$")
+    plt.yscale("log")
+    plt.ylim(1.0e27, 1.0e30)
+
+    plt.sca(axes[1, 0])
+    plt.ylabel(r"${\sigma}_{\parallel, {\rm avg}}[{\rm cm^{-2}\,s^{1}}]$")
+    plt.yscale("log")
+    plt.ylim(1.0e-30, 1.0e-27)
+
+    plt.setp(axes[1,:],xlabel=r"$z\,[{\rm kpc}]$", xlim=(-4,4))
+
+    if savefig:
+        plt.savefig(osp.join(outdir, f"{gr}_kappa_z_{nph}ph.pdf"))
+
+def plot_gainloss_z(simgroup, gr, phases=["wc","hot"], savefig=True):
+    nph = len(phases)
+    sims = simgroup[gr]
+    fig, axes = plt.subplots(2, nph, figsize=(2.5*nph+1, 4), sharex="col", sharey="row", constrained_layout=True)
+
+    for m, s in sims.items():
+        color = model_color[m]
+        if s.options["cosmic_ray"]:
+            if phases[0] == "wc" and phases[1] == "hot":
+                dset_pp = s.zp_pp_ph.sel(time=slice(150, 500)).sum(dim="vz_dir")
+                dset = s.zp_ph.sel(time=slice(150, 500)).sum(dim="vz_dir")
+            else:
+                dset_pp = s.zp_pp.sel(time=slice(150, 500)).sum(dim="vz_dir")
+                dset = s.zprof.sel(time=slice(150, 500)).sum(dim="vz_dir")
+
+            dset_pp["cr_heating"] = (
+                -dset_pp["Gamma_cr_stream"] * (s.u.energy_density / s.u.time).cgs.value
+            )
+            dset_pp["rad_cooling"] = (
+                dset_pp["cool_rate"] * (s.u.energy_density / s.u.time).cgs.value
+            )
+            dset_pp["rad_heating"] = (
+                dset_pp["heat_rate"] * (s.u.energy_density / s.u.time).cgs.value
+            )
+            dset_pp["cr_work"] = (
+                dset_pp["CRwork_total"] * (s.u.energy_density / s.u.time).cgs.value
+            )
+            dset_pp["cr_loss"] = (
+                -dset_pp["CRLosses"] * (s.u.energy_density / s.u.time).cgs.value
+            )
+            if "0-heating_cr" in dset:
+                dset["cr_heating"] = (
+                    -dset["0-heating_cr"] * (s.u.energy_density / s.u.time).cgs.value
+                )
+            if "0-work_cr" in dset:
+                dset["cr_work"] = (
+                    dset["0-work_cr"] * (s.u.energy_density / s.u.time).cgs.value
+                )
+            tdec_scr = s.par["feedback"]["tdec_scr"]*s.u.Myr
+            dset["CRinj_rate"]=(dset["sCR"]/tdec_scr)*(s.u.energy_density / s.u.time).cgs.value
+            for axs, ph in zip(axes.T, phases):
+                plt.sca(axs[0])
+                if type(ph) is list:
+                    plt.title(f"ph={"+".join(ph)}")
+                else:
+                    plt.title(f"ph={ph}")
+                plot_zprof_frac(dset_pp, "cool_rate", ph, color="C0",
+                                label=r"$n_H^2 \Lambda$")
+                plot_zprof_frac(dset_pp, "cr_heating", ph, color="C1",
+                                label=r"$\mathcal{G}_{\rm cr, st}$")
+                plot_zprof_frac(dset_pp, "heat_rate", ph, color="C2",
+                                label=r"$n_H \Gamma$")
+
+                plt.sca(axs[1])
+                plot_zprof_frac(dset_pp, "cr_loss", ph, color="C0",
+                                 label=r"$\mathcal{L}_{\rm cr}$")
+                plot_zprof_frac(dset, "CRinj_rate", ph, color="C1",
+                                label=r"$e_{\rm cr}/t_{\rm dec}$" )
+                plot_zprof_frac(dset_pp, "cr_work", ph, color="C2",
+                                label=r"$W_{\rm gas-cr}$")
+
+
+    plt.sca(axes[0, 0])
+    plt.ylabel("Energy Loss/Gain\n"+r"$[{\rm erg\,s^{-1}\,cm^{-3}}]$")
+    plt.yscale("log")
+    plt.ylim(1.0e-30, 1.0e-25)
+    plt.legend(fontsize="x-small")
+
+    plt.sca(axes[1, 0])
+    plt.ylabel("Energy Loss/Gain\n"+r"$[{\rm erg\,s^{-1}\,cm^{-3}}]$")
+    plt.yscale("log")
+    plt.ylim(1.0e-30, 1.0e-25)
+    plt.legend(fontsize="x-small")
+    plt.sca(axes[1, 1])
+
+    plt.setp(axes[1,:],xlabel=r"$z\,[{\rm kpc}]$", xlim=(-4,4))
+
+    if savefig:
+        plt.savefig(osp.join(outdir, f"{gr}_heatcool_z_{nph}ph.pdf"))
+
+def plot_momentum_transfer_z(simgroup, gr, hot="full",
+                             savefig=True, showall=False):
+    fig,axes = plt.subplots(2,2,figsize=(8,6),
+                            sharey=True,sharex="col",
+                            constrained_layout=True)
+    sims = simgroup[gr]
+    for i,(m, s) in enumerate(sims.items()):
+        color = model_color[m]
+
+        # read zprof/merge velocity
+        dset = s.zp_ph.sum(dim="vz_dir").sel(time=slice(150, 500))
+        dset = update_stress(s, dset)
+
+        # setup gzext
+        gzext = np.interp(dset.z, s.extgrav["z"], s.extgrav["gz"])
+        dz = s.domain["dx"][2]
+
+        # total area
+        area = np.prod(s.domain["Lx"][:2])
+
+        # total pressure
+        PMHD = (dset["Pturbz"] + dset["press"] + dset["Pmag1"] + dset["Pmag2"]
+                - dset["Pmag3"])*s.u.pok/area
+        # turbulent pressure
+        Ptrb = dset["Pturbz"]*s.u.pok/area
+
+        # weight
+        dW=(dset["rhogz"]+dset["rho"]*gzext)*s.u.pok/area
+
+        # CR pressure
+        if s.options["cosmic_ray"]:
+            Pcr = dset["0-Ec"]/3.0*s.u.pok/area
+
+        # calculate pressure differences w.r.t. z=1kpc
+        zmin = 1000
+        zmax = 5000
+        Pu = PMHD.sel(z=zmin,method="nearest").sel(phase="wc").mean(dim="time")
+        Pl = PMHD.sel(z=-zmin,method="nearest").sel(phase="wc").mean(dim="time")
+
+        # upper half
+        dFMHD_upper = (PMHD.sel(z=slice(zmin,zmax))-PMHD.sel(z=zmin,method="nearest"))/Pu
+        dFtrb_upper = (Ptrb.sel(z=slice(zmin,zmax))-Ptrb.sel(z=zmin,method="nearest"))/Pu
+        W_upper = dW.sel(z=slice(zmin,zmax)).cumsum(dim="z")*dz/Pu
+        upper_fields = [dFMHD_upper, dFtrb_upper, W_upper]
+        # lower half
+        dFMHD_lower = (PMHD.sel(z=slice(-zmax,-zmin))-PMHD.sel(z=-zmin,method="nearest"))/Pl
+        dFtrb_lower = (Ptrb.sel(z=slice(-zmax,-zmin))-Ptrb.sel(z=-zmin,method="nearest"))/Pl
+        W_lower = -dW.sel(z=slice(-zmax,-zmin)).isel(z=slice(None,None,-1)).cumsum(dim="z")*dz/Pl
+        W_lower = W_lower.isel(z=slice(None,None,-1))
+        lower_fields = [dFMHD_lower, dFtrb_lower, W_lower]
+        if s.options["cosmic_ray"]:
+            dPcr_upper = (Pcr.sel(z=slice(zmin,zmax))-Pcr.sel(z=zmin,method="nearest"))/Pu
+            dPcr_lower = (Pcr.sel(z=slice(-zmax,-zmin))-Pcr.sel(z=-zmin,method="nearest"))/Pl
+            upper_fields.append(dPcr_upper)
+            lower_fields.append(dPcr_lower)
+        # annotate model
+        # i for crmhd and mhd
+        plt.sca(axes[i,0])
+        plt.annotate(model_name[m], (0.05,0.95), xycoords="axes fraction",
+                     ha="left", va="top", color=model_color[m])
+        for fields, ax in zip([lower_fields, upper_fields],axes[i,:]):
+            if s.options["cosmic_ray"]:
+                dFMHD, dFtrb, W, dPcr = fields
+            else:
+                dFMHD, dFtrb, W = fields
+            plt.sca(ax)
+
+            # calculating RHS from hot
+            RHS =-(dFMHD-W).sel(phase="hot")
+            RHS_hot =-(dFMHD-W).sel(phase="hot")
+            RHS_hot_label = r"$-(\Delta_z \mathcal{F}_{\rm MHD}^{\rm hot}-\Delta_z \mathcal{W}^{\rm hot})$"
+            if s.options["cosmic_ray"]:
+                RHS_hot += (-dPcr).sel(phase="hot")
+                RHS += (-dPcr).sum(dim="phase")
+                RHS_hot_label += r"$-\Delta_z P_{\rm cr}^{\rm hot}$"
+
+            if showall:
+                plot_zprof_mean_quantile(RHS,color=color,ls=":",lw=3,
+                                         quantile=False,label="RHS")
+            else:
+                # dflux - weight - P_CR from hot phase only
+                plot_zprof_mean_quantile(RHS_hot,
+                                         label=RHS_hot_label,
+                                         color=color,ls="-.",quantile=False)
+            # taking into account weight
+            plot_zprof_mean_quantile((dFMHD-W).sel(phase="wc"),
+                                     label=r"$\Delta_z \mathcal{F}_{\rm MHD}^{\rm wc}-\Delta_z \mathcal{W}^{\rm wc}$",
+                                     color=color,lw=3)
+            # Flux difference alone
+            plot_zprof_mean_quantile((dFMHD).sel(phase="wc"),
+                                     label=r"$\Delta_z \mathcal{F}_{\rm MHD}^{\rm wc}$",
+                                     color=color,lw=1,quantile=False)
+            if s.options["cosmic_ray"]:
+                plot_zprof_mean_quantile((-dPcr).sel(phase="wc"),
+                                         label=r"$-\Delta_z P_{\rm cr}^{\rm wc}$",
+                                        color=color,ls="--",quantile=False)
+                # separtely show CR pressure in hot
+                if showall:
+                    plot_zprof_mean_quantile((-dPcr).sel(phase="hot"),
+                                             label=r"$-\Delta_z P_{\rm cr}^{\rm hot}$",
+                                            color=color,ls="-.",quantile=False)
+            if showall:
+                if hot == "full":
+                    # hot contribution
+                    plot_zprof_mean_quantile(-(dFMHD-W).sel(phase="hot"),
+                                             label=r"$-(\Delta_z \mathcal{F}_{\rm MHD}^{\rm hot}-\Delta_z \mathcal{W}^{\rm hot})$",
+                                            color=color,ls=":",quantile=False)
+                elif hot == "trb":
+                    plot_zprof_mean_quantile(-dFtrb.sel(phase="hot"),
+                                             label=r"$-\Delta_z \mathcal{F}_{\rm trb}^{\rm hot}$",
+                                            color=color,ls=":",quantile=False)
+
+    plt.sca(axes[0,0])
+    plt.title("lower")
+    plt.xlim(-4,-1)
+    plt.ylim(-1,2.5)
+    plt.sca(axes[0,1])
+    plt.title("upper")
+    plt.legend(frameon=False, loc=2)
+    plt.xlim(1,4)
+    plt.sca(axes[1,1])
+    plt.legend(frameon=False, loc=2)
+    plt.setp(axes[:,0],ylabel=r"$\langle\Delta_z P\rangle/\langle\mathcal{F}_{\rm MHD}^{\rm wc}(z=1 {\rm kpc})\rangle$")
+    plt.setp(axes[1,:],xlabel=r"$z\,[{\rm kpc}]$")
+    if savefig:
+        if showall:
+            plt.savefig(osp.join(outdir, f"{gr}_dflux_{hot}.pdf"))
+        else:
+            plt.savefig(osp.join(outdir, f"{gr}_dflux.pdf"))
 
 if __name__ == "__main__":
     model_dict = cr_data_load()
