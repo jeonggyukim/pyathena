@@ -13,6 +13,8 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 from mpl_toolkits.axes_grid1 import ImageGrid
 from mpi4py import MPI
 
+# model_colors = dict(crmhd="#000000",mhd="#E77500")
+model_colors = dict(mhd="#000000",crmhd="#E77500")
 
 def plot_slice_xy(sim, slc, field, dfi, kpc=False,
                   vec=None, st=None, stream_kwargs=dict(color="k")):
@@ -713,9 +715,11 @@ def plot_snapshot_comp(sa, models, nums, parnums=None,
                 # ax.axes.get_xaxis().set_visible(False)
                 # ax.axes.get_yaxis().set_visible(False)
         plt.sca(xygrid[0])
-        plt.title(model)
+        plt.title(model,color=model_colors[model])
         plt.sca(xzgrid[1])
-        plt.annotate(model,(1,1.15),xycoords="axes fraction",ha="center")
+        plt.annotate(model,(1,1.11),xycoords="axes fraction",
+                     ha="center",
+                     color=model_colors[model])
     ax = xzgrid[-1]
     ax.tick_params(labelbottom=True,labelleft=False,labelright=True)
     ax.yaxis.tick_right()
