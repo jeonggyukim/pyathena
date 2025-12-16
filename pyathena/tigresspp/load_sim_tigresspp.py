@@ -15,14 +15,14 @@ from .timing import Timing
 from .zprof import Zprof
 from .slc_prj import SliceProj
 from .pdf import PDF
-from .cr_properties import CosmicRays
+from .prostproc_zprof import PostProcessingZprof
 from ..load_sim import LoadSim
 from pyathena.fields.fields import DerivedFields
 import pyathena as pa
 
 base_path = osp.dirname(__file__)
 
-class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF,CosmicRays):
+class LoadSimTIGRESSPP(LoadSim,Hst,Timing,Zprof,SliceProj,PDF,PostProcessingZprof):
     """LoadSim class for analyzing TIGRESS++ simulations running on Athena++"""
 
     def __init__(self, basedir, savdir=None, load_method="xarray", verbose=False):

@@ -41,7 +41,7 @@ def inverse_rotate_vector(angles,vector):
 
     return v1,v2,v3
 
-class CosmicRays:
+class PostProcessingZprof:
     def Fcr_parallel(self, data):
         """CR flux along B field direction
         """
@@ -258,20 +258,22 @@ class CosmicRays:
         phase = self.set_phase(data)
         phname = ["CNM","UNM","WNM","WHIM","HIM"]
         zplist = []
-        # get all CR properties
+        zprof_data = xr.Dataset()
+        # density field for sanity check
+        if "rho" in data:
+            zprof_data["rho"] = data["rho"]
+        # add CR properties
         if self.options["cosmic_ray"]:
-            crprops = self.get_all_crprop(data, ng=0)
-        else:
-            crprops = xr.Dataset()
+            zprof_data.update(self.get_all_crprop(data, ng=0))
         if "cool_rate" not in data:
             self.add_coolheat(data)
-        crprops["cool_rate"] = data["cool_rate"]
-        crprops["heat_rate"] = data["heat_rate"]
+        zprof_data["cool_rate"] = data["cool_rate"]
+        zprof_data["heat_rate"] = data["heat_rate"]
         for vz_dir in [-1,1]:
             zplist_ = []
             for np in range(5):
                 area = self.GetAreaForPhaseAndVz(data, phase, np=np, vz_dir=vz_dir)
-                zprof = (crprops*area).sum(dim=["x","y"]).assign_coords(phase=phname[np])
+                zprof = (zprof_data*area).sum(dim=["x","y"]).assign_coords(phase=phname[np])
                 zplist_.append(zprof)
             zplist.append(xr.concat(zplist_, dim="phase").assign_coords(vz_dir=vz_dir))
 
