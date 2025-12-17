@@ -69,6 +69,10 @@ model_color = {
     "crmhd-16pc-tallbox-b1-diode-diode": "violet",
     "crmhd-16pc-fullgrav-b1-diode-lngrad_out": "orange",
 }
+model_edge_color = {
+    "mhd_v2-8pc-b1-diode":"#E77500",
+    "crmhd_v2-8pc-b1-diode-lngrad_out": "#000000",
+}
 
 model_default = [
     "crmhd_v2-8pc-b1-diode-lngrad_out",
@@ -328,13 +332,13 @@ def load_windpdf(s):
     pdf_outdir = os.path.join(s.savdir, "windpdf")
     with xr.open_dataarray(os.path.join(pdf_outdir, "outpdf.nc")) as da:
         s.outpdf = (
-            da.sel(flux=["mflux", "eflux", "mZflux"])
+            da.sel(flux=["mflux", "eflux", "mflux_Z"])
             .sel(time=slice(150, 500))
             .mean(dim="time")
         )
     with xr.open_dataarray(os.path.join(pdf_outdir, "inpdf.nc")) as da:
         s.inpdf = (
-            da.sel(flux=["mflux", "eflux", "mZflux"])
+            da.sel(flux=["mflux", "eflux", "mflux_Z"])
             .sel(time=slice(150, 500))
             .mean(dim="time")
         )
@@ -355,10 +359,19 @@ def load_windpdf(s):
         mZflux=sfr_avg / mstar * Mej * Zsn,
     )
     ref_flux = xr.Dataset(ref_flux).to_array("flux")
-    s.outflux = s.outpdf / np.prod(s.domain["Nx"][:-1]) / dnz
 
-    s.influx = s.inpdf / np.prod(s.domain["Nx"][:-1]) / dnz
+    outflux = s.outpdf / np.prod(s.domain["Nx"][:-1]) / dnz
+    influx = s.inpdf / np.prod(s.domain["Nx"][:-1]) / dnz
 
+    # mean both sides
+    zabs = [500,1000,2000,3000]
+    outflux_zabs = []
+    influx_zabs = []
+    for z_ in zabs:
+        outflux_zabs.append(outflux.sel(z=[-z_,z_]).mean(dim="z").assign_coords(z=z_))
+        influx_zabs.append(influx.sel(z=[-z_,z_]).mean(dim="z").assign_coords(z=z_))
+    s.outflux = xr.concat(outflux_zabs,dim="z")
+    s.influx = xr.concat(outflux_zabs,dim="z")
 
 def plot_zprof_mean_quantile(ydata, quantile=True, **kwargs):
     q = ydata.quantile([0.16, 0.5, 0.84], dim="time")
@@ -1663,7 +1676,7 @@ def plot_velocity_z(simgroup, gr, ph="wc", savefig=True):
         plt.savefig(osp.join(outdir, f"{gr}_velocity_z_{ph}.pdf"))
 
 
-def plot_history(simgroup, gr):
+def plot_history(simgroup, gr, savefig=True):
     sims = simgroup[gr]
     fig, axes = plt.subplots(
         1, 2, figsize=(8, 2.5), sharex=True, constrained_layout=True
@@ -1713,7 +1726,10 @@ def plot_history(simgroup, gr):
     plt.xlabel(r"$t\,[{\rm Myr}]$")
     plt.xlim(0, 500)
     plt.annotate("(b)", xy=(0.05, 0.95), xycoords="axes fraction", ha="left", va="top")
-    plt.savefig(osp.join(outdir, f"{gr}_history.pdf"))
+    if savefig:
+        plt.savefig(osp.join(outdir, f"{gr}_history.pdf"))
+
+    return fig
 
 
 def plot_pressure_t(simgroup, gr, ph="wc"):
@@ -1835,7 +1851,7 @@ def plot_vertical_equilibrium_t(simgroup, gr, ph="wc", exclude=[]):
     plt.savefig(osp.join(outdir, f"{gr}_vertical_equilibrium_t.pdf"))
 
 
-def plot_jointpdf(simgroup, gr):
+def plot_jointpdf(simgroup, gr, savefig=True):
     fig, axes = plt.subplots(
         2,
         4,
@@ -1859,8 +1875,8 @@ def plot_jointpdf(simgroup, gr):
                 norm=LogNorm(1.0e-5, 1.0),
                 cmap=cmr.fall_r,
             )
-            if name == "crmhd":
-                plt.title(f"$z={z0 / 1.0e3:3.1f} {{\\rm kpc}}$")
+            if name == "mhd":
+                plt.title(f"$|z|={z0 / 1.0e3:3.1f} {{\\rm kpc}}$")
             if z0 == 500:
                 plt.annotate(
                     name,
@@ -1880,7 +1896,8 @@ def plot_jointpdf(simgroup, gr):
         ax=axes[:, -1],
         label=r"$d^2\mathcal{F}_M/d\log v_{\rm out}d\log c_s\,[M_\odot\,{\rm kpc^{-2}\,yr^{-1}\,dex^{-2}}]$",
     )
-    plt.savefig(osp.join(outdir, f"{gr}_jointpdfs.png"))
+    if savefig:
+        plt.savefig(osp.join(outdir, f"{gr}_jointpdfs.png"))
 
 
 def plot_voutpdf(simgroup, gr, savefig=True):

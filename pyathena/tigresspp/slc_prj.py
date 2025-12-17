@@ -49,7 +49,8 @@ class SliceProj:
         ds = self.load_hdf5(num=num, outid=outid, file_only=True)
 
         if dryrun:
-            return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
+            return osp.getmtime(self.fhdf5)
+            # return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
 
         ds = self.get_data(num, outid=outid, load_derived=False)
         # rename the variables to match athena convention so that we can use
@@ -104,7 +105,8 @@ class SliceProj:
         data = self.load_hdf5(num=num, outid=outid, file_only=True)
 
         if dryrun:
-            return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
+            return osp.getmtime(self.fhdf5)
+            # return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
 
         data = self.get_data(num, outid=outid, load_derived=False)
 

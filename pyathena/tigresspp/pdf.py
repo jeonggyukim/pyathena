@@ -81,7 +81,8 @@ class PDF:
         ds = self.load_hdf5(num=num, file_only=True)
 
         if dryrun:
-            return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
+            return osp.getmtime(self.fhdf5)
+            # return max(osp.getmtime(self.fhdf5),osp.getmtime(__file__))
 
         ds = self.get_data(num, load_derived=False)
 

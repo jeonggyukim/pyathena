@@ -717,7 +717,9 @@ def plot_snapshot_comp(sa, models, nums, parnums=None,
         plt.sca(xygrid[0])
         plt.title(model,color=model_colors[model])
         plt.sca(xzgrid[1])
-        plt.annotate(model,(1,1.11),xycoords="axes fraction",
+        tMyr = slc_xy.attrs["time"] * sim.u.Myr
+        plt.annotate(f'{model}, time={tMyr:.1f} Myr',
+                     (1,1.11),xycoords="axes fraction",
                      ha="center",
                      color=model_colors[model])
     ax = xzgrid[-1]
