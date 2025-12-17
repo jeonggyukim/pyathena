@@ -505,7 +505,7 @@ class FindFiles(object):
                     p = list(p)
                     p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
                     hdf5_patterns_.append(tuple(p))
-                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5'])
+                self.files['hdf5'][v] = self.find_match(hdf5_patterns_)
                 if not self.files['hdf5'][v]:
                     self.logger.warning(
                         'hdf5 ({0:s}) files not found in {1:s}'.\
@@ -529,7 +529,7 @@ class FindFiles(object):
                     p = list(p)
                     p[-1] = '*.' + p[-1][2:].replace('*', v)
                     hdf5_patterns_.append(tuple(p))
-                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5_athenak'])
+                self.files['hdf5'][v] = self.find_match(hdf5_patterns_)
                 if not self.files['hdf5'][v]:
                     self.logger.warning(
                         'hdf5 ({0:s}) files not found in {1:s}'.\
