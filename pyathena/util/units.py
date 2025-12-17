@@ -113,6 +113,7 @@ class Units(object):
         # convert from code units to more convenient ones by "multiplying"
         # these constants
         self.cm = self.length.to('cm').value
+        self.g = self.mass.to('g').value
         self.pc = self.length.to('pc').value
         self.kpc = self.length.to('kpc').value
         self.Myr = self.time.to('Myr').value
@@ -122,6 +123,7 @@ class Units(object):
         self.erg = self.energy.to('erg').value
         self.eV = self.energy.to('eV').value
         self.s = self.time.to('s').value
+        self.G = ac.G.cgs.value/(self.cm**3/self.g/self.s**2)
         self.pok = ((self.pressure/ac.k_B).to('cm-3 K')).value
         self.muG = np.sqrt(4*np.pi*self.energy_density.cgs.value)/1e-6
 
