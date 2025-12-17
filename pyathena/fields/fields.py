@@ -81,7 +81,18 @@ def set_derived_fields_def(par, x0):
     def _pok(d, u):
         return d['pressure']*(u.energy_density/ac.k_B).cgs.value
     func[f] = _pok
-    label[f] = r'$P/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P\;[k_B\,{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'inferno'
+    vminmax[f] = (1e2,1e7)
+    take_log[f] = True
+
+    # P/kB [K cm^-3] - thermal pressure
+    f = 'pok_trbz'
+    field_dep[f] = set(['density','velocity'])
+    def _pok_trbz(d, u):
+        return d['density']*d['velocity3']**2*(u.energy_density/ac.k_B).cgs.value
+    func[f] = _pok_trbz
+    label[f] = r'$P_{\rm turb,z}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'inferno'
     vminmax[f] = (1e2,1e7)
     take_log[f] = True
@@ -149,7 +160,7 @@ def set_derived_fields_def(par, x0):
         return d['velocity1']*u.kms
     func[f] = _vx
     label[f] = r'$v_x\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
+    cmap[f] = 'bwr'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
@@ -160,7 +171,7 @@ def set_derived_fields_def(par, x0):
         return d['velocity2']*u.kms
     func[f] = _vy
     label[f] = r'$v_y\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
+    cmap[f] = 'bwr'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
@@ -171,7 +182,7 @@ def set_derived_fields_def(par, x0):
         return d['velocity3']*u.kms
     func[f] = _vz
     label[f] = r'$v_z\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
+    cmap[f] = 'bwr'
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
@@ -511,6 +522,18 @@ def set_derived_fields_mag(par, x0):
     cmap[f] = 'cividis'
     take_log[f] = True
 
+    # Magnetic pressure magnitude [Pmag/kB]
+    f = 'pok_mag'
+    field_dep[f] = set(['cell_centered_B'])
+    def _pok_mag(d, u):
+        return (d['cell_centered_B1']**2 +
+                d['cell_centered_B2']**2 +
+                d['cell_centered_B3']**2)**0.5*(u.energy_density/ac.k_B).cgs.value
+    func[f] = _pok_mag
+    label[f] = r'$P_{\rm mag}\;[k_B\,{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'inferno'
+    vminmax[f] = (1e2,1e7)
+    take_log[f] = True
     return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_newcool(par, x0):
@@ -1338,7 +1361,7 @@ def set_derived_fields_cosmic_ray(par):
     def _pok_cr(d, u):
         return d['0-Ec']*(gamma_cr-1)*(u.energy_density/ac.k_B).cgs.value
     func[f] = _pok_cr
-    label[f] = r'$P_{\rm cr}/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P_{\rm cr}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'YlOrRd_r'
     vminmax[f] = (1,5e4)
     take_log[f] = True
@@ -1390,13 +1413,56 @@ def set_derived_fields_cosmic_ray(par):
     take_log[f] = True
 
     # alfven speed
-    f = 'Vcr_mag'
+    f = 'VAi_mag'
     field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
-    def _Vcr_mag(d, u):
+    def _VAi_mag(d, u):
         vmag = np.sqrt(d['0-Vs1']**2+d['0-Vs2']**2+d['0-Vs3']**2)
         return vmag*u.kms
-    func[f] = _Vcr_mag
-    label[f] = r'$v_{\rm A,i}\;[{\rm km\,s^{-1}}]$'
+    func[f] = _VAi_mag
+    label[f] = r'$|v_{\rm A,i}|\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'managua_r'
+    vminmax[f] = (2,250)
+    take_log[f] = True
+
+    f = 'VAi1'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi1(d, u):
+        return d["0-Vs1"]*u.kms
+    func[f] = _VAi1
+    label[f] = r'$v_{\rm A,i,x}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    f = 'VAi2'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi2(d, u):
+        return d["0-Vs2"]*u.kms
+    func[f] = _VAi2
+    label[f] = r'$v_{\rm A,i,y}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    f = 'VAi3'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi3(d, u):
+        return d["0-Vs3"]*u.kms
+    func[f] = _VAi3
+    label[f] = r'$v_{\rm A,i,z}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    # Vcr
+    f = 'Vcr_mag'
+    field_dep[f] = set(['0-Fc1','0-Fc2','0-Fc3','0-Ec'])
+    def _Vcr(d, u):
+        vmax_ = vmax/(u.cm/u.s)
+        Fmag = np.sqrt(d['0-Fc1']**2+d['0-Fc2']**2+d['0-Fc3']**2)
+        return Fmag*vmax_/(4/3.*d['0-Ec'])*u.kms
+    func[f] = _Vcr
+    label[f] = r'$|v_{\rm eff}|\;[{\rm km\,s^{-1}}]$'
     cmap[f] = 'cool'
     vminmax[f] = (2,250)
     take_log[f] = True
@@ -1418,7 +1484,7 @@ def set_derived_fields_cosmic_ray(par):
     def _pok_CR_inj(d, u):
         return d["eCRinj"]*(gamma_cr-1)*u.pok
     func[f] = _pok_CR_inj
-    label[f] = r'$P_{\rm CR,inj}/k_B\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P_{\rm CR,inj}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'YlOrRd_r'
     vminmax[f] = (1,5e4)
     take_log[f] = True
