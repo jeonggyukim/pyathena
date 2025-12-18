@@ -55,7 +55,7 @@ def set_derived_fields_def(par, x0):
 
     This includes:
     - density (rho, nH)
-    - thermal/turbulent pressure (pok, pok_trbz)
+    - pressure (pok, pok_trbz)
     - distance (r)
     - velocity (vmag, vr, vx/vy/vz)
     - sound speeds (cs, csound)
@@ -113,7 +113,7 @@ def set_derived_fields_def(par, x0):
     vminmax[f] = (1e2,1e7)
     take_log[f] = True
 
-    # P/kB [K cm^-3] - thermal pressure
+    # rho vz^2/kB [K cm^-3]
     f = 'pok_trbz'
     field_dep[f] = set(['density','velocity'])
     def _pok_trbz(d, u):
@@ -519,7 +519,86 @@ def set_derived_fields_mag(par, x0):
     cmap[f] = 'inferno'
     vminmax[f] = (1e2,1e7)
     take_log[f] = True
+
     return func, field_dep, label, cmap, vminmax, take_log
+
+
+def set_derived_fields_rad(par, x0):
+    func = dict()
+    field_dep = dict()
+    label = dict()
+    cmap = dict()
+    vminmax = dict()
+    take_log = dict()
+
+    # Dust PE opacity for Z'=1
+    kappa_dust_PE_def = 418.7
+
+    try:
+        Erad_PE0 = par['cooling']['Erad_PE0']
+        Erad_LW0 = par['cooling']['Erad_LW0']
+    except KeyError:
+        Erad_PE0 = 7.613e-14
+        Erad_LW0 = 1.335e-14
+
+    # Normalized PE radiation field strength (Draine field unit)
+    f = 'chi_PE'
+    field_dep[f] = set(['rad_energy_density_PE'])
+    def _chi_PE(d, u):
+        return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE0)
+    func[f] = _chi_PE
+    label[f] = r'$\chi_{\rm PE}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized LW radiation field strength (Draine field unit)
+    f = 'chi_LW'
+    field_dep[f] = set(['rad_energy_density_LW'])
+    def _chi_LW(d, u):
+        return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_LW
+    label[f] = r'$\chi_{\rm LW}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized FUV radiation field strength (Draine field unit)
+    f = 'chi_FUV'
+    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
+    def _chi_FUV(d, u):
+        return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*\
+            (u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
+    func[f] = _chi_FUV
+    label[f] = r'$\chi_{\rm FUV}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized LW radiation field
+    f = 'chi_CI'
+    field_dep[f] = set(['rad_energy_density_CI'])
+    def _chi_CI(d, u):
+        return d['rad_energy_density_CI']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_CI
+    label[f] = r'$\chi_{\rm C^0}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-8,1e4)
+    take_log[f] = True
+
+    # Normalized LW radiation field strength (Draine ISRF)
+    f = 'chi_H2'
+    field_dep[f] = set(['rad_energy_density_LW_diss'])
+    def _chi_H2(d, u):
+        return d['rad_energy_density_LW_diss']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_H2
+    label[f] = r'$\chi_{\rm H_2}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-8,1e4)
+    take_log[f] = True
+
+    return func, field_dep, label, cmap, vminmax, take_log
+
 
 def set_derived_fields_newcool(par, x0):
     func = dict()
@@ -813,7 +892,6 @@ def set_derived_fields_newcool(par, x0):
 
 
 def set_derived_fields_sixray(par, x0):
-
     func = dict()
     field_dep = dict()
     label = dict()
@@ -886,393 +964,17 @@ def set_derived_fields_sixray(par, x0):
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_rad(par, x0):
-
-    func = dict()
-    field_dep = dict()
-    label = dict()
-    cmap = dict()
-    vminmax = dict()
-    take_log = dict()
-
-    # Dust PE opacity for Z'=1
-    kappa_dust_PE_def = 418.7
-
-    try:
-        Erad_PE0 = par['cooling']['Erad_PE0']
-        Erad_LW0 = par['cooling']['Erad_LW0']
-    except KeyError:
-        Erad_PE0 = 7.613e-14
-        Erad_LW0 = 1.335e-14
-
-    # Normalized PE radiation field strength (Draine field unit)
-    f = 'chi_PE'
-    field_dep[f] = set(['rad_energy_density_PE'])
-    def _chi_PE(d, u):
-        return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE0)
-    func[f] = _chi_PE
-    label[f] = r'$\chi_{\rm PE}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    # Normalized LW radiation field strength (Draine field unit)
-    f = 'chi_LW'
-    field_dep[f] = set(['rad_energy_density_LW'])
-    def _chi_LW(d, u):
-        return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
-    func[f] = _chi_LW
-    label[f] = r'$\chi_{\rm LW}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    # Normalized FUV radiation field strength (Draine field unit)
-    f = 'chi_FUV'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
-    def _chi_FUV(d, u):
-        return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*(u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
-    func[f] = _chi_FUV
-    label[f] = r'$\chi_{\rm FUV}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    try:
-        if (par['radps']['iPhotIon'] == 1):
-            iPhot = True
-        else:
-            iPhot = False
-    except KeyError:
-        iPhot = True
-
-    if iPhot:
-        # Radiation energy density of ionizing radiation in cgs units
-        f = 'Erad_LyC'
-        field_dep[f] = set(['rad_energy_density_PH'])
-        def _Erad_LyC(d, u):
-            return d['rad_energy_density_PH']*u.energy_density.cgs.value
-        func[f] = _Erad_LyC
-        label[f] = r'$\mathcal{E}_{\rm LyC}\;[{\rm erg\,{\rm cm}^{-3}}]$'
-        cmap[f] = 'viridis'
-        vminmax[f] = (5e-16,5e-11)
-        take_log[f] = True
-
-        # Ionizing photon number flux in cgs units [number / cm^2 / s]
-        f = 'Jphot_LyC'
-        field_dep[f] = set(['rad_energy_density_PH'])
-        def _Jphot_LyC(d, u):
-            hnu_LyC = (par['radps']['hnu_PH']*au.eV).cgs.value
-            return d['rad_energy_density_PH']*u.energy_density.cgs.value\
-                /hnu_LyC*ac.c.cgs.value/(4.0*np.pi)
-        func[f] = _Jphot_LyC
-        label[f] = r'$J_{\rm LyC}^{*}\;[{\rm phot}\,{\rm cm}^{-2}\,{\rm s}^{-1}\,{\rm sr}^{-1}]$'
-        cmap[f] = 'viridis'
-        vminmax[f] = (1e2,1e8)
-        take_log[f] = True
-
-        # Dimensionless ionization parameter Uion = Erad_LyC/(hnu_LyC*nH)
-        f = 'Uion'
-        field_dep[f] = set(['density','rad_energy_density_PH'])
-        def _Uion(d, u):
-            return d['rad_energy_density_PH']*u.energy_density.cgs.value/ \
-                    ((par['radps']['hnu_PH']*au.eV).cgs.value*d['density'])
-        func[f] = _Uion
-        label[f] = r'$\mathcal{U}_{\rm ion}$'
-        cmap[f] = 'cubehelix'
-        vminmax[f] = (1e-5,1e2)
-        take_log[f] = True
-
-    # Halpha emissivity [erg/s/cm^-3/sr]
-    # Caution: Draine (2011)'s alpha_eff_Halpha valid for ~1000 K < T < ~30000 K
-    # Better to use this for warm gas only
-    f = 'j_Halpha'
-    field_dep[f] = set(['density', 'pressure', 'xe', 'xHI', 'xH2'])
-    def _j_Halpha(d, u):
-        hnu_Halpha = (ac.h*ac.c/(6562.8*au.angstrom)).to('erg')
-        alpha_eff_Halpha = lambda T: 1.17e-13*(T*1e-4)**(-0.942-0.031*np.log(T*1e-4))
-        # j_Halpha = nHII*ne*alpha_eff_Halpha*hnu_Halpha/(4pi)
-        return d['density']**2*(1.0 - d['xHI'] - d['xH2'])*d['xe']*\
-            alpha_eff_Halpha(d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                (ac.k_B/u.energy_density).cgs.value)*hnu_Halpha/(4.0*np.pi)
-    func[f] = _j_Halpha
-    label[f] = r'$\mathcal{j}_{\rm H\alpha}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm sr}^{-1}]$'
-    cmap[f] = 'plasma'
-    vminmax[f] = (1e-22,1e-30)
-    take_log[f] = True
-
-    # Normalized FUV radiation field strength (Draine field unit)
-    f = 'Erad_FUV'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
-    def _Erad_FUV(d, u):
-        return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*u.energy_density.cgs.value
-    func[f] = _Erad_FUV
-    label[f] = r'$\mathcal{E}_{\rm FUV}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (5e-16,5e-11)
-    take_log[f] = True
-
-    # heat_ratio (G0) ; temporary output
-    f = 'heat_ratio'
-    field_dep[f] = set(['heat_ratio'])
-    def _heat_ratio(d, u):
-        return d['heat_ratio']
-    func[f] = _heat_ratio
-    label[f] = r'heat_ratio'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-1,1e4)
-    take_log[f] = True
-
-    # NHeff (based on dust attenuation of photoelectric band)
-    f = 'NHeff'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_PE_unatt'])
-    def _NHeff(d, u):
-        return 1e21/par['radps']['kappa_dust_PE']*kappa_dust_PE_def*\
-            np.log(d['rad_energy_density_PE_unatt']/d['rad_energy_density_PE'])
-    func[f] = _NHeff
-    label[f] = r'$N_{\rm H,eff}\;[{\rm cm^{-2}}]$'
-    cmap[f] = 'gist_earth'
-    vminmax[f] = (0,1e22)
-    take_log[f] = False
-
-    # Heating rate by H photoionization
-    f = 'heat_rate_HI_phot'
-    field_dep[f] = set(['density','rad_energy_density_PH','xHI'])
-    def _heat_rate_HI_phot(d, u):
-        if 'dhnu_HI_PH' in par['radps']:
-            dhnu_HI_PH = par['radps']['dhnu_HI_PH']*(1.0*au.eV).cgs.value
-        else:
-            dhnu_HI_PH = (par['radps']['hnu_PH'] - 13.6)*(1.0*au.eV).cgs.value
-
-        sigma_HI_PH = par['opacity']['sigma_HI_PH']
-        hnu_PH = par['radps']['hnu_PH']*(1.0*au.eV).cgs.value
-        xi_ph_HI = d['rad_energy_density_PH']*u.energy_density.cgs.value*ac.c.cgs.value/hnu_PH*sigma_HI_PH
-        return d['density']*d['xHI']*xi_ph_HI*dhnu_HI_PH
-
-    func[f] = _heat_rate_HI_phot
-    label[f] = r'$\mathcal{H}_{\rm pi,H}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Heating rate by H photoionization
-    f = 'heat_rate_H2_phot'
-    field_dep[f] = set(['density','rad_energy_density_PH','xH2'])
-    def _heat_rate_H2_phot(d, u):
-        if 'dhnu_H2_PH' in par['radps']:
-            dhnu_H2_PH = par['radps']['dhnu_H2_PH']*(1.0*au.eV).cgs.value
-        else:
-            dhnu_H2_PH = (par['radps']['hnu_PH'] - 15.4)*(1.0*au.eV).cgs.value
-
-        sigma_H2_PH = par['opacity']['sigma_H2_PH']
-        hnu_PH = par['radps']['hnu_PH']*(1.0*au.eV).cgs.value
-        xi_ph_H2 = d['rad_energy_density_PH']*u.energy_density.cgs.value*ac.c.cgs.value/hnu_PH*sigma_H2_PH
-        return d['density']*d['xH2']*xi_ph_H2*dhnu_H2_PH
-
-    func[f] = _heat_rate_H2_phot
-    label[f] = r'$\mathcal{H}_{\rm pi,H_2}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Volumetric absorption rate of LyC radiation by dust (erg/cm^3/s)
-    f = 'heat_rate_dust_LyC'
-    field_dep[f] = set(['density','rad_energy_density_PH'])
-    def _heat_rate_dust_LyC(d, u):
-        conv = u.energy_density.cgs.value*ac.c.cgs.value
-        return d['density']*(d['rad_energy_density_PH']*par['opacity']['sigma_dust_PH0']*par['problem']['Z_dust'])*conv
-
-    func[f] = _heat_rate_dust_LyC
-    label[f] = r'$\mathcal{H}_{\rm d,LyC}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Volumetric absorption rate of FUV radiation by dust (erg/cm^3/s)
-    f = 'heat_rate_dust_FUV'
-    field_dep[f] = set(['density','rad_energy_density_PE','rad_energy_density_LW'])
-    def _heat_rate_dust_FUV(d, u):
-        conv = u.energy_density.cgs.value*ac.c.cgs.value
-        return d['density']*(d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
-                             d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'])*conv
-
-    func[f] = _heat_rate_dust_FUV
-    label[f] = r'$\mathcal{H}_{\rm d,FUV}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Volumetric absorption rate of UV radiation by dust (erg/cm^3/s)
-    f = 'heat_rate_dust_UV'
-    field_dep[f] = set(['density','rad_energy_density_PE','rad_energy_density_LW','rad_energy_density_PH'])
-    def _heat_rate_dust_UV(d, u):
-        conv = u.energy_density.cgs.value*ac.c.cgs.value
-        return d['density']*(d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
-                             d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'] +
-                             d['rad_energy_density_PH']*par['opacity']['sigma_dust_PH0']*par['problem']['Z_dust'])*conv
-
-    func[f] = _heat_rate_dust_UV
-    label[f] = r'$\mathcal{H}_{\rm d,UV}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Grain charge parameter
-    f = 'psi_gr'
-    field_dep[f] = set(['density','pressure','xe','xH2',
-                        'rad_energy_density_LW','rad_energy_density_PE'])
-    def _psi_gr(d, u):
-        G0 = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
-              d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)/1.7
-        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                    (ac.k_B/u.energy_density).cgs.value
-        return G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
-
-    func[f] = _psi_gr
-    label[f] = r'$\psi_{\rm gr}\;[{\rm cm}^{3}\,{\rm K}^{1/2}]$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1,1000)
-    take_log[f] = True
-
-    # PE heating efficiency
-    f = 'eps_pe'
-    field_dep[f] = set(['density','pressure','xe','xH2',
-                        'rad_energy_density_LW','rad_energy_density_PE'])
-    def _eps_pe(d, u):
-        CPE_ = np.array([5.22, 2.25, 0.04996, 0.00430, 0.147, 0.431, 0.692])
-        conv = u.energy_density.cgs.value*ac.c.cgs.value
-        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-            (ac.k_B/u.energy_density).cgs.value
-        chi_FUV = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
-                   d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)
-        G0 = chi_FUV*1.7 # Habing field
-        # Grain charging
-        x = G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
-        eps = (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
-            (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
-        # PE heating rate
-        Gamma_pe = 1.7e-26*chi_FUV*par['problem']['Z_dust']*eps
-        # Dust heating rate
-        Gamma_dust_FUV = (d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
-                          d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'])*conv
-        return Gamma_pe/Gamma_dust_FUV
-
-    func[f] = _eps_pe
-    label[f] = r'$\epsilon_{\rm pe}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1.0e-3,1)
-    take_log[f] = True
-
-    # PE heating rate
-    f = 'Gamma_pe'
-    field_dep[f] = set(['density','pressure','xe','xH2',
-                        'rad_energy_density_LW','rad_energy_density_PE'])
-    def _eps_PE(d, u):
-        CPE_ = np.array([5.22, 2.25, 0.04996, 0.00430, 0.147, 0.431, 0.692])
-        G0 = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
-              d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)*1.7
-        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                    (ac.k_B/u.energy_density).cgs.value
-        # Grain charging
-        x = G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
-        return (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
-            (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
-
-    func[f] = _eps_PE
-    label[f] = r'$\epsilon_{\rm PE}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1.0e-3,1)
-    take_log[f] = True
-
-    try:
-        if par['configure']['lwrad'] == 'ON':
-            # Normalized LW intensity (attenuated by dust and H2 self-shielding)
-            # From Sternberg+14,
-            # For Draine ISRF and 912 < lambda/angstrom < 1108,
-            # The total photon density is 6.9e-4/cm^3, or flux 2.07e7/cm^2/s
-            # Energy density is u_LW = 1.33e-14 erg/cm^3 and
-            # the mean energy of photons is ~12eV
-            # (cf. Mathis ISRF gives u_LW = 9.56e-15 erg/cm^3; see also Heays+17)
-            f = 'chi_LW'
-            field_dep[f] = set(['rad_energy_density_LW'])
-            def _chi_LW(d, u):
-                return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_LW
-            label[f] = r'$\chi_{\rm LW}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-4,1e4)
-            take_log[f] = True
-
-            f = 'chi_H2'
-            field_dep[f] = set(['rad_energy_density_LW_diss'])
-            def _chi_H2(d, u):
-                return d['rad_energy_density_LW_diss']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_H2
-            label[f] = r'$\chi_{\rm H_2}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-8,1e4)
-            take_log[f] = True
-
-            f = 'chi_CI'
-            field_dep[f] = set(['rad_energy_density_CI'])
-            def _chi_CI(d, u):
-                return d['rad_energy_density_CI']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_CI
-            label[f] = r'$\chi_{\rm C^0}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-8,1e4)
-            take_log[f] = True
-
-            # fshld_H2 (effective)
-            f = 'fshld_H2'
-            field_dep[f] = set(['rad_energy_density_LW','rad_energy_density_LW_diss'])
-            def _fshld_H2(d, u):
-                return d['rad_energy_density_LW_diss']/d['rad_energy_density_LW']
-            func[f] = _fshld_H2
-            label[f] = r'$f_{\rm shld,H2}$'
-            cmap[f] = 'tab20c'
-            vminmax[f] = (1e-6,1e0)
-            take_log[f] = True
-
-    except KeyError:
-        pass
-
-    return func, field_dep, label, cmap, vminmax, take_log
-
-def set_derived_fields_wind(par, x0):
-
-    func = dict()
-    field_dep = dict()
-    label = dict()
-    cmap = dict()
-    vminmax = dict()
-    take_log = dict()
-
-    # Wind mass fraction
-    f = 'fwind'
-    field_dep[f] = set(['specific_scalar[1]'])
-    def _fwind(d, u):
-        return d['specific_scalar[1]']
-    func[f] = _fwind
-    label[f] = r'$f_{\rm wind}$'
-    cmap[f] = cmap_apply_alpha('Greens')
-    vminmax[f] = (1e-6,1)
-    take_log[f] = True
-
-    # Wind mass density
-    f = 'swind'
-    field_dep[f] = set(['density', 'specific_scalar[1]'])
-    def _swind(d, u):
-        return d['density']*d['specific_scalar[1]']
-    func[f] = _swind
-    label[f] = r'$\rho_{\rm wind}$'
-    cmap[f] = cmap_apply_alpha('Greens')
-    vminmax[f] = (1e-4,1e3)
-    take_log[f] = True
-
-    return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_xray(par, x0, newcool):
+    # Fail fast with a clear message if yt-dependent helper is missing.
+    if get_xray_emissivity is None:
+        raise ModuleNotFoundError(
+            "X-ray derived fields require the optional dependency `yt`.\n"
+            "Install it with:\n"
+            "  python -m pip install yt\n"
+            "or:\n"
+            "  conda install -c conda-forge yt"
+        )
 
     func = dict()
     field_dep = dict()
@@ -1397,7 +1099,7 @@ def set_derived_fields_cosmic_ray(par):
     vminmax[f] = (5e43,2.5e46)
     take_log[f] = True
 
-    # alfven speed
+    # Ion Alfven speed
     f = 'VAi_mag'
     field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
     def _VAi_mag(d, u):
