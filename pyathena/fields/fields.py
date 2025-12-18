@@ -1,30 +1,49 @@
-from functools import wraps
+"""
+pyathena.fields.fields
+
+Registry of derived fields and their plotting metadata.
+
+Each `set_derived_fields_*` function builds and returns six dictionaries:
+  - func[name]      : callable(d, u) -> array-like
+  - field_dep[name] : set/list of primitive fields required for func[name]
+  - label[name]     : label string (typically LaTeX) for colorbars/axes
+  - cmap[name]      : colormap (string or matplotlib/cmasher colormap)
+  - vminmax[name]   : (vmin, vmax) defaults for visualization
+  - take_log[name]  : bool; if True use LogNorm, else Normalize
+"""
 
 import matplotlib as mpl
 import numpy as np
 import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
+import cmasher as cmr
 
 from matplotlib.colors import Normalize, LogNorm
 
-from ..plt_tools.cmap import cmap_apply_alpha,cmap_shift
+from ..plt_tools.cmap import cmap_apply_alpha, cmap_shift
 from ..microphysics.cool import get_xe_mol
+
+# Optional dependency: xray emissivity helper requires `yt`.
+# Keep import soft so users without yt can still use non-Xray functionality.
 try:
-    # xray_emissivity requires yt.
-    # If yt is not installed, skip importing xray_emissivity.
     from .xray_emissivity import get_xray_emissivity
 except ModuleNotFoundError:
-    pass
+    get_xray_emissivity = None
 
-import cmasher as cmr
 
 def static_vars(**kwargs):
+    """
+    Decorator that attaches static attributes to a function.
+
+    Used in this file to stash a reference point `x0` on functions that need it.
+    """
     def decorate(func):
         for k in kwargs:
             setattr(func, k, kwargs[k])
         return func
     return decorate
+
 
 def set_derived_fields_def(par, x0):
     """
@@ -33,6 +52,14 @@ def set_derived_fields_def(par, x0):
 
     May not work correctly for problems using different unit system.
     Assume that density = nH, length unit = pc, etc.
+
+    This includes:
+    - density (rho, nH)
+    - thermal/turbulent pressure (pok, pok_trbz)
+    - distance (r)
+    - velocity (vmag, vr, vx/vy/vz)
+    - sound speeds (cs, csound)
+    - momentum density, ram pressure (Mr, Mr_abs, rhovr2ok)
 
     Parameters
     ----------
@@ -100,27 +127,34 @@ def set_derived_fields_def(par, x0):
     # Distance from x0 [pc]
     f = 'r'
     field_dep[f] = set(['density'])
+
     @static_vars(x0=x0)
     def _r(d, u):
+        # NOTE: this assumes d provides coordinates 'x','y','z'
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
-        return xr.DataArray(np.sqrt((x - _r.x0[0])**2 + \
-                                    (y - _r.x0[1])**2 + \
-                                    (z - _r.x0[2])**2),
-                            dims=('z','y','x'), name='r')
+        return xr.DataArray(
+            np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
+            dims=('z', 'y', 'x'),
+            name='r',
+        )
+
     func[f] = _r
     label[f] = r'$r\;[{\rm pc}]$'
     cmap[f] = 'viridis'
-    # Set vmax to box length
-    if "domain1" in par:
-        blockname="domain1"
-    elif "mesh" in par:
-        blockname="mesh"
-    Lx = par[blockname]['x1max']-par[blockname]['x1min']
-    Ly = par[blockname]['x2max']-par[blockname]['x2min']
-    Lz = par[blockname]['x3max']-par[blockname]['x3min']
 
-    Lmax = max(max(Lx,Ly),Lz)
-    vminmax[f] = (0,Lmax)
+    # Set vmax to the largest box dimension
+    if "domain1" in par:
+        blockname = "domain1"
+    elif "mesh" in par:
+        blockname = "mesh"
+    else:
+        raise KeyError('Expected "domain1" or "mesh" in parameter dictionary.')
+
+    Lx = par[blockname]['x1max'] - par[blockname]['x1min']
+    Ly = par[blockname]['x2max'] - par[blockname]['x2min']
+    Lz = par[blockname]['x3max'] - par[blockname]['x3min']
+    Lmax = max(max(Lx, Ly), Lz)
+    vminmax[f] = (0, Lmax)
     take_log[f] = False
 
     # Velocity magnitude [km/s]
@@ -153,40 +187,26 @@ def set_derived_fields_def(par, x0):
                          name='cmap_vr')
     take_log[f] = False
 
-    # vx [km/s]
-    f = 'vx'
-    field_dep[f] = set(['velocity'])
-    def _vx(d, u):
-        return d['velocity1']*u.kms
-    func[f] = _vx
-    label[f] = r'$v_x\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'bwr'
-    vminmax[f] = (-100.0,100.0)
-    take_log[f] = False
+    # Velocity components [km/s]
+    def _make_vcomp(idx):
+        def _vcomp(d, u):
+            return d[f'velocity{idx}'] * u.kms
+        return _vcomp
 
-    # vy [km/s]
-    f = 'vy'
-    field_dep[f] = set(['velocity'])
-    def _vy(d, u):
-        return d['velocity2']*u.kms
-    func[f] = _vy
-    label[f] = r'$v_y\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'bwr'
-    vminmax[f] = (-100.0,100.0)
-    take_log[f] = False
+    for idx, axis in enumerate(('x', 'y', 'z'), start=1):
+        f = f'v{axis}'
+        field_dep[f] = set(['velocity'])
+        func[f] = _make_vcomp(idx)
+        label[f] = rf'$v_{axis}\;[{{\rm km\,s^{{-1}}}}]$'
+        cmap[f] = 'bwr'
+        vminmax[f] = (-100.0, 100.0)
+        take_log[f] = False
 
-    # vz [km/s]
-    f = 'vz'
-    field_dep[f] = set(['velocity'])
-    def _vz(d, u):
-        return d['velocity3']*u.kms
-    func[f] = _vz
-    label[f] = r'$v_z\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'bwr'
-    vminmax[f] = (-100.0,100.0)
-    take_log[f] = False
-
+    # -------------------------------------------------------------------------
+    # Sound speeds [km/s]
+    # -------------------------------------------------------------------------
     # cs [km/s]
+    # JGK: rename to csound_iso?
     f = 'cs'
     field_dep[f] = set(['pressure','density'])
     def _cs(d, u):
@@ -264,6 +284,7 @@ def set_derived_fields_def(par, x0):
     take_log[f] = True
 
     return func, field_dep, label, cmap, vminmax, take_log
+
 
 def set_derived_fields_cooling(par, newcool):
     """
@@ -416,8 +437,11 @@ def set_derived_fields_cooling(par, newcool):
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_mag(par, x0):
 
+def set_derived_fields_mag(par, x0):
+    """
+    Magnetic-field / MHD derived fields.
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -432,83 +456,44 @@ def set_derived_fields_mag(par, x0):
         return (d['cell_centered_B1']**2 +
                 d['cell_centered_B2']**2 +
                 d['cell_centered_B3']**2)**0.5/np.sqrt(d['density'])*u.kms
-
     func[f] = _vAmag
     label[f] = r'$v_A\;[{\rm km}\,{\rm s}^{-1}]$'
     vminmax[f] = (0.1, 1000.0)
     cmap[f] = 'cividis'
     take_log[f] = True
 
-    # vAx [km/s]
-    f = 'vAx'
-    field_dep[f] = set(['density','cell_centered_B'])
-    def _vAx(d, u):
-        return d['cell_centered_B1']*np.sqrt(d['density'])*u.kms
-    func[f] = _vAx
-    label[f] = r'$v_{A,x}\;[{\rm km/s}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
+    def _make_vA_component(idx):
+        """Return Alfven velocity component vA{idx} in km/s."""
+        def _vA(d, u):
+            return d[f'cell_centered_B{idx}']*np.sqrt(d['density'])*u.kms
+        return _vA
 
-    # vAy [km/s]
-    f = 'vAy'
-    field_dep[f] = set(['density','cell_centered_B'])
-    def _vAy(d, u):
-        return d['cell_centered_B2']*np.sqrt(d['density'])*u.kms
-    func[f] = _vAy
-    label[f] = r'$v_{A,y}\;[{\rm km/s}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
+    def _make_B_uG_component(idx):
+        """Return magnetic field component B{idx} in micro-Gauss."""
+        def _B(d, u):
+            return d[f'cell_centered_B{idx}']*np.sqrt(u.energy_density.cgs.value)*np.sqrt(4.0*np.pi)*1e6
+        return _B
 
-    # vAz [km/s]
-    f = 'vAz'
-    field_dep[f] = set(['density','cell_centered_B'])
-    def _vAz(d, u):
-        return d['cell_centered_B3']*np.sqrt(d['density'])*u.kms
-    func[f] = _vAz
-    label[f] = r'$v_{A,z}\;[{\rm km/s}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
+    for idx, axis in enumerate(('x', 'y', 'z'), start=1):
+        # vA components
+        f = f'vA{axis}'
+        field_dep[f] = set(['density', 'cell_centered_B'])
+        func[f] = _make_vA_component(idx)
+        label[f] = rf'$v_{{A,{axis}}}\;[{{\rm km/s}}]$'
+        cmap[f] = 'RdBu'
+        vminmax[f] = (-1e2, 1e2)
+        take_log[f] = False
 
-    # Bx [G]
-    f = 'Bx'
-    field_dep[f] = set(['cell_centered_B'])
-    def _Bx(d, u):
-        return d['cell_centered_B1']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)*1e6
-    func[f] = _Bx
-    label[f] = r'$B_{x}\;[\mu{\rm G}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
+        # B components
+        f = f'B{axis}'
+        field_dep[f] = set(['cell_centered_B'])
+        func[f] = _make_B_uG_component(idx)
+        label[f] = rf'$B_{{{axis}}}\;[\mu{{\rm G}}]$'
+        cmap[f] = 'RdBu'
+        vminmax[f] = (-1e2, 1e2)
+        take_log[f] = False
 
-    # By [G]
-    f = 'By'
-    field_dep[f] = set(['cell_centered_B'])
-    def _By(d, u):
-        return d['cell_centered_B2']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)*1e6
-    func[f] = _By
-    label[f] = r'$B_{y}\;[\mu{\rm G}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
-
-    # Bz [G]
-    f = 'Bz'
-    field_dep[f] = set(['cell_centered_B'])
-    def _Bz(d, u):
-        return d['cell_centered_B3']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)*1e6
-    func[f] = _Bz
-    label[f] = r'$B_{z}\;[\mu{\rm G}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
-
-    # Magnetic fields magnitude [G]
+    # Magnetic fields magnitude [micro-Gauss]
     f = 'Bmag'
     field_dep[f] = set(['cell_centered_B'])
     def _Bmag(d, u):
@@ -1639,49 +1624,48 @@ class DerivedFields(object):
         if mhd:
             dicts_ = set_derived_fields_mag(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if cooling or newcool:
             dicts_ = set_derived_fields_cooling(par, newcool)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if newcool:
             dicts_ = set_derived_fields_newcool(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if radps:
             dicts_ = set_derived_fields_rad(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if sixray:
             dicts_ = set_derived_fields_sixray(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if wind:
             dicts_ = set_derived_fields_wind(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
-        # Add X-ray emissivity if Wind or SN is turned on
         if xray:
             dicts_ = set_derived_fields_xray(par, x0, newcool)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
+        # TIGRESS++ specific
         if cosmic_ray:
             dicts_ = set_derived_fields_cosmic_ray(par)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
-        # TIGRESS++ specific
         if feedback_scalars:
             dicts_ = set_derived_fields_feedback_scalars(par)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         self.derived_field_list = self.func
 
