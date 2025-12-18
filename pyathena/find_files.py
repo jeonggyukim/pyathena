@@ -215,7 +215,7 @@ class FindFiles(object):
                                 self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
                                 self.hdf5_outvar.append(self.par[k]['variable'])
                         for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
-                            if v in ['prim', 'cons']:
+                            if 'prim' in v or 'cons' in v:
                                 self._hdf5_outid_def = i
                                 self._hdf5_outvar_def = v
                     if self.athena_variant == 'athenak':
@@ -505,7 +505,7 @@ class FindFiles(object):
                     p = list(p)
                     p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
                     hdf5_patterns_.append(tuple(p))
-                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5'])
+                self.files['hdf5'][v] = self.find_match(hdf5_patterns_)
                 if not self.files['hdf5'][v]:
                     self.logger.warning(
                         'hdf5 ({0:s}) files not found in {1:s}'.\
@@ -529,7 +529,7 @@ class FindFiles(object):
                     p = list(p)
                     p[-1] = '*.' + p[-1][2:].replace('*', v)
                     hdf5_patterns_.append(tuple(p))
-                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5_athenak'])
+                self.files['hdf5'][v] = self.find_match(hdf5_patterns_)
                 if not self.files['hdf5'][v]:
                     self.logger.warning(
                         'hdf5 ({0:s}) files not found in {1:s}'.\
@@ -546,7 +546,7 @@ class FindFiles(object):
         try:
             self.nums = self.nums_hdf5[self._hdf5_outvar_def]
         except AttributeError:
-            self.logger.warning('Could not set nums from hdf5 files.'
+            self.logger.warning('Could not set nums from hdf5 files. '
                                 'Perhaps no hydro output')
 
     def find_rst(self):

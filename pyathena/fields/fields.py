@@ -1,30 +1,49 @@
-from functools import wraps
+"""
+pyathena.fields.fields
+
+Registry of derived fields and their plotting metadata.
+
+Each `set_derived_fields_*` function builds and returns six dictionaries:
+  - func[name]      : callable(d, u) -> array-like
+  - field_dep[name] : set/list of primitive fields required for func[name]
+  - label[name]     : label string (typically LaTeX) for colorbars/axes
+  - cmap[name]      : colormap (string or matplotlib/cmasher colormap)
+  - vminmax[name]   : (vmin, vmax) defaults for visualization
+  - take_log[name]  : bool; if True use LogNorm, else Normalize
+"""
 
 import matplotlib as mpl
 import numpy as np
 import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
+import cmasher as cmr
 
 from matplotlib.colors import Normalize, LogNorm
 
-from ..plt_tools.cmap import cmap_apply_alpha,cmap_shift
+from ..plt_tools.cmap import cmap_apply_alpha, cmap_shift
 from ..microphysics.cool import get_xe_mol
+
+# Optional dependency: xray emissivity helper requires `yt`.
+# Keep import soft so users without yt can still use non-Xray functionality.
 try:
-    # xray_emissivity requires yt.
-    # If yt is not installed, skip importing xray_emissivity.
     from .xray_emissivity import get_xray_emissivity
 except ModuleNotFoundError:
-    pass
+    get_xray_emissivity = None
 
-import cmasher as cmr
 
 def static_vars(**kwargs):
+    """
+    Decorator that attaches static attributes to a function.
+
+    Used in this file to stash a reference point `x0` on functions that need it.
+    """
     def decorate(func):
         for k in kwargs:
             setattr(func, k, kwargs[k])
         return func
     return decorate
+
 
 def set_derived_fields_def(par, x0):
     """
@@ -33,6 +52,14 @@ def set_derived_fields_def(par, x0):
 
     May not work correctly for problems using different unit system.
     Assume that density = nH, length unit = pc, etc.
+
+    This includes:
+    - density (rho, nH)
+    - pressure (pok, pok_trbz)
+    - distance (r)
+    - velocity (vmag, vr, vx/vy/vz)
+    - sound speeds (cs, csound)
+    - momentum density, ram pressure (Mr, Mr_abs, rhovr2ok)
 
     Parameters
     ----------
@@ -81,7 +108,18 @@ def set_derived_fields_def(par, x0):
     def _pok(d, u):
         return d['pressure']*(u.energy_density/ac.k_B).cgs.value
     func[f] = _pok
-    label[f] = r'$P/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P\;[k_B\,{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'inferno'
+    vminmax[f] = (1e2,1e7)
+    take_log[f] = True
+
+    # rho vz^2/kB [K cm^-3]
+    f = 'pok_trbz'
+    field_dep[f] = set(['density','velocity'])
+    def _pok_trbz(d, u):
+        return d['density']*d['velocity3']**2*(u.energy_density/ac.k_B).cgs.value
+    func[f] = _pok_trbz
+    label[f] = r'$P_{\rm turb,z}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'inferno'
     vminmax[f] = (1e2,1e7)
     take_log[f] = True
@@ -89,27 +127,34 @@ def set_derived_fields_def(par, x0):
     # Distance from x0 [pc]
     f = 'r'
     field_dep[f] = set(['density'])
+
     @static_vars(x0=x0)
     def _r(d, u):
+        # NOTE: this assumes d provides coordinates 'x','y','z'
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
-        return xr.DataArray(np.sqrt((x - _r.x0[0])**2 + \
-                                    (y - _r.x0[1])**2 + \
-                                    (z - _r.x0[2])**2),
-                            dims=('z','y','x'), name='r')
+        return xr.DataArray(
+            np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
+            dims=('z', 'y', 'x'),
+            name='r',
+        )
+
     func[f] = _r
     label[f] = r'$r\;[{\rm pc}]$'
     cmap[f] = 'viridis'
-    # Set vmax to box length
-    if "domain1" in par:
-        blockname="domain1"
-    elif "mesh" in par:
-        blockname="mesh"
-    Lx = par[blockname]['x1max']-par[blockname]['x1min']
-    Ly = par[blockname]['x2max']-par[blockname]['x2min']
-    Lz = par[blockname]['x3max']-par[blockname]['x3min']
 
-    Lmax = max(max(Lx,Ly),Lz)
-    vminmax[f] = (0,Lmax)
+    # Set vmax to the largest box dimension
+    if "domain1" in par:
+        blockname = "domain1"
+    elif "mesh" in par:
+        blockname = "mesh"
+    else:
+        raise KeyError('Expected "domain1" or "mesh" in parameter dictionary.')
+
+    Lx = par[blockname]['x1max'] - par[blockname]['x1min']
+    Ly = par[blockname]['x2max'] - par[blockname]['x2min']
+    Lz = par[blockname]['x3max'] - par[blockname]['x3min']
+    Lmax = max(max(Lx, Ly), Lz)
+    vminmax[f] = (0, Lmax)
     take_log[f] = False
 
     # Velocity magnitude [km/s]
@@ -142,40 +187,26 @@ def set_derived_fields_def(par, x0):
                          name='cmap_vr')
     take_log[f] = False
 
-    # vx [km/s]
-    f = 'vx'
-    field_dep[f] = set(['velocity'])
-    def _vx(d, u):
-        return d['velocity1']*u.kms
-    func[f] = _vx
-    label[f] = r'$v_x\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-100.0,100.0)
-    take_log[f] = False
+    # Velocity components [km/s]
+    def _make_vcomp(idx):
+        def _vcomp(d, u):
+            return d[f'velocity{idx}'] * u.kms
+        return _vcomp
 
-    # vy [km/s]
-    f = 'vy'
-    field_dep[f] = set(['velocity'])
-    def _vy(d, u):
-        return d['velocity2']*u.kms
-    func[f] = _vy
-    label[f] = r'$v_y\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-100.0,100.0)
-    take_log[f] = False
+    for idx, axis in enumerate(('x', 'y', 'z'), start=1):
+        f = f'v{axis}'
+        field_dep[f] = set(['velocity'])
+        func[f] = _make_vcomp(idx)
+        label[f] = rf'$v_{axis}\;[{{\rm km\,s^{{-1}}}}]$'
+        cmap[f] = 'bwr'
+        vminmax[f] = (-100.0, 100.0)
+        take_log[f] = False
 
-    # vz [km/s]
-    f = 'vz'
-    field_dep[f] = set(['velocity'])
-    def _vz(d, u):
-        return d['velocity3']*u.kms
-    func[f] = _vz
-    label[f] = r'$v_z\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-100.0,100.0)
-    take_log[f] = False
-
+    # -------------------------------------------------------------------------
+    # Sound speeds [km/s]
+    # -------------------------------------------------------------------------
     # cs [km/s]
+    # JGK: rename to csound_iso?
     f = 'cs'
     field_dep[f] = set(['pressure','density'])
     def _cs(d, u):
@@ -253,6 +284,7 @@ def set_derived_fields_def(par, x0):
     take_log[f] = True
 
     return func, field_dep, label, cmap, vminmax, take_log
+
 
 def set_derived_fields_cooling(par, newcool):
     """
@@ -405,8 +437,11 @@ def set_derived_fields_cooling(par, newcool):
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_mag(par, x0):
 
+def set_derived_fields_mag(par, x0):
+    """
+    Magnetic-field / MHD derived fields.
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -421,83 +456,44 @@ def set_derived_fields_mag(par, x0):
         return (d['cell_centered_B1']**2 +
                 d['cell_centered_B2']**2 +
                 d['cell_centered_B3']**2)**0.5/np.sqrt(d['density'])*u.kms
-
     func[f] = _vAmag
     label[f] = r'$v_A\;[{\rm km}\,{\rm s}^{-1}]$'
     vminmax[f] = (0.1, 1000.0)
     cmap[f] = 'cividis'
     take_log[f] = True
 
-    # vAx [km/s]
-    f = 'vAx'
-    field_dep[f] = set(['density','cell_centered_B'])
-    def _vAx(d, u):
-        return d['cell_centered_B1']*np.sqrt(d['density'])*u.kms
-    func[f] = _vAx
-    label[f] = r'$v_{A,x}\;[{\rm km/s}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
+    def _make_vA_component(idx):
+        """Return Alfven velocity component vA{idx} in km/s."""
+        def _vA(d, u):
+            return d[f'cell_centered_B{idx}']*np.sqrt(d['density'])*u.kms
+        return _vA
 
-    # vAy [km/s]
-    f = 'vAy'
-    field_dep[f] = set(['density','cell_centered_B'])
-    def _vAy(d, u):
-        return d['cell_centered_B2']*np.sqrt(d['density'])*u.kms
-    func[f] = _vAy
-    label[f] = r'$v_{A,y}\;[{\rm km/s}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
+    def _make_B_uG_component(idx):
+        """Return magnetic field component B{idx} in micro-Gauss."""
+        def _B(d, u):
+            return d[f'cell_centered_B{idx}']*np.sqrt(u.energy_density.cgs.value)*np.sqrt(4.0*np.pi)*1e6
+        return _B
 
-    # vAz [km/s]
-    f = 'vAz'
-    field_dep[f] = set(['density','cell_centered_B'])
-    def _vAz(d, u):
-        return d['cell_centered_B3']*np.sqrt(d['density'])*u.kms
-    func[f] = _vAz
-    label[f] = r'$v_{A,z}\;[{\rm km/s}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
+    for idx, axis in enumerate(('x', 'y', 'z'), start=1):
+        # vA components
+        f = f'vA{axis}'
+        field_dep[f] = set(['density', 'cell_centered_B'])
+        func[f] = _make_vA_component(idx)
+        label[f] = rf'$v_{{A,{axis}}}\;[{{\rm km/s}}]$'
+        cmap[f] = 'RdBu'
+        vminmax[f] = (-1e2, 1e2)
+        take_log[f] = False
 
-    # Bx [G]
-    f = 'Bx'
-    field_dep[f] = set(['cell_centered_B'])
-    def _Bx(d, u):
-        return d['cell_centered_B1']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)*1e6
-    func[f] = _Bx
-    label[f] = r'$B_{x}\;[\mu{\rm G}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
+        # B components
+        f = f'B{axis}'
+        field_dep[f] = set(['cell_centered_B'])
+        func[f] = _make_B_uG_component(idx)
+        label[f] = rf'$B_{{{axis}}}\;[\mu{{\rm G}}]$'
+        cmap[f] = 'RdBu'
+        vminmax[f] = (-1e2, 1e2)
+        take_log[f] = False
 
-    # By [G]
-    f = 'By'
-    field_dep[f] = set(['cell_centered_B'])
-    def _By(d, u):
-        return d['cell_centered_B2']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)*1e6
-    func[f] = _By
-    label[f] = r'$B_{y}\;[\mu{\rm G}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
-
-    # Bz [G]
-    f = 'Bz'
-    field_dep[f] = set(['cell_centered_B'])
-    def _Bz(d, u):
-        return d['cell_centered_B3']*np.sqrt(u.energy_density.cgs.value)\
-            *np.sqrt(4.0*np.pi)*1e6
-    func[f] = _Bz
-    label[f] = r'$B_{z}\;[\mu{\rm G}]$'
-    cmap[f] = 'RdBu'
-    vminmax[f] = (-1e2,1e2)
-    take_log[f] = False
-
-    # Magnetic fields magnitude [G]
+    # Magnetic fields magnitude [micro-Gauss]
     f = 'Bmag'
     field_dep[f] = set(['cell_centered_B'])
     def _Bmag(d, u):
@@ -511,7 +507,98 @@ def set_derived_fields_mag(par, x0):
     cmap[f] = 'cividis'
     take_log[f] = True
 
+    # Magnetic pressure magnitude [Pmag/kB]
+    f = 'pok_mag'
+    field_dep[f] = set(['cell_centered_B'])
+    def _pok_mag(d, u):
+        return (d['cell_centered_B1']**2 +
+                d['cell_centered_B2']**2 +
+                d['cell_centered_B3']**2)**0.5*(u.energy_density/ac.k_B).cgs.value
+    func[f] = _pok_mag
+    label[f] = r'$P_{\rm mag}\;[k_B\,{\rm cm^{-3}\,K}]$'
+    cmap[f] = 'inferno'
+    vminmax[f] = (1e2,1e7)
+    take_log[f] = True
+
     return func, field_dep, label, cmap, vminmax, take_log
+
+
+def set_derived_fields_rad(par, x0):
+    func = dict()
+    field_dep = dict()
+    label = dict()
+    cmap = dict()
+    vminmax = dict()
+    take_log = dict()
+
+    # Dust PE opacity for Z'=1
+    kappa_dust_PE_def = 418.7
+
+    try:
+        Erad_PE0 = par['cooling']['Erad_PE0']
+        Erad_LW0 = par['cooling']['Erad_LW0']
+    except KeyError:
+        Erad_PE0 = 7.613e-14
+        Erad_LW0 = 1.335e-14
+
+    # Normalized PE radiation field strength (Draine field unit)
+    f = 'chi_PE'
+    field_dep[f] = set(['rad_energy_density_PE'])
+    def _chi_PE(d, u):
+        return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE0)
+    func[f] = _chi_PE
+    label[f] = r'$\chi_{\rm PE}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized LW radiation field strength (Draine field unit)
+    f = 'chi_LW'
+    field_dep[f] = set(['rad_energy_density_LW'])
+    def _chi_LW(d, u):
+        return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_LW
+    label[f] = r'$\chi_{\rm LW}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized FUV radiation field strength (Draine field unit)
+    f = 'chi_FUV'
+    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
+    def _chi_FUV(d, u):
+        return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*\
+            (u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
+    func[f] = _chi_FUV
+    label[f] = r'$\chi_{\rm FUV}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-4,1e4)
+    take_log[f] = True
+
+    # Normalized LW radiation field
+    f = 'chi_CI'
+    field_dep[f] = set(['rad_energy_density_CI'])
+    def _chi_CI(d, u):
+        return d['rad_energy_density_CI']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_CI
+    label[f] = r'$\chi_{\rm C^0}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-8,1e4)
+    take_log[f] = True
+
+    # Normalized LW radiation field strength (Draine ISRF)
+    f = 'chi_H2'
+    field_dep[f] = set(['rad_energy_density_LW_diss'])
+    def _chi_H2(d, u):
+        return d['rad_energy_density_LW_diss']*(u.energy_density.cgs.value/Erad_LW0)
+    func[f] = _chi_H2
+    label[f] = r'$\chi_{\rm H_2}$'
+    cmap[f] = 'viridis'
+    vminmax[f] = (1e-8,1e4)
+    take_log[f] = True
+
+    return func, field_dep, label, cmap, vminmax, take_log
+
 
 def set_derived_fields_newcool(par, x0):
     func = dict()
@@ -805,7 +892,6 @@ def set_derived_fields_newcool(par, x0):
 
 
 def set_derived_fields_sixray(par, x0):
-
     func = dict()
     field_dep = dict()
     label = dict()
@@ -878,393 +964,17 @@ def set_derived_fields_sixray(par, x0):
 
     return func, field_dep, label, cmap, vminmax, take_log
 
-def set_derived_fields_rad(par, x0):
-
-    func = dict()
-    field_dep = dict()
-    label = dict()
-    cmap = dict()
-    vminmax = dict()
-    take_log = dict()
-
-    # Dust PE opacity for Z'=1
-    kappa_dust_PE_def = 418.7
-
-    try:
-        Erad_PE0 = par['cooling']['Erad_PE0']
-        Erad_LW0 = par['cooling']['Erad_LW0']
-    except KeyError:
-        Erad_PE0 = 7.613e-14
-        Erad_LW0 = 1.335e-14
-
-    # Normalized PE radiation field strength (Draine field unit)
-    f = 'chi_PE'
-    field_dep[f] = set(['rad_energy_density_PE'])
-    def _chi_PE(d, u):
-        return d['rad_energy_density_PE']*(u.energy_density.cgs.value/Erad_PE0)
-    func[f] = _chi_PE
-    label[f] = r'$\chi_{\rm PE}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    # Normalized LW radiation field strength (Draine field unit)
-    f = 'chi_LW'
-    field_dep[f] = set(['rad_energy_density_LW'])
-    def _chi_LW(d, u):
-        return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
-    func[f] = _chi_LW
-    label[f] = r'$\chi_{\rm LW}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    # Normalized FUV radiation field strength (Draine field unit)
-    f = 'chi_FUV'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
-    def _chi_FUV(d, u):
-        return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*(u.energy_density.cgs.value/(Erad_PE0 + Erad_LW0))
-    func[f] = _chi_FUV
-    label[f] = r'$\chi_{\rm FUV}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-4,1e4)
-    take_log[f] = True
-
-    try:
-        if (par['radps']['iPhotIon'] == 1):
-            iPhot = True
-        else:
-            iPhot = False
-    except KeyError:
-        iPhot = True
-
-    if iPhot:
-        # Radiation energy density of ionizing radiation in cgs units
-        f = 'Erad_LyC'
-        field_dep[f] = set(['rad_energy_density_PH'])
-        def _Erad_LyC(d, u):
-            return d['rad_energy_density_PH']*u.energy_density.cgs.value
-        func[f] = _Erad_LyC
-        label[f] = r'$\mathcal{E}_{\rm LyC}\;[{\rm erg\,{\rm cm}^{-3}}]$'
-        cmap[f] = 'viridis'
-        vminmax[f] = (5e-16,5e-11)
-        take_log[f] = True
-
-        # Ionizing photon number flux in cgs units [number / cm^2 / s]
-        f = 'Jphot_LyC'
-        field_dep[f] = set(['rad_energy_density_PH'])
-        def _Jphot_LyC(d, u):
-            hnu_LyC = (par['radps']['hnu_PH']*au.eV).cgs.value
-            return d['rad_energy_density_PH']*u.energy_density.cgs.value\
-                /hnu_LyC*ac.c.cgs.value/(4.0*np.pi)
-        func[f] = _Jphot_LyC
-        label[f] = r'$J_{\rm LyC}^{*}\;[{\rm phot}\,{\rm cm}^{-2}\,{\rm s}^{-1}\,{\rm sr}^{-1}]$'
-        cmap[f] = 'viridis'
-        vminmax[f] = (1e2,1e8)
-        take_log[f] = True
-
-        # Dimensionless ionization parameter Uion = Erad_LyC/(hnu_LyC*nH)
-        f = 'Uion'
-        field_dep[f] = set(['density','rad_energy_density_PH'])
-        def _Uion(d, u):
-            return d['rad_energy_density_PH']*u.energy_density.cgs.value/ \
-                    ((par['radps']['hnu_PH']*au.eV).cgs.value*d['density'])
-        func[f] = _Uion
-        label[f] = r'$\mathcal{U}_{\rm ion}$'
-        cmap[f] = 'cubehelix'
-        vminmax[f] = (1e-5,1e2)
-        take_log[f] = True
-
-    # Halpha emissivity [erg/s/cm^-3/sr]
-    # Caution: Draine (2011)'s alpha_eff_Halpha valid for ~1000 K < T < ~30000 K
-    # Better to use this for warm gas only
-    f = 'j_Halpha'
-    field_dep[f] = set(['density', 'pressure', 'xe', 'xHI', 'xH2'])
-    def _j_Halpha(d, u):
-        hnu_Halpha = (ac.h*ac.c/(6562.8*au.angstrom)).to('erg')
-        alpha_eff_Halpha = lambda T: 1.17e-13*(T*1e-4)**(-0.942-0.031*np.log(T*1e-4))
-        # j_Halpha = nHII*ne*alpha_eff_Halpha*hnu_Halpha/(4pi)
-        return d['density']**2*(1.0 - d['xHI'] - d['xH2'])*d['xe']*\
-            alpha_eff_Halpha(d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                (ac.k_B/u.energy_density).cgs.value)*hnu_Halpha/(4.0*np.pi)
-    func[f] = _j_Halpha
-    label[f] = r'$\mathcal{j}_{\rm H\alpha}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm sr}^{-1}]$'
-    cmap[f] = 'plasma'
-    vminmax[f] = (1e-22,1e-30)
-    take_log[f] = True
-
-    # Normalized FUV radiation field strength (Draine field unit)
-    f = 'Erad_FUV'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_LW'])
-    def _Erad_FUV(d, u):
-        return (d['rad_energy_density_PE'] + d['rad_energy_density_LW'])*u.energy_density.cgs.value
-    func[f] = _Erad_FUV
-    label[f] = r'$\mathcal{E}_{\rm FUV}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (5e-16,5e-11)
-    take_log[f] = True
-
-    # heat_ratio (G0) ; temporary output
-    f = 'heat_ratio'
-    field_dep[f] = set(['heat_ratio'])
-    def _heat_ratio(d, u):
-        return d['heat_ratio']
-    func[f] = _heat_ratio
-    label[f] = r'heat_ratio'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1e-1,1e4)
-    take_log[f] = True
-
-    # NHeff (based on dust attenuation of photoelectric band)
-    f = 'NHeff'
-    field_dep[f] = set(['rad_energy_density_PE','rad_energy_density_PE_unatt'])
-    def _NHeff(d, u):
-        return 1e21/par['radps']['kappa_dust_PE']*kappa_dust_PE_def*\
-            np.log(d['rad_energy_density_PE_unatt']/d['rad_energy_density_PE'])
-    func[f] = _NHeff
-    label[f] = r'$N_{\rm H,eff}\;[{\rm cm^{-2}}]$'
-    cmap[f] = 'gist_earth'
-    vminmax[f] = (0,1e22)
-    take_log[f] = False
-
-    # Heating rate by H photoionization
-    f = 'heat_rate_HI_phot'
-    field_dep[f] = set(['density','rad_energy_density_PH','xHI'])
-    def _heat_rate_HI_phot(d, u):
-        if 'dhnu_HI_PH' in par['radps']:
-            dhnu_HI_PH = par['radps']['dhnu_HI_PH']*(1.0*au.eV).cgs.value
-        else:
-            dhnu_HI_PH = (par['radps']['hnu_PH'] - 13.6)*(1.0*au.eV).cgs.value
-
-        sigma_HI_PH = par['opacity']['sigma_HI_PH']
-        hnu_PH = par['radps']['hnu_PH']*(1.0*au.eV).cgs.value
-        xi_ph_HI = d['rad_energy_density_PH']*u.energy_density.cgs.value*ac.c.cgs.value/hnu_PH*sigma_HI_PH
-        return d['density']*d['xHI']*xi_ph_HI*dhnu_HI_PH
-
-    func[f] = _heat_rate_HI_phot
-    label[f] = r'$\mathcal{H}_{\rm pi,H}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Heating rate by H photoionization
-    f = 'heat_rate_H2_phot'
-    field_dep[f] = set(['density','rad_energy_density_PH','xH2'])
-    def _heat_rate_H2_phot(d, u):
-        if 'dhnu_H2_PH' in par['radps']:
-            dhnu_H2_PH = par['radps']['dhnu_H2_PH']*(1.0*au.eV).cgs.value
-        else:
-            dhnu_H2_PH = (par['radps']['hnu_PH'] - 15.4)*(1.0*au.eV).cgs.value
-
-        sigma_H2_PH = par['opacity']['sigma_H2_PH']
-        hnu_PH = par['radps']['hnu_PH']*(1.0*au.eV).cgs.value
-        xi_ph_H2 = d['rad_energy_density_PH']*u.energy_density.cgs.value*ac.c.cgs.value/hnu_PH*sigma_H2_PH
-        return d['density']*d['xH2']*xi_ph_H2*dhnu_H2_PH
-
-    func[f] = _heat_rate_H2_phot
-    label[f] = r'$\mathcal{H}_{\rm pi,H_2}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Volumetric absorption rate of LyC radiation by dust (erg/cm^3/s)
-    f = 'heat_rate_dust_LyC'
-    field_dep[f] = set(['density','rad_energy_density_PH'])
-    def _heat_rate_dust_LyC(d, u):
-        conv = u.energy_density.cgs.value*ac.c.cgs.value
-        return d['density']*(d['rad_energy_density_PH']*par['opacity']['sigma_dust_PH0']*par['problem']['Z_dust'])*conv
-
-    func[f] = _heat_rate_dust_LyC
-    label[f] = r'$\mathcal{H}_{\rm d,LyC}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Volumetric absorption rate of FUV radiation by dust (erg/cm^3/s)
-    f = 'heat_rate_dust_FUV'
-    field_dep[f] = set(['density','rad_energy_density_PE','rad_energy_density_LW'])
-    def _heat_rate_dust_FUV(d, u):
-        conv = u.energy_density.cgs.value*ac.c.cgs.value
-        return d['density']*(d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
-                             d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'])*conv
-
-    func[f] = _heat_rate_dust_FUV
-    label[f] = r'$\mathcal{H}_{\rm d,FUV}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Volumetric absorption rate of UV radiation by dust (erg/cm^3/s)
-    f = 'heat_rate_dust_UV'
-    field_dep[f] = set(['density','rad_energy_density_PE','rad_energy_density_LW','rad_energy_density_PH'])
-    def _heat_rate_dust_UV(d, u):
-        conv = u.energy_density.cgs.value*ac.c.cgs.value
-        return d['density']*(d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
-                             d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'] +
-                             d['rad_energy_density_PH']*par['opacity']['sigma_dust_PH0']*par['problem']['Z_dust'])*conv
-
-    func[f] = _heat_rate_dust_UV
-    label[f] = r'$\mathcal{H}_{\rm d,UV}\;[{\rm erg}\,{\rm cm}^{-3}\,{\rm s}^{-1}]$'
-    cmap[f] = 'copper'
-    vminmax[f] = (1e-28,1e-19)
-    take_log[f] = True
-
-    # Grain charge parameter
-    f = 'psi_gr'
-    field_dep[f] = set(['density','pressure','xe','xH2',
-                        'rad_energy_density_LW','rad_energy_density_PE'])
-    def _psi_gr(d, u):
-        G0 = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
-              d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)/1.7
-        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                    (ac.k_B/u.energy_density).cgs.value
-        return G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
-
-    func[f] = _psi_gr
-    label[f] = r'$\psi_{\rm gr}\;[{\rm cm}^{3}\,{\rm K}^{1/2}]$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1,1000)
-    take_log[f] = True
-
-    # PE heating efficiency
-    f = 'eps_pe'
-    field_dep[f] = set(['density','pressure','xe','xH2',
-                        'rad_energy_density_LW','rad_energy_density_PE'])
-    def _eps_pe(d, u):
-        CPE_ = np.array([5.22, 2.25, 0.04996, 0.00430, 0.147, 0.431, 0.692])
-        conv = u.energy_density.cgs.value*ac.c.cgs.value
-        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-            (ac.k_B/u.energy_density).cgs.value
-        chi_FUV = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
-                   d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)
-        G0 = chi_FUV*1.7 # Habing field
-        # Grain charging
-        x = G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
-        eps = (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
-            (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
-        # PE heating rate
-        Gamma_pe = 1.7e-26*chi_FUV*par['problem']['Z_dust']*eps
-        # Dust heating rate
-        Gamma_dust_FUV = (d['rad_energy_density_PE']*par['opacity']['sigma_dust_PE0']*par['problem']['Z_dust'] +
-                          d['rad_energy_density_LW']*par['opacity']['sigma_dust_LW0']*par['problem']['Z_dust'])*conv
-        return Gamma_pe/Gamma_dust_FUV
-
-    func[f] = _eps_pe
-    label[f] = r'$\epsilon_{\rm pe}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1.0e-3,1)
-    take_log[f] = True
-
-    # PE heating rate
-    f = 'Gamma_pe'
-    field_dep[f] = set(['density','pressure','xe','xH2',
-                        'rad_energy_density_LW','rad_energy_density_PE'])
-    def _eps_PE(d, u):
-        CPE_ = np.array([5.22, 2.25, 0.04996, 0.00430, 0.147, 0.431, 0.692])
-        G0 = (d['rad_energy_density_PE']*u.energy_density.cgs.value/Erad_PE0 +
-              d['rad_energy_density_LW']*u.energy_density.cgs.value/Erad_LW0)*1.7
-        T = d['pressure']/(d['density']*(1.1 + d['xe'] - d['xH2']))/\
-                    (ac.k_B/u.energy_density).cgs.value
-        # Grain charging
-        x = G0*T**0.5/(d['density']*d['xe']) + 50.0 # add a floor
-        return (CPE_[0] + CPE_[1]*np.power(T, CPE_[4]))/ \
-            (1. + CPE_[2]*np.power(x, CPE_[5])*(1. + CPE_[3]*np.power(x, CPE_[6])))
-
-    func[f] = _eps_PE
-    label[f] = r'$\epsilon_{\rm PE}$'
-    cmap[f] = 'viridis'
-    vminmax[f] = (1.0e-3,1)
-    take_log[f] = True
-
-    try:
-        if par['configure']['lwrad'] == 'ON':
-            # Normalized LW intensity (attenuated by dust and H2 self-shielding)
-            # From Sternberg+14,
-            # For Draine ISRF and 912 < lambda/angstrom < 1108,
-            # The total photon density is 6.9e-4/cm^3, or flux 2.07e7/cm^2/s
-            # Energy density is u_LW = 1.33e-14 erg/cm^3 and
-            # the mean energy of photons is ~12eV
-            # (cf. Mathis ISRF gives u_LW = 9.56e-15 erg/cm^3; see also Heays+17)
-            f = 'chi_LW'
-            field_dep[f] = set(['rad_energy_density_LW'])
-            def _chi_LW(d, u):
-                return d['rad_energy_density_LW']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_LW
-            label[f] = r'$\chi_{\rm LW}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-4,1e4)
-            take_log[f] = True
-
-            f = 'chi_H2'
-            field_dep[f] = set(['rad_energy_density_LW_diss'])
-            def _chi_H2(d, u):
-                return d['rad_energy_density_LW_diss']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_H2
-            label[f] = r'$\chi_{\rm H_2}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-8,1e4)
-            take_log[f] = True
-
-            f = 'chi_CI'
-            field_dep[f] = set(['rad_energy_density_CI'])
-            def _chi_CI(d, u):
-                return d['rad_energy_density_CI']*(u.energy_density.cgs.value/Erad_LW0)
-            func[f] = _chi_CI
-            label[f] = r'$\chi_{\rm C^0}$'
-            cmap[f] = 'viridis'
-            vminmax[f] = (1e-8,1e4)
-            take_log[f] = True
-
-            # fshld_H2 (effective)
-            f = 'fshld_H2'
-            field_dep[f] = set(['rad_energy_density_LW','rad_energy_density_LW_diss'])
-            def _fshld_H2(d, u):
-                return d['rad_energy_density_LW_diss']/d['rad_energy_density_LW']
-            func[f] = _fshld_H2
-            label[f] = r'$f_{\rm shld,H2}$'
-            cmap[f] = 'tab20c'
-            vminmax[f] = (1e-6,1e0)
-            take_log[f] = True
-
-    except KeyError:
-        pass
-
-    return func, field_dep, label, cmap, vminmax, take_log
-
-def set_derived_fields_wind(par, x0):
-
-    func = dict()
-    field_dep = dict()
-    label = dict()
-    cmap = dict()
-    vminmax = dict()
-    take_log = dict()
-
-    # Wind mass fraction
-    f = 'fwind'
-    field_dep[f] = set(['specific_scalar[1]'])
-    def _fwind(d, u):
-        return d['specific_scalar[1]']
-    func[f] = _fwind
-    label[f] = r'$f_{\rm wind}$'
-    cmap[f] = cmap_apply_alpha('Greens')
-    vminmax[f] = (1e-6,1)
-    take_log[f] = True
-
-    # Wind mass density
-    f = 'swind'
-    field_dep[f] = set(['density', 'specific_scalar[1]'])
-    def _swind(d, u):
-        return d['density']*d['specific_scalar[1]']
-    func[f] = _swind
-    label[f] = r'$\rho_{\rm wind}$'
-    cmap[f] = cmap_apply_alpha('Greens')
-    vminmax[f] = (1e-4,1e3)
-    take_log[f] = True
-
-    return func, field_dep, label, cmap, vminmax, take_log
 
 def set_derived_fields_xray(par, x0, newcool):
+    # Fail fast with a clear message if yt-dependent helper is missing.
+    if get_xray_emissivity is None:
+        raise ModuleNotFoundError(
+            "X-ray derived fields require the optional dependency `yt`.\n"
+            "Install it with:\n"
+            "  python -m pip install yt\n"
+            "or:\n"
+            "  conda install -c conda-forge yt"
+        )
 
     func = dict()
     field_dep = dict()
@@ -1338,7 +1048,7 @@ def set_derived_fields_cosmic_ray(par):
     def _pok_cr(d, u):
         return d['0-Ec']*(gamma_cr-1)*(u.energy_density/ac.k_B).cgs.value
     func[f] = _pok_cr
-    label[f] = r'$P_{\rm cr}/k_{\rm B}\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P_{\rm cr}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'YlOrRd_r'
     vminmax[f] = (1,5e4)
     take_log[f] = True
@@ -1389,14 +1099,57 @@ def set_derived_fields_cosmic_ray(par):
     vminmax[f] = (5e43,2.5e46)
     take_log[f] = True
 
-    # alfven speed
-    f = 'Vcr_mag'
+    # Ion Alfven speed
+    f = 'VAi_mag'
     field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
-    def _Vcr_mag(d, u):
+    def _VAi_mag(d, u):
         vmag = np.sqrt(d['0-Vs1']**2+d['0-Vs2']**2+d['0-Vs3']**2)
         return vmag*u.kms
-    func[f] = _Vcr_mag
-    label[f] = r'$v_{\rm A,i}\;[{\rm km\,s^{-1}}]$'
+    func[f] = _VAi_mag
+    label[f] = r'$|v_{\rm A,i}|\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'managua_r'
+    vminmax[f] = (2,250)
+    take_log[f] = True
+
+    f = 'VAi1'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi1(d, u):
+        return d["0-Vs1"]*u.kms
+    func[f] = _VAi1
+    label[f] = r'$v_{\rm A,i,x}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    f = 'VAi2'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi2(d, u):
+        return d["0-Vs2"]*u.kms
+    func[f] = _VAi2
+    label[f] = r'$v_{\rm A,i,y}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    f = 'VAi3'
+    field_dep[f] = set(['0-Vs1','0-Vs2','0-Vs3'])
+    def _VAi3(d, u):
+        return d["0-Vs3"]*u.kms
+    func[f] = _VAi3
+    label[f] = r'$v_{\rm A,i,z}\;[{\rm km\,s^{-1}}]$'
+    cmap[f] = 'bwr'
+    vminmax[f] = (-100.0,100.0)
+    take_log[f] = False
+
+    # Vcr
+    f = 'Vcr_mag'
+    field_dep[f] = set(['0-Fc1','0-Fc2','0-Fc3','0-Ec'])
+    def _Vcr(d, u):
+        vmax_ = vmax/(u.cm/u.s)
+        Fmag = np.sqrt(d['0-Fc1']**2+d['0-Fc2']**2+d['0-Fc3']**2)
+        return Fmag*vmax_/(4/3.*d['0-Ec'])*u.kms
+    func[f] = _Vcr
+    label[f] = r'$|v_{\rm eff}|\;[{\rm km\,s^{-1}}]$'
     cmap[f] = 'cool'
     vminmax[f] = (2,250)
     take_log[f] = True
@@ -1418,7 +1171,7 @@ def set_derived_fields_cosmic_ray(par):
     def _pok_CR_inj(d, u):
         return d["eCRinj"]*(gamma_cr-1)*u.pok
     func[f] = _pok_CR_inj
-    label[f] = r'$P_{\rm CR,inj}/k_B\;[{\rm cm^{-3}\,K}]$'
+    label[f] = r'$P_{\rm CR,inj}\;[k_B\,{\rm cm^{-3}\,K}]$'
     cmap[f] = 'YlOrRd_r'
     vminmax[f] = (1,5e4)
     take_log[f] = True
@@ -1573,49 +1326,48 @@ class DerivedFields(object):
         if mhd:
             dicts_ = set_derived_fields_mag(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if cooling or newcool:
             dicts_ = set_derived_fields_cooling(par, newcool)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if newcool:
             dicts_ = set_derived_fields_newcool(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if radps:
             dicts_ = set_derived_fields_rad(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if sixray:
             dicts_ = set_derived_fields_sixray(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         if wind:
             dicts_ = set_derived_fields_wind(par, x0)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
-        # Add X-ray emissivity if Wind or SN is turned on
         if xray:
             dicts_ = set_derived_fields_xray(par, x0, newcool)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
+        # TIGRESS++ specific
         if cosmic_ray:
             dicts_ = set_derived_fields_cosmic_ray(par)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
-        # TIGRESS++ specific
         if feedback_scalars:
             dicts_ = set_derived_fields_feedback_scalars(par)
             for d, d_ in zip(dicts, dicts_):
-                d = d.update(d_)
+                d.update(d_)
 
         self.derived_field_list = self.func
 

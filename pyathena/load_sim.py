@@ -721,7 +721,8 @@ class LoadSim(LoadSimBase):
             self.logger.info('File already exists: {0:s}'.format(fname_out))
 
     def _load_hdf5_athenapp(self, num=None, ihdf5=None,
-                            outvar=None, outid=None, load_method=None, **kwargs):
+                            outvar=None, outid=None, load_method=None,
+                            file_only=False, **kwargs):
         """Function to read Athena hdf5 file using pythena or yt and
         return DataSet object.
 
@@ -785,6 +786,9 @@ class LoadSim(LoadSimBase):
         self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
         if self.fhdf5 is None or not osp.exists(self.fhdf5):
             self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
+
+        if file_only:
+            return
 
         if self.load_method == 'xarray':
             try:
@@ -1050,7 +1054,7 @@ class LoadSim(LoadSimBase):
                 try:
                     prefix = kwargs['prefix']
                 except KeyError:
-                    print("previs must be provided")
+                    print("prefix must be provided")
 
                 if kwargs['savdir'] is not None:
                     savdir = kwargs['savdir']
@@ -1061,6 +1065,10 @@ class LoadSim(LoadSimBase):
                     filebase = kwargs['filebase']
                 else:
                     filebase = prefix
+
+                if "outid" in kwargs:
+                    if kwargs["outid"] is not None:
+                        filebase += f'.out{kwargs["outid"]:d}'
 
                 force_override = kwargs['force_override']
                 mtime = read_func(cls,dryrun=True,**kwargs)
@@ -1215,19 +1223,42 @@ class LoadSimAll(object):
     """Class to load multiple simulations
 
     """
-    def __init__(self, models):
-
-        self.models = list(models.keys())
+    def __init__(self, models, load_sim_class=LoadSim):
+        # Default models
+        if models is None:
+            models = dict()
+        self.models = []
         self.basedirs = dict()
-
+        self.simdict = dict()
+        self.load_sim_class = load_sim_class
         for mdl, basedir in models.items():
-            self.basedirs[mdl] = basedir
+            if not osp.exists(basedir):
+                print(
+                    "[LoadSimAll]: Model {0:s} doesn't exist: {1:s}".format(
+                        mdl, basedir
+                    )
+                )
+            else:
+                self.models.append(mdl)
+                self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='xarray',
+    def set_model(self, model, savdir=None,
+                  load_method='xarray',
+                  load_sim_class=None,
                   units=Units(kind='LV', muH=1.4271),
                   verbose=False):
+        if load_sim_class is None:
+            load_sim_class = self.load_sim_class
+        try:
+            self.sim = self.simdict[model]
+        except KeyError:
+            self.sim = load_sim_class(
+                self.basedirs[model],
+                savdir=savdir,
+                load_method=load_method,
+                verbose=verbose,
+                units=units
+            )
+            self.simdict[model] = self.sim
         self.model = model
-        self.sim = LoadSim(self.basedirs[model], savdir=savdir,
-                           load_method=load_method,
-                           units=units, verbose=verbose)
         return self.sim

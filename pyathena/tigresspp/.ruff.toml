@@ -1,3 +1,0 @@
-[lint]
-# Skip unused variable rules (`F841`).
-ignore = ["F841", "E741", "E402", "F401"]
