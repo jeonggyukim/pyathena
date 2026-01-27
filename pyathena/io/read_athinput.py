@@ -20,12 +20,35 @@ def read_athinput(filename, as_namedtuple=False, verbose=False):
         block.
     """
 
+
     if verbose:
         print('[read_par]: Reading params from {0}'.format(filename))
 
     lines = []
     with open(filename, 'r') as f:
         lines = f.readlines()
+
+    par = read_athinput_from_lines(lines, as_namedtuple=as_namedtuple, verbose=verbose)
+
+    return par
+
+def read_athinput_from_lines(lines, as_namedtuple=False, verbose=False):
+    """
+    Function to read athinput and configure block from simulation log
+
+    Parameters
+    ----------
+    filename : string
+        Name of the file to open, including extension
+    verbose : bool
+        Print verbose message
+
+    Returns
+    -------
+    par : dict or namedtuple
+        Each item is a dictionary or namedtuple containing individual input
+        block.
+    """
 
     DUMP = False
     for i, line in enumerate(lines):
