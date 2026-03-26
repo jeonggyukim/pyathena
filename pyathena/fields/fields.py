@@ -18,6 +18,7 @@ import xarray as xr
 import astropy.constants as ac
 import astropy.units as au
 import cmasher as cmr
+import cmcrameri
 
 from matplotlib.colors import Normalize, LogNorm
 
@@ -198,7 +199,7 @@ def set_derived_fields_def(par, x0):
         field_dep[f] = set(['velocity'])
         func[f] = _make_vcomp(idx)
         label[f] = rf'$v_{axis}\;[{{\rm km\,s^{{-1}}}}]$'
-        cmap[f] = 'bwr'
+        cmap[f] = cmcrameri.cm.vik
         vminmax[f] = (-100.0, 100.0)
         take_log[f] = False
 
@@ -1107,7 +1108,7 @@ def set_derived_fields_cosmic_ray(par):
         return vmag*u.kms
     func[f] = _VAi_mag
     label[f] = r'$|v_{\rm A,i}|\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'managua_r'
+    cmap[f] = cmcrameri.cm.lapaz
     vminmax[f] = (2,250)
     take_log[f] = True
 
@@ -1117,7 +1118,7 @@ def set_derived_fields_cosmic_ray(par):
         return d["0-Vs1"]*u.kms
     func[f] = _VAi1
     label[f] = r'$v_{\rm A,i,x}\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'bwr'
+    cmap[f] = cmcrameri.cm.vik
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
@@ -1127,7 +1128,7 @@ def set_derived_fields_cosmic_ray(par):
         return d["0-Vs2"]*u.kms
     func[f] = _VAi2
     label[f] = r'$v_{\rm A,i,y}\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'bwr'
+    cmap[f] = cmcrameri.cm.vik
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
@@ -1137,7 +1138,7 @@ def set_derived_fields_cosmic_ray(par):
         return d["0-Vs3"]*u.kms
     func[f] = _VAi3
     label[f] = r'$v_{\rm A,i,z}\;[{\rm km\,s^{-1}}]$'
-    cmap[f] = 'bwr'
+    cmap[f] = cmcrameri.cm.vik
     vminmax[f] = (-100.0,100.0)
     take_log[f] = False
 
