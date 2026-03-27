@@ -17,6 +17,7 @@ class FindFiles(object):
     patterns = dict()
 
     patterns['athinput'] = [
+        ('input/MHD/*.par',),
         ('athinput.runtime',),
         ('out.txt',),
         ('out*.txt',),
@@ -28,6 +29,7 @@ class FindFiles(object):
         ('slurm-*',)]
 
     patterns['hst'] = [
+        ('history', 'MHD', '*.hst'),
         ('id0', '*.hst'),
         ('hst', '*.hst'),
         ('*.hst',)]
@@ -43,8 +45,11 @@ class FindFiles(object):
         ('*.sn',)]
 
     patterns['vtk'] = [
+        ('????', 'MHD', '*.????.vtk'),
         ('vtk', '*.????.vtk'),
         ('*.????.vtk',)]
+
+    patterns['vtk_pi'] = [('????', 'MHD_PI', '*.????.vtk'),]
 
     patterns['vtk_id0'] = [
         ('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
@@ -420,6 +425,7 @@ class FindFiles(object):
             return
         if self.athena_variant == 'athena':
             self.files['vtk'] = self.find_match(self.patterns['vtk'])
+            self.files['vtk_pi'] = self.find_match(self.patterns['vtk_pi'])
             self.files['vtk_id0'] = self.find_match(self.patterns['vtk_id0'])
             self.files['vtk_tar'] = self.find_match(self.patterns['vtk_tar'])
             if not self.files['vtk'] and not self.files['vtk_id0'] and \
