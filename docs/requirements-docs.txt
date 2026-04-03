@@ -10,7 +10,7 @@ scipy
 healpy
 cmasher
 cmocean
-jupyter-book
+jupyter-book<2
 docutils==0.17.1
 tqdm
 periodictable
