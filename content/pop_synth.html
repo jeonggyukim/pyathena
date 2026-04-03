@@ -796,26 +796,64 @@ using the Draine (2003) dust model (R_V = 3.1).</p>
 <dl class="field-list simple">
 <dt class="field-odd">Returns</dt>
 <dd class="field-odd"><p><p><strong>r</strong> – Dictionary with the following keys:</p>
+<p><strong>Spectral data</strong></p>
 <ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>, <code class="docutils literal notranslate"><span class="pre">time_yr</span></code> : array — time arrays</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">wav</span></code> : array — wavelength grid in Angstrom</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">logf</span></code> : 2-D array (ntime × nwav) — log10 spectral luminosity
-[erg s-1 Ang-1], normalized by cluster mass</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">L</span></code> : dict — band luminosities in L_sun M_sun-1</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">pdot</span></code> : dict — radiation pressure rates in
-M_sun km s-1 Myr-1 M_sun-1</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">Q</span></code> : dict — photon emission rates in s-1 M_sun-1</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>, <code class="docutils literal notranslate"><span class="pre">time_yr</span></code> : 1-D array (ntime,) — age of the
+stellar population in Myr and yr.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wav</span></code> : 1-D array (nwav,) — wavelength grid [Angstrom].</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logf</span></code> : 2-D array (ntime, nwav) — <code class="docutils literal notranslate"><span class="pre">log10</span></code> of the spectral
+luminosity <span class="math notranslate nohighlight">\(L_\lambda\)</span> [erg s-1 Å-1] for the full
+instantaneous-burst cluster of mass <span class="math notranslate nohighlight">\(10^{\rm logM}\,M_\odot\)</span>.
+To obtain the specific luminosity per unit stellar mass use
+<code class="docutils literal notranslate"><span class="pre">10.0</span> <span class="pre">**</span> <span class="pre">(logf</span> <span class="pre">-</span> <span class="pre">logM)</span></code>  [erg s-1 Å-1 Msun-1].</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logM</span></code> : float — <code class="docutils literal notranslate"><span class="pre">log10</span></code> cluster mass [<span class="math notranslate nohighlight">\(M_\odot\)</span>];
+equals <code class="docutils literal notranslate"><span class="pre">self.logM</span></code> (0 for continuous-SF runs).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">df</span></code> : pandas.DataFrame — raw per-time-step spectral table
+with columns <code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>, <code class="docutils literal notranslate"><span class="pre">time_yr</span></code>, <code class="docutils literal notranslate"><span class="pre">wav</span></code>, <code class="docutils literal notranslate"><span class="pre">logf</span></code>,
+<code class="docutils literal notranslate"><span class="pre">logfstar</span></code> (stellar continuum), <code class="docutils literal notranslate"><span class="pre">logfneb</span></code> (nebular
+continuum). Useful for plotting the full SED at individual ages.</p></li>
+</ul>
+<p><strong>Band-integrated quantities</strong> (each is a 1-D array over time)</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">L</span></code> : dict — specific luminosity per unit stellar mass
+[<span class="math notranslate nohighlight">\(L_\odot\,M_\odot^{-1}\)</span>]; keys are
+<code class="docutils literal notranslate"><span class="pre">'tot'</span></code>, <code class="docutils literal notranslate"><span class="pre">'LyC'</span></code>, <code class="docutils literal notranslate"><span class="pre">'LW'</span></code>, <code class="docutils literal notranslate"><span class="pre">'PE'</span></code>, <code class="docutils literal notranslate"><span class="pre">'FUV'</span></code>,
+<code class="docutils literal notranslate"><span class="pre">'OPT'</span></code>, <code class="docutils literal notranslate"><span class="pre">'IR'</span></code>, <code class="docutils literal notranslate"><span class="pre">'UV'</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdot</span></code> : dict — specific radiation momentum injection rate
+[<span class="math notranslate nohighlight">\(M_\odot\,{\rm km\,s}^{-1}\,{\rm Myr}^{-1}\,M_\odot^{-1}\)</span>];
+same keys as <code class="docutils literal notranslate"><span class="pre">L</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Q</span></code> : dict — specific ionizing-photon emission rate
+[<span class="math notranslate nohighlight">\({\rm s}^{-1}\,M_\odot^{-1}\)</span>]; same keys as <code class="docutils literal notranslate"><span class="pre">L</span></code>.</p></li>
+</ul>
+<p><strong>Dust and photoionization cross sections</strong> (1-D arrays over time)</p>
+<ul class="simple">
 <li><p><code class="docutils literal notranslate"><span class="pre">Cext</span></code>, <code class="docutils literal notranslate"><span class="pre">Cabs</span></code>, <code class="docutils literal notranslate"><span class="pre">Crpr</span></code> : dict — luminosity-weighted mean
-dust cross sections per H atom [cm2 H-1]</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">hnu</span></code> : dict — luminosity-weighted mean photon energies [eV]</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">sigma_pi_H</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma_pi_H2</span></code> : array — photon-rate-weighted
-mean photoionization cross sections for H and H2 [cm2]</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">dhnu_H_LyC</span></code>, <code class="docutils literal notranslate"><span class="pre">dhnu_H2_LyC</span></code> : array — mean excess photon
-energies above the ionization threshold [eV]</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">tdecay_lum</span></code>, <code class="docutils literal notranslate"><span class="pre">tcumul_lum_50</span></code>, <code class="docutils literal notranslate"><span class="pre">tcumul_lum_90</span></code> : dict —
-luminosity-weighted timescales [Myr]</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">*_avg</span></code>, <code class="docutils literal notranslate"><span class="pre">*_Lavg</span></code>, <code class="docutils literal notranslate"><span class="pre">*_Qavg</span></code> : dict — time-, L-, and
-Q-weighted cumulative averages</p></li>
+dust cross sections per H nucleon [<span class="math notranslate nohighlight">\({\rm cm}^2\,H^{-1}\)</span>];
+keyed by band.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hnu</span></code> : dict — luminosity-weighted mean photon energy [eV];
+keyed by band.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sigma_pi_H</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma_pi_H2</span></code> : array — luminosity-weighted
+mean photoionization cross sections for H and H2 [cm2].</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dhnu_H_LyC</span></code>, <code class="docutils literal notranslate"><span class="pre">dhnu_H2_LyC</span></code> : array — luminosity-weighted
+mean excess photon energy above the ionization threshold for H
+and H2 [eV].</p></li>
+</ul>
+<p><strong>Timescales</strong> (each is a dict keyed by band)</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">tdecay_lum</span></code> : luminosity-weighted mean emission time [Myr].</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tcumul_lum_50</span></code>, <code class="docutils literal notranslate"><span class="pre">tcumul_lum_90</span></code> : age at which 50%/90% of
+the cumulative band luminosity has been emitted [Myr].</p></li>
+</ul>
+<p><strong>Cumulative time-averaged quantities</strong></p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">L_avg</span></code>, <code class="docutils literal notranslate"><span class="pre">Q_avg</span></code> : time-averaged <code class="docutils literal notranslate"><span class="pre">L</span></code> and <code class="docutils literal notranslate"><span class="pre">Q</span></code>.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hnu_Lavg</span></code>, <code class="docutils literal notranslate"><span class="pre">Cabs_Lavg</span></code>, <code class="docutils literal notranslate"><span class="pre">Cext_Lavg</span></code>, <code class="docutils literal notranslate"><span class="pre">Crpr_Lavg</span></code> :
+<code class="docutils literal notranslate"><span class="pre">L</span></code>-weighted running averages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hnu_Qavg</span></code>, <code class="docutils literal notranslate"><span class="pre">Cabs_Qavg</span></code>, <code class="docutils literal notranslate"><span class="pre">Cext_Qavg</span></code>, <code class="docutils literal notranslate"><span class="pre">Crpr_Qavg</span></code> :
+<code class="docutils literal notranslate"><span class="pre">Q</span></code>-weighted running averages.</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sigma_pi_H_Qavg</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma_pi_H2_Qavg</span></code>,
+<code class="docutils literal notranslate"><span class="pre">dhnu_H_LyC_Qavg</span></code>, <code class="docutils literal notranslate"><span class="pre">dhnu_H2_LyC_Qavg</span></code> : <code class="docutils literal notranslate"><span class="pre">Q</span></code>-weighted
+running averages of the LyC cross sections and excess energies.</p></li>
 </ul>
 </p>
 </dd>

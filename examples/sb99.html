@@ -404,7 +404,10 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load-sb99-data">1. Load SB99 data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load-sb99-data">1. Load SB99 data</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#return-fields-of-read-rad">Return fields of <code class="docutils literal notranslate"><span class="pre">read_rad()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sed-evolution">2. SED evolution</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#band-integrated-luminosity-and-momentum-vs-age">3. Band-integrated luminosity and momentum vs age</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#luminosity-weighted-timescales">Luminosity-weighted timescales</a></li>
@@ -526,6 +529,81 @@ original runs without modification.</p>
 </div>
 </div>
 </div>
+<section id="return-fields-of-read-rad">
+<h3>Return fields of <code class="docutils literal notranslate"><span class="pre">read_rad()</span></code><a class="headerlink" href="#return-fields-of-read-rad" title="Permalink to this heading">#</a></h3>
+<p><code class="docutils literal notranslate"><span class="pre">read_rad()</span></code> returns a dictionary <code class="docutils literal notranslate"><span class="pre">rr</span></code> with the following keys:</p>
+<div class="pst-scrollable-table-container"><table class="colwidths-auto table">
+<thead>
+<tr class="row-odd"><th class="head"><p>Key</p></th>
+<th class="head"><p>Type</p></th>
+<th class="head"><p>Description</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>, <code class="docutils literal notranslate"><span class="pre">time_yr</span></code></p></td>
+<td><p>1-D array (ntime,)</p></td>
+<td><p>Stellar population age [Myr, yr]</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">wav</span></code></p></td>
+<td><p>1-D array (nwav,)</p></td>
+<td><p>Wavelength grid [Å]</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">logf</span></code></p></td>
+<td><p>2-D array (ntime, nwav)</p></td>
+<td><p><span class="math notranslate nohighlight">\(\log_{10} L_\lambda\)</span> [erg s<span class="math notranslate nohighlight">\(^{-1}\)</span> Å<span class="math notranslate nohighlight">\(^{-1}\)</span>] for the full cluster of mass <span class="math notranslate nohighlight">\(10^{\rm logM}\,M_\odot\)</span>. Specific luminosity per <span class="math notranslate nohighlight">\(M_\odot\)</span>: <code class="docutils literal notranslate"><span class="pre">10**(logf</span> <span class="pre">-</span> <span class="pre">logM)</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">logM</span></code></p></td>
+<td><p>float</p></td>
+<td><p><span class="math notranslate nohighlight">\(\log_{10}\)</span> cluster mass [<span class="math notranslate nohighlight">\(M_\odot\)</span>]</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">df</span></code></p></td>
+<td><p>DataFrame</p></td>
+<td><p>Raw per-timestep spectral table with columns <code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>, <code class="docutils literal notranslate"><span class="pre">wav</span></code>, <code class="docutils literal notranslate"><span class="pre">logf</span></code>, <code class="docutils literal notranslate"><span class="pre">logfstar</span></code>, <code class="docutils literal notranslate"><span class="pre">logfneb</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">L</span></code></p></td>
+<td><p>dict of arrays</p></td>
+<td><p>Specific luminosity [<span class="math notranslate nohighlight">\(L_\odot\,M_\odot^{-1}\)</span>]; keys: <code class="docutils literal notranslate"><span class="pre">'tot'</span></code>, <code class="docutils literal notranslate"><span class="pre">'LyC'</span></code>, <code class="docutils literal notranslate"><span class="pre">'LW'</span></code>, <code class="docutils literal notranslate"><span class="pre">'PE'</span></code>, <code class="docutils literal notranslate"><span class="pre">'FUV'</span></code>, <code class="docutils literal notranslate"><span class="pre">'OPT'</span></code>, <code class="docutils literal notranslate"><span class="pre">'IR'</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">pdot</span></code></p></td>
+<td><p>dict of arrays</p></td>
+<td><p>Specific radiation momentum rate [<span class="math notranslate nohighlight">\(M_\odot\,\mathrm{km\,s^{-1}\,Myr^{-1}}\,M_\odot^{-1}\)</span>]; same keys as <code class="docutils literal notranslate"><span class="pre">L</span></code></p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">Q</span></code></p></td>
+<td><p>dict of arrays</p></td>
+<td><p>Specific ionizing-photon rate [s<span class="math notranslate nohighlight">\(^{-1}\,M_\odot^{-1}\)</span>]; same keys as <code class="docutils literal notranslate"><span class="pre">L</span></code></p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">Cext</span></code>, <code class="docutils literal notranslate"><span class="pre">Cabs</span></code>, <code class="docutils literal notranslate"><span class="pre">Crpr</span></code></p></td>
+<td><p>dict of arrays</p></td>
+<td><p>Luminosity-weighted mean dust cross sections per H nucleon [cm<span class="math notranslate nohighlight">\(^2\)</span> H<span class="math notranslate nohighlight">\(^{-1}\)</span>]</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">hnu</span></code></p></td>
+<td><p>dict of arrays</p></td>
+<td><p>Luminosity-weighted mean photon energy [eV]</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">sigma_pi_H</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma_pi_H2</span></code></p></td>
+<td><p>array</p></td>
+<td><p>Luminosity-weighted mean PI cross section for H and H<span class="math notranslate nohighlight">\(_2\)</span> [cm<span class="math notranslate nohighlight">\(^2\)</span>]</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">dhnu_H_LyC</span></code>, <code class="docutils literal notranslate"><span class="pre">dhnu_H2_LyC</span></code></p></td>
+<td><p>array</p></td>
+<td><p>Mean excess photon energy above ionization threshold for H and H<span class="math notranslate nohighlight">\(_2\)</span> [eV]</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">tdecay_lum</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>Luminosity-weighted mean emission time [Myr]</p></td>
+</tr>
+<tr class="row-odd"><td><p><code class="docutils literal notranslate"><span class="pre">tcumul_lum_50/90</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>Age at which 50%/90% of cumulative band luminosity is emitted [Myr]</p></td>
+</tr>
+<tr class="row-even"><td><p><code class="docutils literal notranslate"><span class="pre">*_avg</span></code>, <code class="docutils literal notranslate"><span class="pre">*_Lavg</span></code>, <code class="docutils literal notranslate"><span class="pre">*_Qavg</span></code></p></td>
+<td><p>dict</p></td>
+<td><p>Time-, <span class="math notranslate nohighlight">\(L\)</span>-, and <span class="math notranslate nohighlight">\(Q\)</span>-weighted cumulative running averages</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
 </section>
 <section id="sed-evolution">
 <h2>2. SED evolution<a class="headerlink" href="#sed-evolution" title="Permalink to this heading">#</a></h2>
@@ -549,7 +627,7 @@ and PE (<span class="math notranslate nohighlight">\(1108–2068\,\text{Å}\)</s
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>0.0 0.6 1.2 1.8 2.4 3.0 3.6 4.2 4.8 5.4 6.0 6.6 7.2 7.8 8.4 9.0 9.6 10.2 10.8 11.4 12.0 12.6 13.2 13.8 14.4 15.0 15.6 16.2 16.8 17.4 18.0 18.6 19.2 19.8 20.4 21.0 21.6 22.2 22.8 23.4 24.0 24.6 25.2 25.8 26.4 27.0 27.6 28.2 28.8 29.4 30.0 30.6 31.2 31.8 32.4 33.0 33.6 34.2 34.8 35.4 36.0 36.6 37.2 37.8 38.4 39.0 39.6 40.2 40.8 41.4 42.0 42.6 43.2 43.8 44.4 45.0 45.6 46.2 46.8 47.4 48.0 48.6 49.2 49.8 
 </pre></div>
 </div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/Users/jgkim/Dropbox/Projects/pyathena/pyathena/util/sb99.py:714: RuntimeWarning: divide by zero encountered in divide
+<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>/Users/jgkim/Dropbox/Projects/pyathena/pyathena/util/sb99.py:753: RuntimeWarning: divide by zero encountered in divide
   return 1.0/(ac.h.cgs.value*ac.c.cgs.value/1e-8/(1.0*au.eV).cgs.value)/x
 </pre></div>
 </div>
@@ -840,7 +918,7 @@ optical depth and <span class="math notranslate nohighlight">\(E_2\)</span> is t
 <span class="n">r</span> <span class="o">=</span> <span class="n">sb99</span><span class="o">.</span><span class="n">get_ISRF_SB99_plane_parallel</span><span class="p">(</span>
     <span class="n">Sigma_gas</span><span class="o">=</span><span class="mf">10.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">pc</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>
     <span class="n">Sigma_SFR</span><span class="o">=</span><span class="mf">2.5e-3</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">kpc</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">yr</span><span class="p">,</span>
-    <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
 <span class="n">w</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;w_angstrom&#39;</span><span class="p">]</span>
 <span class="n">idx_fuv</span> <span class="o">=</span> <span class="p">(</span><span class="n">w</span> <span class="o">&gt;</span> <span class="mi">912</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">w</span> <span class="o">&lt;</span> <span class="mi">2068</span><span class="p">)</span>
@@ -877,59 +955,6 @@ optical depth and <span class="math notranslate nohighlight">\(E_2\)</span> is t
 </div>
 </div>
 <div class="cell_output docutils container">
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] basedir: /Users/jgkim/Dropbox/Projects/pyathena/data/sb99/Z014_M1E6_GenevaV00_dt02
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Fixed mass; logM: 6.00, tmax: 100.0 Myr
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] IMF: 2 interval(s), exponents=[1.3, 2.3], mass limits=[0.1, 0.5, 100.0] Msun
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Tracks: GENEVA v00 (IZ=54, Z=0.014); SN cutoff: 8 Msun; wind model: 0 (Maeder)
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Time range: 0.01 – 50.0 Myr  (251 steps)
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Wavelength range: 91 – 1600000 Å  (1221 points)
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Band luminosity keys: [&#39;tot&#39;, &#39;LyC&#39;, &#39;LW&#39;, &#39;PE&#39;, &#39;OPT&#39;, &#39;IR&#39;, &#39;FUV&#39;, &#39;UV&#39;]
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] basedir: /Users/jgkim/Dropbox/Projects/pyathena/data/sb99/Z014_M1E6_GenevaV00_logdt_10Gyr
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Fixed mass; logM: 6.00, tmax: 10100.0 Myr
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] IMF: 2 interval(s), exponents=[1.3, 2.3], mass limits=[0.1, 0.5, 100.0] Msun
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Tracks: GENEVA v00 (IZ=54, Z=0.014); SN cutoff: 8 Msun; wind model: 0 (Maeder)
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Time range: 2.01 – 9997.3 Myr  (77 steps)
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Wavelength range: 91 – 1600000 Å  (1221 points)
-</pre></div>
-</div>
-<div class="output stderr highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>[SB99-INFO] Band luminosity keys: [&#39;tot&#39;, &#39;LyC&#39;, &#39;LW&#39;, &#39;PE&#39;, &#39;OPT&#39;, &#39;IR&#39;, &#39;FUV&#39;, &#39;UV&#39;]
-</pre></div>
-</div>
-<div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Sigma_gas   : 10 solMass / pc2
-Sigma_SFR   : 0.0025 solMass / (yr kpc2)
-Z_dust      : 1.0
-t_max_Myr   : 10000
-Sigma_FUV   : 1.12661e+07 solLum / kpc2
-L_FUV/SFR   : 4.50642e+09 solLum yr / solMass
-J_FUV_unatt : 0.00036044 erg / (s sr cm2)
-J_FUV       : 0.000259639 erg / (s sr cm2)
-Attenuation factor (FUV): 0.720
-</pre></div>
-</div>
 <img alt="../_images/accb37ee6737204bb2e7583587f2fad02d5492f9cdf53f64648d9150884ddb3a.png" src="../_images/accb37ee6737204bb2e7583587f2fad02d5492f9cdf53f64648d9150884ddb3a.png" />
 <div class="output stream highlight-myst-ansi notranslate"><div class="highlight"><pre><span></span>Band-integrated FUV mean intensity:
   J_FUV (attenuated) : 2.596e-04 erg / (s sr cm2)
@@ -997,7 +1022,10 @@ Attenuation factor (FUV): 0.720
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load-sb99-data">1. Load SB99 data</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#load-sb99-data">1. Load SB99 data</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#return-fields-of-read-rad">Return fields of <code class="docutils literal notranslate"><span class="pre">read_rad()</span></code></a></li>
+</ul>
+</li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#sed-evolution">2. SED evolution</a></li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#band-integrated-luminosity-and-momentum-vs-age">3. Band-integrated luminosity and momentum vs age</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#luminosity-weighted-timescales">Luminosity-weighted timescales</a></li>
