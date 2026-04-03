@@ -15,7 +15,7 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
         Name of mp4 output file
     fps_in : int
         Frames per second for input
-    fps_output : int
+    fps_out : int
         Frames per second for output
 
     Example

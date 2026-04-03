@@ -1232,6 +1232,52 @@ def set_derived_fields_feedback_scalars(par):
 
 
 class DerivedFields(object):
+    """Registry of derived fields for an Athena/Athena++ simulation.
+
+    Reads simulation parameters and builds dictionaries of derived field
+    metadata (compute function, primitive field dependencies, plot label,
+    colormap, value range, and log-scale flag). The active set of fields
+    is determined automatically from the ``par`` configuration (e.g. MHD,
+    cooling, radiation, cosmic rays).
+
+    Parameters
+    ----------
+    par : dict
+        Simulation parameter dictionary as returned by
+        :func:`pyathena.read_athinput`.
+    x0 : array-like of float, optional
+        Reference position ``[x, y, z]`` used for distance-based fields
+        such as radial velocity. Default is ``[0.0, 0.0, 0.0]``.
+
+    Attributes
+    ----------
+    func : dict
+        Maps field name → callable ``f(d, u)`` that computes the field.
+    field_dep : dict
+        Maps field name → set of required primitive field names.
+    label : dict
+        Maps field name → LaTeX label string for colorbars/axes.
+    cmap : dict
+        Maps field name → colormap.
+    vminmax : dict
+        Maps field name → ``(vmin, vmax)`` defaults for visualization.
+    take_log : dict
+        Maps field name → bool; if ``True`` use log normalization.
+    norm : dict
+        Maps field name → :class:`matplotlib.colors.Normalize` instance.
+    imshow_args : dict
+        Maps field name → dict of kwargs suitable for imshow/colorbar calls.
+    dfi : dict
+        Combined per-field metadata dict (union of all the above).
+
+    Examples
+    --------
+    >>> from pyathena import read_athinput
+    >>> from pyathena.fields.fields import DerivedFields
+    >>> par = read_athinput("/path/to/athinput")
+    >>> df = DerivedFields(par)
+    >>> print(list(df.func.keys())[:5])
+    """
 
     def __init__(self, par, x0=np.array([0.0,0.0,0.0])):
 

@@ -4,16 +4,38 @@ import numpy as np
 
 def plt_joint_pdf(x, y, hexbin_args=dict(), bins=30,
                   weights=None, gs=None):
-    """
-    Function to plot 2d + 1d joint pdf using hexbin
+    """Plot a 2D joint PDF with marginalized 1D histograms.
+
+    Creates a figure with a central hexbin 2D histogram and marginal
+    histograms along the x and y axes.
 
     Parameters
     ----------
+    x : array-like
+        Data for the x-axis.
+    y : array-like
+        Data for the y-axis.
+    hexbin_args : dict, optional
+        Arguments passed to :func:`matplotlib.axes.Axes.hexbin`. Must include
+        an ``extent`` key (``[xmin, xmax, ymin, ymax]`` in log10 for log
+        scales) for the marginal histograms to align correctly.
+        Default sets ``mincnt=1``, ``xscale='log'``, ``yscale='log'``.
+    bins : int, optional
+        Number of bins for the marginal histograms. Default is 30.
+    weights : array-like, optional
+        Weights applied to both the hexbin and marginal histograms.
+        Default is ``None``.
+    gs : matplotlib.gridspec.GridSpec, optional
+        Existing GridSpec to draw into. If ``None``, a new figure is created.
 
     Returns
     -------
-    (ax, axx, axy) : tuple of matplotlib axes
-        Contains plot axes
+    ax : matplotlib.axes.Axes
+        Central 2D hexbin axes.
+    axx : matplotlib.axes.Axes
+        Top marginal histogram axes (x-axis projection).
+    axy : matplotlib.axes.Axes
+        Right marginal histogram axes (y-axis projection).
     """
 
     if gs is None:
