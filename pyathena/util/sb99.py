@@ -20,10 +20,52 @@ from matplotlib.colors import Normalize, LogNorm
 local = pathlib.Path(__file__).parent.absolute()
 
 class SB99(object):
+    """Interface for reading and plotting Starburst99 (SB99) output.
+
+    Reads the text output files produced by the Starburst99 stellar population
+    synthesis code and computes derived quantities (band-integrated luminosities,
+    dust cross sections, photoionization cross sections, momentum injection rates).
+
+    Parameters
+    ----------
+    basedir : str
+        Directory containing the SB99 output files (e.g. ``*.spectrum1``,
+        ``*.power1``, ``*.snr1``). All files in the directory must share a
+        common prefix, which is determined automatically.
+    verbose : bool, optional
+        If ``True``, print cluster mass and star-formation parameters on
+        initialization. Default is ``True``.
+
+    Attributes
+    ----------
+    basedir : str
+        Directory passed at construction time.
+    prefix : str
+        Common filename prefix discovered from the output directory.
+    files : dict
+        Mapping of file-type key (e.g. ``'spectrum'``, ``'power'``, ``'snr'``)
+        to the corresponding file path.
+    logM : float
+        ``log10`` of the instantaneous-burst cluster mass in solar masses
+        (set to 0 for continuous star-formation runs).
+    SFR : float
+        Star-formation rate in M_sun yr-1 (continuous SF runs only).
+    tmax_Myr : float
+        Maximum simulation time in Myr read from the ``.output1`` file.
+    cont_SF : bool
+        ``True`` if the run assumes continuous star formation.
+
+    Examples
+    --------
+    >>> import pyathena as pa
+    >>> sb = pa.SB99('/path/to/sb99/Z014_M1E6_GenevaV00_logdt')
+    >>> rr = sb.read_rad()        # radiation output
+    >>> rw = sb.read_wind()       # stellar wind output
+    >>> rs = sb.read_sn()         # supernova output
+    """
 
     def __init__(self, basedir='/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV00_dt01',
                  verbose=True):
-
         """
         Parameters
         ----------
@@ -90,7 +132,15 @@ class SB99(object):
         self.par = l
 
     def read_sn(self):
-        """Function to read snr1 (supernova rate) output
+        """Read the ``.snr1`` supernova rate output file.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            DataFrame with columns ``time_Myr``, ``time_yr``, SN rate,
+            energy injection rates (``Edot_SN``, ``Edot_SN_IB``, ``Edot_tot``
+            in erg s-1 M_sun-1), and cumulative energy (``Einj_*``), all
+            normalized by the cluster mass.
         """
 
         names = ['time', 'SN_rate', 'Edot_SN', 'Einj_SN', 'SN_rate_IB',
@@ -115,6 +165,15 @@ class SB99(object):
         return df
 
     def read_yield(self):
+        """Read the ``.yield1`` chemical yield output file.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            DataFrame with columns ``time_yr``, ``time_Myr``, and mass-loss
+            rates (H, He, C, N, O, Mg, Si, S, Fe, wind, SN, combined) in
+            M_sun yr-1 M_sun-1, normalized by the cluster mass.
+        """
         names = ['time','Mdot_H','Mdot_He','Mdot_C','Mdot_N',
                  'Mdot_O','Mdot_Mg','Mdot_Si','Mdot_S','Mdot_Fe',
                  'Mdot_wind','Mdot_sn','Mdot_wind_sn','M_tot']
@@ -134,7 +193,17 @@ class SB99(object):
         return df
 
     def read_wind(self):
-        """Function to read power1 (stellar wind power) output
+        """Read the ``.power1`` stellar wind output file.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            DataFrame indexed by time with columns for energy injection rates
+            (``Edot_all/OB/RSG/LBV/WR`` in erg s-1 M_sun-1), momentum
+            injection rates (``pdot_all/...`` in M_sun km s-1 Myr-1 M_sun-1),
+            mass-loss rates (``Mdot_all/...`` in M_sun Myr-1 M_sun-1), and
+            terminal wind velocities (``Vw_all/...`` in km s-1). Also includes
+            time-averaged quantities (``Edot_*_avg``, ``pdot_*_avg``).
         """
 
         names = ['time','Edot_all','Edot_OB','Edot_RSG','Edot_LBV','Edot_WR','Einj_all',
@@ -185,7 +254,50 @@ class SB99(object):
         return df
 
     def read_rad(self):
-        """Function to read SB99 spectrum data and mean dust opacity
+        """Read the ``.spectrum1`` file and compute derived radiation quantities.
+
+        Integrates the SB99 spectrum over standard photometric bands
+        (LyC, LW, PE, OPT, IR, FUV) and computes luminosity-weighted mean
+        dust cross sections, photoionization cross sections, and photon energies
+        using the Draine (2003) dust model (R_V = 3.1).
+
+        Band definitions (wavelength in Angstrom):
+
+        ======  ==================
+        Band    Wavelength range
+        ======  ==================
+        LyC     < 912
+        LW      912 – 1108
+        PE      1108 – 2068
+        FUV     912 – 2068
+        OPT     2068 – 10000
+        IR      10000 – 200000
+        ======  ==================
+
+        Returns
+        -------
+        r : dict
+            Dictionary with the following keys:
+
+            - ``time_Myr``, ``time_yr`` : array — time arrays
+            - ``wav`` : array — wavelength grid in Angstrom
+            - ``logf`` : 2-D array (ntime × nwav) — log10 spectral luminosity
+              [erg s-1 Ang-1], normalized by cluster mass
+            - ``L`` : dict — band luminosities in L_sun M_sun-1
+            - ``pdot`` : dict — radiation pressure rates in
+              M_sun km s-1 Myr-1 M_sun-1
+            - ``Q`` : dict — photon emission rates in s-1 M_sun-1
+            - ``Cext``, ``Cabs``, ``Crpr`` : dict — luminosity-weighted mean
+              dust cross sections per H atom [cm2 H-1]
+            - ``hnu`` : dict — luminosity-weighted mean photon energies [eV]
+            - ``sigma_pi_H``, ``sigma_pi_H2`` : array — photon-rate-weighted
+              mean photoionization cross sections for H and H2 [cm2]
+            - ``dhnu_H_LyC``, ``dhnu_H2_LyC`` : array — mean excess photon
+              energies above the ionization threshold [eV]
+            - ``tdecay_lum``, ``tcumul_lum_50``, ``tcumul_lum_90`` : dict —
+              luminosity-weighted timescales [Myr]
+            - ``*_avg``, ``*_Lavg``, ``*_Qavg`` : dict — time-, L-, and
+              Q-weighted cumulative averages
         """
 
         eV_cgs = (1.0*au.eV).cgs.value
@@ -433,7 +545,16 @@ class SB99(object):
         return r
 
     def read_quanta(self):
-        """Function to read ionizing photon rate
+        """Read the ``.quanta1`` ionizing-photon rate output file.
+
+        Returns
+        -------
+        df : pandas.DataFrame
+            DataFrame with columns ``time_yr``, ``time_Myr``,
+            ionizing photon rates ``Q_HI``, ``Q_HeI``, ``Q_HeII``
+            (in s-1 M_sun-1), luminosity fractions ``Lfrac_HI``,
+            ``Lfrac_HeI``, ``Lfrac_HeII``, and bolometric luminosity
+            ``logL`` (log10 erg s-1 M_sun-1).
         """
         names = ['time_yr', 'Q_HI', 'Lfrac_HI', 'Q_HeI', 'Lfrac_HeI',
                  'Q_HeII', 'Lfrac_HeII', 'logL']
@@ -452,13 +573,32 @@ class SB99(object):
         return df
 
     @staticmethod
-    def plt_spec_sigmad(rr, lambda_Llambda=False, plt_isrf=True, tmax=50.0, nstride=10):
-        """Function to plot SB99 spectrum
+    def plt_spec_sigmad(rr, lambda_Llambda=False, plt_isrf=False, tmax=50.0, nstride=10):
+        """Plot the SB99 spectrum evolution with dust opacity.
+
+        Creates a figure with two or three rows: (1) dust opacity vs wavelength,
+        (2) spectral luminosity at different ages (color-coded by age), and
+        optionally (3) the ISRF at the midplane of a plane-parallel disk.
 
         Parameters
         ----------
-        lambda_Llambda : bool
-            Plot lambda_Llambda instead of Llambda
+        rr : dict
+            Output of :meth:`read_rad`.
+        lambda_Llambda : bool, optional
+            If ``True``, plot ``lambda * L_lambda`` instead of ``L_lambda``.
+            Default is ``False``.
+        plt_isrf : bool, optional
+            If ``True``, add a third panel showing the ISRF estimate from
+            :func:`plt_nuJnu_mid_plane_parallel`. Requires a separate
+            continuous-SF SB99 run; disabled by default.
+        tmax : float, optional
+            Maximum age to show in the spectrum panel [Myr]. Default is 50.
+        nstride : int, optional
+            Plot every ``nstride``-th time step. Default is 10.
+
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
         """
 
         if plt_isrf:
@@ -566,13 +706,32 @@ class SB99(object):
             irow += 1
             plt.sca(axes[irow,1])
             plt.axis('off')
-            plt_nuJnu_mid_plane_parallel(ax=axes[irow,0])
+            plt_nuJnu_mid_plane_parallel(ax=axes[irow,0], basedir=None)
 
         return fig
 
     @staticmethod
     def plt_lum_evol(ax, rr, rw, rs, lw=2, plt_sn=False):
+        """Plot luminosity evolution by band vs age.
 
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+        rr : dict
+            Output of :meth:`read_rad`.
+        rw : pandas.DataFrame
+            Output of :meth:`read_wind`.
+        rs : pandas.DataFrame
+            Output of :meth:`read_sn`.
+        lw : float, optional
+            Line width. Default is 2.
+        plt_sn : bool, optional
+            If ``True``, also plot the SN luminosity. Default is ``False``.
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+        """
         #pa.set_plt_fancy()
         plt.sca(ax)
         plt.plot(rr['time_Myr'], rr['L']['tot'], label=r'Bolometric', c='k', lw=lw)
@@ -599,7 +758,24 @@ class SB99(object):
 
     @staticmethod
     def plt_pdot_evol(ax, rr, rw, rs, lw=2):
+        """Plot radiation momentum injection rate evolution vs age.
 
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+        rr : dict
+            Output of :meth:`read_rad`.
+        rw : pandas.DataFrame
+            Output of :meth:`read_wind`.
+        rs : pandas.DataFrame
+            Output of :meth:`read_sn`.
+        lw : float, optional
+            Line width. Default is 2.
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+        """
         plt.sca(ax)
         plt.plot(rr['time_Myr'], (rr['L']['tot']*au.L_sun/ac.c/au.M_sun).to('km s-1 Myr-1'),
                  label=r'Bolometric', c='k', lw=lw)
@@ -621,7 +797,29 @@ class SB99(object):
 
     @staticmethod
     def plt_lum_cumul(ax, rr, rw, rs, normed=True, plt_sn=False, lw=2):
+        """Plot cumulative energy by band vs age.
 
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+        rr : dict
+            Output of :meth:`read_rad`.
+        rw : pandas.DataFrame
+            Output of :meth:`read_wind`.
+        rs : pandas.DataFrame
+            Output of :meth:`read_sn`.
+        normed : bool, optional
+            If ``True``, normalize by the total bolometric cumulative energy.
+            Default is ``True``.
+        plt_sn : bool, optional
+            If ``True``, also plot cumulative SN energy. Default is ``False``.
+        lw : float, optional
+            Line width. Default is 2.
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+        """
         integrate_L_cum = lambda L, t: cumtrapz((L*au.L_sun).cgs.value,
                                                 (t*au.yr).cgs.value, initial=0.0)
 
@@ -667,7 +865,29 @@ class SB99(object):
 
     @staticmethod
     def plt_pdot_cumul(ax, rr, rw, rs, normed=False, plt_sn=False, lw=2):
+        """Plot cumulative momentum injection vs age.
 
+        Parameters
+        ----------
+        ax : matplotlib.axes.Axes
+        rr : dict
+            Output of :meth:`read_rad`.
+        rw : pandas.DataFrame
+            Output of :meth:`read_wind`.
+        rs : pandas.DataFrame
+            Output of :meth:`read_sn`.
+        normed : bool, optional
+            If ``True``, normalize by the total cumulative momentum.
+            Default is ``False``.
+        plt_sn : bool, optional
+            Unused (reserved). Default is ``False``.
+        lw : float, optional
+            Line width. Default is 2.
+
+        Returns
+        -------
+        ax : matplotlib.axes.Axes
+        """
         integrate_pdot = lambda pdot, t: cumtrapz(
             pdot, t*au.Myr, initial=0.0)
 
@@ -716,6 +936,35 @@ class SB99(object):
 
     @staticmethod
     def plt_Edot_pdot_evol_cumul(rr, rw, rs, plt_sn=True, lw=2, normed=False, fig=None, axes=None):
+        """Plot a 2×2 summary figure of luminosity and momentum (evolution + cumulative).
+
+        Combines :meth:`plt_lum_evol`, :meth:`plt_pdot_evol`,
+        :meth:`plt_lum_cumul`, and :meth:`plt_pdot_cumul` into a single figure.
+
+        Parameters
+        ----------
+        rr : dict
+            Output of :meth:`read_rad`.
+        rw : pandas.DataFrame
+            Output of :meth:`read_wind`.
+        rs : pandas.DataFrame
+            Output of :meth:`read_sn`.
+        plt_sn : bool, optional
+            If ``True``, include SN contributions. Default is ``True``.
+        lw : float, optional
+            Line width. Default is 2.
+        normed : bool, optional
+            Normalize cumulative panels. Default is ``False``.
+        fig : matplotlib.figure.Figure, optional
+            Existing figure to draw into. Created if ``None``.
+        axes : array of matplotlib.axes.Axes, optional
+            Four axes to draw into. Created if ``None``.
+
+        Returns
+        -------
+        fig : matplotlib.figure.Figure
+        axes : numpy.ndarray of matplotlib.axes.Axes
+        """
         if fig is None:
             fig, axes = plt.subplots(2,2,figsize=(12, 10), constrained_layout=True,
                                      gridspec_kw=dict(height_ratios=[0.5,0.5]))
@@ -754,10 +1003,38 @@ class SB99(object):
         return fig, axes
 
 
-def plt_nuJnu_mid_plane_parallel(ax,
+def plt_nuJnu_mid_plane_parallel(ax, basedir=None,
                                  Sigma_gas=10.0*au.M_sun/au.pc**2, plt_dr78=True):
+    """Plot the midplane ISRF from a plane-parallel SB99 continuous-SF model.
 
-    sb = SB99('/projects/EOSTRIKE/SB99/Z014_SFR1_GenevaV00_logdt')
+    Computes the angle-averaged mean intensity ``J_lambda`` at the disk
+    midplane following Ostriker et al. (2010), using a continuous-SF SB99
+    spectrum attenuated by dust absorption.
+
+    Parameters
+    ----------
+    ax : matplotlib.axes.Axes
+        Axes to draw into.
+    basedir : str, optional
+        Path to a continuous-SF SB99 output directory. Must contain a
+        ``*.spectrum1`` file. If ``None``, this function does nothing and
+        returns ``None``.
+    Sigma_gas : astropy.units.Quantity, optional
+        Gas surface density used to compute the dust optical depth.
+        Default is ``10 M_sun pc-2``.
+    plt_dr78 : bool, optional
+        If ``True``, overplot the Draine (1978) ISRF estimate. Default is
+        ``True``.
+
+    Returns
+    -------
+    rr : dict or None
+        Output of :meth:`SB99.read_rad`, or ``None`` if ``basedir`` is not set.
+    """
+    if basedir is None:
+        return None
+
+    sb = SB99(basedir)
     rr = sb.read_rad()
     w = rr['wav'].values*1e-4
     d = DustDraine()
@@ -820,7 +1097,19 @@ def plt_nuJnu_mid_plane_parallel(ax,
     return rr
 
 def print_lum_weighted_avg_quantities(rr, tmax=50.0):
-    """Function to print some useful numbers for radiation
+    """Print luminosity-weighted timescales and mean cross sections.
+
+    Prints to stdout: the luminosity-weighted decay timescale, cumulative
+    50/90/95% thresholds for LyC and FUV, and luminosity-weighted mean dust
+    and photoionization cross sections for each band up to ``tmax``.
+
+    Parameters
+    ----------
+    rr : dict
+        Output of :meth:`SB99.read_rad`.
+    tmax : float, optional
+        Maximum age [Myr] over which to compute mean cross sections.
+        Default is 50.
     """
     L_tot = rr['L']['tot']
     L_LyC = rr['L']['LyC']
@@ -875,7 +1164,26 @@ def print_lum_weighted_avg_quantities(rr, tmax=50.0):
 
 
 def plt_cross_sections_hnu(rr):
+    """Plot dust cross sections, photoionization cross sections, and photon energies vs age.
 
+    Creates a 3-panel figure showing:
+
+    1. Luminosity-weighted mean dust extinction/absorption cross section per H
+       atom for each band vs stellar age.
+    2. Photon-rate-weighted mean photoionization cross sections for H and H2
+       vs stellar age.
+    3. Luminosity-weighted mean photon energy per band vs stellar age, plus
+       mean excess photoelectron energies for H and H2 (LyC only).
+
+    Parameters
+    ----------
+    rr : dict
+        Output of :meth:`SB99.read_rad`.
+
+    Returns
+    -------
+    fig : matplotlib.figure.Figure
+    """
     #rr = sb.read_rad()
 
     fig, axes = plt.subplots(3, 1, figsize=(6, 12),
@@ -927,6 +1235,17 @@ def plt_cross_sections_hnu(rr):
 
 
 def print_tbl_data(rr):
+    """Print LaTeX table rows for radiation timescales and cross sections.
+
+    Outputs LaTeX-formatted rows suitable for inclusion in an AASTeX/emulateapj
+    table, covering luminosity-weighted timescales (rows 1–3), dust cross
+    sections (rows 4–8), and photon energies (rows 9–11).
+
+    Parameters
+    ----------
+    rr : dict
+        Output of :meth:`SB99.read_rad`.
+    """
     bands = ['LyC','LW','PE','FUV','OPT']
     bands2 = ['LyC','LW','PE','FUV','OPT','tot']
 
@@ -990,11 +1309,49 @@ from scipy import integrate
 def get_ISRF_SB99_plane_parallel(Sigma_gas=10.0*au.M_sun/au.pc**2,
                                  Sigma_SFR=2.5e-3*au.M_sun/au.kpc**2/au.yr,
                                  age_Myr=0.99e3,
-                                 Z_dust=1.0, dust_kind='Rv31', Z_star=0.014, verbose=True):
+                                 Z_dust=1.0, dust_kind='Rv31', Z_star=0.014,
+                                 model=None, verbose=True):
+    """Compute the plane-parallel ISRF from a continuous-SF SB99 model.
 
+    Estimates the angle-averaged mean intensity ``J_lambda`` at the disk
+    midplane following Ostriker et al. (2010), integrating the SB99 spectrum
+    attenuated by wavelength-dependent dust absorption.
+
+    Parameters
+    ----------
+    Sigma_gas : astropy.units.Quantity, optional
+        Gas surface density. Default is ``10 M_sun pc-2``.
+    Sigma_SFR : astropy.units.Quantity, optional
+        Star-formation rate surface density. Default is
+        ``2.5e-3 M_sun kpc-2 yr-1``.
+    age_Myr : float, optional
+        Stellar age at which to evaluate the spectrum [Myr]. Default is 990.
+    Z_dust : float, optional
+        Dust metallicity relative to solar. Default is 1.0.
+    dust_kind : str, optional
+        Dust model key passed to :class:`~pyathena.microphysics.dust_draine.DustDraine`.
+        One of ``'Rv31'``, ``'Rv40'``, ``'Rv55'``. Default is ``'Rv31'``.
+    Z_star : float, optional
+        Stellar metallicity used to select the SB99 model. Default is 0.014.
+    model : str, optional
+        Path to a continuous-SF SB99 output directory. If ``None``, constructs
+        the path as ``/projects/EOSTRIKE/SB99/Z{Z_star_str}_SFR1_GenevaV00_logdt_10Gyr``.
+    verbose : bool, optional
+        Print summary statistics. Default is ``True``.
+
+    Returns
+    -------
+    r : dict
+        Dictionary with keys ``Jlambda``, ``Jlambda_unatt``, ``tau_perp``,
+        ``J_FUV``, ``J_FUV_unatt``, ``Sigma_FUV``, ``L_FUV_per_SFR``,
+        ``J``, ``J_unatt``, ``L_per_area``, ``L_per_SFR``,
+        ``w_micron``, ``w_angstrom``, ``SFR``, ``Sigma_gas``,
+        ``Sigma_SFR``, ``Z_star``, ``Z_dust``, ``sb``, ``sb_rad``.
+    """
     Z_gas = Z_dust
     Z_star_str = '{0:03d}'.format(int(Z_star*1000))
-    model = '/projects/EOSTRIKE/SB99/Z{0:s}_SFR1_GenevaV00_logdt_10Gyr'.format(Z_star_str)
+    if model is None:
+        model = '/projects/EOSTRIKE/SB99/Z{0:s}_SFR1_GenevaV00_logdt_10Gyr'.format(Z_star_str)
 
     sb = SB99(model, verbose=verbose)
     rr = sb.read_rad()
@@ -1002,8 +1359,8 @@ def get_ISRF_SB99_plane_parallel(Sigma_gas=10.0*au.M_sun/au.pc**2,
     if sb.cont_SF:
         SFR = sb.SFR*au.M_sun/au.yr
     else:
-        print('SB99 does not assume continuous SF!')
-        raise
+        raise ValueError('SB99 model does not assume continuous SF; '
+                         'get_ISRF_SB99_plane_parallel requires a continuous-SF run.')
 
     d = DustDraine()
     if dust_kind in ['Rv31', 'Rv31', 'Rv55', 'LMCavg', 'SMCbar']:
@@ -1140,7 +1497,29 @@ def get_ISRF_SB99_plane_parallel(Sigma_gas=10.0*au.M_sun/au.pc**2,
 
 
 def write_sb99_output_for_tigress(sb):
+    """Interpolate SB99 output onto the age grids expected by Athena-TIGRESS.
 
+    Reads radiation, wind, SN, and yield data from a :class:`SB99` instance,
+    interpolates onto fixed age arrays used internally by Athena-TIGRESS, and
+    returns the results as dictionaries.
+
+    Parameters
+    ----------
+    sb : SB99
+        Loaded SB99 instance.
+
+    Returns
+    -------
+    res_rad : dict
+        Radiation quantities (``age_Myr``, ``Xi_LyC``, ``Psi_LW``, ``Psi_PE``)
+        on a 0.2 Myr grid up to 40 Myr.
+    res_wind : dict
+        Wind quantities (``age_Myr``, ``log_Edot_wind``, ``log_Mdot_wind``)
+        on a 0.1 Myr grid up to 50 Myr.
+    res_sn : dict
+        SN quantities (``age_Myr``, ``SN_rate``) on a 0.2 Myr grid up to
+        40 Myr.
+    """
     rr = sb.read_rad()
     ry = sb.read_yield()
     rw = sb.read_wind()
