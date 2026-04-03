@@ -22,3 +22,4 @@ parts:
   - caption: Examples
     chapters:
     - file: examples/tigress-cooling.ipynb
+    - file: examples/quickstart-astro-tigress.ipynb
