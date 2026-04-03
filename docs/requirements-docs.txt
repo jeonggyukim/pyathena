@@ -4,6 +4,7 @@ numpy
 astropy
 pandas
 xarray
+dask
 h5py
 netCDF4
 scipy
