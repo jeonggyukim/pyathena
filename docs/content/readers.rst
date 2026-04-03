@@ -10,9 +10,22 @@ Readers
 .. autofunction:: pyathena.read_zprof
 .. autofunction:: pyathena.read_zprof_all
 .. autofunction:: pyathena.read_rst
+.. autofunction:: pyathena.read_hdf5
+
+Particle Readers
+================
+
+.. autofunction:: pyathena.read_partab
+.. autofunction:: pyathena.read_parhst
 
 RestartHandler
 ==============
 
 .. autoclass:: pyathena.RestartHandler
+    :members:
+
+TimingReader
+============
+
+.. autoclass:: pyathena.TimingReader
     :members:
