@@ -2,25 +2,23 @@
 import numpy as np
 
 def rebin_xyz(arr, bin_factor, fill_value=None):
-    """
-    Function to rebin masked 3d array.
+    """Rebin a 3D array by averaging over blocks of size ``bin_factor`` in all dimensions.
 
     Parameters
     ----------
     arr : ndarray
-        Masked or unmasked 3d numpy array. Shape is assumed to be (nz, ny, nx).
+        Masked or unmasked 3D numpy array with shape ``(nz, ny, nx)``.
     bin_factor : int
-        binning factor
-    fill_value: float
-        If arr is a masked array, fill masked elements with fill_value.
-        If *None*, masked elements will be neglected in calculating average.
-        Default value is *None*.
+        Number of cells to bin in each dimension. Must evenly divide each axis.
+    fill_value : float, optional
+        If ``arr`` is a masked array, replace masked elements with this value
+        before averaging. If ``None``, masked elements are excluded from the
+        average. Default is ``None``.
 
-    Return
-    ------
-    arr_rebin: ndarray
-        Smaller size, (averaged) 3d array. Shape is assumed to be
-        (nz//bin_factor, ny//bin_factor, nx//bin_factor)
+    Returns
+    -------
+    arr_rebin : ndarray
+        Rebinned array with shape ``(nz//bin_factor, ny//bin_factor, nx//bin_factor)``.
     """
 
     if bin_factor == 1:
@@ -46,25 +44,25 @@ def rebin_xyz(arr, bin_factor, fill_value=None):
 
 
 def rebin_xy(arr, bin_factor, fill_value=None):
-    """
-    Function to rebin masked 3d array in the x-y dimension.
+    """Rebin a 3D array by averaging over blocks of size ``bin_factor`` in the x-y plane.
+
+    The z-axis is left unchanged.
 
     Parameters
     ----------
     arr : ndarray
-        Masked or unmasked 3d numpy array. Shape is assumed to be (nz, ny, nx).
+        Masked or unmasked 3D numpy array with shape ``(nz, ny, nx)``.
     bin_factor : int
-        binning factor
-    fill_value: float
-        If arr is a masked array, fill masked elements with fill_value.
-        If *None*, masked elements will be neglected in calculating average.
-        Default value is *None*.
+        Number of cells to bin along x and y. Must evenly divide both axes.
+    fill_value : float, optional
+        If ``arr`` is a masked array, replace masked elements with this value
+        before averaging. If ``None``, masked elements are excluded from the
+        average. Default is ``None``.
 
-    Return
-    ------
-    arr_rebin: ndarray
-        Smaller size, (averaged) 3d array. Shape is assumed to be
-        (nz, ny//bin_factor, nx//bin_factor)
+    Returns
+    -------
+    arr_rebin : ndarray
+        Rebinned array with shape ``(nz, ny//bin_factor, nx//bin_factor)``.
     """
 
     if bin_factor == 1:

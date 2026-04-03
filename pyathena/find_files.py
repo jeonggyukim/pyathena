@@ -11,6 +11,44 @@ from .io.athena_read import athinput
 
 
 class FindFiles(object):
+    """Scan a simulation base directory and locate all output files.
+
+    Called automatically by :class:`~pyathena.LoadSim` during initialization.
+    Users typically do not need to instantiate this class directly.
+
+    Parameters
+    ----------
+    basedir : str
+        Root directory of the simulation output.
+    verbose : bool or str or int, optional
+        Logging verbosity. Default is ``False``.
+
+    Attributes
+    ----------
+    files : dict
+        Maps output type (e.g. ``'hst'``, ``'vtk'``, ``'hdf5'``) to file
+        paths found under ``basedir``.
+    athena_variant : {'athena', 'athena++', 'athenak'}
+        Detected code variant, determined from the input parameter file.
+    problem_id : str
+        Simulation problem ID (prefix for output file names).
+    par : dict
+        Input parameters read from the athinput file, or ``None`` if not found.
+    out_fmt : list of str
+        Output formats active in the simulation (e.g. ``['hst', 'vtk']``).
+    nums : list of int
+        Primary snapshot numbers (VTK or HDF5).
+    nums_hdf5 : dict
+        Maps output variable name → list of HDF5 snapshot numbers.
+    nums_vtk : list of int
+        All available VTK snapshot numbers.
+    nums_rst : list of int
+        Restart file snapshot numbers.
+    nums_zprof : dict
+        Maps phase name → list of zprof snapshot numbers.
+    phase : list of str
+        Phase names found in zprof files.
+    """
 
     # Default patterns
     # TODO: more explicit glob patterns using problem_id as in rst?
@@ -151,6 +189,19 @@ class FindFiles(object):
                 delattr(self, attr)
 
     def find_match(self, patterns):
+        """Return files matching the first pattern that yields results.
+
+        Parameters
+        ----------
+        patterns : list of tuple
+            Ordered list of path component tuples to try. Each tuple is joined
+            with ``basedir`` and passed to :func:`glob.glob`.
+
+        Returns
+        -------
+        list of str
+            Sorted list of matching file paths, or an empty list.
+        """
         glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
         for p in patterns:
             f = glob_match(p)
@@ -160,6 +211,11 @@ class FindFiles(object):
         return f
 
     def get_basic_info(self):
+        """Locate the athinput file and populate basic simulation metadata.
+
+        Sets ``athena_variant``, ``problem_id``, ``par``, ``out_fmt``,
+        ``partags``, and HDF5/particle output bookkeeping attributes.
+        """
         fathinput = self.find_match(self.patterns['athinput'])
         if fathinput:
             self.files['athinput'] = fathinput[0]
@@ -281,6 +337,7 @@ class FindFiles(object):
             self.out_fmt = ['hst', 'vtk']
 
     def find_hst(self):
+        """Find the history dump file and store its path in ``files['hst']``."""
         if 'hst' in self.out_fmt:
             # Find history dump and extract problem_id (prefix for output file names)
             # Caution: Assumes that problem_id does not contain '.'
@@ -296,6 +353,7 @@ class FindFiles(object):
                                     format(self.basedir))
 
     def find_sn(self):
+        """Find the supernova dump file and store its path in ``files['sn']``."""
         # Find sn dump
         fsn = self.find_match(self.patterns['sn'])
         if fsn:
@@ -314,6 +372,7 @@ class FindFiles(object):
                         pass
 
     def find_sphst(self):
+        """Find star particle history files (Athena only) and store in ``files['sphst']``."""
         # Find sphst dump (Athena only)
         fsphst = self.find_match(self.patterns['sphst'])
         if fsphst:
@@ -324,6 +383,7 @@ class FindFiles(object):
                 self.nums_sphst[0], self.nums_sphst[-1]))
 
     def find_starpar_vtk(self):
+        """Find star particle VTK files (Athena only) and store in ``files['starpar_vtk']``."""
         # Find starpar files (Athena only)
         if 'starpar_vtk' in self.out_fmt:
             fstarpar = self.find_match(self.patterns['starpar_vtk'])
@@ -338,6 +398,13 @@ class FindFiles(object):
                     'starpar files not found in {0:s}.'.format(self.basedir))
 
     def find_prtcl(self, key):
+        """Find particle output files and store paths and snapshot numbers.
+
+        Parameters
+        ----------
+        key : {'partab', 'parbin', 'pvtk'}
+            Particle output type to search for.
+        """
         if key not in self.out_fmt:
             return
         num_slice = dict(partab=slice(-14, -9),
@@ -365,6 +432,7 @@ class FindFiles(object):
                 self.logger.info(f'{key} ({partag}): {osp.dirname(matches[0])} nums: {nums[0]}-{nums[-1]}')
 
     def find_parhst(self):
+        """Find individual particle history CSV files and store in ``files['parhst']``."""
         if [k for k in self.par.keys() if k.startswith('particle') and
             self.par[k]['type'] != 'none']:
             fparhst = self.find_match(self.patterns['parhst'])
@@ -383,6 +451,8 @@ class FindFiles(object):
                     'parhst files not found in {0:s}'.format(self.basedir))
 
     def find_zprof(self):
+        """Find vertical profile (zprof) files and populate ``files['zprof']``,
+        ``nums_zprof``, and ``phase``."""
         fzprof = self.find_match(self.patterns['zprof'])
         if fzprof:
             self.files['zprof'] = fzprof
@@ -419,7 +489,11 @@ class FindFiles(object):
                     'zprof files not found in {0:s}'.format(self.basedir))
 
     def find_vtk(self):
-        # Find vtk files
+        """Find VTK output files (joined, id0, tarred, or Athena++ block files).
+
+        Populates ``files['vtk']``, ``files['vtk_id0']``, ``files['vtk_tar']``,
+        and the corresponding ``nums*`` attributes.
+        """
         # vtk files in both basedir (joined) and in basedir/id0
         if 'vtk' not in self.out_fmt:
             return
@@ -495,7 +569,10 @@ class FindFiles(object):
             pass
 
     def find_hdf5(self):
-        # Find hdf5 files
+        """Find HDF5 output files and populate ``files['hdf5']`` and ``nums_hdf5``.
+
+        Handles both Athena++ native HDF5 and AthenaK converted HDF5 outputs.
+        """
         # hdf5 files in basedir
         if 'hdf5' not in self.out_fmt:
             return
@@ -556,6 +633,7 @@ class FindFiles(object):
                                 'Perhaps no hydro output')
 
     def find_rst(self):
+        """Find restart files and populate ``files['rst']`` and ``nums_rst``."""
         # Find rst files
         if 'rst' in self.out_fmt:
             if hasattr(self, 'problem_id'):
@@ -588,6 +666,12 @@ class FindFiles(object):
                         'rst files in out_fmt but not found.'.format(self.basedir))
 
     def find_vtk2d(self):
+        """Find 2D VTK slice/projection output files for non-standard output formats.
+
+        Populates ``files[fmt]`` and ``nums_fmt`` for each format found.
+        Formats that cannot be located are stored in ``_fmt_vtk2d_not_found``
+        for deferred search via :meth:`~pyathena.LoadSim.find_files_vtk2d`.
+        """
         # 2d vtk files
         self._fmt_vtk2d_not_found = []
         for fmt in self.out_fmt:
@@ -610,6 +694,7 @@ class FindFiles(object):
                              ', '.join(self._fmt_vtk2d_not_found))
 
     def find_timeit(self):
+        """Find the ``timeit.txt`` file and store its path in ``files['timeit']``."""
         # Find timeit.txt
         ftimeit = self.find_match(self.patterns['timeit'])
         if ftimeit:
@@ -619,6 +704,7 @@ class FindFiles(object):
             self.logger.info('timeit.txt not found.')
 
     def find_looptime_tasktime(self):
+        """Find loop time and task time files and store paths in ``files``."""
         # Find problem_id.loop_time.txt
         flooptime = self.find_match(self.patterns['looptime'])
         if flooptime:

@@ -11,6 +11,7 @@ healpy
 cmasher
 cmocean
 jupyter-book<2
+inherit-docstring
 docutils==0.17.1
 tqdm
 periodictable

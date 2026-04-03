@@ -174,7 +174,7 @@ def set_derived_fields_def(par, x0):
     @static_vars(x0=x0)
     def _vr(d, u):
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
-        r = xr.DataArray(np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
+        r = xr.DataArray(np.sqrt((x - _vr.x0[0])**2 + (y - _vr.x0[1])**2 + (z - _vr.x0[2])**2),
                             dims=('z','y','x'), name='r')
         return (x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r*u.kms
     func[f] = _vr
@@ -298,8 +298,6 @@ def set_derived_fields_cooling(par, newcool):
     ----------
     par: dict
        Dictionary containing simulation parameter information
-    x0: sequence of floats
-       Coordinate of the center with respect to which distance is measured
     newcool: bool
        Is new cooling turned on?
 
@@ -406,7 +404,7 @@ def set_derived_fields_cooling(par, newcool):
     f = 'nHLambda_cool_net'
     field_dep[f] = set(['density','cool_rate','heat_rate'])
     def _nHLambda_cool_net(d, u):
-        return (d['cool_rate'] - d['heat_cool'])*(u.energy_density/u.time).cgs.value/d['density']
+        return (d['cool_rate'] - d['heat_rate'])*(u.energy_density/u.time).cgs.value/d['density']
     func[f] = _nHLambda_cool_net
     label[f] = r'$n_{\rm H}\Lambda_{\rm net}\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
     cmap[f] = 'cubehelix_r'
@@ -524,6 +522,24 @@ def set_derived_fields_mag(par, x0):
 
 
 def set_derived_fields_rad(par, x0):
+    """Register radiation field derived fields.
+
+    Includes normalized FUV (PE and LW band), C ionizing, and H2
+    dissociating radiation field strengths in Draine ISRF units
+    (chi_PE, chi_LW, chi_FUV, chi_CI, chi_H2).
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+    x0 : sequence of floats
+        Reference coordinate (unused here, kept for interface consistency).
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -601,6 +617,24 @@ def set_derived_fields_rad(par, x0):
 
 
 def set_derived_fields_newcool(par, x0):
+    """Register new-cooling (NCR) chemistry derived fields.
+
+    Includes temperature, molecular/atomic hydrogen fractions and densities
+    (T, xH2, nH2, xHI, nHI, xe), carbon/oxygen species (xCII, nCII, xCI,
+    nCI, xCO, nCO, xOI), cosmic-ray ionization rate, and cooling/heating rates.
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+    x0 : sequence of floats
+        Reference coordinate (unused here, kept for interface consistency).
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -847,7 +881,7 @@ def set_derived_fields_newcool(par, x0):
     vminmax[f] = (0,xCtot)
     take_log[f] = False
 
-    # xCII - singlly ionized carbon (use when CR ionization is uniform everywhere)
+    # xCII - singly ionized carbon (use when CR ionization is uniform everywhere)
     # Use with caution.
     # (Do not apply to hot gas and depend on cooling implementation)
     f = 'xCII_alt'
@@ -892,6 +926,23 @@ def set_derived_fields_newcool(par, x0):
 
 
 def set_derived_fields_sixray(par, x0):
+    """Register six-ray external radiation field derived fields.
+
+    Includes external (attenuated) PE and LW radiation field strengths in
+    Draine ISRF units (chi_PE_ext, chi_LW_ext, chi_H2_ext).
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+    x0 : sequence of floats
+        Reference coordinate (unused here, kept for interface consistency).
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -966,6 +1017,30 @@ def set_derived_fields_sixray(par, x0):
 
 
 def set_derived_fields_xray(par, x0, newcool):
+    """Register X-ray emissivity derived fields.
+
+    Registers the X-ray emissivity field (j_X) in the 0.5–7 keV band,
+    computed using APEC emissivity tables via the ``yt`` library.
+
+    .. note::
+        Requires the optional dependency ``yt``. Raises
+        :exc:`ModuleNotFoundError` if ``yt`` is not installed.
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+    x0 : sequence of floats
+        Reference coordinate (unused here, kept for interface consistency).
+    newcool : bool
+        If ``True``, use new-cooling chemistry fields for the emissivity
+        calculation; otherwise use classic fields.
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     # Fail fast with a clear message if yt-dependent helper is missing.
     if get_xray_emissivity is None:
         raise ModuleNotFoundError(
@@ -1018,6 +1093,23 @@ def set_derived_fields_xray(par, x0, newcool):
 
 
 def set_derived_fields_cosmic_ray(par):
+    """Register cosmic-ray derived fields.
+
+    Includes CR parallel diffusion coefficient (sigma_para), CR pressure
+    (pok_cr), CR energy density (Ec), and CR-related velocity fields.
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information. Must include
+        a ``cr`` block with at least ``vmax`` (maximum CR streaming speed
+        in cm/s).
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -1180,6 +1272,21 @@ def set_derived_fields_cosmic_ray(par):
 
 
 def set_derived_fields_feedback_scalars(par):
+    """Register feedback scalar derived fields.
+
+    Includes gas metallicity (Zgas) and SN ejecta mass fraction (rSN)
+    derived from passive scalar fields tracked during stellar feedback.
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -1232,6 +1339,52 @@ def set_derived_fields_feedback_scalars(par):
 
 
 class DerivedFields(object):
+    """Registry of derived fields for an Athena/Athena++ simulation.
+
+    Reads simulation parameters and builds dictionaries of derived field
+    metadata (compute function, primitive field dependencies, plot label,
+    colormap, value range, and log-scale flag). The active set of fields
+    is determined automatically from the ``par`` configuration (e.g. MHD,
+    cooling, radiation, cosmic rays).
+
+    Parameters
+    ----------
+    par : dict
+        Simulation parameter dictionary as returned by
+        :func:`pyathena.read_athinput`.
+    x0 : array-like of float, optional
+        Reference position ``[x, y, z]`` used for distance-based fields
+        such as radial velocity. Default is ``[0.0, 0.0, 0.0]``.
+
+    Attributes
+    ----------
+    func : dict
+        Maps field name → callable ``f(d, u)`` that computes the field.
+    field_dep : dict
+        Maps field name → set of required primitive field names.
+    label : dict
+        Maps field name → LaTeX label string for colorbars/axes.
+    cmap : dict
+        Maps field name → colormap.
+    vminmax : dict
+        Maps field name → ``(vmin, vmax)`` defaults for visualization.
+    take_log : dict
+        Maps field name → bool; if ``True`` use log normalization.
+    norm : dict
+        Maps field name → :class:`matplotlib.colors.Normalize` instance.
+    imshow_args : dict
+        Maps field name → dict of kwargs suitable for imshow/colorbar calls.
+    dfi : dict
+        Combined per-field metadata dict (union of all the above).
+
+    Examples
+    --------
+    >>> from pyathena import read_athinput
+    >>> from pyathena.fields.fields import DerivedFields
+    >>> par = read_athinput("/path/to/athinput")
+    >>> df = DerivedFields(par)
+    >>> print(list(df.func.keys())[:5])
+    """
 
     def __init__(self, par, x0=np.array([0.0,0.0,0.0])):
 
@@ -1348,10 +1501,10 @@ class DerivedFields(object):
             for d, d_ in zip(dicts, dicts_):
                 d.update(d_)
 
-        if wind:
-            dicts_ = set_derived_fields_wind(par, x0)
-            for d, d_ in zip(dicts, dicts_):
-                d.update(d_)
+        # if wind:
+        #     dicts_ = set_derived_fields_wind(par, x0)
+        #     for d, d_ in zip(dicts, dicts_):
+        #         d.update(d_)
 
         if xray:
             dicts_ = set_derived_fields_xray(par, x0, newcool)

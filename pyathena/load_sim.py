@@ -69,7 +69,7 @@ class LoadSimBase(ABC):
         Dictionary containing output file paths.
     par : dict
         Dictionary of dictionaries containing input parameters and configure
-        options read from log fileoutput file names.
+        options read from log file and output file names.
     config_time : pandas.Timestamp
         Date and time when the athena code is configured.
     verbose : bool or str or int
@@ -161,7 +161,7 @@ class LoadSim(LoadSimBase):
     savdir : str, optional
         Directory where pickles and figures are saved. Defaults to `basedir`.
     load_method : {'xarray', 'pyathena_classic', 'yt'}, optional
-        Load vtk/hdf5 snapshots using 'xarray', 'pythena_classic', or 'yt'.
+        Load vtk/hdf5 snapshots using 'xarray', 'pyathena_classic', or 'yt'.
         Defaults to 'xarray'.
     verbose : bool or str or int
         If True/False, set logging level to 'INFO'/'WARNING'.
@@ -193,7 +193,7 @@ class LoadSim(LoadSimBase):
     Examples
     --------
     >>> import pyathena as pa
-    >>> s = pa.LoadSim('/path/to/basedir", verbose=True)
+    >>> s = pa.LoadSim('/path/to/basedir', verbose=True)
     """
 
     def __init__(self, basedir, savdir=None, load_method='xarray',
@@ -415,14 +415,23 @@ class LoadSim(LoadSimBase):
         return self.ds
 
     def load_hdf5(self, num=None, **kwargs):
-        """Wrapper function to read Athena/AthenaK hdf5 files
+        """Read an Athena++ or AthenaK HDF5 snapshot.
 
-        See documentation of `_load_hdf5_athenapp` and `_load_hdf5_atheanak` for details.
+        Dispatches to :meth:`_load_hdf5_athenapp` or :meth:`_load_hdf5_athenak`
+        depending on ``athena_variant``. See those methods for the full list of
+        supported keyword arguments.
 
         Parameters
         ----------
         num : int
-           Snapshot number
+            Snapshot number.
+        **kwargs :
+            Additional arguments forwarded to the variant-specific loader.
+
+        Returns
+        -------
+        ds : xarray.Dataset or yt Dataset
+            Loaded snapshot data.
         """
 
         if self.athena_variant == 'athenak':
@@ -448,8 +457,8 @@ class LoadSim(LoadSimBase):
         ipartab : int
            Read i-th file in the partab file list.
            Overrides num if both are given.
-        partag : int
-           Particle id in the input file. Default value is 'par0'
+        partag : str
+           Particle tag in the input file. Default value is 'par0'
 
         Returns
         -------
@@ -479,8 +488,8 @@ class LoadSim(LoadSimBase):
         iparbin : int
            Read i-th file in the parbin file list.
            Overrides num if both are given.
-        partag : int
-           Particle id in the input file. Default value is 'par0'
+        partag : str
+           Particle tag in the input file. Default value is 'par0'
 
         Returns
         -------
@@ -510,8 +519,8 @@ class LoadSim(LoadSimBase):
         fidx : int
            Read i-th file in the pvtk file list.
            Overrides num if both are given.
-        partag : int
-           Particle id in the input file. Default value is 'par0'
+        partag : str
+           Particle tag in the input file. Default value is 'par0'
 
         Returns
         -------
@@ -586,10 +595,26 @@ class LoadSim(LoadSimBase):
         return self.sp
 
     def load_rst(self, num=None, irst=None, verbose=False):
+        """Read an Athena restart file.
+
+        Parameters
+        ----------
+        num : int, optional
+            Snapshot number.
+        irst : int, optional
+            Read i-th file in the restart file list. Overrides ``num``.
+        verbose : bool, optional
+            Verbosity flag passed to the reader. Default is ``False``.
+
+        Returns
+        -------
+        rh : RestartHandler
+            Restart file object.
+        """
         if num is None and irst is None:
             raise ValueError('Specify either num or irst')
 
-        # get starpar_vtk file name and check if it exist
+        # get rst file name and check if it exists
         self.frst = self._get_filename('rst', num, irst)
         if self.frst is None or not osp.exists(self.frst):
             self.logger.error('[load_rst]: rst file does not exist.')
@@ -600,7 +625,22 @@ class LoadSim(LoadSimBase):
 
         return self.rh
 
-    def create_tar_all(self,remove_original=False,kind='vtk'):
+    def create_tar_all(self, remove_original=False, kind='vtk'):
+        """Move and tar all vtk/rst files from per-process ``id*`` directories.
+
+        Iterates over all snapshot numbers in ``nums_id0``, calls
+        :meth:`move_to_tardir` to gather per-process files into numbered
+        subdirectories, and then calls :meth:`create_tar` to pack each
+        subdirectory into a single ``.tar`` archive.
+
+        Parameters
+        ----------
+        remove_original : bool, optional
+            If ``True``, remove the source directory after archiving.
+            Default is ``False``.
+        kind : {'vtk', 'rst'}, optional
+            File type to archive. Default is ``'vtk'``.
+        """
         for num in self.nums_id0:
             self.move_to_tardir(num=num, kind=kind)
         raw_tardirs = self._find_match([(kind,"????")])
@@ -706,6 +746,32 @@ class LoadSim(LoadSimBase):
 
     def make_movie(self, fname_glob=None, fname_out=None, fps_in=10, fps_out=10,
                    force_override=False, display=False):
+        """Create an mp4 movie from a sequence of PNG snapshots.
+
+        Wraps :func:`~pyathena.plt_tools.make_movie.make_movie`. By default,
+        looks for PNG files under ``<basedir>/snapshots/`` and writes the
+        movie to ``/tigress/<user>/movies/<basename>.mp4``.
+
+        Parameters
+        ----------
+        fname_glob : str, optional
+            Glob pattern matching the input PNG files, e.g.
+            ``'/path/to/snapshots/*.png'``. Defaults to
+            ``<basedir>/snapshots/*.png``.
+        fname_out : str, optional
+            Output movie file path (must end in ``.mp4``). Defaults to
+            ``/tigress/<user>/movies/<basename>.mp4``.
+        fps_in : int, optional
+            Frame rate of the input images. Default is 10.
+        fps_out : int, optional
+            Frame rate of the output movie. Default is 10.
+        force_override : bool, optional
+            If ``True``, re-create the movie even if the output file already
+            exists. Default is ``False``.
+        display : bool, optional
+            If ``True``, display the movie after creation (notebook use).
+            Default is ``False``.
+        """
 
         if fname_glob is None:
             fname_glob = osp.join(self.basedir, 'snapshots', '*.png')
@@ -819,6 +885,24 @@ class LoadSim(LoadSimBase):
         return ds
 
     def _load_hdf5_athenak(self, num, **kwargs):
+        """Read a single AthenaK HDF5 snapshot.
+
+        Currently supports simulations with exactly one HDF5 output variable.
+
+        Parameters
+        ----------
+        num : int
+            Snapshot number,
+            e.g., ``/basedir/problem_id.<outvar>.<num:05d>.athdf``.
+        **kwargs :
+            Additional arguments forwarded to :func:`~pyathena.io.read_hdf5.read_hdf5`.
+
+        Returns
+        -------
+        ds : xarray.Dataset
+            Loaded snapshot data, or ``None`` if the output has multiple
+            variables (not yet supported).
+        """
         num_output_vars = len(self.files['hdf5'].keys())
         if num_output_vars == 1:
             outvar = list(self.files['hdf5'].keys())[0]
@@ -854,6 +938,13 @@ class LoadSim(LoadSimBase):
         self._domain = domain
 
     def find_files_vtk2d(self):
+        """Search for 2-D vtk slice files that were not found during initial setup.
+
+        Looks in both ``id*`` subdirectories and dedicated format subdirectories
+        for files matching ``*.????.{fmt}.vtk``. Found files are stored in
+        ``self.files[fmt]`` and the corresponding snapshot numbers are set as
+        ``self.nums_{fmt}``.
+        """
         self.logger.info('Find 2d vtk: {0:s}'.format(' '.join(self._fmt_vtk2d_not_found)))
         for fmt in self._fmt_vtk2d_not_found:
             fmt = fmt.split('.')[0]
@@ -1220,8 +1311,40 @@ class LoadSim(LoadSimBase):
 
 # Would be useful to have something like this for each problem
 class LoadSimAll(object):
-    """Class to load multiple simulations
+    """Class to manage a collection of simulations.
 
+    Provides a convenient interface for loading and switching between multiple
+    :class:`LoadSim` instances (or subclasses) identified by short model
+    names.
+
+    Parameters
+    ----------
+    models : dict
+        Mapping of model name (str) to ``basedir`` path (str).
+        Non-existent base directories are skipped with a warning.
+    load_sim_class : type, optional
+        :class:`LoadSim` or a subclass to instantiate for each model.
+        Default is :class:`LoadSim`.
+
+    Attributes
+    ----------
+    models : list of str
+        Model names whose base directories exist.
+    basedirs : dict
+        Mapping of model name to base directory path.
+    simdict : dict
+        Cache of already-loaded :class:`LoadSim` instances keyed by model name.
+    model : str
+        Name of the currently active model (set by :meth:`set_model`).
+    sim : LoadSim
+        :class:`LoadSim` instance for the currently active model.
+
+    Examples
+    --------
+    >>> import pyathena as pa
+    >>> models = {'run1': '/path/to/run1', 'run2': '/path/to/run2'}
+    >>> sa = pa.LoadSimAll(models)
+    >>> s = sa.set_model('run1', verbose=True)
     """
     def __init__(self, models, load_sim_class=LoadSim):
         # Default models
@@ -1247,6 +1370,34 @@ class LoadSimAll(object):
                   load_sim_class=None,
                   units=Units(kind='LV', muH=1.4271),
                   verbose=False):
+        """Load (or retrieve from cache) a simulation and set it as active.
+
+        On first call for a given *model*, instantiates a new
+        :class:`LoadSim` and caches it in :attr:`simdict`. Subsequent calls
+        for the same model return the cached instance without re-reading the
+        output directory.
+
+        Parameters
+        ----------
+        model : str
+            Model name — must be a key in :attr:`basedirs`.
+        savdir : str, optional
+            Directory for pickles and figures. Defaults to ``basedir``.
+        load_method : {'xarray', 'pyathena_classic', 'yt'}, optional
+            Method for reading vtk/hdf5 snapshots. Default is ``'xarray'``.
+        load_sim_class : type, optional
+            Override the class used to create the :class:`LoadSim` instance.
+            Defaults to ``self.load_sim_class``.
+        units : Units, optional
+            Unit system for the simulation.
+        verbose : bool or str or int, optional
+            Verbosity level. Default is ``False``.
+
+        Returns
+        -------
+        sim : LoadSim
+            Loaded simulation object, also stored as ``self.sim``.
+        """
         if load_sim_class is None:
             load_sim_class = self.load_sim_class
         try:
