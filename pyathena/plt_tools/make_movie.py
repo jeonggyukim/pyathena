@@ -4,27 +4,31 @@ import base64
 from IPython.display import HTML
 
 def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
-    """(wrapper) function to create an mp4 movie from files matching a glob
-    pattern.
+    """Create an mp4 movie from image files matching a glob pattern.
+
+    Requires ``ffmpeg`` to be installed and available on ``PATH``.
+    Output is encoded as H.264 with yuv420p pixel format for broad
+    compatibility.
 
     Parameters
     ----------
-    fname_glob : string (glob)
-        Glob pattern including wildcard
-    fname_out : string
-        Name of mp4 output file
-    fps_in : int
-        Frames per second for input
-    fps_out : int
-        Frames per second for output
+    fname_glob : str
+        Glob pattern matching the input image files (e.g. ``'frame.????.png'``).
+    fname_out : str
+        Path of the output ``.mp4`` file. Overwritten if it already exists.
+    fps_in : int, optional
+        Frame rate of the input image sequence. Default is 15.
+    fps_out : int, optional
+        Frame rate of the output video. Default is 15.
 
-    Example
+    Returns
     -------
-    To force the frame rate of the input file (valid for raw formats only) to 1
-    fps and the frame rate of the output file to 24 fps
+    bool
+        ``True`` if ffmpeg completed successfully, ``False`` otherwise.
 
+    Examples
+    --------
     >>> make_movie('a.????.png', 'a.mp4', fps_in=1, fps_out=24)
-
     """
 
     cmd = ['ffmpeg',
@@ -59,7 +63,18 @@ def make_movie(fname_glob, fname_out, fps_in=15, fps_out=15):
 
 
 def display_movie(filename):
+    """Display an mp4 video inline in a Jupyter notebook.
 
+    Parameters
+    ----------
+    filename : str
+        Path to the ``.mp4`` file.
+
+    Returns
+    -------
+    IPython.display.HTML
+        An HTML video element for inline playback.
+    """
     video = io.open(filename, 'r+b').read()
     encoded = base64.b64encode(video)
     return HTML(data='''<video alt="test" controls>
