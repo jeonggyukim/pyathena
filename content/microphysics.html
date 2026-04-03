@@ -402,12 +402,58 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solar-abundances">Solar Abundances</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cooling-functions">Cooling Functions</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dust">Dust</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#photoionization-cross-sections">Photoionization Cross-Sections</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#recombination-rates">Recombination Rates</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#h2-chemistry">H2 Chemistry</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solar-abundances">Solar Abundances</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.abundance_solar.AbundanceSolar"><code class="docutils literal notranslate"><span class="pre">AbundanceSolar</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.abundance_solar.AbundanceSolar.get_XYZ_muH_mu"><code class="docutils literal notranslate"><span class="pre">AbundanceSolar.get_XYZ_muH_mu()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cooling-functions">Cooling Functions</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_gnat12.CoolGnat12"><code class="docutils literal notranslate"><span class="pre">CoolGnat12</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.download_data"><code class="docutils literal notranslate"><span class="pre">CoolGnat12.download_data()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.get_cool_cie"><code class="docutils literal notranslate"><span class="pre">CoolGnat12.get_cool_cie()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.num_to_roman"><code class="docutils literal notranslate"><span class="pre">CoolGnat12.num_to_roman()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_rosen95.CoolRosen95"><code class="docutils literal notranslate"><span class="pre">CoolRosen95</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95"><code class="docutils literal notranslate"><span class="pre">CoolRosen95.LambdaRosen95()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95_extrapolate"><code class="docutils literal notranslate"><span class="pre">CoolRosen95.LambdaRosen95_extrapolate()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_wiersma09.CoolWiersma09"><code class="docutils literal notranslate"><span class="pre">CoolWiersma09</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_grackle.cool_grackle"><code class="docutils literal notranslate"><span class="pre">cool_grackle()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dust">Dust</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.dust_draine.DustDraine"><code class="docutils literal notranslate"><span class="pre">DustDraine</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#photoionization-cross-sections">Photoionization Cross-Sections</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.photx.PhotX"><code class="docutils literal notranslate"><span class="pre">PhotX</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.photx.PhotX.get_Eth"><code class="docutils literal notranslate"><span class="pre">PhotX.get_Eth()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.photx.PhotX.get_sigma"><code class="docutils literal notranslate"><span class="pre">PhotX.get_sigma()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#recombination-rates">Recombination Rates</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate"><code class="docutils literal notranslate"><span class="pre">RecRate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_dr_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_dr_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseA_Dr11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseB()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseB_Dr11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_grain"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_grain()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rr_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rr_rate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#h2-chemistry">H2 Chemistry</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.h2.calc_xH2eq"><code class="docutils literal notranslate"><span class="pre">calc_xH2eq()</span></code></a></li>
+</ul>
+</li>
 </ul>
             </nav>
         </div>
@@ -426,21 +472,354 @@ ISM microphysics: cooling functions, chemical equilibrium, dust properties,
 photoionization cross-sections, and recombination rates.</p>
 <section id="solar-abundances">
 <h2>Solar Abundances<a class="headerlink" href="#solar-abundances" title="Permalink to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.microphysics.abundance_solar.AbundanceSolar">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.abundance_solar.</span></span><span class="sig-name descname"><span class="pre">AbundanceSolar</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">xHe</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0955</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Zprime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/abundance_solar.html#AbundanceSolar"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.abundance_solar.AbundanceSolar" title="Permalink to this definition">#</a></dt>
+<dd><p>Class to read protosolar abundances of the elements with Z &lt;= 32
+(Table 1.4 in Draine 2011; based on Asplund et al. 2009) and compute
+mean molecular weight, etc.</p>
+<section id="properties">
+<h3>Properties<a class="headerlink" href="#properties" title="Permalink to this heading">#</a></h3>
+<dl class="simple">
+<dt>df<span class="classifier">pandas DataFrame</span></dt><dd><p>Table 1.4 in Draine (2011)</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">param xHe</dt>
+<dd class="field-odd"><p>Elemental abundance of helium. Default value is 0.0955 (Asplund+2009)</p>
+</dd>
+<dt class="field-even">type xHe</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+<dt class="field-odd">param Zprime</dt>
+<dd class="field-odd"><p>Metallicity scaled to solar abundances.</p>
+</dd>
+<dt class="field-even">type Zprime</dt>
+<dd class="field-even"><p>float</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.abundance_solar.AbundanceSolar.get_XYZ_muH_mu">
+<span class="sig-name descname"><span class="pre">get_XYZ_muH_mu</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/abundance_solar.html#AbundanceSolar.get_XYZ_muH_mu"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.abundance_solar.AbundanceSolar.get_XYZ_muH_mu" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute mass fractions of hydrogen (X), helium (Y), and metals (Z),
+mean molecular weight per H (muH), and mean molecular weight per
+particle (mu). Dust depletion is ignored.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>verbose</strong> (<em>bool</em>) – Print summary of results.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</section>
+</dd></dl>
+
 </section>
 <section id="cooling-functions">
 <h2>Cooling Functions<a class="headerlink" href="#cooling-functions" title="Permalink to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_gnat12.CoolGnat12">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.cool_gnat12.</span></span><span class="sig-name descname"><span class="pre">CoolGnat12</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">abundance</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'Asplund09'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Zprime</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">read_all</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_gnat12.html#CoolGnat12"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_gnat12.CoolGnat12" title="Permalink to this definition">#</a></dt>
+<dd><p>Class to read ion-by-ion cooling function Gnat &amp; Ferland (2012)</p>
+<section id="id1">
+<h3>Properties<a class="headerlink" href="#id1" title="Permalink to this heading">#</a></h3>
+<blockquote>
+<div><dl class="simple">
+<dt>info<span class="classifier">pandas DataFrame</span></dt><dd><p>basic information</p>
+</dd>
+<dt>temp<span class="classifier">float array</span></dt><dd><p>tempreature array (10^4 K to 10^8 K)</p>
+</dd>
+<dt>cool_cie<span class="classifier">float array</span></dt><dd><p>cooling</p>
+</dd>
+<dt>ion_frac<span class="classifier">float array</span></dt><dd><p>cooling</p>
+</dd>
+</dl>
+</div></blockquote>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_gnat12.CoolGnat12.download_data">
+<span class="sig-name descname"><span class="pre">download_data</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">url</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'http://wise-obs.tau.ac.il/~orlyg/ion_by_ion/'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_gnat12.html#CoolGnat12.download_data"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.download_data" title="Permalink to this definition">#</a></dt>
+<dd><p>Download ion-by-ion cooling efficiency tables</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_gnat12.CoolGnat12.get_cool_cie">
+<span class="sig-name descname"><span class="pre">get_cool_cie</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">element</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_gnat12.html#CoolGnat12.get_cool_cie"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.get_cool_cie" title="Permalink to this definition">#</a></dt>
+<dd><section id="parameter">
+<h4>Parameter<a class="headerlink" href="#parameter" title="Permalink to this heading">#</a></h4>
+<dl class="simple">
+<dt>element<span class="classifier">str</span></dt><dd><p>Name of ion (e.g., )</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_gnat12.CoolGnat12.num_to_roman">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">num_to_roman</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_gnat12.html#CoolGnat12.num_to_roman"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.num_to_roman" title="Permalink to this definition">#</a></dt>
+<dd><p>Convert an integer to a Roman numeral</p>
+</dd></dl>
+
+</section>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_rosen95.CoolRosen95">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.cool_rosen95.</span></span><span class="sig-name descname"><span class="pre">CoolRosen95</span></span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_rosen95.html#CoolRosen95"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_rosen95.CoolRosen95" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute Lambda from Rosen &amp; Bregman (1995)</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LambdaRosen95</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_rosen95.html#CoolRosen95.LambdaRosen95"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95" title="Permalink to this definition">#</a></dt>
+<dd><p>Original definition (zero below 300 K)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95_extrapolate">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">LambdaRosen95_extrapolate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_rosen95.html#CoolRosen95.LambdaRosen95_extrapolate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95_extrapolate" title="Permalink to this definition">#</a></dt>
+<dd><p>Extrapolation in log-log space below 300 K</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_wiersma09.CoolWiersma09">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.cool_wiersma09.</span></span><span class="sig-name descname"><span class="pre">CoolWiersma09</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">CIE</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_wiersma09.html#CoolWiersma09"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_wiersma09.CoolWiersma09" title="Permalink to this definition">#</a></dt>
+<dd><p>Class to read Wiersma cooling tables Need to first run idl scripts to
+generate tables or download hdf5 files (for non-zero redshift)</p>
+<p># Data from:
+# <a class="reference external" href="https://www.strw.leidenuniv.nl/WSS08">https://www.strw.leidenuniv.nl/WSS08</a>
+# <a class="reference external" href="https://www.strw.leidenuniv.nl/WSS08/z_collis.txt">https://www.strw.leidenuniv.nl/WSS08/z_collis.txt</a>
+# <a class="reference external" href="https://www.strw.leidenuniv.nl/WSS08/coolingtables_highres.tar.gz">https://www.strw.leidenuniv.nl/WSS08/coolingtables_highres.tar.gz</a></p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.microphysics.cool_grackle.cool_grackle">
+<span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.cool_grackle.</span></span><span class="sig-name descname"><span class="pre">cool_grackle</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/cool_grackle.html#cool_grackle"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.cool_grackle.cool_grackle" title="Permalink to this definition">#</a></dt>
+<dd><p>Function to read equilibrium cooling function in grackle</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>Z</strong> (<em>float</em>) – Metallicity</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="dust">
 <h2>Dust<a class="headerlink" href="#dust" title="Permalink to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.microphysics.dust_draine.DustDraine">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.dust_draine.</span></span><span class="sig-name descname"><span class="pre">DustDraine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basedir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/tigress/jk11/pyathena'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/dust_draine.html#DustDraine"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.dust_draine.DustDraine" title="Permalink to this definition">#</a></dt>
+<dd><p>Class to read dust extinction, scattering, and absorption
+properties computed for carbonaceous-silicate model for
+interstellar dust with R_V=3.1 (Draine 2003)</p>
+<p>Tabulated quantities in DataFrame:
+lwav  = wavelength in vacuo (micron)
+lwavAA = wavelength in vacuo (Anstrom)
+albedo  = (scattering cross section)/(extinction cross section)
+cos   = &lt;cos(theta)&gt; for scattered light
+cossq = &lt;cos^(theta)&gt; for scattered light
+Cext = extinction cross section per H nucleon (cm^2/H)
+K_abs = absorption cross section per mass of dust (cm^2/gram)
+kappa_abs = absorption cross section per mass of gas (cm^2/gram)</p>
+<p><a class="reference external" href="https://www.astro.princeton.edu/~draine/dust/dustmix.html">https://www.astro.princeton.edu/~draine/dust/dustmix.html</a></p>
+<p class="rubric">Example</p>
+<p>dfa (dictionary) has all data.</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="n">d</span> <span class="o">=</span> <span class="n">DustDraine</span><span class="p">()</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="n">d</span><span class="o">.</span><span class="n">dfa</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
+</pre></div>
+</div>
+<p>Print gas-to-dust ratio
+&gt;&gt;&gt; d = DustDraine()
+&gt;&gt;&gt; print(d.GTD)</p>
+</dd></dl>
+
 </section>
 <section id="photoionization-cross-sections">
 <h2>Photoionization Cross-Sections<a class="headerlink" href="#photoionization-cross-sections" title="Permalink to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.microphysics.photx.PhotX">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.photx.</span></span><span class="sig-name descname"><span class="pre">PhotX</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">datadir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/photx.html#PhotX"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.photx.PhotX" title="Permalink to this definition">#</a></dt>
+<dd><p>Computes photoionization cross-sections as described in Verner 96
+<a class="reference external" href="http://adsabs.harvard.edu/abs/1996ApJ...465..487V">http://adsabs.harvard.edu/abs/1996ApJ…465..487V</a>
+Original python code from Rabacus implementation
+<a class="github reference external" href="https://github.com/galtay/rabacus/tree/master/rabacus/atomic/verner/photox">galtay/rabacus</a>
+(Released under GNU GPL3 v.30;
+JKIM: is it okay to copy snippets of their code? what to do with license?)</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.photx.PhotX.get_Eth">
+<span class="sig-name descname"><span class="pre">get_Eth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eV'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/photx.html#PhotX.get_Eth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.photx.PhotX.get_Eth" title="Permalink to this definition">#</a></dt>
+<dd><p>Threshold ionization energy in eV for ions defined by Z and N.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Atomic number (number of protons)</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Electron number</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Eth</strong> – Threshold ionization energy in eV</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.photx.PhotX.get_sigma">
+<span class="sig-name descname"><span class="pre">get_sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/photx.html#PhotX.get_sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.photx.PhotX.get_sigma" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a photo-ionization cross-section for an ion defined by
+Z and N at energies E in eV.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Atomic number (number of protons)</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Electron number (number of electrons)</p></li>
+<li><p><strong>E</strong> (<em>array</em><em> of </em><em>floats</em>) – Calculate cross-section at these energies [eV]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>sigma</strong> – Photoionization cross-sections [cm^-2]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array of floats</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="recombination-rates">
 <h2>Recombination Rates<a class="headerlink" href="#recombination-rates" title="Permalink to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.rec_rate.</span></span><span class="sig-name descname"><span class="pre">RecRate</span></span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate" title="Permalink to this definition">#</a></dt>
+<dd><p>Class to compute Badnell (radiative/dielectronic) recombination rates,
+Draine (2011)’s recombination rates</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate.get_dr_rate">
+<span class="sig-name descname"><span class="pre">get_dr_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate.get_dr_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate.get_dr_rate" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculate dielectronic recombination rate coefficient</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Nuclear Charge</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion (before recombination)</p></li>
+<li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
+<li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
+and metastable terms. The defualt value is 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>rr</strong> – Dielectronic recombination coefficients [cm^3 s^-1]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array of floats</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate.get_rec_rate">
+<span class="sig-name descname"><span class="pre">get_rec_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'badnell'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate.get_rec_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculate radiative + dielectronic recombination rate coefficient</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Nuclear Charge</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion (before recombination)</p></li>
+<li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
+<li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
+and metastable terms. The defualt value is 1.</p></li>
+<li><p><strong>kind</strong> (<em>str</em>) – Set to ‘badnell’ to use fits Badnell fits or ‘dr11’ to use
+Draine (2011)’s formula.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>rrate</strong> – Recombination rate coefficient [cm^3 s^-1]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array of floats</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rec_rate_H_caseA_Dr11</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate.get_rec_rate_H_caseA_Dr11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute case A recombination rate coefficient for H
+Table 14.1 in Draine (2011)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rec_rate_H_caseB</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate.get_rec_rate_H_caseB"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute case B recombination rate coefficient for H
+This is what we use in Athena-TIGRESS (fit to Ferland)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rec_rate_H_caseB_Dr11</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate.get_rec_rate_H_caseB_Dr11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute case B recombination rate coefficient for H
+Table 14.1 in Draine (2011)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate.get_rec_rate_grain">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rec_rate_grain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ne</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate.get_rec_rate_grain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_grain" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute grain assisted recombination coefficient
+Ch 14.8 in Draine (2011)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate.get_rr_rate">
+<span class="sig-name descname"><span class="pre">get_rr_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate.get_rr_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate.get_rr_rate" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculate radiative recombination rate coefficient</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Nuclear Charge</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion</p></li>
+<li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
+<li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
+and metastable terms. The defualt value is 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>rr</strong> – Radiative recombination coefficients [cm^3 s^-1]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array of floats</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="h2-chemistry">
 <h2>H2 Chemistry<a class="headerlink" href="#h2-chemistry" title="Permalink to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.microphysics.h2.calc_xH2eq">
+<span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.h2.</span></span><span class="sig-name descname"><span class="pre">calc_xH2eq</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">nH</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xi_H</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2e-16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">k_gr</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">3e-17</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">zeta_LW</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/h2.html#calc_xH2eq"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.h2.calc_xH2eq" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculate equilibrium H2 fraction xH2_eq (Gong et al. 2018)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>nH</strong> (<em>floats</em>) – number density of hydrogen [cm^-3]</p></li>
+<li><p><strong>xi_H</strong> (<em>floats</em>) – primary cosmic ray ionization rate [H^-1 s^-1]</p></li>
+<li><p><strong>k_gr</strong> (<em>floats</em>) – H2 formation rate on grain surface [cm^3 s^-1]</p></li>
+<li><p><strong>zeta_LW</strong> (<em>floats</em>) – photodissociation rate [s^-1]
+For Draine’s ISRF in the solar neighborhood: 5.7e-11 s^-1</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Equilibrium H2 fraction</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 </section>
 
@@ -508,12 +887,58 @@ photoionization cross-sections, and recombination rates.</p>
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solar-abundances">Solar Abundances</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cooling-functions">Cooling Functions</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dust">Dust</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#photoionization-cross-sections">Photoionization Cross-Sections</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#recombination-rates">Recombination Rates</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#h2-chemistry">H2 Chemistry</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#solar-abundances">Solar Abundances</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.abundance_solar.AbundanceSolar"><code class="docutils literal notranslate"><span class="pre">AbundanceSolar</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.abundance_solar.AbundanceSolar.get_XYZ_muH_mu"><code class="docutils literal notranslate"><span class="pre">AbundanceSolar.get_XYZ_muH_mu()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cooling-functions">Cooling Functions</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_gnat12.CoolGnat12"><code class="docutils literal notranslate"><span class="pre">CoolGnat12</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.download_data"><code class="docutils literal notranslate"><span class="pre">CoolGnat12.download_data()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.get_cool_cie"><code class="docutils literal notranslate"><span class="pre">CoolGnat12.get_cool_cie()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_gnat12.CoolGnat12.num_to_roman"><code class="docutils literal notranslate"><span class="pre">CoolGnat12.num_to_roman()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_rosen95.CoolRosen95"><code class="docutils literal notranslate"><span class="pre">CoolRosen95</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95"><code class="docutils literal notranslate"><span class="pre">CoolRosen95.LambdaRosen95()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95_extrapolate"><code class="docutils literal notranslate"><span class="pre">CoolRosen95.LambdaRosen95_extrapolate()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_wiersma09.CoolWiersma09"><code class="docutils literal notranslate"><span class="pre">CoolWiersma09</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.cool_grackle.cool_grackle"><code class="docutils literal notranslate"><span class="pre">cool_grackle()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dust">Dust</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.dust_draine.DustDraine"><code class="docutils literal notranslate"><span class="pre">DustDraine</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#photoionization-cross-sections">Photoionization Cross-Sections</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.photx.PhotX"><code class="docutils literal notranslate"><span class="pre">PhotX</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.photx.PhotX.get_Eth"><code class="docutils literal notranslate"><span class="pre">PhotX.get_Eth()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.photx.PhotX.get_sigma"><code class="docutils literal notranslate"><span class="pre">PhotX.get_sigma()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#recombination-rates">Recombination Rates</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate"><code class="docutils literal notranslate"><span class="pre">RecRate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_dr_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_dr_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseA_Dr11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseB()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseB_Dr11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_grain"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_grain()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.rec_rate.RecRate.get_rr_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rr_rate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#h2-chemistry">H2 Chemistry</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.microphysics.h2.calc_xH2eq"><code class="docutils literal notranslate"><span class="pre">calc_xH2eq()</span></code></a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

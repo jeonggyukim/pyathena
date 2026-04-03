@@ -1,0 +1,748 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyathena.microphysics.cool_gnat12 &#8212; pyathena</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.5ea377869091fd0449014c60fc090103.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../../../_static/sphinx-thebe.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pyathena/microphysics/cool_gnat12';</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../intro.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/tigress_logo.jpg" class="logo__image only-light" alt="pyathena - Home"/>
+    <script>document.write(`<img src="../../../_static/tigress_logo.jpg" class="logo__image only-dark" alt="pyathena - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../../intro.html">
+                    pyathena
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Basics</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../content/install.html">Installation</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart.html">Quickstart</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API References</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../content/loadsim.html">LoadSim</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/athenadataset.html">AthenaDataSet</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/readers.html">Readers</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../../content/units.html">Units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/pop_synth.html">Population Synthesis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/fields.html">Fields</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/microphysics.html">Microphysics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/plt_tools.html">Plotting Tools</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/tigress-cooling.html">Cooling in TIGRESS-classic</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart-astro-tigress.html">Quickstart</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/jeonggyukim/pyathena" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2F_modules/pyathena/microphysics/cool_gnat12.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for pyathena.microphysics.cool_gnat12</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Read Gnat &amp; Ferland (2012)&#39;s CIE cooling</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">osp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">periodictable</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ptbl</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">re</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.abundance_solar</span><span class="w"> </span><span class="kn">import</span> <span class="n">AbundanceSolar</span>
+
+<div class="viewcode-block" id="CoolGnat12"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.cool_gnat12.CoolGnat12">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CoolGnat12</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to read ion-by-ion cooling function Gnat &amp; Ferland (2012)</span>
+
+<span class="sd">    Properties</span>
+<span class="sd">    ----------</span>
+<span class="sd">        info : pandas DataFrame</span>
+<span class="sd">            basic information</span>
+<span class="sd">        temp : float array</span>
+<span class="sd">            tempreature array (10^4 K to 10^8 K)</span>
+<span class="sd">        cool_cie : float array</span>
+<span class="sd">            cooling</span>
+<span class="sd">        ion_frac : float array</span>
+<span class="sd">            cooling</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">abundance</span><span class="o">=</span><span class="s1">&#39;Asplund09&#39;</span><span class="p">,</span> <span class="n">Zprime</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">read_all</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+
+        <span class="c1"># Directory where Gnat &amp; Ferland (2012) Table 2 and CIE ion fraction</span>
+        <span class="c1"># table in Gnat &amp; Sternberg (2007) is located</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">basedir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">(),</span>
+                                <span class="s1">&#39;../../data/microphysics&#39;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Read elemental abundances</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">info</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_table2</span><span class="p">()</span>
+            <span class="c1"># Read CIE ion fraction</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_ion_frac_table</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">FileNotFoundError</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Download tables with download_data() method&#39;</span><span class="p">)</span>
+            <span class="k">raise</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cool_cie</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cool_cie_per_ion</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">if</span> <span class="n">read_all</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">ion_name</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_cie</span><span class="p">(</span><span class="n">ion_name</span><span class="p">)</span>
+
+        <span class="c1"># Reset abundance</span>
+        <span class="k">if</span> <span class="n">abundance</span> <span class="o">==</span> <span class="s1">&#39;Asplund09&#39;</span><span class="p">:</span>
+            <span class="n">a</span> <span class="o">=</span> <span class="n">AbundanceSolar</span><span class="p">(</span><span class="n">Zprime</span><span class="o">=</span><span class="n">Zprime</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">index</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">e</span><span class="p">,</span> <span class="s1">&#39;abd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;X&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">e</span><span class="p">][</span><span class="s1">&#39;NX_NH&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">e</span><span class="p">,</span> <span class="s1">&#39;mX_amu&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">a</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="n">a</span><span class="o">.</span><span class="n">df</span><span class="p">[</span><span class="s1">&#39;X&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="n">e</span><span class="p">][</span><span class="s1">&#39;mX_amu&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+
+        <span class="c1"># self.cool_cie_tot = self.get_cool_cie_total()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_cie_total</span><span class="p">()</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_ion_frac_table</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read Gnat &amp; Sternberg (2007) CIE ion fractions</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;Gnat_Sternberg07_cie_ion_frac.txt&#39;</span><span class="p">)</span>
+        <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="n">nlines</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">125</span><span class="p">:])</span>
+
+        <span class="n">fields</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">]</span>
+        <span class="n">ion_frac</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="mi">9</span><span class="p">:</span><span class="mi">121</span><span class="p">]:</span>
+            <span class="n">ion_name</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="o">-</span><span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span> \
+                       <span class="n">l</span><span class="p">[</span><span class="n">l</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
+                         <span class="nb">max</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s1">&#39;{&#39;</span><span class="p">)</span><span class="o">+</span><span class="mi">2</span><span class="p">,</span><span class="n">l</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s1">&#39;}&#39;</span><span class="p">)</span><span class="o">-</span><span class="mi">1</span><span class="p">)]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;+&#39;</span><span class="p">,</span><span class="s1">&#39;1&#39;</span><span class="p">)</span>
+            <span class="n">fields</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ion_name</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fields</span><span class="p">:</span>
+            <span class="n">ion_frac</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">(</span><span class="n">nlines</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">iline</span><span class="p">,</span><span class="n">l</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="mi">125</span><span class="p">:]):</span>
+            <span class="n">sp</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
+            <span class="n">nfields</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">sp</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">nfields</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">fields</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">ifield</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfields</span><span class="p">):</span>
+                    <span class="n">ion_frac</span><span class="p">[</span><span class="n">fields</span><span class="p">[</span><span class="n">ifield</span><span class="p">]][</span><span class="n">iline</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="n">ifield</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">ion_frac</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_table2</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read Gnat &amp; Ferland (2012) Table 2</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">fname</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;Gnat_Ferland12_Table2.txt&#39;</span><span class="p">)</span>
+        <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readlines</span><span class="p">()[</span><span class="mi">4</span><span class="p">:</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">:</span>
+            <span class="n">sp</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\t</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="n">elem</span> <span class="o">=</span> <span class="n">ptbl</span><span class="o">.</span><span class="n">elements</span><span class="o">.</span><span class="n">name</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">lower</span><span class="p">())</span>
+            <span class="n">r</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">symbol</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+            <span class="n">r</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">symbol</span><span class="p">][</span><span class="s1">&#39;abd&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; x 10^&#39;</span><span class="p">,</span><span class="s1">&#39;e&#39;</span><span class="p">))</span>
+            <span class="n">r</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">symbol</span><span class="p">][</span><span class="s1">&#39;name&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">r</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">symbol</span><span class="p">][</span><span class="s1">&#39;number&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">number</span>
+            <span class="n">r</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">symbol</span><span class="p">][</span><span class="s1">&#39;mass&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">elem</span><span class="o">.</span><span class="n">mass</span>
+            <span class="n">r</span><span class="p">[</span><span class="n">elem</span><span class="o">.</span><span class="n">symbol</span><span class="p">][</span><span class="s1">&#39;datafile&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">,</span>
+                                                  <span class="s1">&#39;Gnat_Ferland12_tables&#39;</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.txt&#39;</span><span class="o">.</span>\
+                                                  <span class="nb">format</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]))</span>
+
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">r</span><span class="p">)</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">sort_values</span><span class="p">(</span><span class="s1">&#39;number&#39;</span><span class="p">)</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_cool_cie_total</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
+            <span class="n">elements</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;H&#39;</span><span class="p">,</span><span class="s1">&#39;He&#39;</span><span class="p">,</span><span class="s1">&#39;C&#39;</span><span class="p">,</span><span class="s1">&#39;N&#39;</span><span class="p">,</span><span class="s1">&#39;O&#39;</span><span class="p">,</span><span class="s1">&#39;Ne&#39;</span><span class="p">,</span><span class="s1">&#39;Mg&#39;</span><span class="p">,</span><span class="s1">&#39;Si&#39;</span><span class="p">,</span><span class="s1">&#39;S&#39;</span><span class="p">,</span><span class="s1">&#39;Fe&#39;</span><span class="p">]):</span>
+
+        <span class="c1"># xi = n_ion/n_H</span>
+        <span class="n">xi</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">xi_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+
+        <span class="c1"># xe = n_e/n_H</span>
+        <span class="n">xe</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">xe_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+
+        <span class="c1"># Ion mass density (divided by amu)</span>
+        <span class="n">rhoi</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">rhoi_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+
+        <span class="n">cool</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+        <span class="n">cool_tot</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+
+        <span class="c1"># Loop over elements for which CIE ion_frac is available</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
+            <span class="n">xi</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+            <span class="n">xe</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+            <span class="n">rhoi</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+            <span class="n">cool</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">)</span>
+
+        <span class="c1"># print(&#39;Element // Atomic number // amu&#39;)</span>
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
+            <span class="c1"># Number of possible (atomic+)ion states</span>
+            <span class="n">nstate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="s1">&#39;number&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+            <span class="c1"># Elemental abundance</span>
+            <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="s1">&#39;abd&#39;</span><span class="p">]</span>
+            <span class="c1"># mass of element in atomic mass unit</span>
+            <span class="n">amu</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="s1">&#39;mX_amu&#39;</span><span class="p">]</span>
+            <span class="c1"># print(e, &#39; // &#39;, A, &#39; //&#39;, amu)</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nstate</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">xi</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+=</span> <span class="n">A</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="n">e</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">values</span>
+                    <span class="n">rhoi</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+=</span> <span class="n">amu</span><span class="o">*</span><span class="n">A</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="n">e</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">values</span>
+
+                <span class="n">xe</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+=</span> <span class="n">i</span><span class="o">*</span><span class="n">A</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="n">e</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">values</span>
+                <span class="n">cool</span><span class="p">[</span><span class="n">e</span><span class="p">]</span> <span class="o">+=</span> <span class="n">A</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="n">e</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)]</span><span class="o">.</span><span class="n">values</span><span class="o">*</span>\
+                    <span class="bp">self</span><span class="o">.</span><span class="n">cool_cie_per_ion</span><span class="p">[</span><span class="n">e</span><span class="p">][:,</span><span class="n">i</span><span class="p">]</span>
+
+        <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
+            <span class="n">rhoi_tot</span> <span class="o">+=</span> <span class="n">rhoi</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+            <span class="n">xi_tot</span> <span class="o">+=</span> <span class="n">xi</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+            <span class="n">xe_tot</span> <span class="o">+=</span> <span class="n">xe</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+            <span class="n">cool_tot</span> <span class="o">+=</span> <span class="n">cool</span><span class="p">[</span><span class="n">e</span><span class="p">]</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">xi_tot</span> <span class="o">=</span> <span class="n">xi_tot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xe_tot</span> <span class="o">=</span> <span class="n">xe_tot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cool_tot</span> <span class="o">=</span> <span class="n">cool_tot</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">rhoi_tot</span> <span class="o">=</span> <span class="n">rhoi_tot</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xi_tot</span> <span class="o">=</span> <span class="n">xi_tot</span>
+
+        <span class="c1"># mu_i = Sum_s A_s*n_s / Sum_s n_s</span>
+        <span class="c1">#      = Sum_s A_s*x_s / Sum_s x_s</span>
+        <span class="c1"># where the sums are over all &quot;ion&quot; species s and A_s is the ion mass in amu</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mui</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">rhoi_tot</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">xi_tot</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">xi</span> <span class="o">=</span> <span class="n">xi</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">xe</span> <span class="o">=</span> <span class="n">xe</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cool</span> <span class="o">=</span> <span class="n">cool</span>
+
+<div class="viewcode-block" id="CoolGnat12.get_cool_cie"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.cool_gnat12.CoolGnat12.get_cool_cie">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_cool_cie</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameter</span>
+<span class="sd">        ---------</span>
+<span class="sd">        element : str</span>
+<span class="sd">            Name of ion (e.g., )</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">nstate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">element</span><span class="p">][</span><span class="s1">&#39;number&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">cool_cie</span><span class="p">:</span>
+            <span class="n">cool_cie_ion</span><span class="p">,</span> <span class="n">cool_cie</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_read_cool_cie_table</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cool_cie</span><span class="p">[</span><span class="n">element</span><span class="p">]</span> <span class="o">=</span> <span class="n">cool_cie</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">cool_cie_per_ion</span><span class="p">[</span><span class="n">element</span><span class="p">]</span> <span class="o">=</span> <span class="n">cool_cie_ion</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">cool_cie</span><span class="p">[</span><span class="n">element</span><span class="p">]</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_read_cool_cie_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">):</span>
+        <span class="n">element</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">element</span><span class="p">]</span>
+        <span class="n">nstate</span> <span class="o">=</span> <span class="n">element</span><span class="p">[</span><span class="s1">&#39;number&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">nskip</span> <span class="o">=</span> <span class="n">nstate</span> <span class="o">+</span> <span class="mi">12</span>
+        <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">element</span><span class="p">[</span><span class="s1">&#39;datafile&#39;</span><span class="p">],</span><span class="s1">&#39;r&#39;</span><span class="p">)</span>
+        <span class="n">lines</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="c1">#print lines[nskip]</span>
+        <span class="n">temp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp</span>
+
+        <span class="n">cie</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">lines</span><span class="p">[</span><span class="n">nskip</span><span class="p">:]:</span>
+            <span class="n">cie</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">())</span>
+        <span class="n">cie</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cie</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float&#39;</span><span class="p">)</span>
+
+        <span class="n">cie_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">temp</span><span class="p">),</span><span class="n">nstate</span><span class="p">))</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nstate</span><span class="p">):</span>
+            <span class="n">cie_new</span><span class="p">[:,</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span><span class="n">cie</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">cie</span><span class="p">[:,</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">cool_tot_new</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">temp</span><span class="p">,</span><span class="n">cie</span><span class="p">[:,</span><span class="mi">0</span><span class="p">],</span><span class="n">cie</span><span class="p">[:,</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+
+        <span class="k">return</span> <span class="n">cie_new</span><span class="p">,</span><span class="n">cool_tot_new</span>
+
+<div class="viewcode-block" id="CoolGnat12.download_data"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.cool_gnat12.CoolGnat12.download_data">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">download_data</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">url</span><span class="o">=</span><span class="s1">&#39;http://wise-obs.tau.ac.il/~orlyg/ion_by_ion/&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Download ion-by-ion cooling efficiency tables</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="kn">import</span><span class="w"> </span><span class="nn">bs4</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">requests</span>
+        <span class="n">datadir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;Gnat_Ferland12_tables&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">osp</span><span class="o">.</span><span class="n">isdir</span><span class="p">(</span><span class="n">datadir</span><span class="p">):</span>
+            <span class="n">os</span><span class="o">.</span><span class="n">mkdir</span><span class="p">(</span><span class="n">datadir</span><span class="p">)</span>
+
+        <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span><span class="p">)</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">bs4</span><span class="o">.</span><span class="n">BeautifulSoup</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">text</span><span class="p">,</span> <span class="s2">&quot;html.parser&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">l</span> <span class="ow">in</span> <span class="n">data</span><span class="o">.</span><span class="n">find_all</span><span class="p">(</span><span class="s2">&quot;a&quot;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">l</span><span class="p">[</span><span class="s1">&#39;href&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;txt&#39;</span><span class="p">):</span>
+                <span class="n">r</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">url</span> <span class="o">+</span> <span class="n">l</span><span class="p">[</span><span class="s2">&quot;href&quot;</span><span class="p">])</span>
+                <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>
+                    <span class="n">filename</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">datadir</span><span class="p">,</span>
+                                        <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.txt&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">l</span><span class="o">.</span><span class="n">contents</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()[</span><span class="mi">0</span><span class="p">]))</span>
+                    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;wb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+                        <span class="n">f</span><span class="o">.</span><span class="n">write</span><span class="p">(</span><span class="n">r</span><span class="o">.</span><span class="n">content</span><span class="p">)</span>
+                        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Downloading... </span><span class="si">{}</span><span class="s1"> to </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="s1">&#39;href&#39;</span><span class="p">],</span> <span class="n">filename</span><span class="p">))</span>
+
+        <span class="n">os</span><span class="o">.</span><span class="n">rename</span><span class="p">(</span><span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">datadir</span><span class="p">,</span><span class="s1">&#39;Aluminium.txt&#39;</span><span class="p">),</span>
+                  <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">datadir</span><span class="p">,</span><span class="s1">&#39;Aluminum.txt&#39;</span><span class="p">))</span></div>
+
+<div class="viewcode-block" id="CoolGnat12.num_to_roman"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.cool_gnat12.CoolGnat12.num_to_roman">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">num_to_roman</span><span class="p">(</span><span class="n">n</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Convert an integer to a Roman numeral</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">n</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;Expected integer, got </span><span class="si">%s</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">n</span><span class="p">)))</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="mi">0</span> <span class="o">&lt;</span> <span class="n">n</span> <span class="o">&lt;</span> <span class="mi">4000</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Argument must be between 1 and 3999&quot;</span><span class="p">)</span>
+        <span class="n">ints</span> <span class="o">=</span> <span class="p">(</span><span class="mi">1000</span><span class="p">,</span>  <span class="mi">900</span><span class="p">,</span>  <span class="mi">500</span><span class="p">,</span>  <span class="mi">400</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span>  <span class="mi">90</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span>  <span class="mi">40</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span>   <span class="mi">9</span><span class="p">,</span>  <span class="mi">5</span><span class="p">,</span>   <span class="mi">4</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">nums</span> <span class="o">=</span> <span class="p">(</span> <span class="s1">&#39;M&#39;</span><span class="p">,</span> <span class="s1">&#39;CM&#39;</span><span class="p">,</span>  <span class="s1">&#39;D&#39;</span><span class="p">,</span> <span class="s1">&#39;CD&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">,</span><span class="s1">&#39;XC&#39;</span><span class="p">,</span><span class="s1">&#39;L&#39;</span><span class="p">,</span><span class="s1">&#39;XL&#39;</span><span class="p">,</span><span class="s1">&#39;X&#39;</span><span class="p">,</span><span class="s1">&#39;IX&#39;</span><span class="p">,</span><span class="s1">&#39;V&#39;</span><span class="p">,</span><span class="s1">&#39;IV&#39;</span><span class="p">,</span><span class="s1">&#39;I&#39;</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">ints</span><span class="p">)):</span>
+            <span class="n">count</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">n</span><span class="o">/</span><span class="n">ints</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">nums</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">*</span><span class="n">count</span><span class="p">)</span>
+            <span class="n">n</span> <span class="o">-=</span> <span class="n">ints</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">count</span>
+
+        <span class="k">return</span> <span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">res</span><span class="p">)</span></div>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">plt_ion_frac</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">ax</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">plt_kwargs</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">ax</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">ax</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">element</span><span class="p">][</span><span class="s1">&#39;number&#39;</span><span class="p">]</span> <span class="o">+</span><span class="mi">1</span> <span class="p">):</span>
+            <span class="n">ax</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="s1">&#39;temp&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">element</span><span class="p">,</span><span class="n">i</span><span class="p">)],</span>
+                       <span class="n">label</span><span class="o">=</span><span class="s1">&#39;</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">num_to_roman</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)),</span> <span class="o">**</span><span class="n">plt_kwargs</span><span class="p">)</span>
+        <span class="c1"># ax.legend()</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span><span class="n">xlabel</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;$T [{\rm K}]$&#39;</span><span class="p">)</span>
+                 <span class="c1">#ylabel=r&#39;{} $X_i$&#39;.format(ptbl.elements.symbol(element).name))</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">plt_cool_cie_ion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">ion_by_ion</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">noplt</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="n">nstate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">element</span><span class="p">][</span><span class="s1">&#39;number&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">element</span><span class="p">][</span><span class="s1">&#39;abd&#39;</span><span class="p">]</span>
+        <span class="n">cool_tot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_cie</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">noplt</span><span class="p">:</span>
+            <span class="n">l</span><span class="p">,</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">,</span> <span class="n">cool_tot</span><span class="o">*</span><span class="n">A</span><span class="p">,</span><span class="n">label</span><span class="o">=</span><span class="n">element</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ion_by_ion</span> <span class="ow">and</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">0&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nstate</span><span class="p">):</span>
+                    <span class="n">cool_cie_ion</span> <span class="o">=</span> <span class="n">A</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cool_cie_per_ion</span><span class="p">[</span><span class="n">element</span><span class="p">][:,</span><span class="n">i</span><span class="p">]</span><span class="o">*</span>\
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">i</span><span class="p">)]</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">,</span> <span class="n">cool_cie_ion</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">l</span><span class="o">.</span><span class="n">get_color</span><span class="p">(),</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cool_tot</span><span class="o">*</span><span class="n">A</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">plt_cool_cie_ion</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">element</span><span class="p">,</span> <span class="n">ion_by_ion</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">noplt</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+
+        <span class="n">nstate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">element</span><span class="p">][</span><span class="s1">&#39;number&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="n">A</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">info</span><span class="o">.</span><span class="n">loc</span><span class="p">[</span><span class="n">element</span><span class="p">][</span><span class="s1">&#39;abd&#39;</span><span class="p">]</span>
+        <span class="n">cool_tot</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_cool_cie</span><span class="p">(</span><span class="n">element</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">noplt</span><span class="p">:</span>
+            <span class="n">l</span><span class="p">,</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">,</span> <span class="n">cool_tot</span><span class="o">*</span><span class="n">A</span><span class="p">,</span> <span class="n">label</span><span class="o">=</span><span class="n">element</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">ion_by_ion</span> <span class="ow">and</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">0&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">element</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nstate</span><span class="p">):</span>
+                    <span class="n">cool_cie_ion</span> <span class="o">=</span> <span class="n">A</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">cool_cie_per_ion</span><span class="p">[</span><span class="n">element</span><span class="p">][:,</span><span class="n">i</span><span class="p">]</span><span class="o">*</span>\
+                                  <span class="bp">self</span><span class="o">.</span><span class="n">ion_frac</span><span class="p">[</span><span class="s1">&#39;</span><span class="si">{}{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">element</span><span class="p">,</span> <span class="n">i</span><span class="p">)]</span>
+                    <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">temp</span><span class="p">,</span> <span class="n">cool_cie_ion</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="n">l</span><span class="o">.</span><span class="n">get_color</span><span class="p">(),</span> <span class="n">ls</span><span class="o">=</span><span class="s1">&#39;:&#39;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">cool_tot</span><span class="o">*</span><span class="n">A</span></div>
+
+
+
+    <span class="c1"># def plt_cool_cie(self,</span>
+    <span class="c1">#                  elements=[&#39;H&#39;,&#39;He&#39;,&#39;C&#39;,&#39;N&#39;,&#39;O&#39;,&#39;Ne&#39;,&#39;Mg&#39;,&#39;Si&#39;,&#39;S&#39;,&#39;Fe&#39;],</span>
+    <span class="c1">#                  ax=None, ion_by_ion=True, no_plt=False, **plt_kwargs):</span>
+    <span class="c1">#     if ax is None:</span>
+    <span class="c1">#         ax = plt.gca()</span>
+
+    <span class="c1">#     cool_tot = np.zeros_like(self.temp)</span>
+    <span class="c1">#     for element in elements:</span>
+    <span class="c1">#         cool_tot += plt_cool_cie_ion(tbl, element,</span>
+    <span class="c1">#                                               ion_by_ion=ion_by_ion, noplt=noplt)</span>
+    <span class="c1">#     plt.plot(tbl.temp, cool_tot, &#39;-&#39;, c=&#39;grey&#39;, lw=2, **plt_kwargs)</span>
+    <span class="c1">#     plt.ylim(bottom=1e-25)</span>
+    <span class="c1">#     if not ion_by_ion:</span>
+    <span class="c1">#         plt.legend()</span>
+
+    <span class="c1">#     return cool_tot</span>
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Jeong-Gyu Kim, Chang-Goo Kim, Sanghyuk Moon
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

@@ -402,9 +402,38 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#derivedfields">DerivedFields</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#derived-field-builders">Derived Field Builders</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#x-ray-emissivity">X-ray Emissivity</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#derivedfields">DerivedFields</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields"><code class="docutils literal notranslate"><span class="pre">DerivedFields</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.func"><code class="docutils literal notranslate"><span class="pre">DerivedFields.func</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.field_dep"><code class="docutils literal notranslate"><span class="pre">DerivedFields.field_dep</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.label"><code class="docutils literal notranslate"><span class="pre">DerivedFields.label</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.cmap"><code class="docutils literal notranslate"><span class="pre">DerivedFields.cmap</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.vminmax"><code class="docutils literal notranslate"><span class="pre">DerivedFields.vminmax</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.take_log"><code class="docutils literal notranslate"><span class="pre">DerivedFields.take_log</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.norm"><code class="docutils literal notranslate"><span class="pre">DerivedFields.norm</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.imshow_args"><code class="docutils literal notranslate"><span class="pre">DerivedFields.imshow_args</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.dfi"><code class="docutils literal notranslate"><span class="pre">DerivedFields.dfi</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#derived-field-builders">Derived Field Builders</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_def"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_def()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_cooling"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_cooling()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_mag"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_mag()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_rad"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_rad()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_newcool"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_newcool()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_sixray"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_sixray()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_xray"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_xray()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_cosmic_ray"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_cosmic_ray()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_feedback_scalars"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_feedback_scalars()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#x-ray-emissivity">X-ray Emissivity</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.xray_emissivity.XrayEmissivityIntegrator"><code class="docutils literal notranslate"><span class="pre">XrayEmissivityIntegrator</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.xray_emissivity.get_xray_emissivity"><code class="docutils literal notranslate"><span class="pre">get_xray_emissivity()</span></code></a></li>
+</ul>
+</li>
 </ul>
             </nav>
         </div>
@@ -424,12 +453,330 @@ from the primitive fields stored in the simulation output (density, pressure,
 velocity, magnetic field, etc.).</p>
 <section id="derivedfields">
 <h2>DerivedFields<a class="headerlink" href="#derivedfields" title="Permalink to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">DerivedFields</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">array([0.,</span> <span class="pre">0.,</span> <span class="pre">0.])</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#DerivedFields"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.DerivedFields" title="Permalink to this definition">#</a></dt>
+<dd><p>Registry of derived fields for an Athena/Athena++ simulation.</p>
+<p>Reads simulation parameters and builds dictionaries of derived field
+metadata (compute function, primitive field dependencies, plot label,
+colormap, value range, and log-scale flag). The active set of fields
+is determined automatically from the <code class="docutils literal notranslate"><span class="pre">par</span></code> configuration (e.g. MHD,
+cooling, radiation, cosmic rays).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par</strong> (<em>dict</em>) – Simulation parameter dictionary as returned by
+<a class="reference internal" href="readers.html#pyathena.read_athinput" title="pyathena.read_athinput"><code class="xref py py-func docutils literal notranslate"><span class="pre">pyathena.read_athinput()</span></code></a>.</p></li>
+<li><p><strong>x0</strong> (<em>array-like</em><em> of </em><em>float</em><em>, </em><em>optional</em>) – Reference position <code class="docutils literal notranslate"><span class="pre">[x,</span> <span class="pre">y,</span> <span class="pre">z]</span></code> used for distance-based fields
+such as radial velocity. Default is <code class="docutils literal notranslate"><span class="pre">[0.0,</span> <span class="pre">0.0,</span> <span class="pre">0.0]</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.func">
+<span class="sig-name descname"><span class="pre">func</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.func" title="Permalink to this definition">#</a></dt>
+<dd><p>Maps field name → callable <code class="docutils literal notranslate"><span class="pre">f(d,</span> <span class="pre">u)</span></code> that computes the field.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.field_dep">
+<span class="sig-name descname"><span class="pre">field_dep</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.field_dep" title="Permalink to this definition">#</a></dt>
+<dd><p>Maps field name → set of required primitive field names.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.label">
+<span class="sig-name descname"><span class="pre">label</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.label" title="Permalink to this definition">#</a></dt>
+<dd><p>Maps field name → LaTeX label string for colorbars/axes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.cmap">
+<span class="sig-name descname"><span class="pre">cmap</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.cmap" title="Permalink to this definition">#</a></dt>
+<dd><p>Maps field name → colormap.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.vminmax">
+<span class="sig-name descname"><span class="pre">vminmax</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.vminmax" title="Permalink to this definition">#</a></dt>
+<dd><p>Maps field name → <code class="docutils literal notranslate"><span class="pre">(vmin,</span> <span class="pre">vmax)</span></code> defaults for visualization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.take_log">
+<span class="sig-name descname"><span class="pre">take_log</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.take_log" title="Permalink to this definition">#</a></dt>
+<dd><p>Maps field name → bool; if <code class="docutils literal notranslate"><span class="pre">True</span></code> use log normalization.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.norm">
+<span class="sig-name descname"><span class="pre">norm</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.norm" title="Permalink to this definition">#</a></dt>
+<dd><p>Maps field name → <code class="xref py py-class docutils literal notranslate"><span class="pre">matplotlib.colors.Normalize</span></code> instance.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.imshow_args">
+<span class="sig-name descname"><span class="pre">imshow_args</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.imshow_args" title="Permalink to this definition">#</a></dt>
+<dd><p>Maps field name → dict of kwargs suitable for imshow/colorbar calls.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.fields.fields.DerivedFields.dfi">
+<span class="sig-name descname"><span class="pre">dfi</span></span><a class="headerlink" href="#pyathena.fields.fields.DerivedFields.dfi" title="Permalink to this definition">#</a></dt>
+<dd><p>Combined per-field metadata dict (union of all the above).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_athinput</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena.fields.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">DerivedFields</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">par</span> <span class="o">=</span> <span class="n">read_athinput</span><span class="p">(</span><span class="s2">&quot;/path/to/athinput&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">DerivedFields</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">keys</span><span class="p">())[:</span><span class="mi">5</span><span class="p">])</span>
+</pre></div>
+</div>
+</dd></dl>
+
 </section>
 <section id="derived-field-builders">
 <h2>Derived Field Builders<a class="headerlink" href="#derived-field-builders" title="Permalink to this heading">#</a></h2>
 <p>Each <code class="docutils literal notranslate"><span class="pre">set_derived_fields_*</span></code> function populates the registry for a specific
-physics category. They are called automatically by <code class="xref py py-class docutils literal notranslate"><span class="pre">DerivedFields</span></code>
+physics category. They are called automatically by <a class="reference internal" href="#pyathena.fields.fields.DerivedFields" title="pyathena.fields.fields.DerivedFields"><code class="xref py py-class docutils literal notranslate"><span class="pre">DerivedFields</span></code></a>
 based on the simulation configuration.</p>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_def">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_def</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_def"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_def" title="Permalink to this definition">#</a></dt>
+<dd><p>Function to define derived fields info, for example,
+functions to calculate derived fields, dependency, label, colormap, etc.</p>
+<p>May not work correctly for problems using different unit system.
+Assume that density = nH, length unit = pc, etc.</p>
+<p>This includes:
+- density (rho, nH)
+- pressure (pok, pok_trbz)
+- distance (r)
+- velocity (vmag, vr, vx/vy/vz)
+- sound speeds (cs, csound)
+- momentum density, ram pressure (Mr, Mr_abs, rhovr2ok)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par</strong> (<em>dict</em>) – Dictionary containing simulation parameter information</p></li>
+<li><p><strong>x0</strong> (<em>sequence</em><em> of </em><em>floats</em>) – Coordinate of the center with respect to which distance is measured</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Tuple of dictionaries containing derived fields info</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_cooling">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_cooling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newcool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_cooling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_cooling" title="Permalink to this definition">#</a></dt>
+<dd><p>Function to define derived fields info, for example,
+functions to calculate derived fields, dependency, label, colormap, etc.</p>
+<p>May not work correctly for problems using different unit system.
+Assume that density = nH, length unit = pc, etc.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par</strong> (<em>dict</em>) – Dictionary containing simulation parameter information</p></li>
+<li><p><strong>newcool</strong> (<em>bool</em>) – Is new cooling turned on?</p></li>
+</ul>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>Tuple of dictionaries containing derived fields info</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_mag">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_mag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_mag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_mag" title="Permalink to this definition">#</a></dt>
+<dd><p>Magnetic-field / MHD derived fields.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_rad">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_rad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_rad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_rad" title="Permalink to this definition">#</a></dt>
+<dd><p>Register radiation field derived fields.</p>
+<p>Includes normalized FUV (PE and LW band), C ionizing, and H2
+dissociating radiation field strengths in Draine ISRF units
+(chi_PE, chi_LW, chi_FUV, chi_CI, chi_H2).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par</strong> (<em>dict</em>) – Dictionary containing simulation parameter information.</p></li>
+<li><p><strong>x0</strong> (<em>sequence</em><em> of </em><em>floats</em>) – Reference coordinate (unused here, kept for interface consistency).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_newcool">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_newcool</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_newcool"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_newcool" title="Permalink to this definition">#</a></dt>
+<dd><p>Register new-cooling (NCR) chemistry derived fields.</p>
+<p>Includes temperature, molecular/atomic hydrogen fractions and densities
+(T, xH2, nH2, xHI, nHI, xe), carbon/oxygen species (xCII, nCII, xCI,
+nCI, xCO, nCO, xOI), cosmic-ray ionization rate, and cooling/heating rates.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par</strong> (<em>dict</em>) – Dictionary containing simulation parameter information.</p></li>
+<li><p><strong>x0</strong> (<em>sequence</em><em> of </em><em>floats</em>) – Reference coordinate (unused here, kept for interface consistency).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_sixray">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_sixray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_sixray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_sixray" title="Permalink to this definition">#</a></dt>
+<dd><p>Register six-ray external radiation field derived fields.</p>
+<p>Includes external (attenuated) PE and LW radiation field strengths in
+Draine ISRF units (chi_PE_ext, chi_LW_ext, chi_H2_ext).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par</strong> (<em>dict</em>) – Dictionary containing simulation parameter information.</p></li>
+<li><p><strong>x0</strong> (<em>sequence</em><em> of </em><em>floats</em>) – Reference coordinate (unused here, kept for interface consistency).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_xray">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_xray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">x0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newcool</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_xray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_xray" title="Permalink to this definition">#</a></dt>
+<dd><p>Register X-ray emissivity derived fields.</p>
+<p>Registers the X-ray emissivity field (j_X) in the 0.5–7 keV band,
+computed using APEC emissivity tables via the <code class="docutils literal notranslate"><span class="pre">yt</span></code> library.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Requires the optional dependency <code class="docutils literal notranslate"><span class="pre">yt</span></code>. Raises
+<code class="xref py py-exc docutils literal notranslate"><span class="pre">ModuleNotFoundError</span></code> if <code class="docutils literal notranslate"><span class="pre">yt</span></code> is not installed.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>par</strong> (<em>dict</em>) – Dictionary containing simulation parameter information.</p></li>
+<li><p><strong>x0</strong> (<em>sequence</em><em> of </em><em>floats</em>) – Reference coordinate (unused here, kept for interface consistency).</p></li>
+<li><p><strong>newcool</strong> (<em>bool</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, use new-cooling chemistry fields for the emissivity
+calculation; otherwise use classic fields.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_cosmic_ray">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_cosmic_ray</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_cosmic_ray"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_cosmic_ray" title="Permalink to this definition">#</a></dt>
+<dd><p>Register cosmic-ray derived fields.</p>
+<p>Includes CR parallel diffusion coefficient (sigma_para), CR pressure
+(pok_cr), CR energy density (Ec), and CR-related velocity fields.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>par</strong> (<em>dict</em>) – Dictionary containing simulation parameter information. Must include
+a <code class="docutils literal notranslate"><span class="pre">cr</span></code> block with at least <code class="docutils literal notranslate"><span class="pre">vmax</span></code> (maximum CR streaming speed
+in cm/s).</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.fields.set_derived_fields_feedback_scalars">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.fields.</span></span><span class="sig-name descname"><span class="pre">set_derived_fields_feedback_scalars</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">par</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/fields.html#set_derived_fields_feedback_scalars"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.fields.set_derived_fields_feedback_scalars" title="Permalink to this definition">#</a></dt>
+<dd><p>Register feedback scalar derived fields.</p>
+<p>Includes gas metallicity (Zgas) and SN ejecta mass fraction (rSN)
+derived from passive scalar fields tracked during stellar feedback.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>par</strong> (<em>dict</em>) – Dictionary containing simulation parameter information.</p>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="x-ray-emissivity">
 <h2>X-ray Emissivity<a class="headerlink" href="#x-ray-emissivity" title="Permalink to this heading">#</a></h2>
@@ -438,6 +785,37 @@ based on the simulation configuration.</p>
 <p>This module requires <code class="docutils literal notranslate"><span class="pre">yt</span></code> as an optional dependency. It is imported
 lazily; if <code class="docutils literal notranslate"><span class="pre">yt</span></code> is not installed, X-ray derived fields will be unavailable.</p>
 </div>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.fields.xray_emissivity.XrayEmissivityIntegrator">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.fields.xray_emissivity.</span></span><span class="sig-name descname"><span class="pre">XrayEmissivityIntegrator</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">table_type</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">redshift</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_metals</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/xray_emissivity.html#XrayEmissivityIntegrator"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.xray_emissivity.XrayEmissivityIntegrator" title="Permalink to this definition">#</a></dt>
+<dd><p>Class for making X-ray emissivity fields. Uses hdf5 data tables
+generated from Cloudy and AtomDB/APEC.</p>
+<p>Initialize an XrayEmissivityIntegrator object.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>table_type</strong> (<em>string</em>) – The type of data to use when computing the emissivity values. If “cloudy”,
+a file called “cloudy_emissivity.h5” is used, for photoionized
+plasmas. If, “apec”, a file called “apec_emissivity.h5” is used for
+collisionally ionized plasmas. These files contain emissivity tables
+for primordial elements and for metals at solar metallicity for the
+energy range 0.1 to 100 keV.</p></li>
+<li><p><strong>redshift</strong> (<em>float</em><em>, </em><em>optional</em>) – The cosmological redshift of the source of the field. Default: 0.0.</p></li>
+<li><p><strong>data_dir</strong> (<em>string</em><em>, </em><em>optional</em>) – The location to look for the data table in. If not supplied, the file
+will be looked for in the location of the YT_DEST environment variable
+or in the current working directory.</p></li>
+<li><p><strong>use_metals</strong> (<em>boolean</em><em>, </em><em>optional</em>) – If set to True, the emissivity will include contributions from metals.
+Default: True</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.fields.xray_emissivity.get_xray_emissivity">
+<span class="sig-prename descclassname"><span class="pre">pyathena.fields.xray_emissivity.</span></span><span class="sig-name descname"><span class="pre">get_xray_emissivity</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emin</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">emax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">7.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">table_type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'apec'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">energy</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/fields/xray_emissivity.html#get_xray_emissivity"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.fields.xray_emissivity.get_xray_emissivity" title="Permalink to this definition">#</a></dt>
+<dd></dd></dl>
+
 </section>
 </section>
 
@@ -505,9 +883,38 @@ lazily; if <code class="docutils literal notranslate"><span class="pre">yt</span
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#derivedfields">DerivedFields</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#derived-field-builders">Derived Field Builders</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#x-ray-emissivity">X-ray Emissivity</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#derivedfields">DerivedFields</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields"><code class="docutils literal notranslate"><span class="pre">DerivedFields</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.func"><code class="docutils literal notranslate"><span class="pre">DerivedFields.func</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.field_dep"><code class="docutils literal notranslate"><span class="pre">DerivedFields.field_dep</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.label"><code class="docutils literal notranslate"><span class="pre">DerivedFields.label</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.cmap"><code class="docutils literal notranslate"><span class="pre">DerivedFields.cmap</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.vminmax"><code class="docutils literal notranslate"><span class="pre">DerivedFields.vminmax</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.take_log"><code class="docutils literal notranslate"><span class="pre">DerivedFields.take_log</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.norm"><code class="docutils literal notranslate"><span class="pre">DerivedFields.norm</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.imshow_args"><code class="docutils literal notranslate"><span class="pre">DerivedFields.imshow_args</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.DerivedFields.dfi"><code class="docutils literal notranslate"><span class="pre">DerivedFields.dfi</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#derived-field-builders">Derived Field Builders</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_def"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_def()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_cooling"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_cooling()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_mag"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_mag()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_rad"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_rad()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_newcool"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_newcool()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_sixray"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_sixray()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_xray"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_xray()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_cosmic_ray"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_cosmic_ray()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.fields.set_derived_fields_feedback_scalars"><code class="docutils literal notranslate"><span class="pre">set_derived_fields_feedback_scalars()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#x-ray-emissivity">X-ray Emissivity</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.xray_emissivity.XrayEmissivityIntegrator"><code class="docutils literal notranslate"><span class="pre">XrayEmissivityIntegrator</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.fields.xray_emissivity.get_xray_emissivity"><code class="docutils literal notranslate"><span class="pre">get_xray_emissivity()</span></code></a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 

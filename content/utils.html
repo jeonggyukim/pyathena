@@ -59,6 +59,8 @@
     <script src="../_static/design-tabs.js"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
     <script async="async" src="../_static/sphinx-thebe.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'content/utils';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -402,9 +404,25 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transform">Transform</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#piecewisepowerlaw">PiecewisePowerlaw</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rebin">Rebin</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-pyathena.util.transform">Transform</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.transform.euler_rotation"><code class="docutils literal notranslate"><span class="pre">euler_rotation()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.transform.to_spherical"><code class="docutils literal notranslate"><span class="pre">to_spherical()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.transform.to_cylindrical"><code class="docutils literal notranslate"><span class="pre">to_cylindrical()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.transform.groupby_bins"><code class="docutils literal notranslate"><span class="pre">groupby_bins()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#piecewisepowerlaw">PiecewisePowerlaw</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.PiecewisePowerlaw"><code class="docutils literal notranslate"><span class="pre">PiecewisePowerlaw</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.PiecewisePowerlaw.integrate"><code class="docutils literal notranslate"><span class="pre">PiecewisePowerlaw.integrate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rebin">Rebin</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.rebin_xyz"><code class="docutils literal notranslate"><span class="pre">rebin_xyz()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.rebin_xy"><code class="docutils literal notranslate"><span class="pre">rebin_xy()</span></code></a></li>
+</ul>
+</li>
 </ul>
             </nav>
         </div>
@@ -418,14 +436,217 @@ document.write(`
                   
   <section id="utilities">
 <h1>Utilities<a class="headerlink" href="#utilities" title="Permalink to this heading">#</a></h1>
-<section id="transform">
-<h2>Transform<a class="headerlink" href="#transform" title="Permalink to this heading">#</a></h2>
+<section id="module-pyathena.util.transform">
+<span id="transform"></span><h2>Transform<a class="headerlink" href="#module-pyathena.util.transform" title="Permalink to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.util.transform.euler_rotation">
+<span class="sig-prename descclassname"><span class="pre">pyathena.util.transform.</span></span><span class="sig-name descname"><span class="pre">euler_rotation</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">angles</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/transform.html#euler_rotation"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.transform.euler_rotation" title="Permalink to this definition">#</a></dt>
+<dd><p>Rotate coordinate axes to transform the components of vector field <cite>vec</cite></p>
+<p>This assumes “passive” rotation where the vector itself is not rotated geometrically,
+but the coordinate axes are rotated. The euler angles take the “intrinsic” convention
+where the subsequent rotations are applied about the rotated axes.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vec</strong> (<em>tuple</em><em>, </em><em>list</em><em>, or </em><em>numpy.ndarray</em><em> of </em><em>xarray.DataArray</em><em> or </em><em>numpy.ndarray</em>) – (vx, vy, vz) representing Cartesian vector field components.</p></li>
+<li><p><strong>angles</strong> (<em>tuple</em><em>, </em><em>list</em><em>, or </em><em>numpy.ndarray</em>) – Euler angles [alpha, beta, gamma] in radian.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Cartesian components of the rotated vector.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>tuple of xarray.DataArray or numpy.ndarray matching the input type</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.util.transform.to_spherical">
+<span class="sig-prename descclassname"><span class="pre">pyathena.util.transform.</span></span><span class="sig-name descname"><span class="pre">to_spherical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">newz</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/transform.html#to_spherical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.transform.to_spherical" title="Permalink to this definition">#</a></dt>
+<dd><p>Transform vector components from Cartesian to spherical coordinates.</p>
+<p>Supports numpy.ndarray and xarray.DataArray (both dask and numpy-backed).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vec</strong> (<em>tuple</em><em> or </em><em>list</em><em> of </em><em>xarray.DataArray</em>) – (vx, vy, vz) representing Cartesian vector components.</p></li>
+<li><p><strong>origin</strong> (<em>tuple</em><em> or </em><em>list</em>) – (x0, y0, z0) representing the origin of the spherical coords.</p></li>
+<li><p><strong>newz</strong> (<em>tuple</em><em> or </em><em>list</em><em>, </em><em>optional</em>) – Cartesian components of the z-axis vector for the spherical
+coordinates. If not given, it is assumed to be (0, 0, 1).</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>r</strong> (<em>xarray.DataArray</em>) – Binned radius</p></li>
+<li><p><strong>vec_sph</strong> (<em>tuple</em>) – (v_r, v_th, v_ph) representing the three components of
+vector in spherical coords.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.util.transform.to_cylindrical">
+<span class="sig-prename descclassname"><span class="pre">pyathena.util.transform.</span></span><span class="sig-name descname"><span class="pre">to_cylindrical</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">vec</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">origin</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/transform.html#to_cylindrical"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.transform.to_cylindrical" title="Permalink to this definition">#</a></dt>
+<dd><p>Transform vector components from Cartesian to cylindrical coords.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>vec</strong> (<em>tuple</em><em> or </em><em>list</em><em> of </em><em>xarray.DataArray</em>) – (vx, vy, vz) representing Cartesian vector components.</p></li>
+<li><p><strong>origin</strong> (<em>tuple</em><em> or </em><em>list</em>) – (x0, y0, z0) representing the origin of the spherical coords.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>R</strong> (<em>xarray.DataArray</em>) – Binned radius</p></li>
+<li><p><strong>vec_cyl</strong> (<em>tuple</em>) – (v_R, v_ph, v_z) representing the three components of
+velocities in cylindrical coords.</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.util.transform.groupby_bins">
+<span class="sig-prename descclassname"><span class="pre">pyathena.util.transform.</span></span><span class="sig-name descname"><span class="pre">groupby_bins</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dat</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coord</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bins</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">range</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cumulative</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">skipna</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/transform.html#groupby_bins"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.transform.groupby_bins" title="Permalink to this definition">#</a></dt>
+<dd><p>Alternative to xr.groupby_bins, which is very slow</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>dat</strong> (<em>xarray.DataArray</em>) – input dataArray</p></li>
+<li><p><strong>coord</strong> (<em>str</em>) – coordinate name along which data is binned</p></li>
+<li><p><strong>bins</strong> (<em>int</em><em> or </em><em>sequence</em><em> of </em><em>scalars</em>) – If bins is an int, it defines the number of equal-width bins in the given range.
+If bins is a sequence, it defines the bin edges, including the rightmost edge,
+allowing for non-uniform bin widths.</p></li>
+<li><p><strong>range</strong> (<em>(</em><em>float</em><em>, </em><em>float</em><em>)</em><em>, </em><em>optional</em>) – The lower and upper range of the bins.</p></li>
+<li><p><strong>cumulative</strong> (<em>bool</em>) – <dl class="simple">
+<dt>if True, perform cumulative binning, e.g.,</dt><dd><p>v_r_binned[i] = v_r( edge[0] &lt;= r &lt; edge[i+1] ).mean()</p>
+</dd>
+</dl>
+<p>to calculate average velocity dispersion within radius r</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>res</strong> – binned array</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>xarray.DataArray</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 <section id="piecewisepowerlaw">
 <h2>PiecewisePowerlaw<a class="headerlink" href="#piecewisepowerlaw" title="Permalink to this heading">#</a></h2>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.util.PiecewisePowerlaw">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.util.</span></span><span class="sig-name descname"><span class="pre">PiecewisePowerlaw</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">limits</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">powers</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">coefficients</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">externalval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">norm</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/piecewisepowerlaw.html#PiecewisePowerlaw"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.PiecewisePowerlaw" title="Permalink to this definition">#</a></dt>
+<dd><p>A piecewise powerlaw function.</p>
+<p>You can specify the intervals and power indices, and this class
+will figure out the coefficients needed to make the function
+continuous and normalized to unit integral.</p>
+<p class="rubric">Notes</p>
+<p>Intervals are defined by an array l</p>
+<p>Powerlaw indicies by and array p</p>
+<p>a_n are the coefficients.</p>
+<div class="math notranslate nohighlight">
+\[\begin{split}f(x) = a_n x^{p_n} \\textrm{ for } l_{n-1} &lt;= x &lt; l_n\end{split}\]</div>
+<p>Recursion relation for continuity:</p>
+<div class="math notranslate nohighlight">
+\[a_n = a_{n-1} l_n^{p_{n-1} - p_n}\]</div>
+<p>Integral of a piece:</p>
+<div class="math notranslate nohighlight">
+\[I_n = a_n p_n (l_{n+1}^{p_n - 1} - l_n^{p_n - 1})\]</div>
+<p>Total integral:</p>
+<div class="math notranslate nohighlight">
+\[I_{tot} = \sum_0^N I_n\]</div>
+<p>Defined a piecewise powerlaw.</p>
+<p>If coefficients is None then the coefficients are determined
+by requiring the function to be continuous and normalized to
+an integral of one.</p>
+<p>The function is composed of N powerlaws, where N = len(powers).</p>
+<p>len(limits) must be one greated than len(powers)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>limits</strong> (<em>array</em><em> (</em><em>length n+1</em><em>)</em>) – boundaries of the specified powerlaws. Must be one greater in
+length than coefficents and powers. Specify -numpy.infty for
+the first limit or numpy.infty for the last limit for
+unbounded powerlaws.</p></li>
+<li><p><strong>coefficients</strong> (<em>optional array</em><em> (</em><em>length n</em><em>)</em>) – values of the coefficient a_i</p></li>
+<li><p><strong>powers</strong> (<em>array</em><em> (</em><em>length n</em><em>)</em>) – values of the powerlaw indices p_i</p></li>
+<li><p><strong>externalval</strong> (<em>scalar</em>) – Value to return outside the defined domain. None
+correspons to ‘NaN’.</p></li>
+<li><p><strong>norm</strong> (<em>boolean</em>) – Whether to normalize the integral of the function over the
+defined domain to unity.</p></li>
+<li><p><strong>single</strong> (<em>The resulting function takes a</em>) – </p></li>
+<li><p><strong>of</strong> (<em>one-dimensional array</em>) – </p></li>
+<li><p><strong>operate.</strong> (<em>values on which to</em>) – </p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.util.PiecewisePowerlaw.integrate">
+<span class="sig-name descname"><span class="pre">integrate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">low</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">high</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_power</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/piecewisepowerlaw.html#PiecewisePowerlaw.integrate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.PiecewisePowerlaw.integrate" title="Permalink to this definition">#</a></dt>
+<dd><p>Integrate the function from low to high.</p>
+<p>Optionally weight the integral by x^weight_power.</p>
+</dd></dl>
+
+</dd></dl>
+
 </section>
 <section id="rebin">
 <h2>Rebin<a class="headerlink" href="#rebin" title="Permalink to this heading">#</a></h2>
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.rebin_xyz">
+<span class="sig-prename descclassname"><span class="pre">pyathena.</span></span><span class="sig-name descname"><span class="pre">rebin_xyz</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/rebin.html#rebin_xyz"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.rebin_xyz" title="Permalink to this definition">#</a></dt>
+<dd><p>Rebin a 3D array by averaging over blocks of size <code class="docutils literal notranslate"><span class="pre">bin_factor</span></code> in all dimensions.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>ndarray</em>) – Masked or unmasked 3D numpy array with shape <code class="docutils literal notranslate"><span class="pre">(nz,</span> <span class="pre">ny,</span> <span class="pre">nx)</span></code>.</p></li>
+<li><p><strong>bin_factor</strong> (<em>int</em>) – Number of cells to bin in each dimension. Must evenly divide each axis.</p></li>
+<li><p><strong>fill_value</strong> (<em>float</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">arr</span></code> is a masked array, replace masked elements with this value
+before averaging. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, masked elements are excluded from the
+average. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>arr_rebin</strong> – Rebinned array with shape <code class="docutils literal notranslate"><span class="pre">(nz//bin_factor,</span> <span class="pre">ny//bin_factor,</span> <span class="pre">nx//bin_factor)</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.rebin_xy">
+<span class="sig-prename descclassname"><span class="pre">pyathena.</span></span><span class="sig-name descname"><span class="pre">rebin_xy</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">arr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">bin_factor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fill_value</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/rebin.html#rebin_xy"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.rebin_xy" title="Permalink to this definition">#</a></dt>
+<dd><p>Rebin a 3D array by averaging over blocks of size <code class="docutils literal notranslate"><span class="pre">bin_factor</span></code> in the x-y plane.</p>
+<p>The z-axis is left unchanged.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>arr</strong> (<em>ndarray</em>) – Masked or unmasked 3D numpy array with shape <code class="docutils literal notranslate"><span class="pre">(nz,</span> <span class="pre">ny,</span> <span class="pre">nx)</span></code>.</p></li>
+<li><p><strong>bin_factor</strong> (<em>int</em>) – Number of cells to bin along x and y. Must evenly divide both axes.</p></li>
+<li><p><strong>fill_value</strong> (<em>float</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">arr</span></code> is a masked array, replace masked elements with this value
+before averaging. If <code class="docutils literal notranslate"><span class="pre">None</span></code>, masked elements are excluded from the
+average. Default is <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>arr_rebin</strong> – Rebinned array with shape <code class="docutils literal notranslate"><span class="pre">(nz,</span> <span class="pre">ny//bin_factor,</span> <span class="pre">nx//bin_factor)</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
 </section>
 </section>
 
@@ -493,9 +714,25 @@ document.write(`
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#transform">Transform</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#piecewisepowerlaw">PiecewisePowerlaw</a></li>
-<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rebin">Rebin</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#module-pyathena.util.transform">Transform</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.transform.euler_rotation"><code class="docutils literal notranslate"><span class="pre">euler_rotation()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.transform.to_spherical"><code class="docutils literal notranslate"><span class="pre">to_spherical()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.transform.to_cylindrical"><code class="docutils literal notranslate"><span class="pre">to_cylindrical()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.transform.groupby_bins"><code class="docutils literal notranslate"><span class="pre">groupby_bins()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#piecewisepowerlaw">PiecewisePowerlaw</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.PiecewisePowerlaw"><code class="docutils literal notranslate"><span class="pre">PiecewisePowerlaw</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.PiecewisePowerlaw.integrate"><code class="docutils literal notranslate"><span class="pre">PiecewisePowerlaw.integrate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rebin">Rebin</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.rebin_xyz"><code class="docutils literal notranslate"><span class="pre">rebin_xyz()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.rebin_xy"><code class="docutils literal notranslate"><span class="pre">rebin_xy()</span></code></a></li>
+</ul>
+</li>
 </ul>
   </nav></div>
 
