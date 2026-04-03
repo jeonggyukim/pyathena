@@ -9,7 +9,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Installation &#8212; pyathena</title>
+    <title>Plotting Tools &#8212; pyathena</title>
   
   
   
@@ -59,11 +59,11 @@
     <script src="../_static/design-tabs.js"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
     <script async="async" src="../_static/sphinx-thebe.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = 'content/install';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'content/plt_tools';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Quickstart" href="../examples/quickstart.html" />
-    <link rel="prev" title="pyathena" href="../intro.html" />
+    <link rel="next" title="Cooling in TIGRESS-classic" href="../examples/tigress-cooling.html" />
+    <link rel="prev" title="Microphysics" href="microphysics.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -182,13 +182,13 @@
             </li>
         </ul>
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Basics</span></p>
-<ul class="current nav bd-sidenav">
-<li class="toctree-l1 current active"><a class="current reference internal" href="#">Installation</a></li>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="../examples/quickstart.html">Quickstart</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API References</span></p>
-<ul class="nav bd-sidenav">
+<ul class="current nav bd-sidenav">
 <li class="toctree-l1"><a class="reference internal" href="loadsim.html">LoadSim</a></li>
 <li class="toctree-l1"><a class="reference internal" href="athenadataset.html">AthenaDataSet</a></li>
 <li class="toctree-l1"><a class="reference internal" href="readers.html">Readers</a></li>
@@ -200,7 +200,7 @@
 <li class="toctree-l1"><a class="reference internal" href="pop_synth.html">Population Synthesis</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fields.html">Fields</a></li>
 <li class="toctree-l1"><a class="reference internal" href="microphysics.html">Microphysics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="plt_tools.html">Plotting Tools</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Plotting Tools</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul class="nav bd-sidenav">
@@ -278,7 +278,7 @@
       
       
       
-      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2Fcontent/install.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2Fcontent/plt_tools.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -308,7 +308,7 @@
       
       
       
-      <li><a href="../_sources/content/install.md" target="_blank"
+      <li><a href="../_sources/content/plt_tools.rst" target="_blank"
    class="btn btn-sm btn-download-source-button dropdown-item"
    title="Download source file"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -318,7 +318,7 @@
 <span class="btn__icon-container">
   <i class="fas fa-file"></i>
   </span>
-<span class="btn__text-container">.md</span>
+<span class="btn__text-container">.rst</span>
 </a>
 </li>
       
@@ -392,7 +392,7 @@ document.write(`
               
 
 <div id="jb-print-docs-body" class="onlyprint">
-    <h1>Installation</h1>
+    <h1>Plotting Tools</h1>
     <!-- Table of contents -->
     <div id="print-main-content">
         <div id="jb-print-toc">
@@ -402,10 +402,12 @@ document.write(`
             </div>
             <nav aria-label="Page">
                 <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Installation</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#mpi-setup-for-stellar-princeton-cluster">MPI setup for stellar Princeton cluster</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#colormaps">Colormaps</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#annotations">Annotations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plots">Plots</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#style">Style</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#movies">Movies</a></li>
 </ul>
-
             </nav>
         </div>
     </div>
@@ -416,52 +418,25 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <section class="tex2jax_ignore mathjax_ignore" id="installation">
-<h1>Installation<a class="headerlink" href="#installation" title="Permalink to this heading">#</a></h1>
-<p>Below is an example of how you can set up pyathena. It assumes that you have already installed <a class="reference external" href="https://docs.conda.io/en/latest/miniconda.html">miniconda</a> or anaconda on your system.</p>
-<ol class="arabic">
-<li><p>Clone the pyathena repo</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>git<span class="w"> </span>clone<span class="w"> </span>https://github.com/jeonggyukim/pyathena.git
-</pre></div>
-</div>
-</li>
-<li><p>Create an environment from the env.yml file</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>update<span class="w"> </span>conda
-conda<span class="w"> </span>env<span class="w"> </span>create<span class="w"> </span>-f<span class="w"> </span>path_to_pyathena/env.yml
-</pre></div>
-</div>
-</li>
-<li><p>Activate the pyathena environment</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>activate<span class="w"> </span>pyathena
-</pre></div>
-</div>
-</li>
-<li><p>Install pyathena</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>pip<span class="w"> </span>install<span class="w"> </span>.
-</pre></div>
-</div>
-</li>
-</ol>
-<p>Sometimes <code class="docutils literal notranslate"><span class="pre">yt</span></code> and other installed packages (e.g., numpy) may have compatibility issues. In this case, you can downgrade packages to more stable, older versions. For example,</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>install<span class="w"> </span>-c<span class="w"> </span>conda-forge<span class="w"> </span><span class="nv">numpy</span><span class="o">=</span><span class="m">1</span>.26.4
-</pre></div>
-</div>
-<p>To update the existing pyathena environment with an updated env.yml file</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span>conda<span class="w"> </span>activate<span class="w"> </span>pyathena
-conda<span class="w"> </span>env<span class="w"> </span>update<span class="w"> </span>--file<span class="w"> </span>env.yml<span class="w"> </span>--prune
-</pre></div>
-</div>
+  <section id="plotting-tools">
+<h1>Plotting Tools<a class="headerlink" href="#plotting-tools" title="Permalink to this heading">#</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">pyathena.plt_tools</span></code> module provides matplotlib utilities for
+visualizing simulation data.</p>
+<section id="colormaps">
+<h2>Colormaps<a class="headerlink" href="#colormaps" title="Permalink to this heading">#</a></h2>
 </section>
-<section class="tex2jax_ignore mathjax_ignore" id="mpi-setup-for-stellar-princeton-cluster">
-<h1>MPI setup for stellar Princeton cluster<a class="headerlink" href="#mpi-setup-for-stellar-princeton-cluster" title="Permalink to this heading">#</a></h1>
-<p>After setting up the environment as above,</p>
-<div class="highlight-sh notranslate"><div class="highlight"><pre><span></span><span class="c1"># installing mpi4py on stellar</span>
-<span class="c1"># https://researchcomputing.princeton.edu/support/knowledge-base/mpi4py</span>
-module<span class="w"> </span>load<span class="w"> </span>openmpi/gcc/4.1.0
-<span class="nb">export</span><span class="w"> </span><span class="nv">MPICC</span><span class="o">=</span><span class="k">$(</span>which<span class="w"> </span>mpicc<span class="k">)</span>
-pip<span class="w"> </span>install<span class="w"> </span>mpi4py
-</pre></div>
-</div>
+<section id="annotations">
+<h2>Annotations<a class="headerlink" href="#annotations" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="plots">
+<h2>Plots<a class="headerlink" href="#plots" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="style">
+<h2>Style<a class="headerlink" href="#style" title="Permalink to this heading">#</a></h2>
+</section>
+<section id="movies">
+<h2>Movies<a class="headerlink" href="#movies" title="Permalink to this heading">#</a></h2>
+</section>
 </section>
 
     <script type="text/x-thebe-config">
@@ -495,20 +470,20 @@ pip<span class="w"> </span>install<span class="w"> </span>mpi4py
                   
 <div class="prev-next-area">
     <a class="left-prev"
-       href="../intro.html"
+       href="microphysics.html"
        title="previous page">
       <i class="fa-solid fa-angle-left"></i>
       <div class="prev-next-info">
         <p class="prev-next-subtitle">previous</p>
-        <p class="prev-next-title">pyathena</p>
+        <p class="prev-next-title">Microphysics</p>
       </div>
     </a>
     <a class="right-next"
-       href="../examples/quickstart.html"
+       href="../examples/tigress-cooling.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Quickstart</p>
+        <p class="prev-next-title">Cooling in TIGRESS-classic</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
@@ -528,10 +503,12 @@ pip<span class="w"> </span>install<span class="w"> </span>mpi4py
   </div>
   <nav class="bd-toc-nav page-toc">
     <ul class="visible nav section-nav flex-column">
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#">Installation</a></li>
-<li class="toc-h1 nav-item toc-entry"><a class="reference internal nav-link" href="#mpi-setup-for-stellar-princeton-cluster">MPI setup for stellar Princeton cluster</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#colormaps">Colormaps</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#annotations">Annotations</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#plots">Plots</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#style">Style</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#movies">Movies</a></li>
 </ul>
-
   </nav></div>
 
 </div></div>
