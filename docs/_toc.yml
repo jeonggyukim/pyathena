@@ -23,3 +23,4 @@ parts:
     chapters:
     - file: examples/tigress-cooling.ipynb
     - file: examples/quickstart-astro-tigress.ipynb
+    - file: examples/sb99.ipynb
