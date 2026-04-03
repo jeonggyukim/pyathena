@@ -298,8 +298,6 @@ def set_derived_fields_cooling(par, newcool):
     ----------
     par: dict
        Dictionary containing simulation parameter information
-    x0: sequence of floats
-       Coordinate of the center with respect to which distance is measured
     newcool: bool
        Is new cooling turned on?
 
@@ -524,6 +522,24 @@ def set_derived_fields_mag(par, x0):
 
 
 def set_derived_fields_rad(par, x0):
+    """Register radiation field derived fields.
+
+    Includes normalized FUV (PE and LW band), C ionizing, and H2
+    dissociating radiation field strengths in Draine ISRF units
+    (chi_PE, chi_LW, chi_FUV, chi_CI, chi_H2).
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+    x0 : sequence of floats
+        Reference coordinate (unused here, kept for interface consistency).
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -601,6 +617,24 @@ def set_derived_fields_rad(par, x0):
 
 
 def set_derived_fields_newcool(par, x0):
+    """Register new-cooling (NCR) chemistry derived fields.
+
+    Includes temperature, molecular/atomic hydrogen fractions and densities
+    (T, xH2, nH2, xHI, nHI, xe), carbon/oxygen species (xCII, nCII, xCI,
+    nCI, xCO, nCO, xOI), cosmic-ray ionization rate, and cooling/heating rates.
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+    x0 : sequence of floats
+        Reference coordinate (unused here, kept for interface consistency).
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -892,6 +926,23 @@ def set_derived_fields_newcool(par, x0):
 
 
 def set_derived_fields_sixray(par, x0):
+    """Register six-ray external radiation field derived fields.
+
+    Includes external (attenuated) PE and LW radiation field strengths in
+    Draine ISRF units (chi_PE_ext, chi_LW_ext, chi_H2_ext).
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+    x0 : sequence of floats
+        Reference coordinate (unused here, kept for interface consistency).
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -966,6 +1017,30 @@ def set_derived_fields_sixray(par, x0):
 
 
 def set_derived_fields_xray(par, x0, newcool):
+    """Register X-ray emissivity derived fields.
+
+    Registers the X-ray emissivity field (j_X) in the 0.5–7 keV band,
+    computed using APEC emissivity tables via the ``yt`` library.
+
+    .. note::
+        Requires the optional dependency ``yt``. Raises
+        :exc:`ModuleNotFoundError` if ``yt`` is not installed.
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+    x0 : sequence of floats
+        Reference coordinate (unused here, kept for interface consistency).
+    newcool : bool
+        If ``True``, use new-cooling chemistry fields for the emissivity
+        calculation; otherwise use classic fields.
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     # Fail fast with a clear message if yt-dependent helper is missing.
     if get_xray_emissivity is None:
         raise ModuleNotFoundError(
@@ -1018,6 +1093,23 @@ def set_derived_fields_xray(par, x0, newcool):
 
 
 def set_derived_fields_cosmic_ray(par):
+    """Register cosmic-ray derived fields.
+
+    Includes CR parallel diffusion coefficient (sigma_para), CR pressure
+    (pok_cr), CR energy density (Ec), and CR-related velocity fields.
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information. Must include
+        a ``cr`` block with at least ``vmax`` (maximum CR streaming speed
+        in cm/s).
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
@@ -1180,6 +1272,21 @@ def set_derived_fields_cosmic_ray(par):
 
 
 def set_derived_fields_feedback_scalars(par):
+    """Register feedback scalar derived fields.
+
+    Includes gas metallicity (Zgas) and SN ejecta mass fraction (rSN)
+    derived from passive scalar fields tracked during stellar feedback.
+
+    Parameters
+    ----------
+    par : dict
+        Dictionary containing simulation parameter information.
+
+    Returns
+    -------
+    tuple
+        Six dictionaries: (func, field_dep, label, cmap, vminmax, take_log).
+    """
     func = dict()
     field_dep = dict()
     label = dict()
