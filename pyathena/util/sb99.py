@@ -343,25 +343,64 @@ class SB99(object):
         r : dict
             Dictionary with the following keys:
 
-            - ``time_Myr``, ``time_yr`` : array — time arrays
-            - ``wav`` : array — wavelength grid in Angstrom
-            - ``logf`` : 2-D array (ntime × nwav) — log10 spectral luminosity
-              [erg s-1 Ang-1], normalized by cluster mass
-            - ``L`` : dict — band luminosities in L_sun M_sun-1
-            - ``pdot`` : dict — radiation pressure rates in
-              M_sun km s-1 Myr-1 M_sun-1
-            - ``Q`` : dict — photon emission rates in s-1 M_sun-1
+            **Spectral data**
+
+            - ``time_Myr``, ``time_yr`` : 1-D array (ntime,) — age of the
+              stellar population in Myr and yr.
+            - ``wav`` : 1-D array (nwav,) — wavelength grid [Angstrom].
+            - ``logf`` : 2-D array (ntime, nwav) — ``log10`` of the spectral
+              luminosity :math:`L_\\lambda` [erg s-1 Å-1] for the full
+              instantaneous-burst cluster of mass :math:`10^{\\rm logM}\\,M_\\odot`.
+              To obtain the specific luminosity per unit stellar mass use
+              ``10.0 ** (logf - logM)``  [erg s-1 Å-1 Msun-1].
+            - ``logM`` : float — ``log10`` cluster mass [:math:`M_\\odot`];
+              equals ``self.logM`` (0 for continuous-SF runs).
+            - ``df`` : pandas.DataFrame — raw per-time-step spectral table
+              with columns ``time_Myr``, ``time_yr``, ``wav``, ``logf``,
+              ``logfstar`` (stellar continuum), ``logfneb`` (nebular
+              continuum). Useful for plotting the full SED at individual ages.
+
+            **Band-integrated quantities** (each is a 1-D array over time)
+
+            - ``L`` : dict — specific luminosity per unit stellar mass
+              [:math:`L_\\odot\\,M_\\odot^{-1}`]; keys are
+              ``'tot'``, ``'LyC'``, ``'LW'``, ``'PE'``, ``'FUV'``,
+              ``'OPT'``, ``'IR'``, ``'UV'``.
+            - ``pdot`` : dict — specific radiation momentum injection rate
+              [:math:`M_\\odot\\,{\\rm km\\,s}^{-1}\\,{\\rm Myr}^{-1}\\,M_\\odot^{-1}`];
+              same keys as ``L``.
+            - ``Q`` : dict — specific ionizing-photon emission rate
+              [:math:`{\\rm s}^{-1}\\,M_\\odot^{-1}`]; same keys as ``L``.
+
+            **Dust and photoionization cross sections** (1-D arrays over time)
+
             - ``Cext``, ``Cabs``, ``Crpr`` : dict — luminosity-weighted mean
-              dust cross sections per H atom [cm2 H-1]
-            - ``hnu`` : dict — luminosity-weighted mean photon energies [eV]
-            - ``sigma_pi_H``, ``sigma_pi_H2`` : array — photon-rate-weighted
-              mean photoionization cross sections for H and H2 [cm2]
-            - ``dhnu_H_LyC``, ``dhnu_H2_LyC`` : array — mean excess photon
-              energies above the ionization threshold [eV]
-            - ``tdecay_lum``, ``tcumul_lum_50``, ``tcumul_lum_90`` : dict —
-              luminosity-weighted timescales [Myr]
-            - ``*_avg``, ``*_Lavg``, ``*_Qavg`` : dict — time-, L-, and
-              Q-weighted cumulative averages
+              dust cross sections per H nucleon [:math:`{\\rm cm}^2\\,H^{-1}`];
+              keyed by band.
+            - ``hnu`` : dict — luminosity-weighted mean photon energy [eV];
+              keyed by band.
+            - ``sigma_pi_H``, ``sigma_pi_H2`` : array — luminosity-weighted
+              mean photoionization cross sections for H and H2 [cm2].
+            - ``dhnu_H_LyC``, ``dhnu_H2_LyC`` : array — luminosity-weighted
+              mean excess photon energy above the ionization threshold for H
+              and H2 [eV].
+
+            **Timescales** (each is a dict keyed by band)
+
+            - ``tdecay_lum`` : luminosity-weighted mean emission time [Myr].
+            - ``tcumul_lum_50``, ``tcumul_lum_90`` : age at which 50%/90% of
+              the cumulative band luminosity has been emitted [Myr].
+
+            **Cumulative time-averaged quantities**
+
+            - ``L_avg``, ``Q_avg`` : time-averaged ``L`` and ``Q``.
+            - ``hnu_Lavg``, ``Cabs_Lavg``, ``Cext_Lavg``, ``Crpr_Lavg`` :
+              ``L``-weighted running averages.
+            - ``hnu_Qavg``, ``Cabs_Qavg``, ``Cext_Qavg``, ``Crpr_Qavg`` :
+              ``Q``-weighted running averages.
+            - ``sigma_pi_H_Qavg``, ``sigma_pi_H2_Qavg``,
+              ``dhnu_H_LyC_Qavg``, ``dhnu_H2_LyC_Qavg`` : ``Q``-weighted
+              running averages of the LyC cross sections and excess energies.
         """
 
         eV_cgs = (1.0*au.eV).cgs.value
