@@ -21,7 +21,9 @@ Plots
 =====
 
 .. autofunction:: pyathena.plt_tools.plt_joint_pdf.plt_joint_pdf
-.. autofunction:: pyathena.plt_tools.plt_starpar.plt_starpar
+.. autofunction:: pyathena.plt_tools.plt_starpar.scatter_sp
+.. autofunction:: pyathena.plt_tools.plt_starpar.legend_sp
+.. autofunction:: pyathena.plt_tools.plt_starpar.colorbar_sp
 
 Style
 =====
