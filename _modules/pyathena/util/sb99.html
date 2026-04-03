@@ -206,6 +206,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/tigress-cooling.html">Cooling in TIGRESS-classic</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart-astro-tigress.html">Quickstart: ASTRO-TIGRESS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/sb99.html">Starburst99: Stellar Population Synthesis</a></li>
 </ul>
 
     </div>
@@ -370,6 +371,7 @@ document.write(`
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy.interpolate</span><span class="w"> </span><span class="kn">import</span> <span class="n">interp1d</span>
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">..microphysics.dust_draine</span><span class="w"> </span><span class="kn">import</span> <span class="n">DustDraine</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..logger</span><span class="w"> </span><span class="kn">import</span> <span class="n">create_logger</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">mpl</span>
@@ -378,10 +380,52 @@ document.write(`
 <span class="n">local</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">()</span>
 
 <div class="viewcode-block" id="SB99"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">SB99</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interface for reading and plotting Starburst99 (SB99) output.</span>
+
+<span class="sd">    Reads the text output files produced by the Starburst99 stellar population</span>
+<span class="sd">    synthesis code and computes derived quantities (band-integrated luminosities,</span>
+<span class="sd">    dust cross sections, photoionization cross sections, momentum injection rates).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    basedir : str</span>
+<span class="sd">        Directory containing the SB99 output files (e.g. ``*.spectrum1``,</span>
+<span class="sd">        ``*.power1``, ``*.snr1``). All files in the directory must share a</span>
+<span class="sd">        common prefix, which is determined automatically.</span>
+<span class="sd">    verbose : bool, optional</span>
+<span class="sd">        If ``True``, print cluster mass and star-formation parameters on</span>
+<span class="sd">        initialization. Default is ``True``.</span>
+
+<span class="sd">    Attributes</span>
+<span class="sd">    ----------</span>
+<span class="sd">    basedir : str</span>
+<span class="sd">        Directory passed at construction time.</span>
+<span class="sd">    prefix : str</span>
+<span class="sd">        Common filename prefix discovered from the output directory.</span>
+<span class="sd">    files : dict</span>
+<span class="sd">        Mapping of file-type key (e.g. ``&#39;spectrum&#39;``, ``&#39;power&#39;``, ``&#39;snr&#39;``)</span>
+<span class="sd">        to the corresponding file path.</span>
+<span class="sd">    logM : float</span>
+<span class="sd">        ``log10`` of the instantaneous-burst cluster mass in solar masses</span>
+<span class="sd">        (set to 0 for continuous star-formation runs).</span>
+<span class="sd">    SFR : float</span>
+<span class="sd">        Star-formation rate in M_sun yr-1 (continuous SF runs only).</span>
+<span class="sd">    tmax_Myr : float</span>
+<span class="sd">        Maximum simulation time in Myr read from the ``.output1`` file.</span>
+<span class="sd">    cont_SF : bool</span>
+<span class="sd">        ``True`` if the run assumes continuous star formation.</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; import pyathena as pa</span>
+<span class="sd">    &gt;&gt;&gt; sb = pa.SB99(&#39;/path/to/sb99/Z014_M1E6_GenevaV00_logdt&#39;)</span>
+<span class="sd">    &gt;&gt;&gt; rr = sb.read_rad()        # radiation output</span>
+<span class="sd">    &gt;&gt;&gt; rw = sb.read_wind()       # stellar wind output</span>
+<span class="sd">    &gt;&gt;&gt; rs = sb.read_sn()         # supernova output</span>
+<span class="sd">    &quot;&quot;&quot;</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basedir</span><span class="o">=</span><span class="s1">&#39;/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV00_dt01&#39;</span><span class="p">,</span>
                  <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -393,6 +437,7 @@ document.write(`
 
         <span class="bp">self</span><span class="o">.</span><span class="n">basedir</span> <span class="o">=</span> <span class="n">basedir</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span> <span class="o">=</span> <span class="n">verbose</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span> <span class="o">=</span> <span class="n">create_logger</span><span class="p">(</span><span class="s1">&#39;SB99&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="p">)</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">_find_files</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_read_params</span><span class="p">()</span>
@@ -409,7 +454,9 @@ document.write(`
 
         <span class="bp">self</span><span class="o">.</span><span class="n">files</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">ff</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+            <span class="c1"># Strip .bz2 compression suffix before extracting the type key</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="n">f</span><span class="p">[:</span><span class="o">-</span><span class="mi">4</span><span class="p">]</span> <span class="k">if</span> <span class="n">f</span><span class="o">.</span><span class="n">endswith</span><span class="p">(</span><span class="s1">&#39;.bz2&#39;</span><span class="p">)</span> <span class="k">else</span> <span class="n">f</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">][:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">,</span> <span class="n">f</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="kc">None</span></div>
@@ -435,20 +482,69 @@ document.write(`
 
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">cont_SF</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logM</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">5</span><span class="p">]))</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;[SB99] Fixed mass&#39;</span><span class="p">,</span> <span class="n">end</span><span class="o">=</span><span class="s1">&#39; ; &#39;</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;logM:&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">logM</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;basedir: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Fixed mass; logM: </span><span class="si">{:.2f}</span><span class="s1">, tmax: </span><span class="si">{:.1f}</span><span class="s1"> Myr&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">logM</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmax_Myr</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">logM</span> <span class="o">=</span> <span class="mf">0.0</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">SFR</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="mi">7</span><span class="p">])</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">verbose</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;continuous SF&#39;</span><span class="p">)</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SFR:&#39;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">SFR</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;basedir: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">basedir</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Continuous SF; SFR: </span><span class="si">{:.3g}</span><span class="s1"> Msun/yr, tmax: </span><span class="si">{:.1f}</span><span class="s1"> Myr&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">SFR</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">tmax_Myr</span><span class="p">))</span>
+
+        <span class="c1"># Parse and log IMF and stellar track parameters</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">l_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">l</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">l_</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;NUMBER OF INTERVALS FOR THE IMF:&#39;</span><span class="p">):</span>
+                <span class="n">n_imf</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">l_</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;IMF EXPONENTS&#39;</span><span class="p">):</span>
+                <span class="n">imf_exp</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+            <span class="k">if</span> <span class="n">l_</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;MASS LIMITS FOR IMF&#39;</span><span class="p">):</span>
+                <span class="n">imf_mlim</span> <span class="o">=</span> <span class="p">[</span><span class="nb">float</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">()]</span>
+            <span class="k">if</span> <span class="n">l_</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;SUPERNOVA CUT-OFF MASS:&#39;</span><span class="p">):</span>
+                <span class="n">sn_cutoff</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">l_</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;BLACK HOLE CUT-OFF MASS:&#39;</span><span class="p">):</span>
+                <span class="n">bh_cutoff</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">l_</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;METALLICITY + TRACKS:&#39;</span><span class="p">):</span>
+                <span class="c1"># next 6 lines are the track table; IZ code is 7 lines after</span>
+                <span class="n">iz_code</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">7</span><span class="p">])</span>
+                <span class="c1"># Parse metallicity from the table line containing the IZ code</span>
+                <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">7</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">str</span><span class="p">(</span><span class="n">iz_code</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;=&#39;</span> <span class="ow">in</span> <span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">j</span><span class="p">]:</span>
+                        <span class="n">iz_info</span> <span class="o">=</span> <span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="n">j</span><span class="p">]</span>
+                        <span class="k">break</span>
+                <span class="c1"># Extract Z value: e.g. &quot;54=0.014&quot; → 0.014</span>
+                <span class="k">for</span> <span class="n">token</span> <span class="ow">in</span> <span class="n">iz_info</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;;&#39;</span><span class="p">):</span>
+                    <span class="n">token</span> <span class="o">=</span> <span class="n">token</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="k">if</span> <span class="n">token</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">iz_code</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;=&#39;</span><span class="p">):</span>
+                        <span class="n">iz_Z</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">token</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+                        <span class="k">break</span>
+                <span class="c1"># Track name from the beginning of the line</span>
+                <span class="n">iz_track</span> <span class="o">=</span> <span class="n">iz_info</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;:&#39;</span><span class="p">)[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+            <span class="k">if</span> <span class="n">l_</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;WIND MODEL&#39;</span><span class="p">):</span>
+                <span class="n">wind_model_val</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">l</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+                <span class="n">wind_model_str</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">:</span><span class="s1">&#39;Maeder&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">:</span><span class="s1">&#39;Empirical&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">:</span><span class="s1">&#39;Theoretical&#39;</span><span class="p">,</span>
+                                  <span class="mi">3</span><span class="p">:</span><span class="s1">&#39;Elson&#39;</span><span class="p">}</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">wind_model_val</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">wind_model_val</span><span class="p">))</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">&#39;IMF: </span><span class="si">{}</span><span class="s1"> interval(s), exponents=</span><span class="si">{}</span><span class="s1">, mass limits=</span><span class="si">{}</span><span class="s1"> Msun&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">n_imf</span><span class="p">,</span> <span class="n">imf_exp</span><span class="p">,</span> <span class="n">imf_mlim</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">&#39;Tracks: </span><span class="si">{}</span><span class="s1"> (IZ=</span><span class="si">{}</span><span class="s1">, Z=</span><span class="si">{:.3f}</span><span class="s1">); SN cutoff: </span><span class="si">{:.0f}</span><span class="s1"> Msun; &#39;</span>
+            <span class="s1">&#39;wind model: </span><span class="si">{}</span><span class="s1"> (</span><span class="si">{}</span><span class="s1">)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">iz_track</span><span class="p">,</span> <span class="n">iz_code</span><span class="p">,</span> <span class="n">iz_Z</span><span class="p">,</span> <span class="n">sn_cutoff</span><span class="p">,</span> <span class="n">wind_model_val</span><span class="p">,</span> <span class="n">wind_model_str</span><span class="p">))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">par</span> <span class="o">=</span> <span class="n">l</span></div>
 
 <div class="viewcode-block" id="SB99.read_sn"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_sn">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">read_sn</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read snr1 (supernova rate) output</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the ``.snr1`` supernova rate output file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df : pandas.DataFrame</span>
+<span class="sd">            DataFrame with columns ``time_Myr``, ``time_yr``, SN rate,</span>
+<span class="sd">            energy injection rates (``Edot_SN``, ``Edot_SN_IB``, ``Edot_tot``</span>
+<span class="sd">            in erg s-1 M_sun-1), and cumulative energy (``Einj_*``), all</span>
+<span class="sd">            normalized by the cluster mass.</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">,</span> <span class="s1">&#39;SN_rate&#39;</span><span class="p">,</span> <span class="s1">&#39;Edot_SN&#39;</span><span class="p">,</span> <span class="s1">&#39;Einj_SN&#39;</span><span class="p">,</span> <span class="s1">&#39;SN_rate_IB&#39;</span><span class="p">,</span>
@@ -470,9 +566,27 @@ document.write(`
         <span class="n">cols</span> <span class="o">=</span> <span class="n">cols</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">cols</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">cols</span><span class="p">]</span>
 
+        <span class="n">t</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">]</span>
+        <span class="n">sn_rate</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;SN_rate&#39;</span><span class="p">]</span>
+        <span class="n">peak_idx</span> <span class="o">=</span> <span class="n">sn_rate</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">&#39;SN: time </span><span class="si">{:.2f}</span><span class="s1">–</span><span class="si">{:.1f}</span><span class="s1"> Myr  (</span><span class="si">{}</span><span class="s1"> steps); &#39;</span>
+            <span class="s1">&#39;peak rate </span><span class="si">{:.2e}</span><span class="s1"> yr-1 Msun-1 at </span><span class="si">{:.1f}</span><span class="s1"> Myr&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">),</span>
+                <span class="n">sn_rate</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">peak_idx</span><span class="p">],</span> <span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">peak_idx</span><span class="p">]))</span>
+
         <span class="k">return</span> <span class="n">df</span></div>
 
 <div class="viewcode-block" id="SB99.read_yield"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_yield">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">read_yield</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the ``.yield1`` chemical yield output file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df : pandas.DataFrame</span>
+<span class="sd">            DataFrame with columns ``time_yr``, ``time_Myr``, and mass-loss</span>
+<span class="sd">            rates (H, He, C, N, O, Mg, Si, S, Fe, wind, SN, combined) in</span>
+<span class="sd">            M_sun yr-1 M_sun-1, normalized by the cluster mass.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_H&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_He&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_C&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_N&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;Mdot_O&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Mg&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Si&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_S&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_Fe&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;Mdot_wind&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_sn&#39;</span><span class="p">,</span><span class="s1">&#39;Mdot_wind_sn&#39;</span><span class="p">,</span><span class="s1">&#39;M_tot&#39;</span><span class="p">]</span>
@@ -492,7 +606,17 @@ document.write(`
         <span class="k">return</span> <span class="n">df</span></div>
 
 <div class="viewcode-block" id="SB99.read_wind"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_wind">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">read_wind</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read power1 (stellar wind power) output</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the ``.power1`` stellar wind output file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df : pandas.DataFrame</span>
+<span class="sd">            DataFrame indexed by time with columns for energy injection rates</span>
+<span class="sd">            (``Edot_all/OB/RSG/LBV/WR`` in erg s-1 M_sun-1), momentum</span>
+<span class="sd">            injection rates (``pdot_all/...`` in M_sun km s-1 Myr-1 M_sun-1),</span>
+<span class="sd">            mass-loss rates (``Mdot_all/...`` in M_sun Myr-1 M_sun-1), and</span>
+<span class="sd">            terminal wind velocities (``Vw_all/...`` in km s-1). Also includes</span>
+<span class="sd">            time-averaged quantities (``Edot_*_avg``, ``pdot_*_avg``).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">,</span><span class="s1">&#39;Edot_all&#39;</span><span class="p">,</span><span class="s1">&#39;Edot_OB&#39;</span><span class="p">,</span><span class="s1">&#39;Edot_RSG&#39;</span><span class="p">,</span><span class="s1">&#39;Edot_LBV&#39;</span><span class="p">,</span><span class="s1">&#39;Edot_WR&#39;</span><span class="p">,</span><span class="s1">&#39;Einj_all&#39;</span><span class="p">,</span>
@@ -540,10 +664,63 @@ document.write(`
         <span class="n">cols</span> <span class="o">=</span> <span class="n">cols</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">:]</span> <span class="o">+</span> <span class="n">cols</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">df</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="n">cols</span><span class="p">]</span>
 
+        <span class="n">Lsun</span> <span class="o">=</span> <span class="n">ac</span><span class="o">.</span><span class="n">L_sun</span><span class="o">.</span><span class="n">cgs</span><span class="o">.</span><span class="n">value</span>
+        <span class="n">t</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">]</span>
+        <span class="n">edot</span> <span class="o">=</span> <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Edot_all&#39;</span><span class="p">]</span>
+        <span class="n">peak_idx</span> <span class="o">=</span> <span class="n">edot</span><span class="o">.</span><span class="n">idxmax</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s1">&#39;Wind: time </span><span class="si">{:.2f}</span><span class="s1">–</span><span class="si">{:.1f}</span><span class="s1"> Myr  (</span><span class="si">{}</span><span class="s1"> steps); &#39;</span>
+            <span class="s1">&#39;peak Edot_all </span><span class="si">{:.2e}</span><span class="s1"> Lsun Msun-1 at </span><span class="si">{:.1f}</span><span class="s1"> Myr&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+                <span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">t</span><span class="p">),</span>
+                <span class="n">edot</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">peak_idx</span><span class="p">]</span> <span class="o">/</span> <span class="n">Lsun</span><span class="p">,</span> <span class="n">t</span><span class="o">.</span><span class="n">iloc</span><span class="p">[</span><span class="n">peak_idx</span><span class="p">]))</span>
+
         <span class="k">return</span> <span class="n">df</span></div>
 
 <div class="viewcode-block" id="SB99.read_rad"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_rad">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">read_rad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read SB99 spectrum data and mean dust opacity</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the ``.spectrum1`` file and compute derived radiation quantities.</span>
+
+<span class="sd">        Integrates the SB99 spectrum over standard photometric bands</span>
+<span class="sd">        (LyC, LW, PE, OPT, IR, FUV) and computes luminosity-weighted mean</span>
+<span class="sd">        dust cross sections, photoionization cross sections, and photon energies</span>
+<span class="sd">        using the Draine (2003) dust model (R_V = 3.1).</span>
+
+<span class="sd">        Band definitions (wavelength in Angstrom):</span>
+
+<span class="sd">        ======  ==================</span>
+<span class="sd">        Band    Wavelength range</span>
+<span class="sd">        ======  ==================</span>
+<span class="sd">        LyC     &lt; 912</span>
+<span class="sd">        LW      912 – 1108</span>
+<span class="sd">        PE      1108 – 2068</span>
+<span class="sd">        FUV     912 – 2068</span>
+<span class="sd">        OPT     2068 – 10000</span>
+<span class="sd">        IR      10000 – 200000</span>
+<span class="sd">        ======  ==================</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        r : dict</span>
+<span class="sd">            Dictionary with the following keys:</span>
+
+<span class="sd">            - ``time_Myr``, ``time_yr`` : array — time arrays</span>
+<span class="sd">            - ``wav`` : array — wavelength grid in Angstrom</span>
+<span class="sd">            - ``logf`` : 2-D array (ntime × nwav) — log10 spectral luminosity</span>
+<span class="sd">              [erg s-1 Ang-1], normalized by cluster mass</span>
+<span class="sd">            - ``L`` : dict — band luminosities in L_sun M_sun-1</span>
+<span class="sd">            - ``pdot`` : dict — radiation pressure rates in</span>
+<span class="sd">              M_sun km s-1 Myr-1 M_sun-1</span>
+<span class="sd">            - ``Q`` : dict — photon emission rates in s-1 M_sun-1</span>
+<span class="sd">            - ``Cext``, ``Cabs``, ``Crpr`` : dict — luminosity-weighted mean</span>
+<span class="sd">              dust cross sections per H atom [cm2 H-1]</span>
+<span class="sd">            - ``hnu`` : dict — luminosity-weighted mean photon energies [eV]</span>
+<span class="sd">            - ``sigma_pi_H``, ``sigma_pi_H2`` : array — photon-rate-weighted</span>
+<span class="sd">              mean photoionization cross sections for H and H2 [cm2]</span>
+<span class="sd">            - ``dhnu_H_LyC``, ``dhnu_H2_LyC`` : array — mean excess photon</span>
+<span class="sd">              energies above the ionization threshold [eV]</span>
+<span class="sd">            - ``tdecay_lum``, ``tcumul_lum_50``, ``tcumul_lum_90`` : dict —</span>
+<span class="sd">              luminosity-weighted timescales [Myr]</span>
+<span class="sd">            - ``*_avg``, ``*_Lavg``, ``*_Qavg`` : dict — time-, L-, and</span>
+<span class="sd">              Q-weighted cumulative averages</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="n">eV_cgs</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">eV</span><span class="p">)</span><span class="o">.</span><span class="n">cgs</span><span class="o">.</span><span class="n">value</span>
@@ -788,10 +965,25 @@ document.write(`
             <span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="s1">&#39;_Qavg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">cumtrapz</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">*</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;Q&#39;</span><span class="p">][</span><span class="s1">&#39;LyC&#39;</span><span class="p">],</span> <span class="n">x</span><span class="o">=</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="n">initial</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span> <span class="o">/</span> <span class="n">denom</span>
             <span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="s1">&#39;_Qavg&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="n">r</span><span class="p">[</span><span class="n">k</span><span class="o">+</span><span class="s1">&#39;_Qavg&#39;</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span>
 
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Time range: </span><span class="si">{:.2f}</span><span class="s1"> – </span><span class="si">{:.1f}</span><span class="s1"> Myr  (</span><span class="si">{}</span><span class="s1"> steps)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="n">r</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">][</span><span class="mi">0</span><span class="p">],</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">])))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Wavelength range: </span><span class="si">{}</span><span class="s1"> – </span><span class="si">{}</span><span class="s1"> Å  (</span><span class="si">{}</span><span class="s1"> points)&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;wav&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">min</span><span class="p">()),</span> <span class="nb">int</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;wav&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">max</span><span class="p">()),</span> <span class="nb">len</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;wav&#39;</span><span class="p">])))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">logger</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="s1">&#39;Band luminosity keys: </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;L&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">keys</span><span class="p">())))</span>
+
         <span class="k">return</span> <span class="n">r</span></div>
 
 <div class="viewcode-block" id="SB99.read_quanta"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.read_quanta">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">read_quanta</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to read ionizing photon rate</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read the ``.quanta1`` ionizing-photon rate output file.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        df : pandas.DataFrame</span>
+<span class="sd">            DataFrame with columns ``time_yr``, ``time_Myr``,</span>
+<span class="sd">            ionizing photon rates ``Q_HI``, ``Q_HeI``, ``Q_HeII``</span>
+<span class="sd">            (in s-1 M_sun-1), luminosity fractions ``Lfrac_HI``,</span>
+<span class="sd">            ``Lfrac_HeI``, ``Lfrac_HeII``, and bolometric luminosity</span>
+<span class="sd">            ``logL`` (log10 erg s-1 M_sun-1).</span>
 <span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;time_yr&#39;</span><span class="p">,</span> <span class="s1">&#39;Q_HI&#39;</span><span class="p">,</span> <span class="s1">&#39;Lfrac_HI&#39;</span><span class="p">,</span> <span class="s1">&#39;Q_HeI&#39;</span><span class="p">,</span> <span class="s1">&#39;Lfrac_HeI&#39;</span><span class="p">,</span>
                  <span class="s1">&#39;Q_HeII&#39;</span><span class="p">,</span> <span class="s1">&#39;Lfrac_HeII&#39;</span><span class="p">,</span> <span class="s1">&#39;logL&#39;</span><span class="p">]</span>
@@ -810,13 +1002,32 @@ document.write(`
         <span class="k">return</span> <span class="n">df</span></div>
 
 <div class="viewcode-block" id="SB99.plt_spec_sigmad"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_spec_sigmad">[docs]</a>    <span class="nd">@staticmethod</span>
-    <span class="k">def</span><span class="w"> </span><span class="nf">plt_spec_sigmad</span><span class="p">(</span><span class="n">rr</span><span class="p">,</span> <span class="n">lambda_Llambda</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plt_isrf</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">nstride</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Function to plot SB99 spectrum</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">plt_spec_sigmad</span><span class="p">(</span><span class="n">rr</span><span class="p">,</span> <span class="n">lambda_Llambda</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plt_isrf</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mf">50.0</span><span class="p">,</span> <span class="n">nstride</span><span class="o">=</span><span class="mi">10</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot the SB99 spectrum evolution with dust opacity.</span>
+
+<span class="sd">        Creates a figure with two or three rows: (1) dust opacity vs wavelength,</span>
+<span class="sd">        (2) spectral luminosity at different ages (color-coded by age), and</span>
+<span class="sd">        optionally (3) the ISRF at the midplane of a plane-parallel disk.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
-<span class="sd">        lambda_Llambda : bool</span>
-<span class="sd">            Plot lambda_Llambda instead of Llambda</span>
+<span class="sd">        rr : dict</span>
+<span class="sd">            Output of :meth:`read_rad`.</span>
+<span class="sd">        lambda_Llambda : bool, optional</span>
+<span class="sd">            If ``True``, plot ``lambda * L_lambda`` instead of ``L_lambda``.</span>
+<span class="sd">            Default is ``False``.</span>
+<span class="sd">        plt_isrf : bool, optional</span>
+<span class="sd">            If ``True``, add a third panel showing the ISRF estimate from</span>
+<span class="sd">            :func:`plt_nuJnu_mid_plane_parallel`. Requires a separate</span>
+<span class="sd">            continuous-SF SB99 run; disabled by default.</span>
+<span class="sd">        tmax : float, optional</span>
+<span class="sd">            Maximum age to show in the spectrum panel [Myr]. Default is 50.</span>
+<span class="sd">        nstride : int, optional</span>
+<span class="sd">            Plot every ``nstride``-th time step. Default is 10.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        fig : matplotlib.figure.Figure</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">plt_isrf</span><span class="p">:</span>
@@ -924,13 +1135,32 @@ document.write(`
             <span class="n">irow</span> <span class="o">+=</span> <span class="mi">1</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">sca</span><span class="p">(</span><span class="n">axes</span><span class="p">[</span><span class="n">irow</span><span class="p">,</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">plt</span><span class="o">.</span><span class="n">axis</span><span class="p">(</span><span class="s1">&#39;off&#39;</span><span class="p">)</span>
-            <span class="n">plt_nuJnu_mid_plane_parallel</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">irow</span><span class="p">,</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">plt_nuJnu_mid_plane_parallel</span><span class="p">(</span><span class="n">ax</span><span class="o">=</span><span class="n">axes</span><span class="p">[</span><span class="n">irow</span><span class="p">,</span><span class="mi">0</span><span class="p">],</span> <span class="n">basedir</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">fig</span></div>
 
 <div class="viewcode-block" id="SB99.plt_lum_evol"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_lum_evol">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">plt_lum_evol</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">plt_sn</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot luminosity evolution by band vs age.</span>
 
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ax : matplotlib.axes.Axes</span>
+<span class="sd">        rr : dict</span>
+<span class="sd">            Output of :meth:`read_rad`.</span>
+<span class="sd">        rw : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_wind`.</span>
+<span class="sd">        rs : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_sn`.</span>
+<span class="sd">        lw : float, optional</span>
+<span class="sd">            Line width. Default is 2.</span>
+<span class="sd">        plt_sn : bool, optional</span>
+<span class="sd">            If ``True``, also plot the SN luminosity. Default is ``False``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : matplotlib.axes.Axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="c1">#pa.set_plt_fancy()</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">sca</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;L&#39;</span><span class="p">][</span><span class="s1">&#39;tot&#39;</span><span class="p">],</span> <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;Bolometric&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
@@ -957,7 +1187,24 @@ document.write(`
 
 <div class="viewcode-block" id="SB99.plt_pdot_evol"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_pdot_evol">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">plt_pdot_evol</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot radiation momentum injection rate evolution vs age.</span>
 
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ax : matplotlib.axes.Axes</span>
+<span class="sd">        rr : dict</span>
+<span class="sd">            Output of :meth:`read_rad`.</span>
+<span class="sd">        rw : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_wind`.</span>
+<span class="sd">        rs : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_sn`.</span>
+<span class="sd">        lw : float, optional</span>
+<span class="sd">            Line width. Default is 2.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : matplotlib.axes.Axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">sca</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">],</span> <span class="p">(</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;L&#39;</span><span class="p">][</span><span class="s1">&#39;tot&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">L_sun</span><span class="o">/</span><span class="n">ac</span><span class="o">.</span><span class="n">c</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;km s-1 Myr-1&#39;</span><span class="p">),</span>
                  <span class="n">label</span><span class="o">=</span><span class="sa">r</span><span class="s1">&#39;Bolometric&#39;</span><span class="p">,</span> <span class="n">c</span><span class="o">=</span><span class="s1">&#39;k&#39;</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="n">lw</span><span class="p">)</span>
@@ -979,7 +1226,29 @@ document.write(`
 
 <div class="viewcode-block" id="SB99.plt_lum_cumul"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_lum_cumul">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">plt_lum_cumul</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">plt_sn</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot cumulative energy by band vs age.</span>
 
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ax : matplotlib.axes.Axes</span>
+<span class="sd">        rr : dict</span>
+<span class="sd">            Output of :meth:`read_rad`.</span>
+<span class="sd">        rw : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_wind`.</span>
+<span class="sd">        rs : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_sn`.</span>
+<span class="sd">        normed : bool, optional</span>
+<span class="sd">            If ``True``, normalize by the total bolometric cumulative energy.</span>
+<span class="sd">            Default is ``True``.</span>
+<span class="sd">        plt_sn : bool, optional</span>
+<span class="sd">            If ``True``, also plot cumulative SN energy. Default is ``False``.</span>
+<span class="sd">        lw : float, optional</span>
+<span class="sd">            Line width. Default is 2.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : matplotlib.axes.Axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">integrate_L_cum</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">L</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">cumtrapz</span><span class="p">((</span><span class="n">L</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">L_sun</span><span class="p">)</span><span class="o">.</span><span class="n">cgs</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>
                                                 <span class="p">(</span><span class="n">t</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">yr</span><span class="p">)</span><span class="o">.</span><span class="n">cgs</span><span class="o">.</span><span class="n">value</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 
@@ -1025,7 +1294,29 @@ document.write(`
 
 <div class="viewcode-block" id="SB99.plt_pdot_cumul"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_pdot_cumul">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">plt_pdot_cumul</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">plt_sn</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot cumulative momentum injection vs age.</span>
 
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        ax : matplotlib.axes.Axes</span>
+<span class="sd">        rr : dict</span>
+<span class="sd">            Output of :meth:`read_rad`.</span>
+<span class="sd">        rw : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_wind`.</span>
+<span class="sd">        rs : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_sn`.</span>
+<span class="sd">        normed : bool, optional</span>
+<span class="sd">            If ``True``, normalize by the total cumulative momentum.</span>
+<span class="sd">            Default is ``False``.</span>
+<span class="sd">        plt_sn : bool, optional</span>
+<span class="sd">            Unused (reserved). Default is ``False``.</span>
+<span class="sd">        lw : float, optional</span>
+<span class="sd">            Line width. Default is 2.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ax : matplotlib.axes.Axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="n">integrate_pdot</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">pdot</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="n">cumtrapz</span><span class="p">(</span>
             <span class="n">pdot</span><span class="p">,</span> <span class="n">t</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">Myr</span><span class="p">,</span> <span class="n">initial</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
 
@@ -1074,6 +1365,35 @@ document.write(`
 
 <div class="viewcode-block" id="SB99.plt_Edot_pdot_evol_cumul"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.SB99.plt_Edot_pdot_evol_cumul">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">plt_Edot_pdot_evol_cumul</span><span class="p">(</span><span class="n">rr</span><span class="p">,</span> <span class="n">rw</span><span class="p">,</span> <span class="n">rs</span><span class="p">,</span> <span class="n">plt_sn</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">lw</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">normed</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">fig</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">axes</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Plot a 2×2 summary figure of luminosity and momentum (evolution + cumulative).</span>
+
+<span class="sd">        Combines :meth:`plt_lum_evol`, :meth:`plt_pdot_evol`,</span>
+<span class="sd">        :meth:`plt_lum_cumul`, and :meth:`plt_pdot_cumul` into a single figure.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        rr : dict</span>
+<span class="sd">            Output of :meth:`read_rad`.</span>
+<span class="sd">        rw : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_wind`.</span>
+<span class="sd">        rs : pandas.DataFrame</span>
+<span class="sd">            Output of :meth:`read_sn`.</span>
+<span class="sd">        plt_sn : bool, optional</span>
+<span class="sd">            If ``True``, include SN contributions. Default is ``True``.</span>
+<span class="sd">        lw : float, optional</span>
+<span class="sd">            Line width. Default is 2.</span>
+<span class="sd">        normed : bool, optional</span>
+<span class="sd">            Normalize cumulative panels. Default is ``False``.</span>
+<span class="sd">        fig : matplotlib.figure.Figure, optional</span>
+<span class="sd">            Existing figure to draw into. Created if ``None``.</span>
+<span class="sd">        axes : array of matplotlib.axes.Axes, optional</span>
+<span class="sd">            Four axes to draw into. Created if ``None``.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        fig : matplotlib.figure.Figure</span>
+<span class="sd">        axes : numpy.ndarray of matplotlib.axes.Axes</span>
+<span class="sd">        &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="n">fig</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">12</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="n">constrained_layout</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
                                      <span class="n">gridspec_kw</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="n">height_ratios</span><span class="o">=</span><span class="p">[</span><span class="mf">0.5</span><span class="p">,</span><span class="mf">0.5</span><span class="p">]))</span>
@@ -1112,10 +1432,38 @@ document.write(`
         <span class="k">return</span> <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span></div></div>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">plt_nuJnu_mid_plane_parallel</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">plt_nuJnu_mid_plane_parallel</span><span class="p">(</span><span class="n">ax</span><span class="p">,</span> <span class="n">basedir</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                                  <span class="n">Sigma_gas</span><span class="o">=</span><span class="mf">10.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">pc</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span> <span class="n">plt_dr78</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot the midplane ISRF from a plane-parallel SB99 continuous-SF model.</span>
 
-    <span class="n">sb</span> <span class="o">=</span> <span class="n">SB99</span><span class="p">(</span><span class="s1">&#39;/projects/EOSTRIKE/SB99/Z014_SFR1_GenevaV00_logdt&#39;</span><span class="p">)</span>
+<span class="sd">    Computes the angle-averaged mean intensity ``J_lambda`` at the disk</span>
+<span class="sd">    midplane following Ostriker et al. (2010), using a continuous-SF SB99</span>
+<span class="sd">    spectrum attenuated by dust absorption.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    ax : matplotlib.axes.Axes</span>
+<span class="sd">        Axes to draw into.</span>
+<span class="sd">    basedir : str, optional</span>
+<span class="sd">        Path to a continuous-SF SB99 output directory. Must contain a</span>
+<span class="sd">        ``*.spectrum1`` file. If ``None``, this function does nothing and</span>
+<span class="sd">        returns ``None``.</span>
+<span class="sd">    Sigma_gas : astropy.units.Quantity, optional</span>
+<span class="sd">        Gas surface density used to compute the dust optical depth.</span>
+<span class="sd">        Default is ``10 M_sun pc-2``.</span>
+<span class="sd">    plt_dr78 : bool, optional</span>
+<span class="sd">        If ``True``, overplot the Draine (1978) ISRF estimate. Default is</span>
+<span class="sd">        ``True``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    rr : dict or None</span>
+<span class="sd">        Output of :meth:`SB99.read_rad`, or ``None`` if ``basedir`` is not set.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">basedir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="n">sb</span> <span class="o">=</span> <span class="n">SB99</span><span class="p">(</span><span class="n">basedir</span><span class="p">)</span>
     <span class="n">rr</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_rad</span><span class="p">()</span>
     <span class="n">w</span> <span class="o">=</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;wav&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">*</span><span class="mf">1e-4</span>
     <span class="n">d</span> <span class="o">=</span> <span class="n">DustDraine</span><span class="p">()</span>
@@ -1148,10 +1496,10 @@ document.write(`
 
     <span class="nb">print</span><span class="p">(</span><span class="n">tau_perp</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;FUV emissivity per area [Lsun/pc^2]&#39;</span><span class="p">,</span>
-          <span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Sigma_SFR</span><span class="o">*</span><span class="n">Llambda_over_SFR</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">ww</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun&#39;</span><span class="p">)</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;L_FUV_over_SFR/1e7&#39;</span><span class="p">,(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Llambda_over_SFR</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">ww</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun&#39;</span><span class="p">)</span><span class="o">/</span><span class="mf">1e7</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">,</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Jlambda</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">ww</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">,</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Jlambda0</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">ww</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+          <span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Sigma_SFR</span><span class="o">*</span><span class="n">Llambda_over_SFR</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">ww</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun&#39;</span><span class="p">)</span><span class="o">/</span><span class="mf">1e6</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;L_FUV_over_SFR/1e7&#39;</span><span class="p">,(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Llambda_over_SFR</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">ww</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun&#39;</span><span class="p">)</span><span class="o">/</span><span class="mf">1e7</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">,</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Jlambda</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">ww</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">,</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Jlambda0</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span><span class="n">ww</span><span class="p">[</span><span class="n">idx</span><span class="p">]))</span>
 
     <span class="n">plt</span><span class="o">.</span><span class="n">sca</span><span class="p">(</span><span class="n">ax</span><span class="p">)</span>
     <span class="c1"># Show FUV only</span>
@@ -1178,7 +1526,19 @@ document.write(`
     <span class="k">return</span> <span class="n">rr</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">print_lum_weighted_avg_quantities</span><span class="p">(</span><span class="n">rr</span><span class="p">,</span> <span class="n">tmax</span><span class="o">=</span><span class="mf">50.0</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function to print some useful numbers for radiation</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print luminosity-weighted timescales and mean cross sections.</span>
+
+<span class="sd">    Prints to stdout: the luminosity-weighted decay timescale, cumulative</span>
+<span class="sd">    50/90/95% thresholds for LyC and FUV, and luminosity-weighted mean dust</span>
+<span class="sd">    and photoionization cross sections for each band up to ``tmax``.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rr : dict</span>
+<span class="sd">        Output of :meth:`SB99.read_rad`.</span>
+<span class="sd">    tmax : float, optional</span>
+<span class="sd">        Maximum age [Myr] over which to compute mean cross sections.</span>
+<span class="sd">        Default is 50.</span>
 <span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">L_tot</span> <span class="o">=</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;L&#39;</span><span class="p">][</span><span class="s1">&#39;tot&#39;</span><span class="p">]</span>
     <span class="n">L_LyC</span> <span class="o">=</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;L&#39;</span><span class="p">][</span><span class="s1">&#39;LyC&#39;</span><span class="p">]</span>
@@ -1233,7 +1593,26 @@ document.write(`
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">plt_cross_sections_hnu</span><span class="p">(</span><span class="n">rr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Plot dust cross sections, photoionization cross sections, and photon energies vs age.</span>
 
+<span class="sd">    Creates a 3-panel figure showing:</span>
+
+<span class="sd">    1. Luminosity-weighted mean dust extinction/absorption cross section per H</span>
+<span class="sd">       atom for each band vs stellar age.</span>
+<span class="sd">    2. Photon-rate-weighted mean photoionization cross sections for H and H2</span>
+<span class="sd">       vs stellar age.</span>
+<span class="sd">    3. Luminosity-weighted mean photon energy per band vs stellar age, plus</span>
+<span class="sd">       mean excess photoelectron energies for H and H2 (LyC only).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rr : dict</span>
+<span class="sd">        Output of :meth:`SB99.read_rad`.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    fig : matplotlib.figure.Figure</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="c1">#rr = sb.read_rad()</span>
 
     <span class="n">fig</span><span class="p">,</span> <span class="n">axes</span> <span class="o">=</span> <span class="n">plt</span><span class="o">.</span><span class="n">subplots</span><span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">figsize</span><span class="o">=</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span>
@@ -1285,6 +1664,17 @@ document.write(`
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">print_tbl_data</span><span class="p">(</span><span class="n">rr</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Print LaTeX table rows for radiation timescales and cross sections.</span>
+
+<span class="sd">    Outputs LaTeX-formatted rows suitable for inclusion in an AASTeX/emulateapj</span>
+<span class="sd">    table, covering luminosity-weighted timescales (rows 1–3), dust cross</span>
+<span class="sd">    sections (rows 4–8), and photon energies (rows 9–11).</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rr : dict</span>
+<span class="sd">        Output of :meth:`SB99.read_rad`.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">bands</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LyC&#39;</span><span class="p">,</span><span class="s1">&#39;LW&#39;</span><span class="p">,</span><span class="s1">&#39;PE&#39;</span><span class="p">,</span><span class="s1">&#39;FUV&#39;</span><span class="p">,</span><span class="s1">&#39;OPT&#39;</span><span class="p">]</span>
     <span class="n">bands2</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;LyC&#39;</span><span class="p">,</span><span class="s1">&#39;LW&#39;</span><span class="p">,</span><span class="s1">&#39;PE&#39;</span><span class="p">,</span><span class="s1">&#39;FUV&#39;</span><span class="p">,</span><span class="s1">&#39;OPT&#39;</span><span class="p">,</span><span class="s1">&#39;tot&#39;</span><span class="p">]</span>
 
@@ -1345,64 +1735,186 @@ document.write(`
 <span class="kn">from</span><span class="w"> </span><span class="nn">scipy</span><span class="w"> </span><span class="kn">import</span> <span class="n">integrate</span>
 
 
-<span class="k">def</span><span class="w"> </span><span class="nf">get_ISRF_SB99_plane_parallel</span><span class="p">(</span><span class="n">Sigma_gas</span><span class="o">=</span><span class="mf">10.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">pc</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>
+<div class="viewcode-block" id="get_ISRF_SB99_plane_parallel"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.get_ISRF_SB99_plane_parallel">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">get_ISRF_SB99_plane_parallel</span><span class="p">(</span><span class="n">rr</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">rr_long</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                 <span class="n">Sigma_gas</span><span class="o">=</span><span class="mf">10.0</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">pc</span><span class="o">**</span><span class="mi">2</span><span class="p">,</span>
                                  <span class="n">Sigma_SFR</span><span class="o">=</span><span class="mf">2.5e-3</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">kpc</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">yr</span><span class="p">,</span>
-                                 <span class="n">age_Myr</span><span class="o">=</span><span class="mf">0.99e3</span><span class="p">,</span>
-                                 <span class="n">Z_dust</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dust_kind</span><span class="o">=</span><span class="s1">&#39;Rv31&#39;</span><span class="p">,</span> <span class="n">Z_star</span><span class="o">=</span><span class="mf">0.014</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+                                 <span class="n">sfh</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                                 <span class="n">t_max_Myr</span><span class="o">=</span><span class="mf">10000.0</span><span class="p">,</span>
+                                 <span class="n">Z_dust</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">dust_kind</span><span class="o">=</span><span class="s1">&#39;Rv31&#39;</span><span class="p">,</span>
+                                 <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute the plane-parallel ISRF by convolving SB99 SSP spectra with a</span>
+<span class="sd">    star-formation history.</span>
 
+<span class="sd">    Estimates the angle-averaged mean intensity ``J_lambda`` at the disk</span>
+<span class="sd">    midplane following Ostriker et al. (2010).  For a constant SFR the</span>
+<span class="sd">    effective spectrum is</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \\frac{L_\\lambda}{\\rm SFR} =</span>
+<span class="sd">            \\int_0^{t_{\\rm max}} \\frac{L_\\lambda^{\\rm SSP}(t)}{M_*}\\,dt</span>
+
+<span class="sd">    where :math:`L_\\lambda^{\\rm SSP}(t)/M_*` is the SSP spectral luminosity</span>
+<span class="sd">    per unit cluster mass at stellar age :math:`t`.</span>
+
+<span class="sd">    For a time-varying SFH supplied via the ``sfh`` parameter the luminosity</span>
+<span class="sd">    per unit area is computed directly as</span>
+
+<span class="sd">    .. math::</span>
+
+<span class="sd">        \\Sigma_\\lambda =</span>
+<span class="sd">            \\int_0^{t_{\\rm max}}</span>
+<span class="sd">            \\frac{L_\\lambda^{\\rm SSP}(t)}{M_*}\\,\\Sigma_{\\rm SFR}(t)\\,dt</span>
+
+<span class="sd">    where :math:`\\Sigma_{\\rm SFR}(t)` is the SFR surface density at lookback</span>
+<span class="sd">    time :math:`t` returned by the callable ``sfh``.</span>
+
+<span class="sd">    By default the function stitches together the two bundled SSP datasets:</span>
+
+<span class="sd">    * ``Z014_M1E6_GenevaV00_dt02`` — 251 uniform steps at dt = 0.2 Myr,</span>
+<span class="sd">      0–50 Myr (fine short-timescale coverage for integration accuracy).</span>
+<span class="sd">    * ``Z014_M1E6_GenevaV00_logdt_10Gyr`` — 77 log-spaced steps, 2 Myr–10 Gyr</span>
+<span class="sd">      (long-timescale tail, slow evolution well captured by log spacing).</span>
+
+<span class="sd">    The stitch point is at the end of ``rr`` (i.e. ``rr[&#39;time_Myr&#39;][-1]``);</span>
+<span class="sd">    ``rr_long`` contributes only time steps beyond that.</span>
+
+<span class="sd">    .. note::</span>
+
+<span class="sd">       For higher accuracy at short timescales, pass ``rr`` from the original</span>
+<span class="sd">       fine-dt run (dt = 0.1 Myr, 1000 steps) if available locally.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    rr : dict, optional</span>
+<span class="sd">        Output of :meth:`SB99.read_rad` for a short-timescale SSP run</span>
+<span class="sd">        (e.g. 0.1–100 Myr).  If ``None``, the bundled</span>
+<span class="sd">        ``Z014_M1E6_GenevaV00_logdt`` dataset is loaded automatically.</span>
+<span class="sd">    rr_long : dict, optional</span>
+<span class="sd">        Output of :meth:`SB99.read_rad` for a long-timescale SSP run</span>
+<span class="sd">        (e.g. 2 Myr–10 Gyr).  If ``None``, the bundled</span>
+<span class="sd">        ``Z014_M1E6_GenevaV00_logdt_10Gyr`` dataset is loaded automatically.</span>
+<span class="sd">    Sigma_gas : astropy.units.Quantity, optional</span>
+<span class="sd">        Gas surface density used to compute the dust optical depth.</span>
+<span class="sd">        Default is ``10 M_sun pc-2``.</span>
+<span class="sd">    Sigma_SFR : astropy.units.Quantity, optional</span>
+<span class="sd">        Star-formation rate surface density used when ``sfh`` is ``None``</span>
+<span class="sd">        (constant SFH).  Default is ``2.5e-3 M_sun kpc-2 yr-1``.</span>
+<span class="sd">    sfh : callable, optional</span>
+<span class="sd">        Time-varying star-formation history.  When provided, ``Sigma_SFR``</span>
+<span class="sd">        is ignored.  The callable must accept a numpy array of lookback times</span>
+<span class="sd">        in Myr and return an `~astropy.units.Quantity` array of SFR surface</span>
+<span class="sd">        density in units compatible with ``M_sun yr-1 kpc-2``.</span>
+<span class="sd">        Example (Zari et al. 2022 History 1)::</span>
+
+<span class="sd">            def sfh_zari1(t_Myr):</span>
+<span class="sd">                return np.where(t_Myr &lt; 10.0, 4e-3, 2e-3) * au.M_sun/au.kpc**2/au.yr</span>
+<span class="sd">    t_max_Myr : float, optional</span>
+<span class="sd">        Upper integration limit [Myr].  Default is ``10000`` (10 Gyr).</span>
+<span class="sd">    Z_dust : float, optional</span>
+<span class="sd">        Dust metallicity relative to solar.  Default is ``1.0``.</span>
+<span class="sd">    dust_kind : str, optional</span>
+<span class="sd">        Dust model key for :class:`~pyathena.microphysics.dust_draine.DustDraine`.</span>
+<span class="sd">        One of ``&#39;Rv31&#39;``, ``&#39;Rv40&#39;``, ``&#39;Rv55&#39;``.  Default is ``&#39;Rv31&#39;``.</span>
+<span class="sd">    verbose : bool, optional</span>
+<span class="sd">        Print summary statistics.  Default is ``True``.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    r : dict</span>
+<span class="sd">        Dictionary with keys ``Jlambda``, ``Jlambda_unatt``, ``tau_perp``,</span>
+<span class="sd">        ``J_FUV``, ``J_FUV_unatt``, ``Sigma_FUV``, ``L_FUV_per_SFR``,</span>
+<span class="sd">        ``J``, ``J_unatt``, ``L_per_area``, ``L_per_SFR``,</span>
+<span class="sd">        ``w_micron``, ``w_angstrom``, ``Sigma_gas``, ``Sigma_SFR``,</span>
+<span class="sd">        ``Z_dust``, ``t_max_Myr``.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">Z_gas</span> <span class="o">=</span> <span class="n">Z_dust</span>
-    <span class="n">Z_star_str</span> <span class="o">=</span> <span class="s1">&#39;</span><span class="si">{0:03d}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">Z_star</span><span class="o">*</span><span class="mi">1000</span><span class="p">))</span>
-    <span class="n">model</span> <span class="o">=</span> <span class="s1">&#39;/projects/EOSTRIKE/SB99/Z</span><span class="si">{0:s}</span><span class="s1">_SFR1_GenevaV00_logdt_10Gyr&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">Z_star_str</span><span class="p">)</span>
+    <span class="n">_data</span> <span class="o">=</span> <span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">parent</span> <span class="o">/</span> <span class="s1">&#39;data&#39;</span> <span class="o">/</span> <span class="s1">&#39;sb99&#39;</span>
 
-    <span class="n">sb</span> <span class="o">=</span> <span class="n">SB99</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
-    <span class="n">rr</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_rad</span><span class="p">()</span>
-
-    <span class="k">if</span> <span class="n">sb</span><span class="o">.</span><span class="n">cont_SF</span><span class="p">:</span>
-        <span class="n">SFR</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">SFR</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">yr</span>
+    <span class="c1"># Load bundled datasets if not supplied</span>
+    <span class="k">if</span> <span class="n">rr</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sb_short</span> <span class="o">=</span> <span class="n">SB99</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_data</span> <span class="o">/</span> <span class="s1">&#39;Z014_M1E6_GenevaV00_dt02&#39;</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="n">rr</span> <span class="o">=</span> <span class="n">sb_short</span><span class="o">.</span><span class="n">read_rad</span><span class="p">()</span>
+        <span class="n">logM</span> <span class="o">=</span> <span class="n">sb_short</span><span class="o">.</span><span class="n">logM</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;SB99 does not assume continuous SF!&#39;</span><span class="p">)</span>
-        <span class="k">raise</span>
+        <span class="c1"># infer logM from the normalisation embedded in logf</span>
+        <span class="c1"># (logf is already stored as logf - logM, so logM is needed separately)</span>
+        <span class="n">logM</span> <span class="o">=</span> <span class="n">rr</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;logM&#39;</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">rr_long</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">sb_long</span> <span class="o">=</span> <span class="n">SB99</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">_data</span> <span class="o">/</span> <span class="s1">&#39;Z014_M1E6_GenevaV00_logdt_10Gyr&#39;</span><span class="p">),</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span><span class="p">)</span>
+        <span class="n">rr_long</span> <span class="o">=</span> <span class="n">sb_long</span><span class="o">.</span><span class="n">read_rad</span><span class="p">()</span>
+        <span class="n">logM_long</span> <span class="o">=</span> <span class="n">sb_long</span><span class="o">.</span><span class="n">logM</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">logM_long</span> <span class="o">=</span> <span class="n">rr_long</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;logM&#39;</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">)</span>
+
+    <span class="c1"># Stitch: use rr up to its last time step, then rr_long beyond</span>
+    <span class="n">t_stitch</span> <span class="o">=</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">mask_long</span> <span class="o">=</span> <span class="n">rr_long</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">t_stitch</span>
+    <span class="n">time_yr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;time_yr&#39;</span><span class="p">],</span>
+                               <span class="n">rr_long</span><span class="p">[</span><span class="s1">&#39;time_yr&#39;</span><span class="p">][</span><span class="n">mask_long</span><span class="p">]])</span>
+    <span class="n">time_Myr</span> <span class="o">=</span> <span class="n">time_yr</span> <span class="o">*</span> <span class="mf">1e-6</span>
+    <span class="n">logf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;logf&#39;</span><span class="p">],</span>
+                           <span class="n">rr_long</span><span class="p">[</span><span class="s1">&#39;logf&#39;</span><span class="p">][</span><span class="n">mask_long</span><span class="p">]</span> <span class="o">+</span> <span class="p">(</span><span class="n">logM</span> <span class="o">-</span> <span class="n">logM_long</span><span class="p">)],</span>
+                          <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+
+    <span class="c1"># Restrict to integration window</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">time_Myr</span> <span class="o">&lt;=</span> <span class="n">t_max_Myr</span>
+    <span class="n">time_yr</span> <span class="o">=</span> <span class="n">time_yr</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+    <span class="n">logf</span> <span class="o">=</span> <span class="n">logf</span><span class="p">[</span><span class="n">mask</span><span class="p">]</span>
+
+    <span class="n">w_angstrom</span> <span class="o">=</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;wav&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+    <span class="n">w_micron</span> <span class="o">=</span> <span class="n">w_angstrom</span> <span class="o">*</span> <span class="mf">1e-4</span>
+
+    <span class="c1"># L_lambda per unit stellar mass (SSP), shape (ntime, nwav)  [erg/s/Å/Msun]</span>
+    <span class="n">Llambda_per_Msun</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="p">(</span><span class="n">logf</span> <span class="o">-</span> <span class="n">logM</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">sfh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># Time-varying SFH: Sigma_lambda = integral Psi_lambda(t) * Sigma_SFR(t) dt</span>
+        <span class="c1"># sfh(time_Myr) -&gt; Quantity in M_sun yr-1 kpc-2</span>
+        <span class="n">sfh_arr</span> <span class="o">=</span> <span class="n">sfh</span><span class="p">(</span><span class="n">time_Myr</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;M_sun yr-1 kpc-2&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>  <span class="c1"># shape (ntime,)</span>
+        <span class="c1"># units: [M_sun yr-1 kpc-2] * [erg s-1 Å-1 Msun-1] * [yr] = [erg s-1 Å-1 kpc-2]</span>
+        <span class="n">Llambda_per_area_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span>
+            <span class="n">Llambda_per_Msun</span> <span class="o">*</span> <span class="n">sfh_arr</span><span class="p">[:,</span> <span class="n">np</span><span class="o">.</span><span class="n">newaxis</span><span class="p">],</span> <span class="n">x</span><span class="o">=</span><span class="n">time_yr</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">Llambda_per_area</span> <span class="o">=</span> <span class="n">Llambda_per_area_val</span> <span class="o">*</span> <span class="n">au</span><span class="o">.</span><span class="n">erg</span> <span class="o">/</span> <span class="n">au</span><span class="o">.</span><span class="n">s</span> <span class="o">/</span> <span class="n">au</span><span class="o">.</span><span class="n">angstrom</span> <span class="o">/</span> <span class="n">au</span><span class="o">.</span><span class="n">kpc</span><span class="o">**</span><span class="mi">2</span>
+        <span class="n">Llambda_per_SFR</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="c1"># effective Sigma_SFR for reporting (time-averaged)</span>
+        <span class="n">Sigma_SFR</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">sfh_arr</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">time_Myr</span><span class="p">)</span> <span class="o">/</span> <span class="n">t_max_Myr</span> <span class="o">*</span> <span class="n">au</span><span class="o">.</span><span class="n">M_sun</span> <span class="o">/</span> <span class="n">au</span><span class="o">.</span><span class="n">kpc</span><span class="o">**</span><span class="mi">2</span> <span class="o">/</span> <span class="n">au</span><span class="o">.</span><span class="n">yr</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="c1"># Constant SFR convolution: L_lambda per unit SFR</span>
+        <span class="c1">#   integral_0^{t_max} L_lambda(SSP per Msun, t) dt  [erg/s/Å / (Msun/yr)]</span>
+        <span class="n">Llambda_per_SFR_val</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Llambda_per_Msun</span><span class="p">,</span> <span class="n">x</span><span class="o">=</span><span class="n">time_yr</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
+        <span class="n">Llambda_per_SFR</span> <span class="o">=</span> <span class="p">(</span><span class="n">Llambda_per_SFR_val</span>
+                           <span class="o">*</span> <span class="n">au</span><span class="o">.</span><span class="n">erg</span> <span class="o">/</span> <span class="n">au</span><span class="o">.</span><span class="n">s</span> <span class="o">/</span> <span class="n">au</span><span class="o">.</span><span class="n">angstrom</span> <span class="o">/</span> <span class="p">(</span><span class="n">au</span><span class="o">.</span><span class="n">M_sun</span> <span class="o">/</span> <span class="n">au</span><span class="o">.</span><span class="n">yr</span><span class="p">))</span>
+        <span class="n">Llambda_per_area</span> <span class="o">=</span> <span class="n">Sigma_SFR</span> <span class="o">*</span> <span class="n">Llambda_per_SFR</span>
 
     <span class="n">d</span> <span class="o">=</span> <span class="n">DustDraine</span><span class="p">()</span>
-    <span class="k">if</span> <span class="n">dust_kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Rv31&#39;</span><span class="p">,</span> <span class="s1">&#39;Rv31&#39;</span><span class="p">,</span> <span class="s1">&#39;Rv55&#39;</span><span class="p">,</span> <span class="s1">&#39;LMCavg&#39;</span><span class="p">,</span> <span class="s1">&#39;SMCbar&#39;</span><span class="p">]:</span>
+    <span class="k">if</span> <span class="n">dust_kind</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;Rv31&#39;</span><span class="p">,</span> <span class="s1">&#39;Rv40&#39;</span><span class="p">,</span> <span class="s1">&#39;Rv55&#39;</span><span class="p">,</span> <span class="s1">&#39;LMCavg&#39;</span><span class="p">,</span> <span class="s1">&#39;SMCbar&#39;</span><span class="p">]:</span>
         <span class="n">dfdr</span> <span class="o">=</span> <span class="n">d</span><span class="o">.</span><span class="n">dfa</span><span class="p">[</span><span class="n">dust_kind</span><span class="p">]</span>
     <span class="k">else</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;dust_kind </span><span class="si">{0:s}</span><span class="s1"> not supported&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dust_kind</span><span class="p">))</span>
-        <span class="k">raise</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;dust_kind </span><span class="si">{0:s}</span><span class="s1"> not supported&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">dust_kind</span><span class="p">))</span>
 
-    <span class="c1"># Cross sections</span>
+    <span class="c1"># Dust absorption cross section interpolator</span>
     <span class="n">f_Cabs</span> <span class="o">=</span> <span class="n">interp1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">dfdr</span><span class="p">[</span><span class="s1">&#39;lwav&#39;</span><span class="p">]),</span>
                       <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">Z_dust</span><span class="o">*</span><span class="n">dfdr</span><span class="p">[</span><span class="s1">&#39;K_abs&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">d</span><span class="o">.</span><span class="n">GTD</span><span class="p">[</span><span class="s1">&#39;Rv31&#39;</span><span class="p">]),</span>
                       <span class="n">bounds_error</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 
-    <span class="c1"># wavelength in micron</span>
-    <span class="n">w_micron</span> <span class="o">=</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;wav&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="o">*</span><span class="mf">1e-4</span>
-    <span class="n">w_angstrom</span> <span class="o">=</span> <span class="n">rr</span><span class="p">[</span><span class="s1">&#39;wav&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
-
-    <span class="c1"># Luminosity per SFR and area at maximum time</span>
-    <span class="c1">#idx = -1</span>
-    <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;time_Myr&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">age_Myr</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">Llambda_per_SFR</span> <span class="o">=</span> <span class="mf">10.0</span><span class="o">**</span><span class="n">rr</span><span class="p">[</span><span class="s1">&#39;logf&#39;</span><span class="p">][</span><span class="n">idx</span><span class="p">,</span> <span class="p">:]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">erg</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">s</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="o">/</span><span class="n">SFR</span>
-    <span class="n">Llambda_per_area</span> <span class="o">=</span> <span class="n">Sigma_SFR</span><span class="o">*</span><span class="n">Llambda_per_SFR</span>
-
-    <span class="n">muH</span> <span class="o">=</span> <span class="p">(</span><span class="mf">1.4</span> <span class="o">-</span> <span class="mf">0.02</span><span class="o">*</span><span class="n">Z_gas</span><span class="p">)</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">u</span>
-
-    <span class="c1">#kappa_dust_ext = Z_dust*(10.0**f_Cext(np.log10(w_micron))*au.cm**2/au.u).cgs</span>
     <span class="n">kappa_dust_abs</span> <span class="o">=</span> <span class="n">Z_dust</span><span class="o">*</span><span class="p">(</span><span class="mf">10.0</span><span class="o">**</span><span class="n">f_Cabs</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">w_micron</span><span class="p">))</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">cm</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">g</span><span class="p">)</span><span class="o">.</span><span class="n">cgs</span>
 
     <span class="c1"># Wavelength-dependent perpendicular dust optical depth</span>
     <span class="n">tau_perp</span> <span class="o">=</span> <span class="p">(</span><span class="n">Sigma_gas</span><span class="o">*</span><span class="n">kappa_dust_abs</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span>
 
-    <span class="c1"># Naive estimation without attenuation</span>
+    <span class="c1"># Unattenuated mean intensity J_lambda = L_lambda_per_area / (4 pi sr)</span>
     <span class="n">Jlambda_unatt</span> <span class="o">=</span> <span class="p">(</span><span class="n">Llambda_per_area</span><span class="o">/</span><span class="p">(</span><span class="mf">4.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">sr</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;erg s-1 cm-2 angstrom-1 sr-1&#39;</span><span class="p">)</span>
-    <span class="c1"># Intensity at the midplane (see Ostriker et al. 2010)</span>
-    <span class="n">Jlambda</span> <span class="o">=</span> <span class="n">Jlambda_unatt</span><span class="o">/</span><span class="n">tau_perp</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">expn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">tau_perp</span><span class="p">))</span>
+    <span class="c1"># Midplane mean intensity with dust attenuation (Ostriker et al. 2010)</span>
+    <span class="n">Jlambda</span> <span class="o">=</span> <span class="p">(</span><span class="n">Jlambda_unatt</span><span class="o">/</span><span class="n">tau_perp</span><span class="o">*</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">expn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">tau_perp</span><span class="p">))</span>
+               <span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;erg s-1 cm-2 angstrom-1 sr-1&#39;</span><span class="p">)</span>
 
     <span class="c1">###################################</span>
     <span class="c1"># Wavelength integrated quantities</span>
     <span class="c1">###################################</span>
-    <span class="n">w_bdry</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span><span class="mi">912</span><span class="p">,</span><span class="mi">2068</span><span class="p">,</span><span class="mi">10000</span><span class="p">])</span>
-    <span class="n">band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">&#39;LyC&#39;</span><span class="p">,</span><span class="s1">&#39;FUV&#39;</span><span class="p">,</span><span class="s1">&#39;OPT&#39;</span><span class="p">])</span>
+    <span class="n">w_bdry</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mi">0</span><span class="p">,</span> <span class="mi">912</span><span class="p">,</span> <span class="mi">2068</span><span class="p">,</span> <span class="mi">10000</span><span class="p">])</span>
+    <span class="n">band</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="s1">&#39;LyC&#39;</span><span class="p">,</span> <span class="s1">&#39;FUV&#39;</span><span class="p">,</span> <span class="s1">&#39;OPT&#39;</span><span class="p">])</span>
     <span class="n">nband</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">band</span><span class="p">)</span>
 
     <span class="n">J_unatt</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
@@ -1412,26 +1924,19 @@ document.write(`
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nband</span><span class="p">):</span>
         <span class="n">b</span> <span class="o">=</span> <span class="n">band</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
         <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">w_angstrom</span> <span class="o">&gt;</span> <span class="n">w_bdry</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">w_angstrom</span> <span class="o">&lt;=</span> <span class="n">w_bdry</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
-        <span class="c1"># Naive estimate of mean intensity (L/area/4pi)</span>
-        <span class="n">J_unatt</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Jlambda_unatt</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                                     <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span>
-        <span class="c1"># Mean intensity with dust attenuation</span>
-        <span class="n">J</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Jlambda</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                               <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span>
-        <span class="c1"># Luminosity per unit area</span>
-        <span class="n">L_per_area</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Llambda_per_area</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                                         <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun kpc-2&#39;</span><span class="p">)</span>
-        <span class="n">L_per_SFR</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Llambda_per_SFR</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                                        <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun Msun-1 yr&#39;</span><span class="p">)</span>
-
+        <span class="n">J_unatt</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Jlambda_unatt</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span>
+        <span class="n">J</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Jlambda</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span> <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span>
+        <span class="n">L_per_area</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Llambda_per_area</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                                             <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun kpc-2&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">Llambda_per_SFR</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">L_per_SFR</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Llambda_per_SFR</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                                                <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun Msun-1 yr&#39;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">L_per_SFR</span><span class="p">[</span><span class="n">b</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
     <span class="n">r</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;sb&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sb</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;sb_rad&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">rr</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;Z_star&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Z_star</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;Z_star_str&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Z_star_str</span>
     <span class="n">r</span><span class="p">[</span><span class="s1">&#39;Z_dust&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Z_dust</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;SFR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">SFR</span>
+    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;t_max_Myr&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">t_max_Myr</span>
     <span class="n">r</span><span class="p">[</span><span class="s1">&#39;Sigma_gas&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Sigma_gas</span>
     <span class="n">r</span><span class="p">[</span><span class="s1">&#39;Sigma_SFR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Sigma_SFR</span>
     <span class="n">r</span><span class="p">[</span><span class="s1">&#39;w_micron&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">w_micron</span>
@@ -1444,21 +1949,21 @@ document.write(`
     <span class="n">r</span><span class="p">[</span><span class="s1">&#39;L_per_area&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">L_per_area</span>
     <span class="n">r</span><span class="p">[</span><span class="s1">&#39;L_per_SFR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">L_per_SFR</span>
 
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;Jlambda&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">Llambda_per_area</span><span class="o">/</span><span class="p">(</span><span class="mf">4.0</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">pi</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">sr</span><span class="o">*</span><span class="n">tau_perp</span><span class="p">)</span><span class="o">*</span>
-                    <span class="p">(</span><span class="mf">1.0</span> <span class="o">-</span> <span class="n">expn</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">tau_perp</span><span class="p">)))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;erg s-1 cm-2 angstrom-1 sr-1&#39;</span><span class="p">)</span>
-
     <span class="n">idx</span> <span class="o">=</span> <span class="p">(</span><span class="n">w_angstrom</span> <span class="o">&gt;</span> <span class="mf">912.0</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">w_angstrom</span> <span class="o">&lt;</span> <span class="mf">2068.0</span><span class="p">)</span>
     <span class="c1"># Mean FUV intensity (naive estimate)</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Jlambda_unatt</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                                  <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span>
+    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Jlambda_unatt</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                                           <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span>
     <span class="c1"># Mean FUV intensity</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Jlambda</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                            <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span>
+    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Jlambda</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                                     <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span>
     <span class="c1"># FUV luminosity per unit area</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;Sigma_FUV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Llambda_per_area</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                                      <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun kpc-2&#39;</span><span class="p">)</span>
-    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;L_FUV_per_SFR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapz</span><span class="p">(</span><span class="n">Llambda_per_SFR</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
-                           <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun Msun-1 yr&#39;</span><span class="p">)</span>
+    <span class="n">r</span><span class="p">[</span><span class="s1">&#39;Sigma_FUV&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Llambda_per_area</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                                          <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun kpc-2&#39;</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">Llambda_per_SFR</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">r</span><span class="p">[</span><span class="s1">&#39;L_FUV_per_SFR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">integrate</span><span class="o">.</span><span class="n">trapezoid</span><span class="p">(</span><span class="n">Llambda_per_SFR</span><span class="p">[</span><span class="n">idx</span><span class="p">],</span>
+                               <span class="n">w_angstrom</span><span class="p">[</span><span class="n">idx</span><span class="p">])</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">angstrom</span><span class="p">)</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Lsun Msun-1 yr&#39;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">r</span><span class="p">[</span><span class="s1">&#39;L_FUV_per_SFR&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
 
     <span class="c1"># wavelength in Angstrom</span>
@@ -1467,38 +1972,48 @@ document.write(`
 <span class="c1">#     #print(&#39;correction factor:&#39;,1/tau_perp*(1.0 - expn(2, 0.5*tau_perp)))</span>
 <span class="c1">#     print(&#39;Llambda_over_SFR&#39;,Llambda_over_SFR)</span>
 
-<span class="c1">#     r = dict()</span>
-<span class="c1">#     # r[&#39;Z_star&#39;] = Z_star</span>
-<span class="c1">#     r[&#39;Z_star&#39;] = Z_star</span>
-<span class="c1">#     r[&#39;Z_dust&#39;] = Z_dust</span>
-<span class="c1">#     r[&#39;SFR&#39;] = SFR</span>
-<span class="c1">#     r[&#39;Sigma_gas&#39;] = Sigma_gas</span>
-<span class="c1">#     r[&#39;Sigma_SFR&#39;] = Sigma_SFR</span>
-<span class="c1">#     r[&#39;w_angstrom&#39;] = w_angstrom</span>
-<span class="c1">#     r[&#39;Jlambda_unatt&#39;] = Jlambda_unatt</span>
-<span class="c1">#     r[&#39;Jlambda&#39;] = Jlambda</span>
-<span class="c1">#     r[&#39;Sigma_FUV&#39;] = Sigma_FUV</span>
-<span class="c1">#     r[&#39;J_FUV_unatt&#39;] = J_FUV_unatt</span>
-<span class="c1">#     r[&#39;J_FUV&#39;] = J_FUV</span>
-<span class="c1">#     r[&#39;tau_perp&#39;] = tau_perp</span>
-<span class="c1">#     r[&#39;L_FUV_per_SFR&#39;] = L_FUV_per_SFR</span>
-
-<span class="c1">#     r[&#39;sb&#39;] = sb</span>
-<span class="c1">#     r[&#39;rr&#39;] = rr</span>
-
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Z_star, Z_dust&#39;</span><span class="p">,</span> <span class="n">Z_star</span><span class="p">,</span> <span class="n">Z_dust</span><span class="p">)</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Sigma_FUV : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;Sigma_FUV&#39;</span><span class="p">]))</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;L_FUV_per_SFR : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;L_FUV_per_SFR&#39;</span><span class="p">]))</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J_FUV_unatt: </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">]))</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J_FUV : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">]))</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Overall correction factor : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Sigma_gas   : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">Sigma_gas</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Sigma_SFR   : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">Sigma_SFR</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">sfh</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;  (Sigma_SFR is time-averaged over t_max for reporting)&#39;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Z_dust      : </span><span class="si">{}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">Z_dust</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;t_max_Myr   : </span><span class="si">{:.0f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">t_max_Myr</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Sigma_FUV   : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;Sigma_FUV&#39;</span><span class="p">]))</span>
+        <span class="k">if</span> <span class="n">r</span><span class="p">[</span><span class="s1">&#39;L_FUV_per_SFR&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;L_FUV/SFR   : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;L_FUV_per_SFR&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J_FUV_unatt : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;J_FUV       : </span><span class="si">{:g}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">]))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Attenuation factor (FUV): </span><span class="si">{:.3f}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span>
+            <span class="p">(</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">r</span><span class="p">[</span><span class="s1">&#39;J_FUV_unatt&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">decompose</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
 
-    <span class="k">return</span> <span class="n">r</span>
+    <span class="k">return</span> <span class="n">r</span></div>
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">write_sb99_output_for_tigress</span><span class="p">(</span><span class="n">sb</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Interpolate SB99 output onto the age grids expected by Athena-TIGRESS.</span>
 
+<span class="sd">    Reads radiation, wind, SN, and yield data from a :class:`SB99` instance,</span>
+<span class="sd">    interpolates onto fixed age arrays used internally by Athena-TIGRESS, and</span>
+<span class="sd">    returns the results as dictionaries.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    sb : SB99</span>
+<span class="sd">        Loaded SB99 instance.</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    res_rad : dict</span>
+<span class="sd">        Radiation quantities (``age_Myr``, ``Xi_LyC``, ``Psi_LW``, ``Psi_PE``)</span>
+<span class="sd">        on a 0.2 Myr grid up to 40 Myr.</span>
+<span class="sd">    res_wind : dict</span>
+<span class="sd">        Wind quantities (``age_Myr``, ``log_Edot_wind``, ``log_Mdot_wind``)</span>
+<span class="sd">        on a 0.1 Myr grid up to 50 Myr.</span>
+<span class="sd">    res_sn : dict</span>
+<span class="sd">        SN quantities (``age_Myr``, ``SN_rate``) on a 0.2 Myr grid up to</span>
+<span class="sd">        40 Myr.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
     <span class="n">rr</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_rad</span><span class="p">()</span>
     <span class="n">ry</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_yield</span><span class="p">()</span>
     <span class="n">rw</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_wind</span><span class="p">()</span>

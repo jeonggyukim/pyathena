@@ -59,6 +59,8 @@
     <script src="../_static/design-tabs.js"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
     <script async="async" src="../_static/sphinx-thebe.js"></script>
+    <script>window.MathJax = {"options": {"processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    <script defer="defer" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script>DOCUMENTATION_OPTIONS.pagename = 'content/pop_synth';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
@@ -207,6 +209,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../examples/tigress-cooling.html">Cooling in TIGRESS-classic</a></li>
 
 <li class="toctree-l1"><a class="reference internal" href="../examples/quickstart-astro-tigress.html">Quickstart: ASTRO-TIGRESS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/sb99.html">Starburst99: Stellar Population Synthesis</a></li>
 </ul>
 
     </div>
@@ -404,6 +407,13 @@ document.write(`
                 <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#starburst99-reader">Starburst99 Reader</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99"><code class="docutils literal notranslate"><span class="pre">SB99</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.basedir"><code class="docutils literal notranslate"><span class="pre">SB99.basedir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.prefix"><code class="docutils literal notranslate"><span class="pre">SB99.prefix</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.files"><code class="docutils literal notranslate"><span class="pre">SB99.files</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.logM"><code class="docutils literal notranslate"><span class="pre">SB99.logM</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.SFR"><code class="docutils literal notranslate"><span class="pre">SB99.SFR</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.tmax_Myr"><code class="docutils literal notranslate"><span class="pre">SB99.tmax_Myr</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.cont_SF"><code class="docutils literal notranslate"><span class="pre">SB99.cont_SF</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99._find_files"><code class="docutils literal notranslate"><span class="pre">SB99._find_files()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99._read_params"><code class="docutils literal notranslate"><span class="pre">SB99._read_params()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.plt_Edot_pdot_evol_cumul"><code class="docutils literal notranslate"><span class="pre">SB99.plt_Edot_pdot_evol_cumul()</span></code></a></li>
@@ -419,6 +429,7 @@ document.write(`
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.read_yield"><code class="docutils literal notranslate"><span class="pre">SB99.read_yield()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.sb99.get_ISRF_SB99_plane_parallel"><code class="docutils literal notranslate"><span class="pre">get_ISRF_SB99_plane_parallel()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mass-to-luminosity-converter">Mass-to-luminosity Converter</a><ul class="nav section-nav flex-column">
@@ -444,6 +455,108 @@ document.write(`
 <dt class="sig sig-object py" id="pyathena.util.SB99">
 <em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.util.</span></span><span class="sig-name descname"><span class="pre">SB99</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">basedir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'/projects/EOSTRIKE/SB99/Z014_M1E6_GenevaV00_dt01'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99" title="Permalink to this definition">#</a></dt>
 <dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>Interface for reading and plotting Starburst99 (SB99) output.</p>
+<p>Reads the text output files produced by the Starburst99 stellar population
+synthesis code and computes derived quantities (band-integrated luminosities,
+dust cross sections, photoionization cross sections, momentum injection rates).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>basedir</strong> (<em>str</em>) – Directory containing the SB99 output files (e.g. <code class="docutils literal notranslate"><span class="pre">*.spectrum1</span></code>,
+<code class="docutils literal notranslate"><span class="pre">*.power1</span></code>, <code class="docutils literal notranslate"><span class="pre">*.snr1</span></code>). All files in the directory must share a
+common prefix, which is determined automatically.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, print cluster mass and star-formation parameters on
+initialization. Default is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.util.SB99.basedir">
+<span class="sig-name descname"><span class="pre">basedir</span></span><a class="headerlink" href="#pyathena.util.SB99.basedir" title="Permalink to this definition">#</a></dt>
+<dd><p>Directory passed at construction time.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.util.SB99.prefix">
+<span class="sig-name descname"><span class="pre">prefix</span></span><a class="headerlink" href="#pyathena.util.SB99.prefix" title="Permalink to this definition">#</a></dt>
+<dd><p>Common filename prefix discovered from the output directory.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>str</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.util.SB99.files">
+<span class="sig-name descname"><span class="pre">files</span></span><a class="headerlink" href="#pyathena.util.SB99.files" title="Permalink to this definition">#</a></dt>
+<dd><p>Mapping of file-type key (e.g. <code class="docutils literal notranslate"><span class="pre">'spectrum'</span></code>, <code class="docutils literal notranslate"><span class="pre">'power'</span></code>, <code class="docutils literal notranslate"><span class="pre">'snr'</span></code>)
+to the corresponding file path.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.util.SB99.logM">
+<span class="sig-name descname"><span class="pre">logM</span></span><a class="headerlink" href="#pyathena.util.SB99.logM" title="Permalink to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">log10</span></code> of the instantaneous-burst cluster mass in solar masses
+(set to 0 for continuous star-formation runs).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.util.SB99.SFR">
+<span class="sig-name descname"><span class="pre">SFR</span></span><a class="headerlink" href="#pyathena.util.SB99.SFR" title="Permalink to this definition">#</a></dt>
+<dd><p>Star-formation rate in M_sun yr-1 (continuous SF runs only).</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.util.SB99.tmax_Myr">
+<span class="sig-name descname"><span class="pre">tmax_Myr</span></span><a class="headerlink" href="#pyathena.util.SB99.tmax_Myr" title="Permalink to this definition">#</a></dt>
+<dd><p>Maximum simulation time in Myr read from the <code class="docutils literal notranslate"><span class="pre">.output1</span></code> file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py attribute">
+<dt class="sig sig-object py" id="pyathena.util.SB99.cont_SF">
+<span class="sig-name descname"><span class="pre">cont_SF</span></span><a class="headerlink" href="#pyathena.util.SB99.cont_SF" title="Permalink to this definition">#</a></dt>
+<dd><p><code class="docutils literal notranslate"><span class="pre">True</span></code> if the run assumes continuous star formation.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Type</dt>
+<dd class="field-odd"><p>bool</p>
+</dd>
+</dl>
+</dd></dl>
+
+<p class="rubric">Examples</p>
+<div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pyathena</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">sb</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">SB99</span><span class="p">(</span><span class="s1">&#39;/path/to/sb99/Z014_M1E6_GenevaV00_logdt&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rr</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_rad</span><span class="p">()</span>        <span class="c1"># radiation output</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rw</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_wind</span><span class="p">()</span>       <span class="c1"># stellar wind output</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">rs</span> <span class="o">=</span> <span class="n">sb</span><span class="o">.</span><span class="n">read_sn</span><span class="p">()</span>         <span class="c1"># supernova output</span>
+</pre></div>
+</div>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
@@ -467,35 +580,156 @@ Full information contained in self.par</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.plt_Edot_pdot_evol_cumul">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">plt_Edot_pdot_evol_cumul</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_sn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">fig</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">axes</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.plt_Edot_pdot_evol_cumul"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.plt_Edot_pdot_evol_cumul" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Plot a 2×2 summary figure of luminosity and momentum (evolution + cumulative).</p>
+<p>Combines <a class="reference internal" href="#pyathena.util.SB99.plt_lum_evol" title="pyathena.util.SB99.plt_lum_evol"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plt_lum_evol()</span></code></a>, <a class="reference internal" href="#pyathena.util.SB99.plt_pdot_evol" title="pyathena.util.SB99.plt_pdot_evol"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plt_pdot_evol()</span></code></a>,
+<a class="reference internal" href="#pyathena.util.SB99.plt_lum_cumul" title="pyathena.util.SB99.plt_lum_cumul"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plt_lum_cumul()</span></code></a>, and <a class="reference internal" href="#pyathena.util.SB99.plt_pdot_cumul" title="pyathena.util.SB99.plt_pdot_cumul"><code class="xref py py-meth docutils literal notranslate"><span class="pre">plt_pdot_cumul()</span></code></a> into a single figure.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rr</strong> (<em>dict</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_rad" title="pyathena.util.SB99.read_rad"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_rad()</span></code></a>.</p></li>
+<li><p><strong>rw</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_wind" title="pyathena.util.SB99.read_wind"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_wind()</span></code></a>.</p></li>
+<li><p><strong>rs</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_sn" title="pyathena.util.SB99.read_sn"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_sn()</span></code></a>.</p></li>
+<li><p><strong>plt_sn</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, include SN contributions. Default is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>lw</strong> (<em>float</em><em>, </em><em>optional</em>) – Line width. Default is 2.</p></li>
+<li><p><strong>normed</strong> (<em>bool</em><em>, </em><em>optional</em>) – Normalize cumulative panels. Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>fig</strong> (<em>matplotlib.figure.Figure</em><em>, </em><em>optional</em>) – Existing figure to draw into. Created if <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+<li><p><strong>axes</strong> (<em>array</em><em> of </em><em>matplotlib.axes.Axes</em><em>, </em><em>optional</em>) – Four axes to draw into. Created if <code class="docutils literal notranslate"><span class="pre">None</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><ul class="simple">
+<li><p><strong>fig</strong> (<em>matplotlib.figure.Figure</em>)</p></li>
+<li><p><strong>axes</strong> (<em>numpy.ndarray of matplotlib.axes.Axes</em>)</p></li>
+</ul>
+</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.plt_lum_cumul">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">plt_lum_cumul</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_sn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.plt_lum_cumul"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.plt_lum_cumul" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Plot cumulative energy by band vs age.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – </p></li>
+<li><p><strong>rr</strong> (<em>dict</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_rad" title="pyathena.util.SB99.read_rad"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_rad()</span></code></a>.</p></li>
+<li><p><strong>rw</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_wind" title="pyathena.util.SB99.read_wind"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_wind()</span></code></a>.</p></li>
+<li><p><strong>rs</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_sn" title="pyathena.util.SB99.read_sn"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_sn()</span></code></a>.</p></li>
+<li><p><strong>normed</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, normalize by the total bolometric cumulative energy.
+Default is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+<li><p><strong>plt_sn</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also plot cumulative SN energy. Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>lw</strong> (<em>float</em><em>, </em><em>optional</em>) – Line width. Default is 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>ax</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>matplotlib.axes.Axes</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.plt_lum_evol">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">plt_lum_evol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_sn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.plt_lum_evol"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.plt_lum_evol" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Plot luminosity evolution by band vs age.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – </p></li>
+<li><p><strong>rr</strong> (<em>dict</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_rad" title="pyathena.util.SB99.read_rad"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_rad()</span></code></a>.</p></li>
+<li><p><strong>rw</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_wind" title="pyathena.util.SB99.read_wind"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_wind()</span></code></a>.</p></li>
+<li><p><strong>rs</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_sn" title="pyathena.util.SB99.read_sn"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_sn()</span></code></a>.</p></li>
+<li><p><strong>lw</strong> (<em>float</em><em>, </em><em>optional</em>) – Line width. Default is 2.</p></li>
+<li><p><strong>plt_sn</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, also plot the SN luminosity. Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>ax</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>matplotlib.axes.Axes</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.plt_pdot_cumul">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">plt_pdot_cumul</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">normed</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_sn</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.plt_pdot_cumul"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.plt_pdot_cumul" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Plot cumulative momentum injection vs age.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – </p></li>
+<li><p><strong>rr</strong> (<em>dict</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_rad" title="pyathena.util.SB99.read_rad"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_rad()</span></code></a>.</p></li>
+<li><p><strong>rw</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_wind" title="pyathena.util.SB99.read_wind"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_wind()</span></code></a>.</p></li>
+<li><p><strong>rs</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_sn" title="pyathena.util.SB99.read_sn"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_sn()</span></code></a>.</p></li>
+<li><p><strong>normed</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, normalize by the total cumulative momentum.
+Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>plt_sn</strong> (<em>bool</em><em>, </em><em>optional</em>) – Unused (reserved). Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>lw</strong> (<em>float</em><em>, </em><em>optional</em>) – Line width. Default is 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>ax</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>matplotlib.axes.Axes</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.plt_pdot_evol">
 <em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">plt_pdot_evol</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rw</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rs</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lw</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.plt_pdot_evol"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.plt_pdot_evol" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Plot radiation momentum injection rate evolution vs age.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>ax</strong> (<em>matplotlib.axes.Axes</em>) – </p></li>
+<li><p><strong>rr</strong> (<em>dict</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_rad" title="pyathena.util.SB99.read_rad"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_rad()</span></code></a>.</p></li>
+<li><p><strong>rw</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_wind" title="pyathena.util.SB99.read_wind"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_wind()</span></code></a>.</p></li>
+<li><p><strong>rs</strong> (<em>pandas.DataFrame</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_sn" title="pyathena.util.SB99.read_sn"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_sn()</span></code></a>.</p></li>
+<li><p><strong>lw</strong> (<em>float</em><em>, </em><em>optional</em>) – Line width. Default is 2.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>ax</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>matplotlib.axes.Axes</p>
+</dd>
+</dl>
+</dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.plt_spec_sigmad">
-<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">plt_spec_sigmad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_Llambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_isrf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nstride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.plt_spec_sigmad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.plt_spec_sigmad" title="Permalink to this definition">#</a></dt>
-<dd><p>Function to plot SB99 spectrum</p>
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">plt_spec_sigmad</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rr</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambda_Llambda</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plt_isrf</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">tmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">50.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nstride</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">10</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.plt_spec_sigmad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.plt_spec_sigmad" title="Permalink to this definition">#</a></dt>
+<dd><p>Plot the SB99 spectrum evolution with dust opacity.</p>
+<p>Creates a figure with two or three rows: (1) dust opacity vs wavelength,
+(2) spectral luminosity at different ages (color-coded by age), and
+optionally (3) the ISRF at the midplane of a plane-parallel disk.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
-<dd class="field-odd"><p><strong>lambda_Llambda</strong> (<em>bool</em>) – Plot lambda_Llambda instead of Llambda</p>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rr</strong> (<em>dict</em>) – Output of <a class="reference internal" href="#pyathena.util.SB99.read_rad" title="pyathena.util.SB99.read_rad"><code class="xref py py-meth docutils literal notranslate"><span class="pre">read_rad()</span></code></a>.</p></li>
+<li><p><strong>lambda_Llambda</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, plot <code class="docutils literal notranslate"><span class="pre">lambda</span> <span class="pre">*</span> <span class="pre">L_lambda</span></code> instead of <code class="docutils literal notranslate"><span class="pre">L_lambda</span></code>.
+Default is <code class="docutils literal notranslate"><span class="pre">False</span></code>.</p></li>
+<li><p><strong>plt_isrf</strong> (<em>bool</em><em>, </em><em>optional</em>) – If <code class="docutils literal notranslate"><span class="pre">True</span></code>, add a third panel showing the ISRF estimate from
+<code class="xref py py-func docutils literal notranslate"><span class="pre">plt_nuJnu_mid_plane_parallel()</span></code>. Requires a separate
+continuous-SF SB99 run; disabled by default.</p></li>
+<li><p><strong>tmax</strong> (<em>float</em><em>, </em><em>optional</em>) – Maximum age to show in the spectrum panel [Myr]. Default is 50.</p></li>
+<li><p><strong>nstride</strong> (<em>int</em><em>, </em><em>optional</em>) – Plot every <code class="docutils literal notranslate"><span class="pre">nstride</span></code>-th time step. Default is 10.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>fig</strong></p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>matplotlib.figure.Figure</p>
 </dd>
 </dl>
 </dd></dl>
@@ -503,32 +737,224 @@ Full information contained in self.par</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.read_quanta">
 <span class="sig-name descname"><span class="pre">read_quanta</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.read_quanta"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.read_quanta" title="Permalink to this definition">#</a></dt>
-<dd><p>Function to read ionizing photon rate</p>
+<dd><p>Read the <code class="docutils literal notranslate"><span class="pre">.quanta1</span></code> ionizing-photon rate output file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>df</strong> – DataFrame with columns <code class="docutils literal notranslate"><span class="pre">time_yr</span></code>, <code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>,
+ionizing photon rates <code class="docutils literal notranslate"><span class="pre">Q_HI</span></code>, <code class="docutils literal notranslate"><span class="pre">Q_HeI</span></code>, <code class="docutils literal notranslate"><span class="pre">Q_HeII</span></code>
+(in s-1 M_sun-1), luminosity fractions <code class="docutils literal notranslate"><span class="pre">Lfrac_HI</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Lfrac_HeI</span></code>, <code class="docutils literal notranslate"><span class="pre">Lfrac_HeII</span></code>, and bolometric luminosity
+<code class="docutils literal notranslate"><span class="pre">logL</span></code> (log10 erg s-1 M_sun-1).</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.read_rad">
 <span class="sig-name descname"><span class="pre">read_rad</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.read_rad"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.read_rad" title="Permalink to this definition">#</a></dt>
-<dd><p>Function to read SB99 spectrum data and mean dust opacity</p>
+<dd><p>Read the <code class="docutils literal notranslate"><span class="pre">.spectrum1</span></code> file and compute derived radiation quantities.</p>
+<p>Integrates the SB99 spectrum over standard photometric bands
+(LyC, LW, PE, OPT, IR, FUV) and computes luminosity-weighted mean
+dust cross sections, photoionization cross sections, and photon energies
+using the Draine (2003) dust model (R_V = 3.1).</p>
+<p>Band definitions (wavelength in Angstrom):</p>
+<div class="pst-scrollable-table-container"><table class="table">
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 75%" />
+</colgroup>
+<thead>
+<tr class="row-odd"><th class="head"><p>Band</p></th>
+<th class="head"><p>Wavelength range</p></th>
+</tr>
+</thead>
+<tbody>
+<tr class="row-even"><td><p>LyC</p></td>
+<td><p>&lt; 912</p></td>
+</tr>
+<tr class="row-odd"><td><p>LW</p></td>
+<td><p>912 – 1108</p></td>
+</tr>
+<tr class="row-even"><td><p>PE</p></td>
+<td><p>1108 – 2068</p></td>
+</tr>
+<tr class="row-odd"><td><p>FUV</p></td>
+<td><p>912 – 2068</p></td>
+</tr>
+<tr class="row-even"><td><p>OPT</p></td>
+<td><p>2068 – 10000</p></td>
+</tr>
+<tr class="row-odd"><td><p>IR</p></td>
+<td><p>10000 – 200000</p></td>
+</tr>
+</tbody>
+</table>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><p><strong>r</strong> – Dictionary with the following keys:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>, <code class="docutils literal notranslate"><span class="pre">time_yr</span></code> : array — time arrays</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">wav</span></code> : array — wavelength grid in Angstrom</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">logf</span></code> : 2-D array (ntime × nwav) — log10 spectral luminosity
+[erg s-1 Ang-1], normalized by cluster mass</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">L</span></code> : dict — band luminosities in L_sun M_sun-1</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">pdot</span></code> : dict — radiation pressure rates in
+M_sun km s-1 Myr-1 M_sun-1</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Q</span></code> : dict — photon emission rates in s-1 M_sun-1</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Cext</span></code>, <code class="docutils literal notranslate"><span class="pre">Cabs</span></code>, <code class="docutils literal notranslate"><span class="pre">Crpr</span></code> : dict — luminosity-weighted mean
+dust cross sections per H atom [cm2 H-1]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">hnu</span></code> : dict — luminosity-weighted mean photon energies [eV]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">sigma_pi_H</span></code>, <code class="docutils literal notranslate"><span class="pre">sigma_pi_H2</span></code> : array — photon-rate-weighted
+mean photoionization cross sections for H and H2 [cm2]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dhnu_H_LyC</span></code>, <code class="docutils literal notranslate"><span class="pre">dhnu_H2_LyC</span></code> : array — mean excess photon
+energies above the ionization threshold [eV]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">tdecay_lum</span></code>, <code class="docutils literal notranslate"><span class="pre">tcumul_lum_50</span></code>, <code class="docutils literal notranslate"><span class="pre">tcumul_lum_90</span></code> : dict —
+luminosity-weighted timescales [Myr]</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">*_avg</span></code>, <code class="docutils literal notranslate"><span class="pre">*_Lavg</span></code>, <code class="docutils literal notranslate"><span class="pre">*_Qavg</span></code> : dict — time-, L-, and
+Q-weighted cumulative averages</p></li>
+</ul>
+</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.read_sn">
 <span class="sig-name descname"><span class="pre">read_sn</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.read_sn"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.read_sn" title="Permalink to this definition">#</a></dt>
-<dd><p>Function to read snr1 (supernova rate) output</p>
+<dd><p>Read the <code class="docutils literal notranslate"><span class="pre">.snr1</span></code> supernova rate output file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>df</strong> – DataFrame with columns <code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>, <code class="docutils literal notranslate"><span class="pre">time_yr</span></code>, SN rate,
+energy injection rates (<code class="docutils literal notranslate"><span class="pre">Edot_SN</span></code>, <code class="docutils literal notranslate"><span class="pre">Edot_SN_IB</span></code>, <code class="docutils literal notranslate"><span class="pre">Edot_tot</span></code>
+in erg s-1 M_sun-1), and cumulative energy (<code class="docutils literal notranslate"><span class="pre">Einj_*</span></code>), all
+normalized by the cluster mass.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.read_wind">
 <span class="sig-name descname"><span class="pre">read_wind</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.read_wind"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.read_wind" title="Permalink to this definition">#</a></dt>
-<dd><p>Function to read power1 (stellar wind power) output</p>
+<dd><p>Read the <code class="docutils literal notranslate"><span class="pre">.power1</span></code> stellar wind output file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>df</strong> – DataFrame indexed by time with columns for energy injection rates
+(<code class="docutils literal notranslate"><span class="pre">Edot_all/OB/RSG/LBV/WR</span></code> in erg s-1 M_sun-1), momentum
+injection rates (<code class="docutils literal notranslate"><span class="pre">pdot_all/...</span></code> in M_sun km s-1 Myr-1 M_sun-1),
+mass-loss rates (<code class="docutils literal notranslate"><span class="pre">Mdot_all/...</span></code> in M_sun Myr-1 M_sun-1), and
+terminal wind velocities (<code class="docutils literal notranslate"><span class="pre">Vw_all/...</span></code> in km s-1). Also includes
+time-averaged quantities (<code class="docutils literal notranslate"><span class="pre">Edot_*_avg</span></code>, <code class="docutils literal notranslate"><span class="pre">pdot_*_avg</span></code>).</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
 </dd></dl>
 
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.util.SB99.read_yield">
 <span class="sig-name descname"><span class="pre">read_yield</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#SB99.read_yield"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.SB99.read_yield" title="Permalink to this definition">#</a></dt>
-<dd></dd></dl>
+<dd><p>Read the <code class="docutils literal notranslate"><span class="pre">.yield1</span></code> chemical yield output file.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p><strong>df</strong> – DataFrame with columns <code class="docutils literal notranslate"><span class="pre">time_yr</span></code>, <code class="docutils literal notranslate"><span class="pre">time_Myr</span></code>, and mass-loss
+rates (H, He, C, N, O, Mg, Si, S, Fe, wind, SN, combined) in
+M_sun yr-1 M_sun-1, normalized by the cluster mass.</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>pandas.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
 
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.util.sb99.get_ISRF_SB99_plane_parallel">
+<span class="sig-prename descclassname"><span class="pre">pyathena.util.sb99.</span></span><span class="sig-name descname"><span class="pre">get_ISRF_SB99_plane_parallel</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">rr=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">rr_long=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Sigma_gas=&lt;Quantity</span> <span class="pre">10.</span> <span class="pre">solMass</span> <span class="pre">/</span> <span class="pre">pc2&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Sigma_SFR=&lt;Quantity</span> <span class="pre">0.0025</span> <span class="pre">solMass</span> <span class="pre">/</span> <span class="pre">(yr</span> <span class="pre">kpc2)&gt;</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sfh=None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t_max_Myr=10000.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z_dust=1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dust_kind='Rv31'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">verbose=True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/util/sb99.html#get_ISRF_SB99_plane_parallel"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.util.sb99.get_ISRF_SB99_plane_parallel" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute the plane-parallel ISRF by convolving SB99 SSP spectra with a
+star-formation history.</p>
+<p>Estimates the angle-averaged mean intensity <code class="docutils literal notranslate"><span class="pre">J_lambda</span></code> at the disk
+midplane following Ostriker et al. (2010).  For a constant SFR the
+effective spectrum is</p>
+<div class="math notranslate nohighlight">
+\[\frac{L_\lambda}{\rm SFR} =
+    \int_0^{t_{\rm max}} \frac{L_\lambda^{\rm SSP}(t)}{M_*}\,dt\]</div>
+<p>where <span class="math notranslate nohighlight">\(L_\lambda^{\rm SSP}(t)/M_*\)</span> is the SSP spectral luminosity
+per unit cluster mass at stellar age <span class="math notranslate nohighlight">\(t\)</span>.</p>
+<p>For a time-varying SFH supplied via the <code class="docutils literal notranslate"><span class="pre">sfh</span></code> parameter the luminosity
+per unit area is computed directly as</p>
+<div class="math notranslate nohighlight">
+\[\Sigma_\lambda =
+    \int_0^{t_{\rm max}}
+    \frac{L_\lambda^{\rm SSP}(t)}{M_*}\,\Sigma_{\rm SFR}(t)\,dt\]</div>
+<p>where <span class="math notranslate nohighlight">\(\Sigma_{\rm SFR}(t)\)</span> is the SFR surface density at lookback
+time <span class="math notranslate nohighlight">\(t\)</span> returned by the callable <code class="docutils literal notranslate"><span class="pre">sfh</span></code>.</p>
+<p>By default the function stitches together the two bundled SSP datasets:</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">Z014_M1E6_GenevaV00_dt02</span></code> — 251 uniform steps at dt = 0.2 Myr,
+0–50 Myr (fine short-timescale coverage for integration accuracy).</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">Z014_M1E6_GenevaV00_logdt_10Gyr</span></code> — 77 log-spaced steps, 2 Myr–10 Gyr
+(long-timescale tail, slow evolution well captured by log spacing).</p></li>
+</ul>
+<p>The stitch point is at the end of <code class="docutils literal notranslate"><span class="pre">rr</span></code> (i.e. <code class="docutils literal notranslate"><span class="pre">rr['time_Myr'][-1]</span></code>);
+<code class="docutils literal notranslate"><span class="pre">rr_long</span></code> contributes only time steps beyond that.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>For higher accuracy at short timescales, pass <code class="docutils literal notranslate"><span class="pre">rr</span></code> from the original
+fine-dt run (dt = 0.1 Myr, 1000 steps) if available locally.</p>
+</div>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>rr</strong> (<em>dict</em><em>, </em><em>optional</em>) – Output of <code class="xref py py-meth docutils literal notranslate"><span class="pre">SB99.read_rad()</span></code> for a short-timescale SSP run
+(e.g. 0.1–100 Myr).  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the bundled
+<code class="docutils literal notranslate"><span class="pre">Z014_M1E6_GenevaV00_logdt</span></code> dataset is loaded automatically.</p></li>
+<li><p><strong>rr_long</strong> (<em>dict</em><em>, </em><em>optional</em>) – Output of <code class="xref py py-meth docutils literal notranslate"><span class="pre">SB99.read_rad()</span></code> for a long-timescale SSP run
+(e.g. 2 Myr–10 Gyr).  If <code class="docutils literal notranslate"><span class="pre">None</span></code>, the bundled
+<code class="docutils literal notranslate"><span class="pre">Z014_M1E6_GenevaV00_logdt_10Gyr</span></code> dataset is loaded automatically.</p></li>
+<li><p><strong>Sigma_gas</strong> (<em>astropy.units.Quantity</em><em>, </em><em>optional</em>) – Gas surface density used to compute the dust optical depth.
+Default is <code class="docutils literal notranslate"><span class="pre">10</span> <span class="pre">M_sun</span> <span class="pre">pc-2</span></code>.</p></li>
+<li><p><strong>Sigma_SFR</strong> (<em>astropy.units.Quantity</em><em>, </em><em>optional</em>) – Star-formation rate surface density used when <code class="docutils literal notranslate"><span class="pre">sfh</span></code> is <code class="docutils literal notranslate"><span class="pre">None</span></code>
+(constant SFH).  Default is <code class="docutils literal notranslate"><span class="pre">2.5e-3</span> <span class="pre">M_sun</span> <span class="pre">kpc-2</span> <span class="pre">yr-1</span></code>.</p></li>
+<li><p><strong>sfh</strong> (<em>callable</em><em>, </em><em>optional</em>) – <p>Time-varying star-formation history.  When provided, <code class="docutils literal notranslate"><span class="pre">Sigma_SFR</span></code>
+is ignored.  The callable must accept a numpy array of lookback times
+in Myr and return an <cite>~astropy.units.Quantity</cite> array of SFR surface
+density in units compatible with <code class="docutils literal notranslate"><span class="pre">M_sun</span> <span class="pre">yr-1</span> <span class="pre">kpc-2</span></code>.
+Example (Zari et al. 2022 History 1):</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="k">def</span><span class="w"> </span><span class="nf">sfh_zari1</span><span class="p">(</span><span class="n">t_Myr</span><span class="p">):</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">t_Myr</span> <span class="o">&lt;</span> <span class="mf">10.0</span><span class="p">,</span> <span class="mf">4e-3</span><span class="p">,</span> <span class="mf">2e-3</span><span class="p">)</span> <span class="o">*</span> <span class="n">au</span><span class="o">.</span><span class="n">M_sun</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">kpc</span><span class="o">**</span><span class="mi">2</span><span class="o">/</span><span class="n">au</span><span class="o">.</span><span class="n">yr</span>
+</pre></div>
+</div>
+</p></li>
+<li><p><strong>t_max_Myr</strong> (<em>float</em><em>, </em><em>optional</em>) – Upper integration limit [Myr].  Default is <code class="docutils literal notranslate"><span class="pre">10000</span></code> (10 Gyr).</p></li>
+<li><p><strong>Z_dust</strong> (<em>float</em><em>, </em><em>optional</em>) – Dust metallicity relative to solar.  Default is <code class="docutils literal notranslate"><span class="pre">1.0</span></code>.</p></li>
+<li><p><strong>dust_kind</strong> (<em>str</em><em>, </em><em>optional</em>) – Dust model key for <a class="reference internal" href="microphysics.html#pyathena.microphysics.dust_draine.DustDraine" title="pyathena.microphysics.dust_draine.DustDraine"><code class="xref py py-class docutils literal notranslate"><span class="pre">DustDraine</span></code></a>.
+One of <code class="docutils literal notranslate"><span class="pre">'Rv31'</span></code>, <code class="docutils literal notranslate"><span class="pre">'Rv40'</span></code>, <code class="docutils literal notranslate"><span class="pre">'Rv55'</span></code>.  Default is <code class="docutils literal notranslate"><span class="pre">'Rv31'</span></code>.</p></li>
+<li><p><strong>verbose</strong> (<em>bool</em><em>, </em><em>optional</em>) – Print summary statistics.  Default is <code class="docutils literal notranslate"><span class="pre">True</span></code>.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>r</strong> – Dictionary with keys <code class="docutils literal notranslate"><span class="pre">Jlambda</span></code>, <code class="docutils literal notranslate"><span class="pre">Jlambda_unatt</span></code>, <code class="docutils literal notranslate"><span class="pre">tau_perp</span></code>,
+<code class="docutils literal notranslate"><span class="pre">J_FUV</span></code>, <code class="docutils literal notranslate"><span class="pre">J_FUV_unatt</span></code>, <code class="docutils literal notranslate"><span class="pre">Sigma_FUV</span></code>, <code class="docutils literal notranslate"><span class="pre">L_FUV_per_SFR</span></code>,
+<code class="docutils literal notranslate"><span class="pre">J</span></code>, <code class="docutils literal notranslate"><span class="pre">J_unatt</span></code>, <code class="docutils literal notranslate"><span class="pre">L_per_area</span></code>, <code class="docutils literal notranslate"><span class="pre">L_per_SFR</span></code>,
+<code class="docutils literal notranslate"><span class="pre">w_micron</span></code>, <code class="docutils literal notranslate"><span class="pre">w_angstrom</span></code>, <code class="docutils literal notranslate"><span class="pre">Sigma_gas</span></code>, <code class="docutils literal notranslate"><span class="pre">Sigma_SFR</span></code>,
+<code class="docutils literal notranslate"><span class="pre">Z_dust</span></code>, <code class="docutils literal notranslate"><span class="pre">t_max_Myr</span></code>.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>dict</p>
+</dd>
+</dl>
 </dd></dl>
 
 </section>
@@ -618,6 +1044,13 @@ Data taken from Table 1 in Parravano et al. (2003).</p>
     <ul class="visible nav section-nav flex-column">
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#starburst99-reader">Starburst99 Reader</a><ul class="nav section-nav flex-column">
 <li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99"><code class="docutils literal notranslate"><span class="pre">SB99</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.basedir"><code class="docutils literal notranslate"><span class="pre">SB99.basedir</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.prefix"><code class="docutils literal notranslate"><span class="pre">SB99.prefix</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.files"><code class="docutils literal notranslate"><span class="pre">SB99.files</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.logM"><code class="docutils literal notranslate"><span class="pre">SB99.logM</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.SFR"><code class="docutils literal notranslate"><span class="pre">SB99.SFR</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.tmax_Myr"><code class="docutils literal notranslate"><span class="pre">SB99.tmax_Myr</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.cont_SF"><code class="docutils literal notranslate"><span class="pre">SB99.cont_SF</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99._find_files"><code class="docutils literal notranslate"><span class="pre">SB99._find_files()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99._read_params"><code class="docutils literal notranslate"><span class="pre">SB99._read_params()</span></code></a></li>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.plt_Edot_pdot_evol_cumul"><code class="docutils literal notranslate"><span class="pre">SB99.plt_Edot_pdot_evol_cumul()</span></code></a></li>
@@ -633,6 +1066,7 @@ Data taken from Table 1 in Parravano et al. (2003).</p>
 <li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.SB99.read_yield"><code class="docutils literal notranslate"><span class="pre">SB99.read_yield()</span></code></a></li>
 </ul>
 </li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.util.sb99.get_ISRF_SB99_plane_parallel"><code class="docutils literal notranslate"><span class="pre">get_ISRF_SB99_plane_parallel()</span></code></a></li>
 </ul>
 </li>
 <li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#mass-to-luminosity-converter">Mass-to-luminosity Converter</a><ul class="nav section-nav flex-column">
