@@ -174,7 +174,7 @@ def set_derived_fields_def(par, x0):
     @static_vars(x0=x0)
     def _vr(d, u):
         z, y, x = np.meshgrid(d['z'], d['y'], d['x'], indexing='ij')
-        r = xr.DataArray(np.sqrt((x - _r.x0[0])**2 + (y - _r.x0[1])**2 + (z - _r.x0[2])**2),
+        r = xr.DataArray(np.sqrt((x - _vr.x0[0])**2 + (y - _vr.x0[1])**2 + (z - _vr.x0[2])**2),
                             dims=('z','y','x'), name='r')
         return (x*d['velocity1'] + y*d['velocity2'] + z*d['velocity3'])/r*u.kms
     func[f] = _vr
@@ -404,7 +404,7 @@ def set_derived_fields_cooling(par, newcool):
     f = 'nHLambda_cool_net'
     field_dep[f] = set(['density','cool_rate','heat_rate'])
     def _nHLambda_cool_net(d, u):
-        return (d['cool_rate'] - d['heat_cool'])*(u.energy_density/u.time).cgs.value/d['density']
+        return (d['cool_rate'] - d['heat_rate'])*(u.energy_density/u.time).cgs.value/d['density']
     func[f] = _nHLambda_cool_net
     label[f] = r'$n_{\rm H}\Lambda_{\rm net}\;[{\rm erg}\,{\rm cm^{3}}\,{\rm s}^{-1}]$'
     cmap[f] = 'cubehelix_r'
@@ -881,7 +881,7 @@ def set_derived_fields_newcool(par, x0):
     vminmax[f] = (0,xCtot)
     take_log[f] = False
 
-    # xCII - singlly ionized carbon (use when CR ionization is uniform everywhere)
+    # xCII - singly ionized carbon (use when CR ionization is uniform everywhere)
     # Use with caution.
     # (Do not apply to hot gas and depend on cooling implementation)
     f = 'xCII_alt'
@@ -1501,10 +1501,10 @@ class DerivedFields(object):
             for d, d_ in zip(dicts, dicts_):
                 d.update(d_)
 
-        if wind:
-            dicts_ = set_derived_fields_wind(par, x0)
-            for d, d_ in zip(dicts, dicts_):
-                d.update(d_)
+        # if wind:
+        #     dicts_ = set_derived_fields_wind(par, x0)
+        #     for d, d_ in zip(dicts, dicts_):
+        #         d.update(d_)
 
         if xray:
             dicts_ = set_derived_fields_xray(par, x0, newcool)
