@@ -102,10 +102,15 @@ def read_FG20():
                                    sigma_pi_H_LyC/(E_LyC*au.eV).cgs.value*\
                                    (E_LyC*au.eV - Eth_H*au.eV).cgs.value,
                                    x=r['nu'][idx_LyC])
-    q_pi_H = (q_zeta_pi_H/zeta_pi_H*au.erg).to('eV')
-    sigma_mean_pi_H = -zeta_pi_H/(integrate.trapezoid(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]/\
-                                                  (E_LyC*au.eV).cgs.value,
-                                                  x=r['nu'][idx_LyC]))
+    q_pi_H = (np.divide(q_zeta_pi_H, zeta_pi_H,
+                        out=np.zeros_like(q_zeta_pi_H),
+                        where=zeta_pi_H != 0) * au.erg).to('eV')
+    _denom_sigma = -integrate.trapezoid(4.0*np.pi*r['ds']['Jnu'][:,idx_LyC]/
+                                        (E_LyC*au.eV).cgs.value,
+                                        x=r['nu'][idx_LyC])
+    sigma_mean_pi_H = np.divide(zeta_pi_H, _denom_sigma,
+                                out=np.zeros_like(zeta_pi_H),
+                                where=_denom_sigma != 0)
 
     zeta_pi_H_Xray = -integrate.trapezoid(4.0*np.pi*r['ds']['Jnu'][:,idx_Xray]*\
                                       sigma_pi_H_Xray/(E_Xray*au.eV).cgs.value,

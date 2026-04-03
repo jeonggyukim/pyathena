@@ -11,6 +11,8 @@ Starburst99 Reader
     :private-members:
     :show-inheritance:
 
+.. autofunction:: pyathena.util.sb99.get_ISRF_SB99_plane_parallel
+
 
 Mass-to-luminosity Converter
 ============================
