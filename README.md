@@ -39,7 +39,10 @@ Below is an example of how you can set up pyathena. It assumes that you have alr
    
    The `-e` flag creates an editable installation, which means changes to the source code will immediately be reflected without reinstalling the package.
 
-If you hit solver conflicts, pin the offending package to a known-good version, e.g. `conda install -c conda-forge <pkg>=<version>`.
+If conda cannot install the environment because two packages need different versions of the same thing, install an older version of one of them, for example:
+```sh
+conda install -c conda-forge <package-name>=<version>
+```
 
 To update the existing pyathena environment with an updated env.yml file
 ```sh
