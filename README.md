@@ -1,5 +1,3 @@
-<div id="top"></div>
-
 ## About
 
 pyathena is a set of python scripts for reading and analyzing simulation data produced by the Athena-TIGRESS and TIGRIS codes.
@@ -12,32 +10,16 @@ Python version **3.10** or higher
 
 Below is an example of how you can set up pyathena. It assumes that you have already installed [miniforge](https://github.com/conda-forge/miniforge) (recommended), [miniconda](https://docs.conda.io/en/latest/miniconda.html), or anaconda on your system. Miniforge defaults to the `conda-forge` channel and avoids Anaconda Inc.'s commercial-use licensing on the `defaults` channel. Miniforge also ships [`mamba`](https://github.com/mamba-org/mamba), a faster drop-in replacement for `conda` — swap `conda` for `mamba` in any command below.
 
-1. Clone the pyathena repo
-   ```sh
-   git clone https://github.com/jeonggyukim/pyathena.git
-   cd pyathena
-   ```
-2. Create an environment from the env.yml file
-   ```sh
-   conda env create -f env.yml
-   ```
-3. Activate the pyathena environment
-   ```sh
-   conda activate pyathena
-   ```
-4. Install pyathena
+```sh
+git clone https://github.com/jeonggyukim/pyathena.git
+cd pyathena
+conda env create -f env.yml
+conda activate pyathena
+pip install -e .                                         # drop the -e for a non-editable install
+python -c "import pyathena; print(pyathena.__file__)"    # sanity check
+```
 
-   For a standard installation:
-   ```sh
-   pip install .
-   ```
-
-   For development (editable installation - recommended for contributors):
-   ```sh
-   pip install -e .
-   ```
-   
-   The `-e` flag creates an editable installation, which means changes to the source code will immediately be reflected without reinstalling the package.
+Use `pip install -e .` (editable) if you plan to edit the source — changes take effect without reinstalling.
 
 If conda cannot install the environment because two packages need different versions of the same thing, install an older version of one of them, for example:
 ```sh
@@ -61,26 +43,8 @@ See example [notebooks](notebook) and [documentation](https://jeonggyukim.github
 
 ## Contributing
 
-If you have a suggestion that would make pyathena better, please fork the repo and create a pull request.
-Don't forget to give the project a star! Thanks again!
+Fork the repo, follow the [Installation](#installation) steps with `pip install -e .`, then submit a pull request from a feature branch.
 
-### Development Setup
+## License
 
-For contributors, it's recommended to use an editable installation:
-
-1. Fork pyathena and clone your fork:
-   ```sh
-   git clone https://github.com/yourusername/pyathena.git
-   cd pyathena
-   ```
-2. Set up the development environment:
-   ```sh
-   conda env create -f env.yml
-   conda activate pyathena
-   pip install -e .
-   ```
-3. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-4. Make your changes and test them
-5. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-6. Push to the branch (`git push origin feature/AmazingFeature`)
-7. Open a Pull Request
+See [LICENSE.md](LICENSE.md).
