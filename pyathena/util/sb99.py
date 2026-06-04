@@ -1554,16 +1554,16 @@ def get_ISRF_SB99_plane_parallel(rr=None, rr_long=None,
         # sfh(time_Myr) -> Quantity in M_sun yr-1 kpc-2
         sfh_arr = sfh(time_Myr).to('M_sun yr-1 kpc-2').value  # shape (ntime,)
         # units: [M_sun yr-1 kpc-2] * [erg s-1 Å-1 Msun-1] * [yr] = [erg s-1 Å-1 kpc-2]
-        Llambda_per_area_val = np.trapz(
+        Llambda_per_area_val = np.trapezoid(
             Llambda_per_Msun * sfh_arr[:, np.newaxis], x=time_yr, axis=0)
         Llambda_per_area = Llambda_per_area_val * au.erg / au.s / au.angstrom / au.kpc**2
         Llambda_per_SFR = None
         # effective Sigma_SFR for reporting (time-averaged)
-        Sigma_SFR = np.trapz(sfh_arr, x=time_Myr) / t_max_Myr * au.M_sun / au.kpc**2 / au.yr
+        Sigma_SFR = np.trapezoid(sfh_arr, x=time_Myr) / t_max_Myr * au.M_sun / au.kpc**2 / au.yr
     else:
         # Constant SFR convolution: L_lambda per unit SFR
         #   integral_0^{t_max} L_lambda(SSP per Msun, t) dt  [erg/s/Å / (Msun/yr)]
-        Llambda_per_SFR_val = np.trapz(Llambda_per_Msun, x=time_yr, axis=0)
+        Llambda_per_SFR_val = np.trapezoid(Llambda_per_Msun, x=time_yr, axis=0)
         Llambda_per_SFR = (Llambda_per_SFR_val
                            * au.erg / au.s / au.angstrom / (au.M_sun / au.yr))
         Llambda_per_area = Sigma_SFR * Llambda_per_SFR
