@@ -10,22 +10,22 @@ Python version **3.10** or higher
 
 ## Installation
 
-Below is an example of how you can set up pyathena. It assumes that you have already installed [miniconda](https://docs.conda.io/en/latest/miniconda.html) or anaconda on your system.
+Below is an example of how you can set up pyathena. It assumes that you have already installed [miniforge](https://github.com/conda-forge/miniforge) (recommended), [miniconda](https://docs.conda.io/en/latest/miniconda.html), or anaconda on your system. Miniforge defaults to the `conda-forge` channel and avoids Anaconda Inc.'s commercial-use licensing on the `defaults` channel. Miniforge also ships [`mamba`](https://github.com/mamba-org/mamba), a faster drop-in replacement for `conda` — swap `conda` for `mamba` in any command below.
 
 1. Clone the pyathena repo
    ```sh
    git clone https://github.com/jeonggyukim/pyathena.git
+   cd pyathena
    ```
-3. Create an environment from the env.yml file
+2. Create an environment from the env.yml file
    ```sh
-   conda update conda
-   conda env create -f path_to_pyathena/env.yml
+   conda env create -f env.yml
    ```
-4. Activate the pyathena environment
+3. Activate the pyathena environment
    ```sh
    conda activate pyathena
    ```
-5. Install pyathena
+4. Install pyathena
 
    For a standard installation:
    ```sh
