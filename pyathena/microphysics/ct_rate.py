@@ -180,7 +180,7 @@ class ChargeTransferRate(object):
         # Catch exceptions
         if (Z == 8) and (N == 8):
             #return ChargeTransferRate.get_ct_ion_OI_HII(T)
-            return ChargeTransferRate.get_ct_ion_OI_HII_Draine11(T)
+            return ChargeTransferRate.get_ct_ion_HII_OI_Draine11(T)
         elif (Z == 12) and (N == 12):
             return ChargeTransferRate.get_ct_ion_MgI_HII(T)
         elif (Z == 14) and (N == 14):
