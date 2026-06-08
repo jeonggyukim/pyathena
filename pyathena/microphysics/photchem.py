@@ -539,14 +539,37 @@ class PhotChem(object):
                                self.dVol_inv_cgs)
 
     def _ct_rate_safe(self, kind, Z, N, T):
-        """Wrap pyathena's CT rate lookup so that ions for which no
-        data is available (e.g., H itself; high-q metals not in the
-        Kingdon-Ferland table beyond the Dalgarno-1.92e-9 fallback)
-        return 0 instead of raising. Used in the chemistry sweep
-        where we'd rather skip a coupling than crash.
+        """Return the CT rate per reactant atom for the chemistry
+        sweep, with the low-density-limit assumption applied to
+        neutral O.
+
+        Wraps pyathena's CT rate lookup so that ions with no
+        tabulated data (H itself; high-q metals beyond the
+        Kingdon-Ferland table) return 0 instead of raising.
+
+        Special case: O0 CT-ionization. Pyathena's
+        `get_ct_ion_HII_OI_Draine11` returns the UNWEIGHTED J-sum
+        `k0i + k1i + k2i` of the three O 3P fine-structure
+        channels, which is ~4x too large because it assumes all
+        three J levels are simultaneously populated at unit
+        fraction. Use only the J=2 (ground) channel `k0i`, which
+        is the correct per-O0 rate in the low-density limit
+        (n_H << n_crit ~ 2e4 cm^-3; PhotChem operates well below
+        this). A future upgrade could weight by exact J populations
+        from `cool.get_OI_lev`, smoothly interpolating between low-
+        density and LTE limits.
+
+        Other neutrals (C0 / N0 / S0 / Mg0 / Si0) use scalar
+        single-channel fits in pyathena (KF96 generic; or
+        `get_ct_ion_MgI_HII`, `get_ct_ion_SiI_HII` specials), so
+        there is no per-J data to mishandle for them.
         """
         if Z <= 1:
             return 0.0
+        if kind == 'ion' and Z == 8 and N == 8:
+            kJ2, _, _ = (
+                self.ct.get_ct_ion_HII_OI_Draine11(T, sum=False))
+            return kJ2
         try:
             if kind == 'ion':
                 return self.ct.get_ct_ion_rate(Z, N, T)

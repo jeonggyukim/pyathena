@@ -132,16 +132,18 @@ def test_metal_CT_fluxes_signs():
     n_HII = n_H * (1.0 - x_HI)
 
     k_rec_OII = stub.ct.get_ct_rec_rate(8, 7, T)
-    # O0 in J=2 (low-density limit; this is the right call for
-    # n_H = 100 << n_crit ~ 1e5).
-    k_ion_OI = stub.ct.get_ct_ion_rate(8, 8, T)
-
+    # The CT wiring uses the low-density-limit J=2-only channel for
+    # neutral O (pyathena's `get_ct_ion_rate(8, 8, T)` returns the
+    # unweighted J-sum, which would overcount by ~4x). See the
+    # docstring of `_ct_rate_safe` for the rationale.
+    k_ion_OI, _, _ = ChargeTransferRate.get_ct_ion_HII_OI_Draine11(
+        T, sum=False)
     # Expected sum-over-metals contributions (only O carries CT data
     # in the stub). q >= 1 for the CT-rec arm contributes O+ only;
     # CT-ion arm contributes O0 (and could include O+ if ionize is
     # True for it, which it is for our O+ row -- O+ -> O2+ via H+
     # is possible). Account for both O0 and O+ in CT-ion if both
-    # ionize.
+    # ionize. O+ uses the scalar KF96 fit (no per-J resolution).
     k_ion_OII = stub.ct.get_ct_ion_rate(8, 7, T)
     expected_sum_rec = n_OII * k_rec_OII
     expected_sum_ion = n_OI * k_ion_OI + n_OII * k_ion_OII
