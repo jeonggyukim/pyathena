@@ -9,8 +9,8 @@
 #
 LEVELS N=2
 # idx  chianti_lvl  conf            term       j     g    E_erg            E_K
-0     1            2s2 2p          2P0.5      0.5   2     0.000000e+00   0.000000e+00
-1     2            2s2 2p          2P1.5      1.5   4     1.259064e-14   9.119366e+01
+0     1            2s2_2p          2P0.5      0.5   2     0.000000e+00   0.000000e+00
+1     2            2s2_2p          2P1.5      1.5   4     1.259064e-14   9.119366e+01
 
 A_COEFFS N=1
 # upper_idx  lower_idx   A [s^-1]

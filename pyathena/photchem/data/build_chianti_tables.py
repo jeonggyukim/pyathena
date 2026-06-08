@@ -363,7 +363,10 @@ def write_ascii(out_path, label, data, T_min, T_max):
         f.write(f"# idx  chianti_lvl  conf            term       "
                 f"j     g    E_erg            E_K\n")
         for k in range(nlev_phys):
-            conf = str(data['conf'][k])
+            # Replace spaces in the configuration with underscores
+            # so the line is split-by-whitespace parseable. The
+            # reader reverses this.
+            conf = str(data['conf'][k]).replace(' ', '_')
             term = str(data['term'][k])
             E_erg = float(data['E_erg'][k])
             E_K = E_erg / KB_CGS
@@ -416,7 +419,9 @@ def read_ascii(path):
         if section == 'LEVELS':
             idx = np.array([int(b.split()[0]) for b in body])
             lvl = np.array([int(b.split()[1]) for b in body])
-            conf = [b.split()[2] for b in body]
+            # Reverse the underscore-for-space convention used by
+            # the writer to keep the configuration string parseable.
+            conf = [b.split()[2].replace('_', ' ') for b in body]
             term = [b.split()[3] for b in body]
             j_arr = np.array([float(b.split()[4]) for b in body])
             g = np.array([int(b.split()[5]) for b in body])
