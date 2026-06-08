@@ -382,37 +382,6 @@ def test_ct_ion_rate_zero_for_high_q(ct):
     assert rate == 0.0, "high-q ct_ion fallback should be zero (q > 3 cap)"
 
 
-def _n_crit_OI(T, x_e):
-    """Critical density for the [OI] 63 um fine-structure transition,
-    Draine 2011 Eqs. 14.33-14.34. Assumes neutral gas (n_HI ~ n_H).
-    Sets the boundary between low-density (J=2-only) and partial-LTE
-    populations of O 3P.
-    """
-    T2 = T / 100.0
-    return 2.5e5 / (T2 ** 0.40 + x_e * (5.6 + 4.1 * T2 ** 0.19))
-
-
-def _f_OI_J(T, n_H_over_n_crit):
-    """Partial-LTE J=2/1/0 populations of O 3P, parametrized by
-    n_H / n_crit. At n_H << n_crit returns (1, 0, 0); at n_H >> n_crit
-    returns the full thermal Boltzmann fractions.
-
-    Effective two-level approximation: each excited J level's
-    population relative to ground is multiplied by
-    beta = n_H / (n_H + n_crit), interpolating between zero
-    (low density, radiative decay wins) and the Boltzmann factor
-    (high density, collisions thermalize).
-    """
-    import numpy as np
-    beta = n_H_over_n_crit / (1.0 + n_H_over_n_crit)
-    Tinv = 1.0 / T
-    w2 = 5.0
-    w1 = 3.0 * np.exp(-228.0 * Tinv) * beta
-    w0 = 1.0 * np.exp(-326.0 * Tinv) * beta
-    Z = w0 + w1 + w2
-    return w2 / Z, w1 / Z, w0 / Z
-
-
 def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
                     G_PE=1.0, Z_d=1.0):
     """Realistic K(T) = (x_OII/x_OI) / (x_HII/x_HI) under neutral-gas
@@ -452,11 +421,13 @@ def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
         n_e = xe * nH
 
         zeta_O = 2.7 * xi_CR
-        # CT-ion rate: density-dependent weighting between low-density
-        # limit (J=2 only) and high-density LTE (all J's thermalize).
-        # The interpolation uses n_crit from Draine 2011 Eq. 14.33-34.
-        n_crit = _n_crit_OI(T, xe)
-        fJ2, fJ1, fJ0 = _f_OI_J(T, nH / n_crit)
+        # CT-ion rate weighted by the actual J=2/1/0 populations of
+        # O 3P, solved by 3-level statistical equilibrium with
+        # H I, H2 (ortho+para), and e- collision rates from Draine
+        # 2011 Appendix F Table F.6. Implemented in pyathena as
+        # `cool.get_OI_lev`. Returns (f_J=2, f_J=1, f_J=0).
+        from pyathena.microphysics.cool import get_OI_lev
+        fJ2, fJ1, fJ0 = get_OI_lev(nH, T, xe, x_HI, 0.0)
         kJ2, kJ1, kJ0 = ChargeTransferRate.get_ct_ion_HII_OI_Draine11(
             T, sum=False)
         k_CT_ion_eff = fJ2 * kJ2 + fJ1 * kJ1 + fJ0 * kJ0
@@ -609,13 +580,18 @@ def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
             n_HI = x_HI * nH
             n_e = xe * nH
             zeta_O = 2.7 * xi_CR
-            # Low-density limit: only J=2 channel of CT-ion active.
-            k_CT_ion_J2, _, _ = \
+            # CT-ion rate weighted by exact J=2/1/0 populations of
+            # O 3P (`cool.get_OI_lev`, 3-level statistical equilibrium
+            # with Draine 2011 collision rates).
+            from pyathena.microphysics.cool import get_OI_lev
+            fJ2, fJ1, fJ0 = get_OI_lev(nH, T_fixed, xe, 1.0 - xe, 0.0)
+            kJ2, kJ1, kJ0 = \
                 ChargeTransferRate.get_ct_ion_HII_OI_Draine11(
                     T_fixed, sum=False)
+            k_CT_ion_eff = fJ2 * kJ2 + fJ1 * kJ1 + fJ0 * kJ0
             k_CT_rec = ct_obj.get_ct_rec_rate(8, 7, T_fixed)
             alpha_rec = rc_full.get_rec_rate(8, 7, T_fixed)
-            num = zeta_O + n_HII * k_CT_ion_J2
+            num = zeta_O + n_HII * k_CT_ion_eff
             den = n_HI * k_CT_rec + n_e * alpha_rec
             r_O = num / den
             x_OII[j] = r_O / (1.0 + r_O)
