@@ -382,6 +382,37 @@ def test_ct_ion_rate_zero_for_high_q(ct):
     assert rate == 0.0, "high-q ct_ion fallback should be zero (q > 3 cap)"
 
 
+def _n_crit_OI(T, x_e):
+    """Critical density for the [OI] 63 um fine-structure transition,
+    Draine 2011 Eqs. 14.33-14.34. Assumes neutral gas (n_HI ~ n_H).
+    Sets the boundary between low-density (J=2-only) and partial-LTE
+    populations of O 3P.
+    """
+    T2 = T / 100.0
+    return 2.5e5 / (T2 ** 0.40 + x_e * (5.6 + 4.1 * T2 ** 0.19))
+
+
+def _f_OI_J(T, n_H_over_n_crit):
+    """Partial-LTE J=2/1/0 populations of O 3P, parametrized by
+    n_H / n_crit. At n_H << n_crit returns (1, 0, 0); at n_H >> n_crit
+    returns the full thermal Boltzmann fractions.
+
+    Effective two-level approximation: each excited J level's
+    population relative to ground is multiplied by
+    beta = n_H / (n_H + n_crit), interpolating between zero
+    (low density, radiative decay wins) and the Boltzmann factor
+    (high density, collisions thermalize).
+    """
+    import numpy as np
+    beta = n_H_over_n_crit / (1.0 + n_H_over_n_crit)
+    Tinv = 1.0 / T
+    w2 = 5.0
+    w1 = 3.0 * np.exp(-228.0 * Tinv) * beta
+    w0 = 1.0 * np.exp(-326.0 * Tinv) * beta
+    Z = w0 + w1 + w2
+    return w2 / Z, w1 / Z, w0 / Z
+
+
 def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
                     G_PE=1.0, Z_d=1.0):
     """Realistic K(T) = (x_OII/x_OI) / (x_HII/x_HI) under neutral-gas
@@ -421,19 +452,22 @@ def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
         n_e = xe * nH
 
         zeta_O = 2.7 * xi_CR
-        # Low-density limit assumed (n_H << n_crit for [OI] 63 um
-        # ~ 1e4 cm^-3): O0 sits entirely in the J=2 ground level, so
-        # the only CT-ion channel firing is k0r (J=2 -> O+).
-        # Total CT-rec sink IS the J-summed k0+k1+k2 because each
-        # final-J product radiatively cascades back to J=2.
-        k_CT_ion_J2, _, _ = ChargeTransferRate.get_ct_ion_HII_OI_Draine11(
+        # CT-ion rate: density-dependent weighting between low-density
+        # limit (J=2 only) and high-density LTE (all J's thermalize).
+        # The interpolation uses n_crit from Draine 2011 Eq. 14.33-34.
+        n_crit = _n_crit_OI(T, xe)
+        fJ2, fJ1, fJ0 = _f_OI_J(T, nH / n_crit)
+        kJ2, kJ1, kJ0 = ChargeTransferRate.get_ct_ion_HII_OI_Draine11(
             T, sum=False)
+        k_CT_ion_eff = fJ2 * kJ2 + fJ1 * kJ1 + fJ0 * kJ0
+        # Total CT-rec sink is J-summed (each final-J O0 product
+        # radiatively cascades to J=2; one O+ destroyed per event).
         k_CT_rec = ct.get_ct_rec_rate(8, 7, T)   # sum k0+k1+k2
         alpha_rec = rc.get_rec_rate(8, 7, T)     # RR + DR for O+
         # grain-assisted rec for O+ not tabulated; set to 0
         alpha_gr_O = 0.0
 
-        num = zeta_O + n_HII * k_CT_ion_J2
+        num = zeta_O + n_HII * k_CT_ion_eff
         den = n_HI * k_CT_rec + n_e * (alpha_rec + alpha_gr_O)
         r_O = num / den                          # n(O+)/n(O0)
         r_H = x_HII / max(x_HI, 1e-30)           # n(H+)/n(H0)
@@ -552,8 +586,8 @@ def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
     chi_FUV = 1.0
     xi_CR = 2.0e-16
     Z_d = 1.0
-    T_list = [50.0, 200.0]
-    color_T = {50.0: "C0", 200.0: "C3"}
+    T_list = [50.0, 200.0, 1000.0, 8000.0]
+    color_T = {50.0: "C0", 200.0: "C3", 1000.0: "C2", 8000.0: "C4"}
     for T_fixed in T_list:
         x_HII = np.zeros_like(nH_arr)
         x_OII = np.zeros_like(nH_arr)
