@@ -395,18 +395,17 @@ def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
     metals contribute negligibly to xe in diffuse neutral gas so
     xeM is set to 0.
 
-    Oxygen ionization: source = direct CR ionization of O0 + CT-ion
-    of O0 by H+; sink = CT-rec of O+ by H0 + RR + DR. The per-atom
-    CR ionization rate of O is zeta_O ~ a few * zeta_CR_H, with a
-    canonical factor ~2-3 accounting for the larger per-atom CR
-    cross-section (inner-shell + Auger cascade; Draine 2011 ch.
-    13.2) plus secondary ionizations. Tielens 2005, Physics+Chem of
-    the ISM sec 3.4.2 lists per-element rates; Glassgold et al.
-    2012, ApJ 756 157 has the detailed Auger calculation. In the
-    parameter regime of this test (T = 50-200 K, n_H = 1-1e3) the
-    direct CR-ion source term is ~1e4 times smaller than the CT-ion
-    source n_HII * k_CT_ion * n_O0, so the precise factor barely
-    matters numerically. Code uses 2.84 as a placeholder.
+    Oxygen ionization: source = CT-ion of O0 by H+; sink = CT-rec of
+    O+ by H0 + RR + DR. Direct cosmic-ray ionization of O0 is
+    omitted because, in the parameter range of this test (T =
+    50-200 K, n_H = 1-1e3), it is about 4 orders of magnitude
+    weaker than the CT-ion source `n_HII * k_CT_ion * n_O0`. The
+    canonical factor `zeta_O / zeta_CR_H` for direct CR ionization
+    of O has been quoted at ~2-3 in various sources (accounting for
+    inner-shell + Auger cascades plus secondary ionizations; e.g.,
+    Glassgold et al. 2012, ApJ 756 157) but I was unable to locate
+    a clean primary citation while writing this docstring, so the
+    term is dropped rather than carrying an unverifiable factor.
     Grain-assisted recombination for O+ is NOT in WD01 / Draine
     2011 sec 14.8 (only H+, He+, C+, Mg+, S+, Ca+ are tabulated),
     so alpha_gr_O = 0 here. Photoionization is zero in neutral gas.
@@ -429,10 +428,6 @@ def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
         n_HI = x_HI * nH
         n_e = xe * nH
 
-        # Cosmic-ray ionization rate of O per atom; placeholder
-        # factor ~2.84 (see docstring). Sub-dominant to the CT-ion
-        # source term in the test parameter range.
-        zeta_O = 2.84 * xi_CR
         # CT-ion rate weighted by the actual J=2/1/0 populations of
         # O 3P, solved by 3-level statistical equilibrium with
         # H I, H2 (ortho+para), and e- collision rates from Draine
@@ -451,8 +446,10 @@ def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
         alpha_gr_O = 0.0
 
         # Steady-state n(O+)/n(O0): set per-O0 source rate equal to
-        # per-O+ sink rate and solve for the ratio.
-        source_per_OI = zeta_O + n_HII * k_CT_ion_eff
+        # per-O+ sink rate and solve for the ratio. Direct CR
+        # ionization of O omitted (sub-dominant in this regime; see
+        # docstring).
+        source_per_OI = n_HII * k_CT_ion_eff
         sink_per_OII = n_HI * k_CT_rec + n_e * (alpha_rec + alpha_gr_O)
         r_O = source_per_OI / sink_per_OII       # n(O+)/n(O0)
         r_H = x_HII / max(x_HI, 1e-30)           # n(H+)/n(H0)
@@ -593,12 +590,6 @@ def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
             n_HII = xe * nH
             n_HI = x_HI * nH
             n_e = xe * nH
-            # Per-atom CR ionization rate of O. zeta_O ~ a few
-            # * zeta_CR_H, with a canonical factor ~2-3 (inner-shell
-            # + Auger cascade per Draine 2011 ch. 13.2; Tielens 2005
-            # sec 3.4.2; Glassgold et al. 2012). Sub-dominant to
-            # CT-ion in this parameter range. Code uses 2.84.
-            zeta_O = 2.84 * xi_CR
             # CT-ion rate weighted by exact J=2/1/0 populations of
             # O 3P (`cool.get_OI_lev`, 3-level statistical equilibrium
             # with Draine 2011 Appendix F Table F.6 collision rates).
@@ -611,7 +602,9 @@ def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
             k_CT_rec = ct_obj.get_ct_rec_rate(8, 7, T_fixed)
             alpha_rec = rc_full.get_rec_rate(8, 7, T_fixed)
             # Steady-state n(O+)/n(O0): per-O0 source = per-O+ sink.
-            source_per_OI = zeta_O + n_HII * k_CT_ion_eff
+            # Direct CR ionization of O dropped (sub-dominant in this
+            # regime; see _K_realistic_OH docstring).
+            source_per_OI = n_HII * k_CT_ion_eff
             sink_per_OII = n_HI * k_CT_rec + n_e * alpha_rec
             r_O = source_per_OI / sink_per_OII
             x_OII[j] = r_O / (1.0 + r_O)
