@@ -131,6 +131,18 @@ FOLLOWED_IONS = {
     'FeII': ('fe_2', 5),
     # 3d^6 ground (complex): lowest 5 of a^5D term (J = 4, 3, 2, 1, 0)
     'FeIII':('fe_3', 5),
+    # --- Tier 3: Li-like hot-gas ions (T ~ 1e5 K, coronal / WR / AGN /
+    # halo). Rare in HII regions but useful for hot ionized gas and
+    # planetary-nebula / AGN extensions. All have 2s ground + 2p 2P
+    # doublet = 3 levels (padded to 5). Famous resonance doublets:
+    # 'CIV':  ('c_4',  3),   # 2s 2S1/2 + 2p 2P1/2,3/2 (C IV 1548, 1551)
+    'CIV':  ('c_4',  3),
+    # 'NV':   ('n_5',  3),   # N V 1238, 1242
+    'NV':   ('n_5',  3),
+    # 'OVI':  ('o_6',  3),   # O VI 1031, 1037 (FUSE doublet)
+    'OVI':  ('o_6',  3),
+    # 'SiIV': ('si_4', 3),   # Si IV 1393, 1402
+    'SiIV': ('si_4', 3),
 }
 
 # Default temperature grid for the Upsilon table: 60 log-spaced
