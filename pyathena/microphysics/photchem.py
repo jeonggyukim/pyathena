@@ -538,7 +538,81 @@ class PhotChem(object):
                                (1 - np.exp(-self.dtau)) / self.chi.sum(axis=0),
                                self.dVol_inv_cgs)
 
-    def evolve_one_species(self, idx, T, dt, axes=None):
+    def _ct_rate_safe(self, kind, Z, N, T):
+        """Wrap pyathena's CT rate lookup so that ions for which no
+        data is available (e.g., H itself; high-q metals not in the
+        Kingdon-Ferland table beyond the Dalgarno-1.92e-9 fallback)
+        return 0 instead of raising. Used in the chemistry sweep
+        where we'd rather skip a coupling than crash.
+        """
+        if Z <= 1:
+            return 0.0
+        try:
+            if kind == 'ion':
+                return self.ct.get_ct_ion_rate(Z, N, T)
+            else:
+                return self.ct.get_ct_rec_rate(Z, N, T)
+        except (IndexError, KeyError):
+            return 0.0
+
+    def _compute_metal_CT_fluxes(self, T):
+        """Pre-pass before the per-species walks: accumulate the
+        sum-over-metals charge-transfer contributions to the H I
+        and H II rate equations.
+
+        Each metal CT-rec event X^q + HI -> X^(q-1) + HII destroys
+        one H I and creates one H II. Each metal CT-ion event
+        X^q + HII -> X^(q+1) + HI destroys one H II and creates
+        one H I. Summing over all metal ions with q >= 1 (for
+        CT-rec) and over all metal ions (for CT-ion) gives the
+        four arrays returned here.
+
+        H itself and He are skipped: H + H+ self-CT is degenerate;
+        He has no commonly tabulated CT data in Kingdon-Ferland or
+        Draine, so the contribution is taken as zero.
+
+        Returns
+        -------
+        (HI_drate, HII_crate, HI_crate, HII_drate)
+            HI_drate : per-H-I destruction rate from sum_metals
+                       (n_X^q * k_CT_rec) over q >= 1.
+            HII_crate : volumetric H II creation rate
+                       n_HI * sum_metals (n_X^q * k_CT_rec).
+            HI_crate : volumetric H I creation rate
+                       n_HII * sum_metals (n_X^q * k_CT_ion) over
+                       all metal q (incl. neutrals).
+            HII_drate : per-H-II destruction rate from sum_metals
+                       (n_X^q * k_CT_ion).
+        """
+        n_HI = self.den[0]
+        n_HII = self.den[1]
+        shape = n_HI.shape
+        HI_drate = np.zeros(shape)
+        HII_drate = np.zeros(shape)
+        sum_CT_rec_n = np.zeros(shape)  # sum_X (n_X^q * k_CT_rec)
+        sum_CT_ion_n = np.zeros(shape)  # sum_X (n_X^q * k_CT_ion)
+        for name, ion in self.ions.iterrows():
+            element = ion['element']
+            if element in ('H', 'He'):
+                continue
+            Z, N, q = int(ion['Z']), int(ion['N']), int(ion['q'])
+            ion_idx = int(ion['idx'])
+            n_ion = self.den[ion_idx]
+            if q >= 1:
+                k_rec = self._ct_rate_safe('rec', Z, N, T)
+                sum_CT_rec_n += n_ion * k_rec
+            # CT-ion is meaningful only when this ion can be ionized
+            # further (so the produced X^(q+1) is tracked).
+            if bool(ion['ionize']):
+                k_ion = self._ct_rate_safe('ion', Z, N, T)
+                sum_CT_ion_n += n_ion * k_ion
+        HI_drate = sum_CT_rec_n
+        HII_drate = sum_CT_ion_n
+        HII_crate = n_HI * sum_CT_rec_n
+        HI_crate = n_HII * sum_CT_ion_n
+        return HI_drate, HII_crate, HI_crate, HII_drate
+
+    def evolve_one_species(self, idx, T, dt, axes=None, metal_CT=None):
         den = self.den.view()
         nH = self.nH.view()
         n = den[idx]
@@ -573,10 +647,46 @@ class PhotChem(object):
             ci_rate = 0.0
             pi_rate = 0.0
 
+        # Charge transfer with hydrogen. Two channels:
+        #   CT-rec : X^q + H I  -> X^(q-1) + H II   (destroys this
+        #            ion when q >= 1; creates the X^(q-1) ion below).
+        #   CT-ion : X^q + H II -> X^(q+1) + H I    (destroys this
+        #            ion when it can be ionized further; creates
+        #            the X^(q+1) ion above).
+        # Skip H itself (H-H self-CT is degenerate) and He (no
+        # tabulated CT data). For the H walks, the H-side
+        # contributions come from `metal_CT` (pre-computed sum over
+        # all tracked metal ions).
+        ct_drate = 0.0
+        ct_crate = 0.0
+        if element == 'H' and metal_CT is not None:
+            HI_drate, HII_crate, HI_crate, HII_drate = metal_CT
+            if name == 'H0':
+                ct_drate = HI_drate
+                ct_crate = HI_crate
+            elif name == 'H1':
+                ct_drate = HII_drate
+                ct_crate = HII_crate
+        elif element not in ('H', 'He'):
+            n_HI = den[0]
+            n_HII = den[1]
+            if q >= 1:
+                ct_drate += n_HI * self._ct_rate_safe('rec', Z, N, T)
+            if ionize:
+                ct_drate += n_HII * self._ct_rate_safe('ion', Z, N, T)
+            if recomb:
+                # Created by CT-ion of X^(q-1) -> X^q.
+                ct_crate += n_m1 * n_HII * self._ct_rate_safe(
+                    'ion', Z, N + 1, T)
+            if ionize:
+                # Created by CT-rec of X^(q+1) -> X^q.
+                ct_crate += n_p1 * n_HI * self._ct_rate_safe(
+                    'rec', Z, N - 1, T)
+
         # Note that all destruction rates divided by n (hence in units of [1/time])
         # while creation rates have [1/time/volume]
-        drate = rc_rate + ci_rate + pi_rate
-        crate = rc_rate_p1 + ci_rate_m1 + pi_rate_m1
+        drate = rc_rate + ci_rate + pi_rate + ct_drate
+        crate = rc_rate_p1 + ci_rate_m1 + pi_rate_m1 + ct_crate
         n_after = (n + crate*dt)/(1 + drate*dt)
 
         self.den[idx,:] = n_after
@@ -626,8 +736,14 @@ class PhotChem(object):
         for i in range(int(tlim/dt)):
             # print(i, end=' ')
             self.calc_radiation_field()
+            # Pre-pass: accumulate sum-over-metals CT contributions to
+            # the H I / H II walks. Computed at the start-of-step
+            # state, in the same spirit as the existing implicit-Euler
+            # per-species treatment.
+            metal_CT = self._compute_metal_CT_fluxes(self.Tion)
             for idx in range(self.species_set.num_ions_tot):
-                self.evolve_one_species(idx, self.Tion, dt.cgs.value, axes=None)
+                self.evolve_one_species(idx, self.Tion, dt.cgs.value,
+                                        axes=None, metal_CT=metal_CT)
                 self.den[-1,:] = self.den[1,:]
 
             # Set free electron density
