@@ -1,0 +1,6 @@
+# Exclude large SB99 output files not needed for examples
+*.hires1
+*.ifaspec1
+*.ovi1
+*.uvline1
+*.sptyp21

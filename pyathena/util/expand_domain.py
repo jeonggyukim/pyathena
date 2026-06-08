@@ -3,7 +3,7 @@ import numpy as np
 from scipy.ndimage import shift
 
 
-def expand_x(sim, data):
+def expand_x(sim, data, time=None):
     """function to expand original data from -Lx/2 < x < Lx/2 to -3*Lx/2 < x < 3*Lx/2
 
     Parameters
@@ -17,7 +17,12 @@ def expand_x(sim, data):
     xarray.Dataset with extended x-domain (tripled)
     """
     # retrive the AthenaDataset class
-    ds = sim.ds
+    if hasattr(sim, "domain"):
+        domain = sim.domain
+    elif hasattr(sim, "ds"):
+        domain = sim.ds.domain
+    else:
+        raise AttributeError("sim must have either domain or ds attribute")
 
     # is this a shearing-box simulation?
     try:
@@ -26,8 +31,8 @@ def expand_x(sim, data):
         shear = False
 
     # get domain information
-    Lx, Ly, Lz = ds.domain["Lx"]
-    dx, dy, dz = ds.domain["dx"]
+    Lx, Ly, Lz = domain["Lx"]
+    dx, dy, dz = domain["dx"]
 
     # exapnd in x assuming periodic BC
     data_left = data.copy(deep=True).assign_coords(x=data.coords["x"] - Lx)
@@ -37,7 +42,8 @@ def expand_x(sim, data):
     if shear:
         # get shear related parameters
         qOmL = sim.par["problem"]["qshear"] * sim.par["problem"]["Omega"] * Lx
-        time = ds.domain["time"]
+        if time is None:
+            time = domain["time"]
         qOmLt = qOmL * time
         dims = data.to_array("variable").dims
         ndims = len(dims) - 1
@@ -81,10 +87,15 @@ def expand_y(sim, data):
     xarray.Dataset with extended y-domain (tripled)
     """
     # retrive the AthenaDataset class
-    ds = sim.ds
+    if hasattr(sim, "domain"):
+        domain = sim.domain
+    elif hasattr(sim, "ds"):
+        domain = sim.ds.domain
+    else:
+        raise AttributeError("sim must have either domain or ds attribute")
 
     # get domain information
-    Lx, Ly, Lz = ds.domain["Lx"]
+    Lx, Ly, Lz = domain["Lx"]
 
     # exapnd in x assuming periodic BC
     data_bot = data.copy(deep=True).assign_coords(y=data.coords["y"] - Ly)
@@ -93,7 +104,7 @@ def expand_y(sim, data):
     return xr.concat([data_bot, data, data_top], dim="y")
 
 
-def expand_xy(s, data):
+def expand_xy(s, data, time=None):
     """Triple XY domain
 
     Parameters
@@ -115,4 +126,4 @@ def expand_xy(s, data):
     >>> data_exp = expand_xy(s,data.sel(z=0,method="nearest")) # expanded 2D slices
     >>> data_exp["vy"].plot(**s.dfi["vy"]["imshow_args"])
     """
-    return expand_y(s, expand_x(s, data))
+    return expand_y(s, expand_x(s, data, time=time))

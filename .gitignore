@@ -12,3 +12,8 @@ docs/_static
 .DS_Store
 tags
 job*
+scripts/
+working_notebooks/
+pyathena.egg-info
+CLAUDE.md
+.claude/

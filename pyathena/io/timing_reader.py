@@ -3,17 +3,28 @@ import pandas as pd
 import os
 
 class TimingReader(object):
+    """Reader for Athena++ timing output files.
+
+    Reads ``<problem_id>.loop_time.txt`` and ``<problem_id>.task_time.txt``
+    from the simulation base directory and exposes them as pandas DataFrames
+    via :meth:`load_loop_time` and :meth:`load_task_time`.
+
+    Parameters
+    ----------
+    basedir : str
+        Base directory of the simulation.
+    problem_id : str
+        Problem ID used to locate timing files.
+
+    Examples
+    --------
+    >>> from pyathena import TimingReader
+    >>> tr = TimingReader("/path/to/basedir", "problem_id")
+    >>> df_loop = tr.load_loop_time()
+    >>> df_tasks = tr.load_task_time(groups=['Hydro', 'Primitives'])
+    """
+
     def __init__(self, basedir, problem_id):
-        """ Timing reader class
-
-        Parameters
-        ----------
-        basedir : str
-            base directory name
-        problem_id : str
-            problem id
-
-        """
         self.fdict = dict()
         lt = os.path.join(basedir, '{}.loop_time.txt'.format(problem_id))
         tt = os.path.join(basedir, '{}.task_time.txt'.format(problem_id))

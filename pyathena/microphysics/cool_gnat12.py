@@ -26,7 +26,7 @@ class CoolGnat12(object):
         ion_frac : float array
             cooling
     """
-    def __init__(self, abundance='Asplund09', read_all=True):
+    def __init__(self, abundance='Asplund09', Zprime=1.0, read_all=True):
 
         # Directory where Gnat & Ferland (2012) Table 2 and CIE ion fraction
         # table in Gnat & Sternberg (2007) is located
@@ -50,7 +50,7 @@ class CoolGnat12(object):
 
         # Reset abundance
         if abundance == 'Asplund09':
-            a = AbundanceSolar(Zprime=1.0)
+            a = AbundanceSolar(Zprime=Zprime)
             for e in self.info.index:
                 self.info.loc[e, 'abd'] = float(a.df[a.df['X'] == e]['NX_NH'].iloc[0])
                 self.info.loc[e, 'mX_amu'] = float(a.df[a.df['X'] == e]['mX_amu'].iloc[0])
@@ -138,7 +138,7 @@ class CoolGnat12(object):
             rhoi[e] = np.zeros_like(self.temp)
             cool[e] = np.zeros_like(self.temp)
 
-        print('Element // Atomic number // amu')
+        # print('Element // Atomic number // amu')
         for e in elements:
             # Number of possible (atomic+)ion states
             nstate = self.info.loc[e]['number'] + 1
@@ -146,7 +146,7 @@ class CoolGnat12(object):
             A = self.info.loc[e]['abd']
             # mass of element in atomic mass unit
             amu = self.info.loc[e]['mX_amu']
-            print(e, ' // ', A, ' //', amu)
+            # print(e, ' // ', A, ' //', amu)
             for i in range(nstate):
                 if i != 0:
                     xi[e] += A*self.ion_frac[e + str(i)].values

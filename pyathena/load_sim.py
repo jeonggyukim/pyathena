@@ -31,6 +31,7 @@ from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
 from .io.read_particles import read_partab, read_parbin, read_parhst
+from .io.athenak import read_particle_vtk
 from .io.read_rst import read_rst
 from .io.read_starpar_vtk import read_starpar_vtk
 from .io.read_zprof import read_zprof_all
@@ -58,8 +59,8 @@ class LoadSimBase(ABC):
     load_method : str
         Load vtk/hdf5 snapshots using 'xarray', 'pythena_classic' (vtk only),
         or 'yt'. Defaults to 'xarray'.
-    athena_pp : bool
-        True if athena++ simulation
+    athena_variant : str
+        [athena, athena++, athenak]
     problem_id : str
         Prefix for output files.
     domain : dict
@@ -68,7 +69,7 @@ class LoadSimBase(ABC):
         Dictionary containing output file paths.
     par : dict
         Dictionary of dictionaries containing input parameters and configure
-        options read from log fileoutput file names.
+        options read from log file and output file names.
     config_time : pandas.Timestamp
         Date and time when the athena code is configured.
     verbose : bool or str or int
@@ -115,8 +116,8 @@ class LoadSimBase(ABC):
         return self._problem_id
 
     @property
-    def athena_pp(self):
-        return self._athena_pp
+    def athena_variant(self):
+        return self._athena_variant
 
     @property
     def domain(self):
@@ -160,7 +161,7 @@ class LoadSim(LoadSimBase):
     savdir : str, optional
         Directory where pickles and figures are saved. Defaults to `basedir`.
     load_method : {'xarray', 'pyathena_classic', 'yt'}, optional
-        Load vtk/hdf5 snapshots using 'xarray', 'pythena_classic', or 'yt'.
+        Load vtk/hdf5 snapshots using 'xarray', 'pyathena_classic', or 'yt'.
         Defaults to 'xarray'.
     verbose : bool or str or int
         If True/False, set logging level to 'INFO'/'WARNING'.
@@ -192,7 +193,7 @@ class LoadSim(LoadSimBase):
     Examples
     --------
     >>> import pyathena as pa
-    >>> s = pa.LoadSim('/path/to/basedir", verbose=True)
+    >>> s = pa.LoadSim('/path/to/basedir', verbose=True)
     """
 
     def __init__(self, basedir, savdir=None, load_method='xarray',
@@ -216,14 +217,23 @@ class LoadSim(LoadSimBase):
         # Set metadata
         self._get_domain_from_par(self.par)
         try:
-            k = 'Configure_date' if self.athena_pp else 'config_date'
-            self._config_time = pd.to_datetime(dateutil.parser.parse(
-            self.par['configure'][k])).tz_convert('US/Pacific')
+            if self.athena_variant == 'athena++':
+                k = 'Configure_date'
+            elif self.athena_variant == 'athena':
+                k = 'config_date'
+            elif self.athena_variant == 'athenak':
+                # TODO currently AthenaK does not print configure date
+                pass
+            tmp = self.par['configure'][k]
+            for tz in ['PDT', 'EST', 'UTC']:
+                tmp = tmp.replace(tz, '').strip()
+
+            self._config_time = pd.to_datetime(dateutil.parser.parse(tmp))
         except:
             self._config_time = None
 
         # Set units and derived field infomation
-        if not self.athena_pp:
+        if self.athena_variant == 'athena':
             try:
                 muH = self.par['problem']['muH']
                 self.u = Units(kind='LV', muH=muH)
@@ -243,7 +253,7 @@ class LoadSim(LoadSimBase):
 
             # TODO(SMOON) Make DerivedFields work with athena++
             self.dfi = DerivedFields(self.par).dfi
-        else:
+        elif self.athena_variant == 'athena++':
             self.u = Units(kind='custom', units_dict=self.par['units'])
 
     def find_files(self, verbose=None):
@@ -261,7 +271,6 @@ class LoadSim(LoadSimBase):
         """
         if verbose is None:
             verbose = self.verbose
-
         try:
             self.ff = FindFiles(self.basedir, verbose)
         except OSError as e:
@@ -270,11 +279,11 @@ class LoadSim(LoadSimBase):
         # Transfer attributes of FindFiles to LoadSim
         # TODO: Some of these attributes don't need to be transferred.
         attrs_transfer = [
-            'files', 'athena_pp', 'par', 'problem_id', 'out_fmt',
+            'files', 'athena_variant', 'par', 'problem_id', 'out_fmt',
             'nums',
-            # particle (Athena++)
+            # particle (Athena++, AthenaK)
             'nums_partab', 'nums_parbin', 'partags', 'pids',
-            'partab_outid', 'parbin_outid',
+            'partab_outid', 'parbin_outid', 'pvtk_outvar',
             # hdf5 (Athena++)
             'nums_hdf5', 'hdf5_outid', 'hdf5_outvar', '_hdf5_outid_def',
             '_hdf5_outvar_def',
@@ -289,7 +298,7 @@ class LoadSim(LoadSimBase):
             '_fmt_vtk2d_not_found']
         for attr in attrs_transfer:
             if hasattr(self.ff, attr):
-                if attr in ['files', 'par', 'athena_pp', 'problem_id']:
+                if attr in ['files', 'par', 'athena_variant', 'problem_id']:
                     setattr(self, '_' + attr, getattr(self.ff, attr))
                 else:
                     setattr(self, attr, getattr(self.ff, attr))
@@ -323,7 +332,7 @@ class LoadSim(LoadSimBase):
         if load_method is not None:
             self.load_method = load_method
 
-        if self.athena_pp:
+        if self.athena_variant == 'athena++':
             def filter_vtk_files(kind='vtk', num=None):
                 def func(num):
                     return lambda fname: '.{0:05d}.vtk'.format(num) in fname
@@ -405,95 +414,36 @@ class LoadSim(LoadSimBase):
 
         return self.ds
 
-    def load_hdf5(self, num=None, ihdf5=None,
-                  outvar=None, outid=None, load_method=None, **kwargs):
-        """Function to read Athena hdf5 file using pythena or yt and
-        return DataSet object.
+    def load_hdf5(self, num=None, **kwargs):
+        """Read an Athena++ or AthenaK HDF5 snapshot.
+
+        Dispatches to :meth:`_load_hdf5_athenapp` or :meth:`_load_hdf5_athenak`
+        depending on ``athena_variant``. See those methods for the full list of
+        supported keyword arguments.
 
         Parameters
         ----------
         num : int
-           Snapshot number, e.g., /basedir/problem_id.out?.?????.athdf
-        ihdf5 : int
-           Read i-th file in the hdf5 file list. Overrides num if both are given.
-        outvar : str
-           Variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim'
-           or 'cons'. Overrides outid.
-        outid : int
-           output block number (output[n] in the input file).
-        load_method : str
-           'xarray' or 'yt'
+            Snapshot number.
+        **kwargs :
+            Additional arguments forwarded to the variant-specific loader.
 
         Returns
         -------
-        ds : xarray AthenaDataSet or yt datasets
-
-        Examples
-        --------
-        >>> from pyathena.load_sim import LoadSim
-        >>> s = LoadSim("/path/to/basedir")
-        >>> # Load everything at snapshot number 30.
-        >>> ds = s.load_hdf5(30)
-        >>> # Read the domain information only, without loading the fields.
-        >>> ds = s.load_hdf5(30, header_only=True)
-        >>> # Load the selected fields.
-        >>> ds = s.load_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
-        >>> # Load the selected region.
-        >>> ds = s.load_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
+        ds : xarray.Dataset or yt Dataset
+            Loaded snapshot data.
         """
 
-        if num is None and ihdf5 is None:
-            raise ValueError('Specify either num or ihdf5')
-
-        # Override load_method
-        if load_method is not None:
-            self.load_method = load_method
-
-        if outid is None and outvar is None:
-            outid = self._hdf5_outid_def
-            outvar = self._hdf5_outvar_def
-        elif outid is not None:
-            if not outid in self.hdf5_outid:
-                self.logger.error('Invalid hdf5 output id!')
-            idx = [i for i,v in enumerate(self.hdf5_outid) if v == outid][0]
-            outvar = self.hdf5_outvar[idx]
-        elif outvar is not None:
-            if not outvar in self.hdf5_outvar:
-                self.logger.error('Invalid hdf5 variable!')
-            idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
-            outid = self.hdf5_outid[idx]
-
-        self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
-        if self.fhdf5 is None or not osp.exists(self.fhdf5):
-            self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
-
-        if self.load_method == 'xarray':
-            try:
-                refinement = self.par['mesh']['refinement']
-            except KeyError:
-                # Cannot determine if refinement is turned on/off without reading the
-                # HDF5 file and without <refinement> block in athinput.
-                # This part needs to be improved later.
-                refinement = 'none'
-
-            if refinement != 'none':
-                self.logger.error('load_method "{0:s}" does not support mesh\
-                        refinement data. Use "yt" instead'.format(self.load_method))
-                self.ds = None
-            else:
-                self.ds = read_hdf5(self.fhdf5, **kwargs)
-
-        elif self.load_method == 'yt':
-            if hasattr(self, 'u'):
-                units_override = self.u.units_override
-            else:
-                units_override = None
-            self.ds = yt.load(self.fhdf5, units_override=units_override)
+        if self.athena_variant == 'athenak':
+            ds = self._load_hdf5_athenak(num=num, **kwargs)
+        elif self.athena_variant == 'athena++':
+            ds = self._load_hdf5_athenapp(num=num, **kwargs)
         else:
-            self.logger.error('load_method "{0:s}" not recognized.'.format(
-                self.load_method) + ' Use either "yt" or "pyathena".')
+            self.logger.error('Athena hdf5 reading not implemented yet for '
+                              f'{self.athena_variant}.')
+            ds = None
 
-        return self.ds
+        return ds
 
     def load_partab(self, num=None, ipartab=None,
                     partag='par0', **kwargs):
@@ -507,8 +457,8 @@ class LoadSim(LoadSimBase):
         ipartab : int
            Read i-th file in the partab file list.
            Overrides num if both are given.
-        partag : int
-           Particle id in the input file. Default value is 'par0'
+        partag : str
+           Particle tag in the input file. Default value is 'par0'
 
         Returns
         -------
@@ -538,8 +488,8 @@ class LoadSim(LoadSimBase):
         iparbin : int
            Read i-th file in the parbin file list.
            Overrides num if both are given.
-        partag : int
-           Particle id in the input file. Default value is 'par0'
+        partag : str
+           Particle tag in the input file. Default value is 'par0'
 
         Returns
         -------
@@ -557,6 +507,36 @@ class LoadSim(LoadSimBase):
 
         return self.pds
 
+    def load_pvtk(self, num=None, fidx=None,
+                  partag='par0', **kwargs):
+        """Read AthenaK particle vtk file.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number.
+           e.g., /basedir/pvtk/problem_id.outvar.num.part.vtk.
+        fidx : int
+           Read i-th file in the pvtk file list.
+           Overrides num if both are given.
+        partag : str
+           Particle tag in the input file. Default value is 'par0'
+
+        Returns
+        -------
+        pds : dict
+            Particle data
+        """
+        if num is None and fidx is None:
+            raise ValueError('Specify either num or fidx')
+
+        self.fpvtk = self._get_fpvtk(self.pvtk_outvar, partag, num, fidx)
+        if self.fpvtk is None or not osp.exists(self.fpvtk):
+            self.logger.info('[load_pvtk]: pvtk file does not exist. ')
+
+        self.pds = read_particle_vtk(self.fpvtk, **kwargs)
+
+        return self.pds
 
     def load_parhst(self, pid, **kwargs):
         """Read Athena++ individual particle history
@@ -615,10 +595,26 @@ class LoadSim(LoadSimBase):
         return self.sp
 
     def load_rst(self, num=None, irst=None, verbose=False):
-        if num is None and ivtk is None:
+        """Read an Athena restart file.
+
+        Parameters
+        ----------
+        num : int, optional
+            Snapshot number.
+        irst : int, optional
+            Read i-th file in the restart file list. Overrides ``num``.
+        verbose : bool, optional
+            Verbosity flag passed to the reader. Default is ``False``.
+
+        Returns
+        -------
+        rh : RestartHandler
+            Restart file object.
+        """
+        if num is None and irst is None:
             raise ValueError('Specify either num or irst')
 
-        # get starpar_vtk file name and check if it exist
+        # get rst file name and check if it exists
         self.frst = self._get_filename('rst', num, irst)
         if self.frst is None or not osp.exists(self.frst):
             self.logger.error('[load_rst]: rst file does not exist.')
@@ -629,7 +625,22 @@ class LoadSim(LoadSimBase):
 
         return self.rh
 
-    def create_tar_all(self,remove_original=False,kind='vtk'):
+    def create_tar_all(self, remove_original=False, kind='vtk'):
+        """Move and tar all vtk/rst files from per-process ``id*`` directories.
+
+        Iterates over all snapshot numbers in ``nums_id0``, calls
+        :meth:`move_to_tardir` to gather per-process files into numbered
+        subdirectories, and then calls :meth:`create_tar` to pack each
+        subdirectory into a single ``.tar`` archive.
+
+        Parameters
+        ----------
+        remove_original : bool, optional
+            If ``True``, remove the source directory after archiving.
+            Default is ``False``.
+        kind : {'vtk', 'rst'}, optional
+            File type to archive. Default is ``'vtk'``.
+        """
         for num in self.nums_id0:
             self.move_to_tardir(num=num, kind=kind)
         raw_tardirs = self._find_match([(kind,"????")])
@@ -735,6 +746,32 @@ class LoadSim(LoadSimBase):
 
     def make_movie(self, fname_glob=None, fname_out=None, fps_in=10, fps_out=10,
                    force_override=False, display=False):
+        """Create an mp4 movie from a sequence of PNG snapshots.
+
+        Wraps :func:`~pyathena.plt_tools.make_movie.make_movie`. By default,
+        looks for PNG files under ``<basedir>/snapshots/`` and writes the
+        movie to ``/tigress/<user>/movies/<basename>.mp4``.
+
+        Parameters
+        ----------
+        fname_glob : str, optional
+            Glob pattern matching the input PNG files, e.g.
+            ``'/path/to/snapshots/*.png'``. Defaults to
+            ``<basedir>/snapshots/*.png``.
+        fname_out : str, optional
+            Output movie file path (must end in ``.mp4``). Defaults to
+            ``/tigress/<user>/movies/<basename>.mp4``.
+        fps_in : int, optional
+            Frame rate of the input images. Default is 10.
+        fps_out : int, optional
+            Frame rate of the output movie. Default is 10.
+        force_override : bool, optional
+            If ``True``, re-create the movie even if the output file already
+            exists. Default is ``False``.
+        display : bool, optional
+            If ``True``, display the movie after creation (notebook use).
+            Default is ``False``.
+        """
 
         if fname_glob is None:
             fname_glob = osp.join(self.basedir, 'snapshots', '*.png')
@@ -749,14 +786,145 @@ class LoadSim(LoadSimBase):
         else:
             self.logger.info('File already exists: {0:s}'.format(fname_out))
 
+    def _load_hdf5_athenapp(self, num=None, ihdf5=None,
+                            outvar=None, outid=None, load_method=None,
+                            file_only=False, **kwargs):
+        """Function to read Athena hdf5 file using pythena or yt and
+        return DataSet object.
+
+        Parameters
+        ----------
+        num : int
+           Snapshot number, e.g., /basedir/problem_id.out?.?????.athdf
+        ihdf5 : int
+           Read i-th file in the hdf5 file list. Overrides num if both are given.
+        outvar : str
+           Variable name, e.g, 'prim', 'cons', 'uov'. Default value is 'prim'
+           or 'cons'. Overrides outid.
+        outid : int
+           output block number (output[n] in the input file).
+        load_method : str
+           'xarray' or 'yt'
+
+        Returns
+        -------
+        ds : xarray AthenaDataSet or yt datasets
+
+        Examples
+        --------
+        >>> from pyathena.load_sim import LoadSim
+        >>> s = LoadSim("/path/to/basedir")
+        >>> # Load everything at snapshot number 30.
+        >>> ds = s.load_hdf5(30)
+        >>> # Read the domain information only, without loading the fields.
+        >>> ds = s.load_hdf5(30, header_only=True)
+        >>> # Load the selected fields.
+        >>> ds = s.load_hdf5(30, quantities=['dens', 'mom1', 'mom2', 'mom3'])
+        >>> # Load the selected region.
+        >>> ds = s.load_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
+        >>> # Load everything at fifth snapshot with ghost cells
+        >>> num_ghost = s.par['configure']['Number_of_ghost_cells'] if \
+                 s.par[f'output{s.hdf5_outid[0]}']['ghost_zones'] == 'true' else 0
+        >>> ds = s.load_hdf5(ihdf5=5, num_ghost=num_ghost)
+        """
+
+        if num is None and ihdf5 is None:
+            raise ValueError('Specify either num or ihdf5')
+
+        # Override load_method
+        if load_method is not None:
+            self.load_method = load_method
+
+        if outid is None and outvar is None:
+            outid = self._hdf5_outid_def
+            outvar = self._hdf5_outvar_def
+        elif outid is not None:
+            if not outid in self.hdf5_outid:
+                self.logger.error('Invalid hdf5 output id!')
+            idx = [i for i,v in enumerate(self.hdf5_outid) if v == outid][0]
+            outvar = self.hdf5_outvar[idx]
+        elif outvar is not None:
+            if not outvar in self.hdf5_outvar:
+                self.logger.error('Invalid hdf5 variable!')
+            idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
+            outid = self.hdf5_outid[idx]
+
+        self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
+        if self.fhdf5 is None or not osp.exists(self.fhdf5):
+            self.logger.info('[load_hdf5]: hdf5 file does not exist. ')
+
+        if file_only:
+            return
+
+        if self.load_method == 'xarray':
+            try:
+                refinement = self.par['mesh']['refinement']
+            except KeyError:
+                # Cannot determine if refinement is turned on/off without reading the
+                # HDF5 file and without <refinement> block in athinput.
+                # This part needs to be improved later.
+                refinement = 'none'
+
+            if refinement != 'none':
+                self.logger.error('load_method "{0:s}" does not support mesh\
+                        refinement data. Use "yt" instead'.format(self.load_method))
+                ds = None
+            else:
+                ds = read_hdf5(self.fhdf5, **kwargs)
+
+        elif self.load_method == 'yt':
+            if hasattr(self, 'u'):
+                units_override = self.u.units_override
+            else:
+                units_override = None
+            ds = yt.load(self.fhdf5, units_override=units_override)
+        else:
+            self.logger.error('load_method "{0:s}" not recognized.'.format(
+                self.load_method) + ' Use either "xarray" or "yt".')
+
+        return ds
+
+    def _load_hdf5_athenak(self, num, **kwargs):
+        """Read a single AthenaK HDF5 snapshot.
+
+        Currently supports simulations with exactly one HDF5 output variable.
+
+        Parameters
+        ----------
+        num : int
+            Snapshot number,
+            e.g., ``/basedir/problem_id.<outvar>.<num:05d>.athdf``.
+        **kwargs :
+            Additional arguments forwarded to :func:`~pyathena.io.read_hdf5.read_hdf5`.
+
+        Returns
+        -------
+        ds : xarray.Dataset
+            Loaded snapshot data, or ``None`` if the output has multiple
+            variables (not yet supported).
+        """
+        num_output_vars = len(self.files['hdf5'].keys())
+        if num_output_vars == 1:
+            outvar = list(self.files['hdf5'].keys())[0]
+            fpattern = '{0:s}.{1:s}.{2:05d}.athdf'
+            dirname = osp.dirname(self.files['hdf5'][outvar][0])
+            fhdf5 = osp.join(dirname, fpattern.format(
+                             self.problem_id, outvar, num))
+        else:
+            self.logger.error('AthenaK hdf5 reading not implemented yet for\
+                              multiple output variables.')
+            return None
+        ds = read_hdf5(fhdf5, **kwargs)
+        return ds
+
     def _get_domain_from_par(self, par):
         """Get domain info from par['domain1']. Time is set to None.
         """
         domain = dict()
-        if self.athena_pp:
+        if self.athena_variant in ['athena++', 'athenak']:
             d = par['mesh']
             domain['Nx'] = np.array([d['nx1'], d['nx2'], d['nx3']])
-        else:
+        elif self.athena_variant == 'athena':
             d = par['domain1']
             domain['Nx'] = np.array([d['Nx1'], d['Nx2'], d['Nx3']])
         domain['ndim'] = np.sum(domain['Nx'] > 1)
@@ -770,7 +938,13 @@ class LoadSim(LoadSimBase):
         self._domain = domain
 
     def find_files_vtk2d(self):
+        """Search for 2-D vtk slice files that were not found during initial setup.
 
+        Looks in both ``id*`` subdirectories and dedicated format subdirectories
+        for files matching ``*.????.{fmt}.vtk``. Found files are stored in
+        ``self.files[fmt]`` and the corresponding snapshot numbers are set as
+        ``self.nums_{fmt}``.
+        """
         self.logger.info('Find 2d vtk: {0:s}'.format(' '.join(self._fmt_vtk2d_not_found)))
         for fmt in self._fmt_vtk2d_not_found:
             fmt = fmt.split('.')[0]
@@ -783,7 +957,6 @@ class LoadSim(LoadSimBase):
                                               for f in self.files[f'{fmt}']])
             else:
                 self.logger.info('{0:s} files not found '.format(fmt))
-
 
     def _get_filename(self, kind, num=None, ivtk=None):
         """Get file path
@@ -862,6 +1035,21 @@ class LoadSim(LoadSimBase):
 
         return fparbin
 
+    def _get_fpvtk(self, outvar, partag, num=None, idx=None):
+        """Get pvtk file path
+        """
+
+        try:
+            dirname = osp.dirname(self.files['pvtk'][partag][0])
+        except IndexError:
+            return None
+        if idx is not None:
+            fname = self.files['pvtk'][partag][idx]
+        else:
+            fpattern = f'{self.problem_id}.{outvar}.{num:05d}.part.vtk'
+            fname = osp.join(dirname, fpattern)
+        return fname
+
     def _get_fparhst(self, pid):
         """Get parhst file path
         """
@@ -903,6 +1091,11 @@ class LoadSim(LoadSimBase):
                 else:
                     savdir = osp.join(cls.savdir, prefix)
 
+                if 'filebase' in kwargs and kwargs['filebase'] is not None:
+                    filebase = kwargs['filebase']
+                else:
+                    filebase = prefix
+
                 force_override = kwargs['force_override']
 
                 # Create savdir if it doesn't exist
@@ -916,9 +1109,9 @@ class LoadSim(LoadSimBase):
                     print('Permission Error: ', e)
 
                 if 'num' in kwargs:
-                    fpkl = osp.join(savdir, '{0:s}_{1:04d}.p'.format(prefix, kwargs['num']))
+                    fpkl = osp.join(savdir, f'{filebase}_{kwargs["num"]:04d}.p')
                 else:
-                    fpkl = osp.join(savdir, '{0:s}.p'.format(prefix))
+                    fpkl = osp.join(savdir, f'{filebase}.p')
 
                 if not force_override and osp.exists(fpkl):
                     cls.logger.info('Read from existing pickle: {0:s}'.format(fpkl))
@@ -934,6 +1127,76 @@ class LoadSim(LoadSimBase):
                             pickle.dump(res, fb)
                     except (IOError, PermissionError) as e:
                         cls.logger.warning('Could not pickle to {0:s}.'.format(fpkl))
+                    return res
+
+            return wrapper
+
+        def check_netcdf(read_func):
+            @functools.wraps(read_func)
+            def wrapper(cls, *args, **kwargs):
+
+                # Convert positional args to keyword args
+                from inspect import getcallargs
+                call_args = getcallargs(read_func, cls, *args, **kwargs)
+                call_args.pop('self')
+                call_args.pop('dryrun')
+                kwargs = call_args
+
+                try:
+                    prefix = kwargs['prefix']
+                except KeyError:
+                    print("prefix must be provided")
+
+                if kwargs['savdir'] is not None:
+                    savdir = kwargs['savdir']
+                else:
+                    savdir = osp.join(cls.savdir, prefix)
+
+                if kwargs['filebase'] is not None:
+                    filebase = kwargs['filebase']
+                else:
+                    filebase = prefix
+
+                if "outid" in kwargs:
+                    if kwargs["outid"] is not None:
+                        filebase += f'.out{kwargs["outid"]:d}'
+
+                force_override = kwargs['force_override']
+                mtime = read_func(cls,dryrun=True,**kwargs)
+
+                # Create savdir if it doesn't exist
+                try:
+                    if not osp.exists(savdir):
+                        force_override = True
+                        os.makedirs(savdir)
+                except FileExistsError:
+                    print('Directory exists: {0:s}'.format(savdir))
+                except PermissionError as e:
+                    print('Permission Error: ', e)
+
+                if 'num' in kwargs:
+                    fnetcdf = osp.join(savdir, f'{filebase}.{kwargs["num"]:05d}.nc')
+                else:
+                    fnetcdf = osp.join(savdir, f'{filebase}.nc')
+
+                if not force_override and osp.exists(fnetcdf) and \
+                   osp.getmtime(fnetcdf) > mtime:
+                    cls.logger.info('Read from existing netcdf: {0:s}'.format(fnetcdf))
+                    with xr.open_dataset(fnetcdf) as fb:
+                        res = fb.load()
+                    return res
+                else:
+                    cls.logger.info('[check_netcdf]: Read original dump.')
+                    # If we are here, force_override is True or history file is updated.
+                    res = read_func(cls, **kwargs)
+
+                    # Delete file first
+                    if osp.exists(fnetcdf):
+                        os.remove(fnetcdf)
+                    try:
+                        res.to_netcdf(fnetcdf)
+                    except (IOError, PermissionError) as e:
+                        cls.logger.warning('Could not create {0:s}.'.format(fnetcdf))
                     return res
 
             return wrapper
@@ -1048,22 +1311,105 @@ class LoadSim(LoadSimBase):
 
 # Would be useful to have something like this for each problem
 class LoadSimAll(object):
-    """Class to load multiple simulations
+    """Class to manage a collection of simulations.
 
+    Provides a convenient interface for loading and switching between multiple
+    :class:`LoadSim` instances (or subclasses) identified by short model
+    names.
+
+    Parameters
+    ----------
+    models : dict
+        Mapping of model name (str) to ``basedir`` path (str).
+        Non-existent base directories are skipped with a warning.
+    load_sim_class : type, optional
+        :class:`LoadSim` or a subclass to instantiate for each model.
+        Default is :class:`LoadSim`.
+
+    Attributes
+    ----------
+    models : list of str
+        Model names whose base directories exist.
+    basedirs : dict
+        Mapping of model name to base directory path.
+    simdict : dict
+        Cache of already-loaded :class:`LoadSim` instances keyed by model name.
+    model : str
+        Name of the currently active model (set by :meth:`set_model`).
+    sim : LoadSim
+        :class:`LoadSim` instance for the currently active model.
+
+    Examples
+    --------
+    >>> import pyathena as pa
+    >>> models = {'run1': '/path/to/run1', 'run2': '/path/to/run2'}
+    >>> sa = pa.LoadSimAll(models)
+    >>> s = sa.set_model('run1', verbose=True)
     """
-    def __init__(self, models):
-
-        self.models = list(models.keys())
+    def __init__(self, models, load_sim_class=LoadSim):
+        # Default models
+        if models is None:
+            models = dict()
+        self.models = []
         self.basedirs = dict()
-
+        self.simdict = dict()
+        self.load_sim_class = load_sim_class
         for mdl, basedir in models.items():
-            self.basedirs[mdl] = basedir
+            if not osp.exists(basedir):
+                print(
+                    "[LoadSimAll]: Model {0:s} doesn't exist: {1:s}".format(
+                        mdl, basedir
+                    )
+                )
+            else:
+                self.models.append(mdl)
+                self.basedirs[mdl] = basedir
 
-    def set_model(self, model, savdir=None, load_method='xarray',
+    def set_model(self, model, savdir=None,
+                  load_method='xarray',
+                  load_sim_class=None,
                   units=Units(kind='LV', muH=1.4271),
                   verbose=False):
+        """Load (or retrieve from cache) a simulation and set it as active.
+
+        On first call for a given *model*, instantiates a new
+        :class:`LoadSim` and caches it in :attr:`simdict`. Subsequent calls
+        for the same model return the cached instance without re-reading the
+        output directory.
+
+        Parameters
+        ----------
+        model : str
+            Model name — must be a key in :attr:`basedirs`.
+        savdir : str, optional
+            Directory for pickles and figures. Defaults to ``basedir``.
+        load_method : {'xarray', 'pyathena_classic', 'yt'}, optional
+            Method for reading vtk/hdf5 snapshots. Default is ``'xarray'``.
+        load_sim_class : type, optional
+            Override the class used to create the :class:`LoadSim` instance.
+            Defaults to ``self.load_sim_class``.
+        units : Units, optional
+            Unit system for the simulation.
+        verbose : bool or str or int, optional
+            Verbosity level. Default is ``False``.
+
+        Returns
+        -------
+        sim : LoadSim
+            Loaded simulation object, also stored as ``self.sim``.
+        """
+        if load_sim_class is None:
+            load_sim_class = self.load_sim_class
+        try:
+            self.sim = self.simdict[model]
+        except KeyError:
+            self.sim = load_sim_class(
+                self.basedirs[model],
+                savdir=savdir,
+                load_method=load_method,
+                verbose=verbose,
+                units=units
+            )
+            self.simdict[model] = self.sim
         self.model = model
-        self.sim = LoadSim(self.basedirs[model], savdir=savdir,
-                           load_method=load_method,
-                           units=units, verbose=verbose)
         return self.sim

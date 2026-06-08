@@ -73,11 +73,20 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
         # Runaways
         sp_ru = sp[runaways]
         # Sources have negative values of id
-        src_ru = (sp_ru['id'] < 0)
-        sp_ru_src = sp_ru[src_ru]
-        sp_ru_nonsrc = sp_ru[~src_ru]
+        nonsrc_runaway = runaway == True
+        src_runaway = runaway == True
+        if "id" in sp_ru:
+            src_ru = (sp_ru['id'] < 0)
+            sp_ru_src = sp_ru[src_ru]
+            sp_ru_nonsrc = sp_ru[~src_ru]
+            nonsrc_runaway = len(sp_ru_nonsrc) > 0 and nonsrc_runaway
+            src_runaway = len(sp_ru_src) > 0 and src_runaway
+        else:
+            sp_ru_nonsrc = sp_ru
+            src_runaway = False
+            nonsrc_runaway = len(sp_ru_nonsrc) > 0 and nonsrc_runaway
 
-        if len(sp_ru_nonsrc) > 0 and runaway:
+        if nonsrc_runaway:
             spx, spy, spz = projection(sp_ru_nonsrc, dim)
             spvx, spvy, spvz = projection_v(sp_ru_nonsrc, dim)
             if kpc:
@@ -90,7 +99,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
                        marker=marker, edgecolors=edgecolors, linewidths=linewidths,
                        alpha=alpha, s=10.0/norm_factor)
 
-        if len(sp_ru_src) > 0 and runaway:
+        if src_runaway:
             spx, spy, spz = projection(sp_ru_src, dim)
             spvx, spvy, spvz = projection_v(sp_ru_src, dim)
             if kpc:
@@ -141,7 +150,7 @@ def scatter_sp(sp, ax, dim, cmap=plt.cm.cool_r,
 
 
 def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium',
-              facecolors='k', linewidths=1.0, bbox_to_anchor=None):
+              facecolors='k', linewidths=1.0, bbox_to_anchor=None, ext=None):
     """Add legend for sink particle mass.
 
     Parameters
@@ -163,7 +172,8 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
             raise(
                 "bbox_to_anchor[top/right] must be a tuple specifying legend location")
 
-    ext = ax.images[0].get_extent()
+    if ext is None:
+        ext = ax.images[0].get_extent()
 
     ss = []
     labels = []
@@ -195,18 +205,21 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
 
     return legend
 
-def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r, bbox=[0.125, 0.9, 0.1, 0.015]):
+def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r,
+                orientation='horizontal',
+                tickloc="top",
+                bbox=[0.125, 0.9, 0.1, 0.015]):
 
     # Add starpar age colorbar
     norm = mpl.colors.Normalize(vmin=0., vmax=agemax)
     cax = fig.add_axes(bbox)
-    cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation='horizontal',
-                                   ticks=[0, agemax/2.0, agemax], extend='max')
+    cb = mpl.colorbar.ColorbarBase(cax, cmap=cmap, norm=norm, orientation=orientation,
+                                   ticks=[0, agemax/2.0, agemax])
 
     # cbar_sp.ax.tick_params(labelsize=14)
-    cb.set_label(r'${\rm age}\;[{\rm Myr}]$', fontsize=14)
-    cb.ax.xaxis.set_ticks_position('top')
-    cb.ax.xaxis.set_label_position('top')
+    cb.set_label(r'${\rm age}\;[{\rm Myr}]$')
+    cb.ax.xaxis.set_ticks_position(tickloc)
+    cb.ax.xaxis.set_label_position(tickloc)
 
     return cb
 

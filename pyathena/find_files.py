@@ -11,12 +11,51 @@ from .io.athena_read import athinput
 
 
 class FindFiles(object):
+    """Scan a simulation base directory and locate all output files.
+
+    Called automatically by :class:`~pyathena.LoadSim` during initialization.
+    Users typically do not need to instantiate this class directly.
+
+    Parameters
+    ----------
+    basedir : str
+        Root directory of the simulation output.
+    verbose : bool or str or int, optional
+        Logging verbosity. Default is ``False``.
+
+    Attributes
+    ----------
+    files : dict
+        Maps output type (e.g. ``'hst'``, ``'vtk'``, ``'hdf5'``) to file
+        paths found under ``basedir``.
+    athena_variant : {'athena', 'athena++', 'athenak'}
+        Detected code variant, determined from the input parameter file.
+    problem_id : str
+        Simulation problem ID (prefix for output file names).
+    par : dict
+        Input parameters read from the athinput file, or ``None`` if not found.
+    out_fmt : list of str
+        Output formats active in the simulation (e.g. ``['hst', 'vtk']``).
+    nums : list of int
+        Primary snapshot numbers (VTK or HDF5).
+    nums_hdf5 : dict
+        Maps output variable name → list of HDF5 snapshot numbers.
+    nums_vtk : list of int
+        All available VTK snapshot numbers.
+    nums_rst : list of int
+        Restart file snapshot numbers.
+    nums_zprof : dict
+        Maps phase name → list of zprof snapshot numbers.
+    phase : list of str
+        Phase names found in zprof files.
+    """
 
     # Default patterns
     # TODO: more explicit glob patterns using problem_id as in rst?
     patterns = dict()
 
     patterns['athinput'] = [
+        ('input/MHD/*.par',),
         ('athinput.runtime',),
         ('out.txt',),
         ('out*.txt',),
@@ -28,6 +67,7 @@ class FindFiles(object):
         ('slurm-*',)]
 
     patterns['hst'] = [
+        ('history', 'MHD', '*.hst'),
         ('id0', '*.hst'),
         ('hst', '*.hst'),
         ('*.hst',)]
@@ -43,8 +83,11 @@ class FindFiles(object):
         ('*.sn',)]
 
     patterns['vtk'] = [
+        ('????', 'MHD', '*.????.vtk'),
         ('vtk', '*.????.vtk'),
         ('*.????.vtk',)]
+
+    patterns['vtk_pi'] = [('????', 'MHD_PI', '*.????.vtk'),]
 
     patterns['vtk_id0'] = [
         ('vtk', 'id0', '*.' + '[0-9]'*4 + '.vtk'),
@@ -60,6 +103,10 @@ class FindFiles(object):
         ('hdf5', '*.out?.?????.athdf'),
         ('*.out?.?????.athdf',)]
 
+    patterns['hdf5_athenak'] = [
+        ('hdf5', '*.*.?????.athdf'),
+        ('*.*.?????.athdf',)]
+
     patterns['starpar_vtk'] = [
         ('starpar', '*.????.starpar.vtk'),
         ('id0', '*.????.starpar.vtk'),
@@ -73,11 +120,16 @@ class FindFiles(object):
         ('parbin', '*.out?.?????.par?.parbin'),
         ('*.out?.?????.par?.parbin',)]
 
+    patterns['pvtk'] = [
+        ('pvtk', '*.*.?????.part.vtk'),
+        ('*.*.?????.part.vtk',)]
+
     patterns['parhst'] = [
         ('parhst', '*.par*.csv'),
         ('*.par*.csv',)]
 
     patterns['zprof'] = [
+        ('*.zprof',),
         ('zprof', '*.zprof'),
         ('id0', '*.zprof')]
 
@@ -99,38 +151,32 @@ class FindFiles(object):
                                     verbose)
         self.basedir = basedir
         self.patterns = FindFiles.patterns
-        self.find_all()
 
-    def find_all(self):
+        # Find all files
         self.files = dict()
-
+        self.athena_variant = None  # This is set by get_basic_info()
         self.get_basic_info()
 
-        if self.athena_pp:
+        if self.athena_variant == 'athena++':
             self.find_hdf5()
-
-        self.find_vtk()
-        if not self.athena_pp:
+            self.find_vtk()
+            self.find_prtcl('partab')
+            self.find_prtcl('parbin')
+            self.find_parhst()
+            self.find_looptime_tasktime()
+        elif self.athena_variant == 'athena':
+            self.find_vtk()
             self.find_vtk2d()
-
+            self.find_sphst()
+            self.find_starpar_vtk()
+            self.find_timeit()
+        elif self.athena_variant == 'athenak':
+            self.find_hdf5()
+            self.find_prtcl('pvtk')
         self.find_hst()
         self.find_sn()
         self.find_zprof()
-
-        if not self.athena_pp:
-            self.find_sphst()
-            self.find_starpar_vtk()
-        else:
-            self.find_partab()
-            self.find_parbin()
-            self.find_parhst()
-
         self.find_rst()
-
-        if not self.athena_pp:
-            self.find_timeit()
-        else:
-            self.find_looptime_tasktime()
 
         # Remove empty file lists
         kdel = [k for k, v in self.files.items() if v == []]
@@ -143,6 +189,19 @@ class FindFiles(object):
                 delattr(self, attr)
 
     def find_match(self, patterns):
+        """Return files matching the first pattern that yields results.
+
+        Parameters
+        ----------
+        patterns : list of tuple
+            Ordered list of path component tuples to try. Each tuple is joined
+            with ``basedir`` and passed to :func:`glob.glob`.
+
+        Returns
+        -------
+        list of str
+            Sorted list of matching file paths, or an empty list.
+        """
         glob_match = lambda p: sorted(glob.glob(osp.join(self.basedir, *p)))
         for p in patterns:
             f = glob_match(p)
@@ -152,6 +211,11 @@ class FindFiles(object):
         return f
 
     def get_basic_info(self):
+        """Locate the athinput file and populate basic simulation metadata.
+
+        Sets ``athena_variant``, ``problem_id``, ``par``, ``out_fmt``,
+        ``partags``, and HDF5/particle output bookkeeping attributes.
+        """
         fathinput = self.find_match(self.patterns['athinput'])
         if fathinput:
             self.files['athinput'] = fathinput[0]
@@ -166,40 +230,67 @@ class FindFiles(object):
                 # TODO: deal with another failure?
 
             # Determine if it is Athena++ or Athena
-            # TODO: determine athena_pp even when par is unavailable
-            if 'mesh' in self.par:
-                self.athena_pp = True
-                self.logger.info('athena_pp: True')
+            # TODO: determine athena_variant even when par is unavailable
+            if 'basename' in self.par['job']:
+                self.athena_variant = 'athenak'
+                self.logger.info('athena_variant: AthenaK')
+            elif 'mesh' in self.par:
+                self.athena_variant = 'athena++'
+                self.logger.info('athena_variant: Athena++')
             else:
-                self.athena_pp = False
-                self.logger.info('athena_pp: False')
+                self.athena_variant = 'athena'
+                self.logger.info('athena_variant: Athena')
 
             self.out_fmt = []
             self.partags = []
-            if self.athena_pp:
+            if self.athena_variant in ['athena++', 'athenak']:
                 # read output blocks
                 for k in self.par.keys():
                     if k.startswith('output'):
                         self.out_fmt.append(self.par[k]['file_type'])
+                        # Currently, AthenaK does not support native hdf5 output.
+                        # Instead, it provides a script to convert binary outputs to hdf5.
+                        # So here we check if there are converted hdf5 files for binary outputs.
+                        if self.athena_variant == 'athenak' and self.par[k]['file_type'] == 'bin':
+                            # Check if there is converted hdf5 output file
+                            if len(self.find_match(self.patterns['hdf5_athenak'])) > 0:
+                                self.out_fmt.append('hdf5')
 
                     # Save particle output tags
-                    if k.startswith('particle'):
+                    if self.athena_variant == 'athena++' and k.startswith('particle') and self.par[k]['type'] != 'none':
                         par_id = int(k.strip('particle')) - 1
                         partag = 'par{}'.format(par_id)
+                        self.partags.append(partag)
+                    elif self.athena_variant == 'athenak' and k == 'particles':
+                        # Currently only one particle type is supported in AthenaK
+                        partag = 'par0'
                         self.partags.append(partag)
 
                 # if there are hdf5 outputs, save some info
                 if self.out_fmt.count('hdf5') > 0:
-                    self.hdf5_outid = []
-                    self.hdf5_outvar = []
-                    for k in self.par.keys():
-                        if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
-                            self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
-                            self.hdf5_outvar.append(self.par[k]['variable'])
-                    for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
-                        if 'prim' in v or 'cons' in v:
-                            self._hdf5_outid_def = i
-                            self._hdf5_outvar_def = v
+                    if self.athena_variant == 'athena++':
+                        self.hdf5_outid = []
+                        self.hdf5_outvar = []
+                        for k in self.par.keys():
+                            if k.startswith('output') and self.par[k]['file_type'] == 'hdf5':
+                                self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
+                                self.hdf5_outvar.append(self.par[k]['variable'])
+                        for i,v in zip(self.hdf5_outid,self.hdf5_outvar):
+                            if 'prim' in v or 'cons' in v:
+                                self._hdf5_outid_def = i
+                                self._hdf5_outvar_def = v
+                    if self.athena_variant == 'athenak':
+                        self.hdf5_outid = []
+                        self.hdf5_outvar = []
+                        for k in self.par.keys():
+                            # In this case, hdf5 files are converted from binary outputs
+                            # hence checking for file_type 'bin'
+                            if k.startswith('output') and self.par[k]['file_type'] == 'bin':
+                                self.hdf5_outid.append(int(re.split(r'(\d+)',k)[1]))
+                                self.hdf5_outvar.append(self.par[k]['variable'])
+                        for v in self.hdf5_outvar:
+                            if v in ['hydro_w', 'hydro_u']:
+                                self._hdf5_outvar_def = v
 
                 # if there are partab outputs, save some info
                 if 'partab' in self.out_fmt:
@@ -213,7 +304,13 @@ class FindFiles(object):
                         if k.startswith('output') and self.par[k]['file_type'] == 'parbin':
                             self.parbin_outid = int(re.split(r'(\d+)',k)[1])
 
-            else:
+                # if there are pvtk outputs, save some info
+                if 'pvtk' in self.out_fmt:
+                    for k in self.par.keys():
+                        if k.startswith('output') and self.par[k]['file_type'] == 'pvtk':
+                            self.pvtk_outvar = self.par[k]['variable']
+
+            elif self.athena_variant == 'athena':
                 for k in self.par.keys():
                     if k.startswith('output'):
                         # Skip if the block number XX (<outputXX>) is greater than maxout
@@ -226,8 +323,10 @@ class FindFiles(object):
                                                 self.par[k]['out_fmt'])
                         else:
                             self.out_fmt.append(self.par[k]['out_fmt'])
-
-            self.problem_id = self.par['job']['problem_id']
+            if self.athena_variant in ['athena++', 'athena']:
+                self.problem_id = self.par['job']['problem_id']
+            elif self.athena_variant == 'athenak':
+                self.problem_id = self.par['job']['basename']
             self.logger.info('problem_id: {0:s}'.format(self.problem_id))
         else:
             # athinput unavailabe
@@ -238,6 +337,7 @@ class FindFiles(object):
             self.out_fmt = ['hst', 'vtk']
 
     def find_hst(self):
+        """Find the history dump file and store its path in ``files['hst']``."""
         if 'hst' in self.out_fmt:
             # Find history dump and extract problem_id (prefix for output file names)
             # Caution: Assumes that problem_id does not contain '.'
@@ -253,13 +353,14 @@ class FindFiles(object):
                                     format(self.basedir))
 
     def find_sn(self):
+        """Find the supernova dump file and store its path in ``files['sn']``."""
         # Find sn dump
         fsn = self.find_match(self.patterns['sn'])
         if fsn:
             self.files['sn'] = fsn[0]
             self.logger.info('sn: {0:s}'.format(self.files['sn']))
         else:
-            if not self.athena_pp:
+            if self.athena_variant == 'athena':
                 if self.par is not None:
                     # Issue warning only if iSN is nonzero
                     try:
@@ -271,6 +372,7 @@ class FindFiles(object):
                         pass
 
     def find_sphst(self):
+        """Find star particle history files (Athena only) and store in ``files['sphst']``."""
         # Find sphst dump (Athena only)
         fsphst = self.find_match(self.patterns['sphst'])
         if fsphst:
@@ -281,6 +383,7 @@ class FindFiles(object):
                 self.nums_sphst[0], self.nums_sphst[-1]))
 
     def find_starpar_vtk(self):
+        """Find star particle VTK files (Athena only) and store in ``files['starpar_vtk']``."""
         # Find starpar files (Athena only)
         if 'starpar_vtk' in self.out_fmt:
             fstarpar = self.find_match(self.patterns['starpar_vtk'])
@@ -294,55 +397,42 @@ class FindFiles(object):
                 self.logger.warning(
                     'starpar files not found in {0:s}.'.format(self.basedir))
 
-    def find_partab(self):
-        # Find partab files
-        if 'partab' in self.out_fmt:
-            self.files['partab'] = dict()
-            self.nums_partab = dict()
-            for partag in self.partags:
-                partab_patterns_ = []
-                for p in self.patterns['partab']:
-                    p = list(p)
-                    p[-1] = p[-1].replace('par?', partag)
-                    partab_patterns_.append(tuple(p))
-                self.files['partab'][partag] = self.find_match(partab_patterns_)
-                if not self.files['partab'][partag]:
-                    self.logger.warning(
-                        'partab ({0:s}) files not found in {1:s}'.\
-                        format(partag, self.basedir))
-                    self.nums_partab[partag] = None
-                else:
-                    self.nums_partab[partag] = [int(f[-14:-9])
-                                                 for f in self.files['partab'][partag]]
-                    self.logger.info('partab ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        partag, osp.dirname(self.files['partab'][partag][0]),
-                        self.nums_partab[partag][0], self.nums_partab[partag][-1]))
+    def find_prtcl(self, key):
+        """Find particle output files and store paths and snapshot numbers.
 
-    def find_parbin(self):
-        # Find parbin files
-        if 'parbin' in self.out_fmt:
-            self.files['parbin'] = dict()
-            self.nums_parbin = dict()
-            for partag in self.partags:
-                parbin_patterns_ = []
-                for p in self.patterns['parbin']:
-                    p = list(p)
-                    p[-1] = p[-1].replace('par?', partag)
-                    parbin_patterns_.append(tuple(p))
-                self.files['parbin'][partag] = self.find_match(parbin_patterns_)
-                if not self.files['parbin'][partag]:
-                    self.logger.warning(
-                        'parbin ({0:s}) files not found in {1:s}'.\
-                        format(partag, self.basedir))
-                    self.nums_parbin[partag] = None
-                else:
-                    self.nums_parbin[partag] = [int(f[-17:-12])
-                                                 for f in self.files['parbin'][partag]]
-                    self.logger.info('parbin ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
-                        partag, osp.dirname(self.files['parbin'][partag][0]),
-                        self.nums_parbin[partag][0], self.nums_parbin[partag][-1]))
+        Parameters
+        ----------
+        key : {'partab', 'parbin', 'pvtk'}
+            Particle output type to search for.
+        """
+        if key not in self.out_fmt:
+            return
+        num_slice = dict(partab=slice(-14, -9),
+                         parbin=slice(-17, -12),
+                         pvtk=slice(-14, -9))
+
+        self.files[key] = dict()
+        self.__dict__[f'nums_{key}'] = dict()
+        for partag in self.partags:
+            par_pattern = []
+            for p in self.patterns[key]:
+                p = list(p)
+                p[-1] = p[-1].replace('par?', partag)
+                par_pattern.append(tuple(p))
+
+            matches = self.find_match(par_pattern)
+            self.files[key][partag] = matches
+
+            if not matches:
+                self.logger.warning(f'{key} ({partag}) files not found in {self.basedir}')
+                self.__dict__[f'nums_{key}'][partag] = None
+            else:
+                nums = [int(f[num_slice[key]]) for f in matches]
+                self.__dict__[f'nums_{key}'][partag] = nums
+                self.logger.info(f'{key} ({partag}): {osp.dirname(matches[0])} nums: {nums[0]}-{nums[-1]}')
 
     def find_parhst(self):
+        """Find individual particle history CSV files and store in ``files['parhst']``."""
         if [k for k in self.par.keys() if k.startswith('particle') and
             self.par[k]['type'] != 'none']:
             fparhst = self.find_match(self.patterns['parhst'])
@@ -361,6 +451,8 @@ class FindFiles(object):
                     'parhst files not found in {0:s}'.format(self.basedir))
 
     def find_zprof(self):
+        """Find vertical profile (zprof) files and populate ``files['zprof']``,
+        ``nums_zprof``, and ``phase``."""
         fzprof = self.find_match(self.patterns['zprof'])
         if fzprof:
             self.files['zprof'] = fzprof
@@ -368,6 +460,11 @@ class FindFiles(object):
             self.phase = []
             for f in self.files['zprof']:
                 _, num, ph, _ = osp.basename(f).split('.')[-4:]
+                if ph in ["pvz","nvz"]:
+                    _, num, ph, vz, _ = osp.basename(f).split('.')[-5:]
+                    self.zprof_separate_vz = True
+                else:
+                    self.zprof_separate_vz = False
                 try:
                     self.nums_zprof[ph].append(int(num))
                 except KeyError:
@@ -392,10 +489,17 @@ class FindFiles(object):
                     'zprof files not found in {0:s}'.format(self.basedir))
 
     def find_vtk(self):
-        # Find vtk files
+        """Find VTK output files (joined, id0, tarred, or Athena++ block files).
+
+        Populates ``files['vtk']``, ``files['vtk_id0']``, ``files['vtk_tar']``,
+        and the corresponding ``nums*`` attributes.
+        """
         # vtk files in both basedir (joined) and in basedir/id0
-        if 'vtk' in self.out_fmt and not self.athena_pp:
+        if 'vtk' not in self.out_fmt:
+            return
+        if self.athena_variant == 'athena':
             self.files['vtk'] = self.find_match(self.patterns['vtk'])
+            self.files['vtk_pi'] = self.find_match(self.patterns['vtk_pi'])
             self.files['vtk_id0'] = self.find_match(self.patterns['vtk_id0'])
             self.files['vtk_tar'] = self.find_match(self.patterns['vtk_tar'])
             if not self.files['vtk'] and not self.files['vtk_id0'] and \
@@ -455,16 +559,27 @@ class FindFiles(object):
                 self.logger.warning('Vtk file size is not unique.')
                 for f in flist:
                    self.logger.warning('vtk num: {0:d}, size [MB]: {1:d}'.format(f[0], f[1]))
-        elif 'vtk' in self.out_fmt and self.athena_pp:
+        elif self.athena_variant == 'athena++':
             # Athena++ vtk files
             self.files['vtk'] = self.find_match(self.patterns['vtk_athenapp'])
             self.nums_vtk = list(set([int(f[-9:-4]) for f in self.files['vtk']]))
             self.nums_vtk.sort()
+        elif self.athena_variant == 'athenak':
+            #TODO: implement athenak vtk file finding
+            pass
 
     def find_hdf5(self):
-        # Find hdf5 files
+        """Find HDF5 output files and populate ``files['hdf5']`` and ``nums_hdf5``.
+
+        Handles both Athena++ native HDF5 and AthenaK converted HDF5 outputs.
+        """
         # hdf5 files in basedir
-        if 'hdf5' in self.out_fmt:
+        if 'hdf5' not in self.out_fmt:
+            return
+
+        if self.athena_variant == 'athena':
+            raise NotImplementedError('hdf5 is not supported in Athena-Cversion.')
+        elif self.athena_variant == 'athena++':
             self.files['hdf5'] = dict()
             self.nums_hdf5 = dict()
             for i, v in zip(self.hdf5_outid, self.hdf5_outvar):
@@ -473,7 +588,7 @@ class FindFiles(object):
                     p = list(p)
                     p[-1] = p[-1].replace('out?', 'out{0:d}'.format(i))
                     hdf5_patterns_.append(tuple(p))
-                self.files['hdf5'][v] = self.find_match(self.patterns['hdf5'])
+                self.files['hdf5'][v] = self.find_match(hdf5_patterns_)
                 if not self.files['hdf5'][v]:
                     self.logger.warning(
                         'hdf5 ({0:s}) files not found in {1:s}'.\
@@ -488,10 +603,37 @@ class FindFiles(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(
                             self.files['hdf5'][self._hdf5_outvar_def][0]).split('.')[-2:]
-            # Set nums array
+        elif self.athena_variant == 'athenak':
+            self.files['hdf5'] = dict()
+            self.nums_hdf5 = dict()
+            for v in self.hdf5_outvar:
+                hdf5_patterns_ = []
+                for p in self.patterns['hdf5_athenak']:
+                    p = list(p)
+                    p[-1] = '*.' + p[-1][2:].replace('*', v)
+                    hdf5_patterns_.append(tuple(p))
+                self.files['hdf5'][v] = self.find_match(hdf5_patterns_)
+                if not self.files['hdf5'][v]:
+                    self.logger.warning(
+                        'hdf5 ({0:s}) files not found in {1:s}'.\
+                        format(v, self.basedir))
+                    self.nums_hdf5[v] = None
+                else:
+                    self.nums_hdf5[v] = [int(f[-11:-6]) \
+                                         for f in self.files['hdf5'][v]]
+                    self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
+                        v, osp.dirname(self.files['hdf5'][v][0]),
+                        self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
+
+        # Set nums array
+        try:
             self.nums = self.nums_hdf5[self._hdf5_outvar_def]
+        except AttributeError:
+            self.logger.warning('Could not set nums from hdf5 files. '
+                                'Perhaps no hydro output')
 
     def find_rst(self):
+        """Find restart files and populate ``files['rst']`` and ``nums_rst``."""
         # Find rst files
         if 'rst' in self.out_fmt:
             if hasattr(self, 'problem_id'):
@@ -504,11 +646,14 @@ class FindFiles(object):
                 frst = self.find_match(self.patterns['rst'])
                 if frst:
                     self.files['rst'] = frst
-                    if self.athena_pp:
+                    if self.athena_variant == 'athena++':
                         numbered_rstfiles = [f for f in self.files['rst'] if 'final' not in f]
                         self.nums_rst = [int(f[-9:-4]) for f in numbered_rstfiles]
-                    else:
+                    elif self.athena_variant == 'athena':
                         self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
+                    elif self.athena_variant == 'athenak':
+                        # TODO: implement athenak rst file num extraction
+                        pass
                     msg = 'rst: {0:s}'.format(osp.dirname(self.files['rst'][0]))
                     if len(self.nums_rst) > 0:
                         msg += ' nums: {0:d}-{1:d}'.format(
@@ -521,6 +666,12 @@ class FindFiles(object):
                         'rst files in out_fmt but not found.'.format(self.basedir))
 
     def find_vtk2d(self):
+        """Find 2D VTK slice/projection output files for non-standard output formats.
+
+        Populates ``files[fmt]`` and ``nums_fmt`` for each format found.
+        Formats that cannot be located are stored in ``_fmt_vtk2d_not_found``
+        for deferred search via :meth:`~pyathena.LoadSim.find_files_vtk2d`.
+        """
         # 2d vtk files
         self._fmt_vtk2d_not_found = []
         for fmt in self.out_fmt:
@@ -543,6 +694,7 @@ class FindFiles(object):
                              ', '.join(self._fmt_vtk2d_not_found))
 
     def find_timeit(self):
+        """Find the ``timeit.txt`` file and store its path in ``files['timeit']``."""
         # Find timeit.txt
         ftimeit = self.find_match(self.patterns['timeit'])
         if ftimeit:
@@ -552,6 +704,7 @@ class FindFiles(object):
             self.logger.info('timeit.txt not found.')
 
     def find_looptime_tasktime(self):
+        """Find loop time and task time files and store paths in ``files``."""
         # Find problem_id.loop_time.txt
         flooptime = self.find_match(self.patterns['looptime'])
         if flooptime:

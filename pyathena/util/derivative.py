@@ -105,11 +105,11 @@ def deriv_convolve(yarr, xarr, axis=0, fft=False, gauss=True, stddev=3.0):
     return dy/dx
 
 
-def gradient(scal, x, y, z, deriv=deriv_convolve):
+def gradient(scal, x, y, z, deriv=deriv_convolve, **kwargs):
 
-    dsdx = deriv(scal, x, axis=2)
-    dsdy = deriv(scal, y, axis=1)
-    dsdz = deriv(scal, z, axis=0)
+    dsdx = deriv(scal, x, axis=2, **kwargs)
+    dsdy = deriv(scal, y, axis=1, **kwargs)
+    dsdz = deriv(scal, z, axis=0, **kwargs)
 
     return dsdx, dsdy, dsdz
 

@@ -16,6 +16,11 @@ parts:
     - file: content/units
     - file: content/utils
     - file: content/pop_synth
+    - file: content/fields
+    - file: content/microphysics
+    - file: content/plt_tools
   - caption: Examples
     chapters:
-    - file: examples/tigress-classic-cooling.ipynb
+    - file: examples/tigress-cooling.ipynb
+    - file: examples/quickstart-astro-tigress.ipynb
+    - file: examples/sb99.ipynb

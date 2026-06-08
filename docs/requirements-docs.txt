@@ -4,13 +4,15 @@ numpy
 astropy
 pandas
 xarray
+dask
 h5py
 netCDF4
 scipy
 healpy
 cmasher
 cmocean
-jupyter-book
+jupyter-book<2
+inherit-docstring
 docutils==0.17.1
 tqdm
 periodictable

@@ -1,5 +1,3 @@
-<div id="top"></div>
-
 ## About
 
 pyathena is a set of python scripts for reading and analyzing simulation data produced by the Athena-TIGRESS and TIGRIS codes.
@@ -10,29 +8,22 @@ Python version **3.10** or higher
 
 ## Installation
 
-Below is an example of how you can set up pyathena. It assumes that you have already installed [miniconda](https://docs.conda.io/en/latest/miniconda.html) or anaconda on your system.
+Below is an example of how you can set up pyathena. It assumes that you have already installed [miniforge](https://github.com/conda-forge/miniforge) (recommended), [miniconda](https://docs.conda.io/en/latest/miniconda.html), or anaconda on your system. Miniforge defaults to the `conda-forge` channel and avoids Anaconda Inc.'s commercial-use licensing on the `defaults` channel. Miniforge also ships [`mamba`](https://github.com/mamba-org/mamba), a faster drop-in replacement for `conda` — swap `conda` for `mamba` in any command below.
 
-1. Clone the pyathena repo
-   ```sh
-   git clone https://github.com/jeonggyukim/pyathena.git
-   ```
-3. Create an environment from the env.yml file
-   ```sh
-   conda update conda
-   conda env create -f path_to_pyathena/env.yml
-   ```
-4. Activate the pyathena environment
-   ```sh
-   conda activate pyathena
-   ```
-5. Install pyathena
-   ```sh
-   pip install .
-   ```
-
-Sometimes `yt` and other installed packages (e.g., numpy) may have compatibility issues. In this case, you can downgrade packages to more stable, older versions. For example,
 ```sh
-conda install -c conda-forge numpy=1.26.4
+git clone https://github.com/jeonggyukim/pyathena.git
+cd pyathena
+conda env create -f env.yml
+conda activate pyathena
+pip install -e .                                         # drop the -e for a non-editable install
+python -c "import pyathena; print(pyathena.__file__)"    # sanity check
+```
+
+Use `pip install -e .` (editable) if you plan to edit the source — changes take effect without reinstalling.
+
+If conda cannot install the environment because two packages need different versions of the same thing, install an older version of one of them, for example:
+```sh
+conda install -c conda-forge <package-name>=<version>
 ```
 
 To update the existing pyathena environment with an updated env.yml file
@@ -52,11 +43,8 @@ See example [notebooks](notebook) and [documentation](https://jeonggyukim.github
 
 ## Contributing
 
-If you have a suggestion that would make pyathena better, please fork the repo and create a pull request.
-Don't forget to give the project a star! Thanks again!
+Fork the repo, follow the [Installation](#installation) steps with `pip install -e .`, then submit a pull request from a feature branch.
 
-1. Fork pyathena
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
+## License
+
+See [LICENSE.md](LICENSE.md).

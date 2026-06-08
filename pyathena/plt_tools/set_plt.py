@@ -3,14 +3,37 @@ from cycler import cycler
 import numpy as np
 
 def toggle_xticks(axes, visible=False):
+    """Toggle x-axis tick label visibility on one or more axes.
+
+    Parameters
+    ----------
+    axes : matplotlib.axes.Axes or array-like of Axes
+        Axes to modify.
+    visible : bool, optional
+        Whether to show tick labels. Default is ``False`` (hidden).
+    """
     axes = np.atleast_1d(axes)
     plt.setp([ax.get_xticklabels() for ax in axes], visible=visible)
 
 def toggle_yticks(axes, visible=False):
+    """Toggle y-axis tick label visibility on one or more axes.
+
+    Parameters
+    ----------
+    axes : matplotlib.axes.Axes or array-like of Axes
+        Axes to modify.
+    visible : bool, optional
+        Whether to show tick labels. Default is ``False`` (hidden).
+    """
     axes = np.atleast_1d(axes)
     plt.setp([ax.get_yticklabels() for ax in axes], visible=visible)
 
 def set_plt_default():
+    """Apply default matplotlib rcParams for pyathena plots.
+
+    Sets figure size (8x6), DPI 200, font size 15, thick tick marks,
+    and constrained layout.
+    """
 
     plt.rcParams['figure.figsize'] = (8, 6)
     plt.rcParams['figure.dpi'] = 200
@@ -32,7 +55,11 @@ def set_plt_default():
     # plt.rcParams['ytick.right'] = True
 
 def set_plt_fancy():
-    # Chang-Goo's fancystyle
+    """Apply a publication-quality matplotlib style.
+
+    Sets ticks inward on all sides, white background, thick lines,
+    and a custom 10-color cycle.
+    """
     plt.rcParams['lines.linewidth'] = 2.0
     plt.rcParams['lines.solid_capstyle'] = 'butt'
 

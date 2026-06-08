@@ -5,6 +5,7 @@ Read athena vtk file
 
 import os
 import os.path as osp
+from packaging.version import Version
 import glob, struct
 import numpy as np
 import xarray as xr
@@ -432,7 +433,11 @@ class AthenaDataSet(object):
             fp.readline() # skip header
             if fm['read_table']:
                 fp.readline()
-            grid['data'][field]= (np.frombuffer(buffer=fp.read(fm['dsize']),dtype=fm['dtype'])).newbyteorder() # New method for converting the binary data
+            if Version(np.__version__) >= Version('2.0.0'):
+                arr = np.frombuffer(buffer=fp.read(fm['dsize']),dtype=fm['dtype']) # New method for converting the binary data
+                grid['data'][field]= arr.view(arr.dtype.newbyteorder()) # New method for converting the binary data
+            else:
+                grid['data'][field]= (np.frombuffer(buffer=fp.read(fm['dsize']),dtype=fm['dtype'])).newbyteorder() # New method for converting the binary data
             fp.close()
 
             if fm['nvar'] == 1:
