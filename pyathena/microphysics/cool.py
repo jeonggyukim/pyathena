@@ -391,7 +391,14 @@ def coolOI(nH, T, xe, xHI, xH2, xOI):
     fp_ = 0.25
     fo_ = 0.75
 
-    # OI, 3 level system
+    # OI 3P 3-level fine-structure system. Hund's 3rd rule: O 2p^4 is
+    # more than half-filled, so the ground state has max J = L + S = 2.
+    # Level indices (0/1/2) are by EXCITATION ENERGY, not by J value:
+    #   level 0 = 3P_2 (ground, J=2, g=5, E=0)
+    #   level 1 = 3P_1 (J=1, g=3, E=228 K above ground; [OI] 63 um line)
+    #   level 2 = 3P_0 (J=0, g=1, E=326 K above ground; [OI] 146 um line)
+    # Index labels here (g0OI_, A10OI_, etc.) refer to those numbered
+    # levels, not to J. See Draine 2011 Appendix F Table F.6.
     g0OI_ = 5
     g1OI_ = 3
     g2OI_ = 1
@@ -1126,6 +1133,15 @@ def get_CI_lev(nH, T, xe, xHI, xH2):
 
 
 def get_OI_lev(nH, T, xe, xHI, xH2):
+    """Return (f0, f1, f2): population fractions of the OI 3P levels.
+
+    Levels are indexed by EXCITATION ENERGY:
+      f0 = J=2 (ground, g=5, E=0)
+      f1 = J=1 (g=3, E=228 K above ground)
+      f2 = J=0 (g=1, E=326 K above ground)
+    NOT indexed by J value.  Hund's 3rd rule: O 2p^4 is more than
+    half-filled, so the ground state has max J = L+S = 2.
+    """
 
     kB_cgs = ac.k_B.cgs.value
 
@@ -1133,7 +1149,7 @@ def get_OI_lev(nH, T, xe, xHI, xH2):
     fp_ = 0.25
     fo_ = 0.75
 
-    # OI, 3 level system
+    # OI, 3 level system; see docstring for level <-> J mapping.
     g0OI_ = 5
     g1OI_ = 3
     g2OI_ = 1

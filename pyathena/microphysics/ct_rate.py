@@ -294,6 +294,16 @@ class ChargeTransferRate(object):
 
     @staticmethod
     def get_ct_rec_HI_OII_Draine11(T, sum=True):
+        """O+ + H I -> O(J) + H II charge-transfer recombination
+        rate, Draine 2011 Eqs. 14.24-14.26 fits to Stancil et al.
+        1999. Index convention follows Draine: k0r ends in J=2
+        (ground state, max J since O 2p^4 is more-than-half-filled
+        shell), k1r ends in J=1 (+228 K), k2r ends in J=0 (+326 K,
+        endothermic by 97 K). NOTE: the index here means the FINAL
+        J of the produced O atom, NOT the J value itself. k0r is
+        the dominant channel in the low-density limit because all
+        of O sits in the J=2 ground after fast radiative cascade.
+        """
         Tinv = 1.0/T
         T4 = 1.0e-4*T
         lnT4 = np.log(T4)
@@ -308,6 +318,20 @@ class ChargeTransferRate(object):
 
     @staticmethod
     def get_ct_ion_HII_OI_Draine11(T, sum=True):
+        """O(J) + H II -> O+ + H I charge-transfer ionization rate,
+        reverse of `get_ct_rec_HI_OII_Draine11` by detailed balance
+        (Draine 2011 Eqs. 14.28-14.30). Index convention follows
+        Draine: k0i starts from J=2 (ground; endothermic by 229 K,
+        suppressed at low T), k1i starts from J=1 (+228 K,
+        nearly thermoneutral), k2i starts from J=0 (+326 K,
+        exothermic by 97 K, enhanced at low T). The unweighted
+        sum k0i + k1i + k2i returned when sum=True is NOT a
+        physically valid per-O0 rate: in the low-density limit all
+        O sits in J=2 so only k0i fires; in LTE the Boltzmann-
+        weighted (5*k0i + 3*k1i + k2i)/9 applies. For correct
+        per-O0 rates call with sum=False and weight by the J=2/1/0
+        populations from `cool.get_OI_lev`.
+        """
         k0r, k1r, k2r = ChargeTransferRate.get_ct_rec_HI_OII_Draine11(T, sum=False)
         Tinv = 1.0/T
         k0i = 8.0/5.0*k0r*np.exp(-229.0*Tinv)
