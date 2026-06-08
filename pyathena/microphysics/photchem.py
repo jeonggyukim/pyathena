@@ -373,9 +373,9 @@ class PhotChem(object):
             # Collisional ionization
             l, = axes[1].loglog(T, self.ci.get_ci_rate(ion['Z'], ion['N'], T),
                                 label=ion['label'], c=ion['color'])
-            # CT ionization
+            # CT ionization (reactant-indexed: this ion is the reactant)
             try:
-                axes[2].loglog(T, self.ct.get_ct_rec_rate(ion['Z'], ion['N'], T),
+                axes[2].loglog(T, self.ct.get_ct_ion_rate(ion['Z'], ion['N'], T),
                                label=ion['label'], c=l.get_color(),ls='--')
             except IndexError:
                 # print('Ion {0:s}: ct_ion does not exist!'.format(name))

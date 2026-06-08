@@ -203,25 +203,37 @@ class ChargeTransferRate(object):
 
     def get_ct_rec_rate(self, Z, N, T):
         """
-        Charge transfer recombination rate coefficient for
-        Ion(Z,q+1) + H+ -> Ion(Z,q) + H
-        where q = Z - N is the ion charge. That is, (Z,N) is the product.
+        Charge transfer recombination rate coefficient [cm^3/s] for
+
+            Ion(Z, q) + H I -> Ion(Z, q-1) + H II
+
+        where q = Z - N is the REACTANT ion charge. That is, (Z, N)
+        labels the reactant ion (the one that gains an electron from
+        H I and recombines). Matches the (Z, N) = reactant convention
+        used by `get_ct_ion_rate`, `get_ci_rate`, and `get_rec_rate`.
+
+        Returns 0 for q < 1 (already-neutral reactant cannot recombine
+        further). For q >= 5 the rate falls back to the Dalgarno
+        generic estimate `1.92e-9 * q` (data tables only cover q <= 4).
         """
 
-        # Charge
+        # Reactant charge
         q = Z - N
+        if q < 1:
+            return np.zeros_like(T)
         rate_Dalgarno = 1.92e-9
-        if q < 0:
-            raise ValueError('Check Z and N')
-        if q > 3:
-            return np.full_like(T, rate_Dalgarno)*(q + 1)
+        if q > 4:
+            return np.full_like(T, rate_Dalgarno) * q
 
-        # Catch exceptions
-        if (Z == 8) and (N == 8):
+        # Special case: O+ + H I -> O + H II (Draine 2011 per-J fit).
+        if (Z == 8) and (N == 7):
             # return ChargeTransferRate.get_ct_rec_OII_HI(T)
             return ChargeTransferRate.get_ct_rec_HI_OII_Draine11(T)
 
-        i = self._get_index2(Z, N)
+        # Internal data table is keyed by PRODUCT electron count
+        # (matches Cloudy ctrecombdata.dat row layout). Translate the
+        # reactant input by adding 1 to N.
+        i = self._get_index2(Z, N + 1)
 
         if self.a2[i] == 0.0:
             return np.zeros_like(T)
