@@ -224,18 +224,27 @@ def test_plot_sigma_overview(px, figures_dir, save_figures, ion_colors):
     if not save_figures:
         pytest.skip("plot generation disabled (--no-figures)")
     import matplotlib.pyplot as plt
+    import matplotlib.patheffects as path_effects
+    from pyathena.plt_tools.line_annotation import line_annotate
     E = np.logspace(0.5, 4.0, 400)  # 3 eV to 10 keV
     fig, ax = plt.subplots(figsize=(7, 5))
+    # Annotate each line just above its threshold (1.5 * Eth);
+    # white-stroke patheffects keep the label legible over neighbours.
+    stroke = [path_effects.withStroke(linewidth=2.5, foreground="white")]
     for Z, N, label, Eth in PHOTOION_CATALOG:
         sigma = px.get_sigma(Z, N, E)
         q = Z - N
-        ax.loglog(E, np.where(sigma > 0, sigma, np.nan),
-                  label=label, color=ion_colors(Z, q), lw=1.2)
+        ln, = ax.loglog(E, np.where(sigma > 0, sigma, np.nan),
+                        color=ion_colors(Z, q), lw=1.4)
+        line_annotate(label, ln, x=1.5 * Eth,
+                      fontsize="x-small", color=ion_colors(Z, q),
+                      path_effects=stroke)
     ax.set_xlabel(r"$E\,[{\rm eV}]$")
     ax.set_ylabel(r"$\sigma_{\rm pi}\,[{\rm cm}^2]$")
     ax.set_title("Verner+96 photoionization cross sections")
-    ax.legend(fontsize="x-small", ncol=2, loc="lower left")
-    ax.set_ylim(1e-22, 1e-16)
+    ax.set_xlim(3.0, 1e3)
+    ax.set_ylim(1e-20, 1e-16)
+    ax.grid(True, which="both", alpha=0.3)
     fig.tight_layout()
     fig.savefig(figures_dir / "photx_sigma_overview.png", dpi=200)
     plt.close(fig)

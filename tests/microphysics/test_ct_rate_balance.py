@@ -338,6 +338,7 @@ def test_OH_CT_rec_agrees_across_sources(figures_dir, save_figures):
         )
         ax.legend(fontsize="x-small", loc="lower right")
         ax.set_ylim(1e-12, 5e-9)
+        ax.grid(True, which="both", alpha=0.3)
         fig.tight_layout()
         fig.savefig(figures_dir / "ct_OH_rec_comparison.png", dpi=200)
         plt.close(fig)

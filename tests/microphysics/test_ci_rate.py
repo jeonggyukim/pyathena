@@ -254,30 +254,36 @@ def test_plot_ci_rate_overview(ci, figures_dir, save_figures, ion_colors):
     if not save_figures:
         pytest.skip("plot generation disabled (--no-figures)")
     import matplotlib.pyplot as plt
+    import matplotlib.patheffects as path_effects
+    from pyathena.plt_tools.line_annotation import line_annotate
     T = np.logspace(3, 8, 400)
-    # (Z, N_reactant, label). Plot a representative set per element.
+    # (Z, N_reactant, label, x_annot_K). x_annot placed per-ion in
+    # the steep-rise portion so the inline label sits cleanly.
     PLOT_IONS = [
-        (1, 1, "H I"),
-        (2, 2, "He I"),
-        (2, 1, "He II"),
-        (6, 6, "C I"),
-        (6, 5, "C II"),
-        (7, 7, "N I"),
-        (8, 8, "O I"),
-        (8, 7, "O II"),
-        (8, 6, "O III"),
+        (1, 1, "H I",   1e5),
+        (2, 2, "He I",  3e5),
+        (2, 1, "He II", 1e6),
+        (6, 6, "C I",   3e4),
+        (6, 5, "C II",  3e5),
+        (7, 7, "N I",   1e5),
+        (8, 8, "O I",   1e5),
+        (8, 7, "O II",  5e5),
+        (8, 6, "O III", 1e6),
     ]
+    stroke = [path_effects.withStroke(linewidth=2.5, foreground="white")]
     fig, ax = plt.subplots(figsize=(7, 5))
-    for Z, N, label in PLOT_IONS:
+    for Z, N, label, x_annot in PLOT_IONS:
         q = Z - N      # reactant ion charge
         beta = ci.get_ci_rate(Z, N, T)
-        ax.loglog(T, np.where(beta > 0, beta, np.nan),
-                  label=label, color=ion_colors(Z, q), lw=1.2)
+        ln, = ax.loglog(T, np.where(beta > 0, beta, np.nan),
+                        color=ion_colors(Z, q), lw=1.4)
+        line_annotate(label, ln, x=x_annot, fontsize="x-small",
+                      color=ion_colors(Z, q), path_effects=stroke)
     ax.set_xlabel(r"$T\,[{\rm K}]$")
     ax.set_ylabel(r"$\beta_{\rm CI}\,[{\rm cm}^3\,{\rm s}^{-1}]$")
     ax.set_title("Voronov 1997 collisional ionization rates")
-    ax.legend(fontsize="x-small", ncol=2, loc="lower right")
     ax.set_ylim(1e-15, 1e-7)
+    ax.grid(True, which="both", alpha=0.3)
     fig.tight_layout()
     fig.savefig(figures_dir / "ci_rate_overview.png", dpi=200)
     plt.close(fig)

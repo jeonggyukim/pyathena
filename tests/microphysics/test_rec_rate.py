@@ -280,34 +280,41 @@ def test_plot_rec_rate_overview(rc, figures_dir, save_figures, ion_colors):
     if not save_figures:
         pytest.skip("plot generation disabled (--no-figures)")
     import matplotlib.pyplot as plt
+    import matplotlib.patheffects as path_effects
+    from pyathena.plt_tools.line_annotation import line_annotate
     T = np.logspace(2, 8, 400)
-    # (Z, N_initial, label). Plot one ionization stage per element so
-    # the figure stays readable; color identifies the element + stage.
+    # (Z, N_initial, label, x_annot_K). x_annot picks a per-ion T
+    # where the line sits in an uncrowded region of the plot.
     PLOT_IONS = [
-        (1, 0, "H II"),
-        (2, 1, "He II"),
-        (2, 0, "He III"),
-        (6, 5, "C II"),
-        (7, 6, "N II"),
-        (8, 7, "O II"),
-        (8, 6, "O III"),
+        (1, 0, "H II",   3e3),
+        (2, 1, "He II",  3e3),
+        (2, 0, "He III", 1e5),
+        (6, 5, "C II",   1e4),
+        (7, 6, "N II",   3e4),
+        (8, 7, "O II",   1e5),
+        (8, 6, "O III",  3e5),
     ]
+    stroke = [path_effects.withStroke(linewidth=2.5, foreground="white")]
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True)
-    for Z, N, label in PLOT_IONS:
+    for Z, N, label, x_annot in PLOT_IONS:
         q = Z - N           # initial-ion charge
         color = ion_colors(Z, q)
         rr = rc.get_rr_rate(Z, N, T)
-        axes[0].loglog(T, rr, label=label, color=color, lw=1.2)
+        ln_rr, = axes[0].loglog(T, rr, color=color, lw=1.4)
+        line_annotate(label, ln_rr, x=x_annot, fontsize="x-small",
+                      color=color, path_effects=stroke)
         if Z > 1 and N > 0:
             dr = rc.get_dr_rate(Z, N, T)
-            axes[1].loglog(T, dr, label=label, color=color, lw=1.2)
+            ln_dr, = axes[1].loglog(T, dr, color=color, lw=1.4)
+            line_annotate(label, ln_dr, x=x_annot, fontsize="x-small",
+                          color=color, path_effects=stroke)
     axes[0].set_title("Radiative recombination (Badnell)")
     axes[1].set_title("Dielectronic recombination (Badnell)")
     for ax in axes:
         ax.set_xlabel(r"$T\,[{\rm K}]$")
         ax.set_ylabel(r"$\alpha\,[{\rm cm}^3\,{\rm s}^{-1}]$")
-        ax.legend(fontsize="x-small", loc="lower left")
         ax.set_ylim(1e-14, 1e-9)
+        ax.grid(True, which="both", alpha=0.3)
     fig.tight_layout()
     fig.savefig(figures_dir / "rec_rate_overview.png", dpi=200)
     plt.close(fig)
