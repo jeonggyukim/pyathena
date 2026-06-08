@@ -38,9 +38,9 @@ from pyathena.microphysics.ct_rate import ChargeTransferRate
 # Kingdon & Ferland 1996 (Table 1 entries used by Cloudy / pyathena).
 # (Z, N) = (atomic number, electron number); charge q = Z - N.
 CT_ION_CATALOG = [
-    (8, 8, "O I"),     # O + HII -> O+ + HI; near-resonant, dE ~ 0.02 eV
-    (7, 7, "N I"),     # N + HII -> N+ + HI; dE ~ 0.93 eV
-    (16, 16, "S I"),   # S + HII -> S+ + HI; dE ~ 1.6 eV
+    (8, 8, "O I"), # O + HII -> O+ + HI; near-resonant, dE ~ 0.02 eV
+    (7, 7, "N I"), # N + HII -> N+ + HI; dE ~ 0.93 eV
+    (16, 16, "S I"), # S + HII -> S+ + HI; dE ~ 1.6 eV
 ]
 
 
@@ -337,7 +337,7 @@ def test_OH_CT_rec_agrees_across_sources(figures_dir, save_figures):
             r"Cloudy poly runs higher at low T)"
         )
         ax.legend(fontsize="x-small", loc="lower right")
-        ax.set_ylim(1e-12, 5e-9)
+        ax.set_ylim(3e-11, 5e-9)
         ax.grid(True, which="both", alpha=0.3)
         fig.tight_layout()
         fig.savefig(figures_dir / "ct_OH_rec_comparison.png", dpi=200)

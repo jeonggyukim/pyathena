@@ -21,7 +21,7 @@ API conventions verified
 * `get_rr_rate(Z, N, T, M=1)` -> radiative recombination coefficient
   [cm^3/s] for the ion (Z, N) BEFORE recombination (the ion that
   captures the electron). Examples:
-    - H II  -> H I:  (Z=1, N=0)
+    - H II  -> H I: (Z=1, N=0)
     - He II -> He I: (Z=2, N=1)
     - O III -> O II: (Z=8, N=6)
   `M=1` selects the ground metastable level (default everywhere).
@@ -66,16 +66,16 @@ from pyathena.microphysics.rec_rate import RecRate
 # (Z, N_initial, label) -- (Z, N) = ion BEFORE recombination.
 # E.g., HII rec -> HI is queried as (1, 0).
 REC_CATALOG = [
-    (1,  0, "H II"),
-    (2,  1, "He II"),
-    (2,  0, "He III"),
-    (6,  5, "C II"),
-    (6,  4, "C III"),
-    (7,  6, "N II"),
-    (7,  5, "N III"),
-    (8,  7, "O II"),
-    (8,  6, "O III"),
-    (8,  5, "O IV"),
+    (1, 0, "H II"),
+    (2, 1, "He II"),
+    (2, 0, "He III"),
+    (6, 5, "C II"),
+    (6, 4, "C III"),
+    (7, 6, "N II"),
+    (7, 5, "N III"),
+    (8, 7, "O II"),
+    (8, 6, "O III"),
+    (8, 5, "O IV"),
     (16, 15, "S II"),
     (16, 14, "S III"),
 ]
@@ -286,13 +286,17 @@ def test_plot_rec_rate_overview(rc, figures_dir, save_figures, ion_colors):
     # (Z, N_initial, label, x_annot_K). x_annot picks a per-ion T
     # where the line sits in an uncrowded region of the plot.
     PLOT_IONS = [
-        (1, 0, "H II",   3e3),
-        (2, 1, "He II",  3e3),
-        (2, 0, "He III", 1e5),
-        (6, 5, "C II",   1e4),
-        (7, 6, "N II",   3e4),
-        (8, 7, "O II",   1e5),
-        (8, 6, "O III",  3e5),
+        # x_annot picked per ion to avoid label overlap in the
+        # dense RR-decline / DR-peak T ranges.
+        (1, 0, "H II", 3e3),
+        (2, 1, "He II", 1e4),
+        (2, 0, "He III", 2e5),
+        (6, 5, "C II", 2e4),
+        (7, 6, "N II", 6e4),
+        (8, 7, "O II", 1.5e5),
+        (8, 6, "O III", 6e5),
+        (16, 15, "S II", 4e4),
+        (16, 14, "S III", 1.5e5),
     ]
     stroke = [path_effects.withStroke(linewidth=2.5, foreground="white")]
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True)
@@ -300,21 +304,26 @@ def test_plot_rec_rate_overview(rc, figures_dir, save_figures, ion_colors):
         q = Z - N           # initial-ion charge
         color = ion_colors(Z, q)
         rr = rc.get_rr_rate(Z, N, T)
-        ln_rr, = axes[0].loglog(T, rr, color=color, lw=1.4)
-        line_annotate(label, ln_rr, x=x_annot, fontsize="x-small",
-                      color=color, path_effects=stroke)
+        ln_rr, = axes[0].loglog(T, rr, color=color, lw=1.4, label=label)
+        line_annotate(label, ln_rr, x=x_annot, xytext=(0, 0),
+                      fontsize="x-small", color=color,
+                      path_effects=stroke)
         if Z > 1 and N > 0:
             dr = rc.get_dr_rate(Z, N, T)
-            ln_dr, = axes[1].loglog(T, dr, color=color, lw=1.4)
-            line_annotate(label, ln_dr, x=x_annot, fontsize="x-small",
-                          color=color, path_effects=stroke)
+            ln_dr, = axes[1].loglog(T, dr, color=color, lw=1.4,
+                                     label=label)
+            line_annotate(label, ln_dr, x=x_annot, xytext=(0, 0),
+                          fontsize="x-small", color=color,
+                          path_effects=stroke)
     axes[0].set_title("Radiative recombination (Badnell)")
     axes[1].set_title("Dielectronic recombination (Badnell)")
+    axes[0].set_ylabel(r"$\alpha_{\rm rr}\,[{\rm cm}^3\,{\rm s}^{-1}]$")
+    axes[1].set_ylabel(r"$\alpha_{\rm dr}\,[{\rm cm}^3\,{\rm s}^{-1}]$")
     for ax in axes:
         ax.set_xlabel(r"$T\,[{\rm K}]$")
-        ax.set_ylabel(r"$\alpha\,[{\rm cm}^3\,{\rm s}^{-1}]$")
-        ax.set_ylim(1e-14, 1e-9)
+        ax.set_ylim(1e-14, 2e-10)
         ax.grid(True, which="both", alpha=0.3)
+        ax.legend(fontsize="x-small", loc="lower left")
     fig.tight_layout()
     fig.savefig(figures_dir / "rec_rate_overview.png", dpi=200)
     plt.close(fig)

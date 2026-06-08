@@ -53,17 +53,18 @@ from pyathena.microphysics.photx import PhotX
 # H + He + the 10 followed coolant ions (C I/II, N I/II, O I/II/III,
 # S I/II/III) plus their ionization products.
 PHOTOION_CATALOG = [
-    (1,  1, "H I",   13.6),     # H I (1s) -> H II
-    (2,  2, "He I",  24.59),    # He I 1S(0) -> He II
-    (2,  1, "He II", 54.42),    # He II 2S(1/2) -> He III (hydrogenic)
-    (6,  6, "C I",    11.26),   # C I (2p^2) -> C II
-    (6,  5, "C II",   24.38),   # C II (2p) -> C III
-    (7,  7, "N I",    14.53),   # N I (2p^3) -> N II
-    (8,  8, "O I",    13.62),   # O I (2p^4) -> O II
-    (8,  7, "O II",   35.12),   # O II (2p^3) -> O III
-    (8,  6, "O III",  54.94),   # O III (2p^2) -> O IV
-    (16, 16, "S I",    10.36),  # S I (3p^4) -> S II
-    (16, 15, "S II",   23.34),  # S II (3p^3) -> S III
+    (1, 1, "H I", 13.6), # H I (1s) -> H II
+    (2, 2, "He I", 24.59), # He I 1S(0) -> He II
+    (2, 1, "He II", 54.42), # He II 2S(1/2) -> He III (hydrogenic)
+    (6, 6, "C I", 11.26), # C I (2p^2) -> C II
+    (6, 5, "C II", 24.38), # C II (2p) -> C III
+    (7, 7, "N I", 14.53), # N I (2p^3) -> N II
+    (8, 8, "O I", 13.62), # O I (2p^4) -> O II
+    (8, 7, "O II", 35.12), # O II (2p^3) -> O III
+    (8, 6, "O III", 54.94), # O III (2p^2) -> O IV
+    (16, 16, "S I", 10.36), # S I (3p^4) -> S II
+    (16, 15, "S II", 23.34), # S II (3p^3) -> S III
+    (16, 14, "S III", 34.83), # S III (3p^2) -> S IV
 ]
 
 
@@ -118,8 +119,8 @@ def test_sigma_finite_positive_above_threshold(px, Z, N, label, Eth_eV):
 @pytest.mark.parametrize(
     "Z,N,label,E_eV,sigma_expected_cm2,rtol",
     [
-        (1, 1, "H I at 13.6 eV",   13.6, 6.3e-18, 0.10),
-        (2, 2, "He I at 24.6 eV",  24.6, 7.4e-18, 0.20),
+        (1, 1, "H I at 13.6 eV", 13.6, 6.3e-18, 0.10),
+        (2, 2, "He I at 24.6 eV", 24.6, 7.4e-18, 0.20),
         (2, 1, "He II at 54.4 eV", 54.4, 1.6e-18, 0.20),
     ],
 )
@@ -228,15 +229,32 @@ def test_plot_sigma_overview(px, figures_dir, save_figures, ion_colors):
     from pyathena.plt_tools.line_annotation import line_annotate
     E = np.logspace(0.5, 4.0, 400)  # 3 eV to 10 keV
     fig, ax = plt.subplots(figsize=(7, 5))
-    # Annotate each line just above its threshold (1.5 * Eth);
-    # white-stroke patheffects keep the label legible over neighbours.
+    # Per-ion x position for the inline label, hand-picked to avoid
+    # overlaps with neighbouring lines (Eth values cluster around
+    # 13.6 eV and 54 eV; using 1.5 * Eth would overlap H I/O I,
+    # C II/He I, and He II/O III). White-stroke patheffects keep
+    # labels legible over crossing lines.
     stroke = [path_effects.withStroke(linewidth=2.5, foreground="white")]
+    X_ANNOT_eV = {
+        "H I": 40.0,
+        "He I": 100.0,
+        "He II": 300.0,
+        "C I": 13.0, # just above C I Eth = 11.26 eV, where C I is highest
+        "C II": 35.0,
+        "N I": 20.0,
+        "O I": 25.0, # O I peak region (Eth = 13.62)
+        "O II": 60.0,
+        "O III": 200.0,
+        "S I": 11.0, # just above S I Eth = 10.36 eV
+        "S II": 50.0,
+        "S III": 80.0,
+    }
     for Z, N, label, Eth in PHOTOION_CATALOG:
         sigma = px.get_sigma(Z, N, E)
         q = Z - N
         ln, = ax.loglog(E, np.where(sigma > 0, sigma, np.nan),
-                        color=ion_colors(Z, q), lw=1.4)
-        line_annotate(label, ln, x=1.5 * Eth,
+                        color=ion_colors(Z, q), lw=1.4, label=label)
+        line_annotate(label, ln, x=X_ANNOT_eV[label], xytext=(0, 0),
                       fontsize="x-small", color=ion_colors(Z, q),
                       path_effects=stroke)
     ax.set_xlabel(r"$E\,[{\rm eV}]$")
@@ -245,6 +263,7 @@ def test_plot_sigma_overview(px, figures_dir, save_figures, ion_colors):
     ax.set_xlim(3.0, 1e3)
     ax.set_ylim(1e-20, 1e-16)
     ax.grid(True, which="both", alpha=0.3)
+    ax.legend(fontsize="x-small", ncol=2, loc="lower left")
     fig.tight_layout()
     fig.savefig(figures_dir / "photx_sigma_overview.png", dpi=200)
     plt.close(fig)

@@ -83,19 +83,25 @@ _CMAP_NAME = {
 _Z_TO_ELEMENT = {1: "H", 2: "He", 6: "C", 7: "N", 8: "O", 16: "S"}
 
 
-def ion_color(Z, q):
+def ion_color(Z, q, num_ions=None):
     """Return matplotlib color hex string for ion (Z, q).
 
     Matches `pyathena/microphysics/photchem.py:_set_colors` so the
     same ion always gets the same color whether plotted from a test
     or from `PhotChem.plt_rate_coeffs` / `plt_sed_sigma_pi`.
+
+    `num_ions` overrides the per-element default (used by tests that
+    extend to higher ionization stages than the photchem default
+    species sets cover -- e.g., the collisional-ionization
+    overview plot which spans up to T=1e8 K). Pass `Z + 1` to span
+    neutral through fully-stripped.
     """
     import matplotlib as mpl
     elem = _Z_TO_ELEMENT[Z]
-    num_ions = _NUM_IONS_DEFAULT[elem]
+    n = num_ions if num_ions is not None else _NUM_IONS_DEFAULT[elem]
     cmap = mpl.colormaps[_CMAP_NAME[elem]]
-    norm = mpl.colors.Normalize(0, num_ions)
-    return mpl.colors.rgb2hex(cmap(norm(num_ions - q)))
+    norm = mpl.colors.Normalize(0, n)
+    return mpl.colors.rgb2hex(cmap(norm(n - q)))
 
 
 def ion_label(Z, q):

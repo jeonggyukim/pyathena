@@ -68,16 +68,16 @@ from pyathena.microphysics.ci_rate import CollIonRate
 # (Z, N_reactant, label) -- (Z, N) = ion BEFORE ionization.
 # H I: Z=1, N=1; HeI: Z=2, N=2; CI: Z=6, N=6; etc.
 CI_CATALOG = [
-    (1,  1, "H I"),
-    (2,  2, "He I"),
-    (2,  1, "He II"),
-    (6,  6, "C I"),
-    (6,  5, "C II"),
-    (7,  7, "N I"),
-    (7,  6, "N II"),
-    (8,  8, "O I"),
-    (8,  7, "O II"),
-    (8,  6, "O III"),
+    (1, 1, "H I"),
+    (2, 2, "He I"),
+    (2, 1, "He II"),
+    (6, 6, "C I"),
+    (6, 5, "C II"),
+    (7, 7, "N I"),
+    (7, 6, "N II"),
+    (8, 8, "O I"),
+    (8, 7, "O II"),
+    (8, 6, "O III"),
     (16, 16, "S I"),
     (16, 15, "S II"),
     (16, 14, "S III"),
@@ -120,9 +120,9 @@ def test_ci_rate_finite_nonneg(ci, T_grid_warm, Z, N, label):
 # ---------------------------------------------------------------------
 
 @pytest.mark.parametrize("Z,N,label", [
-    (1, 1, "H I"),     # dE = 13.6 eV / k_B ~ 1.58e5 K
-    (2, 2, "He I"),    # dE = 24.6 eV
-    (8, 8, "O I"),     # dE = 13.6 eV
+    (1, 1, "H I"), # dE = 13.6 eV / k_B ~ 1.58e5 K
+    (2, 2, "He I"), # dE = 24.6 eV
+    (8, 8, "O I"), # dE = 13.6 eV
 ])
 def test_ci_rate_grows_with_T(ci, Z, N, label):
     """Endothermic CI rate must increase with T.
@@ -154,8 +154,8 @@ def test_ci_rate_grows_with_T(ci, Z, N, label):
 
 @pytest.mark.parametrize("Z,N,label", [
     (1, 1, "H I"),
-    (2, 1, "He II"),   # dE = 54.4 eV -> 6.3e5 K threshold
-    (8, 7, "O II"),    # dE = 35.1 eV
+    (2, 1, "He II"), # dE = 54.4 eV -> 6.3e5 K threshold
+    (8, 7, "O II"), # dE = 35.1 eV
 ])
 def test_ci_rate_zero_at_cold_T(ci, Z, N, label):
     """At T = 100 K, every ion in this test has U = dE_Kel/T > 80,
@@ -259,31 +259,51 @@ def test_plot_ci_rate_overview(ci, figures_dir, save_figures, ion_colors):
     T = np.logspace(3, 8, 400)
     # (Z, N_reactant, label, x_annot_K). x_annot placed per-ion in
     # the steep-rise portion so the inline label sits cleanly.
+    # Extended ion set spanning the full plotted T range [1e3, 1e8] K.
+    # At T~1e8 K (kT ~ 8.6 keV), highly-charged species like O VII
+    # and S XII matter for the CIE cooling balance. Color per ion
+    # spans neutral -> fully-stripped via `num_ions=Z+1` passed to
+    # `ion_colors` so the gradient is visible across the full chain.
     PLOT_IONS = [
-        (1, 1, "H I",   1e5),
-        (2, 2, "He I",  3e5),
-        (2, 1, "He II", 1e6),
-        (6, 6, "C I",   3e4),
-        (6, 5, "C II",  3e5),
-        (7, 7, "N I",   1e5),
-        (8, 8, "O I",   1e5),
-        (8, 7, "O II",  5e5),
+        # (Z, N_reactant, label, x_annot_K)
+        (1, 1, "H I", 1.5e5),
+        (2, 2, "He I", 4e5),
+        (2, 1, "He II", 2e6),
+        (6, 6, "C I", 2e4),
+        (6, 5, "C II", 7e4),
+        (6, 3, "C IV", 2e6),
+        (6, 1, "C VI", 3e7),
+        (7, 7, "N I", 5e4),
+        (7, 4, "N IV", 1e6),
+        (7, 1, "N VII", 5e7),
+        (8, 8, "O I", 1.5e5),
+        (8, 7, "O II", 4e5),
         (8, 6, "O III", 1e6),
+        (8, 4, "O V", 3e6),
+        (8, 1, "O VIII", 8e7),
+        (16, 16, "S I", 3e4),
+        (16, 15, "S II", 2e5),
+        (16, 14, "S III", 6e5),
+        (16, 10, "S VII", 5e6),
+        (16, 5, "S XII", 3e7),
     ]
     stroke = [path_effects.withStroke(linewidth=2.5, foreground="white")]
-    fig, ax = plt.subplots(figsize=(7, 5))
+    fig, ax = plt.subplots(figsize=(8, 5.5))
     for Z, N, label, x_annot in PLOT_IONS:
         q = Z - N      # reactant ion charge
+        color = ion_colors(Z, q, num_ions=Z + 1)
         beta = ci.get_ci_rate(Z, N, T)
         ln, = ax.loglog(T, np.where(beta > 0, beta, np.nan),
-                        color=ion_colors(Z, q), lw=1.4)
-        line_annotate(label, ln, x=x_annot, fontsize="x-small",
-                      color=ion_colors(Z, q), path_effects=stroke)
+                        color=color, lw=1.4, label=label)
+        line_annotate(label, ln, x=x_annot, xytext=(0, 0),
+                      fontsize="x-small", color=color,
+                      path_effects=stroke)
     ax.set_xlabel(r"$T\,[{\rm K}]$")
     ax.set_ylabel(r"$\beta_{\rm CI}\,[{\rm cm}^3\,{\rm s}^{-1}]$")
     ax.set_title("Voronov 1997 collisional ionization rates")
-    ax.set_ylim(1e-15, 1e-7)
+    ax.set_ylim(1e-15, 1e-6)
     ax.grid(True, which="both", alpha=0.3)
+    ax.legend(fontsize="x-small", ncol=3, loc="lower right")
     fig.tight_layout()
     fig.savefig(figures_dir / "ci_rate_overview.png", dpi=200)
     plt.close(fig)
@@ -294,9 +314,9 @@ def test_O_isoelectronic_ci_decreases_with_charge(ci):
     higher charge ions need more energy, so rate decreases.
 
     Ionization potentials:
-      O I  -> O II:  13.6 eV
+      O I  -> O II: 13.6 eV
       O II -> O III: 35.1 eV
-      O III-> O IV:  54.9 eV
+      O III-> O IV: 54.9 eV
 
     At T = 1e5 K (k_B*T = 8.6 eV), U values are 1.58, 4.08, 6.38.
     The Boltzmann factor exp(-U) drops by ~50x from O I to O III at
