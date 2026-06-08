@@ -421,13 +421,19 @@ def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
         n_e = xe * nH
 
         zeta_O = 2.7 * xi_CR
-        k_CT_ion = ct.get_ct_ion_rate(8, 8, T)   # O + H+ -> O+ + H
-        k_CT_rec = ct.get_ct_rec_rate(8, 7, T)   # O+ + H -> O + H+
+        # Low-density limit assumed (n_H << n_crit for [OI] 63 um
+        # ~ 1e4 cm^-3): O0 sits entirely in the J=2 ground level, so
+        # the only CT-ion channel firing is k0r (J=2 -> O+).
+        # Total CT-rec sink IS the J-summed k0+k1+k2 because each
+        # final-J product radiatively cascades back to J=2.
+        k_CT_ion_J2, _, _ = ChargeTransferRate.get_ct_ion_HII_OI_Draine11(
+            T, sum=False)
+        k_CT_rec = ct.get_ct_rec_rate(8, 7, T)   # sum k0+k1+k2
         alpha_rec = rc.get_rec_rate(8, 7, T)     # RR + DR for O+
         # grain-assisted rec for O+ not tabulated; set to 0
         alpha_gr_O = 0.0
 
-        num = zeta_O + n_HII * k_CT_ion
+        num = zeta_O + n_HII * k_CT_ion_J2
         den = n_HI * k_CT_rec + n_e * (alpha_rec + alpha_gr_O)
         r_O = num / den                          # n(O+)/n(O0)
         r_H = x_HII / max(x_HI, 1e-30)           # n(H+)/n(H0)
@@ -528,7 +534,7 @@ def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
     ax.set_xlabel(r"$T\,[{\rm K}]$")
     ax.set_ylabel(r"$[n({\rm O}^+)/n({\rm O}^0)]\,/\,"
                   r"[n({\rm H}^+)/n({\rm H}^0)]$")
-    ax.set_title("CT-only equilibrium ratio\n(corrected Draine 2011 Fig 14.5; see errata_p1.pdf)")
+    ax.set_title("CT-only equilibrium ratio (Draine 2011 Fig 14.5)")
     ax.set_xlim(10, 30000)
     ax.set_ylim(0.0, 1.0)
     ax.grid(True, which="both", alpha=0.3)
@@ -569,10 +575,13 @@ def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
             n_HI = x_HI * nH
             n_e = xe * nH
             zeta_O = 2.7 * xi_CR
-            k_CT_ion = ct_obj.get_ct_ion_rate(8, 8, T_fixed)
+            # Low-density limit: only J=2 channel of CT-ion active.
+            k_CT_ion_J2, _, _ = \
+                ChargeTransferRate.get_ct_ion_HII_OI_Draine11(
+                    T_fixed, sum=False)
             k_CT_rec = ct_obj.get_ct_rec_rate(8, 7, T_fixed)
             alpha_rec = rc_full.get_rec_rate(8, 7, T_fixed)
-            num = zeta_O + n_HII * k_CT_ion
+            num = zeta_O + n_HII * k_CT_ion_J2
             den = n_HI * k_CT_rec + n_e * alpha_rec
             r_O = num / den
             x_OII[j] = r_O / (1.0 + r_O)
