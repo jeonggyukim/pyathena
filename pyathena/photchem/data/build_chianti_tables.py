@@ -47,19 +47,90 @@ import sys
 import numpy as np
 
 
-# Map (Z, N) reactant tuple to CHIANTI ion name (lowercase, "_"
-# separator, charge q+1 by CHIANTI convention).
+# Map pyathena label -> (CHIANTI ion name, nlev_phys).
+# CHIANTI convention: ion charge is 1-based (c_1 = CI, c_2 = CII).
+# nlev_phys = number of physical levels to extract (lowest in
+# energy). Padded with high-E dummies to 5 inside the builder.
+#
+# Each line annotates the ion's ground configuration, the LS terms
+# spanning the lowest extracted levels, and a representative nebular
+# line where applicable. Symbol "+" between terms means cohabiting
+# in the lowest extracted set; numbers in parentheses give the
+# number of fine-structure J levels for that term.
 FOLLOWED_IONS = {
+    # --- 10-ion HII-region followed coolant set (Phase 3c target) ---
+    # 2p^2 ground (C-like): 3P(3) + 1D(1) + 1S(1) = 5 levels
     'CI':   ('c_1',  5),
-    'CII':  ('c_2',  2),   # 2P doublet only (2 levels physically)
+    # 2p^1 ground (B-like): 2P doublet = 2 levels ([C II] 158 um)
+    'CII':  ('c_2',  2),
+    # 2p^3 ground (N-like): 4S(1) + 2D(2) + 2P(2) = 5 levels
     'NI':   ('n_1',  5),
+    # 2p^2 ground (C-like): 3P(3) + 1D(1) + 1S(1) = 5 levels
+    # nebular: [N II] 6548, 6584 (1D -> 3P); 5755 (1S -> 1D)
     'NII':  ('n_2',  5),
+    # 2p^4 ground (O-like, Hund's 3rd inverts): 3P(3) + 1D(1) + 1S(1) = 5
+    # nebular: [O I] 6300, 6364 (1D -> 3P); 63 + 146 um (within 3P)
     'OI':   ('o_1',  5),
+    # 2p^3 ground (N-like): 4S(1) + 2D(2) + 2P(2) = 5 levels
+    # nebular: [O II] 3726, 3729 (2D -> 4S); 7320, 7330 (2P -> 2D)
     'OII':  ('o_2',  5),
+    # 2p^2 ground (C-like): 3P(3) + 1D(1) + 1S(1) = 5 levels
+    # nebular: [O III] 4960, 5008 (1D -> 3P); 4364 (1S -> 1D); IR fine struct
     'OIII': ('o_3',  5),
+    # 3p^4 ground (O-like): 3P(3) + 1D(1) + 1S(1) = 5 levels
     'SI':   ('s_1',  5),
+    # 3p^3 ground (N-like): 4S(1) + 2D(2) + 2P(2) = 5 levels
+    # nebular: [S II] 6717, 6731 (2D -> 4S, n_e diagnostic)
     'SII':  ('s_2',  5),
+    # 3p^2 ground (C-like): 3P(3) + 1D(1) + 1S(1) = 5 levels
+    # nebular: [S III] 9069, 9532 (1D -> 3P); IR fine struct
     'SIII': ('s_3',  5),
+    # --- Tier 1 extended: helium + neon + argon HII tracers ---
+    # 1s^2 ground (He-like): 1S_0 + 1s 2s (3S+1S) + 1s 2p (3P+1P) -> ~5
+    # nebular: He I 5876 (recombination)
+    'HeI':  ('he_1', 5),
+    # 1s ground (hydrogenic): 2S_1/2 + n=2 (2s 2S + 2p 2P_1/2,3/2) -> 5
+    # nebular: He II 4686 (n=4 -> n=3)
+    'HeII': ('he_2', 5),
+    # 2p^5 ground (Ne hole / F-like): 2P doublet inverted = 2 levels
+    # nebular: [Ne II] 12.81 um (within 2P)
+    'NeII': ('ne_2', 2),
+    # 2p^4 ground (O-like): 3P(3) + 1D(1) + 1S(1) = 5 levels
+    # nebular: [Ne III] 15.55 um (3P); 3869, 3968 (1D -> 3P)
+    'NeIII':('ne_3', 5),
+    # 3p^4 ground (O-like): 3P(3) + 1D(1) + 1S(1) = 5 levels
+    # nebular: [Ar III] 7136, 7751 (1D -> 3P); IR fine struct
+    'ArIII':('ar_3', 5),
+    # 3p^3 ground (N-like): 4S(1) + 2D(2) + 2P(2) = 5 levels
+    # nebular: [Ar IV] 4711, 4740 (2D -> 4S)
+    'ArIV': ('ar_4', 5),
+    # --- Tier 2 extended: high-q + metal lines for WIM / harder ionizers ---
+    # 2s^2 ground (Be-like): 1S_0 + 2s 2p 3P(3) + 1P_1 = 5 levels
+    # (C III] 1909 = 3P_1 -> 1S_0; C III 977 = 1P_1 -> 1S_0)
+    'CIII': ('c_3',  5),
+    # 2p^1 ground (B-like): 2P doublet = 2 levels (N III 1750)
+    'NIII': ('n_3',  2),
+    # 2p^1 ground (B-like): 2P doublet = 2 levels
+    'OIV':  ('o_4',  2),
+    # 2s^2 ground (Be-like): 1S_0 + 2s 2p 3P(3) + 1P = 5 levels
+    'OV':   ('o_5',  5),
+    # 3p^1 ground (B-like): 2P doublet = 2 levels ([S IV] 10.5 um)
+    'SIV':  ('s_4',  2),
+    # 3p^1 ground (B-like): 2P doublet = 2 levels ([Si II] 34.8 um)
+    'SiII': ('si_2', 2),
+    # 3s^2 ground (Be-like): 1S_0 + 3s 3p 3P(3) + 1P = 5 levels
+    # (Si III] 1882, 1892)
+    'SiIII':('si_3', 5),
+    # 3s^1 ground (Na-like): 2S_1/2 + 3p 2P_1/2 + 2P_3/2 = 3 levels
+    # captures both Mg II h (2796) and k (2803) doublet components
+    'MgII': ('mg_2', 3),
+    # 3p^5 ground (Cl-like / Ar hole): 2P doublet = 2 levels
+    'ArII': ('ar_2', 2),
+    # 3d^6 4s ground (complex multi-D structure): lowest 5 of a^6D term
+    # (J = 9/2, 7/2, 5/2, 3/2, 1/2)
+    'FeII': ('fe_2', 5),
+    # 3d^6 ground (complex): lowest 5 of a^5D term (J = 4, 3, 2, 1, 0)
+    'FeIII':('fe_3', 5),
 }
 
 # Default temperature grid for the Upsilon table: 60 log-spaced
@@ -75,15 +146,22 @@ DEFAULT_N_T = 60
 ERG_PER_CM = 1.986e-16
 
 
+class NoCHIANTIData(Exception):
+    """Raised when CHIANTI does not have the required atomic data
+    for the requested ion (level structure or transition probs)."""
+
+
 def build_one(ion_name, nlev, T_grid):
     """Extract atomic data for one ion and return a dict suitable
-    for `np.savez`.
+    for the ASCII writer.
     """
     import ChiantiPy.core as ch
     print(f"--- {ion_name} (taking lowest {nlev} levels) ---")
     ion = ch.ion(ion_name, temperature=T_grid)
     if not hasattr(ion, 'Elvlc'):
-        raise RuntimeError(f"{ion_name}: no Elvlc data found")
+        raise NoCHIANTIData(
+            f"{ion_name}: no Elvlc data found in CHIANTI; ion has "
+            f"only ionization / recombination params, skipping")
 
     elv = ion.Elvlc
     lvl_all = np.asarray(elv['lvl'])
@@ -364,15 +442,29 @@ def main(argv=None):
           f"{args.T_min:.3g} K -> {args.T_max:.3g} K")
     ions = args.ions if args.ions else list(FOLLOWED_IONS)
     out_dir = os.path.dirname(os.path.abspath(__file__))
+    skipped = []
     for label in ions:
         ion_name, nlev = FOLLOWED_IONS[label]
-        data = build_one(ion_name, nlev, T_grid)
-        out_path = os.path.join(out_dir, f"{label}.txt")
+        try:
+            data = build_one(ion_name, nlev, T_grid)
+        except NoCHIANTIData as exc:
+            print(f"  SKIP: {exc}")
+            skipped.append(label)
+            continue
+        # Use CHIANTI lowercase naming (e.g., s_2, si_2) for the
+        # output file. Avoids case-collision on case-insensitive
+        # filesystems (macOS HFS+, APFS default, NTFS) where
+        # 'SII.txt' (sulfur) would clobber 'SiII.txt' (silicon) or
+        # vice versa. Also matches the upstream CHIANTI data file
+        # naming so the provenance is unambiguous.
+        out_path = os.path.join(out_dir, f"{ion_name}.txt")
         write_ascii(out_path, label, data, args.T_min, args.T_max)
         nz_A = (data['A'] > 0).sum()
         nz_Y = (data['Upsilon_e'] > 0).any(axis=2).sum() // 2
         print(f"  wrote {out_path}  "
               f"(A: {nz_A} entries, Upsilon: {nz_Y} transitions)")
+    if skipped:
+        print(f"\nSkipped (no CHIANTI level data): {skipped}")
 
 
 if __name__ == '__main__':
