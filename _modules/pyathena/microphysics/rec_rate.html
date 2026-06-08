@@ -371,18 +371,20 @@ document.write(`
 <span class="sd">    Draine (2011)&#39;s recombination rates</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caseB</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
         <span class="c1"># read data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_read_data</span><span class="p">()</span>
+        <span class="c1"># Use Draine&#39;s caseB for hydrogen</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">caseB</span> <span class="o">=</span> <span class="n">caseB</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_read_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="n">basedir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">(),</span>
                            <span class="s1">&#39;../../data/microphysics&#39;</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_C</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_dr_C.dat&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_E</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_dr_E.dat&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fname_rr</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_rr.dat&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_C</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_dr_C_2023.dat&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_E</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_dr_E_2023.dat&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname_rr</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_rr_2023.dat&#39;</span><span class="p">)</span>
 
         <span class="c1"># Read dielectronic recombination rate data</span>
         <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_C</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
@@ -481,7 +483,7 @@ document.write(`
 <span class="sd">            Temperature [K]</span>
 <span class="sd">        M : int</span>
 <span class="sd">            Initial metastable levels (M=1 for the ground state) of the ground</span>
-<span class="sd">            and metastable terms. The defualt value is 1.</span>
+<span class="sd">            and metastable terms. The default value is 1.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -513,14 +515,14 @@ document.write(`
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        Z : int</span>
-<span class="sd">            Nuclear Charge</span>
+<span class="sd">            Nuclear charge</span>
 <span class="sd">        N : int</span>
 <span class="sd">            Number of electrons of the initial target ion (before recombination)</span>
 <span class="sd">        T : array of floats</span>
 <span class="sd">            Temperature [K]</span>
 <span class="sd">        M : int</span>
 <span class="sd">            Initial metastable levels (M=1 for the ground state) of the ground</span>
-<span class="sd">            and metastable terms. The defualt value is 1.</span>
+<span class="sd">            and metastable terms. The default value is 1.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -556,10 +558,10 @@ document.write(`
 <span class="sd">            Temperature [K]</span>
 <span class="sd">        M : int</span>
 <span class="sd">            Initial metastable levels (M=1 for the ground state) of the ground</span>
-<span class="sd">            and metastable terms. The defualt value is 1.</span>
+<span class="sd">            and metastable terms. The default value is 1.</span>
 <span class="sd">        kind : str</span>
 <span class="sd">            Set to &#39;badnell&#39; to use fits Badnell fits or &#39;dr11&#39; to use</span>
-<span class="sd">            Draine (2011)&#39;s formula.</span>
+<span class="sd">            Draine (2011)&#39;s formula. This keyword is ignored if caseB is turned on.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
@@ -568,7 +570,9 @@ document.write(`
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;badnell&#39;</span><span class="p">:</span>
-            <span class="k">if</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># No dielectronic recombination</span>
+            <span class="k">if</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">caseB</span><span class="p">:</span> <span class="c1"># Ignore kind keyword</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rec_rate_H_caseB_Dr11</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">N</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># No dielectronic recombination</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">)</span> <span class="o">+</span> \
