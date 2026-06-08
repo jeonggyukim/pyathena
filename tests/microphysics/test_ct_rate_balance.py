@@ -5,15 +5,17 @@ and `get_ct_ion_rate` and pins it down before downstream code starts
 wiring CT into `evolve_one_species` (pyathena_ct_fixes_plan.md MVP
 item 3 prerequisite).
 
-API conventions verified here:
-  * `get_ct_rec_rate(Z, N, T)` -> rate for X^(q+1) + H I -> X^q + H II.
-    (Z, N) labels the PRODUCT (ion X^q with charge q = Z - N).
-    The product side is the exothermic side; no Boltzmann factor in
+API conventions verified here (both functions now use REACTANT-ion
+indexing):
+  * `get_ct_rec_rate(Z, N, T)` -> rate for X^q + H I -> X^(q-1) + H II,
+    where (Z, N) labels the REACTANT (ion X^q with charge q = Z - N).
+    Requires q >= 1 (already-neutral reactants cannot recombine).
+    The reactant side is the exothermic side; no Boltzmann factor in
     the rate.
-  * `get_ct_ion_rate(Z, N, T)` -> rate for X^q + H II -> X^(q+1) + H I.
-    (Z, N) labels the REACTANT (ion X^q with charge q = Z - N).
-    The reactant side is the endothermic side for the ions we care
-    about (O, N, S); the rate carries `exp(-dE/T)` with dE > 0.
+  * `get_ct_ion_rate(Z, N, T)` -> rate for X^q + H II -> X^(q+1) + H I,
+    where (Z, N) labels the REACTANT (same convention). The reactant
+    side is the endothermic side for the ions we care about
+    (O, N, S); the rate carries `exp(-dE/T)` with dE > 0.
 
 Reference data:
   * Kingdon & Ferland 1996, ApJS 106 205, Table 1 (Cloudy
@@ -34,13 +36,24 @@ import pytest
 from pyathena.microphysics.ct_rate import ChargeTransferRate
 
 
-# Ion catalog: (Z, N, label) for ions with documented CT data in
-# Kingdon & Ferland 1996 (Table 1 entries used by Cloudy / pyathena).
-# (Z, N) = (atomic number, electron number); charge q = Z - N.
+# (Z, N) = (atomic number, electron number) labels the REACTANT ion
+# in both `get_ct_rec_rate` and `get_ct_ion_rate`.
+#
+# CT_ION_CATALOG -- neutral X reacting with H+ to ionize (q = 0).
+# CT_REC_CATALOG -- singly-ionized X+ reacting with H to recombine
+# (q = 1); same atom as the corresponding CT_ION entry, one electron
+# fewer.
+
 CT_ION_CATALOG = [
-    (8, 8, "O I"), # O + HII -> O+ + HI; near-resonant, dE ~ 0.02 eV
-    (7, 7, "N I"), # N + HII -> N+ + HI; dE ~ 0.93 eV
-    (16, 16, "S I"), # S + HII -> S+ + HI; dE ~ 1.6 eV
+    (8, 8, "O I"),   # O + H II -> O+ + H I; near-resonant, dE ~ 0.02 eV
+    (7, 7, "N I"),   # N + H II -> N+ + H I; dE ~ 0.93 eV
+    (16, 16, "S I"), # S + H II -> S+ + H I; dE ~ 1.6 eV
+]
+
+CT_REC_CATALOG = [
+    (8, 7, "O II"),  # O+ + H I -> O + H II; near-resonant (Draine 2011)
+    (7, 6, "N II"),  # N+ + H I -> N + H II
+    (16, 15, "S II"),# S+ + H I -> S + H II
 ]
 
 
@@ -58,7 +71,7 @@ def T_grid():
 # Smoke tests: rates are finite + positive in HII-region T range.
 # ---------------------------------------------------------------------
 
-@pytest.mark.parametrize("Z,N,label", CT_ION_CATALOG)
+@pytest.mark.parametrize("Z,N,label", CT_REC_CATALOG)
 def test_ct_rec_rate_finite_positive(ct, T_grid, Z, N, label):
     """CT recombination rate is finite and positive for all T."""
     rate = ct.get_ct_rec_rate(Z, N, T_grid)
@@ -85,15 +98,18 @@ def test_ct_ion_rate_finite_nonneg(ct, T_grid, Z, N, label):
 
 def test_ct_ion_rate_NI_grows_faster_than_rec(ct):
     """N I CT-ion has dE ~ 0.93 eV -- clearly endothermic.
-    ct_ion(N I) should grow with T markedly faster than ct_rec.
+    ct_ion(N I) should grow with T markedly faster than ct_rec(N II).
     If the Boltzmann factor sign is wrong, this fails immediately.
+
+    Reactant-indexed convention: CT-ion of N (charge 0) takes
+    (Z=7, N=7); the reverse CT-rec of N+ (charge 1) takes (Z=7, N=6).
     """
     T_lo = 5.0e3
     T_hi = 5.0e4
     ion_lo = ct.get_ct_ion_rate(7, 7, T_lo)
     ion_hi = ct.get_ct_ion_rate(7, 7, T_hi)
-    rec_lo = ct.get_ct_rec_rate(7, 7, T_lo)
-    rec_hi = ct.get_ct_rec_rate(7, 7, T_hi)
+    rec_lo = ct.get_ct_rec_rate(7, 6, T_lo)
+    rec_hi = ct.get_ct_rec_rate(7, 6, T_hi)
 
     assert ion_hi > ion_lo, (
         f"N I ct_ion decreasing with T -- sign convention may be "
@@ -113,16 +129,19 @@ def test_ct_ion_rate_NI_grows_faster_than_rec(ct):
 
 def test_ct_OH_resonance_growth_similar(ct):
     """For near-resonant O+H (dE ~ 230 K) the Boltzmann factor is
-    close to 1 across the HII T range. ct_ion and ct_rec should grow
-    by a similar factor; their ratio at T_lo and T_hi should not
-    differ by more than ~30%.
+    close to 1 across the HII T range. ct_ion(O I) and ct_rec(O II)
+    should grow by a similar factor; their ratio at T_lo and T_hi
+    should not differ by more than ~30 percent.
+
+    Reactant-indexed: O (charge 0) for ct_ion -> (8, 8); O+ (charge 1)
+    for ct_rec -> (8, 7).
     """
     T_lo = 5.0e3
     T_hi = 5.0e4
     ion_lo = ct.get_ct_ion_rate(8, 8, T_lo)
     ion_hi = ct.get_ct_ion_rate(8, 8, T_hi)
-    rec_lo = ct.get_ct_rec_rate(8, 8, T_lo)
-    rec_hi = ct.get_ct_rec_rate(8, 8, T_hi)
+    rec_lo = ct.get_ct_rec_rate(8, 7, T_lo)
+    rec_hi = ct.get_ct_rec_rate(8, 7, T_hi)
 
     ratio_lo = ion_lo / rec_lo
     ratio_hi = ion_hi / rec_hi
@@ -324,8 +343,10 @@ def test_OH_CT_rec_agrees_across_sources(figures_dir, save_figures):
                   label="Cloudy poly (atmdat_char_tran, valid T > 200 K)")
         ax.axvline(T_check, color="gray", lw=0.5, alpha=0.5)
         ax.axvline(200., color="C4", lw=0.5, alpha=0.4, linestyle=":")
-        ax.text(220, 1.5e-12, "Cloudy poly\n  valid T > 200 K",
-                fontsize="x-small", color="C4", va="bottom")
+        # Place the validity-floor annotation just inside the ylim,
+        # to the right of the T=200 K guide line.
+        ax.text(230, 5e-11, "Cloudy poly\nvalid $T > 200$ K",
+                fontsize="x-small", color="C4", va="bottom", ha="left")
         ax.set_xlabel(r"$T\,[{\rm K}]$")
         ax.set_ylabel(
             r"$k_{\rm rec}({\rm O}^+ + {\rm H}\!\to\!{\rm O} + {\rm H}^+)"
@@ -361,12 +382,234 @@ def test_ct_ion_rate_zero_for_high_q(ct):
     assert rate == 0.0, "high-q ct_ion fallback should be zero (q > 3 cap)"
 
 
+def _K_realistic_OH(rc, ct, T_arr, nH=30.0, xi_CR=2.0e-16,
+                    G_PE=1.0, Z_d=1.0):
+    """Realistic K(T) = (x_OII/x_OI) / (x_HII/x_HI) under neutral-gas
+    equilibrium with CR ionization + grain-assisted recombination +
+    radiative + dielectronic recombination + charge transfer.
+
+    Hydrogen ionization solved via pyathena `get_xHII` with
+    `zeta_pi=0` (no UV photoionization in neutral gas) and
+    `gr_rec=True` (grain-assisted recomb for H+ active). Self-
+    consistency over xe = x_HII is reached by fixed-point iteration;
+    metals contribute negligibly to xe in diffuse neutral gas so
+    xeM is set to 0.
+
+    Oxygen ionization: source = CR ionization (zeta_O = 2.7 * xi_CR
+    per Draine 2011 §13.7) + CT-ion of O0 by H+; sink = CT-rec of O+
+    by H0 + RR + DR. Grain-assisted recombination for O+ is NOT in
+    WD01 / Draine 2011 §14.37 (only H+, He+, C+, Mg+, S+, Ca+ are
+    tabulated), so alpha_gr_O = 0 here. Photoionization is zero in
+    neutral gas.
+    """
+    from pyathena.microphysics.get_xe_eq import get_xHII
+    K = np.zeros_like(T_arr)
+    for i, T in enumerate(T_arr):
+        # Fixed-point iteration to converge xe = x_HII.
+        xe = 1.0e-4
+        for _ in range(80):
+            xHII_new = get_xHII(nH, xe, 0.0, 0.0, T,
+                                xi_CR, G_PE, Z_d, 0.0, True)
+            if abs(xHII_new - xe) / (xe + 1e-30) < 1.0e-5:
+                xe = xHII_new
+                break
+            xe = xHII_new
+        x_HII = xe
+        x_HI = 1.0 - x_HII
+        n_HII = x_HII * nH
+        n_HI = x_HI * nH
+        n_e = xe * nH
+
+        zeta_O = 2.7 * xi_CR
+        k_CT_ion = ct.get_ct_ion_rate(8, 8, T)   # O + H+ -> O+ + H
+        k_CT_rec = ct.get_ct_rec_rate(8, 7, T)   # O+ + H -> O + H+
+        alpha_rec = rc.get_rec_rate(8, 7, T)     # RR + DR for O+
+        # grain-assisted rec for O+ not tabulated; set to 0
+        alpha_gr_O = 0.0
+
+        num = zeta_O + n_HII * k_CT_ion
+        den = n_HI * k_CT_rec + n_e * (alpha_rec + alpha_gr_O)
+        r_O = num / den                          # n(O+)/n(O0)
+        r_H = x_HII / max(x_HI, 1e-30)           # n(H+)/n(H0)
+        K[i] = r_O / r_H
+    return K
+
+
+def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
+    """Reproduce the CORRECTED Draine 2011 Figure 14.5: the ratio
+    `[n(O+)/n(O0)] / [n(H+)/n(H0)]` versus T, in the low-density
+    and high-density limits.
+
+    NOTE ON THE PUBLISHED FIGURE
+    ----------------------------
+    The printed Figure 14.5 in the 2011 Princeton edition has
+    numerically incorrect curves (y-axis range 0 to 1.2, low-density
+    curve mislabelled as the upper one reaching ~1.15 at T = 1e4 K).
+    Bruce Draine acknowledges this on his book-errata page at
+    https://www.astro.princeton.edu/~draine/book/errata_p1.pdf:
+
+      "§14.7.1, p. 157, Figure 14.5: plotted curves were
+      numerically incorrect.  Corrected Figure 14.5: [...]"
+      (noted 2011.05.18 by E. B. Jenkins)
+
+    The corrected figure on the errata page has:
+      - y-axis range 0 to 1.0,
+      - "high density" as the UPPER curve, "low density" as the LOWER,
+      - both curves asymptoting to ~8/9 at high T.
+
+    This test reproduces the corrected figure, not the buggy
+    printed version. The equations in the book (14.31, 14.32, 14.35)
+    are correct; only the plot was wrong.
+
+    Draine 2011 Eqs. 14.31-14.35: in the low-density limit the
+    O ground state stays in J=2 (decays beat collisions), so only
+    the J=2 channel of CT-rec is active and
+
+        K_low(T) = k0r / (k0 + k1 + k2)
+
+    In the high-density limit the O fine-structure levels J=0,1,2
+    thermalize via collisions:
+
+        K_high(T) = [5*k0r + 3*k1r*exp(-228/T) + k2r*exp(-326/T)]
+                    / [5 + 3*exp(-228/T) + exp(-326/T)]
+                    / (k0 + k1 + k2)
+
+    where k0, k1, k2 are the per-J CT-ionization rates (Draine eqs
+    14.24-26 -> pyathena `get_ct_ion_HII_OI_Draine11(T, sum=False)`)
+    and k0r, k1r, k2r are the per-J CT-recomb rates (Draine eqs
+    14.28-30 -> `get_ct_rec_HI_OII_Draine11(T, sum=False)`).
+
+    At T >~ 10^3 K both ratios approach ~8/9, so x_OII tracks x_HII.
+    At T <~ 300 K the J=2 Boltzmann suppression (exp(-229/T)) pulls
+    K_low below 1, so x_OII falls below x_HII.
+
+    Skipped when --no-figures is passed.
+    """
+    if not save_figures:
+        pytest.skip("plot generation disabled (--no-figures)")
+    import matplotlib.pyplot as plt
+
+    T = np.logspace(1.5, 4.5, 400)  # 30 K to 30000 K
+    # Draine 2011 notation:
+    #   k0, k1, k2 = CT-RECOMBINATION rates per O J-level
+    #                (Draine eq 14.24-26) -- O+ + H -> O(J) + H+
+    #   k0r, k1r, k2r = CT-IONIZATION rates per O J-level
+    #                   (Draine eq 14.28-30) -- O(J) + H+ -> O+ + H
+    # Pyathena mapping:
+    #   get_ct_rec_HI_OII_Draine11 returns Draine (k0, k1, k2)
+    #   get_ct_ion_HII_OI_Draine11 returns Draine (k0r, k1r, k2r)
+    k0, k1, k2 = ChargeTransferRate.get_ct_rec_HI_OII_Draine11(T, sum=False)
+    k0r, k1r, k2r = ChargeTransferRate.get_ct_ion_HII_OI_Draine11(T, sum=False)
+    k_rec_tot = k0 + k1 + k2
+
+    # Low-density limit (Draine eq 14.32): O ground state all in J=2.
+    #   K_low = k0r / (k0 + k1 + k2)
+    K_low = k0r / k_rec_tot
+
+    # High-density limit (Draine eq 14.35): J=0/1/2 thermalize per
+    # Boltzmann (E(J=1) = 228 K, E(J=0) = 326 K above J=2 ground).
+    Tinv = 1.0 / T
+    w0 = 5.0
+    w1 = 3.0 * np.exp(-228.0 * Tinv)
+    w2 = 1.0 * np.exp(-326.0 * Tinv)
+    K_high = (w0 * k0r + w1 * k1r + w2 * k2r) / (w0 + w1 + w2) / k_rec_tot
+
+    fig, axes = plt.subplots(1, 2, figsize=(12, 5))
+
+    # ---- Left panel: faithful Draine 2011 Fig 14.5 reproduction.
+    ax = axes[0]
+    ax.semilogx(T, K_low, "C0-", lw=1.6,
+                label=r"low density ($n_{\rm H}\ll n_{\rm crit}$)")
+    ax.semilogx(T, K_high, "C3--", lw=1.6,
+                label=r"high density ($n_{\rm H}\gg n_{\rm crit}$)")
+    ax.axhline(8.0 / 9.0, color="gray", lw=0.6, ls=":", alpha=0.7)
+    ax.text(15, 8.0/9.0 + 0.03, r"$8/9$",
+            fontsize="x-small", color="gray", va="bottom")
+    ax.set_xlabel(r"$T\,[{\rm K}]$")
+    ax.set_ylabel(r"$[n({\rm O}^+)/n({\rm O}^0)]\,/\,"
+                  r"[n({\rm H}^+)/n({\rm H}^0)]$")
+    ax.set_title("CT-only equilibrium ratio\n(corrected Draine 2011 Fig 14.5; see errata_p1.pdf)")
+    ax.set_xlim(10, 30000)
+    ax.set_ylim(0.0, 1.0)
+    ax.grid(True, which="both", alpha=0.3)
+    ax.legend(fontsize="x-small", loc="lower right")
+
+    # ---- Right panel: self-consistent x_HII and x_OII vs n_H in
+    # neutral gas (no photoionization), at fixed chi_FUV = 1 and
+    # xi_CR = 2e-16 s^-1, for a couple of representative T.
+    ax = axes[1]
+    from pyathena.microphysics.rec_rate import RecRate
+    from pyathena.microphysics.get_xe_eq import get_xHII
+    rc_full = RecRate(caseB=False)
+    ct_obj = ChargeTransferRate()
+    nH_arr = np.logspace(0, 4, 50)
+    chi_FUV = 1.0
+    xi_CR = 2.0e-16
+    Z_d = 1.0
+    T_list = [50.0, 200.0]
+    color_T = {50.0: "C0", 200.0: "C3"}
+    for T_fixed in T_list:
+        x_HII = np.zeros_like(nH_arr)
+        x_OII = np.zeros_like(nH_arr)
+        for j, nH in enumerate(nH_arr):
+            # Self-consistent x_HII = xe (xeM = 0 in diffuse neutral gas).
+            xe = 1.0e-4
+            for _ in range(80):
+                xnew = get_xHII(nH, xe, 0.0, 0.0, T_fixed,
+                                xi_CR, chi_FUV, Z_d, 0.0, True)
+                if abs(xnew - xe) / (xe + 1e-30) < 1e-5:
+                    xe = xnew
+                    break
+                xe = xnew
+            x_HII[j] = xe
+
+            # O balance: CR + CT-ion (source) vs CT-rec + (RR+DR) (sink).
+            x_HI = 1.0 - xe
+            n_HII = xe * nH
+            n_HI = x_HI * nH
+            n_e = xe * nH
+            zeta_O = 2.7 * xi_CR
+            k_CT_ion = ct_obj.get_ct_ion_rate(8, 8, T_fixed)
+            k_CT_rec = ct_obj.get_ct_rec_rate(8, 7, T_fixed)
+            alpha_rec = rc_full.get_rec_rate(8, 7, T_fixed)
+            num = zeta_O + n_HII * k_CT_ion
+            den = n_HI * k_CT_rec + n_e * alpha_rec
+            r_O = num / den
+            x_OII[j] = r_O / (1.0 + r_O)
+        ax.loglog(nH_arr, x_HII, "-",  color=color_T[T_fixed], lw=1.5,
+                  label=rf"$x_{{\rm HII}}$, $T={T_fixed:g}$ K")
+        ax.loglog(nH_arr, x_OII, "--", color=color_T[T_fixed], lw=1.5,
+                  label=rf"$x_{{\rm OII}}$, $T={T_fixed:g}$ K")
+    ax.set_xlabel(r"$n_{\rm H}\,[{\rm cm}^{-3}]$")
+    ax.set_ylabel(r"$x_{\rm HII}$ or $x_{\rm OII}$")
+    ax.set_title(
+        r"Self-consistent eq fractions in neutral gas"
+        "\n"
+        r"$\chi_{\rm FUV}=1$, $\xi_{\rm CR}=2\times10^{-16}$ s$^{-1}$, "
+        "no photoionization"
+    )
+    ax.set_xlim(1.0, 1e4)
+    ax.set_ylim(1e-6, 1.0)
+    ax.grid(True, which="both", alpha=0.3)
+    ax.legend(fontsize="x-small", loc="lower left")
+
+    fig.tight_layout()
+    fig.savefig(figures_dir / "ct_O_equilibrium_Draine_fig14_5.png", dpi=200)
+    plt.close(fig)
+
+
 def test_ct_rec_rate_dalgarno_for_high_q(ct):
-    """`get_ct_rec_rate` falls back to Dalgarno-like generic estimate
-    `1.92e-9 * (q + 1)` for q > 3. Pin this for now.
+    """`get_ct_rec_rate` falls back to a Dalgarno-like generic
+    estimate `1.92e-9 * q` for reactant charge q > 4 (data tables
+    only cover q <= 4 in Cloudy's `ctrecombdata.dat`). Pin this for
+    now -- a future upgrade to Pequignot 1996 / Stancil+99 fits for
+    high-q ions will intentionally break this pin.
+
+    Reactant-indexed: Fe^5+ is the reactant (charge 5, electron count
+    21). The reaction is Fe^5+ + H I -> Fe^4+ + H II.
     """
     T = 1.0e4
     q = 5
-    Z, N = 26, 26 - q  # Fe^5+
+    Z, N = 26, 26 - q  # Fe^5+ as reactant
     rate = ct.get_ct_rec_rate(Z, N, T)
-    np.testing.assert_allclose(rate, 1.92e-9 * (q + 1), rtol=1e-6)
+    np.testing.assert_allclose(rate, 1.92e-9 * q, rtol=1e-6)
