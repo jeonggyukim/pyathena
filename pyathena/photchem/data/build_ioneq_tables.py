@@ -98,21 +98,32 @@ def read_ioneq(path):
 
 
 def main():
-    import ChiantiPy.tools.io as cio
+    """Build per-element x_q(T) using ChiantiPy's dynamic ioneq
+    solver (`ChiantiPy.core.ioneq.calculate`), which evaluates the
+    sequential CIE balance with CURRENT CHIANTI v11 rate fits at
+    each T (Badnell DR + Verner-Ferland RR + Dere 2007 CI). This is
+    superior to reading the static `chianti.ioneq` file shipped
+    with CHIANTI, which is Dere et al. 2009 frozen and does NOT
+    reflect ~15 years of subsequent atomic-data updates.
+
+    Use the same T grid as the legacy chianti.ioneq (101 log-spaced
+    points, 1e4 to 1e9 K) so existing plots and downstream tools
+    remain compatible.
+    """
+    import ChiantiPy.core as ch
     out_dir = os.path.dirname(os.path.abspath(__file__))
-    ioneq = cio.ioneqRead('chianti')
-    T = np.asarray(ioneq['ioneqTemperature'])   # K (linear)
-    log_T = np.log10(T)
-    ioneqAll = np.asarray(ioneq['ioneqAll'])    # (Zmax, qmax+1, NT)
-    print(f"Loaded CHIANTI ioneq: {len(T)} T points "
-          f"({T[0]:.2g} -> {T[-1]:.2g} K)")
+    # T grid matches the chianti.ioneq native grid for compat.
+    log_T = np.linspace(4.0, 9.0, 101)
+    T = 10.0 ** log_T
+    print(f"Computing ioneq with ChiantiPy.core.ioneq.calculate "
+          f"(current CHIANTI v11 rate fits): "
+          f"{len(T)} T points ({T[0]:.2g} -> {T[-1]:.2g} K)")
     for element, Z in ELEMENTS.items():
-        # ChiantiPy convention: ioneqAll[Z-1, q, T_idx] is x_q of
-        # element Z, charge q = 0..Z (q=0 = neutral).
-        x_q = ioneqAll[Z - 1, :Z + 1, :]
+        ie = ch.ioneq(Z)
+        ie.calculate(T)
+        x_q = np.asarray(ie.Ioneq)        # (Z+1, NT)
         out_path = os.path.join(out_dir, f"ioneq_{element}.txt")
         write_ascii(out_path, element, Z, log_T, x_q)
-        # Sanity: each column should sum to ~1 (charge conservation).
         col_sum = x_q.sum(axis=0)
         print(f"  {element:2s} (Z={Z:2d}): wrote {out_path}  "
               f"(col sums {col_sum.min():.4f} - {col_sum.max():.4f})")
