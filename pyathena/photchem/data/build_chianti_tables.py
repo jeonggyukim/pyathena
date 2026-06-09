@@ -145,16 +145,23 @@ FOLLOWED_IONS = {
     'SiIV': ('si_4', 3),
 }
 
-# Per-tier temperature grids. Mirrors the cold + full table pattern
-# in tigris-ncr's `src/photchem/ncr_rates.hpp` (kLogTMin=1, kLogTMax
-# Cold=5, kLogTMax=8.5). Each ion picks one tier at build time:
+# Per-tier temperature grids. Modeled on the cold + full table
+# pattern in tigris-ncr's `src/photchem/ncr_rates.hpp` (kLogTMin=1,
+# kLogTMaxCold=5, kLogTMax=8.5), refined into three tiers so each
+# ion's grid hugs its CIE peak + emission-relevant range.
 #
-# - COLD: 10 K -- 1e5 K, 80 log-spaced points. For neutral
-#   coolants that emit dominantly at low T (CI / CII / NI / OI / SI
-#   / HeI fine-structure FIR lines; PDR / CNM / dark cloud
-#   conditions).
-# - HOT:  1e3 K -- 1e7 K, 80 log-spaced points. For ionized stages
-#   and HII / WIM / coronal regimes.
+# - COLD: 10 K -- 1e5 K, 80 log-spaced points.
+#     Neutrals + atomic He; PDR / CNM / diffuse molecular gas.
+#     Dominant FIR fine-structure lines [CI] 609, [CII] 158 um,
+#     [OI] 63 um.
+# - WARM: 1e3 K -- 5e5 K, 80 log-spaced points.
+#     Low-q ions (CIE peak ~1e4 - 1e5 K), HII region + WIM regime.
+#     Includes the iconic nebular forbidden-line emitters
+#     [O III] 5008 / 4960, [N II] 6584, [S II] 6717 / 31.
+# - HOT:  1e4 K -- 1e7 K, 80 log-spaced points.
+#     High-q ions, coronal / AGN / shock relevant.
+#     Li-like resonance doublets (C IV 1548, O VI 1031) and the
+#     hotter Be-like systems.
 #
 # The grid is written into each .txt so the runtime coolant
 # modules pick up the right one without extra bookkeeping. CLI
@@ -162,23 +169,49 @@ FOLLOWED_IONS = {
 # uniformly when building a single ion for diagnostic use.
 TIER_GRIDS = {
     'cold': (1.0e1, 1.0e5, 80),
-    'hot':  (1.0e3, 1.0e7, 80),
+    'warm': (1.0e3, 5.0e5, 80),
+    'hot':  (1.0e4, 1.0e7, 80),
 }
-DEFAULT_TIER = 'hot'        # fallback for ions not in TIER_BY_LABEL
-DEFAULT_T_MIN = TIER_GRIDS['hot'][0]
-DEFAULT_T_MAX = TIER_GRIDS['hot'][1]
-DEFAULT_N_T   = TIER_GRIDS['hot'][2]
+DEFAULT_TIER = 'warm'       # fallback for ions not in TIER_BY_LABEL
+DEFAULT_T_MIN = TIER_GRIDS['warm'][0]
+DEFAULT_T_MAX = TIER_GRIDS['warm'][1]
+DEFAULT_N_T   = TIER_GRIDS['warm'][2]
 
-# Classify each followed ion into a T-grid tier. Neutrals + atomic
-# helium use the cold grid (their FIR lines and cooling matter most
-# at T < 1e5 K). All ionized stages use the hot grid.
+# Classify each followed ion into a T-grid tier.
 TIER_BY_LABEL = {
-    # cold (PDR / CNM / dark cloud relevant)
-    'CI': 'cold',  'CII': 'cold',
+    # cold (PDR / CNM / diffuse molecular)
+    'CI': 'cold',
+    'CII': 'cold',
     'NI': 'cold',
     'OI': 'cold',
     'SI': 'cold',
     'HeI': 'cold',
+    # warm (HII region + WIM)
+    'HeII':  'warm',
+    'CIII':  'warm',   # Be-like, peaks ~5e4 K but seen in HII
+    'NII':   'warm',
+    'OII':   'warm',
+    'OIII':  'warm',
+    'SII':   'warm',
+    'SIII':  'warm',
+    'NeII':  'warm',
+    'NeIII': 'warm',
+    'ArIII': 'warm',
+    'ArIV':  'warm',
+    'SiII':  'warm',
+    'SiIII': 'warm',
+    'MgII':  'warm',
+    'FeII':  'warm',
+    'FeIII': 'warm',
+    # hot (coronal / AGN / shock)
+    'NIII': 'hot',
+    'OIV':  'hot',
+    'OV':   'hot',
+    'SIV':  'hot',
+    'CIV':  'hot',
+    'NV':   'hot',
+    'OVI':  'hot',
+    'SiIV': 'hot',
 }
 
 # 1 cm^-1 = h c in erg = 1.986e-16 erg
