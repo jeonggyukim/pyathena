@@ -37,7 +37,7 @@ CLI:
 
 import os
 
-from . import build_ioneq_tables, build_ioneq_local
+from . import build_ioneq_tables, build_ioneq_local, build_cool_tables
 
 
 def main():
@@ -53,6 +53,11 @@ def main():
     print()
     print("=== Step 2: local ioneq_local[_ct]_<element>.txt ===")
     build_ioneq_local.main()
+    print()
+    print("=== Step 3: per-ion cooling cool_<element>.txt ===")
+    print("    (slow: ~10 min for full element set; ChiantiPy "
+          "loads each ion's data files individually)")
+    build_cool_tables.main()
     print()
     print("All tables regenerated.")
 
