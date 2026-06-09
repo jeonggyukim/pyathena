@@ -18,9 +18,9 @@ import os
 import numpy as np
 
 
-# Followed elements for the photchem subpackage: same set as the
-# atomic-data tables, indexed by atomic number Z. Used as input
-# columns for the ASCII tables.
+# Followed elements for the photchem subpackage, indexed by atomic
+# number Z. Matches the set tabulated by Gnat & Sternberg 2007 for
+# direct benchmark comparison.
 ELEMENTS = {
     'H':  1,
     'He': 2,
@@ -32,6 +32,7 @@ ELEMENTS = {
     'Si': 14,
     'S':  16,
     'Ar': 18,
+    'Ca': 20,
     'Fe': 26,
 }
 
