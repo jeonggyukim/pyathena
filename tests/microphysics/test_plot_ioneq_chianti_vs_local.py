@@ -85,7 +85,7 @@ def _make_panel(figures_dir, elements_subset, fig_name):
             color = cmap(q / Z)
             label = _ion_label(element, q)
             line_annotate(label, ch_lines[q], x=x_annot,
-                          xytext=(0, 4), fontsize='x-small',
+                          xytext=(0, 4), fontsize='small',
                           color=color, ha='center',
                           path_effects=stroke)
         # Method legend (line styles) on every panel, lower-left.
@@ -99,14 +99,14 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         ax.set_ylim(1e-5, 2)
         ax.grid(True, which='both', alpha=0.3)
     for ax in axes[-3:]:
-        ax.set_xlabel(r'$\log_{10}(T/{\rm K})$')
+        ax.set_xlabel(r'$\log_{10}\,T\,[{\rm K}]$')
     for ax in axes[::3]:
         ax.set_ylabel(r'$x_q = n(X^{q+})/n(X)$')
     fig.suptitle('CIE x_q(T): CHIANTI v11 vs pyathena own rates '
                  '(without / with CT). H ionization for CT weighting '
                  'taken from CHIANTI v11.')
     fig.tight_layout()
-    fig.savefig(figures_dir / fig_name, dpi=150)
+    fig.savefig(figures_dir / fig_name, dpi=300)
     plt.close(fig)
 
 

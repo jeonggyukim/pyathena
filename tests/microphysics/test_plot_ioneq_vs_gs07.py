@@ -113,7 +113,7 @@ def _make_panel(figures_dir, elements_subset, fig_name, gs07):
                 continue
             line_annotate(_ion_label(element, q), ch_lines[q],
                           x=xa, xytext=(0, 4),
-                          fontsize='x-small',
+                          fontsize='small',
                           color=cmap(q / Z), ha='center',
                           path_effects=stroke)
         ax.plot([], [], 'k-',  lw=1.4, label='CHIANTI v11')
@@ -125,13 +125,13 @@ def _make_panel(figures_dir, elements_subset, fig_name, gs07):
         ax.set_ylim(1e-5, 2)
         ax.grid(True, which='both', alpha=0.3)
     for ax in axes[-3:]:
-        ax.set_xlabel(r'$\log_{10}(T/{\rm K})$')
+        ax.set_xlabel(r'$\log_{10}\,T\,[{\rm K}]$')
     for ax in axes[::3]:
         ax.set_ylabel(r'$x_q = n(X^{q+})/n(X)$')
     fig.suptitle('CIE x_q(T): CHIANTI v11 (solid) '
                  'vs Gnat & Sternberg 2007 (dashed)')
     fig.tight_layout()
-    fig.savefig(figures_dir / fig_name, dpi=150)
+    fig.savefig(figures_dir / fig_name, dpi=300)
     plt.close(fig)
 
 
