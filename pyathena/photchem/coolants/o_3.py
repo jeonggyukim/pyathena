@@ -10,31 +10,15 @@ electron density, and fed into the generic 5-level solver to get
 populations. The cooling rate per O III ion is the standard
 sum_{i>j} f_i * A[i,j] * E_ij.
 
-LIMITATION -- PROTON IMPACT NOT INCLUDED.
-
-CHIANTI ships proton-impact excitation rates (Psplups data) for
-the 3P_J fine-structure transitions of O III. Proton rates for
-these small-Delta-E transitions can equal or exceed electron rates
-at HII temperatures, where n_p ~ n_e. The current implementation
-uses electron impact only, so:
-  - The IR fine-structure lines [O III] 52 + 88 um are
-    underestimated at n_e < n_crit (~few * 1e3 cm^-3 for the FS
-    transitions).
-  - The dominant optical cooling channel [O III] 5008 + 4960 is
-    set by electron excitation from the 3P_0 ground and is
-    relatively accurate.
-  - Total cooling per OIII ion can be off by up to ~3x in
-    low-density HII gas (n_e ~ 1e3 cm^-3); converges to the
-    correct value at n_e >> n_crit where collisions thermalize
-    3P_J independent of collider.
-Comparison vs ChiantiPy.populate() (which includes p + e) at
-T=10^4 K, n_e=1e3 cm^-3:
-  - f(3P_0): 0.97 (here) vs 0.31 (full); f(3P_2): 0.002 vs 0.20.
-  - Total cooling per OIII: 4.6e-19 vs ~1.4e-18 erg / s.
-Follow-up: extend the build script to extract psplups data and the
-runtime to add a proton-impact contribution. Sufficient for an
-HII-region SWEEP TARGET that focuses on 5008+4960 line emission;
-not adequate for FIR fine-structure diagnostics.
+Both electron and proton impact are included. CHIANTI ships
+proton-impact excitation rates (Psplups data) for the small-Delta-E
+fine-structure transitions of O III (3P_J -> 3P_J'). For HII
+conditions (T ~ 1e4 K, n_p ~ n_e), proton impact dominates the FS
+thermalization. Both contributions are summed at runtime via the
+same Draine 2011 Eq. 17.10 formula on the per-collider Upsilon
+tables. Pass `n_p` explicitly if it differs from `n_e`; default is
+`n_p = n_e` (charge neutrality with metals being a small
+correction in HII gas).
 
 Public API:
     cooling(T, n_e, n_OIII)
@@ -86,6 +70,8 @@ def _load():
         'g': g,
         'T_grid': d['T_grid'],
         'Upsilon_e': d['Upsilon_e'],
+        'Upsilon_p': d.get('Upsilon_p',
+                           np.zeros_like(d['Upsilon_e'])),
     }
 
 
@@ -104,19 +90,16 @@ def _table():
     return _TABLE
 
 
-def _interp_upsilon(T):
-    """Interpolate the (5, 5, NT) Upsilon table to per-cell T.
-
-    Returns an array of shape (5, 5, ...) where the trailing dims
-    match the shape of T.
+def _interp_upsilon_kind(T, kind):
+    """Interpolate one of the (5, 5, NT) Upsilon tables to per-cell
+    T. `kind` is 'e' (electron) or 'p' (proton).
     """
     tab = _table()
     T_grid = tab['T_grid']
-    Y_grid = tab['Upsilon_e']                       # (5, 5, NT)
+    Y_grid = tab['Upsilon_e' if kind == 'e' else 'Upsilon_p']
     T_arr = np.atleast_1d(np.asarray(T, dtype=float))
     cell_shape = T_arr.shape
     out = np.zeros((NLEV, NLEV) + cell_shape)
-    # Linear interpolation in log T for each (i, j) transition.
     lnT = np.log(T_arr)
     lnT_grid = np.log(T_grid)
     for i in range(NLEV):
@@ -127,46 +110,58 @@ def _interp_upsilon(T):
             out[i, j] = np.interp(lnT, lnT_grid, Y_ij,
                                   left=Y_ij[0], right=Y_ij[-1])
     if np.isscalar(T):
-        # Squeeze the (1,) trailing dim back out
         out = out[..., 0]
     return out
 
 
-def _collisional_q_down(T, n_e):
-    """Per-cell downward rate matrix `n_e * q_ij` for electron
-    impact, shape (5, 5, ...).
+def _collisional_q_down(T, n_e, n_p=None):
+    """Per-cell downward rate matrix summed over collider
+    contributions, shape (5, 5, ...).
+
+    Electron impact and (optional) proton impact use the same
+    Draine 2011 Eq. 17.10 conversion of Upsilon to q with the same
+    prefactor `beta = 8.629e-8` (the kinematics of the electron
+    cancel out in the rate-coefficient form), only the table of
+    Upsilon differs. For HII gas where the protons supply most of
+    the FS thermalization, leaving `n_p = None` defaults to
+    `n_p = n_e` (charge neutrality with metals being a small
+    correction).
     """
     tab = _table()
     g = tab['g']
-    Y = _interp_upsilon(T)                          # (5, 5, ...)
     T_arr = np.asarray(T, dtype=float)
     sqrt_T = np.sqrt(T_arr)
-    # Draine 17.10: q_ji = beta * Upsilon_ji / (g_j * sqrt(T)).
-    # Note that 'j' here is the UPPER level in our convention
-    # (de-excitation is i_upper -> i_lower; rate keyed by upper g).
-    NL = NLEV
-    Cdown = np.zeros_like(Y)
     n_e_arr = np.asarray(n_e, dtype=float)
-    for i in range(NL):
-        for j in range(NL):
+    if n_p is None:
+        n_p_arr = n_e_arr
+    else:
+        n_p_arr = np.asarray(n_p, dtype=float)
+
+    Y_e = _interp_upsilon_kind(T, 'e')
+    Y_p = _interp_upsilon_kind(T, 'p')
+    Cdown = np.zeros_like(Y_e)
+    for i in range(NLEV):
+        for j in range(NLEV):
             if i <= j:
-                continue                            # only downward
-            Cdown[i, j] = (_BETA / (g[i] * sqrt_T)) * Y[i, j] * n_e_arr
+                continue
+            pref = _BETA / (g[i] * sqrt_T)
+            Cdown[i, j] = pref * (Y_e[i, j] * n_e_arr
+                                  + Y_p[i, j] * n_p_arr)
     return Cdown
 
 
-def populations(T, n_e):
+def populations(T, n_e, n_p=None):
     """Return the 5-level fractional populations of O III at the
-    given (T, n_e). Inputs can be scalars or arrays.
+    given (T, n_e [, n_p]). `n_p` defaults to `n_e`.
     """
     tab = _table()
-    Cdown = _collisional_q_down(T, n_e)
+    Cdown = _collisional_q_down(T, n_e, n_p=n_p)
     return solve_5level_steady_state(
         tab['A'], tab['E_erg'], tab['g'], T, Cdown,
     )
 
 
-def cooling(T, n_e, n_OIII):
+def cooling(T, n_e, n_OIII, n_p=None):
     """Volumetric cooling rate from O III [erg cm^-3 s^-1].
 
     Lambda(O III) = n_OIII * sum_{i>j} f_i * A[i,j] * (E_i - E_j),
@@ -175,7 +170,10 @@ def cooling(T, n_e, n_OIII):
       - [O III] 5008 + 4960 (1D2 -> 3P_2 + 3P_1)
       - [O III] 4364 (1S0 -> 1D2; auroral, T_e diagnostic with 5008)
       - IR fine-structure (3P_J transitions, far-IR)
+    Both electron and proton impact are included; pass `n_p`
+    explicitly if it differs from `n_e` (in HII regions
+    `n_p = n_HII ~= n_e` is the default).
     """
     tab = _table()
-    f = populations(T, n_e)
+    f = populations(T, n_e, n_p=n_p)
     return n_OIII * cooling_from_populations(f, tab['A'], tab['E_erg'])

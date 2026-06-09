@@ -145,14 +145,22 @@ FOLLOWED_IONS = {
     'SiIV': ('si_4', 3),
 }
 
-# Default temperature grid for the Upsilon table: 60 log-spaced
-# points from 1e3 to 1e6 K. Covers the followed-ion CIE peaks plus
-# non-equilibrium / shock margin. 60 log-points gives ~1% log-linear
-# interpolation; the underlying splups fits are 5-9 spline knots per
-# transition. Override via CLI args (see module docstring).
-DEFAULT_T_MIN = 1.0e3
+# Default temperature grid for the Upsilon table: 80 log-spaced
+# points from 1e2 to 1e6 K. Lower bound 100 K covers neutral
+# metal-line cooling in PDR / CNM regimes (where [OI] 63 um, [CII]
+# 158 um, [CI] 609 um are dominant FIR coolants); upper bound 1e6 K
+# covers the followed-ion CIE peaks plus non-equilibrium / shock
+# margin. 80 log-points keeps ~1% log-linear interpolation accuracy
+# across 4 decades. Override via CLI args (see module docstring).
+#
+# Note: ChiantiPy extrapolates Upsilon below the data validity
+# range per-ion (splines can diverge at the lower edge). Runtime
+# coolant modules clip Upsilon to non-negative values; the user
+# should check per-ion that the low-T behavior is physically
+# reasonable before trusting the cooling rate at T < few * 1e2 K.
+DEFAULT_T_MIN = 1.0e2
 DEFAULT_T_MAX = 1.0e6
-DEFAULT_N_T = 60
+DEFAULT_N_T = 80
 
 # 1 cm^-1 = h c in erg = 1.986e-16 erg
 ERG_PER_CM = 1.986e-16
@@ -262,10 +270,10 @@ def build_one(ion_name, nlev, T_grid):
     # temperatures the ion was constructed with.  Convention
     # follows Wgfa: lvl1 = lower, lvl2 = upper.
     Upsilon_e = np.zeros((nlev, nlev, len(T_grid)))
+    keep_set = set(int(x) for x in lvl_keep)
     if hasattr(ion, 'Scups') or hasattr(ion, 'Splups'):
         ion.upsilonDescale()
         ups = ion.Upsilon
-        keep_set = set(int(x) for x in lvl_keep)
         for k in range(len(ups['lvl1'])):
             l1 = int(ups['lvl1'][k])
             l2 = int(ups['lvl2'][k])
@@ -278,6 +286,32 @@ def build_one(ion_name, nlev, T_grid):
                 Upsilon_e[lo, hi, :] = Y_T
                 Upsilon_e[hi, lo, :] = Y_T
 
+    # Effective collision strengths Upsilon_p on T_grid for PROTON
+    # impact. Same formula at runtime (q = beta * Upsilon /
+    # (g_upper * sqrt(T))) but multiplied by n_p (= n_HII in HII
+    # gas) instead of n_e. Significant for small-Delta-E
+    # fine-structure transitions where the de-excitation can be
+    # comparable to or larger than electron impact at HII T. In
+    # ChiantiPy v0.16 the result lands in `ion.PUpsilon` after
+    # `upsilonDescale(prot=True)`.
+    Upsilon_p = np.zeros((nlev, nlev, len(T_grid)))
+    if hasattr(ion, 'Psplups'):
+        try:
+            ion.upsilonDescale(prot=True)
+        except (TypeError, AttributeError):
+            ion.upsilonDescale(prot=1)
+        pups = getattr(ion, 'PUpsilon', None)
+        if pups is not None and 'upsilon' in pups:
+            for k in range(len(pups['lvl1'])):
+                l1 = int(pups['lvl1'][k])
+                l2 = int(pups['lvl2'][k])
+                if l1 in keep_set and l2 in keep_set:
+                    lo = int(np.where(lvl_keep == l1)[0][0])
+                    hi = int(np.where(lvl_keep == l2)[0][0])
+                    Y_T = np.asarray(pups['upsilon'][k])
+                    Upsilon_p[lo, hi, :] = Y_T
+                    Upsilon_p[hi, lo, :] = Y_T
+
     return {
         'lvl': lvl_keep,
         'conf': conf,
@@ -288,6 +322,7 @@ def build_one(ion_name, nlev, T_grid):
         'A': A,
         'T_grid': T_grid,
         'Upsilon_e': Upsilon_e,
+        'Upsilon_p': Upsilon_p,
         'nlev_phys': np.array(nlev_phys),
         'chianti_ion_name': np.array(ion_name),
     }
@@ -328,7 +363,8 @@ def write_ascii(out_path, label, data, T_min, T_max):
     nlev_phys = int(data['nlev_phys'])
     nlev = len(data['lvl'])
     A = data['A']
-    Y = data['Upsilon_e']
+    Y_e = data['Upsilon_e']
+    Y_p = data.get('Upsilon_p', np.zeros_like(Y_e))
     T = data['T_grid']
     KB_CGS = 1.380649e-16
     # Collect A and Upsilon transitions present (upper > lower).
@@ -337,11 +373,14 @@ def write_ascii(out_path, label, data, T_min, T_max):
         for j in range(i):
             if A[i, j] > 0.0:
                 A_rows.append((i, j, A[i, j]))
-    Y_rows = []
+    Ye_rows = []
+    Yp_rows = []
     for i in range(nlev):
         for j in range(i):
-            if np.any(Y[i, j, :] > 0.0):
-                Y_rows.append((i, j, Y[i, j, :]))
+            if np.any(Y_e[i, j, :] > 0.0):
+                Ye_rows.append((i, j, Y_e[i, j, :]))
+            if np.any(Y_p[i, j, :] > 0.0):
+                Yp_rows.append((i, j, Y_p[i, j, :]))
 
     with open(out_path, 'w') as f:
         f.write(f"# pyathena.photchem atomic data : {label}\n")
@@ -387,11 +426,20 @@ def write_ascii(out_path, label, data, T_min, T_max):
         for Tk in T:
             f.write(f"{Tk: .6e}\n")
         f.write("\n")
-        # Section 4: Upsilon
-        f.write(f"UPSILON_E N_trans={len(Y_rows)}\n")
+        # Section 4: electron-impact Upsilon
+        f.write(f"UPSILON_E N_trans={len(Ye_rows)}\n")
         f.write(f"# upper_idx  lower_idx   "
                 f"upsilon(T_GRID[0]..T_GRID[N-1])\n")
-        for (i, j, Y_T) in Y_rows:
+        for (i, j, Y_T) in Ye_rows:
+            vals = " ".join(f"{y: .6e}" for y in Y_T)
+            f.write(f"{i:<11d} {j:<11d} {vals}\n")
+        f.write("\n")
+        # Section 5: proton-impact Upsilon (only when CHIANTI has
+        # Psplups data; empty section otherwise).
+        f.write(f"UPSILON_P N_trans={len(Yp_rows)}\n")
+        f.write(f"# upper_idx  lower_idx   "
+                f"upsilon(T_GRID[0]..T_GRID[N-1])\n")
+        for (i, j, Y_T) in Yp_rows:
             vals = " ".join(f"{y: .6e}" for y in Y_T)
             f.write(f"{i:<11d} {j:<11d} {vals}\n")
         f.write("\n")
@@ -436,7 +484,7 @@ def read_ascii(path):
             out['A'] = A
         elif section == 'T_GRID':
             out['T_grid'] = np.array([float(b) for b in body])
-        elif section == 'UPSILON_E':
+        elif section in ('UPSILON_E', 'UPSILON_P'):
             Y = np.zeros((5, 5, len(out['T_grid'])))
             for b in body:
                 parts = b.split()
@@ -444,9 +492,13 @@ def read_ascii(path):
                 Y_T = np.array([float(p) for p in parts[2:]])
                 Y[up, lo, :] = Y_T
                 Y[lo, up, :] = Y_T
-            out['Upsilon_e'] = Y
+            out['Upsilon_e' if section == 'UPSILON_E' else 'Upsilon_p'] = Y
         else:
             raise ValueError(f"unknown section: {section!r}")
+    # Default empty Upsilon_p if file pre-dates the proton extension.
+    if 'Upsilon_p' not in out and 'T_grid' in out:
+        out['Upsilon_p'] = np.zeros(
+            (5, 5, len(out['T_grid'])), dtype=float)
     return out
 
 
