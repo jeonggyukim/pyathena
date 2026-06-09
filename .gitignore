@@ -17,3 +17,10 @@ working_notebooks/
 pyathena.egg-info
 CLAUDE.md
 .claude/
+
+# CIE ionization-fraction tables regenerated locally by
+# pyathena/photchem/data/build_all.py from CHIANTI v11 via
+# ChiantiPy. Not tracked: rerun the builder to regenerate.
+pyathena/photchem/data/ioneq_*.txt
+pyathena/photchem/data/ioneq_local_*.txt
+pyathena/photchem/data/ioneq_local_ct_*.txt

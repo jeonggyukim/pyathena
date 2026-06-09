@@ -22,51 +22,6 @@ from pyathena.microphysics.ct_rate import ChargeTransferRate
 from .build_ioneq_tables import ELEMENTS, read_ioneq, write_ascii
 
 
-# CHIANTI element symbol lowercase used in ion names (`fe_2`, `o_3`,
-# etc.). Matches CHIANTI's data directory naming.
-_CH_ELEM = {
-    'H':  'h',  'He': 'he', 'C':  'c',  'N':  'n',  'O':  'o',
-    'Ne': 'ne', 'Mg': 'mg', 'Si': 'si', 'S':  's',  'Ar': 'ar',
-    'Ca': 'ca', 'Fe': 'fe',
-}
-
-
-def _chianti_rates(element, Z, T_grid):
-    """Return (k_ci_full, alpha_rec_full) arrays of shape (Z+1, NT)
-    computed entirely from CHIANTI v11 via ChiantiPy. Each
-    k_ci_full[q] is the rate for X^q -> X^(q+1) (and is zero for
-    q=Z); each alpha_rec_full[q] is the rate for X^q -> X^(q-1)
-    (zero for q=0).
-    """
-    import ChiantiPy.core as ch
-    NT = len(T_grid)
-    k_ci = np.zeros((Z + 1, NT))
-    arec = np.zeros((Z + 1, NT))
-    sym = _CH_ELEM[element]
-    for q in range(Z + 1):
-        ion_name = f'{sym}_{q + 1}'   # CHIANTI 1-based
-        try:
-            ion = ch.ion(ion_name, temperature=T_grid)
-        except (FileNotFoundError, KeyError, IOError, OSError):
-            continue
-        # k_ci: only meaningful for q < Z (q=Z is fully stripped).
-        if q < Z:
-            try:
-                ion.ionizRate()
-                k_ci[q] = np.asarray(ion.IonizRate['rate'])
-            except Exception:
-                pass
-        # alpha_rec: only meaningful for q > 0.
-        if q > 0:
-            try:
-                ion.recombRate()
-                arec[q] = np.asarray(ion.RecombRate['rate'])
-            except Exception:
-                pass
-    # Sanitize: replace NaN/negative with 0.
-    k_ci = np.where(np.isfinite(k_ci) & (k_ci > 0), k_ci, 0.0)
-    arec = np.where(np.isfinite(arec) & (arec > 0), arec, 0.0)
-    return k_ci, arec
 
 
 def _safe(call):
@@ -119,12 +74,6 @@ def cie_xq_for_element(Z, T_grid, x_HI_arr, x_HII_arr, use_ct=True,
     ct = ChargeTransferRate()
     NT = len(T_grid)
     x_q = np.zeros((Z + 1, NT))
-    # Pre-compute CHIANTI fallback arrays once (each gives all q,
-    # all T). Used cell-by-cell below when pyathena returns 0.
-    if element is not None:
-        ci_ch, arec_ch = _chianti_rates(element, Z, T_grid)
-    else:
-        ci_ch, arec_ch = None, None
     for k, T in enumerate(T_grid):
         x_HI = x_HI_arr[k]
         x_HII = x_HII_arr[k]
@@ -171,6 +120,20 @@ def main():
                                            CHIANTI's CIE H state)
     The pair lets the comparison plot isolate the effect of CT.
     """
+    # Guard against silent failure: the CHIANTI rate classes need
+    # XUVTOP to load .rrparams / .drparams / .diparams from the
+    # CHIANTI database. Without it, every ChiantiPy lookup returns
+    # an error that the rate classes catch, producing empty rate
+    # tables. The CIE sequential solver then puts every element at
+    # q=0 with no warning.
+    if not os.environ.get('XUVTOP'):
+        raise RuntimeError(
+            "XUVTOP environment variable not set. ChiantiPy cannot "
+            "load CHIANTI data without it; build_ioneq_local would "
+            "silently produce all-neutral x_q tables. Set XUVTOP "
+            "to your CHIANTI v11 data directory before running, "
+            "e.g.:\n"
+            "    export XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db")
     out_dir = os.path.dirname(os.path.abspath(__file__))
     H = read_ioneq(os.path.join(out_dir, 'ioneq_H.txt'))
     log_T = H['log_T']

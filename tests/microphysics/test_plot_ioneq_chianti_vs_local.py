@@ -67,7 +67,12 @@ def _make_panel(figures_dir, elements_subset, fig_name):
             color = cmap(q / Z)
             ln_ch, = ax.semilogy(log_T, x_ch[q],    '-',
                                  color=color, lw=1.4)
-            ax.semilogy(log_T, x_lo[q],    '--', color=color, lw=1.0)
+            # Dashed (ours, no CT) thicker + reduced alpha so it
+            # stays visible even when it overlaps the solid
+            # CHIANTI reference (which it does for elements where
+            # both methods use the same atomic data).
+            ax.semilogy(log_T, x_lo[q], '--', color=color,
+                        lw=3.5, alpha=0.45)
             ax.semilogy(log_T, x_lo_ct[q], ':',  color=color, lw=1.0)
             ch_lines.append(ln_ch)
         # Inline labels per charge state on the CHIANTI curve.
@@ -90,7 +95,8 @@ def _make_panel(figures_dir, elements_subset, fig_name):
                           path_effects=stroke)
         # Method legend (line styles) on every panel, lower-left.
         ax.plot([], [], 'k-',  lw=1.4, label='CHIANTI v11')
-        ax.plot([], [], 'k--', lw=1.0, label='ours, no CT')
+        ax.plot([], [], 'k--', lw=3.5, alpha=0.45,
+                label='ours, no CT')
         ax.plot([], [], 'k:',  lw=1.0, label='ours, + CT')
         ax.legend(fontsize='xx-small', loc='lower left',
                   framealpha=0.7)
