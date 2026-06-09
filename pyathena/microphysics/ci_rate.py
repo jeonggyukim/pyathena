@@ -39,3 +39,62 @@ class CollIonRate(object):
                         (self.X[i] + U)*U**(self.K[i])*np.exp(-U))
 
         return rate
+
+
+class CollIonRateCHIANTI(object):
+    """Collisional ionization rate coefficient using CHIANTI v11 via
+    ChiantiPy. Same `get_ci_rate(Z, N, T)` API as the pyathena-native
+    `CollIonRate`. Pre-tabulates rates on a fixed T grid; interpolates
+    in log T at call time. See `RecRateCHIANTI` for the same pattern
+    applied to recombination.
+    """
+
+    DEFAULT_ELEMENTS = [
+        ('H', 1), ('He', 2), ('C', 6), ('N', 7), ('O', 8),
+        ('Ne', 10), ('Mg', 12), ('Si', 14), ('S', 16), ('Ar', 18),
+        ('Ca', 20), ('Fe', 26),
+    ]
+    _ELEM_SYM = {
+        'H':  'h',  'He': 'he', 'C':  'c',  'N':  'n',  'O':  'o',
+        'Ne': 'ne', 'Mg': 'mg', 'Si': 'si', 'S':  's',  'Ar': 'ar',
+        'Ca': 'ca', 'Fe': 'fe',
+    }
+
+    def __init__(self, T_grid=None, elements=None):
+        import ChiantiPy.core as ch
+        if T_grid is None:
+            T_grid = np.logspace(2.0, 9.0, 100)
+        else:
+            T_grid = np.asarray(T_grid, dtype=float)
+        self._T_grid = T_grid
+        self._lnT_grid = np.log(T_grid)
+        if elements is None:
+            elements = self.DEFAULT_ELEMENTS
+        self._table = {}
+        for element, Z in elements:
+            sym = self._ELEM_SYM[element]
+            for q in range(0, Z):  # q=Z is fully stripped, can't ionize further
+                ion_name = f'{sym}_{q + 1}'
+                try:
+                    ion = ch.ion(ion_name, temperature=T_grid)
+                    ion.ionizRate()
+                    rate = np.asarray(ion.IonizRate['rate'])
+                except Exception:
+                    continue
+                rate = np.where(np.isfinite(rate) & (rate > 0), rate, 0.0)
+                N = Z - q                # reactant electron count
+                self._table[(Z, N)] = rate
+
+    def get_ci_rate(self, Z, N, T):
+        """Same API as pyathena.microphysics.ci_rate.CollIonRate.
+
+        Returns k_CI [cm^3 / s] for the reactant ion (Z, N). Returns
+        0 if CHIANTI lacks data.
+        """
+        rate = self._table.get((Z, N))
+        if rate is None:
+            return np.zeros_like(np.asarray(T, dtype=float))
+        T_arr = np.atleast_1d(np.asarray(T, dtype=float))
+        out = np.interp(np.log(T_arr), self._lnT_grid, rate,
+                        left=rate[0], right=rate[-1])
+        return float(out[0]) if np.isscalar(T) else out

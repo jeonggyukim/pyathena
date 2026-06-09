@@ -142,12 +142,18 @@ def _sum_line_group(per_transition_dict, transitions):
 
 def test_plot_O_nebular_per_line(figures_dir, save_figures):
     """Benchmark: per-line cooling vs T for OII + OIII at HII
-    conditions. Two panels (one per ion), each showing:
+    conditions, normalized by n_H * n_e (Draine 2011 Fig 27.1(b)
+    style). Two panels (one per ion), each showing:
       - pyathena 5-level (solid),
       - ChiantiPy popCorrect=False (dashed),
       - ChiantiPy popCorrect=True (dotted).
     Lines are grouped by physical pairing (4960+5008 doublet,
     3726+3729 doublet, etc.).
+
+    Assumed abundance + ionization fractions (typical inner HII):
+      n_O / n_H = 3.2e-4
+      x_OII  = n(O+) / n_O = 0.3
+      x_OIII = n(O++) / n_O = 0.7
     """
     if not save_figures:
         pytest.skip('plot generation disabled (--no-figures)')
@@ -156,7 +162,11 @@ def test_plot_O_nebular_per_line(figures_dir, save_figures):
 
     n_e = 1e3
     T_grid = np.logspace(3.5, 5.0, 25)
-    # Per-ion line group definitions.
+    # Abundance + ionization fractions (inner HII fiducial)
+    AO_H = 3.2e-4    # n_O / n_H
+    X_ION = {'OII': 0.3, 'OIII': 0.7}
+    # Per-ion line group definitions: (display_label, pyathena_mod,
+    # chianti_name, line_defs)
     ion_panels = [
         ('OIII', 'o_3', 'o_3', OIII_LINES),
         ('OII',  'o_2', 'o_2', OII_LINES),
@@ -188,6 +198,13 @@ def test_plot_O_nebular_per_line(figures_dir, save_figures):
             else:
                 tables[method_name] = _chianti_pops_and_A(
                     ch_name, T_grid, n_e, popCorrect=popCorrect)
+        # Conversion factor from Lambda / n_ion to
+        # Lambda / (n_H * n_e):
+        #   Lambda / (n_H * n_e)
+        #     = (Lambda / n_ion) * (n_ion / n_H) / n_e
+        #     = (Lambda / n_ion) * (A_O * x_ion) / n_e
+        x_ion = X_ION[ion_label]
+        factor = AO_H * x_ion / n_e
         # Plot per line group, all methods.
         for label, transitions in line_defs:
             col = color_per_line[label]
@@ -196,17 +213,17 @@ def test_plot_O_nebular_per_line(figures_dir, save_figures):
                     tables[method_name], transitions)
                 if vals is None or np.all(vals <= 0):
                     continue
-                # Lambda / (n_ion * n_e) so divide by n_e
-                ax.loglog(T_grid, vals / n_e, ls, color=col,
+                ax.loglog(T_grid, vals * factor, ls, color=col,
                           label=f'{label} ({method_name})')
         ax.set_xlabel(r'$T\,[{\rm K}]$')
         ax.set_ylabel(
-            rf'$\Lambda / (n_{{{ion_label}}}\,n_e)\,'
+            r'$\Lambda_{\rm line} / (n_{\rm H}\,n_e)\,'
             r'[\rm erg\,cm^3\,s^{-1}]$')
-        ax.set_title(f'{ion_label} per-line cooling at '
-                     f'$n_e = {n_e:g}$ cm$^{{-3}}$')
+        ax.set_title(f'{ion_label} per-line cooling, '
+                     rf'$x_{{{ion_label}}}={x_ion}$, '
+                     rf'$n_e = {n_e:g}$ cm$^{{-3}}$')
         ax.set_xlim(3e3, 1e5)
-        ax.set_ylim(1e-26, 1e-20)
+        ax.set_ylim(1e-28, 1e-22)
         ax.grid(True, which='both', alpha=0.3)
         ax.legend(fontsize='xx-small', loc='lower right', ncol=2)
     fig.tight_layout()

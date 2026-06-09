@@ -98,7 +98,10 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         ax.set_xlim(4.0, 8.0)
         ax.set_ylim(1e-5, 2)
         ax.grid(True, which='both', alpha=0.3)
-    for ax in axes[-3:]:
+    # Force every visible axis to show xticklabels + xlabel (sharex
+    # hides them by default in interior subplots; override).
+    for ax in axes[:len(elements_subset)]:
+        ax.tick_params(axis='x', labelbottom=True)
         ax.set_xlabel(r'$\log_{10}\,T\,[{\rm K}]$')
     for ax in axes[::3]:
         ax.set_ylabel(r'$x_q = n(X^{q+})/n(X)$')
