@@ -32,38 +32,68 @@ def _load(element):
             d_lo['x_q'], d_lo_ct['x_q'])
 
 
+def _ion_label(element, q):
+    """LaTeX label for charge state q of element."""
+    if q == 0:
+        return rf'${{\rm {element}}}$'
+    elif q == 1:
+        return rf'${{\rm {element}}}^+$'
+    else:
+        return rf'${{\rm {element}}}^{{{q}+}}$'
+
+
 def _make_panel(figures_dir, elements_subset, fig_name):
-    """Build one 2x3 panel grid for the given element subset; if
-    fewer than 6 elements, hide the trailing axes."""
+    """Build one 2x3 panel grid for the given element subset. Inline
+    labels via `line_annotate` with white-stroke patheffects; one
+    label per charge state placed at the T where x_q is near its
+    peak (and above a visibility floor)."""
     import matplotlib.pyplot as plt
+    import matplotlib.patheffects as path_effects
+    import numpy as np
+    from pyathena.plt_tools.line_annotation import line_annotate
+
+    stroke = [path_effects.withStroke(linewidth=2.0, foreground='white')]
     fig, axes = plt.subplots(2, 3, figsize=(15, 9),
                              sharex=True, sharey=True)
     axes = axes.flatten()
-    # Hide any axes beyond len(elements_subset)
     for ax in axes[len(elements_subset):]:
         ax.set_visible(False)
     for ax, element in zip(axes, elements_subset):
         log_T, x_ch, x_lo, x_lo_ct = _load(element)
         Z = x_ch.shape[0] - 1
         cmap = plt.get_cmap('viridis')
+        ch_lines = []  # store CHIANTI Line2D for annotation
         for q in range(Z + 1):
             color = cmap(q / Z)
-            ax.semilogy(log_T, x_ch[q],    '-',  color=color, lw=1.4)
+            ln_ch, = ax.semilogy(log_T, x_ch[q],    '-',
+                                 color=color, lw=1.4)
             ax.semilogy(log_T, x_lo[q],    '--', color=color, lw=1.0)
             ax.semilogy(log_T, x_lo_ct[q], ':',  color=color, lw=1.0)
-        # Per-charge-state legend on the first panel of each figure.
-        if element == elements_subset[0]:
-            for q in range(Z + 1):
-                ax.plot([], [], color=cmap(q / Z), lw=1.4,
-                        label=f'q={q}')
-            ax.legend(fontsize='xx-small', loc='lower left',
-                      ncol=2 if Z + 1 > 6 else 1)
-        # Method legend on a different panel.
-        if element == elements_subset[2]:
-            ax.plot([], [], 'k-',  lw=1.4, label='CHIANTI v11')
-            ax.plot([], [], 'k--', lw=1.0, label='ours (no CT)')
-            ax.plot([], [], 'k:',  lw=1.0, label='ours (+ CT)')
-            ax.legend(fontsize='xx-small', loc='lower left')
+            ch_lines.append(ln_ch)
+        # Inline labels per charge state on the CHIANTI curve.
+        # Place at peak log-T (within the plot range).
+        for q in range(Z + 1):
+            ymax = np.max(x_ch[q])
+            if ymax < 1e-3:
+                # Skip annotating barely-present stages.
+                continue
+            i_peak = int(np.argmax(x_ch[q]))
+            x_annot = log_T[i_peak]
+            # Skip if peak sits at the edge of the plotted T range.
+            if x_annot < 4.05 or x_annot > 7.95:
+                continue
+            color = cmap(q / Z)
+            label = _ion_label(element, q)
+            line_annotate(label, ch_lines[q], x=x_annot,
+                          xytext=(0, 4), fontsize='x-small',
+                          color=color, ha='center',
+                          path_effects=stroke)
+        # Method legend (line styles) on every panel, lower-left.
+        ax.plot([], [], 'k-',  lw=1.4, label='CHIANTI v11')
+        ax.plot([], [], 'k--', lw=1.0, label='ours, no CT')
+        ax.plot([], [], 'k:',  lw=1.0, label='ours, + CT')
+        ax.legend(fontsize='xx-small', loc='lower left',
+                  framealpha=0.7)
         ax.set_title(f'{element} (Z={Z})')
         ax.set_xlim(4.0, 8.0)
         ax.set_ylim(1e-5, 2)
