@@ -111,7 +111,10 @@ def main():
     remain compatible.
     """
     import ChiantiPy.core as ch
-    out_dir = os.path.dirname(os.path.abspath(__file__))
+    out_dir = os.path.abspath(os.path.join(
+        os.path.dirname(__file__),
+        '..', '..', '..', 'data', 'microphysics', 'chianti_v11'))
+    os.makedirs(out_dir, exist_ok=True)
     # T grid matches the chianti.ioneq native grid for compat.
     log_T = np.linspace(4.0, 9.0, 101)
     T = 10.0 ** log_T

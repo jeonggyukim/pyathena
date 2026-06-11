@@ -22,12 +22,13 @@ def _load(element):
     """Return (log_T, x_q_chianti, x_q_local, x_q_local_ct) for
     one element."""
     from pyathena.photchem.data.build_ioneq_tables import read_ioneq
-    base = Path(__file__).parent.parent.parent / 'pyathena' / \
-        'photchem' / 'data'
-    d_ch = read_ioneq(str(base / f'ioneq_{element}.txt'))
-    d_lo = read_ioneq(str(base / f'ioneq_local_{element}.txt'))
+    root = Path(__file__).parent.parent.parent
+    chianti_dir = root / 'data' / 'microphysics' / 'chianti_v11'
+    local_dir = root / 'pyathena' / 'photchem' / 'data'
+    d_ch = read_ioneq(str(chianti_dir / f'ioneq_{element}.txt'))
+    d_lo = read_ioneq(str(local_dir / f'ioneq_local_{element}.txt'))
     d_lo_ct = read_ioneq(
-        str(base / f'ioneq_local_ct_{element}.txt'))
+        str(local_dir / f'ioneq_local_ct_{element}.txt'))
     return (d_ch['log_T'], d_ch['x_q'],
             d_lo['x_q'], d_lo_ct['x_q'])
 
@@ -61,7 +62,10 @@ def _make_panel(figures_dir, elements_subset, fig_name):
     for ax, element in zip(axes, elements_subset):
         log_T, x_ch, x_lo, x_lo_ct = _load(element)
         Z = x_ch.shape[0] - 1
-        cmap = plt.get_cmap('viridis')
+        import cmasher as cmr
+        cmap = cmr.combine_cmaps(
+            cmr.get_sub_cmap(cmr.ocean, 0.15, 0.85),
+            cmr.get_sub_cmap(cmr.amber, 0.15, 0.85))
         ch_lines = []  # store CHIANTI Line2D for annotation
         for q in range(Z + 1):
             color = cmap(q / Z)

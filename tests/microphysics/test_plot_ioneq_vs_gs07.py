@@ -61,8 +61,8 @@ def _read_gs07():
 def _read_chianti_local(element):
     """Return (log_T, x_q) from our CHIANTI v11 ioneq file."""
     from pyathena.photchem.data.build_ioneq_tables import read_ioneq
-    base = Path(__file__).parent.parent.parent / 'pyathena' / \
-        'photchem' / 'data'
+    base = Path(__file__).parent.parent.parent / 'data' / \
+        'microphysics' / 'chianti_v11'
     d = read_ioneq(str(base / f'ioneq_{element}.txt'))
     return d['log_T'], d['x_q']
 
@@ -94,7 +94,10 @@ def _make_panel(figures_dir, elements_subset, fig_name, gs07):
         T_gs, x_gs = gs07[element]
         log_T_gs = np.log10(T_gs)
         Z = x_ch.shape[0] - 1
-        cmap = plt.get_cmap('viridis')
+        import cmasher as cmr
+        cmap = cmr.combine_cmaps(
+            cmr.get_sub_cmap(cmr.ocean, 0.15, 0.85),
+            cmr.get_sub_cmap(cmr.amber, 0.15, 0.85))
 
         ch_lines = []
         for q in range(Z + 1):

@@ -72,8 +72,8 @@ def _read_gf12(element):
 def _read_ours(element):
     """Read our cool_<element>.txt."""
     from pyathena.photchem.data.build_cool_tables import read_cool
-    base = Path(__file__).parent.parent.parent / 'pyathena' / \
-        'photchem' / 'data'
+    base = Path(__file__).parent.parent.parent / 'data' / \
+        'microphysics' / 'chianti_v11'
     return read_cool(str(base / f'cool_{element}.txt'))
 
 
@@ -103,7 +103,10 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         Z = gf['Lambda_q'].shape[0] - 1
         log_T_gf = np.log10(gf['T'])
         log_T_o  = ours['log_T']
-        cmap = plt.get_cmap('viridis')
+        import cmasher as cmr
+        cmap = cmr.combine_cmaps(
+            cmr.get_sub_cmap(cmr.ocean, 0.15, 0.85),
+            cmr.get_sub_cmap(cmr.amber, 0.15, 0.85))
         gf_lines = []
         for q in range(Z + 1):
             color = cmap(q / max(Z, 1))
@@ -119,7 +122,13 @@ def _make_panel(figures_dir, elements_subset, fig_name):
                 continue
             i_peak = int(np.argmax(arr))
             T_annot = float(10 ** log_T_gf[i_peak])
-            if T_annot < 1.5e4 or T_annot > 0.5 * gf['T'].max():
+            # For fully-stripped ions whose cooling rises monotonic
+            # in T (FF dominant), the argmax falls at the top of
+            # the table -- pin the label to the right edge of the
+            # plotted range so it stays visible.
+            if T_annot > 0.9 * 1e8:
+                T_annot = 5e7
+            if T_annot < 1.5e4:
                 continue
             line_annotate(_ion_label(element, q), gf_lines[q],
                           x=T_annot, xytext=(0, 4),
@@ -133,7 +142,7 @@ def _make_panel(figures_dir, elements_subset, fig_name):
                   framealpha=0.7)
         ax.set_title(f'{element} (Z={Z})')
         ax.set_xlim(1e4, 1e8)
-        ax.set_ylim(1e-26, 1e-18)
+        ax.set_ylim(1e-24, 1e-16)
         ax.grid(True, which='both', alpha=0.3)
     for ax in axes[:len(elements_subset)]:
         ax.tick_params(axis='x', labelbottom=True)
@@ -142,9 +151,17 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         ax.set_ylabel(
             r'$\Lambda_q\,[\rm erg\,cm^3\,s^{-1}]$ '
             r'(per ion per $e$)')
-    fig.suptitle('Ion-by-ion CIE cooling efficiency: '
-                 'CHIANTI v11 (ours, dashed) vs '
-                 'Gnat & Ferland 2012 (Cloudy, solid)')
+    fig.suptitle(
+        r'Per-ion cooling efficiency $\Lambda_q(T)$ '
+        r'(low-density limit; no abundance or $x_q$ baked in)'
+        '\n'
+        r'cooling rate per unit volume from ion $X^q$ = '
+        r'$n(X^q)\,n_e\,\Lambda_q$;  $\Lambda_q$ = sum of '
+        r'bound-bound + two-photon + bremsstrahlung + '
+        r'recombination radiation'
+        '\n'
+        r'CHIANTI v11 (ours, dashed) vs '
+        r'Gnat & Ferland 2012 (Cloudy, solid)')
     fig.tight_layout()
     fig.savefig(figures_dir / fig_name, dpi=300)
     plt.close(fig)

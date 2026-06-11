@@ -155,45 +155,94 @@ def read_cool(path):
     return dict(log_T=log_T, Z=Z, element=element, Lambda_q=Lambda_q)
 
 
-def cooling_for_element(element, Z, T_grid):
-    """Compute Lambda_q(T) per ion per electron for all q=0..Z of
-    one element via ChiantiPy. Returns (Z+1, NT) ndarray.
+def _safe_loss(obj, method_name, attr_name, NT):
+    """Call ChiantiPy's <method_name>() on obj and return per-ion
+    per-electron rate array of shape (NT,), or zeros if data is
+    incomplete. Raises if obj doesn't even have method_name on it
+    (catches the wrong-class mistake that previously silently
+    masked free-free / free-bound losses)."""
+    if not hasattr(obj, method_name):
+        raise AttributeError(
+            f"{type(obj).__name__} has no method {method_name!r}; "
+            f"caller is using the wrong ChiantiPy class")
+    try:
+        getattr(obj, method_name)()
+        rate = np.asarray(getattr(obj, attr_name)['rate'])
+    except Exception:
+        # Internal ChiantiPy errors (missing Nlvls, missing files,
+        # etc.) are real data-coverage gaps; treat as zero rate.
+        return np.zeros(NT)
+    if rate.shape != (NT,):
+        return np.zeros(NT)
+    return np.where(np.isfinite(rate) & (rate > 0), rate, 0.0)
 
-    ChiantiPy's `boundBoundLoss` automatically multiplies by its
-    default elemental abundance (Asplund09 by default) and its
-    default CIE ionization fraction at each T -- so the raw return
-    is per-H per-electron, NOT per-ion per-electron. To get a
-    pure per-ion per-electron cooling efficiency that can be
-    combined with arbitrary x_q + abundance at use time, override
-    both with 1.0 before calling boundBoundLoss.
+
+def cooling_for_element(element, Z, T_grid):
+    """Compute total CIE cooling efficiency Lambda_q(T) per ion per
+    electron for all q=0..Z of one element. Returns (Z+1, NT)
+    ndarray.
+
+    Sums four ChiantiPy cooling channels:
+       bound-bound (line emission)        -- on ion class
+       two-photon  (H-like, He-like ions) -- on ion class
+       free-free   (bremsstrahlung)       -- on CONTINUUM class
+       free-bound  (recomb continuum)     -- on CONTINUUM class
+
+    ChiantiPy splits radiation processes between two classes:
+       `ChiantiPy.core.ion(name)`        : level populations, line
+                                            emission, two-photon
+       `ChiantiPy.core.continuum(name)`  : RR + bremsstrahlung
+    Calling freeFreeLoss / freeBoundLoss on ion() raises
+    AttributeError (they don't exist there) -- a silent catch-all
+    here would mask the omission and produce wrong tables.
+
+    Per-channel calls automatically multiply by ChiantiPy's default
+    abundance + CIE x_q. Override Abundance + IoneqOne to 1 so the
+    output is the pure per-ion per-electron cooling efficiency,
+    independent of any assumed ionization equilibrium.
     """
     import ChiantiPy.core as ch
     NT = len(T_grid)
     Lambda_q = np.zeros((Z + 1, NT))
     sym = _ELEM_SYM[element]
-    for q in range(Z):     # q=Z fully stripped, no bound-bound
+    for q in range(Z + 1):
         ion_name = f'{sym}_{q + 1}'   # CHIANTI 1-based
+        total = np.zeros(NT)
+        # --- Ion-class channels: BB + 2gamma ---
+        if q < Z:   # fully stripped has no bound electrons
+            try:
+                ion = ch.ion(ion_name, temperature=T_grid,
+                             eDensity=_NE_REF)
+                ion.Abundance = 1.0
+                ion.IoneqOne = np.ones(NT)
+            except Exception:
+                ion = None
+            if ion is not None:
+                total += _safe_loss(ion, 'boundBoundLoss',
+                                    'BoundBoundLoss', NT)
+                N_electrons = Z - q
+                if N_electrons in (1, 2):
+                    total += _safe_loss(ion, 'twoPhotonLoss',
+                                        'TwoPhotonLoss', NT)
+        # --- Continuum-class channels: FF + FB ---
+        # Both work for fully stripped too (FF needs nuclear charge,
+        # FB needs a bound state to recombine into; for q=Z=fully
+        # stripped, FB is into q-1, attributed to current q's
+        # entry).
         try:
-            ion = ch.ion(ion_name, temperature=T_grid,
-                         eDensity=_NE_REF)
-            # Override defaults so boundBoundLoss returns the per-
-            # ion-per-electron cooling efficiency, not GF12-style
-            # per-H-per-electron-with-x_q-baked-in.
-            ion.Abundance = 1.0
-            ion.IoneqOne = np.ones(NT)
-            ion.boundBoundLoss()
-            rate = np.asarray(ion.BoundBoundLoss['rate'])
+            cont = ch.continuum(ion_name, temperature=T_grid)
+            cont.Abundance = 1.0
+            cont.IoneqOne = np.ones(NT)
         except Exception:
-            continue
-        if rate.shape != (NT,):
-            continue
-        # Rate is now per ion per electron at the reference n_e.
-        # boundBoundLoss already normalizes by n_e internally
-        # (energy flux is independent of n_e in the low-n limit;
-        # at higher n_e it saturates as n_crit is approached, but
-        # at n_e = 1 cm^-3 we are firmly in the linear regime).
-        Lambda_q[q] = np.where(
-            np.isfinite(rate) & (rate > 0), rate, 0.0)
+            cont = None
+        if cont is not None:
+            if q >= 1:    # neutral atom has no Coulomb FF
+                total += _safe_loss(cont, 'freeFreeLoss',
+                                    'FreeFreeLoss', NT)
+            if q >= 1:    # FB from q+1 recombines into q
+                total += _safe_loss(cont, 'freeBoundLoss',
+                                    'FreeBoundLoss', NT)
+        Lambda_q[q] = total
     return Lambda_q
 
 
@@ -205,7 +254,10 @@ def main():
             "silently produce all-zero cooling tables. Set XUVTOP "
             "to your CHIANTI v11 data directory before running.")
     warnings.filterwarnings('ignore')
-    out_dir = os.path.dirname(os.path.abspath(__file__))
+    out_dir = os.path.abspath(os.path.join(
+        os.path.dirname(__file__),
+        '..', '..', '..', 'data', 'microphysics', 'chianti_v11'))
+    os.makedirs(out_dir, exist_ok=True)
     log_T = np.linspace(4.0, 9.0, 101)
     T_grid = 10.0 ** log_T
     print(f"Building CIE bound-bound cooling tables: "
