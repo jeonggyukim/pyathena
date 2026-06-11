@@ -660,6 +660,85 @@ document.write(`
         <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">),</span> <span class="s1">&#39;--&#39;</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">1e-14</span><span class="p">,</span> <span class="mf">1e-10</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span></div>
+
+
+<span class="k">class</span><span class="w"> </span><span class="nc">RecRateCHIANTI</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Total recombination rate (RR + DR) coefficient using CHIANTI</span>
+<span class="sd">    v11 data via ChiantiPy. Same `get_rec_rate(Z, N, T)` API as the</span>
+<span class="sd">    pyathena-native `RecRate`, so the two are drop-in interchangeable.</span>
+
+<span class="sd">    The class pre-tabulates rates on a fixed T grid at construction</span>
+<span class="sd">    time (CHIANTI lookups are slow per-call), and interpolates linearly</span>
+<span class="sd">    in log T at call time. Set `XUVTOP` to your CHIANTI v11 data</span>
+<span class="sd">    directory before importing.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    T_grid : array-like, optional</span>
+<span class="sd">        Temperature grid [K] for the pre-tabulation. Defaults to a</span>
+<span class="sd">        log-spaced 100-point grid from 100 K to 1e9 K covering the</span>
+<span class="sd">        full PDR-through-coronal range.</span>
+<span class="sd">    elements : list of (str, int) tuples, optional</span>
+<span class="sd">        Per-element atomic numbers to pre-load, e.g. [(&#39;Fe&#39;, 26)].</span>
+<span class="sd">        Defaults to the photchem followed set (H He C N O Ne Mg Si</span>
+<span class="sd">        S Ar Ca Fe). Pass a subset if you only need a few elements</span>
+<span class="sd">        and want to keep init time short.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">DEFAULT_ELEMENTS</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s1">&#39;H&#39;</span><span class="p">,</span> <span class="mi">1</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;He&#39;</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;C&#39;</span><span class="p">,</span> <span class="mi">6</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;N&#39;</span><span class="p">,</span> <span class="mi">7</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;O&#39;</span><span class="p">,</span> <span class="mi">8</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Ne&#39;</span><span class="p">,</span> <span class="mi">10</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;Mg&#39;</span><span class="p">,</span> <span class="mi">12</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;Si&#39;</span><span class="p">,</span> <span class="mi">14</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;S&#39;</span><span class="p">,</span> <span class="mi">16</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;Ar&#39;</span><span class="p">,</span> <span class="mi">18</span><span class="p">),</span>
+        <span class="p">(</span><span class="s1">&#39;Ca&#39;</span><span class="p">,</span> <span class="mi">20</span><span class="p">),</span> <span class="p">(</span><span class="s1">&#39;Fe&#39;</span><span class="p">,</span> <span class="mi">26</span><span class="p">),</span>
+    <span class="p">]</span>
+    <span class="n">_ELEM_SYM</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s1">&#39;H&#39;</span><span class="p">:</span>  <span class="s1">&#39;h&#39;</span><span class="p">,</span>  <span class="s1">&#39;He&#39;</span><span class="p">:</span> <span class="s1">&#39;he&#39;</span><span class="p">,</span> <span class="s1">&#39;C&#39;</span><span class="p">:</span>  <span class="s1">&#39;c&#39;</span><span class="p">,</span>  <span class="s1">&#39;N&#39;</span><span class="p">:</span>  <span class="s1">&#39;n&#39;</span><span class="p">,</span>  <span class="s1">&#39;O&#39;</span><span class="p">:</span>  <span class="s1">&#39;o&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;Ne&#39;</span><span class="p">:</span> <span class="s1">&#39;ne&#39;</span><span class="p">,</span> <span class="s1">&#39;Mg&#39;</span><span class="p">:</span> <span class="s1">&#39;mg&#39;</span><span class="p">,</span> <span class="s1">&#39;Si&#39;</span><span class="p">:</span> <span class="s1">&#39;si&#39;</span><span class="p">,</span> <span class="s1">&#39;S&#39;</span><span class="p">:</span>  <span class="s1">&#39;s&#39;</span><span class="p">,</span>  <span class="s1">&#39;Ar&#39;</span><span class="p">:</span> <span class="s1">&#39;ar&#39;</span><span class="p">,</span>
+        <span class="s1">&#39;Ca&#39;</span><span class="p">:</span> <span class="s1">&#39;ca&#39;</span><span class="p">,</span> <span class="s1">&#39;Fe&#39;</span><span class="p">:</span> <span class="s1">&#39;fe&#39;</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">T_grid</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">elements</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+        <span class="kn">import</span><span class="w"> </span><span class="nn">ChiantiPy.core</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ch</span>
+        <span class="k">if</span> <span class="n">T_grid</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">T_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">logspace</span><span class="p">(</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">9.0</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">T_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T_grid</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_T_grid</span> <span class="o">=</span> <span class="n">T_grid</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_lnT_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T_grid</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">elements</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">elements</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">DEFAULT_ELEMENTS</span>
+        <span class="c1"># Pre-tabulated per (Z, N) -&gt; array on T_grid.</span>
+        <span class="c1"># Convention: keyed by REACTANT, same as pyathena.RecRate</span>
+        <span class="c1"># (i.e., (Z, N) labels the ion being recombined).</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_table</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">element</span><span class="p">,</span> <span class="n">Z</span> <span class="ow">in</span> <span class="n">elements</span><span class="p">:</span>
+            <span class="n">sym</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ELEM_SYM</span><span class="p">[</span><span class="n">element</span><span class="p">]</span>
+            <span class="k">for</span> <span class="n">q</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Z</span> <span class="o">+</span> <span class="mi">1</span><span class="p">):</span>    <span class="c1"># q=0 cannot recombine</span>
+                <span class="n">ion_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">sym</span><span class="si">}</span><span class="s1">_</span><span class="si">{</span><span class="n">q</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">1</span><span class="si">}</span><span class="s1">&#39;</span>   <span class="c1"># CHIANTI 1-based</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">ion</span> <span class="o">=</span> <span class="n">ch</span><span class="o">.</span><span class="n">ion</span><span class="p">(</span><span class="n">ion_name</span><span class="p">,</span> <span class="n">temperature</span><span class="o">=</span><span class="n">T_grid</span><span class="p">)</span>
+                    <span class="n">ion</span><span class="o">.</span><span class="n">recombRate</span><span class="p">()</span>
+                    <span class="n">rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">ion</span><span class="o">.</span><span class="n">RecombRate</span><span class="p">[</span><span class="s1">&#39;rate&#39;</span><span class="p">])</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="k">continue</span>
+                <span class="n">rate</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="n">rate</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">rate</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">),</span> <span class="n">rate</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span>
+                <span class="n">N</span> <span class="o">=</span> <span class="n">Z</span> <span class="o">-</span> <span class="n">q</span>                <span class="c1"># reactant electron count</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_table</span><span class="p">[(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">)]</span> <span class="o">=</span> <span class="n">rate</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Same API as pyathena.microphysics.rec_rate.RecRate.</span>
+
+<span class="sd">        Returns alpha_rec (RR + DR) [cm^3 / s] for the reactant ion</span>
+<span class="sd">        labeled by (Z, N) -- the ion BEFORE recombination. Returns 0</span>
+<span class="sd">        if CHIANTI lacks data for that ion.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_table</span><span class="o">.</span><span class="n">get</span><span class="p">((</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">rate</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+        <span class="n">T_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">))</span>
+        <span class="c1"># Linear-log interpolation; clip to grid edges.</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">interp</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T_arr</span><span class="p">),</span> <span class="bp">self</span><span class="o">.</span><span class="n">_lnT_grid</span><span class="p">,</span> <span class="n">rate</span><span class="p">,</span>
+                        <span class="n">left</span><span class="o">=</span><span class="n">rate</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">right</span><span class="o">=</span><span class="n">rate</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">out</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">if</span> <span class="n">np</span><span class="o">.</span><span class="n">isscalar</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="k">else</span> <span class="n">out</span>
 </pre></div>
 
                 </article>
