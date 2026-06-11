@@ -125,6 +125,19 @@ def main():
         ie = ch.ioneq(Z)
         ie.calculate(T)
         x_q = np.asarray(ie.Ioneq)        # (Z+1, NT)
+        # ChiantiPy yields NaN at very low T where collisional rates
+        # all go to zero and the solver hits 0/0. Below ~10^3.2 K
+        # gas is physically fully neutral, so any column whose sum
+        # is NaN or 0 gets replaced with x_q=0 for q>=1 and x_q=1
+        # for q=0 (the neutral state).
+        col_sum = np.nansum(x_q, axis=0)
+        bad = ~np.isfinite(col_sum) | (col_sum < 0.5)
+        if bad.any():
+            x_q[:, bad] = 0.0
+            x_q[0, bad] = 1.0
+        # Renormalize remaining columns to exactly sum to 1.
+        col_sum = x_q.sum(axis=0)
+        x_q = x_q / col_sum[None, :]
         out_path = os.path.join(out_dir, f"ioneq_{element}.txt")
         write_ascii(out_path, element, Z, log_T, x_q)
         col_sum = x_q.sum(axis=0)

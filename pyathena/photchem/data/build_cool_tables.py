@@ -186,7 +186,8 @@ def cooling_for_element(element, Z, T_grid):
        bound-bound (line emission)        -- on ion class
        two-photon  (H-like, He-like ions) -- on ion class
        free-free   (bremsstrahlung)       -- on CONTINUUM class
-       free-bound  (recomb continuum)     -- on CONTINUUM class
+       free-bound  (recomb continuum, GF12 convention:
+                    attributed to the POST-recombination ion)
 
     ChiantiPy splits radiation processes between two classes:
        `ChiantiPy.core.ion(name)`        : level populations, line
@@ -224,23 +225,31 @@ def cooling_for_element(element, Z, T_grid):
                 if N_electrons in (1, 2):
                     total += _safe_loss(ion, 'twoPhotonLoss',
                                         'TwoPhotonLoss', NT)
-        # --- Continuum-class channels: FF + FB ---
-        # Both work for fully stripped too (FF needs nuclear charge,
-        # FB needs a bound state to recombine into; for q=Z=fully
-        # stripped, FB is into q-1, attributed to current q's
-        # entry).
+        # --- Continuum: FF for this ion ---
         try:
             cont = ch.continuum(ion_name, temperature=T_grid)
             cont.Abundance = 1.0
             cont.IoneqOne = np.ones(NT)
         except Exception:
             cont = None
-        if cont is not None:
-            if q >= 1:    # neutral atom has no Coulomb FF
-                total += _safe_loss(cont, 'freeFreeLoss',
-                                    'FreeFreeLoss', NT)
-            if q >= 1:    # FB from q+1 recombines into q
-                total += _safe_loss(cont, 'freeBoundLoss',
+        if cont is not None and q >= 1:
+            total += _safe_loss(cont, 'freeFreeLoss',
+                                'FreeFreeLoss', NT)
+        # --- FB attributed to POST-recombination ion (GF12 / Cloudy
+        # convention). FB from X^(q+1) + e -> X^q + photon shows in
+        # the row of X^q, not X^(q+1). For q < Z, look up the
+        # continuum object of X^(q+1) and add its FB rate here.
+        if q < Z:
+            next_ion_name = f'{sym}_{q + 2}'   # X^(q+1)
+            try:
+                cont_next = ch.continuum(
+                    next_ion_name, temperature=T_grid)
+                cont_next.Abundance = 1.0
+                cont_next.IoneqOne = np.ones(NT)
+            except Exception:
+                cont_next = None
+            if cont_next is not None:
+                total += _safe_loss(cont_next, 'freeBoundLoss',
                                     'FreeBoundLoss', NT)
         Lambda_q[q] = total
     return Lambda_q

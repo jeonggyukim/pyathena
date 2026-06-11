@@ -285,34 +285,34 @@ def test_plot_rec_rate_overview(rc, figures_dir, save_figures, ion_colors):
     T = np.logspace(2, 8, 400)
     # (Z, N_initial, label, x_annot_K). x_annot picks a per-ion T
     # where the line sits in an uncrowded region of the plot.
+    # (Z, N_initial, label, x_annot_K, dy_pixel). dy alternates
+    # +/- to stagger labels above/below curves.
     PLOT_IONS = [
-        # x_annot picked per ion to avoid label overlap in the
-        # dense RR-decline / DR-peak T ranges.
-        (1, 0, "H II", 3e3),
-        (2, 1, "He II", 1e4),
-        (2, 0, "He III", 2e5),
-        (6, 5, "C II", 2e4),
-        (7, 6, "N II", 6e4),
-        (8, 7, "O II", 1.5e5),
-        (8, 6, "O III", 6e5),
-        (16, 15, "S II", 4e4),
-        (16, 14, "S III", 1.5e5),
+        (1, 0,   "H II",   3.0e3, +6),
+        (2, 1,   "He II",  1.0e4, -8),
+        (6, 5,   "C II",   2.0e4, +6),
+        (16, 15, "S II",   4.0e4, -8),
+        (7, 6,   "N II",   7.0e4, +6),
+        (8, 7,   "O II",   1.5e5, -8),
+        (2, 0,   "He III", 2.5e5, +6),
+        (16, 14, "S III",  4.0e5, -8),
+        (8, 6,   "O III",  8.0e5, +6),
     ]
     stroke = [path_effects.withStroke(linewidth=2.5, foreground="white")]
     fig, axes = plt.subplots(1, 2, figsize=(11, 4.5), sharey=True)
-    for Z, N, label, x_annot in PLOT_IONS:
+    for Z, N, label, x_annot, dy in PLOT_IONS:
         q = Z - N           # initial-ion charge
         color = ion_colors(Z, q)
         rr = rc.get_rr_rate(Z, N, T)
         ln_rr, = axes[0].loglog(T, rr, color=color, lw=1.4, label=label)
-        line_annotate(label, ln_rr, x=x_annot, xytext=(0, 0),
+        line_annotate(label, ln_rr, x=x_annot, xytext=(0, dy),
                       fontsize="x-small", color=color,
                       path_effects=stroke)
         if Z > 1 and N > 0:
             dr = rc.get_dr_rate(Z, N, T)
             ln_dr, = axes[1].loglog(T, dr, color=color, lw=1.4,
                                      label=label)
-            line_annotate(label, ln_dr, x=x_annot, xytext=(0, 0),
+            line_annotate(label, ln_dr, x=x_annot, xytext=(0, dy),
                           fontsize="x-small", color=color,
                           path_effects=stroke)
     axes[0].set_title("Radiative recombination (Badnell)")
@@ -321,6 +321,7 @@ def test_plot_rec_rate_overview(rc, figures_dir, save_figures, ion_colors):
     axes[1].set_ylabel(r"$\alpha_{\rm dr}\,[{\rm cm}^3\,{\rm s}^{-1}]$")
     for ax in axes:
         ax.set_xlabel(r"$T\,[{\rm K}]$")
+        ax.set_xlim(1e2, 1e8)
         ax.set_ylim(1e-14, 2e-10)
         ax.grid(True, which="both", alpha=0.3)
         ax.legend(fontsize="x-small", loc="lower left")

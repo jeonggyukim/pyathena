@@ -9,7 +9,7 @@ deltas.
 
 CLI:
     XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db \\
-        python -m pyathena.photchem.data.build_ioneq_local
+        python -m pyathena.photchem.data.build_ioneq_ct
 """
 
 import os
@@ -114,8 +114,8 @@ def cie_xq_for_element(Z, T_grid, x_HI_arr, x_HII_arr, use_ct=True,
 
 def main():
     """Build two CIE x_q(T) tables per element on the CHIANTI T grid:
-       - `ioneq_local_<element>.txt`     : collisional only (no CT)
-       - `ioneq_local_ct_<element>.txt`  : collisional + CT (CT
+       - `ioneq_<element>.txt`     : collisional only (no CT)
+       - `ioneq_ct_<element>.txt`  : collisional + CT (CT
                                            contribution weighted by
                                            CHIANTI's CIE H state)
     The pair lets the comparison plot isolate the effect of CT.
@@ -129,7 +129,7 @@ def main():
     if not os.environ.get('XUVTOP'):
         raise RuntimeError(
             "XUVTOP environment variable not set. ChiantiPy cannot "
-            "load CHIANTI data without it; build_ioneq_local would "
+            "load CHIANTI data without it; build_ioneq_ct would "
             "silently produce all-neutral x_q tables. Set XUVTOP "
             "to your CHIANTI v11 data directory before running, "
             "e.g.:\n"
@@ -143,15 +143,32 @@ def main():
     T_grid = 10.0 ** log_T
     x_HI = H['x_q'][0]
     x_HII = H['x_q'][1]
-    print(f"Building local CIE on T grid {len(T_grid)} pts, "
+    print(f"Building our CIE on T grid {len(T_grid)} pts, "
           f"{T_grid[0]:.2g} -> {T_grid[-1]:.2g} K")
+    # Below this x_HII threshold, the gas has effectively no H+
+    # available, so both source and sink rates vanish and the
+    # equilibrium time -> infinity. The mathematical CIE limit is
+    # undefined (depends on which vanishing quantity wins). Force
+    # neutral state for x_HII below this threshold (physical: real
+    # cold gas at log T < 4 stays at whatever initial state since
+    # nothing actually happens fast enough to equilibrate).
+    _XHII_FLOOR = 1.0e-6
+    # Only build the +CT variant: the no-CT (use_ct=False) result
+    # is identical to `ioneq_<X>.txt` by construction (same CHIANTI
+    # rates, same sequential balance, no extra physics), so it's
+    # redundant. Keep the CT variant which adds H charge transfer.
     for element, Z in ELEMENTS.items():
-        for use_ct, suffix in [(False, ''), (True, 'ct_')]:
+        for use_ct, suffix in [(True, 'ct_')]:
             x_q = cie_xq_for_element(
                 Z, T_grid, x_HI, x_HII, use_ct=use_ct,
                 element=element)
+            # Force all-neutral where H is essentially neutral.
+            mask_cold = x_HII < _XHII_FLOOR
+            if mask_cold.any():
+                x_q[:, mask_cold] = 0.0
+                x_q[0, mask_cold] = 1.0
             out_path = os.path.join(
-                out_dir, f'ioneq_local_{suffix}{element}.txt')
+                out_dir, f'ioneq_{suffix}{element}.txt')
             write_ascii(out_path, element, Z, log_T, x_q)
             col_sum = x_q.sum(axis=0)
             tag = 'with CT' if use_ct else 'collisional only'

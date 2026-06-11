@@ -97,7 +97,8 @@ def _make_panel(figures_dir, elements_subset, fig_name):
     axes = axes.flatten()
     for ax in axes[len(elements_subset):]:
         ax.set_visible(False)
-    for ax, element in zip(axes, elements_subset):
+    for ax_idx, (ax, element) in enumerate(
+            zip(axes, elements_subset)):
         gf = _read_gf12(element)
         ours = _read_ours(element)
         Z = gf['Lambda_q'].shape[0] - 1
@@ -107,21 +108,24 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         cmap = cmr.combine_cmaps(
             cmr.get_sub_cmap(cmr.ocean, 0.15, 0.85),
             cmr.get_sub_cmap(cmr.amber, 0.15, 0.85))
-        gf_lines = []
+        ours_lines = []   # store ours Line2D for label annotation
         for q in range(Z + 1):
             color = cmap(q / max(Z, 1))
-            ln_gf, = ax.loglog(10 ** log_T_gf, gf['Lambda_q'][q],
-                               '-', color=color, lw=1.4)
-            ax.loglog(10 ** log_T_o, ours['Lambda_q'][q], '--',
+            # GF12 reference (thick dashed, semi-transparent).
+            ax.loglog(10 ** log_T_gf, gf['Lambda_q'][q], '--',
                       color=color, lw=3.5, alpha=0.45)
-            gf_lines.append(ln_gf)
+            # Ours (CHIANTI v11) -- primary, solid.
+            ln_o, = ax.loglog(10 ** log_T_o,
+                              ours['Lambda_q'][q], '-',
+                              color=color, lw=1.4)
+            ours_lines.append(ln_o)
         # Inline labels at the T where each ion's Lambda_q peaks.
         for q in range(Z + 1):
-            arr = gf['Lambda_q'][q]
+            arr = ours['Lambda_q'][q]
             if not np.any(arr > 0):
                 continue
             i_peak = int(np.argmax(arr))
-            T_annot = float(10 ** log_T_gf[i_peak])
+            T_annot = float(10 ** log_T_o[i_peak])
             # For fully-stripped ions whose cooling rises monotonic
             # in T (FF dominant), the argmax falls at the top of
             # the table -- pin the label to the right edge of the
@@ -130,18 +134,21 @@ def _make_panel(figures_dir, elements_subset, fig_name):
                 T_annot = 5e7
             if T_annot < 1.5e4:
                 continue
-            line_annotate(_ion_label(element, q), gf_lines[q],
+            line_annotate(_ion_label(element, q), ours_lines[q],
                           x=T_annot, xytext=(0, 4),
                           fontsize='small',
                           color=cmap(q / max(Z, 1)),
                           ha='center', path_effects=stroke)
-        ax.plot([], [], 'k-',  lw=1.4, label='GF12 (Cloudy)')
-        ax.plot([], [], 'k--', lw=3.5, alpha=0.45,
-                label='ours (CHIANTI v11)')
-        ax.legend(fontsize='small', loc='lower left',
-                  framealpha=0.7)
+        # Method legend only in the first (upper-left) panel.
+        if ax_idx == 0:
+            ax.plot([], [], 'k-',  lw=1.4,
+                    label='ours (CHIANTI v11)')
+            ax.plot([], [], 'k--', lw=3.5, alpha=0.45,
+                    label='Gnat & Ferland 2012 (Cloudy)')
+            ax.legend(fontsize='large', loc='lower right',
+                      framealpha=0.7, handlelength=3.5)
         ax.set_title(f'{element} (Z={Z})')
-        ax.set_xlim(1e4, 1e8)
+        ax.set_xlim(1e3, 1e8)
         ax.set_ylim(1e-24, 1e-16)
         ax.grid(True, which='both', alpha=0.3)
     for ax in axes[:len(elements_subset)]:
@@ -160,8 +167,8 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         r'bound-bound + two-photon + bremsstrahlung + '
         r'recombination radiation'
         '\n'
-        r'CHIANTI v11 (ours, dashed) vs '
-        r'Gnat & Ferland 2012 (Cloudy, solid)')
+        r'CHIANTI v11 (ours, solid) vs '
+        r'Gnat & Ferland 2012 (Cloudy, thick dashed)')
     fig.tight_layout()
     fig.savefig(figures_dir / fig_name, dpi=300)
     plt.close(fig)

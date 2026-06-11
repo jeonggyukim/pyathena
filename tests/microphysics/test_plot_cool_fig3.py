@@ -139,17 +139,20 @@ def test_plot_cool_fig3(figures_dir, save_figures):
     ax.loglog(10 ** ours_log_T, ours_total, 'k-', lw=2.4)
 
     # Inline element labels at the T where each curve peaks.
-    for element, ln, color in gf_lines:
+    # Stagger dy alternately +/- to avoid label overlap when
+    # adjacent elements peak at similar T.
+    for el_idx, (element, ln, color) in enumerate(gf_lines):
         xdata = ln.get_xdata()
         ydata = ln.get_ydata()
         if not np.any(ydata > 0):
             continue
         i_peak = int(np.argmax(ydata))
         T_annot = float(xdata[i_peak])
-        if T_annot < 1.5e4 or T_annot > 5e8:
+        if T_annot < 1.5e3 or T_annot > 5e8:
             continue
+        dy = +8 if el_idx % 2 == 0 else -10
         line_annotate(rf'${{\rm {element}}}$', ln, x=T_annot,
-                      xytext=(0, 4), fontsize='small',
+                      xytext=(0, dy), fontsize='large',
                       color=color, ha='center',
                       path_effects=stroke)
 
@@ -159,7 +162,7 @@ def test_plot_cool_fig3(figures_dir, save_figures):
             label='GF12 (Cloudy 2012)')
     ax.plot([], [], 'k-',  lw=2.4,
             label='ours (CHIANTI v11)')
-    ax.legend(fontsize='small', loc='lower right', framealpha=0.7,
+    ax.legend(fontsize='large', loc='upper right', framealpha=0.7,
               handlelength=4.0)
     ax.set_xlabel(r'$T\,[{\rm K}]$')
     ax.set_ylabel(
@@ -169,7 +172,7 @@ def test_plot_cool_fig3(figures_dir, save_figures):
         '\n'
         r'cooling rate per unit volume = $n_{\rm H}\,n_e\,\Lambda_e$'
         r' (Asplund 2009 solar abundances)')
-    ax.set_xlim(1e4, 1e9)
+    ax.set_xlim(1e3, 1e9)
     ax.set_ylim(1e-25, 1e-21)
     ax.grid(True, which='both', alpha=0.3)
     fig.tight_layout()

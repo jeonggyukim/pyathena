@@ -353,11 +353,14 @@ def test_OH_CT_rec_agrees_across_sources(figures_dir, save_figures):
             r"\,[{\rm cm}^3\,{\rm s}^{-1}]$"
         )
         ax.set_title(
-            r"O-H charge-exchange recombination: source comparison" "\n"
-            r"(Cloudy and Draine 2011 both fit Stancil+99 data; "
-            r"Cloudy poly runs higher at low T)"
+            r"O-H charge-exchange recombination: source comparison"
+            "\n"
+            r"Cloudy and Draine 2011 both fit Stancil+99 data;"
+            "\n"
+            r"Cloudy poly runs higher at low T"
         )
         ax.legend(fontsize="x-small", loc="lower right")
+        ax.set_xlim(1e1, 1e5)
         ax.set_ylim(3e-11, 5e-9)
         ax.grid(True, which="both", alpha=0.3)
         fig.tight_layout()
@@ -511,7 +514,7 @@ def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
         pytest.skip("plot generation disabled (--no-figures)")
     import matplotlib.pyplot as plt
 
-    T = np.logspace(1.5, 4.5, 400)  # 30 K to 30000 K
+    T = np.logspace(1.0, 5.0, 400)  # 10 K to 1e5 K
     # Draine 2011 notation:
     #   k0, k1, k2 = CT-RECOMBINATION rates per O J-level
     #                (Draine eq 14.24-26) -- O+ + H -> O(J) + H+
@@ -608,20 +611,23 @@ def test_plot_oxygen_CT_equilibrium(figures_dir, save_figures):
             sink_per_OII = n_HI * k_CT_rec + n_e * alpha_rec
             r_O = source_per_OI / sink_per_OII
             x_OII[j] = r_O / (1.0 + r_O)
-        ax.loglog(nH_arr, x_HII, "-",  color=color_T[T_fixed], lw=1.5,
-                  label=rf"$x_{{\rm HII}}$, $T={T_fixed:g}$ K")
-        ax.loglog(nH_arr, x_OII, "--", color=color_T[T_fixed], lw=1.5,
-                  label=rf"$x_{{\rm OII}}$, $T={T_fixed:g}$ K")
+        # K = (x_OII / x_OI) / (x_HII / x_HI)
+        # = (n(O+)/n(O0)) / (n(H+)/n(H0)), same convention as left panel.
+        x_OI = 1.0 - x_OII
+        x_HI_arr = 1.0 - x_HII
+        K_ratio = (x_OII / np.maximum(x_OI, 1e-30)) / \
+                  (x_HII / np.maximum(x_HI_arr, 1e-30))
+        ax.semilogx(nH_arr, K_ratio, "-",
+                    color=color_T[T_fixed], lw=1.5,
+                    label=rf"$T={T_fixed:g}$ K")
+    ax.axhline(8.0 / 9.0, color="gray", lw=0.6, ls=":", alpha=0.7)
+    ax.text(1.2, 8.0/9.0 + 0.03, r"$8/9$",
+            fontsize="x-small", color="gray", va="bottom")
     ax.set_xlabel(r"$n_{\rm H}\,[{\rm cm}^{-3}]$")
-    ax.set_ylabel(r"$x_{\rm HII}$ or $x_{\rm OII}$")
-    ax.set_title(
-        r"Self-consistent eq fractions in neutral gas"
-        "\n"
-        r"$\chi_{\rm FUV}=1$, $\xi_{\rm CR}=2\times10^{-16}$ s$^{-1}$, "
-        "no photoionization"
-    )
+    ax.set_ylabel(r"$[n({\rm O}^+)/n({\rm O}^0)]\,/\,"
+                  r"[n({\rm H}^+)/n({\rm H}^0)]$")
     ax.set_xlim(1.0, 1e4)
-    ax.set_ylim(1e-6, 1.0)
+    ax.set_ylim(0.0, 1.0)
     ax.grid(True, which="both", alpha=0.3)
     ax.legend(fontsize="x-small", loc="lower left")
 

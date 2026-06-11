@@ -264,38 +264,40 @@ def test_plot_ci_rate_overview(ci, figures_dir, save_figures, ion_colors):
     # and S XII matter for the CIE cooling balance. Color per ion
     # spans neutral -> fully-stripped via `num_ions=Z+1` passed to
     # `ion_colors` so the gradient is visible across the full chain.
+    # (Z, N_reactant, label, x_annot_K, dy_pixel). dy alternates
+    # +/- to stagger labels above/below the curve, preventing
+    # overlap when multiple ions peak near the same T.
     PLOT_IONS = [
-        # (Z, N_reactant, label, x_annot_K)
-        (1, 1, "H I", 1.5e5),
-        (2, 2, "He I", 4e5),
-        (2, 1, "He II", 2e6),
-        (6, 6, "C I", 2e4),
-        (6, 5, "C II", 7e4),
-        (6, 3, "C IV", 2e6),
-        (6, 1, "C VI", 3e7),
-        (7, 7, "N I", 5e4),
-        (7, 4, "N IV", 1e6),
-        (7, 1, "N VII", 5e7),
-        (8, 8, "O I", 1.5e5),
-        (8, 7, "O II", 4e5),
-        (8, 6, "O III", 1e6),
-        (8, 4, "O V", 3e6),
-        (8, 1, "O VIII", 8e7),
-        (16, 16, "S I", 3e4),
-        (16, 15, "S II", 2e5),
-        (16, 14, "S III", 6e5),
-        (16, 10, "S VII", 5e6),
-        (16, 5, "S XII", 3e7),
+        (6, 6,   "C I",     2.0e4, +6),
+        (16, 16, "S I",     3.0e4, -8),
+        (7, 7,   "N I",     5.0e4, +6),
+        (6, 5,   "C II",    8.0e4, -8),
+        (1, 1,   "H I",     1.3e5, +6),
+        (8, 8,   "O I",     1.8e5, -8),
+        (16, 15, "S II",    2.5e5, +6),
+        (2, 2,   "He I",    3.5e5, -8),
+        (8, 7,   "O II",    5.0e5, +6),
+        (16, 14, "S III",   7.0e5, -8),
+        (8, 6,   "O III",   1.0e6, +6),
+        (7, 4,   "N IV",    1.4e6, -8),
+        (2, 1,   "He II",   1.8e6, +6),
+        (6, 3,   "C IV",    2.5e6, -8),
+        (8, 4,   "O V",     4.0e6, +6),
+        (16, 10, "S VII",   6.0e6, -8),
+        (6, 1,   "C VI",    2.5e7, +6),
+        (16, 5,  "S XII",   3.5e7, -8),
+        (7, 1,   "N VII",   5.0e7, +6),
+        (8, 1,   "O VIII",  8.0e7, -8),
     ]
     stroke = [path_effects.withStroke(linewidth=2.5, foreground="white")]
     fig, ax = plt.subplots(figsize=(8, 5.5))
-    for Z, N, label, x_annot in PLOT_IONS:
+    for Z, N, label, x_annot, dy in PLOT_IONS:
         q = Z - N      # reactant ion charge
         color = ion_colors(Z, q, num_ions=Z + 1)
         beta = ci.get_ci_rate(Z, N, T)
         ln, = ax.loglog(T, np.where(beta > 0, beta, np.nan),
                         color=color, lw=1.4, label=label)
-        line_annotate(label, ln, x=x_annot, xytext=(0, 0),
+        line_annotate(label, ln, x=x_annot, xytext=(0, dy),
                       fontsize="x-small", color=color,
                       path_effects=stroke)
     ax.set_xlabel(r"$T\,[{\rm K}]$")

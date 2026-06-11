@@ -63,7 +63,7 @@ def _load(element, gs07_cache):
         'microphysics' / 'chianti_v11'
     d_ch = read_ioneq(str(base / f'ioneq_{element}.txt'))
     d_lo_ct = read_ioneq(
-        str(base / f'ioneq_local_ct_{element}.txt'))
+        str(base / f'ioneq_ct_{element}.txt'))
     if element in gs07_cache:
         T_gs, x_gs = gs07_cache[element]
         log_T_gs = np.log10(T_gs)
@@ -101,7 +101,8 @@ def _make_panel(figures_dir, elements_subset, fig_name):
     gs07_cache = _read_gs07_all()
     for ax in axes[len(elements_subset):]:
         ax.set_visible(False)
-    for ax, element in zip(axes, elements_subset):
+    for ax_idx, (ax, element) in enumerate(
+            zip(axes, elements_subset)):
         log_T, x_ch, log_T_gs, x_gs, x_lo_ct = _load(
             element, gs07_cache)
         Z = x_ch.shape[0] - 1
@@ -143,22 +144,24 @@ def _make_panel(figures_dir, elements_subset, fig_name):
                 continue
             i_mid = (idx[0] + idx[-1]) // 2
             # Clamp to the visible panel range so labels don't clip.
-            x_annot = float(np.clip(log_T[i_mid], 4.1, 7.9))
+            x_annot = float(np.clip(log_T[i_mid], 3.1, 7.9))
             color = cmap(q / Z)
             label = _ion_label(element, q)
             line_annotate(label, ch_lines[q], x=x_annot,
                           xytext=(0, 4), fontsize='small',
                           color=color, ha='center',
                           path_effects=stroke)
-        # Method legend on every panel.
-        ax.plot([], [], 'k-',  lw=1.4, label='CHIANTI v11 (ours)')
-        ax.plot([], [], 'k--', lw=3.5, alpha=0.45,
-                label='Gnat & Sternberg 2007')
-        ax.plot([], [], 'k:',  lw=1.0, label='ours, + CT')
-        ax.legend(fontsize='small', loc='lower right',
-                  framealpha=0.7, handlelength=3.5)
+        # Method legend only in the first (upper-left) panel.
+        if ax_idx == 0:
+            ax.plot([], [], 'k-',  lw=1.4,
+                    label='ours (CHIANTI v11)')
+            ax.plot([], [], 'k:',  lw=1.0, label='ours, + CT')
+            ax.plot([], [], 'k--', lw=3.5, alpha=0.45,
+                    label='Gnat & Sternberg 2007')
+            ax.legend(fontsize='large', loc='lower right',
+                      framealpha=0.7, handlelength=3.5)
         ax.set_title(f'{element} (Z={Z})')
-        ax.set_xlim(4.0, 8.0)
+        ax.set_xlim(3.0, 8.0)
         ax.set_ylim(1e-5, 2)
         ax.grid(True, which='both', alpha=0.3)
     # Force every visible axis to show xticklabels + xlabel (sharex

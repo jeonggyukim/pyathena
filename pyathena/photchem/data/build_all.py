@@ -11,15 +11,15 @@ Produces two sets of per-element files in
         and same solver as the dashed "ours" curves below; this is
         the gold-standard reference.
 
-  - ioneq_local_<element>.txt
+  - ioneq_<element>.txt
         Our own implementation of the sequential CIE balance using
         the same CHIANTI v11 rate data (via RecRateCHIANTI /
         CollIonRateCHIANTI). Should match `ioneq_<element>.txt` to
         machine precision; differences would indicate a bug in our
         sequential solver or rate-class wrappers.
 
-  - ioneq_local_ct_<element>.txt
-        Same as `ioneq_local_<element>.txt` but with the
+  - ioneq_ct_<element>.txt
+        Same as `ioneq_<element>.txt` but with the
         charge-transfer (CT) contribution added to source / sink
         rates. CT weighted by CHIANTI's CIE H state at each T
         (trace-element approximation).
@@ -37,7 +37,7 @@ CLI:
 
 import os
 
-from . import build_ioneq_tables, build_ioneq_local, build_cool_tables
+from . import build_ioneq_tables, build_ioneq_ct, build_cool_tables
 
 
 def main():
@@ -51,8 +51,8 @@ def main():
     print("=== Step 1: CHIANTI reference ioneq_<element>.txt ===")
     build_ioneq_tables.main()
     print()
-    print("=== Step 2: local ioneq_local[_ct]_<element>.txt ===")
-    build_ioneq_local.main()
+    print("=== Step 2: ours +CT ioneq_ct_<element>.txt ===")
+    build_ioneq_ct.main()
     print()
     print("=== Step 3: per-ion cooling cool_<element>.txt ===")
     print("    (slow: ~10 min for full element set; ChiantiPy "
