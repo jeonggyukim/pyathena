@@ -258,7 +258,7 @@ def main():
         os.path.dirname(__file__),
         '..', '..', '..', 'data', 'microphysics', 'chianti_v11'))
     os.makedirs(out_dir, exist_ok=True)
-    log_T = np.linspace(4.0, 9.0, 101)
+    log_T = np.linspace(3.0, 9.0, 121)
     T_grid = 10.0 ** log_T
     print(f"Building CIE bound-bound cooling tables: "
           f"{len(T_grid)} T points ({T_grid[0]:.2g} -> "

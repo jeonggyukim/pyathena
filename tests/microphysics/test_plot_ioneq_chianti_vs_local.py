@@ -13,33 +13,75 @@ import numpy as np
 
 
 # GS07 element set is exactly these 10 (no Ar, no Ca):
-COMPARE_FIG1 = ['H',  'He', 'C', 'N', 'O']
-COMPARE_FIG2 = ['Ne', 'Mg', 'Si', 'S', 'Fe']
+COMPARE_FIG1 = ['H',  'He', 'C', 'N', 'O', 'Ne']
+COMPARE_FIG2 = ['Mg', 'Si', 'S', 'Ar', 'Ca', 'Fe']
 COMPARE = COMPARE_FIG1 + COMPARE_FIG2
 
 
-def _load(element):
-    """Return (log_T, x_q_chianti, x_q_local, x_q_local_ct) for
-    one element."""
+GS07_PATH = Path(__file__).parent.parent.parent / 'data' / \
+    'microphysics' / 'Gnat_Sternberg07_cie_ion_frac.txt'
+_GS07_ELEMENT_ORDER = [
+    ('H', 1), ('He', 2), ('C', 6), ('N', 7), ('O', 8),
+    ('Ne', 10), ('Mg', 12), ('Si', 14), ('S', 16), ('Fe', 26),
+]
+
+
+def _read_gs07_all():
+    """Parse GS07 ASCII table into {element: (T_K, x_q_array)}."""
+    with open(GS07_PATH) as f:
+        lines = f.read().splitlines()
+    data_lines = []
+    for ln in lines:
+        s = ln.lstrip()
+        if not s:
+            continue
+        first = s.split()[0]
+        if 'e' in first.lower() and any(c.isdigit() for c in first):
+            try:
+                float(first)
+                data_lines.append(ln)
+            except ValueError:
+                continue
+    arr = np.array([[float(v) for v in ln.split()]
+                    for ln in data_lines])
+    T = arr[:, 0]
+    out = {}
+    col = 1
+    for element, Z in _GS07_ELEMENT_ORDER:
+        ncol = Z + 1
+        out[element] = (T, arr[:, col:col + ncol].T)
+        col += ncol
+    return out
+
+
+def _load(element, gs07_cache):
+    """Return (log_T, x_q_chianti, log_T_gs, x_q_gs, x_q_local_ct).
+    GS07 is None when the element isn't in GS07's published set
+    (Ar, Ca)."""
     from pyathena.photchem.data.build_ioneq_tables import read_ioneq
     base = Path(__file__).parent.parent.parent / 'data' / \
         'microphysics' / 'chianti_v11'
     d_ch = read_ioneq(str(base / f'ioneq_{element}.txt'))
-    d_lo = read_ioneq(str(base / f'ioneq_local_{element}.txt'))
     d_lo_ct = read_ioneq(
         str(base / f'ioneq_local_ct_{element}.txt'))
+    if element in gs07_cache:
+        T_gs, x_gs = gs07_cache[element]
+        log_T_gs = np.log10(T_gs)
+    else:
+        log_T_gs, x_gs = None, None
     return (d_ch['log_T'], d_ch['x_q'],
-            d_lo['x_q'], d_lo_ct['x_q'])
+            log_T_gs, x_gs, d_lo_ct['x_q'])
 
 
 def _ion_label(element, q):
-    """LaTeX label for charge state q of element."""
+    """LaTeX label for charge state q: '0', '+', '2+', ..., 'Z+'.
+    Element name dropped because plot title already names it."""
     if q == 0:
-        return rf'${{\rm {element}}}$'
+        return r'$0$'
     elif q == 1:
-        return rf'${{\rm {element}}}^+$'
+        return r'$+$'
     else:
-        return rf'${{\rm {element}}}^{{{q}+}}$'
+        return rf'${q}+$'
 
 
 def _make_panel(figures_dir, elements_subset, fig_name):
@@ -56,10 +98,12 @@ def _make_panel(figures_dir, elements_subset, fig_name):
     fig, axes = plt.subplots(2, 3, figsize=(15, 9),
                              sharex=True, sharey=True)
     axes = axes.flatten()
+    gs07_cache = _read_gs07_all()
     for ax in axes[len(elements_subset):]:
         ax.set_visible(False)
     for ax, element in zip(axes, elements_subset):
-        log_T, x_ch, x_lo, x_lo_ct = _load(element)
+        log_T, x_ch, log_T_gs, x_gs, x_lo_ct = _load(
+            element, gs07_cache)
         Z = x_ch.shape[0] - 1
         import cmasher as cmr
         cmap = cmr.combine_cmaps(
@@ -68,14 +112,14 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         ch_lines = []  # store CHIANTI Line2D for annotation
         for q in range(Z + 1):
             color = cmap(q / Z)
-            ln_ch, = ax.semilogy(log_T, x_ch[q],    '-',
+            ln_ch, = ax.semilogy(log_T, x_ch[q], '-',
                                  color=color, lw=1.4)
-            # Dashed (ours, no CT) thicker + reduced alpha so it
-            # stays visible even when it overlaps the solid
-            # CHIANTI reference (which it does for elements where
-            # both methods use the same atomic data).
-            ax.semilogy(log_T, x_lo[q], '--', color=color,
-                        lw=3.5, alpha=0.45)
+            # GS07 (Gnat & Sternberg 2007) ion fractions: thick
+            # dashed with reduced alpha. Skipped for Ar/Ca since
+            # GS07 doesn't include them.
+            if x_gs is not None and q < x_gs.shape[0]:
+                ax.semilogy(log_T_gs, x_gs[q], '--', color=color,
+                            lw=3.5, alpha=0.45)
             ax.semilogy(log_T, x_lo_ct[q], ':',  color=color, lw=1.0)
             ch_lines.append(ln_ch)
         # Inline labels per charge state on the CHIANTI curve.
@@ -83,26 +127,36 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         for q in range(Z + 1):
             ymax = np.max(x_ch[q])
             if ymax < 1e-3:
-                # Skip annotating barely-present stages.
+                # Skip stages that never reach a visible fraction.
                 continue
-            i_peak = int(np.argmax(x_ch[q]))
-            x_annot = log_T[i_peak]
-            # Skip if peak sits at the edge of the plotted T range.
-            if x_annot < 4.05 or x_annot > 7.95:
+            # Use FWHM midpoint as label position. Handles all curve
+            # shapes uniformly:
+            #   - bell curve (mid-q): midpoint = argmax
+            #   - saturated rising (fully stripped): midpoint inside
+            #     the high-T plateau
+            #   - saturated falling (neutral): midpoint inside the
+            #     low-T plateau
+            half = 0.5 * ymax
+            mask = x_ch[q] >= half
+            idx = np.where(mask)[0]
+            if len(idx) == 0:
                 continue
+            i_mid = (idx[0] + idx[-1]) // 2
+            # Clamp to the visible panel range so labels don't clip.
+            x_annot = float(np.clip(log_T[i_mid], 4.1, 7.9))
             color = cmap(q / Z)
             label = _ion_label(element, q)
             line_annotate(label, ch_lines[q], x=x_annot,
                           xytext=(0, 4), fontsize='small',
                           color=color, ha='center',
                           path_effects=stroke)
-        # Method legend (line styles) on every panel, lower-left.
-        ax.plot([], [], 'k-',  lw=1.4, label='CHIANTI v11')
+        # Method legend on every panel.
+        ax.plot([], [], 'k-',  lw=1.4, label='CHIANTI v11 (ours)')
         ax.plot([], [], 'k--', lw=3.5, alpha=0.45,
-                label='ours, no CT')
+                label='Gnat & Sternberg 2007')
         ax.plot([], [], 'k:',  lw=1.0, label='ours, + CT')
-        ax.legend(fontsize='xx-small', loc='lower left',
-                  framealpha=0.7)
+        ax.legend(fontsize='small', loc='lower right',
+                  framealpha=0.7, handlelength=3.5)
         ax.set_title(f'{element} (Z={Z})')
         ax.set_xlim(4.0, 8.0)
         ax.set_ylim(1e-5, 2)
@@ -114,9 +168,11 @@ def _make_panel(figures_dir, elements_subset, fig_name):
         ax.set_xlabel(r'$\log_{10}\,T\,[{\rm K}]$')
     for ax in axes[::3]:
         ax.set_ylabel(r'$x_q = n(X^{q+})/n(X)$')
-    fig.suptitle('CIE x_q(T): CHIANTI v11 vs pyathena own rates '
-                 '(without / with CT). H ionization for CT weighting '
-                 'taken from CHIANTI v11.')
+    fig.suptitle(
+        r'CIE ionization fractions $x_q(T)$: '
+        r'CHIANTI v11 (ours, solid) vs Gnat & Sternberg 2007 '
+        r'(thick dashed)' '\n'
+        r'Dotted: our $x_q$ including charge transfer with H')
     fig.tight_layout()
     fig.savefig(figures_dir / fig_name, dpi=300)
     plt.close(fig)

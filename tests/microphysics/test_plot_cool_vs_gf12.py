@@ -31,8 +31,8 @@ _GF12_NAME = {
     'Mg': 'Magnesium', 'Si': 'Silicon',  'S':  'Sulfur',
     'Ar': 'Argon',     'Ca': 'Calcium',  'Fe': 'Iron',
 }
-COMPARE_FIG1 = ['H',  'He', 'C', 'N', 'O']
-COMPARE_FIG2 = ['Ne', 'Mg', 'Si', 'S', 'Fe']
+COMPARE_FIG1 = ['H',  'He', 'C', 'N', 'O', 'Ne']
+COMPARE_FIG2 = ['Mg', 'Si', 'S', 'Ar', 'Ca', 'Fe']
 
 
 def _read_gf12(element):

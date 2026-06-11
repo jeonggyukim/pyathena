@@ -116,7 +116,7 @@ def main():
         '..', '..', '..', 'data', 'microphysics', 'chianti_v11'))
     os.makedirs(out_dir, exist_ok=True)
     # T grid matches the chianti.ioneq native grid for compat.
-    log_T = np.linspace(4.0, 9.0, 101)
+    log_T = np.linspace(3.0, 9.0, 121)
     T = 10.0 ** log_T
     print(f"Computing ioneq with ChiantiPy.core.ioneq.calculate "
           f"(current CHIANTI v11 rate fits): "

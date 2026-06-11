@@ -39,7 +39,8 @@ _GF12_NAME = {
     'Mg': 'Magnesium', 'Si': 'Silicon',  'S':  'Sulfur',
     'Ar': 'Argon',     'Ca': 'Calcium',  'Fe': 'Iron',
 }
-ELEMENTS = ['H', 'He', 'C', 'N', 'O', 'Ne', 'Mg', 'Si', 'S', 'Fe']
+ELEMENTS = ['H', 'He', 'C', 'N', 'O', 'Ne',
+            'Mg', 'Si', 'S', 'Ar', 'Ca', 'Fe']
 
 
 def _read_gf12_cie_per_atom(element):
