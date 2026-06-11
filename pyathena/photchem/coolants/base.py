@@ -49,9 +49,15 @@ class IonCoolant:
         self._table = None  # lazily loaded
 
     def _load(self):
+        # Per-ion atomic-data files live at
+        # data/microphysics/chianti_v11/ alongside the other CHIANTI
+        # tables (ioneq + cool). This module is at
+        # pyathena/photchem/coolants/base.py; go up three to the
+        # repo root then into data/microphysics/chianti_v11/.
         path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
-            '..', 'data', self.filename,
+            '..', '..', '..',
+            'data', 'microphysics', 'chianti_v11', self.filename,
         )
         d = read_ascii(path)
         nphys = int(d.get('nlev_phys', len(d['E_erg'])))

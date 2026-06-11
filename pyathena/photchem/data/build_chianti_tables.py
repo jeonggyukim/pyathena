@@ -575,7 +575,10 @@ def main(argv=None):
             print(f"Temperature grid [{tier}]: {nT} points, "
                   f"{tmin:.3g} -> {tmax:.3g} K")
     ions = args.ions if args.ions else list(FOLLOWED_IONS)
-    out_dir = os.path.dirname(os.path.abspath(__file__))
+    out_dir = os.path.abspath(os.path.join(
+        os.path.dirname(__file__),
+        '..', '..', '..', 'data', 'microphysics', 'chianti_v11'))
+    os.makedirs(out_dir, exist_ok=True)
     skipped = []
     for label in ions:
         ion_name, nlev = FOLLOWED_IONS[label]
