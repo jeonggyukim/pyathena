@@ -22,13 +22,12 @@ def _load(element):
     """Return (log_T, x_q_chianti, x_q_local, x_q_local_ct) for
     one element."""
     from pyathena.photchem.data.build_ioneq_tables import read_ioneq
-    root = Path(__file__).parent.parent.parent
-    chianti_dir = root / 'data' / 'microphysics' / 'chianti_v11'
-    local_dir = root / 'pyathena' / 'photchem' / 'data'
-    d_ch = read_ioneq(str(chianti_dir / f'ioneq_{element}.txt'))
-    d_lo = read_ioneq(str(local_dir / f'ioneq_local_{element}.txt'))
+    base = Path(__file__).parent.parent.parent / 'data' / \
+        'microphysics' / 'chianti_v11'
+    d_ch = read_ioneq(str(base / f'ioneq_{element}.txt'))
+    d_lo = read_ioneq(str(base / f'ioneq_local_{element}.txt'))
     d_lo_ct = read_ioneq(
-        str(local_dir / f'ioneq_local_ct_{element}.txt'))
+        str(base / f'ioneq_local_ct_{element}.txt'))
     return (d_ch['log_T'], d_ch['x_q'],
             d_lo['x_q'], d_lo_ct['x_q'])
 

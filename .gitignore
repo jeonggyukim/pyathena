@@ -18,8 +18,3 @@ pyathena.egg-info
 CLAUDE.md
 .claude/
 
-# Our locally-derived CIE x_q tables (computed from CHIANTI rates
-# via sequential balance; per-element with/without CT). Not tracked
-# because they're cheap to regenerate.
-pyathena/photchem/data/ioneq_local_*.txt
-pyathena/photchem/data/ioneq_local_ct_*.txt

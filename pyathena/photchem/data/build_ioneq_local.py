@@ -134,11 +134,11 @@ def main():
             "to your CHIANTI v11 data directory before running, "
             "e.g.:\n"
             "    export XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db")
-    out_dir = os.path.dirname(os.path.abspath(__file__))
-    chianti_dir = os.path.abspath(os.path.join(
+    out_dir = os.path.abspath(os.path.join(
         os.path.dirname(__file__),
         '..', '..', '..', 'data', 'microphysics', 'chianti_v11'))
-    H = read_ioneq(os.path.join(chianti_dir, 'ioneq_H.txt'))
+    os.makedirs(out_dir, exist_ok=True)
+    H = read_ioneq(os.path.join(out_dir, 'ioneq_H.txt'))
     log_T = H['log_T']
     T_grid = 10.0 ** log_T
     x_HI = H['x_q'][0]
