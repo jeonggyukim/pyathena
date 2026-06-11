@@ -112,10 +112,18 @@ def _solve_one(A, E, g, T, Cdown):
 
     # Steady state: sum_j R[j, i] f_j - f_i sum_j R[i, j] = 0
     M = R.T - np.diag(R.sum(axis=1))
-    # Replace last row with closure sum_i f_i = 1
-    M[-1, :] = 1.0
+    # Detect isolated / dummy levels (no rates in or out). Happens
+    # for ions with fewer than NLEV physical levels (e.g. 2-level
+    # CII / NeII) padded with high-E dummies. Force f = 0 there.
+    isolated = (R.sum(axis=1) == 0) & (R.sum(axis=0) == 0)
+    for k in np.where(isolated)[0]:
+        M[k, :] = 0.0
+        M[k, k] = 1.0
+    # Closure sum_i f_i = 1. Put it on the ground level (row 0),
+    # which is always non-isolated; the last row may be a dummy.
+    M[0, :] = 1.0
     b = np.zeros(NLEV)
-    b[-1] = 1.0
+    b[0] = 1.0
     return np.linalg.solve(M, b)
 
 
