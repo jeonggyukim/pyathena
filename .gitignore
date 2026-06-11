@@ -9,6 +9,7 @@ pyathena_env
 pyathena_env/*
 docs/_build
 docs/_static
+data/pop_synth/*
 .DS_Store
 tags
 job*
