@@ -41,7 +41,8 @@ Tables extracted from Cloudy (Ferland et al. 2017 RMxAA 53, 385).
 
 ## ugacxdb/
 
-Charge transfer rate fits. Used by `pyathena.microphysics.ct_rate`.
+UGA Charge Transfer Database (https://sites.physast.uga.edu/ugacxdb/).
+Used by `pyathena.microphysics.ct_rate`.
 
 - `ct_h2.dat`   -- H+ + H2 isotopomer charge transfer fits from
   Wang & Stancil 2002 (Physica Scripta T96, 72).
