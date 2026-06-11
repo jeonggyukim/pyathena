@@ -204,11 +204,16 @@ def cooling_for_element(element, Z, T_grid):
     """
     import ChiantiPy.core as ch
     NT = len(T_grid)
-    Lambda_q = np.zeros((Z + 1, NT))
+    # Per-channel tables: BB, 2gamma, FF, FB. Caller can sum to get
+    # total or inspect channels individually (e.g., to compare with
+    # GF12, which appears to exclude FB from per-ion columns).
+    Lambda_BB = np.zeros((Z + 1, NT))
+    Lambda_2g = np.zeros((Z + 1, NT))
+    Lambda_FF = np.zeros((Z + 1, NT))
+    Lambda_FB = np.zeros((Z + 1, NT))
     sym = _ELEM_SYM[element]
     for q in range(Z + 1):
         ion_name = f'{sym}_{q + 1}'   # CHIANTI 1-based
-        total = np.zeros(NT)
         # --- Ion-class channels: BB + 2gamma ---
         if q < Z:   # fully stripped has no bound electrons
             try:
@@ -219,12 +224,12 @@ def cooling_for_element(element, Z, T_grid):
             except Exception:
                 ion = None
             if ion is not None:
-                total += _safe_loss(ion, 'boundBoundLoss',
-                                    'BoundBoundLoss', NT)
+                Lambda_BB[q] = _safe_loss(ion, 'boundBoundLoss',
+                                          'BoundBoundLoss', NT)
                 N_electrons = Z - q
                 if N_electrons in (1, 2):
-                    total += _safe_loss(ion, 'twoPhotonLoss',
-                                        'TwoPhotonLoss', NT)
+                    Lambda_2g[q] = _safe_loss(
+                        ion, 'twoPhotonLoss', 'TwoPhotonLoss', NT)
         # --- Continuum: FF for this ion ---
         try:
             cont = ch.continuum(ion_name, temperature=T_grid)
@@ -233,14 +238,14 @@ def cooling_for_element(element, Z, T_grid):
         except Exception:
             cont = None
         if cont is not None and q >= 1:
-            total += _safe_loss(cont, 'freeFreeLoss',
-                                'FreeFreeLoss', NT)
+            Lambda_FF[q] = _safe_loss(cont, 'freeFreeLoss',
+                                      'FreeFreeLoss', NT)
         # --- FB attributed to POST-recombination ion (GF12 / Cloudy
         # convention). FB from X^(q+1) + e -> X^q + photon shows in
         # the row of X^q, not X^(q+1). For q < Z, look up the
         # continuum object of X^(q+1) and add its FB rate here.
         if q < Z:
-            next_ion_name = f'{sym}_{q + 2}'   # X^(q+1)
+            next_ion_name = f'{sym}_{q + 2}'
             try:
                 cont_next = ch.continuum(
                     next_ion_name, temperature=T_grid)
@@ -249,10 +254,16 @@ def cooling_for_element(element, Z, T_grid):
             except Exception:
                 cont_next = None
             if cont_next is not None:
-                total += _safe_loss(cont_next, 'freeBoundLoss',
-                                    'FreeBoundLoss', NT)
-        Lambda_q[q] = total
-    return Lambda_q
+                Lambda_FB[q] = _safe_loss(
+                    cont_next, 'freeBoundLoss',
+                    'FreeBoundLoss', NT)
+    return {
+        'BB': Lambda_BB,
+        '2g': Lambda_2g,
+        'FF': Lambda_FF,
+        'FB': Lambda_FB,
+        'total': Lambda_BB + Lambda_2g + Lambda_FF + Lambda_FB,
+    }
 
 
 def main():
@@ -272,15 +283,27 @@ def main():
     print(f"Building CIE bound-bound cooling tables: "
           f"{len(T_grid)} T points ({T_grid[0]:.2g} -> "
           f"{T_grid[-1]:.2g} K)")
+    # Channel suffixes for per-channel output files.
+    CHANNELS = [('BB', 'bound-bound line emission'),
+                ('2g', 'two-photon continuum'),
+                ('FF', 'free-free bremsstrahlung'),
+                ('FB', 'free-bound recombination radiation'),
+                ('total', 'BB + 2g + FF + FB')]
     for element, Z in ELEMENTS.items():
-        Lambda_q = cooling_for_element(element, Z, T_grid)
-        out_path = os.path.join(out_dir, f"cool_{element}.txt")
-        write_ascii(out_path, element, Z, log_T, Lambda_q)
-        nonzero_q = int(np.sum(Lambda_q.max(axis=1) > 0))
-        max_q = float(Lambda_q.max())
-        print(f"  {element:2s} (Z={Z:2d}): wrote {out_path}  "
-              f"({nonzero_q}/{Z+1} ions with non-zero L, "
-              f"max={max_q:.2e})")
+        chans = cooling_for_element(element, Z, T_grid)
+        for suffix, _desc in CHANNELS:
+            arr = chans[suffix]
+            out_path = os.path.join(
+                out_dir, f"cool_{suffix}_{element}.txt"
+                if suffix != 'total'
+                else f"cool_{element}.txt")
+            write_ascii(out_path, element, Z, log_T, arr)
+        total = chans['total']
+        nonzero_q = int(np.sum(total.max(axis=1) > 0))
+        max_q = float(total.max())
+        print(f"  {element:2s} (Z={Z:2d}): wrote 5 channel files, "
+              f"{nonzero_q}/{Z+1} ions non-zero, "
+              f"max_total={max_q:.2e}")
 
 
 if __name__ == '__main__':
