@@ -4,7 +4,7 @@ and save to ASCII text files in this directory.
 Run once (or whenever the followed-ion list or T grid changes):
 
     XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db \\
-        python -m pyathena.photchem.data.build_chianti_tables
+        python -m pyathena.microphysics.chianti_v11.build_atomic
 
 By default the temperature grid is 60 log-spaced points from
 1e3 to 1e6 K, covering:
@@ -22,7 +22,7 @@ relaxed to 5e4 K to halve the table size; for coronal applications
 (Fe XIV etc.) extend further up. Pass --T-min, --T-max, --N-T to
 override:
 
-    python -m pyathena.photchem.data.build_chianti_tables \\
+    python -m pyathena.microphysics.chianti_v11.build_atomic \\
         --T-min 100 --T-max 1e6 --N-T 80
 
 ASCII format chosen so the tables stay `cat`-/git-diffable and
@@ -31,7 +31,7 @@ parses with std::ifstream). The format is line-based with section
 markers; see `OIII.txt` for the canonical layout.
 
 ChiantiPy is a build-time-only dependency: the runtime coolant
-modules under `pyathena.photchem.coolants` parse the .txt files
+modules under `pyathena.microphysics.coolants` parse the .txt files
 directly.
 
 The 5-level truncation captures the np^2 / np^3 / np^4 ground-
@@ -435,7 +435,7 @@ def write_ascii(out_path, label, data, T_min, T_max, tier='hot'):
                 Yp_rows.append((i, j, Y_p[i, j, :]))
 
     with open(out_path, 'w') as f:
-        f.write(f"# pyathena.photchem atomic data : {label}\n")
+        f.write(f"# pyathena.microphysics atomic data : {label}\n")
         f.write(f"# CHIANTI source : ion {data['chianti_ion_name']}\n")
         f.write(f"# Levels kept    : lowest {nlev_phys} of CHIANTI "
                 f"(padded to 5 if smaller)\n")

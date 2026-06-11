@@ -21,7 +21,7 @@ from ..n_level import (
     cooling_from_populations,
     NLEV,
 )
-from ..data.build_chianti_tables import read_ascii
+from ..chianti_v11.build_atomic import read_ascii
 
 
 # Prefactor in Draine 2011 Eq. 17.10 / Osterbrock 2006 Eq. 3.20

@@ -32,7 +32,7 @@ balance (cold ionized regime).
 
 CLI:
     XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db \\
-        python -m pyathena.photchem.data.build_all
+        python -m pyathena.microphysics.chianti_v11.build_all
 """
 
 import os

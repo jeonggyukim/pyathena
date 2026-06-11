@@ -9,7 +9,7 @@ deltas.
 
 CLI:
     XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db \\
-        python -m pyathena.photchem.data.build_ioneq_ct
+        python -m pyathena.microphysics.chianti_v11.build_ioneq_ct
 """
 
 import os
@@ -19,7 +19,7 @@ from pyathena.microphysics.ci_rate import (
     CollIonRate, CollIonRateCHIANTI)
 from pyathena.microphysics.rec_rate import RecRate, RecRateCHIANTI
 from pyathena.microphysics.ct_rate import ChargeTransferRate
-from .build_ioneq_tables import ELEMENTS, read_ioneq, write_ascii
+from .build_ioneq import ELEMENTS, read_ioneq, write_ascii
 
 
 

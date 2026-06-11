@@ -74,14 +74,14 @@ Computed for the photchem followed-element set:
 
 CLI:
     XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db \\
-        python -m pyathena.photchem.data.build_cool_tables
+        python -m pyathena.microphysics.chianti_v11.build_cool
 """
 
 import os
 import warnings
 import numpy as np
 
-from .build_ioneq_tables import ELEMENTS
+from .build_ioneq import ELEMENTS
 
 
 _ELEM_SYM = {

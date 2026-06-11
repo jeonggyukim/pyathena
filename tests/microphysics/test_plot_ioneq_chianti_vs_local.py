@@ -58,7 +58,7 @@ def _load(element, gs07_cache):
     """Return (log_T, x_q_chianti, log_T_gs, x_q_gs, x_q_local_ct).
     GS07 is None when the element isn't in GS07's published set
     (Ar, Ca)."""
-    from pyathena.photchem.data.build_ioneq_tables import read_ioneq
+    from pyathena.microphysics.chianti_v11.build_ioneq import read_ioneq
     base = Path(__file__).parent.parent.parent / 'data' / \
         'microphysics' / 'chianti_v11'
     d_ch = read_ioneq(str(base / f'ioneq_{element}.txt'))

@@ -3,7 +3,7 @@
 Benchmark plot: Lambda_line / (n_OIII * n_e) vs T for each of the
 five dominant OIII collisionally excited lines, compared between:
 
-  1. pyathena.photchem 5-level: collisional + radiative within
+  1. pyathena.microphysics 5-level: collisional + radiative within
      2p^2 3P + 1D + 1S, electron + proton impact from CHIANTI v11
      Upsilon tables we extract offline.
   2. ChiantiPy.populate(popCorrect=False): many-level (~177)
@@ -101,7 +101,7 @@ def _pyathena_pops_and_A(module_name, T_grid, n_e):
     """
     import numpy as np
     from importlib import import_module
-    mod = import_module(f'pyathena.photchem.coolants.{module_name}')
+    mod = import_module(f'pyathena.microphysics.coolants.{module_name}')
     tab = mod._C.table()
     A = tab['A']
     E = tab['E_erg']

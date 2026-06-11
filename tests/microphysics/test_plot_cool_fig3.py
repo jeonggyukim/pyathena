@@ -68,8 +68,8 @@ def _read_gf12_cie_per_atom(element):
 def _ours_cie_per_atom(element):
     """Compute Sum_q x_q^our_CIE * Lambda_q^per_ion from our local
     tables. Returns (log_T, Lambda_X_CIE_per_atom)."""
-    from pyathena.photchem.data.build_cool_tables import read_cool
-    from pyathena.photchem.data.build_ioneq_tables import read_ioneq
+    from pyathena.microphysics.chianti_v11.build_cool import read_cool
+    from pyathena.microphysics.chianti_v11.build_ioneq import read_ioneq
     base = Path(__file__).parent.parent.parent / 'data' / \
         'microphysics' / 'chianti_v11'
     cool = read_cool(str(base / f'cool_{element}.txt'))

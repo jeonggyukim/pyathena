@@ -1,4 +1,4 @@
-# pyathena.photchem.data
+# pyathena.microphysics.data
 
 Data tables and builders for the photchem CIE atomic-data pipeline.
 
@@ -86,5 +86,5 @@ path. Files at this directory:
 
 Per-ion atomic-data files (e.g., `o_3.txt`) used by the 5-level
 coolant solver also live under `data/microphysics/chianti_v11/`.
-Read by `pyathena.photchem.coolants.base.IonCoolant._load` via a
+Read by `pyathena.microphysics.coolants.base.IonCoolant._load` via a
 relative path. Built by `build_chianti_tables.py`.

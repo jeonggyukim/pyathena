@@ -11,7 +11,7 @@ charge state q = 0 to Z. Row q+2 sums to 1 (charge conservation).
 
 CLI:
     XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db \\
-        python -m pyathena.photchem.data.build_ioneq_tables
+        python -m pyathena.microphysics.chianti_v11.build_ioneq
 """
 
 import os
