@@ -41,11 +41,16 @@ Tables extracted from Cloudy (Ferland et al. 2017 RMxAA 53, 385).
 
 ## ugacxdb/
 
-Tables from the UGA Charge Exchange Database
-(Stancil et al., https://www.physast.uga.edu/ugacxdb).
+Charge transfer rate fits. Used by `pyathena.microphysics.ct_rate`.
 
-- `ct_h2.dat` -- charge transfer with H2.
-- `cti_he.dat` -- charge transfer ionization with He.
+- `ct_h2.dat`   -- H+ + H2 isotopomer charge transfer fits from
+  Wang & Stancil 2002 (Physica Scripta T96, 72).
+- `cti_hyd.dat` -- charge transfer ionization with H I
+  (Kingdon & Ferland 1996 ApJ 442, 714 fits).
+- `ctr_hyd.dat` -- charge transfer recombination with H I
+  (Kingdon & Ferland 1996).
+- `cti_he.dat`  -- charge transfer ionization with He I.
+- `ctr_he.dat`  -- charge transfer recombination with He I.
 
 ## Gnat_Ferland12_tables/
 
