@@ -1,16 +1,16 @@
-"""Generic 5-level coolant module factory.
+"""Generic 5-level coolant module.
 
 Each per-ion file under this package (e.g., `o_3.py`, `n_2.py`)
-is a thin shim that:
+does:
 
     from .base import IonCoolant
     coolant = IonCoolant('o_3.txt', label='OIII')
     populations = coolant.populations
     cooling = coolant.cooling
 
-Carries the per-ion atomic data load + the Upsilon interpolation
-+ the 5-level steady-state solve. All ions share the same physics
-path; only the data file differs.
+The class loads per-ion atomic data, interpolates Upsilon, and
+solves the 5-level steady-state populations. All ions use the
+same code; only the data file differs.
 """
 
 import os
@@ -35,8 +35,8 @@ _BETA = 8.629e-6
 
 
 class IonCoolant:
-    """Single-ion 5-level cooling function backed by an atomic-data
-    text file in `pyathena/photchem/data/`.
+    """Single-ion 5-level cooling function. Atomic data is read
+    from a text file in `data/microphysics/chianti_v11/`.
 
     Parameters
     ----------
@@ -53,11 +53,11 @@ class IonCoolant:
         self._table = None  # lazily loaded
 
     def _load(self):
-        # Per-ion atomic-data files live at
-        # data/microphysics/chianti_v11/ alongside the other CHIANTI
+        # Per-ion atomic data is stored at
+        # data/microphysics/chianti_v11/ next to the other CHIANTI
         # tables (ioneq + cool). This module is at
-        # pyathena/photchem/coolants/base.py; go up three to the
-        # repo root then into data/microphysics/chianti_v11/.
+        # pyathena/microphysics/coolants/base.py; the path goes up
+        # three directories to the repo root.
         path = os.path.join(
             os.path.dirname(os.path.abspath(__file__)),
             '..', '..', '..',

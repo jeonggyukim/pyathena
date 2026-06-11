@@ -15,7 +15,7 @@ Our output is **per ion per electron**, low-density limit:
 
 Units of Lambda_q: erg cm^3 / s.
 
-No abundance, no x_q baked in. Combine with whatever ionization
+No abundance or x_q included. Combine with whatever ionization
 fractions + abundance the application provides.
 
 Conversion to other conventions
@@ -55,7 +55,7 @@ The reference for the format is Gnat & Ferland 2012, ApJS 199, 20,
 whose tables are shipped under
 `pyathena/data/microphysics/Gnat_Ferland12_tables/<Element>.txt`.
 GF12 tabulates Lambda_q per ion per electron in the same
-convention used here (no abundance, no x_q baked in). Their final
+convention used here (no abundance or x_q included). Their final
 `<Element>{CIE}` column is the GS07-CIE-weighted sum
 `sum_q x_q^CIE * Lambda_q`. Spot-check at T=1e4 K, OIII:
     ChiantiPy (our build):  7.07e-21 erg cm^3/s per ion per e

@@ -277,7 +277,7 @@ def _make_element_panel_figure(figures_dir, element_letter, A_X,
                     ax.loglog(T_grid, vals_ch * f_ch, '--',
                               color=col, lw=3.5, alpha=0.45)
                     total_ch += vals_ch
-            # Total curves on top in black.
+            # Black total-cooling curves.
             if np.any(total_ref > 0):
                 ax.loglog(T_grid, total_ref * f_ref, '-',
                           color='black', lw=1.0, alpha=0.35)

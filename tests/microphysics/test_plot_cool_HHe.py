@@ -1,24 +1,23 @@
 """H + He CIE cooling function vs T with per-channel decomposition.
 
 Uses CIE x_q(T) from data/microphysics/chianti_v11/ioneq_{H,He}.txt
-to weight cooling channels properly across temperature. Channels:
+to weight each cooling channel by ion fraction. Channels:
 
   BB:   collisional excitation -> line emission (HI Ly alpha, HeI,
         HeII line cooling)
   2g:   two-photon continuum (HI 2s, HeI/HeII 2s metastable decay)
-  CI:   collisional ionization (gamma * E_ion thermal-energy sink)
+  CI:   collisional ionization (gamma * E_ion thermal-energy loss)
   FB:   radiative recombination + cascade continuum
   FF:   bremsstrahlung
   Tot:  sum
 
-For each channel the rate density is n_X^q * n_e * Lambda^chan_q(T).
-Divided by n_H * n_e for display, this becomes:
-
+Rate per volume for each channel:
+  rate / volume = n_X^q * n_e * Lambda^chan_q(T)
+Divided by n_H * n_e for display:
   Lambda^chan_q(T) / (nH ne) = A_X * x_q(T) * Lambda^chan_per_ion(T)
 
-x_q(T) comes from the CIE ioneq table; the figure therefore shows
-the full CIE cooling-curve structure rather than a single fixed-x
-snapshot.
+x_q(T) is read from the CIE ioneq table, so the figure shows the
+full CIE cooling-curve structure (not a single fixed-x snapshot).
 """
 import os
 import warnings
@@ -230,8 +229,8 @@ def _ionization_rate(ion_name, T_grid):
 
 
 def _fb_per_recombining_ion_per_e(ion_name, T_grid):
-    """Case-A FB cooling per recombining ion per electron, sourced
-    by ion_name (e.g. 'h_2' -> HII recombining). Total radiation
+    """Case-A FB cooling per recombining ion per electron, for the
+    given ion_name (e.g. 'h_2' -> HII recombining). Total radiation
     emitted including LyC photons that re-ionize neutral H."""
     import ChiantiPy.core as ch
     import numpy as np
