@@ -6,9 +6,59 @@ by the scripts under `pyathena/microphysics/chianti_v11/`.
 
 ## Top-level files
 
-- `coll_ion.dat` -- Voronov 1997 (At. Data Nucl. Data Tables 65, 1)
-  collisional ionization fit coefficients. Used by
-  `pyathena.microphysics.ci_rate`. Source: Cloudy.
+- `verner96_photx.dat` -- Verner et al. 1996 (ApJ 465, 487)
+  photoionization cross sections. Used by
+  `pyathena.microphysics.photx`.
+- `badnell_rr_2023.dat` -- Badnell radiative recombination fit
+  coefficients (Badnell 2006 ApJS 167, 334; updated 2023).
+  `badnell_rr.dat` is the older version, kept for back-compat.
+- `badnell_dr_C_2023.dat`, `badnell_dr_E_2023.dat` -- Badnell
+  dielectronic recombination C and E coefficients (Badnell 2006
+  A&A 447, 389; updated 2023). `badnell_dr_*.dat` are older
+  versions.
+- `Gnat_Ferland12_Table2.txt` -- Gnat & Ferland 2012 (ApJS 199,
+  20) Table 2 (per-element CIE cooling efficiencies). Used by
+  `pyathena.microphysics.cool_gnat12.CoolGnat12`.
+- `Gnat_Sternberg07_cie_ion_frac.txt` -- Gnat & Sternberg 2007
+  (ApJS 168, 213) CIE ionization fractions, used as the reference
+  for CIE plots.
+- `Grackle_equillibrium_cooling_*.dat` -- Grackle (Smith et al.
+  2017 MNRAS 466, 2217) equilibrium cooling functions at Z = 0.1
+  and 1.0 solar.
+
+## cloudy/
+
+Tables extracted from Cloudy (Ferland et al. 2017 RMxAA 53, 385).
+
+- `coll_ion.dat` -- Voronov 1997 (At. Data Nucl. Data Tables 65,
+  1) collisional ionization fit coefficients. Used by
+  `pyathena.microphysics.ci_rate`.
+- `ctiondata.dat` -- charge-transfer ionization (X+ + Y -> X +
+  Y+) rate coefficients. Used by `pyathena.microphysics.ct_rate`.
+- `ctrecombdata.dat` -- charge-transfer recombination (X + Y+ ->
+  X+ + Y) rate coefficients. Used by
+  `pyathena.microphysics.ct_rate`.
+
+## ugacxdb/
+
+Tables from the UGA Charge Exchange Database
+(Stancil et al., https://www.physast.uga.edu/ugacxdb).
+
+- `ct_h2.dat` -- charge transfer with H2.
+- `cti_he.dat` -- charge transfer ionization with He.
+
+## Gnat_Ferland12_tables/
+
+Per-element ASCII tables from Gnat & Ferland 2012 (ApJS 199, 20).
+One file per element (Hydrogen.txt, Helium.txt, ..., Zinc.txt)
+containing per-ion CIE cooling efficiency Lambda_q(T) plus the
+final CIE-weighted column. Format documented in the GF12 paper.
+
+## Wiersma09/
+
+Wiersma et al. 2009 (MNRAS 393, 99) cooling tables. Solar-scaled
+metallicity-dependent cooling functions used in cosmological
+simulations.
 
 ## chianti_v11/
 
@@ -19,10 +69,11 @@ H, He, C, N, O, Ne, Mg, Si, S, Ar, Ca, Fe.
 ### Ionization equilibrium
 
 - `ioneq_<X>.txt` -- CIE ionization fractions x_q(T) from
-  `ChiantiPy.core.ioneq.calculate`. 101 log-spaced T points from
-  1e3 to 1e9 K.
+  `ChiantiPy.core.ioneq.calculate`. Built by `build_ioneq.py`.
+  101 log-spaced T points from 1e3 to 1e9 K.
 - `ioneq_ct_<X>.txt` -- CIE ionization fractions with charge
-  transfer included (pyathena `evolve_one_species` solver).
+  transfer (pyathena `evolve_one_species`). Built by
+  `build_ioneq_ct.py`.
 
 ### Cooling tables
 
