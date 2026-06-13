@@ -73,6 +73,20 @@ class H2Gong17Cooling(CoolingChannel):
     """H2 cooling via Gong+17 (Gong, Ostriker, Wolfire 2017) fits."""
 
     name: ClassVar[str] = 'H2Gong17'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:h2_g17:T_eff',
+        'cooling:h2_g17:T3',
+        'cooling:h2_g17:y',
+        'cooling:h2_g17:tmp',
+        'cooling:h2_g17:tmp_b',
+        'cooling:h2_g17:Lpartner',
+        'cooling:h2_g17:Gamma_n0',
+        'cooling:h2_g17:Gamma_LTE',
+        'cooling:h2_g17:mask_cold',
+        'cooling:h2_g17:mask_warm',
+        'cooling:h2_g17:mask_hot',
+        'cooling:h2_g17:mask_T_floor',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(

@@ -26,6 +26,10 @@ class FreeFreeHCooling(CoolingChannel):
     """H II free-free (bremsstrahlung) cooling."""
 
     name: ClassVar[str] = 'FreeFreeH'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:free_free:tmp',
+        'cooling:free_free:gff',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_HII: int, i_electron: int) -> None:

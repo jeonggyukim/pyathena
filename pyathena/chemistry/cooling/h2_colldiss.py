@@ -43,6 +43,23 @@ class H2CollDissCooling(CoolingChannel):
     """Cooling by H2 collisional dissociation (GMacL07)."""
 
     name: ClassVar[str] = 'H2CollDiss'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:h2_colldiss:Tinv',
+        'cooling:h2_colldiss:logT4',
+        'cooling:h2_colldiss:sqrtT',
+        'cooling:h2_colldiss:k9l',
+        'cooling:h2_colldiss:k9h',
+        'cooling:h2_colldiss:k10l',
+        'cooling:h2_colldiss:k10h',
+        'cooling:h2_colldiss:ncrH2',
+        'cooling:h2_colldiss:ncrHI',
+        'cooling:h2_colldiss:n2ncr',
+        'cooling:h2_colldiss:k_H2_HI',
+        'cooling:h2_colldiss:k_H2_H2',
+        'cooling:h2_colldiss:tmp_a',
+        'cooling:h2_colldiss:tmp_b',
+        'cooling:h2_colldiss:gate',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_HI: int, i_H2: int) -> None:

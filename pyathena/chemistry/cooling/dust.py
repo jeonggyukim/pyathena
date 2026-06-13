@@ -31,6 +31,9 @@ class DustGasCoupling(CoolingChannel):
     """
 
     name: ClassVar[str] = 'DustGasCoupling'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:dust:tmp',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def evaluate(

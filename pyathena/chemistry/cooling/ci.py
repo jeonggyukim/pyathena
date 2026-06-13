@@ -78,6 +78,37 @@ class CIFineStructureCooling(CoolingChannel):
     """C I 370 + 609 um fine-structure cooling. Phase 4b literal port."""
 
     name: ClassVar[str] = 'CIFineStructure'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:ci:T2',
+        'cooling:ci:lnT',
+        'cooling:ci:lnT2',
+        'cooling:ci:tmp_a',
+        'cooling:ci:tmp_b',
+        'cooling:ci:mask_cold',
+        'cooling:ci:mask_warm',
+        'cooling:ci:gamma10',
+        'cooling:ci:gamma20',
+        'cooling:ci:gamma21',
+        'cooling:ci:k_e_10',
+        'cooling:ci:k_e_20',
+        'cooling:ci:k_e_21',
+        'cooling:ci:k_HI_10',
+        'cooling:ci:k_HI_20',
+        'cooling:ci:k_HI_21',
+        'cooling:ci:k_H2_10',
+        'cooling:ci:k_H2_20',
+        'cooling:ci:k_H2_21',
+        'cooling:ci:q10',
+        'cooling:ci:q20',
+        'cooling:ci:q21',
+        'cooling:ci:q01',
+        'cooling:ci:q02',
+        'cooling:ci:q12',
+        'cooling:ci:tmp0',
+        'cooling:ci:tmp1',
+        'cooling:ci:tmp2',
+        'cooling:ci:fac',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(

@@ -35,6 +35,12 @@ class H2DissociationHeating(HeatingChannel):
     """0.4 eV per H2 photodissociation event (translational)."""
 
     name: ClassVar[str] = 'H2Dissociation'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'heating:h2_pump:tmp_a',
+        'heating:h2_pump:tmp_b',
+        'heating:h2_pump:ncrit',
+        'heating:h2_pump:f',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_H2: int, xi_diss_H2: float = 0.0) -> None:

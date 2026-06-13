@@ -1030,3 +1030,74 @@ Out of scope (Phase 4c):
 Validation: 516 passed, 4 skipped (up from 512 / 4; +4 net new test
 entries covering 30+ internal cases across the 4 channels, no
 regressions).
+
+## 2026-06-14: Phase 4c -- driver rebind to CoolingChannels aggregator
+
+Wires the channel-policy pattern into the driver. The Phase 3 solver
+no longer needs to wait on the Phase 4 cooling work: the
+`make_ncr_default_cooling(species)` factory composes the 17
+production-default channels (12 cooling + 5 heating) into a
+`CoolingChannels` aggregator that the driver consumes through the
+existing `cooling` policy slot, replacing `CoolingStub`.
+
+Plumbing changes:
+
+- `CoolingChannel.SCRATCH_NAMES` ClassVar: each concrete channel
+  lists every state-scratch slot it reads inside `evaluate(...)`.
+  The base `allocate_scratch(state)` method walks `SCRATCH_NAMES`
+  and registers each as a `(ncell,)` float64 slot. 20 of the 21
+  channels gained this declaration via a one-shot regex injection;
+  the only channel with no scratch (`H2DissociationHeating`)
+  keeps the empty default. `HeatingChannel` mirrors the contract.
+- `CoolingChannels.allocate_scratch(state)` now also calls each
+  composed channel's `allocate_scratch(state)` so the aggregator
+  setup chain is one-shot.
+- `ChemistryDriver.setup(state)` walks the cooling / opacity /
+  radiation policy slots and calls their `allocate_scratch(state)`
+  hooks when present. This means a driver wired with
+  `make_ncr_default_cooling` has every channel-internal scratch
+  registered after one `setup` call, and `cooling.update(state)`
+  during the substep loop runs allocation-free.
+
+Factory module:
+
+- `pyathena.chemistry.cooling.factories.make_ncr_default_cooling(
+  species, *, xi_CR, xi_diss_H2, kgr_H2, chi_band)` returns a
+  `CoolingChannels(channels, heating)` ready to drop into
+  `ChemistryDriver(..., cooling=...)`. The 17 NCR-default channels
+  follow the wiring of `pyathena.microphysics.get_cooling.py` and
+  the C++ `PhotochemistryNCR::HeatingH2` / `CoolingOther` paths.
+
+Tests (`tests/chemistry/parity/test_cooling_channels_aggregator.py`,
+3 tests):
+
+- Aggregator allocate_scratch registers every per-channel Lambda /
+  dLambda / Gamma / dGamma slot AND every channel-internal scratch
+  name from each `SCRATCH_NAMES`.
+- `cooling.update(state)` writes `solver:net_cool` equal to
+  `sum_c Lambda_c - sum_h Gamma_h` within rtol = 1e-14 of the
+  channels' independent evaluations, and writes a zero
+  `solver:d_net_cool_d_temp_mu` (the contract Phase 4d will
+  replace).
+- `ChemistryDriver.setup(state)` chains the cooling allocation, and
+  a one-shot `driver.step(dt, state)` runs without KeyError on a
+  missing slot.
+
+The aggregator's net_cool is now a real cooling rate; the solver's
+substep estimator and stiffness machinery start seeing meaningful
+inputs in real runs. The strict allocation-free hot-path guarantee
+(`assert_no_alloc(allow=0)` in Phase 3 tests) is unaffected --
+every channel's `evaluate` body still uses `out=` + named scratch
+exclusively.
+
+Out of scope (Phase 4d):
+
+- Analytic / tabulated derivatives in each channel (`d_out` is still
+  written zero).
+- Cooling-table caching for the recombination cooling channel
+  (`RecRate.get_rec_rate_H_caseB` allocates inside the substep loop
+  per call; pre-tabulating onto a LogLog grid is the natural fix).
+
+Validation: 519 passed, 4 skipped (up from 516 / 4; +3 net new tests
+covering aggregator scratch wiring, sum-matches-channels, and the
+driver setup chain).

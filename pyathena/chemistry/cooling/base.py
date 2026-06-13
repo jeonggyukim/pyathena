@@ -18,7 +18,7 @@ sees `net_cool == 0`.
 from __future__ import annotations
 
 import abc
-from typing import Any, ClassVar, Optional, Sequence, Tuple
+from typing import Any, ClassVar, Optional, Sequence, Tuple  # noqa: Tuple used in ClassVar annotations
 
 import numpy as np
 
@@ -34,6 +34,23 @@ class CoolingChannel(abc.ABC):
     """
 
     name: ClassVar[str] = '<unset>'
+
+    # Internal scratch slots the channel allocates inside its
+    # `evaluate` body. Concrete channels list every name they pass
+    # to `state.get_scratch(...)`. Empty default for channels that
+    # need no internal scratch (e.g. `H2DissociationHeating`).
+    SCRATCH_NAMES: ClassVar[Tuple[str, ...]] = ()
+
+    def allocate_scratch(self, state: Any) -> None:
+        """Register channel-internal scratch buffers on `state`.
+
+        Walks `SCRATCH_NAMES` and registers each as a `(ncell,)`
+        float64 slot via `state.alloc_scratch`. Channels with
+        non-trivial scratch shapes can override this method instead.
+        """
+        ncell = state.nH.shape[0]
+        for name in self.SCRATCH_NAMES:
+            state.alloc_scratch(name, (ncell,))
 
     @abc.abstractmethod
     def evaluate(
@@ -113,12 +130,17 @@ class CoolingChannels:
         """Register per-channel scratch on `state` so update() runs
         allocation-free.
 
-        Each channel gets its own `(ncell,)` slot under the
+        Each channel gets its own `(ncell,)` Lambda slot under the
         `<prefix>:Lambda:<name>` namespace; derivatives (when
         requested) live under `<prefix>:dLambda:<name>`. Heating
-        channels mirror this with `Gamma` / `dGamma`. The aggregator
-        does not own a `Lambda_total` buffer -- it writes directly
-        into `solver:net_cool`, which the solver allocates.
+        channels mirror this with `Gamma` / `dGamma`. Each channel's
+        own internal scratch (`cooling:cii:T2`,
+        `heating:photoelectric:tmp` etc.) is allocated by calling
+        the channel's `allocate_scratch(state)` hook.
+
+        The aggregator does not own a `Lambda_total` buffer -- it
+        writes directly into `solver:net_cool`, which the solver
+        allocates.
         """
         ncell = state.nH.shape[0]
         for ch in self._channels:
@@ -127,12 +149,14 @@ class CoolingChannels:
             if self._provide_derivative:
                 state.alloc_scratch(
                     f'{self._prefix}:dLambda:{ch.name}', (ncell,))
+            ch.allocate_scratch(state)
         for hch in self._heating:
             state.alloc_scratch(
                 f'{self._prefix}:Gamma:{hch.name}', (ncell,))
             if self._provide_derivative:
                 state.alloc_scratch(
                     f'{self._prefix}:dGamma:{hch.name}', (ncell,))
+            hch.allocate_scratch(state)
 
     def update(self, state: Any) -> None:
         """Recompute every channel and accumulate into the solver
@@ -174,6 +198,16 @@ class HeatingChannel(abc.ABC):
     """
 
     name: ClassVar[str] = '<unset>'
+    SCRATCH_NAMES: ClassVar[Tuple[str, ...]] = ()
+
+    def allocate_scratch(self, state: Any) -> None:
+        """Register channel-internal scratch buffers on `state`.
+
+        See `CoolingChannel.allocate_scratch` for the contract.
+        """
+        ncell = state.nH.shape[0]
+        for name in self.SCRATCH_NAMES:
+            state.alloc_scratch(name, (ncell,))
 
     @abc.abstractmethod
     def evaluate(

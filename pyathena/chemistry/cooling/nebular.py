@@ -43,6 +43,13 @@ class NebularMetalLineCooling(CoolingChannel):
     """
 
     name: ClassVar[str] = 'NebularMetalLine'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:neb:T4',
+        'cooling:neb:lnT4',
+        'cooling:neb:poly_fit',
+        'cooling:neb:f_red',
+        'cooling:neb:tmp_a',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_HII: int, i_electron: int) -> None:

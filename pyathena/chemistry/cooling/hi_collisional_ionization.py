@@ -42,6 +42,11 @@ class HICollisionalIonizationCooling(CoolingChannel):
     """Cooling due to thermal-electron collisional ionization of H I."""
 
     name: ClassVar[str] = 'HICollisionalIonization'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:hi_coll_ion:tmp',
+        'cooling:hi_coll_ion:y',
+        'cooling:hi_coll_ion:kcoll',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_HI: int, i_electron: int) -> None:

@@ -36,6 +36,15 @@ class H2FormationHeating(HeatingChannel):
     """H2 grain-surface formation heating (HM79 / NCR default)."""
 
     name: ClassVar[str] = 'H2Formation'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'heating:h2_form:T2',
+        'heating:h2_form:sqrtT2',
+        'heating:h2_form:kgr',
+        'heating:h2_form:ncrit',
+        'heating:h2_form:tmp_a',
+        'heating:h2_form:tmp_b',
+        'heating:h2_form:f',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(

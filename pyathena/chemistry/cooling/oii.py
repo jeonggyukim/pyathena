@@ -44,6 +44,22 @@ class OIIFineStructureCooling(CoolingChannel):
     """O II fine-structure cooling."""
 
     name: ClassVar[str] = 'OIIFineStructure'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:oii:T4',
+        'cooling:oii:lnT4',
+        'cooling:oii:prefac',
+        'cooling:oii:tmp_a',
+        'cooling:oii:Omega',
+        'cooling:oii:q10',
+        'cooling:oii:q20',
+        'cooling:oii:q21',
+        'cooling:oii:q01',
+        'cooling:oii:q02',
+        'cooling:oii:q12',
+        'cooling:oii:tmp0',
+        'cooling:oii:tmp1',
+        'cooling:oii:tmp2',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_OII: int, i_electron: int) -> None:

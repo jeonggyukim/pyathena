@@ -39,6 +39,13 @@ class CosmicRayHeating(HeatingChannel):
     """Cosmic-ray ionization heating of H I + H2."""
 
     name: ClassVar[str] = 'CosmicRay'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'heating:cosmic_ray:tmp',
+        'heating:cosmic_ray:qHI',
+        'heating:cosmic_ray:qH2',
+        'heating:cosmic_ray:log_nH',
+        'heating:cosmic_ray:mask_b1',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(

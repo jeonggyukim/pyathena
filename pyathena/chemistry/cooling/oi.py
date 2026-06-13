@@ -73,6 +73,25 @@ class OIFineStructureCooling(CoolingChannel):
     """O I 63 + 146 um fine-structure cooling. Phase 4b literal port."""
 
     name: ClassVar[str] = 'OIFineStructure'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:oi:T2',
+        'cooling:oi:lnT2',
+        'cooling:oi:tmp',
+        'cooling:oi:tmp_o',
+        'cooling:oi:tmp_p',
+        'cooling:oi:k_HI',
+        'cooling:oi:k_H2',
+        'cooling:oi:k_e',
+        'cooling:oi:q10',
+        'cooling:oi:q20',
+        'cooling:oi:q21',
+        'cooling:oi:q01',
+        'cooling:oi:q02',
+        'cooling:oi:q12',
+        'cooling:oi:tmp0',
+        'cooling:oi:tmp1',
+        'cooling:oi:tmp2',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(

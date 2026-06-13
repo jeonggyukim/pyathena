@@ -31,6 +31,19 @@ class H2Moseley21Cooling(CoolingChannel):
     """H2 rovibrational cooling (NCR default; Moseley+2021)."""
 
     name: ClassVar[str] = 'H2Moseley21'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:h2_moseley:T3',
+        'cooling:h2_moseley:T3inv',
+        'cooling:h2_moseley:sqrtT3',
+        'cooling:h2_moseley:nHI',
+        'cooling:h2_moseley:nH2',
+        'cooling:h2_moseley:tmp',
+        'cooling:h2_moseley:x_eff',
+        'cooling:h2_moseley:accum',
+        'cooling:h2_moseley:term',
+        'cooling:h2_moseley:ratio_lo',
+        'cooling:h2_moseley:ratio_hi',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(

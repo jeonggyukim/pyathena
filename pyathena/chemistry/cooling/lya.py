@@ -38,6 +38,13 @@ class LyaCooling(CoolingChannel):
     """H I Lyman-alpha 2-level cooling. NCR production default."""
 
     name: ClassVar[str] = 'Lya'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:lya:T4',
+        'cooling:lya:fac',
+        'cooling:lya:ne',
+        'cooling:lya:tmp_a',
+        'cooling:lya:tmp_b',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_HI: int, i_electron: int) -> None:

@@ -111,7 +111,7 @@ class ChemistryDriver:
     # Lifecycle
     # ------------------------------------------------------------------
     def setup(self, state: ChemState) -> None:
-        """Register network and solver scratch on `state`.
+        """Register network, solver, and cooling scratch on `state`.
 
         Idempotent: repeated calls re-register the same buffer names
         without leaking memory because `ChemState.alloc_scratch`
@@ -121,6 +121,17 @@ class ChemistryDriver:
         alloc = getattr(self.solver, 'allocate_scratch', None)
         if callable(alloc):
             alloc(state)
+        # CoolingChannels and similar policies own per-channel scratch
+        # buffers (e.g. cooling:Lambda:CII, heating:Gamma:CR). Allocate
+        # them here so `cooling.update(state)` runs allocation-free.
+        # Also let individual channels register any internal scratch
+        # they need by calling their `allocate_scratch(state)` hooks
+        # when present (e.g. the metal-line channels need T2 / lnT2 /
+        # mask buffers).
+        for slot in (self.cooling, self.opacity, self.radiation):
+            alloc = getattr(slot, 'allocate_scratch', None)
+            if callable(alloc):
+                alloc(state)
 
     # ------------------------------------------------------------------
     # Per-step API

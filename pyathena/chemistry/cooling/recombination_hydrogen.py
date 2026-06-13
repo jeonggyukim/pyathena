@@ -29,6 +29,10 @@ class HRecombinationCooling(CoolingChannel):
     """H II -> H I case-B recombination cooling."""
 
     name: ClassVar[str] = 'HRecombination'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:h_rec:tmp',
+        'cooling:h_rec:E_rr_B',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_HII: int, i_electron: int) -> None:

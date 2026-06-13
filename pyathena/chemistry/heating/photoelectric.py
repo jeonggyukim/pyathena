@@ -57,6 +57,11 @@ class PhotoelectricHeating(HeatingChannel):
     """Weingartner & Draine 2001 photoelectric heating on dust."""
 
     name: ClassVar[str] = 'PhotoelectricWD01'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'heating:photoelectric:tmp',
+        'heating:photoelectric:ne_floor',
+        'heating:photoelectric:eps_num',
+    )
     __version__: ClassVar[str] = '0.1@phase4a'
 
     def __init__(

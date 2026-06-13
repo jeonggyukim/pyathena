@@ -42,6 +42,11 @@ class GrainRecombinationCooling(CoolingChannel):
     """Cooling by electron capture on dust grains (WD01)."""
 
     name: ClassVar[str] = 'GrainRecombination'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:grain_rec:tmp',
+        'cooling:grain_rec:ne_floor',
+        'cooling:grain_rec:lnx',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(

@@ -55,6 +55,10 @@ class LymanAlphaCooling(CoolingChannel):
     """H I Lyman-series + 2-photon cooling."""
 
     name: ClassVar[str] = 'LymanAlpha'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:lyman_alpha:tmp',
+        'cooling:lyman_alpha:prefac',
+    )
     __version__: ClassVar[str] = '0.1@phase4a'
 
     def __init__(self, *, i_HI: int, i_electron: int) -> None:

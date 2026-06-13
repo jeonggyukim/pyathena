@@ -67,6 +67,18 @@ class HISmith21Cooling(CoolingChannel):
     """H I excitation cooling (Smith+2021); alternative to Lya."""
 
     name: ClassVar[str] = 'HISmith21'
+    SCRATCH_NAMES: ClassVar[tuple] = (
+        'cooling:hi_smith21:Tinv',
+        'cooling:hi_smith21:T6',
+        'cooling:hi_smith21:T6_SQR',
+        'cooling:hi_smith21:T6_CUB',
+        'cooling:hi_smith21:Upsilon',
+        'cooling:hi_smith21:u_cold',
+        'cooling:hi_smith21:total',
+        'cooling:hi_smith21:tmp_a',
+        'cooling:hi_smith21:mask_cold',
+        'cooling:hi_smith21:mask_hot',
+    )
     __version__: ClassVar[str] = '0.1@phase4b'
 
     def __init__(self, *, i_HI: int, i_electron: int) -> None:
