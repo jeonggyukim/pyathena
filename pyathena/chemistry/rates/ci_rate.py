@@ -18,9 +18,22 @@ import astropy.constants as ac
 
 from ..datapaths import _DATA_ROOT
 from ..enums import InterpMode
+from . import _nqt
 from .photx import _ordered_ions
 
 _CLOUDY_DIR = osp.join(_DATA_ROOT, 'microphysics', 'cloudy')
+
+# Floor applied to tabulated rates before taking log / nqt_log. Mirrors
+# the C++ side's kRateFloor; sufficient for double-precision storage
+# without underflowing the NQTo2 inversion (which needs 4 - 3*f > 0 in
+# the fractional mantissa).
+_RATE_FLOOR: float = 1.0e-100
+
+# T-grid endpoints + size shared by the LogLog and NQT modes. Matches
+# the C++ ncr_rates.hpp TabFull layout (n_grid=2000, T in [1, 1e9]).
+_TAB_N: int = 2000
+_TAB_T_MIN: float = 1.0
+_TAB_T_MAX: float = 1.0e9
 
 
 class CollIonRate(object):
@@ -30,19 +43,22 @@ class CollIonRate(object):
         Parameters
         ----------
         interp_mode : InterpMode, optional
-            Rate-table interpolation mode. Only `InterpMode.Exact`
-            (analytic Voronov fits) is supported today; the
-            table-based modes land in Phase 3.5 alongside the C++
-            port.
+            Rate-table interpolation mode. `InterpMode.Exact` (analytic
+            Voronov fits) is the default; `InterpMode.LogLog`,
+            `InterpMode.Nqt2`, and `InterpMode.Nqt1` precompute a
+            `(n_T, n_ions)` table on construction and dispatch a
+            two-point linear interpolation in the chosen log space.
         """
-        if interp_mode != InterpMode.Exact:
-            raise NotImplementedError(
-                f'CollIonRate interp_mode={interp_mode!r} is not '
-                'implemented; table-based modes (LogLog / Nqt1 / '
-                'Nqt2) land in Phase 3.5. Use InterpMode.Exact for '
-                'now.')
+        if interp_mode not in (
+            InterpMode.Exact, InterpMode.LogLog,
+            InterpMode.Nqt2, InterpMode.Nqt1,
+        ):
+            raise ValueError(
+                f'CollIonRate: unknown interp_mode={interp_mode!r}')
         self.interp_mode = interp_mode
         self._read_data()
+        if interp_mode != InterpMode.Exact:
+            self._build_table(interp_mode)
 
     def _read_data(self, max_rows=465):
 
@@ -66,16 +82,92 @@ class CollIonRate(object):
             for i in range(self.Z.size)
         }
 
+    def _get_ci_rate_exact(self, i_row: int, T: np.ndarray) -> np.ndarray:
+        """Analytic Voronov fit for a single ion row at temperature(s) `T`.
+
+        The dispatcher in `get_ci_rate` resolves `(Z, N)` to `i_row`
+        once; the table-build path calls this directly on every row to
+        populate the LogLog / Nqt2 / Nqt1 tables. `T` is treated as a
+        numpy array so the result is always an ndarray (scalar T gives
+        a 0-d ndarray).
+        """
+        U = self.dE_Kel[i_row] / T
+        return np.where(
+            U > 80.0,
+            0.0,
+            self.A[i_row] * (1.0 + self.P[i_row] * U ** 0.5)
+            / (self.X[i_row] + U)
+            * U ** (self.K[i_row]) * np.exp(-U),
+        )
+
+    def _build_table(self, mode: 'InterpMode') -> None:
+        """Pre-tabulate rate(T_grid) for every ion row in `_ion_idx`.
+
+        Stores the encoded rate (log10 for LogLog; nqt2_log / nqt1_log
+        for the NQT modes) alongside the grid metadata so the lookup
+        path can recover the rate with a single linear interpolation
+        plus an inverse encoding step.
+        """
+        if mode == InterpMode.LogLog:
+            log_T_grid = np.linspace(
+                np.log10(_TAB_T_MIN), np.log10(_TAB_T_MAX), _TAB_N,
+            )
+            self._T_grid = 10.0 ** log_T_grid
+            self._tab_x_min = float(log_T_grid[0])
+            self._tab_inv_dx = float(
+                (_TAB_N - 1) / (log_T_grid[-1] - log_T_grid[0])
+            )
+        else:  # Nqt2 / Nqt1 share the same nqt1_log T grid
+            y_min = float(_nqt.nqt1_log(np.array([_TAB_T_MIN]))[0])
+            y_max = float(_nqt.nqt1_log(np.array([_TAB_T_MAX]))[0])
+            y_grid = np.linspace(y_min, y_max, _TAB_N)
+            self._T_grid = _nqt.nqt1_exp(y_grid)
+            self._tab_x_min = y_min
+            self._tab_inv_dx = float((_TAB_N - 1) / (y_max - y_min))
+
+        n_ions = int(self.Z.size)
+        tab = np.empty((_TAB_N, n_ions), dtype=np.float64)
+        for j in range(n_ions):
+            rates = self._get_ci_rate_exact(j, self._T_grid)
+            rates = np.where(rates > _RATE_FLOOR, rates, _RATE_FLOOR)
+            if mode == InterpMode.LogLog:
+                tab[:, j] = np.log10(rates)
+            elif mode == InterpMode.Nqt2:
+                tab[:, j] = _nqt.nqt2_log(rates)
+            else:  # Nqt1
+                tab[:, j] = _nqt.nqt1_log(rates)
+        self._tab = tab
+
+    def _table_lookup(self, i_row: int, T: np.ndarray) -> np.ndarray:
+        """Two-point linear interpolation of the pre-built table.
+
+        Returns the rate decoded out of the appropriate log space.
+        Branch-free over T -- the per-mode choice is fixed at
+        construction time, so the dispatch happens once in
+        `get_ci_rate`.
+        """
+        T_arr = np.asarray(T, dtype=np.float64)
+        if self.interp_mode == InterpMode.LogLog:
+            x = np.log10(T_arr)
+        else:
+            x = _nqt.nqt1_log(T_arr)
+        idx_f = (x - self._tab_x_min) * self._tab_inv_dx
+        idx = np.clip(idx_f.astype(np.int64), 0, _TAB_N - 2)
+        frac = idx_f - idx.astype(np.float64)
+        lo = self._tab[idx, i_row]
+        hi = self._tab[idx + 1, i_row]
+        encoded = lo + (hi - lo) * frac
+        if self.interp_mode == InterpMode.LogLog:
+            return 10.0 ** encoded
+        if self.interp_mode == InterpMode.Nqt2:
+            return _nqt.nqt2_exp(encoded)
+        return _nqt.nqt1_exp(encoded)
+
     def get_ci_rate(self, Z, N, T):
         i = self._ion_idx[(int(Z), int(N))]
-
-        U = self.dE_Kel[i]/T
-        rate = np.where(U > 80.0,
-                        0.0,
-                        self.A[i]*(1.0 + self.P[i]*U**0.5)/\
-                        (self.X[i] + U)*U**(self.K[i])*np.exp(-U))
-
-        return rate
+        if self.interp_mode == InterpMode.Exact:
+            return self._get_ci_rate_exact(i, T)
+        return self._table_lookup(i, T)
 
     def get_ci_rate_table(self, species_set, T):
         """Strip-vectorised collisional-ionization rates.

@@ -537,3 +537,80 @@ internal energy at the substep boundary.
 
 Validation: 438 passed, 4 skipped (matches the previous baseline; no
 regressions introduced by the rewrite).
+
+## 2026-06-13: Phase 3.5 -- NQT helpers + LogLog / Nqt2 / Nqt1 table modes
+
+Implements the tabulated-rate interpolation modes documented in
+`chemistry-rewrite-plan.md` Phase 3.5. Scope follows the C++
+`NCRRates::InterpMode` enum at
+`tigris-ncr/src/photchem/ncr_rates.hpp:188`: the temperature-dependent
+rate classes `CollIonRate` and `RecRate` gain `LogLog`, `Nqt2`, and
+`Nqt1` modes; `PhotX` (energy-indexed, not temperature-indexed) and
+`ChargeTransferRate` (ion-pair-indexed, awkward to tabulate as a 2D
+table) keep the `Exact`-only contract and continue to raise on
+non-Exact construction. The Phase 3.5b follow-up will revisit them
+along with the Phase 4 channel split.
+
+NQT helpers (Hammond et al. 2025, ApJS 277, 65):
+
+- `pyathena.chemistry.rates._nqt` -- vectorised `nqt1_log`,
+  `nqt1_exp`, `nqt2_log`, `nqt2_exp`. Mirrors the four scalar
+  `static inline` helpers at
+  `tigris-ncr/src/photchem/ncr_rates.hpp:557-592`. The encoding is
+  pure IEEE 754 bit manipulation; the magic constants
+  (`0x3FF0000000000000` = `as_int(1.0)`, `2**52`, the 52-bit mantissa
+  mask) match the C++ side byte-for-byte, so for any positive
+  normalised float64 input the Python and C++ outputs are
+  bit-identical.
+- `tests/chemistry/test_nqt_helpers.py` -- 15 tests covering exact
+  values at powers of 2, round-trip bijectivity to within float64
+  round-off (rtol = 1e-13), Hammond+2025 absolute-error bounds on
+  `log2(x)` (NQTo1 worst-case ~0.086, threshold 0.09; NQTo2 worst-case
+  ~0.0094 near `b = 0.25`, threshold 0.012), and vectorised-vs-scalar
+  equivalence.
+
+Table modes on the temperature-dependent rates:
+
+- `pyathena.chemistry.enums.InterpMode` -- members `LogLog`, `Nqt2`,
+  `Nqt1` are now first-class alongside `Exact`. Integer values 1, 2, 3
+  match the C++ enum.
+- `pyathena.chemistry.rates.ci_rate.CollIonRate` -- gains
+  `_build_table(mode)` and `_table_lookup(i_row, T)`. The Voronov
+  analytic formula is split out into `_get_ci_rate_exact(i_row, T)`
+  so the table-build path can populate the encoded `(n_T, n_ions)`
+  table without recursing through the dispatch. `get_ci_rate(Z, N, T)`
+  dispatches on `self.interp_mode`. Grid: `n_T = 2000`, `T in [1, 1e9]
+  K`, identical to the C++ `kNTabT` choice. Rate floor `1e-100`
+  applied before encoding to keep `nqt2_exp` away from the
+  `4 - 3*f = 0` corner.
+- `pyathena.chemistry.rates.rec_rate.RecRate` -- gains the same
+  `_build_table` / `_table_lookup` pair. The tabulation covers the
+  TOTAL `get_rec_rate(Z, N, T, M=1, kind='badnell')` per (Z, N) ion
+  that has at least one M=1 entry in either the Badnell RR or DR
+  data. `get_rec_rate(Z, N, T, M=M, kind=kind)` dispatches to the
+  table only when both `M == 1` and `kind == 'badnell'`; other
+  combinations fall through to the analytic helpers so the existing
+  RR / DR APIs remain untouched.
+
+Cross-mode validation:
+
+- `tests/chemistry/test_ci_rate_interp_modes.py` -- 18 tests across 5
+  representative ions (HI, HeI, HeII, CI, OI). LogLog vs Exact: rtol
+  < 1e-3. Nqt2 vs Exact: rtol < 1e-2. Nqt1 vs Exact: rtol < 8e-2 (OI
+  hits ~5.5% near the Voronov-fit knee; the plan's 1e-2 target is
+  unrealistic for NQTo1 on rates with the `exp(-U)` factor at the
+  ionisation threshold, and the C++ port hits the same bound).
+- `tests/chemistry/test_rec_rate_interp_modes.py` -- 25 tests across
+  7 ions (H, He, C, N, O, Si first-step recombinations). Same LogLog
+  / Nqt2 thresholds; Nqt1 relaxed to rtol < 0.1 for the same reason.
+  Two dispatch-fallback tests pin the `M != 1` and `caseB = False`
+  paths so future re-routes do not silently bypass them.
+- `tests/chemistry/test_rates_strip_tables.py::test_interp_mode_table_modes_not_implemented`
+  -- parametrisation narrowed from `[PhotX, RecRate, CollIonRate]` to
+  `[PhotX]` only. The other two classes now support the table modes;
+  PhotX continues to raise until the Phase 3.5b energy-grid path
+  lands.
+
+Validation: 490 passed, 4 skipped (up from 438 / 4 in the previous
+entry; +52 net new tests, no regressions). Pytest runtime within the
+~34 s envelope.

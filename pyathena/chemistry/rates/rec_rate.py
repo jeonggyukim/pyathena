@@ -22,7 +22,16 @@ import matplotlib.pyplot as plt
 
 from ..datapaths import _DATA_ROOT
 from ..enums import InterpMode
+from . import _nqt
 from .photx import _ordered_ions
+
+# Floor + T-grid shared with the CollIonRate tabulation. See
+# `ci_rate.py` for the rationale (mirrors C++ ncr_rates.hpp kRateFloor
+# / kNTabT / T range).
+_RATE_FLOOR: float = 1.0e-100
+_TAB_N: int = 2000
+_TAB_T_MIN: float = 1.0
+_TAB_T_MAX: float = 1.0e9
 
 
 def _badnell_data_dir():
@@ -45,20 +54,30 @@ class RecRate(object):
         caseB : bool, optional
             Use Draine 2011 Case B for hydrogen recombination.
         interp_mode : InterpMode, optional
-            Rate-table interpolation mode. Only `InterpMode.Exact`
-            (analytic Badnell fits) is supported today; the table-
-            based modes land in Phase 3.5 alongside the C++ port.
+            Rate-table interpolation mode. `InterpMode.Exact` is the
+            analytic Badnell fits and the default. The table-based
+            modes (`LogLog`, `Nqt2`, `Nqt1`) pre-tabulate the TOTAL
+            `get_rec_rate(Z, N, T, M=1, kind='badnell')` per (Z, N)
+            ion on construction and dispatch through a single
+            log-space linear interpolation at query time. Calls with
+            `M != 1` or `kind != 'badnell'` fall through to the
+            analytic path even in the table modes, because the
+            tabulation covers only the default ground-state
+            badnell-formula combination.
         """
-        if interp_mode != InterpMode.Exact:
-            raise NotImplementedError(
-                f'RecRate interp_mode={interp_mode!r} is not implemented; '
-                'table-based modes (LogLog / Nqt1 / Nqt2) land in '
-                'Phase 3.5. Use InterpMode.Exact for now.')
+        if interp_mode not in (
+            InterpMode.Exact, InterpMode.LogLog,
+            InterpMode.Nqt2, InterpMode.Nqt1,
+        ):
+            raise ValueError(
+                f'RecRate: unknown interp_mode={interp_mode!r}')
         self.interp_mode = interp_mode
         # read data
         self._read_data()
         # Use Draine's caseB for hydrogen
         self.caseB = caseB
+        if interp_mode != InterpMode.Exact:
+            self._build_table(interp_mode)
 
     def _read_data(self):
 
@@ -162,6 +181,104 @@ class RecRate(object):
             (int(self.Zd[i]), int(self.Nd[i]), int(self.Md[i])): i
             for i in range(self.Zd.size)
         }
+
+    def _build_table(self, mode: 'InterpMode') -> None:
+        """Pre-tabulate `get_rec_rate(Z, N, T, M=1, kind='badnell')` per
+        (Z, N) ion onto the chosen log-T grid.
+
+        Only ions that have at least one entry in the RR or DR data are
+        eligible: the union of `_rr_idx` and `_dr_idx` keys restricted
+        to `M=1`. Each row stores the encoded total recombination rate
+        (log10 for LogLog; nqt2_log / nqt1_log for the NQT modes). The
+        lookup path adds two indexed reads + one linear interpolation.
+
+        Calls with `M != 1` or `kind != 'badnell'` are dispatched back
+        to the analytic path inside `get_rec_rate`; the caller never
+        observes a mode-related inconsistency.
+        """
+        if mode == InterpMode.LogLog:
+            log_T_grid = np.linspace(
+                np.log10(_TAB_T_MIN), np.log10(_TAB_T_MAX), _TAB_N,
+            )
+            self._T_grid = 10.0 ** log_T_grid
+            self._tab_x_min = float(log_T_grid[0])
+            self._tab_inv_dx = float(
+                (_TAB_N - 1) / (log_T_grid[-1] - log_T_grid[0])
+            )
+        else:
+            y_min = float(_nqt.nqt1_log(np.array([_TAB_T_MIN]))[0])
+            y_max = float(_nqt.nqt1_log(np.array([_TAB_T_MAX]))[0])
+            y_grid = np.linspace(y_min, y_max, _TAB_N)
+            self._T_grid = _nqt.nqt1_exp(y_grid)
+            self._tab_x_min = y_min
+            self._tab_inv_dx = float((_TAB_N - 1) / (y_max - y_min))
+
+        # Collect every (Z, N) ion that has an M=1 row in either DR or RR.
+        pairs: set = set()
+        for (Zr, Nr, Mr) in self._rr_idx:
+            if Mr == 1:
+                pairs.add((Zr, Nr))
+        for (Zd, Nd, Md) in self._dr_idx:
+            if Md == 1:
+                pairs.add((Zd, Nd))
+        pair_list = sorted(pairs)
+        self._tab_ion_idx: Dict[Tuple[int, int], int] = {
+            (Z, N): j for j, (Z, N) in enumerate(pair_list)
+        }
+
+        n_ions = len(pair_list)
+        tab = np.empty((_TAB_N, n_ions), dtype=np.float64)
+        for j, (Z, N) in enumerate(pair_list):
+            # Call the analytic-path helpers directly so the table-build
+            # is not blocked by the not-yet-set table.
+            if Z == 1 and self.caseB:
+                rates = np.asarray(
+                    self.get_rec_rate_H_caseB_Dr11(self._T_grid),
+                    dtype=np.float64,
+                )
+            elif Z == 1 or N == 0:
+                rates = np.asarray(
+                    self.get_rr_rate(Z, N, self._T_grid, M=1),
+                    dtype=np.float64,
+                )
+            else:
+                rates = np.asarray(
+                    self.get_rr_rate(Z, N, self._T_grid, M=1)
+                    + self.get_dr_rate(Z, N, self._T_grid, M=1),
+                    dtype=np.float64,
+                )
+            rates = np.where(rates > _RATE_FLOOR, rates, _RATE_FLOOR)
+            if mode == InterpMode.LogLog:
+                tab[:, j] = np.log10(rates)
+            elif mode == InterpMode.Nqt2:
+                tab[:, j] = _nqt.nqt2_log(rates)
+            else:  # Nqt1
+                tab[:, j] = _nqt.nqt1_log(rates)
+        self._tab = tab
+
+    def _table_lookup(self, ion_row: int, T: np.ndarray) -> np.ndarray:
+        """Two-point linear interpolation of the recombination table.
+
+        Decoded from the encoding used at construction. Branch-free
+        over T because the mode dispatch happens once at the
+        `get_rec_rate` entry.
+        """
+        T_arr = np.asarray(T, dtype=np.float64)
+        if self.interp_mode == InterpMode.LogLog:
+            x = np.log10(T_arr)
+        else:
+            x = _nqt.nqt1_log(T_arr)
+        idx_f = (x - self._tab_x_min) * self._tab_inv_dx
+        idx = np.clip(idx_f.astype(np.int64), 0, _TAB_N - 2)
+        frac = idx_f - idx.astype(np.float64)
+        lo = self._tab[idx, ion_row]
+        hi = self._tab[idx + 1, ion_row]
+        encoded = lo + (hi - lo) * frac
+        if self.interp_mode == InterpMode.LogLog:
+            return 10.0 ** encoded
+        if self.interp_mode == InterpMode.Nqt2:
+            return _nqt.nqt2_exp(encoded)
+        return _nqt.nqt1_exp(encoded)
 
     def get_rr_rate(self, Z, N, T, M=1):
         """
@@ -267,6 +384,17 @@ class RecRate(object):
         """
 
         if kind == 'badnell':
+            # Table dispatch when (a) a non-Exact mode is active,
+            # (b) M=1 (only ground-state was tabulated), and (c) the
+            # (Z, N) pair is covered in `_tab_ion_idx`. Otherwise
+            # fall through to the analytic helpers.
+            if (
+                self.interp_mode != InterpMode.Exact
+                and int(M) == 1
+                and (int(Z), int(N)) in self._tab_ion_idx
+            ):
+                ion_row = self._tab_ion_idx[(int(Z), int(N))]
+                return self._table_lookup(ion_row, T)
             if Z == 1 and self.caseB: # Ignore kind keyword
                 return self.get_rec_rate_H_caseB_Dr11(T)
             elif Z == 1 or N == 0: # No dielectronic recombination

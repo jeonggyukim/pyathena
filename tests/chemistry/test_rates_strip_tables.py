@@ -61,11 +61,17 @@ def test_interp_mode_default_is_Exact(cls):
     assert obj.interp_mode == InterpMode.Exact
 
 
-@pytest.mark.parametrize('cls', [PhotX, RecRate, CollIonRate])
+@pytest.mark.parametrize('cls', [PhotX])
 @pytest.mark.parametrize('mode', [
     InterpMode.LogLog, InterpMode.Nqt1, InterpMode.Nqt2,
 ])
 def test_interp_mode_table_modes_not_implemented(cls, mode):
+    """The table-based interp modes are only meaningful for the
+    temperature-dependent rate classes that the C++ NCRRates side
+    tabulates (CollIonRate, RecRate). `PhotX` is evaluated at a
+    photon energy `E` rather than a temperature and is not tabulated
+    on either side; it raises until Phase 3.5b adds an E-grid path.
+    """
     with pytest.raises(NotImplementedError):
         cls(interp_mode=mode)
 
