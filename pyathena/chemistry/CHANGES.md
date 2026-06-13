@@ -961,3 +961,72 @@ Out of scope (Phase 4b batch 4b):
 Validation: 512 passed, 4 skipped (up from 509 / 4; +3 net new test
 entries covering 24 internal cases across the 3 channels, no
 regressions).
+
+## 2026-06-13: Phase 4b batch 4b -- coolH2colldiss + OII + nebular + Smith21
+
+Four more cooling channels rounding out the Phase 4b cool.py port:
+
+- `cooling.h2_colldiss.H2CollDissCooling` -- port of
+  `cool.coolH2colldiss`. H2 thermal dissociation cooling at T > 700 K
+  via collisions with H I and H2 (Glover + Mac Low 2007). Rate
+  coefficients are floored at 1e-300 before log10 to avoid -Inf
+  warnings; the T > 700 K gate at the end zeroes the contribution
+  from cold cells either way, so output is byte-identical to the
+  legacy.
+- `cooling.oii.OIIFineStructureCooling` -- port of `cool.coolOII`.
+  3-level fine-structure cooling on the 4S / 2D O II ground term,
+  electron-only collider (Draine 2011 power-law fits). The 497.1 um
+  intra-2D line and the 3726 / 3728 A doublet to 4S together
+  dominate O II metal cooling in the WIM. Reuses the `cool_3level`
+  steady-state helper.
+- `cooling.nebular.NebularMetalLineCooling` -- port of `cool.coolneb`.
+  Stopgap Z_g-scaled metal-line cooling (G&S 2007 fit) for runs
+  that track only H / H+ / H2 (NCRNetwork3). Phase 6 / Phase 7
+  replaces this with explicit per-ion CHIANTI-table metal-line
+  cooling once the multi-ion network (NCRNetwork3PlusIons16) ships
+  -- at that point each followed ion (N II, O II, O III, S II, ...)
+  contributes its own channel and the proxy is turned off. The
+  docstring flags this as a Phase D / Phase 7 stopgap.
+- `cooling.hi_smith21.HISmith21Cooling` -- port of
+  `cool.coolHISmith21`. H I excitation cooling 1 -> 2, 3, 4, 5 via
+  the Smith+2021 Upsilon fits. Piecewise polynomial in
+  T6 = T / 1e6: cubic for T6 <= 0.3, constant for T6 > 0.3.
+  Available as an alternative to `LymanAlphaCooling` (DESPOTIC) and
+  `LyaCooling` (NCR default).
+
+Parity tests
+(`tests/chemistry/parity/test_phase4b_h2cd_oii_neb_smith21.py`):
+four test functions, one per channel; tolerance rtol = 1e-12,
+atol = 0 except for the nebular test (atol = 1e-300 to ignore last-
+ULP subnormal precision in the deep-cold tail where both values
+are effectively zero). The H2 colldiss test uses
+`np.errstate(divide='ignore', invalid='ignore')` because the legacy
+code also emits the same -Inf warning at cold T (the channel
+floors the rate, the legacy does not, but the final gated output
+matches byte-for-byte).
+
+Phase 4 channel inventory after this batch (21 total):
+
+- H I cooling (4): LymanAlpha (DESPOTIC), Lya (NCR default),
+  HICollIon, HISmith21
+- H+ cooling (3): HRecombination, FreeFreeH, GrainRecombination
+- H2 cooling (3): H2Gong17, H2Moseley21 (NCR default), H2CollDiss
+- Metal FS (4): CIIFineStructure, OIFineStructure, CIFineStructure,
+  OIIFineStructure
+- Other cooling (2): DustGasCoupling, NebularMetalLine (Phase 7
+  proxy)
+- Heating (5): PhotoelectricWD01, CosmicRay, H2Formation,
+  H2Dissociation, H2Pump
+
+Out of scope (Phase 4c):
+
+- Analytic d(Lambda)/d(T/mu) for the simple channels.
+- Tabulated derivatives for the level-population channels.
+- Driver rebind: replace CoolingStub with CoolingChannels
+  composing the 21 channels.
+- coolCO (commented-out in get_cooling.py; revisit when CO
+  abundance tracking lands).
+
+Validation: 516 passed, 4 skipped (up from 512 / 4; +4 net new test
+entries covering 30+ internal cases across the 4 channels, no
+regressions).
