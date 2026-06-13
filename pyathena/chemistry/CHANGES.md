@@ -390,3 +390,83 @@ Validation: 419 passed, 4 skipped in `tests/chemistry/ +
 tests/microphysics/` (no regressions). The pass / skip totals shift
 vs the previous entry because Phase 0.5 relocated several tests out
 of microphysics into chemistry; net delta is 0.
+
+## 2026-06-13: Phase 3 explicit subcycling solver + driver
+
+Strip-first synchronous explicit subcycling solver and the
+`ChemistryDriver` that owns its lifecycle. The Python solver mirrors
+the planned C++ Phase C `SynchronousSemiImplicitSweep` semantics (one
+`dt_sub` shared across the strip, one `nsub` count) rather than the
+current per-cell adaptive `ExplicitSubcyclingSolver::SolveCell`
+semantics; this lets the same algorithm port directly to the C++
+NCRStrip path later and keeps the substep loop allocation-free under
+`assert_no_alloc`.
+
+- `pyathena.chemistry.solvers.explicit_subcycling.ExplicitSubcyclingSolver`
+  -- registered under `'explicit_subcycling'` via
+  `@register_solver`. Constructor takes a `ChemistryConfig`, a
+  `NetworkBase` (NCRNetwork3 in practice), an `NCRThermo`, and an
+  optional cooling policy (`None` for Phase 3). All hot-path scratch
+  is named under the `solver:` prefix and registered via
+  `allocate_scratch(state)`. The substep loop runs the (C, D) split,
+  estimates the strip-MIN substep length, semi-implicit Euler T step
+  with rejection-and-halve up to 3 retries, recompute (C, D) at the
+  post-T state, implicit-Euler chemistry update on the evolved rows,
+  closure. The temperature update kernel and the implicit-Euler
+  chemistry kernel live in `_substep_kernels.py` so they unit-test
+  without instantiating the solver class.
+- `pyathena.chemistry.solvers._substep_kernels` -- two pure functions
+  (`implicit_euler_update`, `semi_implicit_T_update`) that take
+  caller-owned `out=` / `tmp=` buffers. Allocation-free by
+  construction.
+- `pyathena.chemistry.solvers._stubs` -- `CoolingStub`,
+  `OpacityStub`, `RadiationStub` placeholder policies the driver
+  consumes until Phase 4+ ship the real ones. `RadiationStub` copies
+  fixed FUV / photo-rate scalars onto `state.chi_FUV` etc. so
+  `NCRNetwork3.evaluate_CD` reads non-zero rates without reaching for
+  a radiation transport policy.
+- `pyathena.chemistry.driver.ChemistryDriver` -- owns the
+  network / solver / thermo / cooling / opacity / radiation policy
+  instances. `setup(state)` calls `network.allocate_scratch` then
+  `solver.allocate_scratch`. `step(dt, state)` runs
+  `radiation.update`, `opacity.update`, `cooling.update`, then
+  `solver.step(dt, state)` in that order. The solver name in
+  `config.solver` is resolved through `SOLVER_REGISTRY` when the
+  caller omits `solver=...`.
+- `pyathena.chemistry.solvers.__init__` -- re-exports
+  `ExplicitSubcyclingSolver` and triggers the registry side effect
+  on import.
+- `tests/chemistry/test_solvers_explicit_subcycling.py` -- 8 tests
+  covering registry lookup, scratch idempotency, allocation-free
+  hot path (under `assert_no_alloc(allow=0)` with a stub network so
+  the rate-coefficient `np.where` / `np.exp` allocations inside
+  `NCRNetwork3.evaluate_CD` do not poison the contract), H mass
+  closure after `step(dt)`, single-substep implicit-Euler update vs
+  a hand-rolled `x_new = (x + C dt) / (1 + D dt)` reference at
+  rtol=1e-8, and the rejection-path retry counter triggered by a
+  swinging-cooling stub.
+- `tests/chemistry/test_driver_smoke.py` -- 3 tests covering the
+  end-to-end driver on a 1024-cell HII-region strip, the
+  diagnostics snapshot helper, and the registry-driven solver
+  resolution path.
+- `tests/chemistry/parity/test_ncr_cooling_lambda_parity.py` -- 8
+  tests parameterised over the NCR cooling catalog (coolCII, coolOI,
+  coolOII, coolHIion, coolHI, coolHISmith21, coolH2G17) on a
+  (50, 10) (T, nH) grid plus the summed-Lambda test, all at
+  rtol=1e-10. Phase 3 delegates the new path to
+  `pyathena.microphysics.cool` so the test passes by construction;
+  Phase 4 rebinds the new-path module reference to the
+  `pyathena.chemistry.coolants` package and the tolerance band kicks
+  in for real.
+
+The Phase 3 solver is not bit-stable with the merged C++
+`ExplicitSubcyclingSolver::SolveCell` because the C++ side runs a
+per-cell `while (t_done < dt)` loop with per-cell `dt_sub`, whereas
+the Python solver runs a strip-wide loop with `dt_sub = min_strip(...)`.
+The Phase C `SynchronousSemiImplicitSweep` solver in tigris-ncr will
+use the strip-MIN convention too; that is the C++ target this Python
+reference will eventually compare against.
+
+Validation: 438 passed, 4 skipped in `tests/chemistry/ +
+tests/microphysics/` (up from 419 / 4 in the previous entry; +19 new
+tests, no regressions).
