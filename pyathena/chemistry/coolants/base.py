@@ -1,4 +1,4 @@
-"""Generic 5-level coolant module.
+r"""Generic 5-level coolant module.
 
 Each per-ion file under this package (e.g., `o_3.py`, `n_2.py`)
 does:
@@ -11,6 +11,110 @@ does:
 The class loads per-ion atomic data, interpolates Upsilon, and
 solves the 5-level steady-state populations. All ions use the
 same code; only the data file differs.
+
+Atomic-physics summary
+======================
+
+A bound electron is excited from level $j$ (lower) to level $i$
+(upper) by collision with a thermal electron or proton. From the
+upper level it either decays radiatively at rate $A_{ij}$,
+emitting a photon of energy $E_i - E_j$, or is collisionally
+de-excited before it can radiate.
+
+Statistical equilibrium fixes the level populations
+$f_i \equiv n_i / n_X$ by balancing every collisional and
+radiative excitation against every collisional and radiative
+de-excitation:
+
+$$
+\sum_{j \neq i} \left[ n_e \, q_{ji}^{\rm up} f_j
+                     + n_e \, q_{ij}^{\rm down} f_i \,\delta_{j<i}
+                     + A_{ji} f_j \,\delta_{j>i}
+                 \right]
+= \sum_{j \neq i} \left[ A_{ij} f_i \,\delta_{j<i}
+                     + n_e \, q_{ij}^{\rm down} f_i \,\delta_{j<i}
+                     + n_e \, q_{ji}^{\rm up} f_j
+                 \right] ,
+$$
+
+with closure $\sum_i f_i = 1$. For a 5-level system this is a
+$5 \times 5$ linear system per cell solved by
+`n_level.solve_5level_steady_state`. Once $f_i$ is known the
+volumetric cooling rate is
+
+$$
+\Lambda = n_X \sum_{i>j} f_i \, A_{ij} \, (E_i - E_j)
+\quad [\text{erg cm}^{-3}\,\text{s}^{-1}] .
+$$
+
+The per-ion-per-electron cooling efficiency reported by
+`cooling()` is this rate divided by $n_e \, n_X$.
+
+Rate coefficient conventions (Draine 2011 ch. 17)
+=================================================
+
+* **Downward** (collisional de-excitation, upper $i \to$ lower $j$):
+
+  $$
+  q_{ij}^{\rm down}(T)
+  = \frac{\beta \, \Upsilon_{ij}(T)}{g_i \sqrt{T}}
+  \quad [\text{cm}^{3}\,\text{s}^{-1}] ,
+  $$
+
+  where $g_i = 2 J_i + 1$ is the statistical weight of the upper
+  level and $\Upsilon_{ij}(T)$ is the Burgess-Tully effective
+  collision strength tabulated by CHIANTI.
+
+* **Upward** (collisional excitation, lower $j \to$ upper $i$) by
+  detailed balance,
+
+  $$
+  q_{ji}^{\rm up}(T)
+  = q_{ij}^{\rm down}(T)\,\frac{g_i}{g_j}\,
+    \exp\!\left(-\frac{E_i - E_j}{k_B T}\right)
+  \quad [\text{cm}^{3}\,\text{s}^{-1}] .
+  $$
+
+* Per-cell rate $[\text{s}^{-1}]$ is $q \, n_e$ for electron
+  impact, $q \, n_p$ for proton impact; the two contributions add
+  linearly (Draine 2011 Eq. 17.10).
+
+The prefactor
+
+$$
+\beta = \frac{h^2}{\sqrt{8 \pi^3 \, m_e^3 \, k_B}}
+    \simeq 8.629 \times 10^{-6}
+\quad [\text{cm}^{3}\,\text{s}^{-1}\,\text{K}^{1/2}]
+$$
+
+is computed at module import from `astropy.constants` so a CODATA
+update flows through without touching this file.
+
+Dummy padding for low-physical-level ions
+=========================================
+
+`NLEV` is fixed at 5. Ions with fewer physical levels (e.g., the
+2-level fine-structure ions C II ${}^2P$, Ne II ${}^2P$,
+N III ${}^2P$) get the remaining rows padded with dummy levels at
+$E = 10^7\,\text{cm}^{-1}$, $g = 1$, and zero rates. The n-level
+solver detects them (zero row + zero column in the rate matrix)
+and forces $f_{\rm dummy} = 0$ so the matrix stays non-singular.
+The dummy rows contribute nothing to cooling.
+
+Reference frame for the per-ion files
+=====================================
+
+The text files in `data/microphysics/chianti_v11/` are produced
+offline by `pyathena.chemistry.tables.chianti_v11.build_atomic`
+and carry, for each ion: the energy levels $E_i$ in erg, the
+statistical weights $g_i$, the radiative-decay matrix $A_{ij}$ in
+$\text{s}^{-1}$, the temperature grid $T_{\rm grid}$ in K, and the
+electron and proton Burgess-Tully $\Upsilon_{ij}(T)$ tables.
+
+The docstring uses MyST-flavoured Markdown math (`$...$` inline,
+`$$...$$` block) so equations render in Jupyter / JupyterBook /
+GitHub renderer / VS Code preview without a separate math
+extension.
 """
 
 import os

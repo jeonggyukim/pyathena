@@ -18,6 +18,7 @@ parts:
     - file: content/pop_synth
     - file: content/fields
     - file: content/microphysics
+    - file: content/chemistry
     - file: content/plt_tools
   - caption: Examples
     chapters:

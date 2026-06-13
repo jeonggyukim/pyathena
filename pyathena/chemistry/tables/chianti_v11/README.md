@@ -1,6 +1,25 @@
-# pyathena.microphysics.data
+# pyathena.chemistry.tables.chianti_v11
 
-Data tables and builders for the photchem CIE atomic-data pipeline.
+Build scripts for the CHIANTI v11 derived atomic-data tables consumed
+at runtime by `pyathena.chemistry.coolants` and the cooling-table
+readers. The tables themselves live in `data/microphysics/chianti_v11/`.
+
+## Build-time requirements
+
+The build scripts here read the CHIANTI v11 atomic database via
+[ChiantiPy](https://chiantipy.readthedocs.io/en/latest/). The runtime
+readers (`IonCoolant`, the `read_*` parsers) do not. Install the
+build-time extra with
+
+    pip install pyathena[tables]
+
+and point ChiantiPy at the CHIANTI data directory by setting the
+`XUVTOP` environment variable, e.g.
+
+    export XUVTOP=$HOME/Dropbox/Projects/CHIANTI_db
+
+End-user runtime code that only reads pre-built tables does not need
+ChiantiPy or `XUVTOP`.
 
 ## Build scripts
 
