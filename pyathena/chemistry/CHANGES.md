@@ -614,3 +614,84 @@ Cross-mode validation:
 Validation: 490 passed, 4 skipped (up from 438 / 4 in the previous
 entry; +52 net new tests, no regressions). Pytest runtime within the
 ~34 s envelope.
+
+## 2026-06-13: Phase 4a -- cooling/heating channel ABCs + first ports
+
+Lays the channel-policy scaffolding for the cool.py monolith split.
+Phase 4a delivers (a) the per-channel `CoolingChannel` /
+`HeatingChannel` ABCs and the `CoolingChannels` aggregator that
+populates `solver:net_cool` + `solver:d_net_cool_d_temp_mu`, (b)
+literal-port channels for H I Lyman-alpha cooling and Weingartner-
+Draine 2001 photoelectric heating, and (c) byte-exact parity tests
+against the corresponding `pyathena.microphysics.cool` helpers.
+Subsequent Phase 4b commits port the remaining 20-plus channels
+incrementally and Phase 4c wires `CoolingChannels` into
+`ChemistryDriver` so the solver's cooling policy slot consumes real
+rates instead of `CoolingStub`.
+
+ABC + aggregator:
+
+- `pyathena/chemistry/cooling/base.py` -- `CoolingChannel` (abstract,
+  one mechanism per subclass with `name`, `evaluate(state, out,
+  d_out=None)`), `HeatingChannel` (same shape; co-located here to
+  avoid a forward-import cycle), and `CoolingChannels` (composes a
+  cooling tuple + a heating tuple, sums Lambda contributions and
+  subtracts Gamma contributions into `solver:net_cool` and the
+  matching derivative slot). The aggregator owns its per-channel
+  Lambda / dLambda scratch namespaces (`cooling:Lambda:<name>`) and
+  registers them via `allocate_scratch(state)` so the substep loop
+  runs allocation-free. Heating mirrors the contract under
+  `cooling:Gamma:<name>` / `cooling:dGamma:<name>`.
+
+Channel ports:
+
+- `pyathena/chemistry/cooling/lyman_alpha.py::LymanAlphaCooling` --
+  literal port of `pyathena.microphysics.cool.coolHI` (lines 490 -
+  513). Computes Lambda_2p (H I 2-photon), Lambda_LyA, Lambda_LyB
+  using the DESPOTIC formulae (Krumholz 2014, ApJS 211, 19;
+  Draine 2011 11.32 / 11.34 / 11.36). Constants
+  `T_LYA = 118415.63430152694 K`, `T_LYB = 140344.45546847637 K`,
+  effective collision strengths upsilon_{2s, 2p, 3s, 3p, 3d},
+  beta = 8.629e-6 cm^3 s^-1 K^0.5 hardcoded with the same precision
+  as the legacy helper.
+- `pyathena/chemistry/heating/photoelectric.py::PhotoelectricHeating`
+  -- literal port of `pyathena.microphysics.cool.heatPE` (lines
+  78 - 86) + its `get_charge_param` helper. Charge parameter
+  `x = 1.7 * chi_PE * sqrt(T) / (xe * nH * phi) + 50.0` (the `+50.0`
+  offset clamps the WD01 fit away from its small-x invalid regime).
+  WD01 Table 2 epsilon fit coefficients hardcoded; default
+  `chi_band = 'FUV'` reads `state.chi_for('FUV')` on the strip.
+
+Both channels follow the Phase 4a contract: `evaluate(state, out)`
+writes Lambda or Gamma in `erg / s / cm^3`; the optional `d_out`
+buffer is zeroed (the analytic temperature derivative lands in Phase
+4b). The hot path uses `np.add(a, b, out=c)` form throughout, with
+all temporaries drawn from named scratch slots so the channel runs
+inside `assert_no_alloc(allow=0)` once the wired-up driver is added.
+
+Parity:
+
+- `tests/chemistry/parity/test_cooling_lyman_alpha_parity.py` (4
+  tests) -- `LymanAlphaCooling.evaluate` vs `coolHI` on a 30 x 20
+  (T, n_H) grid spanning T = 100 K to 1e6 K and n_H = 0.01 to 1e4 cm^-3,
+  for three (xHI, xe) combinations; rtol = 1e-12, atol = 0. Also pins
+  the `d_out` zero-write contract.
+- `tests/chemistry/parity/test_heating_pe_parity.py` (3 tests) --
+  `PhotoelectricHeating.evaluate` vs `heatPE` on a 24 x 16 (T, n_H)
+  grid spanning T = 10 K to 1e4 K and n_H = 0.01 to 1e4 cm^-3, for
+  three (xe, Z_d, chi_PE) combinations; rtol = 1e-12, atol = 0.
+
+Out of scope for Phase 4a (queued for 4b):
+
+- The remaining cooling channels (CII, OI, CI, CO, H2 G17, rec, ff,
+  dust, ...) and heating channels (CR, H2 form, H2 photo, ...).
+- The analytic `d(Lambda)/d(T/mu)` and `d(Gamma)/d(T/mu)` derivatives
+  for each channel.
+- The driver-level rebind that swaps `CoolingStub` for the
+  `CoolingChannels` aggregator and exercises a real cooling rate in
+  the explicit-subcycling step.
+- The Phase 6-prerequisite `build_cie_high_pool.py` Tabulator (Phase
+  4c).
+
+Validation: 497 passed, 4 skipped (up from 490 / 4 in the previous
+entry; +7 net new tests, no regressions).
