@@ -27,8 +27,7 @@ def chianti_v11_dir() -> str:
     """Absolute path to the CHIANTI v11 derived tables (ioneq, cool,
     per-ion atomic data). Files live under
     `data/microphysics/chianti_v11/` — built by
-    `pyathena.chemistry.tables.chianti_v11.*` (relocated from
-    `pyathena.microphysics.chianti_v11.*` in Phase 0.5).
+    `pyathena.chemistry.tables.chianti_v11.*`.
     """
     return os.path.join(_DATA_ROOT, 'microphysics', 'chianti_v11')
 

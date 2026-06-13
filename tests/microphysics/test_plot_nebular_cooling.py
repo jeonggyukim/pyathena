@@ -151,7 +151,7 @@ def _pyathena_pops_and_A(module_name, T_grid, n_e):
     """
     import numpy as np
     from importlib import import_module
-    mod = import_module(f'pyathena.microphysics.coolants.{module_name}')
+    mod = import_module(f'pyathena.chemistry.coolants.{module_name}')
     tab = mod._C.table()
     A = tab['A']
     E = tab['E_erg']

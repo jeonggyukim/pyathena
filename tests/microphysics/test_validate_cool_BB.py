@@ -110,7 +110,7 @@ def _pyathena_BB_per_ion_per_e(module_name, T, n_e):
     """Pyathena 5-level Sum_i,j f_i * A_ij * (E_i - E_j)."""
     from importlib import import_module
     mod = import_module(
-        f'pyathena.microphysics.coolants.{module_name}')
+        f'pyathena.chemistry.coolants.{module_name}')
     L_per_volume = mod.cooling(T, n_e, n_ion=1.0)
     return float(L_per_volume / n_e)
 
@@ -128,7 +128,7 @@ def _explicit_direct_excitation(module_name, T, n_e):
     import numpy as np
     from importlib import import_module
     mod = import_module(
-        f'pyathena.microphysics.coolants.{module_name}')
+        f'pyathena.chemistry.coolants.{module_name}')
     tab = mod._C.table()
     A = tab['A']
     E = tab['E_erg']

@@ -71,7 +71,7 @@ def _read_gf12(element):
 
 def _read_ours(element):
     """Read our cool_<element>.txt."""
-    from pyathena.microphysics.chianti_v11.build_cool import read_cool
+    from pyathena.chemistry.tables.chianti_v11.build_cool import read_cool
     base = Path(__file__).parent.parent.parent / 'data' / \
         'microphysics' / 'chianti_v11'
     return read_cool(str(base / f'cool_{element}.txt'))

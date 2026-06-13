@@ -16,12 +16,12 @@ same code; only the data file differs.
 import os
 import numpy as np
 
-from ..n_level import (
+from .n_level import (
     solve_5level_steady_state,
     cooling_from_populations,
     NLEV,
 )
-from ..chianti_v11.build_atomic import read_ascii
+from ..tables.chianti_v11.build_atomic import read_ascii
 
 
 # Prefactor in Draine 2011 Eq. 17.10 / Osterbrock 2006 Eq. 3.20
