@@ -422,17 +422,17 @@ class ExplicitSubcyclingSolver:
         x_new_H2 = state.get_scratch('solver:x_new_H2')
 
         # HI row
-        kern.implicit_euler_update(
+        kern.semi_implicit_x_update(
             state.x[i_HI], C[i_HI], D[i_HI], dt_sub,
             out=x_new_HI, tmp=tmp_ncell,
         )
         # HII row
-        kern.implicit_euler_update(
+        kern.semi_implicit_x_update(
             state.x[i_HII], C[i_HII], D[i_HII], dt_sub,
             out=x_new_HII, tmp=tmp_ncell,
         )
         # H2 row
-        kern.implicit_euler_update(
+        kern.semi_implicit_x_update(
             state.x[i_H2], C[i_H2], D[i_H2], dt_sub,
             out=x_new_H2, tmp=tmp_ncell,
         )

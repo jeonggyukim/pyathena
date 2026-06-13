@@ -38,22 +38,22 @@ class RecRate(object):
     Draine (2011)'s recombination rates
     """
 
-    def __init__(self, caseB=True, interp_mode: 'InterpMode' = InterpMode.kExact):
+    def __init__(self, caseB=True, interp_mode: 'InterpMode' = InterpMode.Exact):
         """
         Parameters
         ----------
         caseB : bool, optional
             Use Draine 2011 Case B for hydrogen recombination.
         interp_mode : InterpMode, optional
-            Rate-table interpolation mode. Only `InterpMode.kExact`
+            Rate-table interpolation mode. Only `InterpMode.Exact`
             (analytic Badnell fits) is supported today; the table-
             based modes land in Phase 3.5 alongside the C++ port.
         """
-        if interp_mode != InterpMode.kExact:
+        if interp_mode != InterpMode.Exact:
             raise NotImplementedError(
                 f'RecRate interp_mode={interp_mode!r} is not implemented; '
-                'table-based modes (kLogLog / kNqt1 / kNqt2) land in '
-                'Phase 3.5. Use InterpMode.kExact for now.')
+                'table-based modes (LogLog / Nqt1 / Nqt2) land in '
+                'Phase 3.5. Use InterpMode.Exact for now.')
         self.interp_mode = interp_mode
         # read data
         self._read_data()

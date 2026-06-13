@@ -53,27 +53,27 @@ class PhotX(object):
     JKIM: okay to copy snippets of their code?)
     """
 
-    def __init__(self, datadir=None, interp_mode: 'InterpMode' = InterpMode.kExact):
+    def __init__(self, datadir=None, interp_mode: 'InterpMode' = InterpMode.Exact):
         """
         Parameters
         ----------
         datadir : str or None
             Override the default Verner+96 data directory.
         interp_mode : InterpMode, optional
-            Rate-table interpolation mode. Only `InterpMode.kExact`
+            Rate-table interpolation mode. Only `InterpMode.Exact`
             (analytic evaluation) is supported at present; the
-            `kLogLog` / `kNqt1` / `kNqt2` table-based modes are
+            `LogLog` / `Nqt1` / `Nqt2` table-based modes are
             scheduled for Phase 3.5 once the chemistry strip
             scaffold is in place.
         """
-        # Only kExact is implemented today. Refuse anything else
+        # Only Exact is implemented today. Refuse anything else
         # explicitly so callers do not silently get analytic results
         # when they asked for a table mode.
-        if interp_mode != InterpMode.kExact:
+        if interp_mode != InterpMode.Exact:
             raise NotImplementedError(
                 f'PhotX interp_mode={interp_mode!r} is not implemented; '
-                'table-based modes (kLogLog / kNqt1 / kNqt2) land in '
-                'Phase 3.5. Use InterpMode.kExact for now.')
+                'table-based modes (LogLog / Nqt1 / Nqt2) land in '
+                'Phase 3.5. Use InterpMode.Exact for now.')
         self.interp_mode = interp_mode
 
         # Read Verner et al. 1996 photoionization cross-section table

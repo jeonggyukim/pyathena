@@ -20,7 +20,7 @@ from __future__ import annotations
 import numpy as np
 
 
-def implicit_euler_update(
+def semi_implicit_x_update(
     x: np.ndarray,
     C: np.ndarray,
     D: np.ndarray,
@@ -28,11 +28,14 @@ def implicit_euler_update(
     out: np.ndarray,
     tmp: np.ndarray,
 ) -> np.ndarray:
-    """Apply one backward-Euler step to `dx/dt = C - D x`.
+    """Apply one semi-implicit backward-Euler step to `dx/dt = C - D x`.
 
-    The closed form is `x_new = (x + C * dt) / (1 + D * dt)`. The
-    update is unconditionally positivity-preserving as long as `x`,
-    `C`, `D` are non-negative.
+    "Semi-implicit" because the rate coefficients `C` and `D` are
+    evaluated at the start of the substep and held fixed for the duration
+    of this kernel, while the state `x` is solved implicitly. For the
+    linearised problem with frozen rates the closed form is
+    `x_new = (x + C * dt) / (1 + D * dt)`. The update is unconditionally
+    positivity-preserving as long as `x`, `C`, `D` are non-negative.
 
     Parameters
     ----------

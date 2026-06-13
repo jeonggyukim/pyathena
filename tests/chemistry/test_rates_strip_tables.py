@@ -18,8 +18,8 @@ vectorise alongside the photo/coll-ion/recombination strip and is
 deferred to Phase 6 when the multi-ion sweep needs it.
 
 Also pins the `interp_mode` argument plumbed through each class:
-only `InterpMode.kExact` is implemented today; the table-based
-modes (`kLogLog`, `kNqt1`, `kNqt2`) raise `NotImplementedError`
+only `InterpMode.Exact` is implemented today; the table-based
+modes (`LogLog`, `Nqt1`, `Nqt2`) raise `NotImplementedError`
 until Phase 3.5 lands.
 """
 from __future__ import annotations
@@ -52,18 +52,18 @@ def T_grid():
 
 
 # ---------------------------------------------------------------------
-# interp_mode plumbing: only kExact is implemented today.
+# interp_mode plumbing: only Exact is implemented today.
 # ---------------------------------------------------------------------
 
 @pytest.mark.parametrize('cls', [PhotX, RecRate, CollIonRate])
-def test_interp_mode_default_is_kExact(cls):
+def test_interp_mode_default_is_Exact(cls):
     obj = cls()
-    assert obj.interp_mode == InterpMode.kExact
+    assert obj.interp_mode == InterpMode.Exact
 
 
 @pytest.mark.parametrize('cls', [PhotX, RecRate, CollIonRate])
 @pytest.mark.parametrize('mode', [
-    InterpMode.kLogLog, InterpMode.kNqt1, InterpMode.kNqt2,
+    InterpMode.LogLog, InterpMode.Nqt1, InterpMode.Nqt2,
 ])
 def test_interp_mode_table_modes_not_implemented(cls, mode):
     with pytest.raises(NotImplementedError):

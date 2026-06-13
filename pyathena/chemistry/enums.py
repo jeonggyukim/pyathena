@@ -42,16 +42,21 @@ class Regime(enum.IntEnum):
 class InterpMode(enum.IntEnum):
     """Rate-table interpolation mode.
 
-    Mirrors `NCRRates::InterpMode` in `src/photchem/ncr_rates.hpp`.
+    Integer values mirror `NCRRates::InterpMode` in
+    `tigris-ncr/src/photchem/ncr_rates.hpp`; both sides agree on the
+    raw int so config files can use the integers interchangeably. The
+    Python member names drop the C++ `kFoo` Google-style prefix per
+    the project's CLAUDE.md rule for new enumerators.
+
     Selectable per-run via the `interp_mode` parameter in the
     `[photchem_ncr]` input block.
 
-    - kExact  : full analytical form (slow; one log/exp/pow per rate)
-    - kLogLog : log-log linear interpolation (1 log10 + 1 pow10 per rate)
-    - kNqt2   : NQT grid, nqt2_log encoding (1 sqrt + integer ops)
-    - kNqt1   : NQT grid, nqt1_log encoding (integer ops only)
+    - Exact  : full analytical form (slow; one log/exp/pow per rate)
+    - LogLog : log-log linear interpolation (1 log10 + 1 pow10 per rate)
+    - Nqt2   : NQT grid, nqt2_log encoding (1 sqrt + integer ops)
+    - Nqt1   : NQT grid, nqt1_log encoding (integer ops only)
     """
-    kExact  = 0
-    kLogLog = 1
-    kNqt2   = 2
-    kNqt1   = 3
+    Exact  = 0
+    LogLog = 1
+    Nqt2   = 2
+    Nqt1   = 3

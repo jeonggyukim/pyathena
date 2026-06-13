@@ -203,7 +203,7 @@ class ChemistryConfig:
     iH2heating:         int = 1
     iCII_rec_rate:      int = 2
     iPEheating:         int = 1
-    interp_mode:        InterpMode = InterpMode.kLogLog
+    interp_mode:        InterpMode = InterpMode.LogLog
 
     # ---- Background rates / metallicities (no C++ default) ----
     # No `GetOrAdd*` defaults exist for these on the C++ side; they

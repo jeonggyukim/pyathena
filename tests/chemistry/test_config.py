@@ -59,7 +59,7 @@ def test_defaults_match_cpp_constructor():
     assert c.iH2heating == 1
     assert c.iCII_rec_rate == 2
     assert c.iPEheating == 1
-    assert c.interp_mode == InterpMode.kLogLog
+    assert c.interp_mode == InterpMode.LogLog
 
     # Z and zeta defaults from the constructor (`GetOrAddReal`,
     # not `GetReal`).
@@ -95,7 +95,7 @@ def test_from_dict_overrides_defaults():
     assert c.temp_hot0 == pytest.approx(1.5e4)
     assert c.temp_hot1 == pytest.approx(3.0e4)
     assert c.cool_dust_flag is True
-    assert c.interp_mode == InterpMode.kExact
+    assert c.interp_mode == InterpMode.Exact
     assert c.xCstd == pytest.approx(2.0e-4)
     # Untouched defaults still hold.
     assert c.dvdr == pytest.approx(3.240779289444365e-14)
@@ -140,10 +140,10 @@ def test_bool_coercion_from_int_and_string():
 
 def test_interp_mode_accepts_int_and_enum():
     assert (ChemistryConfig.from_dict({'interp_mode': 3}).interp_mode
-            == InterpMode.kNqt1)
+            == InterpMode.Nqt1)
     assert (ChemistryConfig
-            .from_dict({'interp_mode': InterpMode.kNqt2}).interp_mode
-            == InterpMode.kNqt2)
+            .from_dict({'interp_mode': InterpMode.Nqt2}).interp_mode
+            == InterpMode.Nqt2)
 
 
 # ---- from_athinput ----
@@ -175,7 +175,7 @@ def test_from_athinput_minimal_block(tmp_path):
     assert c.temp_hot0 == pytest.approx(18000.0)
     assert c.temp_hot1 == pytest.approx(33000.0)
     assert c.cfl_cool_sub == pytest.approx(0.05)
-    assert c.interp_mode == InterpMode.kNqt2
+    assert c.interp_mode == InterpMode.Nqt2
     assert c.xCstd == pytest.approx(1.4e-4)
     assert c.xOstd == pytest.approx(3.0e-4)
     # Defaults untouched.

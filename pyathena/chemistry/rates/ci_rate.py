@@ -25,21 +25,21 @@ _CLOUDY_DIR = osp.join(_DATA_ROOT, 'microphysics', 'cloudy')
 
 class CollIonRate(object):
 
-    def __init__(self, interp_mode: 'InterpMode' = InterpMode.kExact):
+    def __init__(self, interp_mode: 'InterpMode' = InterpMode.Exact):
         """
         Parameters
         ----------
         interp_mode : InterpMode, optional
-            Rate-table interpolation mode. Only `InterpMode.kExact`
+            Rate-table interpolation mode. Only `InterpMode.Exact`
             (analytic Voronov fits) is supported today; the
             table-based modes land in Phase 3.5 alongside the C++
             port.
         """
-        if interp_mode != InterpMode.kExact:
+        if interp_mode != InterpMode.Exact:
             raise NotImplementedError(
                 f'CollIonRate interp_mode={interp_mode!r} is not '
-                'implemented; table-based modes (kLogLog / kNqt1 / '
-                'kNqt2) land in Phase 3.5. Use InterpMode.kExact for '
+                'implemented; table-based modes (LogLog / Nqt1 / '
+                'Nqt2) land in Phase 3.5. Use InterpMode.Exact for '
                 'now.')
         self.interp_mode = interp_mode
         self._read_data()
