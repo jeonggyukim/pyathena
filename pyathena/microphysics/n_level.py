@@ -23,7 +23,8 @@ NLEV = 5
 # Boltzmann constant in erg / K (CGS), used only here for the
 # detailed-balance upward-rate factors. Imported by ion files via
 # the helper functions.
-KB_CGS = 1.380649e-16
+from astropy import constants as _const
+KB_CGS = _const.k_B.cgs.value
 
 
 def solve_5level_steady_state(A, E, g, T, n_coll_times_q):

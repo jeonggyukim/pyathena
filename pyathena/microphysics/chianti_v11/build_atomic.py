@@ -418,7 +418,8 @@ def write_ascii(out_path, label, data, T_min, T_max, tier='hot'):
     Y_e = data['Upsilon_e']
     Y_p = data.get('Upsilon_p', np.zeros_like(Y_e))
     T = data['T_grid']
-    KB_CGS = 1.380649e-16
+    from astropy import constants as _const
+    KB_CGS = _const.k_B.cgs.value
     # Collect A and Upsilon transitions present (upper > lower).
     A_rows = []
     for i in range(nlev):
