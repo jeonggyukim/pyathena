@@ -101,6 +101,25 @@ class CoolingChannel(abc.ABC):
             just degrades the substep loop to forward Euler in that
             channel's contribution -- correct, but slower in stiff
             regimes.
+
+            FD bootstrap convention (when the analytic chain rule is
+            impractical, e.g. CIE-table-driven cooling that lacks a
+            precomputed slope column): use 1-point forward FD at
+            `dT_rel = 1e-3`. Pattern:
+
+                T_orig = state.T.copy()
+                state.T[:] = T_orig * (1.0 + 1.0e-3)
+                channel.evaluate(state, out_Tp)
+                state.T[:] = T_orig
+                channel.evaluate(state, out_T)
+                # d_out = mu * (out_Tp - out_T) / (T_orig * 1e-3)
+
+            See `tests/chemistry/test_fd_calibration.py` for the
+            sweep that validates this choice. Avoid `dT_rel = 2e-2`
+            (the historical NCR convention): the same one-extra-eval
+            cost at `1e-3` improves accuracy by an order of magnitude.
+            Avoid per-channel-optimum `dT_rel` (sits on the roundoff
+            cliff; platform-dependent; NaN risk).
         """
 
 

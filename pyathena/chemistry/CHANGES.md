@@ -1330,3 +1330,65 @@ Out of scope (Phase 4d-b2 next, plus follow-ups):
 
 Validation: 529 passed, 4 skipped (up from 527 / 4; +2 net new
 analytic-derivative parity tests, no regressions).
+
+## 2026-06-14: FD calibration sweep + production fallback convention
+
+A documented calibration sweep that pins the recommended
+`dT_rel = 1e-3` forward-FD convention for any future Python channel
+that ends up using FD inside the substep loop (bootstrap path when
+the analytic chain rule is impractical, e.g. tabulated cooling
+functions whose interpolation slope is not readily exposed).
+
+Test (`tests/chemistry/test_fd_calibration.py`):
+
+- Sweep `dT_rel` over `logspace(-10, -1, 19)` for both 2-point
+  central FD and 1-point forward FD, comparing each against the
+  Phase 4d-a / 4d-b1 analytic d_out on 3 representative channels:
+  Lya (steep Boltzmann exp(-T_excite/T)), HRecomb (steep power law
+  `alpha_B ~ T^-0.8`), and Dust (smooth `sqrt(T) * (T - T_dust)`).
+- Asserts: at the conservative default (1e-3 for central; 1e-1 for
+  forward), the relative error stays below the target and the
+  per-curve optimum sits to the LEFT of the default (i.e. in the
+  roundoff regime), so the default sits safely on the truncation-
+  dominated plateau.
+
+Empirical numbers from the sweep:
+
+    Channel    Method        dT_rel=1e-3   dT_rel=2e-2   Optimum
+    Lya        central 2-pt  2.3e-5        2.3e-3        3e-6 (5e-10)
+    Lya        forward 1-pt  6.5e-3        6.7e-2        3e-8 (3e-7)
+    HRecomb    central 2-pt  3.2e-6        3.2e-4        1e-5 (1.7e-9)
+    HRecomb    forward 1-pt  3.1e-3        3.0e-2        1e-7 (5e-7)
+    Dust       central 2-pt  ~1e-12        ~5e-10        ~1e-7 (~1e-13)
+    Dust       forward 1-pt  ~1e-9         ~5e-7         ~1e-7 (~1e-13)
+
+Production convention recommendation:
+
+- **Analytic d_out where the chain rule is tractable** (Phase 4d-a,
+  4d-b, ...): exact, free, bit-stable with the C++ port.
+- **1-point forward FD at `dT_rel = 1e-3`** as the bootstrap for
+  channels whose analytic derivative is impractical (e.g.
+  CIE-table-driven cooling that lacks a `slope` column). Forward FD
+  costs one extra evaluate per substep; `dT_rel = 1e-3` keeps the
+  error under 0.6% on the worst (Boltzmann-dominated) channels and
+  under 1e-9 on smooth channels.
+- Avoid the historical NCR `dT_rel = 2e-2` value for the Python
+  port: the same one-extra-eval cost at `dT_rel = 1e-3` improves
+  the error by an order of magnitude. The 2e-2 plateau is fine for
+  the original C++ runs but the modern Python rewrite gets a free
+  precision upgrade.
+- Do NOT use per-channel optimum dT_rel: the optimum sits on the
+  roundoff cliff; any small perturbation (platform, numpy version,
+  parameter regime, tabulated-vs-analytic swap) shifts the optimum
+  by 1-2 dex and risks NaN. The conservative `1e-3` value sits in
+  the truncation-dominated regime where error is platform-
+  independent and predictable.
+
+The test is plain-pytest (no `slow` marker yet); it runs in <2 s and
+is cheap enough to leave in CI. If it ever needs to be skipped, add
+`@pytest.mark.slow` and a `--runslow` flag to the project pytest
+config.
+
+Validation: 535 passed, 4 skipped (up from 529 / 4; +6 net new
+calibration cases covering 3 channels x 2 FD methods, no
+regressions).
