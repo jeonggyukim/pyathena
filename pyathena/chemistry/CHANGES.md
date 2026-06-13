@@ -825,3 +825,70 @@ Out of scope (queued for Phase 4b batch 3+ / 4c):
 Validation: 504 passed, 4 skipped (up from 501 / 4; +3 net new test
 entries covering 40+ internal cases across the 3 channels, no
 regressions).
+
+## 2026-06-13: Phase 4b batch 3 -- CI / Lya / H2 (both forms) / grain rec
+
+Five more channel ports. Two of the new channels are the NCR
+production defaults (Lya for H I cooling, H2Moseley21 for H2
+rovibrational cooling); two alternative forms (LymanAlpha for the
+DESPOTIC coolHI convention, H2Gong17 for the Gong + Ostriker +
+Wolfire 2017 form) live alongside them. CI 3-level fine-structure
+and the WD01 grain-recombination cooling round out the batch.
+
+Production wiring corrections informed the channel-name split:
+
+- Tigris-ncr PhotochemistryNCR uses `coolLya` for H I cooling, not
+  `coolHI` (which is the DESPOTIC Lyman-alpha + Lyman-beta + 2-photon
+  sum). Both ports are kept; constructor-time choice between
+  `LyaCooling` (NCR default) and `LymanAlphaCooling` (DESPOTIC) is
+  up to the driver wiring.
+- `pyathena.microphysics.get_cooling.py` line 127 wires `coolH2rovib`
+  (Moseley + 2021), not `coolH2G17`. Both ports are kept;
+  `H2Moseley21Cooling` is the NCR default. The Cloudy molecular
+  database may eventually serve as a swap target for either form;
+  CHIANTI does not.
+
+Channels:
+
+- `cooling.ci.CIFineStructureCooling` -- literal port of `cool.coolCI`.
+  3-level fine-structure (g_0=1, g_1=3, g_2=5) for 370 + 609 um. The
+  electron collision strength is a 4-coefficient Horner polynomial
+  in `ln T` piecewise at T = 1000 K; HI and H2 partners from
+  Draine 2011 F.6. The piecewise blend uses three scratch buffers
+  (`tmp_a`, `tmp_b`, `out`) so the cold-piece Horner result is not
+  clobbered by the warm-piece Horner workspace. A naming convention
+  has been adopted: `tmp_a` / `tmp_b` for symmetric paired scratches.
+- `cooling.lya.LyaCooling` -- literal port of `cool.coolLya`. H I
+  2-level 1s -> 2p (Lyman-alpha), Draine 2011 17.18 effective
+  collision strength fit for the e partner. NCR production default.
+- `cooling.h2_gong17.H2Gong17Cooling` -- literal port of
+  `cool.coolH2G17` (Gong, Ostriker, Wolfire 2017). Five collision
+  partners (HI / H2 / He / H+ / e); piecewise Horner polynomials in
+  `log10(T_3)` for the low-density limit; Hollenbach + McKee 1979
+  LTE limit. Combined via `Gamma_tot = Gamma_LTE / (1 + Gamma_LTE /
+  Gamma_n0)`. Alternative form; not the NCR default.
+- `cooling.h2_moseley21.H2Moseley21Cooling` -- literal port of
+  `cool.coolH2rovib` (Moseley + 2021). Four rovibrational line
+  series with saturation density terms. NCR production default.
+- `cooling.grain_recombination.GrainRecombinationCooling` -- literal
+  port of `cool.coolRec`. The WD01 charge-parameter `x` and exponent
+  structure match the PE heating channel exactly; the two should be
+  enabled together in production.
+
+Parity tests
+(`tests/chemistry/parity/test_phase4b_ci_h2_grain.py`): five test
+functions (one per channel), each looping representative cases
+internally. Tolerance `rtol = 1e-12`, `atol = 0`.
+
+Out of scope (queued for Phase 4b batch 4+ / 4c):
+
+- HISmith21 cooling.
+- coolH2colldiss (H2 collisional dissociation cooling) and the
+  paired `heatH2diss` / `heatH2form` / `heatH2pump` heating channels.
+- OII (cool.coolOII) and the coolneb metal-line collision channel.
+- Analytic d(Lambda)/d(T/mu) and d(Gamma)/d(T/mu) derivatives.
+- Driver rebind to `CoolingChannels`.
+
+Validation: 509 passed, 4 skipped (up from 504 / 4; +5 net new test
+entries covering ~50 internal cases across the 5 channels, no
+regressions).
