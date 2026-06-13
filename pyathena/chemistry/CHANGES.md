@@ -1101,3 +1101,72 @@ Out of scope (Phase 4d):
 Validation: 519 passed, 4 skipped (up from 516 / 4; +3 net new tests
 covering aggregator scratch wiring, sum-matches-channels, and the
 driver setup chain).
+
+## 2026-06-14: Phase 4 prereq -- build_cie_high_pool.py + pool tables
+
+Adds the Phase 6 CIE-lumped-pool table builder and the four
+production tables it writes. The builder is a Phase 4 prerequisite
+for the Phase 6 `NCRNetwork3PlusIons16` ghost-row layout: the
+CIE-lumped-pool ghosts (`x_high_C`, `x_high_N`, `x_high_O`,
+`x_high_S`) need precomputed `(x_high_frac(T), q_high_mean(T),
+Lambda_high(T))` columns to be useful at runtime.
+
+Builder:
+
+- `pyathena.chemistry.tables.chianti_v11.build_cie_high_pool` reads
+  the existing CHIANTI v11 per-element tables under
+  `data/microphysics/chianti_v11/`:
+  - `ioneq_<element>.txt` -- CIE ionisation fractions x_q(T), shape
+    `(Z+1, NT)`, from `build_ioneq`.
+  - `cool_<element>.txt`  -- per-ion radiative-loss coefficient
+    L_q(T) [erg cm^3 / s], shape `(Z+1, NT)`, from `build_cool`.
+  For each element / q_max_tracked pair the builder sums:
+  - `x_high_frac(T)  = sum_{q >= q_max_tracked} ioneq_q(T)`
+  - `q_high_mean(T)  = sum_{q >= q_max_tracked} q * ioneq_q
+                       / x_high_frac` (= 0 where the pool fraction
+                        is < 1e-30, avoiding 0/0 in the cold tail)
+  - `Lambda_high(T) = sum_{q >= q_max_tracked} ioneq_q * L_q`
+  and writes the result to `data/chemistry/cie_high_pool_<element>.txt`.
+
+- `ELEMENT_GROUPS` mirrors the
+  `NCRNetwork3PlusIons16.element_groups` cutoffs from
+  `chemistry-rewrite-plan.md` §4a.2: `('C', 2)` pools q = 2..6,
+  `('N', 2)` pools q = 2..7, `('O', 3)` pools q = 3..8,
+  `('S', 3)` pools q = 3..16.
+
+- Helper functions: `compute_pool(ioneq, L_q, q_max_tracked)` does
+  the core sum and is unit-testable in isolation; `write_ascii` and
+  `read_cie_high_pool` are the I/O round-trip.
+
+Tables (committed under `data/chemistry/`):
+
+- `cie_high_pool_C.txt` (Z = 6, pool q = 2..6)
+- `cie_high_pool_N.txt` (Z = 7, pool q = 2..7)
+- `cie_high_pool_O.txt` (Z = 8, pool q = 3..8)
+- `cie_high_pool_S.txt` (Z = 16, pool q = 3..16)
+
+Each on the same 121-point log-T grid as the upstream CHIANTI
+tables (10^3 K -> 10^9 K, 0.05 dex).
+
+Tests (`tests/chemistry/test_cie_high_pool_builder.py`):
+
+- `test_compute_pool_sums_correctly` hand-checks the three sums on
+  a synthetic `(Z+1, NT)` ioneq + L_q input (rtol = 1e-14).
+- `test_compute_pool_handles_empty_pool` exercises the 0/0 guard.
+- `test_pre_built_O_table_is_well_formed` reads the on-disk O table
+  and asserts the format invariants (monotone log_T, x_high in
+  [0,1], q_high in [q_max, Z], Lambda_high >= 0, hot end fully
+  ionised). Skipped when the table is missing on disk.
+
+Phase 6 consumers: `NCRNetwork3PlusIons16.fill_ghosts` will read
+these tables via a `CIEHighPool` helper that exposes
+`x_high_frac(T)`, `q_high_mean(T)`, `Lambda_high(T)` as interpolated
+arrays on the strip log-T grid. The plan §4a.3 closure formulation
+uses `x_high_frac` to renormalise the evolved low-charge rows so
+element conservation holds; `q_high_mean` enters the electron-
+fraction ghost (`x_high * q_high_mean` contributes to x_e); and
+`Lambda_high` plugs directly into the cooling channel for the pool
+contribution.
+
+Validation: 522 passed, 4 skipped (up from 519 / 4; +3 net new
+tests covering the pool sum + format invariants).
