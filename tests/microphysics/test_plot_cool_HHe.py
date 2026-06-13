@@ -3,13 +3,13 @@
 Uses CIE x_q(T) from data/microphysics/chianti_v11/ioneq_{H,He}.txt
 to weight each cooling channel by ion fraction. Channels:
 
-  BB:   collisional excitation -> line emission (HI Ly alpha, HeI,
-        HeII line cooling)
-  2g:   two-photon continuum (HI 2s, HeI/HeII 2s metastable decay)
-  CI:   collisional ionization (gamma * E_ion thermal-energy loss)
-  FB:   radiative recombination + cascade continuum
-  FF:   bremsstrahlung
-  Tot:  sum
+  bound-bound: collisional excitation -> line emission
+               (HI Ly alpha, HeI, HeII line cooling)
+  two-photon:  HI 2s, HeI/HeII 2s metastable decay
+  collisional ionization: gamma * E_ion thermal-energy loss
+  free-bound:  radiative recombination + cascade continuum
+  free-free:   bremsstrahlung
+  total:       sum
 
 Rate per volume for each channel:
   rate / volume = n_X^q * n_e * Lambda^chan_q(T)
@@ -85,8 +85,8 @@ def draine_HII_rec_per_HII_per_e(T):
     Counts only the thermal kinetic energy of the captured
     electron (~0.685 * k_B * T per recombination). The Balmer-
     continuum and cascade-line emission are accounted as separate
-    channels (continuum + BB Ly-alpha / Balmer lines) to avoid
-    double-counting.
+    channels (continuum + bound-bound Ly-alpha / Balmer lines) to
+    avoid double-counting.
 
     Hummer 1994 case-B recombination coefficient fit:
         alpha_B(T) ~ 2.59e-13 * T_4^(-0.833 - 0.034 * log10 T_4)
@@ -144,14 +144,14 @@ def draine_HeIII_rec_per_HeIII_per_e(T):
 
 
 def draine_FF_HeII_per_HeII_per_e(T):
-    """FF for He II (charge Z = 1). Draine 27.24 with Z = 1; same
-    formula as HII."""
+    """Free-free for He II (charge Z = 1). Draine 27.24 with
+    Z = 1; same formula as HII."""
     return draine_FF_per_HII_per_e(T)
 
 
 def draine_FF_HeIII_per_HeIII_per_e(T):
-    """FF for He III (charge Z = 2). Draine 27.24 with Z = 2:
-    factor of 4 (Z^2) over the H II coefficient."""
+    """Free-free for He III (charge Z = 2). Draine 27.24 with
+    Z = 2: factor of 4 (Z^2) over the H II coefficient."""
     return 4.0 * draine_FF_per_HII_per_e(T)
 
 
@@ -229,9 +229,10 @@ def _ionization_rate(ion_name, T_grid):
 
 
 def _fb_per_recombining_ion_per_e(ion_name, T_grid):
-    """Case-A FB cooling per recombining ion per electron, for the
-    given ion_name (e.g. 'h_2' -> HII recombining). Total radiation
-    emitted including LyC photons that re-ionize neutral H."""
+    """Case-A free-bound cooling per recombining ion per electron,
+    for the given ion_name (e.g. 'h_2' -> HII recombining). Total
+    radiation emitted including LyC photons that re-ionize neutral
+    H."""
     import ChiantiPy.core as ch
     import numpy as np
     try:
@@ -246,7 +247,7 @@ def _fb_per_recombining_ion_per_e(ion_name, T_grid):
 
 def _fb_caseB_per_recombining_ion_per_e(ion_name, T_grid,
                                         lambda_cut=911.75):
-    """Case-B FB cooling: integrate freeBound spectrum at
+    """Case-B free-bound cooling: integrate freeBound spectrum at
     wavelengths longer than the lambda_cut (default = Lyman limit
     911.75 Angstrom for HII). Excludes direct-to-ground (n=1)
     captures whose LyC photons re-ionize neutral H locally and
@@ -294,7 +295,8 @@ def test_plot_HHe_CIE_cooling(figures_dir, save_figures):
 
     T_grid = np.logspace(np.log10(3e3), 5.0, 50)
     n_e = 1.0   # all per-ion-per-e quantities are n_e-independent
-                # at this density for the FB/FF/CI channels (BB is
+                # at this density for the free-bound / free-free /
+                # collisional-ionization channels (bound-bound is
                 # in the low-density limit at n_e=1).
 
     # CIE x_q(T) for H and He.

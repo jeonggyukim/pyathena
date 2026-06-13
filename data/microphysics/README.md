@@ -87,7 +87,8 @@ Per-ion cooling efficiency Lambda_q(T) in units of erg cm^3 / s, at
 the low-density limit, with no abundance or ionization-fraction
 weighting included.
 
-- `cool_<X>.txt`    -- total: BB + 2g + FF + FB
+- `cool_<X>.txt`    -- total: bound-bound + two-photon + free-free
+  + free-bound
 - `cool_BB_<X>.txt` -- bound-bound line emission
 - `cool_2g_<X>.txt` -- two-photon continuum
 - `cool_FF_<X>.txt` -- free-free bremsstrahlung
@@ -95,9 +96,9 @@ weighting included.
   (attributed to the post-recombination ion, Gnat & Ferland 2012
   convention)
 
-The split lets time-dependent multi-ion chemistry weight FB by
-x_(q+1) (the recombining ion) and BB / 2g / FF by x_q (the emitting
-ion).
+The split lets time-dependent multi-ion chemistry weight free-bound
+by x_(q+1) (the recombining ion) and bound-bound / two-photon /
+free-free by x_q (the emitting ion).
 
 ### Per-ion atomic data
 

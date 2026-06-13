@@ -204,9 +204,10 @@ def cooling_for_element(element, Z, T_grid):
     """
     import ChiantiPy.core as ch
     NT = len(T_grid)
-    # Per-channel tables: BB, 2gamma, FF, FB. Caller can sum to get
-    # total or inspect channels individually (e.g., to compare with
-    # GF12, which appears to exclude FB from per-ion columns).
+    # Per-channel tables: bound-bound, two-photon, free-free,
+    # free-bound. Caller can sum to get total or inspect channels
+    # individually (e.g., to compare with GF12, which appears to
+    # exclude free-bound from per-ion columns).
     Lambda_BB = np.zeros((Z + 1, NT))
     Lambda_2g = np.zeros((Z + 1, NT))
     Lambda_FF = np.zeros((Z + 1, NT))
@@ -214,7 +215,7 @@ def cooling_for_element(element, Z, T_grid):
     sym = _ELEM_SYM[element]
     for q in range(Z + 1):
         ion_name = f'{sym}_{q + 1}'   # CHIANTI 1-based
-        # --- Ion-class channels: BB + 2gamma ---
+        # --- Ion-class channels: bound-bound + two-photon ---
         if q < Z:   # fully stripped has no bound electrons
             try:
                 ion = ch.ion(ion_name, temperature=T_grid,
@@ -230,7 +231,7 @@ def cooling_for_element(element, Z, T_grid):
                 if N_electrons in (1, 2):
                     Lambda_2g[q] = _safe_loss(
                         ion, 'twoPhotonLoss', 'TwoPhotonLoss', NT)
-        # --- Continuum: FF for this ion ---
+        # --- Continuum: free-free for this ion ---
         try:
             cont = ch.continuum(ion_name, temperature=T_grid)
             cont.Abundance = 1.0
@@ -240,10 +241,11 @@ def cooling_for_element(element, Z, T_grid):
         if cont is not None and q >= 1:
             Lambda_FF[q] = _safe_loss(cont, 'freeFreeLoss',
                                       'FreeFreeLoss', NT)
-        # --- FB attributed to POST-recombination ion (GF12 / Cloudy
-        # convention). FB from X^(q+1) + e -> X^q + photon shows in
-        # the row of X^q, not X^(q+1). For q < Z, look up the
-        # continuum object of X^(q+1) and add its FB rate here.
+        # --- Free-bound attributed to POST-recombination ion
+        # (GF12 / Cloudy convention). Free-bound from
+        # X^(q+1) + e -> X^q + photon shows in the row of X^q, not
+        # X^(q+1). For q < Z, look up the continuum object of
+        # X^(q+1) and add its free-bound rate here.
         if q < Z:
             next_ion_name = f'{sym}_{q + 2}'
             try:
