@@ -695,3 +695,60 @@ Out of scope for Phase 4a (queued for 4b):
 
 Validation: 497 passed, 4 skipped (up from 490 / 4 in the previous
 entry; +7 net new tests, no regressions).
+
+## 2026-06-13: Phase 4b batch 1 -- four hydrogen channels
+
+Adds four more channels in the Phase 4 cool.py split: HI collisional
+ionisation cooling, H II case-B recombination cooling, H II free-free
+(bremsstrahlung), and cosmic-ray heating. All four mirror their
+`pyathena.microphysics.cool` originals byte-for-byte and follow the
+Phase 4a `CoolingChannel` / `HeatingChannel` contracts (named scratch
+slots, in-place numpy hot path, optional zeroed `d_out`).
+
+Channels added:
+
+- `cooling.hi_collisional_ionization.HICollisionalIonizationCooling`
+  -- ports `coolHIion`. Lambda = 13.6 eV * k_coll(T) * n_H * x_e *
+  x_HI with `k_coll(T)` the 8-term Janev 1987 polynomial in
+  ln(T * 8.6173e-5) gated to T > 3000 K. Horner-evaluated to keep
+  the inner loop branch-free.
+- `cooling.recombination_hydrogen.HRecombinationCooling` -- ports
+  `coolrecH`. Lambda = E_rr_B * alpha_caseB(T) * n_H * x_e * x_HII
+  with E_rr_B = (0.684 - 0.0416 * ln(T / 1e4)) * k_B * T. The
+  channel owns a `RecRate` instance; alpha_caseB still allocates on
+  every call inside `RecRate.get_rec_rate_H_caseB`, so Phase 4c
+  rebinds to a pre-tabulated path.
+- `cooling.free_free.FreeFreeHCooling` -- ports `coolffH`. Lambda =
+  1.422e-25 * g_ff(T) * sqrt(T / 1e4) * n_H * x_e * x_HII with the
+  Draine 2011 10.11 Gaunt factor.
+- `heating.cosmic_ray.CosmicRayHeating` -- ports `heatCR`. Gamma =
+  xi_CR * (x_HI * q_HI + 2 * x_H2 * q_H2), with q_H2 the Krumholz
+  2014 piecewise-linear-in-log10(n_H) fit assembled branch-free via
+  np.where over the five density pieces. xi_CR exposed as a
+  constructor argument; defaults to 2e-16 (NCR standard).
+
+Parity tests
+(`tests/chemistry/parity/test_phase4b_hydrogen_channels.py`):
+
+- One test function per channel, looping over four ionisation
+  states (WNM, HII boundary, ionised, half-molecular CNM); cosmic-ray
+  heating additionally sweeps three xi_CR values. Each test invokes
+  `np.testing.assert_allclose(..., rtol = 1e-12, atol = 0,
+  err_msg = ...)` so a failure names the case inline rather than
+  spamming the pytest tail. The grouping follows the project's
+  pytest test-count convention.
+
+Out of scope (queued for Phase 4b batch 2 / 4c):
+
+- CII / OI / CI fine-structure channels (need the per-coolant
+  `cool2Level_` / `cool3Level_` helpers).
+- H2 cooling (G17, rovib, coll-dissoc) and H2 photoheating channels.
+- Dust grain cooling.
+- WD01 recombination cooling on grains (`coolRec`).
+- Analytic `d(Lambda)/d(T/mu)` and `d(Gamma)/d(T/mu)` -- still
+  zeroed for now.
+- Driver rebind to `CoolingChannels`.
+
+Validation: 501 passed, 4 skipped (up from 497 / 4; +4 net new test
+entries covering 32 internal cases across the 4 channels, no
+regressions).
