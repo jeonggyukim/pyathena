@@ -143,11 +143,17 @@ class ExplicitSubcyclingSolver:
         state.alloc_scratch('solver:D', (nspec, ncell))
         state.alloc_scratch('solver:tmp_ncell', (ncell,))
         state.alloc_scratch('solver:tmp_ncell_b', (ncell,))
-        state.alloc_scratch('solver:T_old', (ncell,))
-        state.alloc_scratch('solver:T_new', (ncell,))
+        # Substep thermodynamic state. The conserved variable across the
+        # substep is `temp_mu = T / mu`; see kernels::semi_implicit_temp_mu_update.
+        # `solver:mu_at_entry` holds mu evaluated at substep entry so the
+        # post-chemistry rescale state.T = mu_new * temp_mu_new can keep
+        # the substep-invariant T/mu correct when species evolve.
+        state.alloc_scratch('solver:temp_mu_old', (ncell,))
+        state.alloc_scratch('solver:temp_mu_new', (ncell,))
+        state.alloc_scratch('solver:mu_at_entry', (ncell,))
         state.alloc_scratch('solver:net_cool', (ncell,))
-        state.alloc_scratch('solver:d_net_cool_dT', (ncell,))
-        state.alloc_scratch('solver:inv_heat_capacity', (ncell,))
+        state.alloc_scratch('solver:d_net_cool_d_temp_mu', (ncell,))
+        state.alloc_scratch('solver:inv_heat_cap_per_temp_mu', (ncell,))
         # Single-row scratch for the implicit-Euler chemistry update.
         # Three buffers cover HI, HII, H2 substep updates without
         # cross-row aliasing.
@@ -209,12 +215,20 @@ class ExplicitSubcyclingSolver:
         """
         C = state.get_scratch('solver:C')
         D = state.get_scratch('solver:D')
-        T_old = state.get_scratch('solver:T_old')
+        T_entry = state.get_scratch('solver:tmp_ncell_b')
+        temp_mu_old = state.get_scratch('solver:temp_mu_old')
+        temp_mu_new = state.get_scratch('solver:temp_mu_new')
+        mu_at_entry = state.get_scratch('solver:mu_at_entry')
         tmp_ncell = state.get_scratch('solver:tmp_ncell')
 
         # Snapshot T at substep entry so the rejection-and-halve loop
-        # restores it on retry.
-        np.copyto(T_old, state.T)
+        # restores it on retry. mu is also snapshotted because every
+        # cooling sub-step computes its own `temp_mu_old = T_entry /
+        # mu_at_entry` and the post-chemistry rescale needs the same
+        # reference mu.
+        np.copyto(T_entry, state.T)
+        self.thermo.mu(state, mu_at_entry)
+        np.divide(T_entry, mu_at_entry, out=temp_mu_old)
 
         # Step 1: evaluate (C, D) at the entry state.
         self.network.evaluate_CD(state, C, D)
@@ -227,12 +241,14 @@ class ExplicitSubcyclingSolver:
         # Step 4: try the substep; halve on rejection until accepted or
         # the budget is exhausted.
         for _retry in range(_NBAD_DT_MAX + 1):
-            accepted = self._attempt_T_step(state, T_old, dt_sub)
+            accepted = self._attempt_temp_mu_step(
+                state, temp_mu_old, mu_at_entry, dt_sub,
+            )
             state.diag.n_thermal_solves += 1
             if accepted:
                 break
             # Restore T to the entry value before retrying.
-            np.copyto(state.T, T_old)
+            np.copyto(state.T, T_entry)
             dt_sub *= 0.5
             if dt_sub < _DT_SUB_FLOOR:
                 break
@@ -244,32 +260,58 @@ class ExplicitSubcyclingSolver:
         self.network.evaluate_CD(state, C, D)
         self._update_chemistry(state, C, D, dt_sub)
         self.network.closure(state)
+
+        # Post-chemistry rescale: temp_mu is the substep-invariant
+        # variable. Cooling fixed it at temp_mu_new; chemistry then
+        # changed mu without touching temp_mu. The hydro-facing T must
+        # therefore become mu_new * temp_mu_new so that pressure (=
+        # den * temp_mu_new / temp_mu_cgs in code units) is consistent
+        # with the operator-splitting energy accounting. Without this
+        # rescale, T would silently track mu_at_entry and the gas would
+        # gain or lose internal energy whenever species ionised /
+        # recombined inside a single substep. tigris-ncr
+        # (ncr_solver.hpp::UpdateTemperature) and mini-RAMSES
+        # (cooling_module::cool_step) follow the same convention.
+        mu_new = state.get_scratch('solver:tmp_ncell')
+        self.thermo.mu(state, mu_new)
+        np.multiply(mu_new, temp_mu_new, out=state.T)
         return dt_sub
 
     # ------------------------------------------------------------------
     # Substep ingredients
     # ------------------------------------------------------------------
-    def _attempt_T_step(
+    def _attempt_temp_mu_step(
         self,
         state: Any,
-        T_old: np.ndarray,
+        temp_mu_old: np.ndarray,
+        mu_at_entry: np.ndarray,
         dt_sub: float,
     ) -> bool:
-        """Try the semi-implicit T step at `dt_sub`.
+        """Try the semi-implicit temp_mu step at `dt_sub`.
 
-        Returns True if every cell accepts (T_new > 0, finite, within
-        a factor of `1 + 2 * cfl_cool_sub` of T_old). On rejection the
-        caller restores `state.T` and halves `dt_sub`.
+        Returns True if every cell accepts (temp_mu_new > 0, finite,
+        within a factor of `1 + 2 * cfl_cool_sub` of temp_mu_old). On
+        rejection the caller restores `state.T` from the substep-entry
+        snapshot and halves `dt_sub`. The conserved variable is
+        `temp_mu = T / mu`; with `mu` held fixed across the cooling
+        sub-step, the bound on `temp_mu_new / temp_mu_old` is the same
+        as a bound on `T_new / T_old` (the ratio `mu` cancels). On
+        accept the kernel result is written through to `state.T` as
+        `mu_at_entry * temp_mu_new` so the chemistry sub-step sees the
+        correct post-cooling temperature for its rate coefficients.
         """
         net_cool = state.get_scratch('solver:net_cool')
-        d_net_cool_dT = state.get_scratch('solver:d_net_cool_dT')
-        inv_heat_capacity = state.get_scratch('solver:inv_heat_capacity')
+        d_net_cool_d_temp_mu = state.get_scratch(
+            'solver:d_net_cool_d_temp_mu')
+        inv_heat_cap_per_temp_mu = state.get_scratch(
+            'solver:inv_heat_cap_per_temp_mu')
         tmp_ncell = state.get_scratch('solver:tmp_ncell')
-        T_new = state.get_scratch('solver:T_new')
+        temp_mu_new = state.get_scratch('solver:temp_mu_new')
 
-        kern.semi_implicit_T_update(
-            T_old, net_cool, d_net_cool_dT, inv_heat_capacity, dt_sub,
-            out=T_new, tmp=tmp_ncell,
+        kern.semi_implicit_temp_mu_update(
+            temp_mu_old, net_cool, d_net_cool_d_temp_mu,
+            inv_heat_cap_per_temp_mu, dt_sub,
+            out=temp_mu_new, tmp=tmp_ncell,
         )
 
         # Physical-range check, branch-free over the strip. The
@@ -277,26 +319,24 @@ class ExplicitSubcyclingSolver:
         reject_mask = state.get_scratch('solver:reject_mask')
         viol_mask = state.get_scratch('solver:mask_b1')
         cfl = self.cfl_cool_sub
-        # reject = ~isfinite(T_new) | (T_new <= 0)
-        #        | (T_new > (1 + 2 cfl) * T_old)
-        #        | (T_new < (1 - 2 cfl) * T_old)
-        np.isfinite(T_new, out=reject_mask)
+        # reject = ~isfinite(temp_mu_new) | (temp_mu_new <= 0)
+        #        | (temp_mu_new > (1 + 2 cfl) * temp_mu_old)
+        #        | (temp_mu_new < (1 - 2 cfl) * temp_mu_old)
+        np.isfinite(temp_mu_new, out=reject_mask)
         np.logical_not(reject_mask, out=reject_mask)
-        # viol_mask = T_new <= 0
-        np.less_equal(T_new, 0.0, out=viol_mask)
+        np.less_equal(temp_mu_new, 0.0, out=viol_mask)
         np.logical_or(reject_mask, viol_mask, out=reject_mask)
-        # tmp_ncell = (1 + 2 cfl) * T_old; viol_mask = T_new > tmp_ncell
-        np.multiply(T_old, 1.0 + 2.0 * cfl, out=tmp_ncell)
-        np.greater(T_new, tmp_ncell, out=viol_mask)
+        np.multiply(temp_mu_old, 1.0 + 2.0 * cfl, out=tmp_ncell)
+        np.greater(temp_mu_new, tmp_ncell, out=viol_mask)
         np.logical_or(reject_mask, viol_mask, out=reject_mask)
-        # tmp_ncell = (1 - 2 cfl) * T_old; viol_mask = T_new < tmp_ncell
-        np.multiply(T_old, 1.0 - 2.0 * cfl, out=tmp_ncell)
-        np.less(T_new, tmp_ncell, out=viol_mask)
+        np.multiply(temp_mu_old, 1.0 - 2.0 * cfl, out=tmp_ncell)
+        np.less(temp_mu_new, tmp_ncell, out=viol_mask)
         np.logical_or(reject_mask, viol_mask, out=reject_mask)
         if bool(np.any(reject_mask)):
             return False
-        # Accepted: write T_new back into state.T.
-        np.copyto(state.T, T_new)
+        # Accepted: write T_new = mu_at_entry * temp_mu_new back into
+        # state.T. mu has not changed yet (chemistry runs next).
+        np.multiply(mu_at_entry, temp_mu_new, out=state.T)
         return True
 
     def _estimate_dt_sub(
@@ -343,12 +383,18 @@ class ExplicitSubcyclingSolver:
         np.multiply(scratch, gate, out=scratch)
         inv_t_chem_h2_max = float(np.max(scratch))
 
-        # Cooling timescale.
+        # Cooling timescale. The natural form on the substep-invariant
+        # variable temp_mu = T / mu is
+        #     1 / t_cool = inv_heat_cap_per_temp_mu * |net_cool| / temp_mu
+        # which is mu-independent (both factors are). It is identical
+        # to the T-space form |net_cool| / u_int because both reduce to
+        # |net_cool| * (gamma - 1) / (n_H * mu_hyd * k_B * temp_mu).
         net_cool = state.get_scratch('solver:net_cool')
-        inv_heat_capacity = state.get_scratch('solver:inv_heat_capacity')
-        # 1 / t_cool = inv_heat_capacity * |net_cool| / T
-        np.multiply(inv_heat_capacity, net_cool, out=scratch)
-        np.divide(scratch, state.T, out=scratch)
+        inv_heat_cap_per_temp_mu = state.get_scratch(
+            'solver:inv_heat_cap_per_temp_mu')
+        temp_mu_old = state.get_scratch('solver:temp_mu_old')
+        np.multiply(inv_heat_cap_per_temp_mu, net_cool, out=scratch)
+        np.divide(scratch, temp_mu_old, out=scratch)
         np.fabs(scratch, out=scratch)
         inv_t_cool_max = float(np.max(scratch))
 
@@ -362,42 +408,54 @@ class ExplicitSubcyclingSolver:
         return dt_sub
 
     def _evaluate_cooling(self, state: Any) -> None:
-        """Populate `net_cool`, `d_net_cool_dT`, `inv_heat_capacity`.
+        """Populate `net_cool`, `d_net_cool_d_temp_mu`,
+        `inv_heat_cap_per_temp_mu`.
 
         The Phase 3 driver does not yet have a cooling policy plumbed
         in (Phase 4 wires that up). Without one, `net_cool` and
-        `d_net_cool_dT` are zero -- the temperature stays put and only
-        the chemistry advances. `inv_heat_capacity` is still computed
-        because the dt_sub estimator divides by T through it.
+        `d_net_cool_d_temp_mu` are zero -- temp_mu stays put and only
+        the chemistry advances. `inv_heat_cap_per_temp_mu` is still
+        computed because the dt_sub estimator reads it.
 
-        When `self.cooling` is supplied, the policy is expected to
-        write `solver:net_cool` and `solver:d_net_cool_dT` in place
-        on `state.scratch`. The Phase 4 implementation follows this
-        contract.
+        Cooling policy contract (Phase 4): the policy writes
+        `solver:net_cool` (= cool - heat per cell, erg / s / cm^3) and
+        `solver:d_net_cool_d_temp_mu` (= d(cool - heat) / d(T/mu) per
+        cell). The temp_mu-space derivative is `mu * d(net_cool) / dT`
+        because temp_mu = T / mu; concrete policies that only know
+        `d(net_cool) / dT` should scale by mu before writing.
         """
         net_cool = state.get_scratch('solver:net_cool')
-        d_net_cool_dT = state.get_scratch('solver:d_net_cool_dT')
-        inv_heat_capacity = state.get_scratch('solver:inv_heat_capacity')
+        d_net_cool_d_temp_mu = state.get_scratch(
+            'solver:d_net_cool_d_temp_mu')
+        inv_heat_cap_per_temp_mu = state.get_scratch(
+            'solver:inv_heat_cap_per_temp_mu')
 
         if self.cooling is None:
             net_cool[:] = 0.0
-            d_net_cool_dT[:] = 0.0
+            d_net_cool_d_temp_mu[:] = 0.0
         else:
             self.cooling.update(state)
 
-        # inv_heat_capacity = (gamma - 1) / (n_tot * k_B) per cell.
-        # n_tot = n_H * (1 + A_He - x_H2 + x_e); recover it from mu
-        # via mu = mu_hyd / (1 + A_He - x_H2 + x_e). So
-        # n_tot / n_H = mu_hyd / mu, hence inv_heat_capacity
-        #             = (gamma - 1) * mu / (n_H * mu_hyd * k_B).
-        self.thermo.mu(state, inv_heat_capacity)
+        # inv_heat_cap_per_temp_mu = (gamma - 1) / (n_H * mu_hyd * k_B)
+        # per cell. This is mu-INDEPENDENT: it converts an erg / s / cm^3
+        # net cooling rate into a K / s rate of temp_mu = T / mu.
+        # Derivation: the gas internal energy density u_int satisfies
+        # u_int = n_tot * k_B * T / (gamma - 1) and n_tot = n_H * (1 +
+        # A_He - x_H2 + x_e) = n_H * mu_hyd / mu. Hence
+        # d(temp_mu)/dt = d(T/mu)/dt = (1/mu) * dT/dt
+        #               = (gamma - 1) / (n_H * mu_hyd * k_B) * (heat -
+        #                 cool)
+        # so the mu factor cancels: the only species inputs that survive
+        # are n_H and mu_hyd, both constant on the substep timescale.
+        # This matches tigris-ncr `ncr_solver.hpp` (it_heat / it_cool
+        # computed against `igm1 * press` rather than `n_tot * k_B`,
+        # which is the same expression with the press = n_tot k_B T
+        # substitution undone).
         mu_hyd = self.thermo.mu_hyd
         gamma_minus_one = self.thermo.gamma - 1.0
-        np.multiply(inv_heat_capacity, gamma_minus_one,
-                    out=inv_heat_capacity)
-        np.divide(inv_heat_capacity, state.nH, out=inv_heat_capacity)
-        np.divide(inv_heat_capacity, mu_hyd * K_B_CGS,
-                  out=inv_heat_capacity)
+        np.divide(gamma_minus_one, state.nH, out=inv_heat_cap_per_temp_mu)
+        np.divide(inv_heat_cap_per_temp_mu, mu_hyd * K_B_CGS,
+                  out=inv_heat_cap_per_temp_mu)
 
     def _update_chemistry(
         self,

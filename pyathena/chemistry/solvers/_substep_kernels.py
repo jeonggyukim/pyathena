@@ -67,45 +67,66 @@ def semi_implicit_x_update(
     return out
 
 
-def semi_implicit_T_update(
-    T: np.ndarray,
+def semi_implicit_temp_mu_update(
+    temp_mu: np.ndarray,
     net_cool: np.ndarray,
-    d_net_cool_dT: np.ndarray,
-    inv_heat_capacity: np.ndarray,
+    d_net_cool_d_temp_mu: np.ndarray,
+    inv_heat_cap_per_temp_mu: np.ndarray,
     dt: float,
     out: np.ndarray,
     tmp: np.ndarray,
 ) -> np.ndarray:
-    """Apply one semi-implicit Euler step to the temperature equation.
+    """Apply one semi-implicit Euler step to the T/mu equation.
 
-    The temperature evolves as `dT/dt = -inv_heat_capacity * net_cool`,
+    The conserved thermodynamic variable across the substep is
+    `temp_mu = T / mu`, not `T`. Mirroring the tigris-ncr C++ side
+    (`src/photchem/ncr_solver.hpp::UpdateTemperature`) and mini-RAMSES
+    (`cooling/neq_cooling_module.f90::cool_step`, `T2 = T/mu`), the
+    cooling sub-step updates `temp_mu` with `mu` held fixed; the
+    chemistry sub-step then changes `mu` without changing `temp_mu`.
+    The driver rescales `state.T = mu_new * temp_mu` at the end of the
+    substep so the per-cell internal energy budget stays consistent
+    when species evolve.
+
+    The equation of evolution is
+
+        d(temp_mu) / dt = -inv_heat_cap_per_temp_mu * net_cool
+
     where `net_cool = cool - heat` is the net cooling rate per unit
-    volume [erg / s / cm^3] and `inv_heat_capacity` is the local
-    `(gamma - 1) / (n_total * k_B)` so the product has units of `K / s`.
+    volume [erg / s / cm^3] and `inv_heat_cap_per_temp_mu` is the local
+    `(gamma - 1) / (n_H * mu_hyd * k_B)` so the product has units of
+    K / s. The factor is mu-independent: `n_H * mu_hyd` is the total
+    particle count per unit volume that `n_total = n_H * (1 + A_He -
+    x_H2 + x_e) = n_H * mu_hyd / mu` reduces to once the mu factor is
+    pulled into the conserved variable.
+
     Following Kim+2023 Eq. 59 the semi-implicit Euler update is
 
-        T_new = T - inv_heat_capacity * net_cool * dt / (1 - deriv)
+        temp_mu_new = temp_mu
+                      - inv_heat_cap_per_temp_mu * net_cool * dt
+                        / (1 - deriv)
 
-    with `deriv = -inv_heat_capacity * d_net_cool_dT * dt`. The
-    denominator damps the response when the rate derivative w.r.t.
-    temperature is large, which is the stability anchor that makes
+    with `deriv = -inv_heat_cap_per_temp_mu * d_net_cool_d_temp_mu *
+    dt`. The denominator damps the response when the rate derivative
+    w.r.t. temp_mu is large, which is the stability anchor that makes
     the explicit subcycle behave at small dt without going implicit.
 
     Parameters
     ----------
-    T : ndarray
-        Current temperature per cell.
+    temp_mu : ndarray
+        Current `T / mu` per cell [K].
     net_cool : ndarray
         `(cool - heat)` per cell [erg / s / cm^3].
-    d_net_cool_dT : ndarray
-        Finite-difference derivative `d(cool - heat) / dT` per cell.
-    inv_heat_capacity : ndarray
-        Per-cell `(gamma - 1) / (n_total * k_B)` so the product
-        `inv_heat_capacity * net_cool` has units of K / s.
+    d_net_cool_d_temp_mu : ndarray
+        Finite-difference derivative `d(cool - heat) / d(T/mu)` per
+        cell.
+    inv_heat_cap_per_temp_mu : ndarray
+        Per-cell `(gamma - 1) / (n_H * mu_hyd * k_B)`. Multiplying by
+        `net_cool` gives the K / s rate of `temp_mu`.
     dt : float
         Substep length.
     out : ndarray
-        Output buffer for `T_new`.
+        Output buffer for `temp_mu_new`.
     tmp : ndarray
         Scratch buffer of the same shape used for the denominator
         assembly; written in place.
@@ -113,18 +134,16 @@ def semi_implicit_T_update(
     Returns
     -------
     ndarray
-        `out` containing `T_new`.
+        `out` containing `temp_mu_new`.
     """
-    # tmp = 1 + inv_heat_capacity * d_net_cool_dT * dt
-    # (the -- sign on deriv flips because we are subtracting a
-    # cool-positive derivative from T)
-    np.multiply(inv_heat_capacity, d_net_cool_dT, out=tmp)
+    # tmp = 1 + inv_heat_cap_per_temp_mu * d_net_cool_d_temp_mu * dt
+    np.multiply(inv_heat_cap_per_temp_mu, d_net_cool_d_temp_mu, out=tmp)
     np.multiply(tmp, dt, out=tmp)
     np.add(tmp, 1.0, out=tmp)
-    # out = inv_heat_capacity * net_cool * dt / tmp
-    np.multiply(inv_heat_capacity, net_cool, out=out)
+    # out = inv_heat_cap_per_temp_mu * net_cool * dt / tmp
+    np.multiply(inv_heat_cap_per_temp_mu, net_cool, out=out)
     np.multiply(out, dt, out=out)
     np.divide(out, tmp, out=out)
-    # out = T - out
-    np.subtract(T, out, out=out)
+    # out = temp_mu - out
+    np.subtract(temp_mu, out, out=out)
     return out

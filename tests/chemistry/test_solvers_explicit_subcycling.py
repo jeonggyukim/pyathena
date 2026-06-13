@@ -119,10 +119,12 @@ def test_allocate_scratch_registers_named_buffers():
     state = _build_state(ncell=8)
     solver = _build_solver(state)
     expected = {
-        'solver:C', 'solver:D', 'solver:T_old', 'solver:T_new',
+        'solver:C', 'solver:D',
+        'solver:temp_mu_old', 'solver:temp_mu_new',
+        'solver:mu_at_entry',
         'solver:tmp_ncell', 'solver:tmp_ncell_b',
-        'solver:net_cool', 'solver:d_net_cool_dT',
-        'solver:inv_heat_capacity',
+        'solver:net_cool', 'solver:d_net_cool_d_temp_mu',
+        'solver:inv_heat_cap_per_temp_mu',
         'solver:x_new_HI', 'solver:x_new_HII', 'solver:x_new_H2',
         'solver:reject_mask', 'solver:mask_b1', 'solver:mask_b2',
     }
@@ -254,12 +256,13 @@ class _SwingingCooling:
     def update(self, state):
         self.calls += 1
         net_cool = state.get_scratch('solver:net_cool')
-        d_net_cool_dT = state.get_scratch('solver:d_net_cool_dT')
+        d_net_cool_d_temp_mu = state.get_scratch(
+            'solver:d_net_cool_d_temp_mu')
         # Drive a very rapid cooling spike that the cfl_cool_sub check
-        # has to reject. Magnitude is set so T_new < 0 unless dt_sub
-        # is halved several times.
+        # has to reject. Magnitude is set so temp_mu_new < 0 unless
+        # dt_sub is halved several times.
         net_cool[:] = 1.0e10 * (1.0 if self.calls % 2 == 0 else -1.0)
-        d_net_cool_dT[:] = 0.0
+        d_net_cool_d_temp_mu[:] = 0.0
 
 
 def test_subcycle_rejection_path_halves_dt_sub():

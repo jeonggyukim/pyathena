@@ -470,3 +470,70 @@ reference will eventually compare against.
 Validation: 438 passed, 4 skipped in `tests/chemistry/ +
 tests/microphysics/` (up from 419 / 4 in the previous entry; +19 new
 tests, no regressions).
+
+## 2026-06-13: Solver substep updates T/mu, not T (operator-splitting fix)
+
+Phase 3 follow-up. The semi-implicit temperature kernel in
+`pyathena.chemistry.solvers._substep_kernels` was updating the
+temperature `T` directly. The conserved variable across the substep
+under standard operator splitting is `T/mu`, not `T`: the cooling
+sub-step holds `mu` fixed while it updates the thermal energy, then
+the chemistry sub-step holds `T` fixed while it changes the species
+composition (and therefore `mu`). Storing `T` and recomputing pressure
+through the post-chemistry `mu` silently adds or removes internal
+energy proportional to `Delta mu / mu * T` at every substep boundary;
+the gas heats whenever species recombine and cools whenever they
+ionise, with no corresponding entry in the cooling channel ledger.
+
+The tigris-ncr C++ solver
+(`tigris-ncr/src/photchem/ncr_solver.hpp::UpdateTemperature`, lines
+466 - 495) and the mini-RAMSES neq cooling driver
+(`mini-ramses/cooling/neq_cooling_module.f90::cool_step`, lines
+500 - 575, `T2 = T/mu`) both update `T/mu` for this reason. Aligning
+the Python reference removes the discrepancy and is a prerequisite
+for the Phase 4 cooling-channel parity tests.
+
+Changes:
+
+- `pyathena.chemistry.solvers._substep_kernels` -- the temperature
+  kernel renamed `semi_implicit_T_update` -> `semi_implicit_temp_mu_update`
+  with the same closed-form arithmetic but new arg names and
+  docstring. Inputs: `temp_mu` (= T/mu), `net_cool`,
+  `d_net_cool_d_temp_mu`, `inv_heat_cap_per_temp_mu`, `dt`, and the
+  output / scratch buffers. The cooling-channel derivative now lives
+  in temp_mu-space (`mu * d(net_cool)/dT`) because that is what the
+  semi-implicit denominator needs.
+- `pyathena.chemistry.solvers.explicit_subcycling.ExplicitSubcyclingSolver`
+  -- substep loop refactored to mirror the C++ flow. Scratch slots
+  renamed: `solver:T_old` / `solver:T_new` ->
+  `solver:temp_mu_old` / `solver:temp_mu_new`, and a new
+  `solver:mu_at_entry` slot snapshots mu at substep start.
+  `solver:inv_heat_capacity` (which had a mu factor) is replaced by
+  `solver:inv_heat_cap_per_temp_mu` (= `(gamma - 1) / (n_H * mu_hyd *
+  k_B)`, mu-independent). `solver:d_net_cool_dT` is renamed
+  `solver:d_net_cool_d_temp_mu`. After the chemistry sub-step the
+  solver rescales `state.T = mu_new * temp_mu_new` so the
+  substep-invariant `T/mu` survives a change of species composition.
+  The dt_sub estimator's cooling timescale formula now reads
+  `inv_heat_cap_per_temp_mu * |net_cool| / temp_mu` (algebraically
+  identical to the old expression up to a mu factor that cancels with
+  the new heat-capacity formula).
+- Cooling-policy contract update: Phase 4 cooling policies write
+  `solver:net_cool` (unchanged) and `solver:d_net_cool_d_temp_mu`
+  (was `solver:d_net_cool_dT`). The temp_mu-space derivative is
+  `mu * d(net_cool)/dT`; policies that internally know
+  `d(net_cool)/dT` should scale by `mu` before storing.
+- Tests: `tests/chemistry/test_solvers_explicit_subcycling.py`
+  scratch-slot assertions, and the `_SwingingCooling` stub writing
+  the renamed derivative slot, are both updated.
+
+Numerical behaviour: with the current Phase 3 cooling stub
+(`net_cool = 0`) the dT update is zero so `state.T` end-of-substep
+matches the previous solver bit-for-bit. The behavioural change
+shows up only once a real cooling policy lands (Phase 4) and `mu`
+drifts during chemistry -- where the new path stays consistent with
+the C++ and RAMSES references and the old path would have leaked
+internal energy at the substep boundary.
+
+Validation: 438 passed, 4 skipped (matches the previous baseline; no
+regressions introduced by the rewrite).
