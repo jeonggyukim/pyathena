@@ -108,6 +108,17 @@ class NCRThermo(ThermoPolicy):
         Formula (C++ port; photchem.hpp:295-298):
 
             mu = mu_hyd / (1 + A_He - x_H2 + x_e)
+
+        Style note for new readers: the body below looks ugly compared to
+        the one-liner `out[:] = self.mu_hyd / (1 + self.A_He - x_h2 + x_e)`.
+        The one-liner is forbidden in this code path because every numpy
+        operator on arrays allocates a fresh temporary `(ncell,)` array.
+        Inside the solver's substep loop, that temporary is created and
+        freed thousands of times per MeshBlock, which is bad for cache
+        locality, GC pressure, and the `assert_no_alloc(allow=0)` test
+        guard. The `np.add(a, b, out=out)` form writes into pre-allocated
+        scratch and allocates nothing. Outside the hot path (setup, tests,
+        diagnostics), the one-liner form is fine and preferred.
         """
         x_h2 = self._x_h2(state)
         x_e = self._x_e(state)
