@@ -27,11 +27,13 @@ from ..chianti_v11.build_atomic import read_ascii
 # Prefactor in Draine 2011 Eq. 17.10 / Osterbrock 2006 Eq. 3.20
 # Collisional de-excitation rate coefficient (upper -> lower):
 #   q_ji^down(T) = _BETA * Upsilon / (g_upper * sqrt(T))   [cm^3 / s]
-# In CGS this prefactor is beta = h^2 / sqrt(8 pi^3 m_e^3 k_B) =
-# 8.629e-6. Draine 2011 Eq 17.10 uses 8.629e-8 with T in units of
-# 1e4 K (i.e. sqrt(T_4) in the denominator); the two forms are
-# equivalent.
-_BETA = 8.629e-6
+# beta = h^2 / sqrt(8 pi^3 m_e^3 k_B) in CGS (Draine 2011 Eq 17.10
+# with T in K; equals 8.629e-6).
+from astropy import constants as _const
+_BETA = (_const.h.cgs.value ** 2
+         / np.sqrt(8.0 * np.pi ** 3
+                   * _const.m_e.cgs.value ** 3
+                   * _const.k_B.cgs.value))
 
 
 class IonCoolant:
