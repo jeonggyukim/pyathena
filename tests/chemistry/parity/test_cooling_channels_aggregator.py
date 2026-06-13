@@ -97,6 +97,11 @@ def test_aggregator_update_matches_channel_sum():
     ncell = _T.size
     state.alloc_scratch('solver:net_cool', (ncell,))
     state.alloc_scratch('solver:d_net_cool_d_temp_mu', (ncell,))
+    # Phase 4d analytic derivatives read solver:mu_at_entry to
+    # convert d/dT -> d/d(T/mu). Outside a real solver run we have
+    # to allocate + populate it manually.
+    state.alloc_scratch('solver:mu_at_entry', (ncell,))
+    state.scratch['solver:mu_at_entry'][:] = 1.2
     cooling.allocate_scratch(state)
     cooling.update(state)
     net_cool = state.get_scratch('solver:net_cool').copy()
@@ -115,11 +120,21 @@ def test_aggregator_update_matches_channel_sum():
         net_cool, reference, rtol=1.0e-14, atol=0.0,
         err_msg='aggregator net_cool != sum_channels',
     )
-    # Phase 4c writes zero derivative; Phase 4d will replace with
-    # analytic / tabulated. Until then this assertion pins the
-    # contract so a regression cannot silently change the damping
-    # behaviour of the solver.
-    np.testing.assert_array_equal(d_net_cool, np.zeros_like(d_net_cool))
+    # Derivative sum: d_net_cool_d_temp_mu = sum_c dLambda_c - sum_h
+    # dGamma_h. Phase 4d-a fills in analytic derivatives for a few
+    # channels (Dust, FreeFreeH, Lya) and leaves the rest at zero;
+    # the aggregator must still sum the per-channel slots exactly.
+    reference_d = np.zeros(ncell, dtype=np.float64)
+    for ch in cooling._channels:
+        slot = state.get_scratch(f'cooling:dLambda:{ch.name}')
+        reference_d += slot
+    for hch in cooling._heating:
+        slot = state.get_scratch(f'cooling:dGamma:{hch.name}')
+        reference_d -= slot
+    np.testing.assert_allclose(
+        d_net_cool, reference_d, rtol=1.0e-14, atol=0.0,
+        err_msg='aggregator d_net_cool != sum_channel_derivatives',
+    )
 
 
 def test_driver_setup_chains_cooling_allocation():

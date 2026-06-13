@@ -47,7 +47,7 @@ _SCRATCH_SLOTS = (
     'cooling:oi:q10', 'cooling:oi:q20', 'cooling:oi:q21',
     'cooling:oi:q01', 'cooling:oi:q02', 'cooling:oi:q12',
     'cooling:oi:tmp0', 'cooling:oi:tmp1', 'cooling:oi:tmp2',
-    'cooling:dust:tmp',
+    'cooling:dust:tmp', 'cooling:dust:tmp_b',
 )
 
 

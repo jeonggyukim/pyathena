@@ -33,6 +33,7 @@ class DustGasCoupling(CoolingChannel):
     name: ClassVar[str] = 'DustGasCoupling'
     SCRATCH_NAMES: ClassVar[tuple] = (
         'cooling:dust:tmp',
+        'cooling:dust:tmp_b',
     )
     __version__: ClassVar[str] = '0.1@phase4b'
 
@@ -48,6 +49,7 @@ class DustGasCoupling(CoolingChannel):
         Z_d = state.Z_d
 
         scratch = state.get_scratch('cooling:dust:tmp')
+        tmp_b = state.get_scratch('cooling:dust:tmp_b')
 
         # Lambda = Z_d * alpha_gd * nH * sqrt(T) * (T - T_dust)
         np.subtract(T, T_dust, out=out)
@@ -58,4 +60,18 @@ class DustGasCoupling(CoolingChannel):
         np.multiply(out, _ALPHA_GD, out=out)
 
         if d_out is not None:
-            d_out[:] = 0.0
+            # Lambda = K * sqrt(T) * (T - T_dust) with K = Z_d * alpha_gd * nH
+            # dLambda/dT = K * (sqrt(T) + (T - T_dust) / (2 sqrt(T)))
+            #            = K * (3 T - T_dust) / (2 sqrt(T))
+            # Multiply by mu_at_entry to convert d/dT -> d/d(T/mu).
+            # scratch still holds sqrt(T).
+            # tmp_b = (3 T - T_dust) / (2 sqrt(T))
+            np.multiply(T, 3.0, out=tmp_b)
+            np.subtract(tmp_b, T_dust, out=tmp_b)
+            np.multiply(scratch, 2.0, out=scratch)
+            np.divide(tmp_b, scratch, out=d_out)
+            np.multiply(d_out, nH, out=d_out)
+            np.multiply(d_out, Z_d, out=d_out)
+            np.multiply(d_out, _ALPHA_GD, out=d_out)
+            mu = state.get_scratch('solver:mu_at_entry')
+            np.multiply(d_out, mu, out=d_out)

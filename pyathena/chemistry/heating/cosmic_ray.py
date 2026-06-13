@@ -135,4 +135,8 @@ class CosmicRayHeating(HeatingChannel):
         np.multiply(out, self._xi_CR, out=out)
 
         if d_out is not None:
+            # Gamma = xi_CR * (xHI * qHI(xe) + 2 xH2 * qH2(nH)). Neither
+            # qHI nor qH2 depends on T; xi_CR is a constant. Hence
+            # d(Gamma)/dT = 0 exactly. The analytic derivative is the
+            # zero we already wrote.
             d_out[:] = 0.0

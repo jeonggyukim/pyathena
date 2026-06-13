@@ -1170,3 +1170,96 @@ contribution.
 
 Validation: 522 passed, 4 skipped (up from 519 / 4; +3 net new
 tests covering the pool sum + format invariants).
+
+## 2026-06-14: Phase 4d-a -- first analytic d_out (5 channels)
+
+Phase 4d starts filling in the per-channel analytic
+`d(Lambda) / d(T/mu)` (cooling) / `d(Gamma) / d(T/mu)` (heating)
+buffers. Until now every channel wrote `d_out[:] = 0.0`, which makes
+the substep loop's semi-implicit T/mu kernel degrade to forward
+Euler -- correct but slow in stiff regimes (HII region Lya, cold
+neutral CII). User experience confirms the derivative term is
+required in practice; analytic form is cheap because it reuses the
+same scratch values the Lambda computation already produced.
+
+Convention:
+
+- Channels write `d(out) / d(T/mu)` directly. Operator splitting
+  freezes mu during the cooling sub-step, so analytic
+  implementations compute `d(out) / dT` from the scratch
+  intermediates left over from the Lambda calculation and multiply
+  by `state.get_scratch('solver:mu_at_entry')` at the end to
+  convert to the T/mu derivative.
+- The base ABC docstring (`pyathena.chemistry.cooling.base.CoolingChannel.evaluate`)
+  now explains the `d_out` contract in full, including the
+  "skipped when None / zero accepted as the default" fallback for
+  channels that have not been ported yet.
+
+Channels with analytic d_out filled in:
+
+- `heating.cosmic_ray.CosmicRayHeating` -- analytic = 0. CR heating
+  depends on `xi_CR, x_HI, x_H2, x_e, n_H`; none have any T
+  dependence under operator splitting.
+- `heating.h2_photodissociation.H2DissociationHeating` -- analytic
+  = 0. `Gamma = xi_diss * x_H2 * 0.4 eV` is purely scalar.
+- `cooling.dust.DustGasCoupling` -- closed-form. The signed
+  `Lambda = Z_d * alpha_gd * n_H * sqrt(T) * (T - T_dust)` has
+  `dLambda/dT = K * (3T - T_dust) / (2 sqrt(T))` with K = Z_d *
+  alpha_gd * n_H. New scratch slot `cooling:dust:tmp_b`.
+- `cooling.free_free.FreeFreeHCooling` -- closed-form. The Gaunt
+  factor `g_ff(T) = 1 + 0.44 / (1 + 0.058 L^2)` with L = ln(T /
+  T_gff) gives `d(ln g_ff)/dT = -0.05104 * L / (T * denom^2 *
+  g_ff)`; with the `sqrt(T/1e4)` factor folded in, `dLambda/dT =
+  Lambda * (d(ln g_ff)/dT + 1 / (2 T))`. Two new scratch slots
+  `cooling:free_free:L` and `cooling:free_free:denom` so the
+  derivative reuses the values computed for Lambda.
+- `cooling.lya.LyaCooling` -- closed-form. Through the collision-
+  strength factor `fac(T)`, the Boltzmann factor `exp(-11.84/T4)`,
+  and the level-1 fraction `f_1 = q_01 / (q_01 + q_10 + A_10)`,
+  the derivative chains as
+  `d(ln fac)/dT = (1/T) * (0.64897/v - 0.5)` with v the WD01
+  denominator, then `dq_01/dT = q_01 * (d(ln fac)/dT + 11.84 /
+  (T * T_4))`, `dq_10/dT = q_10 * d(ln fac)/dT`, and `df_1/dT =
+  (dq_01/dT - f_1 * dD/dT) / D` with D = q_01 + q_10 + A_10. Two
+  new scratch slots `cooling:lya:v` and `cooling:lya:d_ln_fac`.
+
+Tests (`tests/chemistry/test_phase4d_analytic_derivatives.py`):
+
+- One test function per channel; analytic `d_out` compared against
+  a central FD `(Lambda(T+dT) - Lambda(T-dT)) / (2 dT) * mu` at
+  `dT_rel = 1e-3`. Tolerance `rtol = 1e-4`.
+- T grid is `np.unique(concatenate([logspace(2, 6, 24),
+  logspace(3.5, 5, 30)]))`: broad coverage 100 K - 1e6 K with a
+  denser sub-grid in the Lya / H ionisation knee at ~3e3 K - 1e5 K.
+  Cross with `n_H` in [0.01, 1e4] cm^-3 (14 points), and 2 - 6
+  species / state cases per channel -- 1k to 4k FD comparisons per
+  channel.
+- Deep-cold-tail mask: where `|d_out| < 1e-25`, FD picks up
+  catastrophic cancellation from huge Boltzmann exponentials and
+  the comparison becomes a precision-noise check. Cells below the
+  mask are excluded; they contribute negligibly to physical
+  net_cool.
+
+Compatibility:
+
+- Aggregator parity test updated: the "d_net_cool == 0" assertion
+  is replaced with "d_net_cool = sum_c dLambda_c - sum_h dGamma_h"
+  to reflect the new non-zero entries. Hand-built scratch lists in
+  the legacy phase 4b parity tests are also extended with the new
+  slot names (`cooling:dust:tmp_b`, `cooling:free_free:L`,
+  `cooling:free_free:denom`, `cooling:lya:v`,
+  `cooling:lya:d_ln_fac`).
+- Lambda numerics unchanged byte-for-byte: the Phase 4b parity
+  tests against `pyathena.microphysics.cool` still pass at
+  rtol = 1e-12. The derivative paths are pure additions, not a
+  Lambda restructuring.
+
+Out of scope (Phase 4d-b...):
+
+- HICollIon, HRecomb, PE, GrainRec (H ionisation family).
+- Nebular, Smith21, H2Form, H2Pump, H2CollDiss.
+- H2Moseley21, H2Gong17.
+- CII / OI / CI / OII (frozen-q_ij analytic; level-pop).
+
+Validation: 527 passed, 4 skipped (up from 522 / 4; +5 net new
+analytic-derivative parity tests, no regressions).

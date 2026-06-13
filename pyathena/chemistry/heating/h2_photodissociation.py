@@ -56,6 +56,9 @@ class H2DissociationHeating(HeatingChannel):
         xH2 = state.x[self._i_H2]
         np.multiply(xH2, self._xi_diss_H2 * 0.4 * _EV_CGS, out=out)
         if d_out is not None:
+            # Gamma = xi_diss_H2 * x_H2 * 0.4 eV. No T dependence;
+            # x_H2 is held fixed during the substep. d(Gamma)/d(T/mu) = 0
+            # exactly.
             d_out[:] = 0.0
 
 

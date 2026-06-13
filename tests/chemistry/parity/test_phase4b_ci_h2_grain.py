@@ -70,6 +70,7 @@ _SCRATCH_SLOTS = (
     # Lya
     'cooling:lya:T4', 'cooling:lya:fac', 'cooling:lya:ne',
     'cooling:lya:tmp_a', 'cooling:lya:tmp_b',
+    'cooling:lya:v', 'cooling:lya:d_ln_fac',
     # H2 Moseley21
     'cooling:h2_moseley:T3', 'cooling:h2_moseley:T3inv',
     'cooling:h2_moseley:sqrtT3', 'cooling:h2_moseley:nHI',

@@ -44,6 +44,8 @@ class LyaCooling(CoolingChannel):
         'cooling:lya:ne',
         'cooling:lya:tmp_a',
         'cooling:lya:tmp_b',
+        'cooling:lya:v',
+        'cooling:lya:d_ln_fac',
     )
     __version__: ClassVar[str] = '0.1@phase4b'
 
@@ -67,17 +69,20 @@ class LyaCooling(CoolingChannel):
         ne = state.get_scratch('cooling:lya:ne')
         tmp_a = state.get_scratch('cooling:lya:tmp_a')
         tmp_b = state.get_scratch('cooling:lya:tmp_b')
+        v = state.get_scratch('cooling:lya:v')
 
         # T4 = T / 1e4
         np.multiply(T, 1.0e-4, out=T4)
 
-        # fac = 5.30856e-08 * T4**0.14897 / (1 + (0.2 * T4)**0.64897)
+        # v = 1 + (0.2 * T4)**0.64897   (denominator of `fac` below)
+        np.multiply(T4, 0.2, out=v)
+        np.power(v, 0.64897, out=v)
+        np.add(v, 1.0, out=v)
+
+        # fac = 5.30856e-08 * T4**0.14897 / v
         np.power(T4, 0.14897, out=fac)
         np.multiply(fac, 5.30856e-08, out=fac)
-        np.multiply(T4, 0.2, out=tmp_a)
-        np.power(tmp_a, 0.64897, out=tmp_a)
-        np.add(tmp_a, 1.0, out=tmp_a)
-        np.divide(fac, tmp_a, out=fac)
+        np.divide(fac, v, out=fac)
 
         # ne = xe * nH
         np.multiply(xe, nH, out=ne)
@@ -94,10 +99,57 @@ class LyaCooling(CoolingChannel):
 
         # Lambda = q01 / (q01 + q10 + A10) * A10 * E10 * xHI
         np.add(tmp_a, tmp_b, out=fac)
-        np.add(fac, _A10, out=fac)
-        np.divide(tmp_a, fac, out=out)
+        np.add(fac, _A10, out=fac)            # fac now holds D = q01+q10+A10
+        np.divide(tmp_a, fac, out=out)        # f1 = q01 / D
         np.multiply(out, _A10 * _E10, out=out)
         np.multiply(out, xHI, out=out)
 
         if d_out is not None:
-            d_out[:] = 0.0
+            # Derivation with mu held fixed during the cooling
+            # sub-step:
+            #   d(ln fac)/dT = (1/T) * (0.64897 / v - 0.5)
+            #     (from d/dT [ln(T4^0.14897) - ln v] with v as above
+            #      and dv/dT4 = 0.64897 (v - 1) / T4.)
+            # so
+            #   d(q01)/dT = q01 * (d(ln fac)/dT + 11.84 / (T * T4))
+            #   d(q10)/dT = q10 *  d(ln fac)/dT
+            #   d(D)/dT  = d(q01)/dT + d(q10)/dT
+            #   d(f1)/dT = (d(q01)/dT - f1 * d(D)/dT) / D
+            # Lambda = f1 * A10 * E10 * xHI, so
+            #   d(Lambda)/dT = d(f1)/dT * A10 * E10 * xHI
+            # Multiply by mu_at_entry to convert to d/d(T/mu).
+            d_ln_fac = state.get_scratch('cooling:lya:d_ln_fac')
+            # d_ln_fac = (1/T) * (0.64897 / v - 0.5)
+            np.divide(0.64897, v, out=d_ln_fac)
+            np.subtract(d_ln_fac, 0.5, out=d_ln_fac)
+            np.divide(d_ln_fac, T, out=d_ln_fac)
+
+            # d_out := dq01/dT = q01 * (d_ln_fac + 11.84 / (T * T4))
+            np.multiply(T, T4, out=d_out)
+            np.divide(11.84, d_out, out=d_out)
+            np.add(d_out, d_ln_fac, out=d_out)
+            np.multiply(d_out, tmp_a, out=d_out)    # tmp_a still = q01
+
+            # d_ln_fac := dq10/dT = q10 * d_ln_fac
+            np.multiply(d_ln_fac, tmp_b, out=d_ln_fac)  # tmp_b = q10
+
+            # v := dD/dT = dq01/dT + dq10/dT  (reuse `v` -- no longer
+            # needed for the value computation).
+            np.add(d_out, d_ln_fac, out=v)
+
+            # d_ln_fac := f1 * dD/dT = (q01 / D) * dD/dT
+            np.divide(tmp_a, fac, out=d_ln_fac)   # f1
+            np.multiply(d_ln_fac, v, out=d_ln_fac)
+
+            # d_out = (dq01/dT - f1 * dD/dT) / D = df1/dT
+            np.subtract(d_out, d_ln_fac, out=d_out)
+            np.divide(d_out, fac, out=d_out)
+
+            # dLambda/dT = df1/dT * A10 * E10 * xHI
+            np.multiply(d_out, _A10 * _E10, out=d_out)
+            np.multiply(d_out, xHI, out=d_out)
+
+            # Convert d/dT to d/d(T/mu) via the chain rule (mu fixed
+            # during the cooling sub-step): d/d(T/mu) = mu * d/dT.
+            mu = state.get_scratch('solver:mu_at_entry')
+            np.multiply(d_out, mu, out=d_out)

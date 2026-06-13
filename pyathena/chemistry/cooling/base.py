@@ -74,16 +74,33 @@ class CoolingChannel(abc.ABC):
             contents are overwritten, not accumulated -- the
             aggregator's sum across channels is what accumulates.
         d_out : np.ndarray, optional
-            Caller-owned `(ncell,)` buffer to receive
-            `d(Lambda_chan) / d(T/mu)` in
-            `erg / s / cm^3 / K` units. Optional because some channels
-            either lack a meaningful temperature derivative
-            (recombination heating from species ledger entries) or the
-            Phase 3 substep does not need the derivative (the
-            derivative refines the semi-implicit T/mu damping; setting
-            it to zero is safe but slower). When supplied, the channel
-            writes; when None, the channel skips the derivative
-            calculation.
+            Caller-owned `(ncell,)` buffer to receive the channel's
+            DERIVATIVE OUTPUT (`d` is short for "derivative"):
+            `d(Lambda_chan) / d(T/mu)` for cooling channels (or
+            `d(Gamma_chan) / d(T/mu)` for heating channels), in
+            `erg / s / cm^3 / K` units. Differentiation is with respect
+            to `T/mu = temp_mu` because that is the substep-invariant
+            variable the semi-implicit kernel updates; mu is held fixed
+            during the cooling sub-step under standard operator
+            splitting, so analytic implementations compute
+            `d(Lambda) / dT` and multiply by mu (read from
+            `state.get_scratch('solver:mu_at_entry')`) to convert.
+
+            Optional because:
+
+            - some channels lack a meaningful T derivative (e.g.
+              cosmic-ray heating, where `q_HI(x_e)` and `q_H2(n_H)`
+              are T-independent under operator splitting);
+            - early-phase ports may not have written the analytic form
+              yet (Phase 4d fills these in incrementally).
+
+            When supplied, the channel writes the derivative; when
+            None, the channel skips the derivative calculation. The
+            semi-implicit kernel reads the sum across channels
+            (`solver:d_net_cool_d_temp_mu`); a missing or zero entry
+            just degrades the substep loop to forward Euler in that
+            channel's contribution -- correct, but slower in stiff
+            regimes.
         """
 
 
