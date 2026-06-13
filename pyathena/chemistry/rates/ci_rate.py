@@ -1,10 +1,13 @@
-"""Voronov 1997 collisional ionization rate fits (chemistry port).
+"""Voronov 1997 collisional ionization rate fits.
 
-Phase 1 strangler-pattern port of `pyathena.microphysics.ci_rate`.
-See `~/Dropbox/Projects/tigris-notes/docs-claude/pyathena/chemistry-rewrite-plan.md`
-for the rewrite plan. Public API and numerical behavior are
-identical to the microphysics version; data files are read from the
-same on-disk location (`data/microphysics/cloudy/coll_ion.dat`).
+Provides `CollIonRate` (Voronov 1997, At. Data Nucl. Data Tables 65, 1)
+and the optional `CollIonRateCHIANTI` for the same rates via
+ChiantiPy. Data file at
+`data/microphysics/cloudy/coll_ion.dat`.
+
+Compatibility port of `pyathena.microphysics.ci_rate`; public API
+and numerical behavior identical (rtol = 1e-12 parity test under
+`tests/chemistry/parity/test_ci_rate_parity.py`).
 """
 import os
 import os.path as osp

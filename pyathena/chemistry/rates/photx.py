@@ -1,10 +1,13 @@
-"""Verner+96 photoionization cross sections (chemistry port).
+"""Verner+96 photoionization cross sections.
 
-Phase 1 strangler-pattern port of `pyathena.microphysics.photx`. See
-`~/Dropbox/Projects/tigris-notes/docs-claude/pyathena/chemistry-rewrite-plan.md`
-for the rewrite plan. Public API and numerical behavior are identical
-to the microphysics version; the data file is read from the same
-on-disk location (`data/microphysics/verner96_photx.dat`).
+Provides `PhotX` (per-ion sigma_pi(nu) lookups) and
+`get_sigma_pi_H2`. The data file lives at
+`data/microphysics/verner96_photx.dat`.
+
+This is a compatibility port of `pyathena.microphysics.photx` whose
+public API and numerical behavior are identical (rtol = 1e-12 parity
+test under `tests/chemistry/parity/test_photx_parity.py`). The old
+module stays available until cross-repo callers migrate.
 """
 import numpy as np
 import os

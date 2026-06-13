@@ -26,10 +26,13 @@ Design choices (cross-referenced to
 - HDF5 serialisation persists payload only; scratch and `diag` are
   recomputed on restart.
 
-This file is a Phase 0 skeleton. Methods that need policy-specific
-information (`from_grid`, `from_meshblock`, `from_photchem`, `to_hdf5`)
-are stubs that raise `NotImplementedError`; subsequent phases fill
-them in.
+`from_grid` is the canonical factory for offline / 1D analytic
+benchmarks (Stromgren sphere, PDR plane-parallel, single-cell sweeps).
+`from_meshblock` views an Athena++ MeshBlock as a ChemState without
+copying — used by the tigris-ncr port path. `from_photchem` adapts a
+legacy `pyathena.microphysics.photchem.PhotChem` instance for parity
+tests. Stubs raise `NotImplementedError` until the consuming code
+path lands; see the chemistry-rewrite-plan.md roadmap.
 """
 from __future__ import annotations
 
@@ -48,16 +51,16 @@ class ChemState:
     See the package README and the chemistry-rewrite-plan.md design
     document for the rationale behind each field.
 
-    Phase 0 note: the schema is locked here, but the factory methods
-    (`from_grid`, `from_meshblock`, `from_photchem`) and the
-    `to_hdf5` / `from_hdf5` serialisers are stubs. Subsequent phases
-    flesh them out as concrete networks land.
+    The schema (which fields exist, in what shape, with what dtypes)
+    is fixed here and validated by `validate()`. The factories
+    (`from_grid`, `from_meshblock`, `from_photchem`) and the HDF5
+    serialisers are filled in as the consuming code paths land; see
+    the chemistry-rewrite-plan.md roadmap.
     """
 
     # ---- Frozen schema header ----
-    # `species` is a SpeciesSet placeholder for now (Phase 2 introduces
-    # the real SpeciesSet class). Using Any to avoid a forward import
-    # cycle in the skeleton.
+    # `species` is a SpeciesSet; typed as `Any` to avoid a forward
+    # import cycle between state.py and species.py.
     species: Any
     policy_versions: Mapping[str, str]
     walk_order: Tuple[Tuple[str, ...], ...]

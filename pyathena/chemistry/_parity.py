@@ -5,10 +5,10 @@
 `pyathena.chemistry` (the rewrite) on identical inputs and returns
 both outputs. Tests then assert agreement at a documented tolerance.
 
-This module imports both packages. Production paths must NOT depend on
-it. Imports are wrapped in try / except so that a partial chemistry
-package (typical during Phase 0/1/2 construction) does not break
-microphysics-only tests.
+This module imports both packages. Production paths must NOT depend
+on it. Imports are wrapped in try / except so that a partial
+chemistry package (typical during in-progress module ports) does not
+break microphysics-only tests.
 """
 from __future__ import annotations
 
@@ -25,9 +25,9 @@ def run_both(
     `callable_new(*args, **kwargs)` and return both results as
     `(out_old, out_new)`.
 
-    Phase 0 contract: callers handle the comparison and tolerance.
-    Subsequent phases may add a default comparator with documented
-    tolerance defaults.
+    Callers handle the comparison and tolerance themselves; use the
+    `assert_close` helper below for the common case (structured
+    numerical output with a per-test rtol / atol).
     """
     out_old = callable_old(*args, **kwargs)
     out_new = callable_new(*args, **kwargs)

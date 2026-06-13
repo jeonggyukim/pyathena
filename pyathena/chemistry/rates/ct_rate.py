@@ -1,16 +1,12 @@
-"""Charge-transfer rate coefficients (Phase 1 port).
+"""Charge-transfer rate coefficients.
 
-Copied from `pyathena.microphysics.ct_rate` as part of the chemistry
-rewrite (`tigris-notes/docs-claude/pyathena/chemistry-rewrite-plan.md`).
-The only edit relative to the original is the `basedir` resolution:
-this module lives one directory deeper than the original, so the
-path-relative-to-`__file__` calculation is replaced by going through
-`pyathena.chemistry.datapaths` (single source of truth for the repo
-data root).
+Provides `ChargeTransferRate` with both the Cloudy-table CT fits and
+the UGA charge-transfer database (UGA CXDB) tables. Data files live
+under `data/microphysics/cloudy/` and `data/microphysics/ugacxdb/`.
 
-Public API (class `ChargeTransferRate` and all its methods/attributes)
-is unchanged. Parity test:
-`tests/chemistry/parity/test_ct_rate_parity.py`.
+Compatibility port of `pyathena.microphysics.ct_rate`; public API
+and numerical behavior identical (rtol = 1e-12 parity test under
+`tests/chemistry/parity/test_ct_rate_parity.py`).
 """
 import pathlib
 import os

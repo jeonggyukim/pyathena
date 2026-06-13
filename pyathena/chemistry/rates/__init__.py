@@ -1,10 +1,17 @@
-"""Leaf rate modules ported from `pyathena.microphysics`.
+"""Atomic / molecular rate-coefficient modules.
 
-Phase 1 of the chemistry rewrite (`tigris-notes/docs-claude/pyathena/
-chemistry-rewrite-plan.md`) copies leaf rate modules here verbatim,
-with the only adjustments being data-file path resolution and a
-top-line docstring marker. Public APIs are preserved so parity tests
-under `tests/chemistry/parity/` can pin numerical agreement.
+Five modules:
+
+- `photx` — Verner+96 photoionisation cross sections
+- `ci_rate` — Voronov 1997 collisional ionisation
+- `rec_rate` — Badnell RR + DR; Draine 2011 H case-B
+- `ct_rate` — Cloudy + UGA charge-transfer database
+
+Each is a leaf module with only `numpy`, `astropy`, and
+`pyathena.chemistry.datapaths` for dependencies. Compatibility ports
+of `pyathena.microphysics.{photx, ci_rate, rec_rate, ct_rate}` with
+identical public API and numerical behaviour; parity tests under
+`tests/chemistry/parity/` pin agreement at rtol = 1e-12.
 """
 
 from .ci_rate import CollIonRate, CollIonRateCHIANTI

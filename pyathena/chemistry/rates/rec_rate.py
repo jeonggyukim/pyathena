@@ -1,17 +1,17 @@
-"""Computes recombination rate
+"""Recombination rate coefficients.
 
-Phase 1 port of `pyathena.microphysics.rec_rate` into the
-`pyathena.chemistry` rewrite. See
-`tigris-notes/docs-claude/pyathena/chemistry-rewrite-plan.md` for the
-overall design. This module is the Badnell RR+DR + Draine H Case B
-leaf rate module; it is a leaf with no internal pyathena dependencies
-other than the shared `pyathena.chemistry.datapaths` helper used to
-locate the Badnell .dat files (which remain under
-`data/microphysics/` and are NOT moved).
+Provides `RecRate` (Badnell RR + DR fits + Draine 2011 H case-B
+override) and the optional `RecRateCHIANTI` for the same rates via
+ChiantiPy. The Badnell data files live at
+`data/microphysics/badnell_{rr,dr_C,dr_E}_2023.dat`.
 
-Public API is identical to `pyathena.microphysics.rec_rate`; the
-parity test at `tests/chemistry/parity/test_rec_rate_parity.py`
-verifies bit-for-bit agreement for every supported (Z, N).
+Leaf module: no internal pyathena dependencies other than the
+shared `pyathena.chemistry.datapaths` helper used to resolve the
+data-file paths.
+
+Compatibility port of `pyathena.microphysics.rec_rate`; public API
+and numerical behavior identical (rtol = 1e-12 parity test under
+`tests/chemistry/parity/test_rec_rate_parity.py`).
 """
 
 import os

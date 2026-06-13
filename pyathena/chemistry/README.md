@@ -1,10 +1,17 @@
 # pyathena.chemistry
 
-A typed, policy-based rewrite of `pyathena.microphysics` that mirrors
-the tigris-ncr C++ Phase D / E template structure. Replaces the old
-package over a deprecation window. See
-`~/Dropbox/Projects/tigris-notes/docs-claude/pyathena/chemistry-rewrite-plan.md`
-for full design and roadmap.
+A typed, policy-based rewrite of `pyathena.microphysics`. The driver
+is one constructor call that composes seven independent policy slots
+(network, solver, cooling, heating, opacity, radiation, thermo);
+each slot is an abstract base class with multiple concrete
+implementations swappable per run.
+
+The same policy-based shape is the target for the tigris-ncr C++
+implementation (static polymorphism via template parameters), so
+this package doubles as the reference implementation while the C++
+port is in progress. Replaces the old package over a deprecation
+window. Full design and roadmap:
+`~/Dropbox/Projects/tigris-notes/docs-claude/pyathena/chemistry-rewrite-plan.md`.
 
 ## Intent
 
