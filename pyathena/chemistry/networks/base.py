@@ -77,6 +77,16 @@ class NetworkBase(abc.ABC):
     evolved: ClassVar[Tuple[str, ...]] = ()
     ghost:   ClassVar[Tuple[str, ...]] = ()
 
+    # Per-element partial-tracking declaration. Each entry is
+    # `(element, q_max_tracked, evolved_ion_names)`. The driver consumes
+    # this to size and load CIE-lumped pool tables (`x_high_frac(T)`,
+    # `q_high_mean(T)`, `Lambda_high(T)`; see chemistry-rewrite-plan
+    # §4a.2-3) and to drive the per-element closure renormalisation.
+    # Elements that are fully tracked (e.g. H) or handled by a
+    # prescription ghost (e.g. He in NCRNetwork3) are omitted. Empty
+    # tuple = no CIE pool, no per-element closure (the NCR3 default).
+    element_groups: ClassVar[Tuple[Tuple[str, int, Tuple[str, ...]], ...]] = ()
+
     # Capability flags consumed by the solver / driver layer.
     kSupportsStrips: ClassVar[bool] = True
     kNeedsJacobian: ClassVar[bool] = False

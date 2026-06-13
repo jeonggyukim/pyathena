@@ -307,3 +307,86 @@ tables produced by `get_*_table`.
 Validation: 406 passed, 17 skipped in `tests/chemistry/ +
 tests/microphysics/` (up from 354 / 17 in Phase 2; +52 new tests,
 no regressions).
+
+## 2026-06-13: CIE-lumped pool ghost design + Phase 6 stub
+
+Plan integration pass folding the CIE-lumped pool architecture into
+`chemistry-rewrite-plan.md` and reserving the corresponding code path
+under `pyathena.chemistry.networks.ncr3_plus_ions16` so the Phase 3
+explicit-subcycling driver and the Phase 4 cooling tables land
+against a stable downstream consumer.
+
+Plan changes (`chemistry-rewrite-plan.md`):
+
+- §4a rewritten into four subsections. §4a.1 names the three KINDS
+  of ghost (charge-sum, prescription, CIE-lumped pool) so each
+  concrete network's ghost composition can be read off as a
+  combination of the three. §4a.2 introduces the
+  `element_groups: Tuple[Tuple[str, int, Tuple[str, ...]], ...]`
+  declaration the driver consumes to size per-element CIE-pool
+  tables and emit one CIE-lumped pool ghost per heavy element. §4a.3
+  states the closure formulation: per substep, per element, if
+  `sum(x_q for q in evolved_ion_names) > (1 - x_high_frac(T)) *
+  x_std * Z_g` the evolved rows are renormalised by
+  `x_low_avail / sum_evolved` before `fill_ghosts` writes the pool
+  row, with a worked example for O at T = 1e5 K. §4a.4 is the
+  per-network catalogue: NCRNetwork3 keeps `element_groups = ()`
+  (its C / O tracking is too coarse for the pool concept to add
+  anything); NCRNetwork3PlusIons16 declares four pools (C, N, O, S)
+  and 19 species total (13 evolved + 6 ghost); NCRNetwork3PlusHe and
+  GOW17Network keep their existing characterisations and are
+  annotated to make the kind composition explicit.
+- §5 Phase 4 adds `build_cie_high_pool.py` as a prerequisite for
+  the Phase 6 pool ghosts. The builder reads CHIANTI v11 CIE
+  ionisation fractions on the standard log-T grid and writes
+  `data/chemistry/cie_high_pool_{element}.nc` containing
+  `x_high_frac(T)`, `q_high_mean(T)` (population-weighted mean
+  charge), and `Lambda_high(T)` for each element in
+  NCRNetwork3PlusIons16.element_groups. The CHIANTI invariant
+  `x_high_frac + sum_q ioneq_q = 1` is checked at every grid point;
+  asymptotic limits validate Lambda_high.
+- §5 Phase 6 documents the hot-regime fast path. The solver
+  pre-scans every strip cell for `x_low_avail(T) < eps` across all
+  elements in `element_groups` and, on cells flagged hot, skips the
+  evolved-ion implicit-Euler updates entirely. The evolved rows
+  freeze, `fill_ghosts` writes the pool rows directly from the
+  table, and cooling reads `Lambda = sum_elem Lambda_high(T) *
+  x_std * Z_g`. The regression suite covers cells on both sides of
+  the threshold (default eps = 1e-3) so the fast path and the slow
+  path agree at the boundary.
+- §9 (C++ porting mapping) rewrote the `x_e` advection row: the
+  current advected scalar becomes obviously wrong at Phase D because
+  `sum_q q * x_q` must equal `x_e` exactly at every chemistry-step
+  entry — the HII-region path only masks this today because `x_HII`
+  is the only positive ion in scope. The required follow-up is to
+  drop the advected scalar at Phase D entry and compute `x_e` from
+  the positive-charge sum inside `fill_ghosts(state)` (kind 1 of
+  §4a.1). The Python reference computes it this way from Phase 2
+  onward.
+
+Code changes:
+
+- `pyathena.chemistry.networks.base.NetworkBase` —
+  `element_groups: ClassVar[Tuple[Tuple[str, int, Tuple[str, ...]], ...]] = ()`
+  added alongside the existing `evolved` / `ghost` declarations. The
+  driver consumes it to size CIE-pool tables and drive the
+  per-element closure renormalisation; concrete networks that need
+  no pool (e.g., NCRNetwork3) keep the default empty tuple.
+- `pyathena.chemistry.networks.ncr3_plus_ions16.NCRNetwork3PlusIons16` —
+  Phase 6 planning stub. Declares `evolved` (13 rows), `ghost`
+  (6 rows: e, CO, x_high_C, x_high_N, x_high_O, x_high_S),
+  `element_groups` (the four-tuple in §4a.2 of the plan), and
+  `walk_order` (ground-state-first per element). All five method
+  bodies — `__init__`, `evaluate_CD`, `closure`,
+  `electron_fraction`, `fill_ghosts`, `allocate_scratch` — raise
+  `NotImplementedError('Phase 6')`. The module docstring captures
+  the layout, the closure formulation (mirrors plan §4a.3), and the
+  hot-regime fast path (mirrors plan §5 Phase 6), so an architect
+  reading the stub gets the same picture as one reading the plan.
+  No test imports the class today; the stub is reachable only
+  through the explicit module path.
+
+Validation: 419 passed, 4 skipped in `tests/chemistry/ +
+tests/microphysics/` (no regressions). The pass / skip totals shift
+vs the previous entry because Phase 0.5 relocated several tests out
+of microphysics into chemistry; net delta is 0.
