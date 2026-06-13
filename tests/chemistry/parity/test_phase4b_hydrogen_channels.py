@@ -65,6 +65,7 @@ def _build_state(T, nH, xHI, xHII, xH2, xe):
         'cooling:hi_coll_ion:tmp', 'cooling:hi_coll_ion:y',
         'cooling:hi_coll_ion:kcoll',
         'cooling:h_rec:tmp', 'cooling:h_rec:E_rr_B',
+        'cooling:h_rec:u', 'cooling:h_rec:d_ln_alpha',
         'cooling:free_free:tmp', 'cooling:free_free:gff',
         'cooling:free_free:L', 'cooling:free_free:denom',
         'heating:cosmic_ray:tmp', 'heating:cosmic_ray:qHI',

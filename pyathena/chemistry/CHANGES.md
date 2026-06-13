@@ -1263,3 +1263,70 @@ Out of scope (Phase 4d-b...):
 
 Validation: 527 passed, 4 skipped (up from 522 / 4; +5 net new
 analytic-derivative parity tests, no regressions).
+
+## 2026-06-14: Phase 4d-b1 -- HICollIon + HRecomb analytic d_out
+
+Two more channels gain analytic d_out plus a switch to 5-point
+central FD for the parity tests so no per-channel dT_rel tuning is
+needed.
+
+Channels:
+
+- `cooling.hi_collisional_ionization.HICollisionalIonizationCooling`
+  -- closed-form. k_coll(T) = exp(P(y)) with y = ln(T * kB_eV);
+  dy/dT = 1/T so dLambda/dT = Lambda * P'(y) / T. P'(y) is evaluated
+  by a Horner pass mirroring the value-path Horner; both Lambda and
+  d_out are gated by the same T > 3000 K mask at the end so the
+  cold-cell branch produces a clean zero pair.
+- `cooling.recombination_hydrogen.HRecombinationCooling` -- closed-
+  form chain rule on E_rr_B and Draine alpha_B:
+  d(ln E_rr_B)/dT = (0.6424 - 0.0416 u) / ((0.684 - 0.0416 u) T)
+                    with u = ln(T/1e4)
+  d(ln alpha)/dT = (K0 - K1/d_arg) / T   with d_arg = 1 + c^0.407,
+                                              c = 115188/T,
+                                              K1 = 2.242 * 0.407 (= 0.912494),
+                                              K0 = K1 - 1.5      (= -0.587506)
+  dLambda/dT = Lambda * (d(ln E_rr_B)/dT + d(ln alpha)/dT)
+  Then multiply by mu. The K1 / K0 constants are stored to full
+  float64 precision because the SUM `d(ln E_rr_B)/dT +
+  d(ln alpha)/dT` has 6-7 digits of cancellation around T ~ 1e4 -
+  1e5 K (the HII-region knee); a 5-digit truncation of 2.242 *
+  0.407 = 0.91249 propagates to a 2e-4 relative error there.
+  Lesson logged in the docstring.
+
+Tests
+(`tests/chemistry/test_phase4d_analytic_derivatives.py::_fd_central`):
+
+- Switched from 2-point to 5-point central FD. Truncation drops
+  from O(dT^2) to O(dT^4); at dT_rel = 1e-3 the FD residual is
+  ~1e-12 -- well below the rtol = 1e-4 target for every channel
+  regardless of how steep its T-dependence is. Removes the per-
+  channel dT_rel tuning that the steep-power-law alpha_B fit
+  would otherwise force.
+- Two new test functions
+  `test_hi_collisional_ionization_d_out_matches_FD` and
+  `test_h_recombination_d_out_matches_FD`. Same T x n_H grid and
+  same 3 ionisation states each. Subnormal-tail masks at 1e-30
+  and 1e-28 erg/s/cm^3/K respectively.
+
+Compatibility:
+
+- The hand-built scratch list on the existing Phase 4b parity test
+  in `tests/chemistry/parity/test_phase4b_hydrogen_channels.py` was
+  extended for the two new HRecomb slots (`cooling:h_rec:u`,
+  `cooling:h_rec:d_ln_alpha`).
+- Lambda numerics unchanged byte-for-byte; the d_out path is a pure
+  addition.
+
+Out of scope (Phase 4d-b2 next, plus follow-ups):
+
+- PE and GrainRec share the WD01 charge parameter `x = 1.7 * chi *
+  sqrt(T) / (n_e * phi) + 50`; will land alongside a shared scratch
+  slot (`cooling:shared:wd01_x`, `cooling:shared:wd01_lnx`) so the
+  computation runs once per substep, not once per channel. Same
+  pattern ports to the eventual AthenaK/Kokkos rewrite where
+  redundant per-cell compute hits GPU bandwidth twice.
+- Nebular / Smith21 / H2 family / level-pop channels still pending.
+
+Validation: 529 passed, 4 skipped (up from 527 / 4; +2 net new
+analytic-derivative parity tests, no regressions).

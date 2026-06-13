@@ -36,6 +36,12 @@ from pyathena.chemistry.state import ChemState
 from pyathena.chemistry.cooling.dust import DustGasCoupling
 from pyathena.chemistry.cooling.free_free import FreeFreeHCooling
 from pyathena.chemistry.cooling.lya import LyaCooling
+from pyathena.chemistry.cooling.hi_collisional_ionization import (
+    HICollisionalIonizationCooling,
+)
+from pyathena.chemistry.cooling.recombination_hydrogen import (
+    HRecombinationCooling,
+)
 from pyathena.chemistry.heating.cosmic_ray import CosmicRayHeating
 from pyathena.chemistry.heating.h2_photodissociation import (
     H2DissociationHeating,
@@ -88,24 +94,40 @@ def _alloc_channel_scratch(state, channel):
         state.alloc_scratch(name, (state.T.size,))
 
 
-def _fd_central(channel, state, dT_rel=1.0e-3):
-    """Central finite-difference of `channel.evaluate(state, out)`
-    on `state.T`, returning `d(out)/d(T/mu) = mu * d(out)/dT`.
+def _fd_central(channel, state, dT_rel: float = 1.0e-3):
+    """5-point central finite-difference of `channel.evaluate(state,
+    out)` on `state.T`, returning `d(out)/d(T/mu) = mu * d(out)/dT`.
+
+    5-point central difference has O(dT^4) truncation, so at the
+    default dT_rel = 1e-3 the truncation residual is ~ 1e-12 -- well
+    below the rtol = 1e-4 target for every channel regardless of how
+    steep its T-dependence is. Avoids the per-channel dT_rel tuning
+    that 2-point central would otherwise force.
+
+    Formula (Abramowitz + Stegun 25.3.6):
+        f'(T) = (-f(T+2dT) + 8 f(T+dT) - 8 f(T-dT) + f(T-2dT))
+                / (12 dT)
     """
     T = state.T
     mu = state.scratch['solver:mu_at_entry']
     dT = dT_rel * T
-    out_plus = np.empty_like(T)
-    out_minus = np.empty_like(T)
+    out_pp = np.empty_like(T)
+    out_p = np.empty_like(T)
+    out_m = np.empty_like(T)
+    out_mm = np.empty_like(T)
 
     T_original = T.copy()
+    state.T[:] = T_original + 2.0 * dT
+    channel.evaluate(state, out_pp)
     state.T[:] = T_original + dT
-    channel.evaluate(state, out_plus)
+    channel.evaluate(state, out_p)
     state.T[:] = T_original - dT
-    channel.evaluate(state, out_minus)
+    channel.evaluate(state, out_m)
+    state.T[:] = T_original - 2.0 * dT
+    channel.evaluate(state, out_mm)
     state.T[:] = T_original
 
-    return mu * (out_plus - out_minus) / (2.0 * dT)
+    return mu * (-out_pp + 8.0 * out_p - 8.0 * out_m + out_mm) / (12.0 * dT)
 
 
 def test_cosmic_ray_heating_d_out_is_zero():
@@ -208,4 +230,54 @@ def test_lya_d_out_matches_FD():
         np.testing.assert_allclose(
             d_out[mask], fd[mask], rtol=1.0e-4, atol=0.0,
             err_msg=f'(xHI={xHI}, xe={xe})',
+        )
+
+
+def test_hi_collisional_ionization_d_out_matches_FD():
+    """H I collisional ionisation has a Horner-polynomial derivative
+    through P'(y) with y = ln(T * kB_eV). Gate at T > 3000 K mirrors
+    the value path. Subnormal-tail mask at 1e-30 erg/s/cm^3/K because
+    the Boltzmann factor's derivative also collapses to noise there.
+    """
+    for xHI, xe in ((0.99, 0.01), (0.5, 0.5), (0.1, 0.5)):
+        state, species = _build_state(
+            _T, _NH, xHI=xHI, xHII=1.0 - xHI, xe=xe)
+        ch = HICollisionalIonizationCooling(
+            i_HI=species.idx['HI'],
+            i_electron=species.idx['electron'],
+        )
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        mask = np.abs(d_out) > 1.0e-30
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=1.0e-4, atol=0.0,
+            err_msg=f'(xHI={xHI}, xe={xe})',
+        )
+
+
+def test_h_recombination_d_out_matches_FD():
+    """H II case-B recombination has a closed-form derivative
+    chaining the E_rr_B affinity, the Draine alpha_B power-law fit
+    through the (b, c, d) intermediates. Subnormal-tail mask at
+    1e-30 erg/s/cm^3/K.
+    """
+    for xHII, xe in ((0.99, 0.99), (0.5, 0.5), (0.01, 0.01)):
+        state, species = _build_state(
+            _T, _NH, xHI=1.0 - xHII, xHII=xHII, xe=xe)
+        ch = HRecombinationCooling(
+            i_HII=species.idx['HII'],
+            i_electron=species.idx['electron'],
+        )
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        mask = np.abs(d_out) > 1.0e-28
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=1.0e-4, atol=0.0,
+            err_msg=f'(xHII={xHII}, xe={xe})',
         )

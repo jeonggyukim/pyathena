@@ -92,15 +92,46 @@ class HICollisionalIonizationCooling(CoolingChannel):
         np.add(scratch, _C0, out=scratch)
         np.exp(scratch, out=kcoll)
 
-        # Gate: k_coll = 0 for T <= 3000 K. Reuse `y` for the mask.
-        np.greater(T, 3.0e3, out=y)
-        np.multiply(kcoll, y, out=kcoll)
-
-        # Lambda = 13.6 eV * kcoll * nH * xe * xHI
+        # Lambda = 13.6 eV * kcoll * nH * xe * xHI (without gate yet;
+        # we gate Lambda and d_out together at the end so the d_out
+        # path can still use `y` for the Horner-derivative polynomial)
         np.multiply(kcoll, nH, out=out)
         np.multiply(out, xe, out=out)
         np.multiply(out, xHI, out=out)
         np.multiply(out, _E_IONIZATION_HI_ERG, out=out)
 
         if d_out is not None:
-            d_out[:] = 0.0
+            # k_coll(T) = exp(P(y)) with y = ln(T * kB_eV); y has
+            # dy/dT = 1/T. Hence
+            #   d(ln k_coll)/dT = P'(y) / T
+            #   dLambda/dT = Lambda * P'(y) / T
+            # P'(y) = c1 + 2 c2 y + 3 c3 y^2 + ... + 8 c8 y^7
+            # Horner form:
+            #   ((((((8 c8 y + 7 c7) y + 6 c6) y + 5 c5) y + 4 c4)
+            #    y + 3 c3) y + 2 c2) y + c1
+            np.multiply(y, 8.0 * _C8, out=scratch)
+            np.add(scratch, 7.0 * _C7, out=scratch)
+            np.multiply(scratch, y, out=scratch)
+            np.add(scratch, 6.0 * _C6, out=scratch)
+            np.multiply(scratch, y, out=scratch)
+            np.add(scratch, 5.0 * _C5, out=scratch)
+            np.multiply(scratch, y, out=scratch)
+            np.add(scratch, 4.0 * _C4, out=scratch)
+            np.multiply(scratch, y, out=scratch)
+            np.add(scratch, 3.0 * _C3, out=scratch)
+            np.multiply(scratch, y, out=scratch)
+            np.add(scratch, 2.0 * _C2, out=scratch)
+            np.multiply(scratch, y, out=scratch)
+            np.add(scratch, _C1, out=scratch)
+            # scratch = P'(y); d_out = Lambda * P'(y) / T
+            np.divide(scratch, T, out=d_out)
+            np.multiply(d_out, out, out=d_out)
+            mu = state.get_scratch('solver:mu_at_entry')
+            np.multiply(d_out, mu, out=d_out)
+
+        # Gate: T > 3000 K applies to both Lambda and d_out. Reuse
+        # `y` as the mask (no longer needed for the polynomial).
+        np.greater(T, 3.0e3, out=y)
+        np.multiply(out, y, out=out)
+        if d_out is not None:
+            np.multiply(d_out, y, out=d_out)
