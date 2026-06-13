@@ -90,6 +90,93 @@ def test_ncr3_plus_helium_layout():
     assert ss.x_He == 0.0
 
 
+def test_ncr3_with_ghosts_layout():
+    """Nine-row NCR3 + algebraic-ghost set: HI, HII, H2 evolved;
+    electron + CI/CII/CO/OI/OII ghost.
+    """
+    ss = SpeciesSet.ncr3_with_ghosts()
+
+    assert ss.names == (
+        'HI', 'HII', 'H2',
+        'electron', 'CI', 'CII', 'CO', 'OI', 'OII',
+    )
+    assert ss.nspec == 9
+    assert len(ss) == 9
+    assert ss.electron_index == 3
+    # Charge vector: HI 0, HII +1, H2 0, e -1, CI 0, CII +1, CO 0,
+    # OI 0, OII +1.
+    assert ss.charges.tolist() == [0, +1, 0, -1, 0, +1, 0, 0, +1]
+
+
+def test_ncr3_with_ghosts_partition_is_consistent():
+    """SpeciesSet.ncr3_with_ghosts must declare a partition that
+    covers all rows exactly with no overlap.
+    """
+    ss = SpeciesSet.ncr3_with_ghosts()
+
+    assert ss.evolved_names == ('HI', 'HII', 'H2')
+    assert ss.ghost_names == (
+        'electron', 'CI', 'CII', 'CO', 'OI', 'OII',
+    )
+    assert ss.n_evolved == 3
+    assert ss.n_ghost == 6
+    assert ss.n_evolved + ss.n_ghost == ss.nspec
+
+    # Index arrays must be int and contain the right row indices.
+    assert ss.evolved_idx.dtype == np.int64
+    assert ss.ghost_idx.dtype == np.int64
+    np.testing.assert_array_equal(ss.evolved_idx, [0, 1, 2])
+    np.testing.assert_array_equal(ss.ghost_idx, [3, 4, 5, 6, 7, 8])
+
+    # Coverage: union of indices equals the full row set.
+    union = np.union1d(ss.evolved_idx, ss.ghost_idx)
+    np.testing.assert_array_equal(union, np.arange(ss.nspec))
+
+    # No overlap.
+    intersection = np.intersect1d(ss.evolved_idx, ss.ghost_idx)
+    assert intersection.size == 0
+
+
+def test_partition_rejects_overlap():
+    """SpeciesSet raises if evolved and ghost overlap."""
+    with pytest.raises(ValueError, match='overlap'):
+        SpeciesSet(
+            ions=(HI, HII, H2, ELECTRON),
+            evolved_names_in=('HI', 'HII', 'electron'),
+            ghost_names_in=('H2', 'electron'),
+        )
+
+
+def test_partition_rejects_missing_coverage():
+    """SpeciesSet raises if evolved + ghost together miss a name."""
+    with pytest.raises(ValueError, match='partition'):
+        SpeciesSet(
+            ions=(HI, HII, H2, ELECTRON),
+            evolved_names_in=('HI', 'HII'),
+            ghost_names_in=('electron',),
+        )
+
+
+def test_minimal_HI_HII_H2_has_ghost_partition():
+    """The 4-species minimal set declares electron as the only ghost."""
+    ss = SpeciesSet.minimal_HI_HII_H2()
+    assert ss.evolved_names == ('HI', 'HII', 'H2')
+    assert ss.ghost_names == ('electron',)
+    assert ss.n_evolved == 3
+    assert ss.n_ghost == 1
+    np.testing.assert_array_equal(ss.evolved_idx, [0, 1, 2])
+    np.testing.assert_array_equal(ss.ghost_idx, [3])
+
+
+def test_idx_of_method_mirrors_idx_dict():
+    """`idx_of(name)` returns the same row index as `idx[name]`."""
+    ss = SpeciesSet.ncr3_with_ghosts()
+    for name in ss.names:
+        assert ss.idx_of(name) == ss.idx[name]
+    with pytest.raises(KeyError):
+        ss.idx_of('not_a_species')
+
+
 def test_validate_rejects_missing_electron():
     """SpeciesSet must contain exactly one electron species."""
     with pytest.raises(ValueError, match='electron'):

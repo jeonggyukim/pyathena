@@ -36,12 +36,44 @@ path lands; see the chemistry-rewrite-plan.md roadmap.
 """
 from __future__ import annotations
 
+import contextlib
 from dataclasses import dataclass, field
-from typing import Any, Mapping, Optional, Tuple
+from typing import Any, Dict, Mapping, Optional, Tuple
 
 import numpy as np
 
 from .diagnostics import SolverDiag
+
+
+# Default radiation-field band layout for the 3-band NCR convention
+# (FUV / LW / EUV). Matches `NCRRates` on the C++ side.
+DEFAULT_CHI_BANDS: Tuple[str, ...] = ('FUV', 'LW', 'EUV')
+
+# Sentinel string used in `policy_versions` when no policy was supplied
+# at construction time. Phase 3 drivers overwrite these via `from_grid`'s
+# policy kwargs.
+_POLICY_NONE_SENTINEL: str = '__none__'
+
+# Names of the policy roles that `from_grid` recognises as keyword
+# arguments. Order is the canonical display order (network -> solver ->
+# thermo -> cooling -> opacity -> radiation).
+_POLICY_ROLES: Tuple[str, ...] = (
+    'network', 'solver', 'thermo', 'cooling', 'opacity', 'radiation',
+)
+
+
+def _policy_version_tag(policy: Any) -> str:
+    """Stamp a policy as `ClassQualname@version_string`.
+
+    `version_string` is `policy.__version__` if set, else the sentinel
+    `__none__`. Callers pass the policy instance (not the class) so
+    instance-level overrides are picked up.
+    """
+    if policy is None:
+        return _POLICY_NONE_SENTINEL
+    cls_name = type(policy).__qualname__
+    version = getattr(policy, '__version__', _POLICY_NONE_SENTINEL)
+    return f'{cls_name}@{version}'
 
 
 @dataclass
@@ -80,14 +112,19 @@ class ChemState:
     dt_remaining: np.ndarray         # (ncell,) — set to dt at reset_step
     t:            float
 
-    # ---- Optional scratch (allocated lazily when a policy requests it) ----
-    C:          Optional[np.ndarray] = None    # (nspec, ncell)
-    D:          Optional[np.ndarray] = None    # (nspec, ncell)
-    Lambda:     Optional[np.ndarray] = None    # (nchan_cool, ncell)
-    Gamma:      Optional[np.ndarray] = None    # (nchan_heat, ncell)
-    metal_CT:   Optional[np.ndarray] = None    # (4, ncell)
-    regime_tag: Optional[np.ndarray] = None    # (ncell,) int8 — matches enums.Regime
-    nsub_est:   Optional[np.ndarray] = None    # (ncell,) int32
+    # ---- Structured radiation-field index ----
+    # `chi_bands[i]` names the i-th row of `chi`. The 3-band NCR default
+    # is `('FUV', 'LW', 'EUV')`; richer networks (Phase 6+) extend it.
+    # Use `chi_for(band_name)` instead of ad-hoc attribute access.
+    chi_bands: Tuple[str, ...] = DEFAULT_CHI_BANDS
+
+    # ---- Lazily-allocated scratch buffers ----
+    # Networks / solvers request scratch by string key via
+    # `alloc_scratch(name, shape, dtype)` and read it back with
+    # `get_scratch(name)`. The dict is owned by the state; hot-path code
+    # is expected to allocate once at setup time (outside the inner
+    # loop) and reuse the same buffer thereafter.
+    scratch: Dict[str, np.ndarray] = field(default_factory=dict)
 
     # ---- Diagnostics (fixed-field POD; no free-form dict on hot path) ----
     diag: SolverDiag = field(default_factory=SolverDiag)
@@ -95,17 +132,31 @@ class ChemState:
     # ---- Derived / read-only properties ----
     @property
     def ne(self) -> np.ndarray:
-        """Electron density n_e = n_H * sum_i q_i x_i, derived from `x`.
+        """Electron density n_e derived from the state.
 
-        No setter. Callers must mutate `x` to change `ne`. Charge
-        neutrality is read off `SpeciesSet.charges`; the electron row
-        carries charge -1 so it cancels HII in a balanced state.
+        No setter. Callers must mutate `x` to change `ne`. The
+        network is responsible for keeping the electron row of `x`
+        consistent with the rest of the strip via
+        `NetworkBase.fill_ghosts` (see
+        `pyathena/chemistry/networks/base.py`); this property simply
+        reads it back.
 
-        For sets that include the electron row, this is equivalent to
-        `n_H * x_e`. For sets that derive the electron implicitly (no
-        electron row), the sum is over the positive-ion rows only.
+        Resolution order:
+
+        - If the species set carries an explicit `electron` row, the
+          property returns `n_H * x[electron]` (the canonical 9-species
+          `ncr3_with_ghosts` layout).
+        - Otherwise the value comes from the positive-charge sum
+          `n_H * sum_i max(q_i, 0) * x_i`. This branch only matters
+          for legacy `SpeciesSet` constructions that omit an electron
+          species entirely.
         """
         species = getattr(self, 'species', None)
+        if species is not None:
+            idx = getattr(species, 'idx', None)
+            if idx is not None and 'electron' in idx:
+                i_e = idx['electron']
+                return self.nH * self.x[i_e]
         charges = getattr(species, 'charges', None)
         if charges is None:
             return np.zeros_like(self.nH)
@@ -125,6 +176,59 @@ class ChemState:
     @property
     def nspec(self) -> int:
         return self.x.shape[0]
+
+    # ---- Structured radiation-field lookup ----
+    def chi_for(self, band_name: str) -> np.ndarray:
+        """Return the row of `chi` named `band_name`.
+
+        Raises `KeyError` if `band_name` is not in `chi_bands`. The
+        returned array is a view into `chi` — mutating it mutates the
+        state. Networks should prefer this over reading positional
+        indices so the band layout can evolve without breaking call
+        sites.
+        """
+        try:
+            idx = self.chi_bands.index(band_name)
+        except ValueError as exc:
+            raise KeyError(
+                f'chi band {band_name!r} not present; '
+                f'known bands = {self.chi_bands!r}'
+            ) from exc
+        return self.chi[idx]
+
+    # ---- Scratch buffer management ----
+    def alloc_scratch(
+        self,
+        name: str,
+        shape: Tuple[int, ...],
+        dtype: Any = np.float64,
+    ) -> np.ndarray:
+        """Allocate (or re-allocate) a scratch buffer and return it.
+
+        Subsequent calls with the same `name` overwrite the previous
+        buffer. Networks call this at setup time via
+        `network.allocate_scratch(state)`; the hot path then uses
+        `get_scratch(name)` only.
+        """
+        buf = np.zeros(shape, dtype=dtype)
+        self.scratch[name] = buf
+        return buf
+
+    def get_scratch(self, name: str) -> np.ndarray:
+        """Return the scratch buffer registered under `name`.
+
+        Raises `KeyError` if no buffer has been allocated for `name` —
+        callers must call `alloc_scratch` first (typically through the
+        owning network's `allocate_scratch` hook). The hot path is
+        expected to fetch buffers once and reuse the reference.
+        """
+        try:
+            return self.scratch[name]
+        except KeyError as exc:
+            raise KeyError(
+                f'scratch buffer {name!r} not allocated; '
+                f'call alloc_scratch({name!r}, ...) first'
+            ) from exc
 
     # ---- Lifecycle ----
     def reset_step(self, dt: float, t: float) -> None:
@@ -212,13 +316,8 @@ class ChemState:
             dt=self.dt,
             dt_remaining=self.dt_remaining.copy(),
             t=self.t,
-            C=None if self.C is None else self.C.copy(),
-            D=None if self.D is None else self.D.copy(),
-            Lambda=None if self.Lambda is None else self.Lambda.copy(),
-            Gamma=None if self.Gamma is None else self.Gamma.copy(),
-            metal_CT=None if self.metal_CT is None else self.metal_CT.copy(),
-            regime_tag=None if self.regime_tag is None else self.regime_tag.copy(),
-            nsub_est=None if self.nsub_est is None else self.nsub_est.copy(),
+            chi_bands=self.chi_bands,
+            scratch={k: v.copy() for k, v in self.scratch.items()},
             diag=SolverDiag(**self.diag.as_dict()),
         )
 
@@ -239,6 +338,13 @@ class ChemState:
         T_dust: Optional[np.ndarray] = None,
         dvdr: float = 0.0,
         xi_CR: float = 0.0,
+        chi_bands: Optional[Tuple[str, ...]] = None,
+        network: Any = None,
+        solver: Any = None,
+        thermo: Any = None,
+        cooling: Any = None,
+        opacity: Any = None,
+        radiation: Any = None,
     ) -> 'ChemState':
         """Build a strip-shaped state from a 1-D radial / planar grid.
 
@@ -274,6 +380,15 @@ class ChemState:
         dvdr, xi_CR : float, optional
             Scalar broadcasts of the velocity gradient and CR ionization
             rate. The driver overwrites these per substep.
+        chi_bands : tuple of str, optional
+            Names for the rows of `chi`. Defaults to `DEFAULT_CHI_BANDS`
+            (`('FUV', 'LW', 'EUV')`) when `nfreq == 3` and to a
+            positional `('chi_0', 'chi_1', ...)` layout otherwise.
+        network, solver, thermo, cooling, opacity, radiation : optional
+            Policy instances. When supplied, their qualified class name
+            and `__version__` attribute are stamped into
+            `state.policy_versions`. Unsupplied roles get the
+            `'__none__'` sentinel.
 
         Returns
         -------
@@ -324,16 +439,58 @@ class ChemState:
                 raise ValueError(
                     f'T_dust shape {T_dust_arr.shape} != ncell={ncell}')
 
-        chi = np.zeros((max(int(nfreq), 0), ncell), dtype=np.float64)
+        nfreq_int = max(int(nfreq), 0)
+        chi = np.zeros((nfreq_int, ncell), dtype=np.float64)
         N_col = np.zeros((max(int(ncol), 0), ncell), dtype=np.float64)
         xi_CR_arr = np.full(ncell, float(xi_CR), dtype=np.float64)
         dvdr_arr = np.full(ncell, float(dvdr), dtype=np.float64)
         dt_rem = np.zeros(ncell, dtype=np.float64)
 
+        # Resolve chi_bands. When the caller did not pass a layout,
+        # default to the 3-band NCR convention for nfreq=3 and to a
+        # positional naming for other widths so `chi_for()` still works.
+        if chi_bands is None:
+            if nfreq_int == len(DEFAULT_CHI_BANDS):
+                bands_resolved: Tuple[str, ...] = DEFAULT_CHI_BANDS
+            else:
+                bands_resolved = tuple(
+                    f'chi_{i}' for i in range(nfreq_int)
+                )
+        else:
+            bands_resolved = tuple(chi_bands)
+            if len(bands_resolved) != nfreq_int:
+                raise ValueError(
+                    f'chi_bands has {len(bands_resolved)} entries but '
+                    f'nfreq={nfreq_int}'
+                )
+
+        # Stamp policy_versions from the supplied policy instances. The
+        # 'network' / 'thermo' entries are always present (even when not
+        # supplied) so legacy call sites that read these keys keep
+        # working; the others appear only when provided.
+        provided = dict(zip(
+            _POLICY_ROLES,
+            (network, solver, thermo, cooling, opacity, radiation),
+        ))
+        policy_versions: Dict[str, str] = {
+            'network': _policy_version_tag(provided['network']),
+            'thermo':  _policy_version_tag(provided['thermo']),
+        }
+        for role in ('solver', 'cooling', 'opacity', 'radiation'):
+            if provided[role] is not None:
+                policy_versions[role] = _policy_version_tag(provided[role])
+
+        # Walk_order falls out of the network when one is supplied.
+        walk_order: Tuple[Tuple[str, ...], ...] = ()
+        if network is not None:
+            wo = getattr(network, 'walk_order', None)
+            if wo:
+                walk_order = tuple(tuple(g) for g in wo)
+
         state = cls(
             species=species,
-            policy_versions={'network': '__none__', 'thermo': '__none__'},
-            walk_order=(),
+            policy_versions=policy_versions,
+            walk_order=walk_order,
             x=x,
             nH=nH.copy(),
             T=T.copy(),
@@ -347,7 +504,14 @@ class ChemState:
             dt=0.0,
             dt_remaining=dt_rem,
             t=0.0,
+            chi_bands=bands_resolved,
         )
+
+        # Give the network a chance to register its scratch buffers.
+        if network is not None:
+            alloc_hook = getattr(network, 'allocate_scratch', None)
+            if callable(alloc_hook):
+                alloc_hook(state)
         # Attach the grid coordinate as a non-schema field for callers
         # that want to plot the strip later. Not part of validate().
         object.__setattr__(state, 'r', r)
@@ -376,3 +540,59 @@ class ChemState:
         """Serialise payload only. Phase 8."""
         raise NotImplementedError(
             'ChemState.to_hdf5 arrives in Phase 8 (tigris-ncr port)')
+
+
+@contextlib.contextmanager
+def assert_no_alloc(allow: int = 0):
+    """Context manager: assert no new `numpy.ndarray` allocations
+    happened inside the block.
+
+    Used by Phase 3 solver tests to confirm that hot-path code paths do
+    not allocate. Tracks ndarray construction by wrapping the array
+    constructors numpy exposes at the Python level (`np.empty`,
+    `np.zeros`, `np.ones`, `np.full`, `np.array`, `np.asarray`, and
+    `np.copy`). Views, in-place ufuncs (`out=`), and pre-allocated
+    buffers do not go through these constructors — those are the
+    patterns the solver hot path must use.
+
+    Parameters
+    ----------
+    allow : int, optional
+        Tolerate up to `allow` allocations without raising. Defaults to
+        zero. Useful when a known one-off setup allocation happens
+        inside the timed block.
+
+    Notes
+    -----
+    The wrap is process-wide (numpy has no thread-local hook), so do
+    not nest these or use them from multiple threads. `np.asarray` of an
+    array of the same dtype usually returns the input unchanged with no
+    fresh allocation, but a dtype / copy=True conversion does allocate
+    — the counter reflects what numpy actually did, not the call count.
+    """
+    counter = {'n': 0}
+    constructors = ('empty', 'zeros', 'ones', 'full', 'array', 'copy',
+                    'empty_like', 'zeros_like', 'ones_like', 'full_like')
+    originals = {name: getattr(np, name) for name in constructors}
+
+    def _wrap(name, fn):
+        def wrapper(*args, **kwargs):
+            out = fn(*args, **kwargs)
+            if isinstance(out, np.ndarray):
+                counter['n'] += 1
+            return out
+        wrapper.__name__ = name
+        return wrapper
+
+    for name, fn in originals.items():
+        setattr(np, name, _wrap(name, fn))
+    try:
+        yield counter
+    finally:
+        for name, fn in originals.items():
+            setattr(np, name, fn)
+    if counter['n'] > allow:
+        raise AssertionError(
+            f'expected at most {allow} numpy allocations, '
+            f'got {counter["n"]}'
+        )

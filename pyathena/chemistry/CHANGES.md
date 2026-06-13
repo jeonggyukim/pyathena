@@ -177,3 +177,133 @@ remaining ion rows).
 Validation: 354 passed, 17 skipped in `tests/chemistry/ +
 tests/microphysics/` (up from 341 / 17 in Phase 1; +13 new tests, no
 regressions).
+
+## 2026-06-13: Pre-Phase-3 refactor
+
+Three parallel tracks that together prepare the chemistry stack for
+the Phase 3 explicit-subcycling driver, the Phase 4 cooling/heating
+ABCs, and the Phase 6 multi-ion sweep. No public API was removed and
+no parity test changed; the work is additive scaffolding.
+
+Plan update (`chemistry-rewrite-plan.md`): ghost species are now a
+first-class part of the SpeciesSet schema. The NCRNetwork3 ghost list
+has six entries (electron, CI, CII, CO, OI, OII) — replacing the
+earlier single-ghost (electron) sketch — to match the
+`CoolingOther` algebraic closure in
+`tigris-ncr/src/photchem/ncr_rates.hpp:1505-1540`. The GOW17 18-species
+clarification (every species an ODE variable, so the ghost list is
+empty) was folded in. A follow-up note flags that the electron row is
+advected by the hydro step on the C++ side but not yet on the Python
+side; the driver layer will own the closure when it lands.
+
+- `pyathena.chemistry.species.SpeciesSet` — evolved / ghost split
+  added. The constructor takes optional `evolved_names_in` /
+  `ghost_names_in` tuples; both must partition `names` exactly (no
+  overlap, no missing entries). Three name-tuple + index-array views
+  are materialised: `evolved_names` / `evolved_idx` / `n_evolved` and
+  `ghost_names` / `ghost_idx` / `n_ghost`. Default when no partition
+  is provided: every species is evolved, none are ghost (back-compat
+  with the Phase 2 factories). New factory:
+  `SpeciesSet.ncr3_with_ghosts()` returns the 9-species NCR layout
+  (HI, HII, H2 evolved; electron, CI, CII, CO, OI, OII ghost).
+- `pyathena.chemistry.networks.base.NetworkBase` — `fill_ghosts(state)`
+  contract: pure algebra, idempotent, mutates only `state.x[ghost_idx]`,
+  zero allocation. The base class provides a no-op default for
+  networks with no ghost species (e.g., a future fully-tracked GOW17).
+  Class-level `evolved` / `ghost` declarations sit alongside `species`
+  / `walk_order` for solver consumption. A no-op
+  `allocate_scratch(state)` hook is also provided; concrete networks
+  override it to register multi-buffer scratch via
+  `state.alloc_scratch`.
+- `pyathena.chemistry.networks.ncr3.NCRNetwork3.fill_ghosts` —
+  implements the `Chem_flag == 0` branch of `CoolingOther`:
+  `x_OII = x_HII * xOstd * Z_g`, `x_CII = xCstd * Z_g` (saturated),
+  `x_CO = 0` (floored at `x_floor`), `x_OI = max(xOstd * Z_g - x_OII
+  - x_CO, x_floor)`, `x_CI = max(xCstd * Z_g - x_CII - x_CO, x_floor)`,
+  `x_e = max(x_HII + x_CII + x_OII, x_floor)`. The constants
+  `x_C_std = 1.6e-4` and `x_O_std = 3.2e-4` mirror `NCRRates::kxCstd`
+  / `kxOstd` on the C++ side. TODO marker in the docstring points at
+  the chemistry-rewrite-plan §9 follow-up: the saturated `x_CII`
+  should be replaced with the full `GetxCII(chi_FUV, chi_CI, xi_CR,
+  Z_d)` prescription once the radiation-field state inputs land in
+  ChemState, and CO needs the GOW17 chain in Phase 9.
+  `evaluate_CD` / `closure` / `electron_fraction` now read indices
+  from `state.species.idx` (not `self.species.idx`) so the network
+  operates uniformly across the 9-species layout and any reduced
+  legacy set that omits the metal ghosts.
+- `pyathena.chemistry.state.ChemState` — schema additions for the
+  Phase 3 driver. `chi_bands: Tuple[str, ...]` names the rows of
+  `chi`; defaults to the 3-band NCR convention `('FUV', 'LW', 'EUV')`
+  for `nfreq=3` and a positional `('chi_0', ...)` layout otherwise.
+  Callers read radiation rows via `state.chi_for(band_name)` instead
+  of positional indices. `scratch: Dict[str, np.ndarray]` replaces the
+  earlier named scratch fields (`C` / `D` / `Lambda` / `Gamma`
+  / `metal_CT` / `regime_tag` / `nsub_est` are gone); networks
+  register their buffers via the `allocate_scratch(state)` hook and
+  the hot path uses `state.get_scratch(name)`. `from_grid` accepts
+  policy kwargs `network=`, `solver=`, `thermo=`, `cooling=`,
+  `opacity=`, `radiation=` and stamps `'ClassQualname@__version__'`
+  strings into `policy_versions`; unsupplied roles keep the
+  `'__none__'` sentinel for back-compat. The `ne` property delegates
+  to the explicit electron row when present and falls back to the
+  positive-charge sum otherwise.
+- `pyathena.chemistry.state.assert_no_alloc(allow=0)` — context
+  manager that wraps numpy's array constructors (`empty` / `zeros` /
+  `ones` / `full` / `array` / `copy` / `*_like`) and asserts no more
+  than `allow` allocations happen inside the block. Process-wide
+  (not thread-safe) — used by Phase 3 solver tests to confirm the
+  hot path does not allocate.
+- `pyathena.chemistry.config.ChemistryConfig` — `solver_type: str` was
+  replaced by `solver: SolverSpec`. `solver_type` remains as a
+  read-only `@property` aliasing `self.solver.name`; the legacy string
+  `'explicit'` is mapped to the registry name `'explicit_subcycling'`
+  via `_LEGACY_SOLVER_NAMES`. `network_params` is a free-form mapping
+  that the future `NCRNetwork3PlusIons16` reads; flat NCR3 keys
+  (`xCstd`, `xOstd`, `temp_mu_floor`, `x_floor`) are auto-mirrored
+  into it for back-compat. A new `SOLVER_REGISTRY` dict + class
+  decorator `@register_solver('name')` populates the registry at
+  solver-module import time; the registry is empty at config-import
+  time (Phase 3 fills it).
+- `pyathena.chemistry.rates.{photx,rec_rate,ci_rate,ct_rate}` —
+  rate-class audit follow-ups. All four classes accept an
+  `interp_mode: InterpMode = InterpMode.kExact` constructor argument
+  (the table modes raise `NotImplementedError`). Per-call
+  `np.where(c1 & c2 [& c3])` table scans were replaced with O(1)
+  dict lookups on `(Z, N)` (or `(Z, N, M)` for the Badnell DR / RR
+  tables); `RecRate.get_dr_rate`'s inner DR sum is now one broadcast
+  `np.exp(-Ed[:, None] / T[None, :]).sum(0)`; `ChargeTransferRate`
+  drops `copy.deepcopy(T)` in favour of `np.asarray(T, dtype=float)`.
+  New strip-vectorised accessors `PhotX.get_sigma_table`,
+  `RecRate.get_rec_rate_table`, `CollIonRate.get_ci_rate_table` return
+  `(n_species, ncell)` arrays in the
+  `species_set.evolved_names + species_set.ghost_names` traversal
+  order. Charge-transfer strip table deferred to Phase 6 (CT carries
+  ion-pair structure awkward to vectorise outside the multi-ion
+  sweep). `InterpMode` and `Regime` are now re-exported from
+  `pyathena.chemistry.__init__`.
+
+Merge-point fix landed in this entry: the strip-table accessors
+originally looked for `species_set.evolved` / `species_set.ghost` (no
+suffix), which do not exist on the SpeciesSet exposed by track 1 — the
+canonical attribute names are `evolved_names` / `ghost_names`. The
+three accessors now share a `_ordered_ions(species_set)` helper that
+reads the name-tuples and resolves each name back to its `Ion` instance
+through `species_set.idx`, falling back to `species_set.ions` for sets
+that declare no partition. Three new tests in
+`tests/chemistry/test_rates_strip_tables.py` exercise the
+`ncr3_with_ghosts` path so the fallback path cannot silently re-cover
+this regression.
+
+The Phase 3 explicit-subcycling driver and the Phase 4
+cooling / heating ABCs will be the first consumers of every change in
+this entry: the driver registers itself under
+`'explicit_subcycling'` via `@register_solver`, sizes its scratch
+through `NetworkBase.allocate_scratch`, reads radiation rows through
+`ChemState.chi_for`, and validates allocation-free hot paths via
+`assert_no_alloc`. Phase 6 multi-ion work reuses the
+`evolved_names` / `ghost_names` partition to size the strip rate
+tables produced by `get_*_table`.
+
+Validation: 406 passed, 17 skipped in `tests/chemistry/ +
+tests/microphysics/` (up from 354 / 17 in Phase 2; +52 new tests,
+no regressions).

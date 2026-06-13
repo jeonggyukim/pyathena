@@ -29,7 +29,7 @@ Design notes (see also the chemistry-rewrite-plan.md, Section 2):
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Mapping, Tuple
+from typing import Mapping, Optional, Tuple
 
 import numpy as np
 
@@ -88,6 +88,11 @@ HeI      = _ion('HeI',      'He', Z=2, N=2, charge=0)
 HeII     = _ion('HeII',     'He', Z=2, N=1, charge=+1)
 HeIII    = _ion('HeIII',    'He', Z=2, N=0, charge=+2)
 ELECTRON = _ion('electron', 'e',  Z=0, N=1, charge=-1)
+CI       = _ion('CI',       'C',  Z=6, N=6, charge=0)
+CII      = _ion('CII',      'C',  Z=6, N=5, charge=+1)
+CO       = _ion('CO',       'CO', Z=14, N=14, charge=0)  # 6 + 8; net 14 e
+OI       = _ion('OI',       'O',  Z=8, N=8, charge=0)
+OII      = _ion('OII',      'O',  Z=8, N=7, charge=+1)
 
 
 @dataclass(frozen=True)
@@ -100,7 +105,11 @@ class SpeciesSet:
     Use the factory classmethods rather than constructing by hand:
 
     - `SpeciesSet.minimal_HI_HII_H2()` for the 4-species NCRNetwork3
-      layout (HI, HII, H2, electron).
+      layout (HI, HII, H2, electron) with the electron as the only
+      ghost species.
+    - `SpeciesSet.ncr3_with_ghosts()` extends the minimal set with the
+      five algebraic ghost rows (CI, CII, CO, OI, OII) consumed by the
+      NCR cooling layer (`CoolingOther` in `ncr_rates.hpp`).
     - `SpeciesSet.ncr3_plus_helium()` adds the three helium ions
       (HeI, HeII, HeIII) ahead of the electron — placeholder for the
       Phase 6 helium-tracking network.
@@ -109,9 +118,30 @@ class SpeciesSet:
     `is_electron`) are populated in `__post_init__` from the `Ion`
     table so that callers can write vectorised expressions without a
     per-species Python loop.
+
+    Two additional partitioning slots are filled by the constructor
+    based on the optional `evolved_names_in` / `ghost_names_in` inputs:
+
+    - `evolved_names` / `evolved_idx` / `n_evolved`: subset of `names`
+      that a solver integrates as ODE state variables.
+    - `ghost_names` / `ghost_idx` / `n_ghost`: subset of `names` whose
+      values a network rebuilds algebraically each substep via
+      `NetworkBase.fill_ghosts`.
+
+    The two subsets must cover `names` exactly with no overlap; the
+    constructor raises `ValueError` if they do not. When neither
+    partitioning input is provided, the constructor defaults to
+    `evolved = names` and `ghost = ()` (back-compat with legacy
+    callers that did not know about the split).
     """
 
     ions: Tuple[Ion, ...]
+
+    # Optional partitioning inputs. The defaults of `None` mean
+    # "treat every species as evolved and none as ghost"; concrete
+    # factories pass explicit tuples.
+    evolved_names_in: Optional[Tuple[str, ...]] = None
+    ghost_names_in:   Optional[Tuple[str, ...]] = None
 
     # Filled by __post_init__; declared with init=False so the
     # constructor signature stays `SpeciesSet(ions=...)`.
@@ -122,6 +152,15 @@ class SpeciesSet:
     n_per_particle: np.ndarray           = field(init=False)
     mass_per_particle: np.ndarray        = field(init=False)
     is_electron: np.ndarray              = field(init=False)
+
+    # Evolved / ghost partition. Solvers iterate over `evolved_idx`;
+    # networks rebuild `ghost_idx` rows in `fill_ghosts`.
+    evolved_names: Tuple[str, ...]       = field(init=False)
+    ghost_names: Tuple[str, ...]         = field(init=False)
+    evolved_idx: np.ndarray              = field(init=False)
+    ghost_idx: np.ndarray                = field(init=False)
+    n_evolved: int                       = field(init=False)
+    n_ghost: int                         = field(init=False)
 
     # Mu baseline carried by the set. For sets that do not track He
     # explicitly we fold x_He into the HI / HII / H2 n_per_particle
@@ -220,6 +259,52 @@ class SpeciesSet:
                 masses[i] = 0.0
         object.__setattr__(self, 'mass_per_particle', masses)
 
+        # Evolved / ghost partition.
+        # Defaults: every species is evolved when no partition is given.
+        evolved_in = self.evolved_names_in
+        ghost_in = self.ghost_names_in
+        if evolved_in is None and ghost_in is None:
+            evolved_in = names
+            ghost_in = ()
+        elif evolved_in is None:
+            # ghost-only declared; evolved is the complement.
+            ghost_set = set(ghost_in)
+            evolved_in = tuple(n for n in names if n not in ghost_set)
+        elif ghost_in is None:
+            evolved_set = set(evolved_in)
+            ghost_in = tuple(n for n in names if n not in evolved_set)
+
+        evolved_in = tuple(evolved_in)
+        ghost_in = tuple(ghost_in)
+
+        # Validate the partition before computing index arrays so the
+        # error message describes the user input rather than an index
+        # KeyError further down.
+        if set(evolved_in) & set(ghost_in):
+            overlap = sorted(set(evolved_in) & set(ghost_in))
+            raise ValueError(
+                'SpeciesSet evolved/ghost partition overlaps: '
+                f'{overlap}')
+        union = set(evolved_in) | set(ghost_in)
+        if union != set(names):
+            missing = sorted(set(names) - union)
+            extra = sorted(union - set(names))
+            raise ValueError(
+                'SpeciesSet evolved/ghost partition does not cover '
+                f'names exactly; missing={missing} extra={extra}')
+
+        evolved_idx = np.array(
+            [self.idx[n] for n in evolved_in], dtype=np.int64)
+        ghost_idx = np.array(
+            [self.idx[n] for n in ghost_in], dtype=np.int64)
+
+        object.__setattr__(self, 'evolved_names', evolved_in)
+        object.__setattr__(self, 'ghost_names', ghost_in)
+        object.__setattr__(self, 'evolved_idx', evolved_idx)
+        object.__setattr__(self, 'ghost_idx', ghost_idx)
+        object.__setattr__(self, 'n_evolved', int(evolved_idx.size))
+        object.__setattr__(self, 'n_ghost', int(ghost_idx.size))
+
         self.validate()
 
     # ---- Factory methods ----
@@ -232,8 +317,33 @@ class SpeciesSet:
         conservation closure `x_HI + x_HII + 2 x_H2 = 1` is enforced
         downstream by the solver (RAMSES-style clipping); SpeciesSet
         carries the metadata only.
+
+        Partition: evolved = (HI, HII, H2), ghost = (electron,). The
+        electron row is rebuilt from the positive-ion charges via
+        `NetworkBase.fill_ghosts`.
         """
-        return cls(ions=(HI, HII, H2, ELECTRON))
+        return cls(
+            ions=(HI, HII, H2, ELECTRON),
+            evolved_names_in=('HI', 'HII', 'H2'),
+            ghost_names_in=('electron',),
+        )
+
+    @classmethod
+    def ncr3_with_ghosts(cls) -> 'SpeciesSet':
+        """Nine-species NCRNetwork3 layout with the full algebraic
+        ghost set used by the NCR cooling layer.
+
+        Order: HI, HII, H2 (evolved), then electron, CI, CII, CO, OI,
+        OII (ghost). The ghost rows are populated each substep by
+        `NCRNetwork3.fill_ghosts` from the evolved rows, T, and the
+        radiation / metal-abundance state — they are not integrated
+        as ODE variables.
+        """
+        return cls(
+            ions=(HI, HII, H2, ELECTRON, CI, CII, CO, OI, OII),
+            evolved_names_in=('HI', 'HII', 'H2'),
+            ghost_names_in=('electron', 'CI', 'CII', 'CO', 'OI', 'OII'),
+        )
 
     @classmethod
     def ncr3_plus_helium(cls) -> 'SpeciesSet':
@@ -244,8 +354,17 @@ class SpeciesSet:
         treats x_He as a scalar); the set is provided so downstream
         code paths and parity infrastructure can be plumbed without
         another schema change later.
+
+        Partition: evolved = (HI, HII, H2, HeI, HeII, HeIII), ghost =
+        (electron,). All helium ions are integrated as ODE variables
+        once Phase 6 lands; until then they are seeded by the test
+        harness directly.
         """
-        return cls(ions=(HI, HII, H2, HeI, HeII, HeIII, ELECTRON))
+        return cls(
+            ions=(HI, HII, H2, HeI, HeII, HeIII, ELECTRON),
+            evolved_names_in=('HI', 'HII', 'H2', 'HeI', 'HeII', 'HeIII'),
+            ghost_names_in=('electron',),
+        )
 
     # ---- Lookups / helpers ----
     def __len__(self) -> int:
@@ -256,6 +375,13 @@ class SpeciesSet:
 
     def index(self, name: str) -> int:
         """Row index for `name`. Raises KeyError on miss."""
+        return self.idx[name]
+
+    def idx_of(self, name: str) -> int:
+        """Row index for `name`. Mirrors the `idx` dict lookup but as
+        a method, so parametric code (`species.idx_of(target_name)`)
+        does not need to introspect the dict directly.
+        """
         return self.idx[name]
 
     @property

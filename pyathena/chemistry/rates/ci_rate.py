@@ -11,18 +11,37 @@ and numerical behavior identical (rtol = 1e-12 parity test under
 """
 import os
 import os.path as osp
+from typing import Dict, Tuple
 import numpy as np
 import astropy.units as au
 import astropy.constants as ac
 
 from ..datapaths import _DATA_ROOT
+from ..enums import InterpMode
+from .photx import _ordered_ions
 
 _CLOUDY_DIR = osp.join(_DATA_ROOT, 'microphysics', 'cloudy')
 
 
 class CollIonRate(object):
 
-    def __init__(self):
+    def __init__(self, interp_mode: 'InterpMode' = InterpMode.kExact):
+        """
+        Parameters
+        ----------
+        interp_mode : InterpMode, optional
+            Rate-table interpolation mode. Only `InterpMode.kExact`
+            (analytic Voronov fits) is supported today; the
+            table-based modes land in Phase 3.5 alongside the C++
+            port.
+        """
+        if interp_mode != InterpMode.kExact:
+            raise NotImplementedError(
+                f'CollIonRate interp_mode={interp_mode!r} is not '
+                'implemented; table-based modes (kLogLog / kNqt1 / '
+                'kNqt2) land in Phase 3.5. Use InterpMode.kExact for '
+                'now.')
+        self.interp_mode = interp_mode
         self._read_data()
 
     def _read_data(self, max_rows=465):
@@ -40,10 +59,15 @@ class CollIonRate(object):
         self.X = lines[5]
         self.K = lines[6]
 
+        # Build (Z, N) -> row index dict so get_ci_rate does an O(1)
+        # lookup instead of a per-call `np.where(iZ & iN)` scan.
+        self._ion_idx: Dict[Tuple[int, int], int] = {
+            (int(self.Z[i]), int(self.N[i])): i
+            for i in range(self.Z.size)
+        }
+
     def get_ci_rate(self, Z, N, T):
-        iZ = Z == self.Z
-        iN = N == self.N
-        i = np.where(iZ & iN)[0][0]
+        i = self._ion_idx[(int(Z), int(N))]
 
         U = self.dE_Kel[i]/T
         rate = np.where(U > 80.0,
@@ -52,6 +76,44 @@ class CollIonRate(object):
                         (self.X[i] + U)*U**(self.K[i])*np.exp(-U))
 
         return rate
+
+    def get_ci_rate_table(self, species_set, T):
+        """Strip-vectorised collisional-ionization rates.
+
+        Returns k_CI[(Z_i, N_i), T] stacked over every ion in
+        `species_set`. Output shape is `(n_species, ncell)`. Species
+        that have no entry — bare electron, H2, fully-stripped ions
+        outside the Voronov table — contribute a zero row.
+
+        Parameters
+        ----------
+        species_set : SpeciesSet
+            Iterable of ions. Picks up
+            `species_set.evolved_names + species_set.ghost_names` when
+            the partition is declared, else `species_set.ions`.
+        T : float or array-like
+            Temperature [K].
+
+        Notes
+        -----
+        Today this is a thin loop wrapper over `get_ci_rate`. The C++
+        port (Phase D) will replace it with a precomputed strip-shape
+        table indexed by the same `(Z, N)` ordering.
+        """
+        T_arr = np.asarray(T, dtype=float)
+        ncell = T_arr.size if T_arr.ndim > 0 else 1
+        ions = _ordered_ions(species_set)
+
+        out = np.zeros((len(ions), ncell), dtype=float)
+        for i, ion in enumerate(ions):
+            if ion.element in ('e', 'H2'):
+                continue
+            key = (int(ion.Z), int(ion.N))
+            if key not in self._ion_idx:
+                continue
+            rate = self.get_ci_rate(ion.Z, ion.N, T_arr)
+            out[i, :] = np.broadcast_to(rate, (ncell,))
+        return out
 
 
 class CollIonRateCHIANTI(object):

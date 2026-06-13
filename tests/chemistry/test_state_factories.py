@@ -15,7 +15,7 @@ import numpy as np
 import pytest
 
 from pyathena.chemistry.species import SpeciesSet
-from pyathena.chemistry.state import ChemState
+from pyathena.chemistry.state import ChemState, DEFAULT_CHI_BANDS
 
 
 def _radial_grid(ncell: int = 10):
@@ -162,3 +162,155 @@ def test_from_grid_carries_grid_coordinate():
     state = ChemState.from_grid(r, nH, T, species)
     np.testing.assert_array_equal(state.r, r)
     assert state.A_He == pytest.approx(0.0955)
+
+
+# ---- chi_bands + chi_for ----
+def test_chi_bands_default_is_3band_NCR_convention():
+    """nfreq=3 picks up the canonical FUV / LW / EUV layout."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species, nfreq=3)
+    assert state.chi_bands == DEFAULT_CHI_BANDS == ('FUV', 'LW', 'EUV')
+
+
+def test_chi_for_returns_correct_band_view():
+    """`chi_for('LW')` returns the row of chi corresponding to LW."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species, nfreq=3)
+    # Write into the FUV row through the helper, observe via chi[0,:].
+    state.chi_for('FUV')[:] = 1.7
+    state.chi_for('LW')[:] = 0.5
+    state.chi_for('EUV')[:] = 0.1
+    np.testing.assert_allclose(state.chi[0, :], 1.7)
+    np.testing.assert_allclose(state.chi[1, :], 0.5)
+    np.testing.assert_allclose(state.chi[2, :], 0.1)
+
+
+def test_chi_for_unknown_band_raises_keyerror():
+    """An unknown band name raises KeyError, not ValueError."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species, nfreq=3)
+    with pytest.raises(KeyError, match='not present'):
+        state.chi_for('soft_xray')
+
+
+def test_chi_bands_explicit_override():
+    """A caller-supplied chi_bands tuple is taken verbatim."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(
+        r, nH, T, species, nfreq=2,
+        chi_bands=('soft_xray', 'hard_xray'),
+    )
+    assert state.chi_bands == ('soft_xray', 'hard_xray')
+    assert state.chi.shape == (2, state.ncell)
+
+
+def test_chi_bands_length_mismatch_rejected():
+    """chi_bands must match nfreq exactly."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    with pytest.raises(ValueError, match='chi_bands'):
+        ChemState.from_grid(
+            r, nH, T, species, nfreq=3,
+            chi_bands=('FUV', 'LW'),
+        )
+
+
+def test_chi_bands_falls_back_to_positional_for_non_default_nfreq():
+    """Non-3 nfreq with no chi_bands kwarg gets `chi_0`, `chi_1`, ..."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species, nfreq=4)
+    assert state.chi_bands == ('chi_0', 'chi_1', 'chi_2', 'chi_3')
+
+
+# ---- Scratch dict ----
+def test_scratch_dict_is_empty_by_default():
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species)
+    assert state.scratch == {}
+
+
+def test_alloc_scratch_and_get_scratch_roundtrip():
+    """alloc_scratch returns the buffer and registers it under `name`."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species)
+    buf = state.alloc_scratch('metal_CT', (4, state.ncell))
+    assert buf.shape == (4, state.ncell)
+    assert buf.dtype == np.float64
+    # Read back via the keyed accessor and confirm identity (no copy).
+    assert state.get_scratch('metal_CT') is buf
+
+
+def test_get_scratch_unknown_raises_keyerror():
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species)
+    with pytest.raises(KeyError, match='not allocated'):
+        state.get_scratch('metal_CT')
+
+
+def test_alloc_scratch_custom_dtype():
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species)
+    buf = state.alloc_scratch('regime_tag', (state.ncell,), dtype=np.int8)
+    assert buf.dtype == np.int8
+
+
+def test_alloc_scratch_reallocate_overwrites():
+    """Re-allocating an existing name replaces the buffer."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species)
+    buf_a = state.alloc_scratch('foo', (3, state.ncell))
+    buf_b = state.alloc_scratch('foo', (5, state.ncell))
+    assert buf_a is not buf_b
+    assert state.get_scratch('foo') is buf_b
+    assert state.get_scratch('foo').shape == (5, state.ncell)
+
+
+# ---- policy_versions stamping ----
+def test_policy_versions_with_policies_records_qualname_and_version():
+    """Supplying policy instances stamps `Class@version` strings."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+
+    class _StubNetwork:
+        __version__ = '2.0'
+        walk_order = (('HI', 'HII'),)
+
+        def allocate_scratch(self, state):
+            state.alloc_scratch('foo', (state.ncell,))
+
+    class _StubThermo:
+        # No __version__ attribute -> falls back to sentinel.
+        pass
+
+    net = _StubNetwork()
+    therm = _StubThermo()
+    state = ChemState.from_grid(r, nH, T, species,
+                                network=net, thermo=therm)
+
+    # qualname includes the enclosing function for locally-defined
+    # classes; we only check the class name and version are present.
+    assert '_StubNetwork' in state.policy_versions['network']
+    assert state.policy_versions['network'].endswith('@2.0')
+    assert state.policy_versions['thermo'].endswith('@__none__')
+    # walk_order populated from the supplied network.
+    assert state.walk_order == (('HI', 'HII'),)
+    # allocate_scratch hook fired.
+    assert 'foo' in state.scratch
+
+
+def test_policy_versions_optional_roles_not_added_when_none():
+    """Without `cooling`/`opacity`/`radiation`, those keys do not appear."""
+    species = SpeciesSet.minimal_HI_HII_H2()
+    r, nH, T = _radial_grid()
+    state = ChemState.from_grid(r, nH, T, species)
+    assert set(state.policy_versions.keys()) == {'network', 'thermo'}

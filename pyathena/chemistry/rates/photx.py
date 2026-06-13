@@ -9,6 +9,7 @@ public API and numerical behavior are identical (rtol = 1e-12 parity
 test under `tests/chemistry/parity/test_photx_parity.py`). The old
 module stays available until cross-repo callers migrate.
 """
+from typing import Dict, Tuple
 import numpy as np
 import os
 import os.path as osp
@@ -17,10 +18,29 @@ import astropy.units as au
 import astropy.constants as ac
 
 from ..datapaths import _DATA_ROOT
+from ..enums import InterpMode
 
 __all__ = ['PhotX', 'get_sigma_pi_H2']
 
 _MICROPHYSICS_DATA_DIR = osp.join(_DATA_ROOT, 'microphysics')
+
+
+def _ordered_ions(species_set):
+    """Return the `Ion` instances of `species_set` in the strip-table
+    traversal order (`evolved_names + ghost_names`) when the partition
+    is declared, otherwise the raw `ions` tuple.
+
+    The strip-table accessors call this so they can honor the
+    SpeciesSet partition without each one re-implementing the lookup.
+    """
+    evolved = getattr(species_set, 'evolved_names', None)
+    ghost = getattr(species_set, 'ghost_names', None)
+    idx = getattr(species_set, 'idx', None)
+    ions = tuple(species_set.ions)
+    if evolved is not None and ghost is not None and idx is not None:
+        names = tuple(evolved) + tuple(ghost)
+        return tuple(ions[idx[n]] for n in names)
+    return ions
 
 
 class PhotX(object):
@@ -33,7 +53,29 @@ class PhotX(object):
     JKIM: okay to copy snippets of their code?)
     """
 
-    def __init__(self, datadir=None):
+    def __init__(self, datadir=None, interp_mode: 'InterpMode' = InterpMode.kExact):
+        """
+        Parameters
+        ----------
+        datadir : str or None
+            Override the default Verner+96 data directory.
+        interp_mode : InterpMode, optional
+            Rate-table interpolation mode. Only `InterpMode.kExact`
+            (analytic evaluation) is supported at present; the
+            `kLogLog` / `kNqt1` / `kNqt2` table-based modes are
+            scheduled for Phase 3.5 once the chemistry strip
+            scaffold is in place.
+        """
+        # Only kExact is implemented today. Refuse anything else
+        # explicitly so callers do not silently get analytic results
+        # when they asked for a table mode.
+        if interp_mode != InterpMode.kExact:
+            raise NotImplementedError(
+                f'PhotX interp_mode={interp_mode!r} is not implemented; '
+                'table-based modes (kLogLog / kNqt1 / kNqt2) land in '
+                'Phase 3.5. Use InterpMode.kExact for now.')
+        self.interp_mode = interp_mode
+
         # Read Verner et al. 1996 photoionization cross-section table
         if datadir is None:
             fname = os.path.join(_MICROPHYSICS_DATA_DIR, 'verner96_photx.dat')
@@ -55,6 +97,13 @@ class PhotX(object):
         self.y1 = self._dat[10]
         del self._dat
 
+        # Build (Z, N) -> row index dict so get_sigma / get_Eth do an
+        # O(1) lookup instead of a per-call `np.where(c1 & c2)` scan.
+        self._ion_idx: Dict[Tuple[int, int], int] = {
+            (int(self.Z[i]), int(self.N[i])): i
+            for i in range(self.Z.size)
+        }
+
     def get_Eth(self, Z, N, unit='eV'):
         """
         Threshold ionization energy in eV for ions defined by Z and N.
@@ -72,10 +121,7 @@ class PhotX(object):
             Threshold ionization energy in eV
         """
 
-        c1 = self.Z == Z
-        c2 = self.N == N
-        indx = np.where(c1 & c2)
-        indx = indx[0][0]
+        indx = self._ion_idx[(int(Z), int(N))]
         Eth = self.Eth[indx]
 
         if unit == 'eV':
@@ -103,10 +149,7 @@ class PhotX(object):
         """
 
         # calculate fit
-        c1 = self.Z == Z
-        c2 = self.N == N
-        indx = np.where(c1 & c2)
-        indx = indx[0][0]
+        indx = self._ion_idx[(int(Z), int(N))]
         Z = self.Z[indx]
         N = self.N[indx]
         Eth = self.Eth[indx]
@@ -131,6 +174,59 @@ class PhotX(object):
             sigma[indx] = 0.0
 
         return sigma
+
+    def get_sigma_table(self, species_set, E):
+        """Strip-vectorised photoionization cross sections.
+
+        Returns sigma_pi[(Z_i, N_i), E] stacked over every ion in
+        `species_set`. Output shape is `(n_ions, len(E))`.
+
+        Parameters
+        ----------
+        species_set : SpeciesSet
+            Iterable of ions. The traversal order follows the
+            `species_set.evolved_names + species_set.ghost_names`
+            convention when the partition is declared; falls back to
+            `species_set.ions` (the full storage order) otherwise. Ions that lack a Verner+96
+            entry — e.g. the bare electron or H2 — contribute a zero
+            row.
+        E : array-like of float
+            Photon energies [eV].
+
+        Returns
+        -------
+        sigma : np.ndarray
+            Shape `(n_ions, len(E))`. Cross sections in cm^-2.
+
+        Notes
+        -----
+        Today this is a thin loop wrapper over `get_sigma`. The C++
+        port (Phase D) will replace it with a precomputed strip-shape
+        table indexed by the same `(Z, N)` ordering.
+        """
+        E_arr = np.asarray(E, dtype=float)
+        # Pick evolved+ghost when the SpeciesSet exposes the partition
+        # via name-tuples; resolve each name back to the canonical Ion
+        # through `species_set.idx`. Falls back to `species_set.ions`
+        # (the full storage order) for sets that do not declare a
+        # partition.
+        ions = _ordered_ions(species_set)
+
+        out = np.zeros((len(ions), E_arr.size), dtype=float)
+        for i, ion in enumerate(ions):
+            # Skip the bare electron and molecular species (e.g. H2)
+            # outright; both lack a per-atom Verner+96 fit and the
+            # `(Z, N)` lookup would collide with another ion (H2 shares
+            # (2, 2) with He I).
+            if ion.element in ('e', 'H2'):
+                continue
+            key = (int(ion.Z), int(ion.N))
+            if key not in self._ion_idx:
+                # No Verner fit row for this ion (atomic species
+                # outside the table). Leave the strip row at zero.
+                continue
+            out[i, :] = self.get_sigma(ion.Z, ion.N, E_arr)
+        return out
 
 def get_sigma_pi_H2(E):
     """H2 photoionization cross-section [cm^-2]

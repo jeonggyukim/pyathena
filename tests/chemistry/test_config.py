@@ -10,7 +10,9 @@ import textwrap
 
 import pytest
 
-from pyathena.chemistry.config import ChemistryConfig
+from pyathena.chemistry.config import (
+    ChemistryConfig, SolverSpec, SOLVER_REGISTRY, register_solver,
+)
 from pyathena.chemistry.enums import InterpMode
 
 
@@ -64,7 +66,14 @@ def test_defaults_match_cpp_constructor():
     assert c.z_gas == pytest.approx(1.0)
     assert c.z_dust == pytest.approx(1.0)
     assert c.zeta_hi_phot0 == pytest.approx(0.0)
-    assert c.solver_type == 'explicit'
+    # Default solver is the explicit subcycling kernel; legacy
+    # `solver_type='explicit'` from the C++ side is mapped onto the
+    # registry name `'explicit_subcycling'`.
+    assert isinstance(c.solver, SolverSpec)
+    assert c.solver.name == 'explicit_subcycling'
+    assert c.solver.params == {}
+    # The `solver_type` property is kept for back-compat readers.
+    assert c.solver_type == 'explicit_subcycling'
 
 
 def test_temp_mu_floor_positive_and_x_floor_nonneg():
@@ -192,3 +201,118 @@ def test_to_dict_round_trip_preserves_extra(tmp_path):
     c2 = ChemistryConfig.from_dict(c1.to_dict())
     assert c2.temp_hot0 == pytest.approx(11000.0)
     assert c2.extra == {'mystery': 'kept'}
+
+
+# ---- SolverSpec round-trip + legacy flat keys ----
+def test_solverspec_from_dict_via_string():
+    """A bare string in the `solver` key maps to a name-only SolverSpec."""
+    c = ChemistryConfig.from_dict({'solver': 'rosenbrock'})
+    assert isinstance(c.solver, SolverSpec)
+    assert c.solver.name == 'rosenbrock'
+    assert c.solver.params == {}
+
+
+def test_solverspec_from_dict_via_mapping():
+    """A dict in the `solver` key carries through to params."""
+    c = ChemistryConfig.from_dict({
+        'solver': {
+            'name': 'rosenbrock',
+            'params': {'atol': 1.0e-8, 'rtol': 1.0e-5},
+        },
+    })
+    assert c.solver.name == 'rosenbrock'
+    assert c.solver.params == {'atol': 1.0e-8, 'rtol': 1.0e-5}
+
+
+def test_solverspec_round_trip_via_to_dict():
+    """Encoding -> decode preserves the typed SolverSpec."""
+    c1 = ChemistryConfig.from_dict({
+        'solver': {
+            'name': 'rosenbrock',
+            'params': {'atol': 1.0e-8},
+        },
+    })
+    c2 = ChemistryConfig.from_dict(c1.to_dict())
+    assert c2.solver == c1.solver
+
+
+def test_legacy_solver_type_string_maps_to_registry_name():
+    """Legacy `solver_type='explicit'` resolves to the new registry name."""
+    c = ChemistryConfig.from_dict({'solver_type': 'explicit'})
+    assert c.solver.name == 'explicit_subcycling'
+    assert c.solver_type == 'explicit_subcycling'
+
+
+def test_legacy_solver_type_unmapped_string_falls_through():
+    """An unrecognised legacy string is kept verbatim — useful for
+    forward-compat with solver names we have not registered yet."""
+    c = ChemistryConfig.from_dict({'solver_type': 'mystery_solver'})
+    assert c.solver.name == 'mystery_solver'
+
+
+def test_explicit_solver_wins_over_legacy_solver_type():
+    """If both `solver` and `solver_type` are supplied, the structured
+    `solver` takes precedence."""
+    c = ChemistryConfig.from_dict({
+        'solver_type': 'explicit',
+        'solver': {'name': 'rosenbrock', 'params': {'atol': 1.0e-9}},
+    })
+    assert c.solver.name == 'rosenbrock'
+    assert c.solver.params == {'atol': 1.0e-9}
+
+
+def test_legacy_flat_network_keys_mirror_into_network_params():
+    """Flat `xCstd`/`xOstd`/`temp_mu_floor`/`x_floor` mirror into
+    `network_params` while the flat attributes also remain readable."""
+    c = ChemistryConfig.from_dict({
+        'xCstd':         2.0e-4,
+        'xOstd':         3.0e-4,
+        'temp_mu_floor': 5.0,
+        'x_floor':       1.0e-10,
+    })
+    assert c.xCstd == pytest.approx(2.0e-4)
+    assert c.xOstd == pytest.approx(3.0e-4)
+    assert c.temp_mu_floor == pytest.approx(5.0)
+    assert c.x_floor == pytest.approx(1.0e-10)
+    assert c.network_params == {
+        'xCstd':         2.0e-4,
+        'xOstd':         3.0e-4,
+        'temp_mu_floor': 5.0,
+        'x_floor':       1.0e-10,
+    }
+
+
+def test_explicit_network_params_override_flat_mirror():
+    """A caller-supplied `network_params` key wins on collision."""
+    c = ChemistryConfig.from_dict({
+        'xCstd':          1.6e-4,
+        'network_params': {'xCstd': 9.9e-4, 'custom_knob': 42},
+    })
+    # Flat attribute reflects the flat input.
+    assert c.xCstd == pytest.approx(1.6e-4)
+    # network_params reflects the explicit override.
+    assert c.network_params['xCstd'] == pytest.approx(9.9e-4)
+    assert c.network_params['custom_knob'] == 42
+
+
+def test_register_solver_populates_registry_and_rejects_collision():
+    """`@register_solver` adds the class to SOLVER_REGISTRY and refuses
+    to rebind an already-registered name to a different class."""
+    name = 'test_dummy_solver_xyz'
+    assert name not in SOLVER_REGISTRY
+    try:
+        @register_solver(name)
+        class _DummySolver:
+            pass
+        assert SOLVER_REGISTRY[name] is _DummySolver
+
+        # Re-registering the same class is a no-op.
+        register_solver(name)(_DummySolver)
+
+        # Re-registering a different class is a hard error.
+        with pytest.raises(ValueError, match='already registered'):
+            @register_solver(name)
+            class _OtherSolver:
+                pass
+    finally:
+        SOLVER_REGISTRY.pop(name, None)

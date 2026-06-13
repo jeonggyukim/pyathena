@@ -16,10 +16,13 @@ and numerical behavior identical (rtol = 1e-12 parity test under
 
 import os
 import os.path as osp  # noqa: F401  (kept for API parity w/ microphysics module)
+from typing import Dict, Tuple
 import numpy as np
 import matplotlib.pyplot as plt
 
 from ..datapaths import _DATA_ROOT
+from ..enums import InterpMode
+from .photx import _ordered_ions
 
 
 def _badnell_data_dir():
@@ -35,7 +38,23 @@ class RecRate(object):
     Draine (2011)'s recombination rates
     """
 
-    def __init__(self, caseB=True):
+    def __init__(self, caseB=True, interp_mode: 'InterpMode' = InterpMode.kExact):
+        """
+        Parameters
+        ----------
+        caseB : bool, optional
+            Use Draine 2011 Case B for hydrogen recombination.
+        interp_mode : InterpMode, optional
+            Rate-table interpolation mode. Only `InterpMode.kExact`
+            (analytic Badnell fits) is supported today; the table-
+            based modes land in Phase 3.5 alongside the C++ port.
+        """
+        if interp_mode != InterpMode.kExact:
+            raise NotImplementedError(
+                f'RecRate interp_mode={interp_mode!r} is not implemented; '
+                'table-based modes (kLogLog / kNqt1 / kNqt2) land in '
+                'Phase 3.5. Use InterpMode.kExact for now.')
+        self.interp_mode = interp_mode
         # read data
         self._read_data()
         # Use Draine's caseB for hydrogen
@@ -132,6 +151,18 @@ class RecRate(object):
             except IndexError:
                 self.modr[i] = False
 
+        # Build (Z, N, M) -> row-index dicts for both DR and RR tables.
+        # Replaces per-call `np.where(c1 & c2 & c3)` scans in the
+        # `get_rr_rate` / `get_dr_rate` hot paths.
+        self._rr_idx: Dict[Tuple[int, int, int], int] = {
+            (int(self.Zr[i]), int(self.Nr[i]), int(self.Mr[i])): i
+            for i in range(self.Zr.size)
+        }
+        self._dr_idx: Dict[Tuple[int, int, int], int] = {
+            (int(self.Zd[i]), int(self.Nd[i]), int(self.Md[i])): i
+            for i in range(self.Zd.size)
+        }
+
     def get_rr_rate(self, Z, N, T, M=1):
         """
         Calculate radiative recombination rate coefficient
@@ -154,11 +185,7 @@ class RecRate(object):
             Radiative recombination coefficients [cm^3 s^-1]
         """
 
-        c1 = self.Zr == Z
-        c2 = self.Nr == N
-        c3 = self.Mr == M
-        idx = np.where(c1 & c2 & c3)
-        i = idx[0][0]
+        i = self._rr_idx[(int(Z), int(N), int(M))]
         sqrtTT0 = np.sqrt(T/self.T0r[i])
         sqrtTT1 = np.sqrt(T/self.T1r[i])
         if self.modr[i]:
@@ -193,16 +220,23 @@ class RecRate(object):
             Dielectronic recombination coefficients [cm^3 s^-1]
         """
 
-        c1 = self.Zd == Z
-        c2 = self.Nd == N
-        c3 = self.Md == M
-
-        idx = np.where(c1 & c2 & c3)
-
-        i = idx[0][0]
-        dr = 0.0
-        for m in range(self.nd[i]):
-            dr += self.Cd[i, m]*np.exp(-self.Ed[i, m]/T)
+        i = self._dr_idx[(int(Z), int(N), int(M))]
+        n = int(self.nd[i])
+        # Vectorise the inner DR sum:
+        #     dr = sum_m C_m * exp(-E_m / T)
+        # was a Python loop over the m channels; rewrite as a single
+        # broadcast + sum across the (n_channels, ncell) outer-product.
+        T_arr = np.asarray(T, dtype=float)
+        # `Cd` / `Ed` rows are zero-padded past `nd[i]`, so we slice to
+        # the first `n` entries explicitly.
+        Cd_i = self.Cd[i, :n]
+        Ed_i = self.Ed[i, :n]
+        if T_arr.ndim == 0:
+            dr = np.sum(Cd_i * np.exp(-Ed_i / float(T_arr)))
+        else:
+            # (n_channels, 1) over (1, ncell) -> (n_channels, ncell)
+            dr = np.exp(-Ed_i[:, None] / T_arr[None, :])
+            dr = (Cd_i[:, None] * dr).sum(axis=0)
 
         dr *= T**(-1.5)
         return dr
@@ -246,6 +280,58 @@ class RecRate(object):
             else:
                 print('Z > 1 is not supported for dr11 recombination rate.')
                 raise
+
+    def get_rec_rate_table(self, species_set, T, M=1, kind='badnell'):
+        """Strip-vectorised total recombination rates.
+
+        Returns alpha_rec[(Z_i, N_i), T] stacked over every ion in
+        `species_set`. Output shape is `(n_species, ncell)`. Species
+        that have no recombination entry — neutral atoms whose
+        reactant would be the neutral itself, the bare electron, H2,
+        and fully-stripped ions outside the Badnell table coverage —
+        contribute a zero row.
+
+        Parameters
+        ----------
+        species_set : SpeciesSet
+            Iterable of ions. Picks up
+            `species_set.evolved_names + species_set.ghost_names` when
+            the partition is declared, else `species_set.ions` (the full
+            storage order).
+        T : float or array-like
+            Temperature [K]. The output is broadcast over T.
+        M : int, optional
+            Initial metastable level (default 1, ground term).
+        kind : str, optional
+            Passed through to `get_rec_rate`.
+
+        Notes
+        -----
+        Today this is a thin loop wrapper over `get_rec_rate`. The C++
+        port (Phase D) will replace it with a precomputed strip-shape
+        table indexed by the same `(Z, N)` ordering.
+        """
+        T_arr = np.asarray(T, dtype=float)
+        ncell = T_arr.size if T_arr.ndim > 0 else 1
+        ions = _ordered_ions(species_set)
+
+        out = np.zeros((len(ions), ncell), dtype=float)
+        for i, ion in enumerate(ions):
+            # Skip rows that cannot recombine: bare electron, the
+            # neutral H2 molecule (no atomic Badnell entry), and any
+            # neutral atom (charge == 0). Per the Badnell convention
+            # the reactant (Z, N) must satisfy N <= Z, i.e. charge >= 1.
+            if ion.element in ('e', 'H2'):
+                continue
+            if ion.charge <= 0:
+                continue
+            try:
+                rate = self.get_rec_rate(ion.Z, ion.N, T_arr, M=M, kind=kind)
+            except (KeyError, IndexError):
+                # Ion not in the Badnell table; leave zero.
+                continue
+            out[i, :] = np.broadcast_to(rate, (ncell,))
+        return out
 
     @staticmethod
     def get_rec_rate_H_caseA_Dr11(T):

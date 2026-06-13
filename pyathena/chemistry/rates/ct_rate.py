@@ -11,18 +11,35 @@ and numerical behavior identical (rtol = 1e-12 parity test under
 import pathlib
 import os
 import os.path as osp
+from typing import Dict, Tuple
 import pandas as pd
-import copy
 import numpy as np
 import astropy.units as au
 import astropy.constants as ac
 
 from ..datapaths import _DATA_ROOT
+from ..enums import InterpMode
 
 
 class ChargeTransferRate(object):
 
-    def __init__(self):
+    def __init__(self, interp_mode: 'InterpMode' = InterpMode.kExact):
+        """
+        Parameters
+        ----------
+        interp_mode : InterpMode, optional
+            Rate-table interpolation mode. Only `InterpMode.kExact`
+            (analytic Cloudy + UGA fits) is supported today; the
+            table-based modes land in Phase 3.5 alongside the C++
+            port.
+        """
+        if interp_mode != InterpMode.kExact:
+            raise NotImplementedError(
+                f'ChargeTransferRate interp_mode={interp_mode!r} is '
+                'not implemented; table-based modes (kLogLog / kNqt1 '
+                '/ kNqt2) land in Phase 3.5. Use InterpMode.kExact '
+                'for now.')
+        self.interp_mode = interp_mode
         self.basedir = osp.join(_DATA_ROOT, 'microphysics')
 
         self.name_to_Z = dict(H=1, He=2, Li=3, Be=4, B=5, C=6, N=7, O=8, F=9,
@@ -33,6 +50,27 @@ class ChargeTransferRate(object):
         # read data
         self._read_data_cloudy()
         self._read_data_uga()
+        self._build_indices()
+
+    def _build_indices(self):
+        """Build the dict-based row lookups used by the UGA-table
+        rate getters. The Cloudy `(Z, N)` dicts are built inside
+        `_read_data_cloudy` because the post-load coefficient
+        overrides there already need `_get_index1`/`_get_index2`.
+        """
+        # UGA tables: pandas DataFrames keyed by (Z, N). Pre-index
+        # by row position so `get_ct_*_rate_uga` can do an O(1)
+        # `.iloc[idx]` instead of a boolean mask scan.
+        self._uga_idx_ion: Dict[Tuple[int, int], int] = {
+            (int(z), int(n)): pos
+            for pos, (z, n) in enumerate(zip(self.dfi['Z'].to_numpy(),
+                                              self.dfi['N'].to_numpy()))
+        }
+        self._uga_idx_rec: Dict[Tuple[int, int], int] = {
+            (int(z), int(n)): pos
+            for pos, (z, n) in enumerate(zip(self.dfr['Z'].to_numpy(),
+                                              self.dfr['N'].to_numpy()))
+        }
 
     def _read_data_uga(self):
         self.dfi = self._read_cti_hyd()
@@ -114,6 +152,19 @@ class ChargeTransferRate(object):
         self.Tmax2 = lines_rec[5,:]
         self.dE_heat2 = lines_rec[6,:]
 
+        # Build the Cloudy `(Z, N)` -> row index dicts before the
+        # coefficient overrides below run; `_get_index1` and
+        # `_get_index2` are invoked inside those overrides and now
+        # read directly from these dicts.
+        self._cloudy_idx1: Dict[Tuple[int, int], int] = {
+            (int(self.Z1[i]), int(self.N1[i])): i
+            for i in range(self.Z1.size)
+        }
+        self._cloudy_idx2: Dict[Tuple[int, int], int] = {
+            (int(self.Z2[i]), int(self.N2[i])): i
+            for i in range(self.Z2.size)
+        }
+
         # Modify coefficient for CT recombination of HeII with HI
         # Cloudy uses the value in Table 1 of Kingdon+96.
         # Confusingly, however, they use "+=" operator...
@@ -150,9 +201,7 @@ class ChargeTransferRate(object):
             self.dE_heat1[i] = 0.0
 
     def get_ct_rec_rate_uga(self, Z, N, T):
-        iZ = Z == self.dfr['Z']
-        iN = N == self.dfr['N']
-        idx = np.where(iZ & iN)[0][0]
+        idx = self._uga_idx_rec[(int(Z), int(N))]
         d = self.dfr.iloc[idx]
 
         T = np.where(T >= d.tlo, T, d.tlo)
@@ -163,13 +212,16 @@ class ChargeTransferRate(object):
         return 1e-9*d.a*T4**(d.b)*(1.0 + d.c*np.exp(d.d*T4))
 
     def get_ct_ion_rate_uga(self, Z, N, T):
-        iZ = Z == self.dfi['Z']
-        iN = N == self.dfi['N']
-        idx = np.where(iZ & iN)[0][0]
+        idx = self._uga_idx_ion[(int(Z), int(N))]
         d = self.dfi.iloc[idx]
 
-        T_in = copy.deepcopy(T)
-        T = np.where(T >= d.tlo, T, d.tlo)
+        # Preserve the original temperature for the Boltzmann
+        # suppression factor. `np.asarray(T, dtype=float)` returns the
+        # input unchanged if it is already a float ndarray, so we
+        # avoid the per-call `copy.deepcopy(T)` overhead while still
+        # decoupling `T_in` from the subsequent `np.where` clipping.
+        T_in = np.asarray(T, dtype=float)
+        T = np.where(T_in >= d.tlo, T_in, d.tlo)
         T = np.where(T <= d.thi, T, d.thi)
         T4 = T*1e-4
         # Eq. 7 in Kingdon & Ferland (1996)
@@ -202,8 +254,13 @@ class ChargeTransferRate(object):
         if self.a1[i] == 0.0:
             return np.zeros_like(T)
         else:
-            T_in = copy.deepcopy(T)
-            T = np.where(T >= self.Tmin1[i], T, self.Tmin1[i])
+            # Keep the unclamped temperature for the Boltzmann factor.
+            # `np.asarray` is a no-op when `T` is already a float
+            # ndarray, so this avoids the per-call `copy.deepcopy`
+            # while still decoupling `T_in` from the `np.where`
+            # clipping below.
+            T_in = np.asarray(T, dtype=float)
+            T = np.where(T_in >= self.Tmin1[i], T_in, self.Tmin1[i])
             T = np.where(T <= self.Tmax1[i], T, self.Tmax1[i])
             T4 = T*1e-4
             # Recombination rate multiplied by the Boltzmann factor
@@ -259,14 +316,10 @@ class ChargeTransferRate(object):
         return rate
 
     def _get_index1(self, Z, N):
-        iZ = Z == self.Z1
-        iN = N == self.N1
-        return np.where(iZ & iN)[0][0]
+        return self._cloudy_idx1[(int(Z), int(N))]
 
     def _get_index2(self, Z, N):
-        iZ = Z == self.Z2
-        iN = N == self.N2
-        return np.where(iZ & iN)[0][0]
+        return self._cloudy_idx2[(int(Z), int(N))]
 
     @staticmethod
     def get_ct_rec_HI_OII(T):

@@ -27,16 +27,20 @@ Design notes:
   `ncell`-shaped array, never a Python `if`. Sorted-strip dispatch is
   the solver's responsibility.
 
-The abstract class is deliberately small. Two class-level attributes
+The abstract class is deliberately small. Four class-level attributes
 declare structural facts about the network — `species` (the
-`SpeciesSet` instance describing names, indices, charges) and
+`SpeciesSet` instance describing names, indices, charges),
 `walk_order` (per-element ion sequence for the Phase D sequential
-sweep) — and two ClassVar booleans advertise capability flags to the
-solver layer: `kSupportsStrips` (can `evaluate_CD` consume an
-`ncell > 1` state) and `kNeedsJacobian` (does any planned solver
-require `jacobian` to be implemented). Concrete networks override the
-abstract methods; the base class provides a no-op `fill_ghosts` and a
-`jacobian` that raises `NotImplementedError`.
+sweep), `evolved` (the tuple of species names the solver integrates
+as ODE state), and `ghost` (the tuple of species names that
+`fill_ghosts` reconstructs algebraically each substep). Two ClassVar
+booleans advertise capability flags to the solver layer:
+`kSupportsStrips` (can `evaluate_CD` consume an `ncell > 1` state)
+and `kNeedsJacobian` (does any planned solver require `jacobian`).
+Concrete networks override the abstract methods; the base class
+provides a default `fill_ghosts` no-op (so networks with no ghost
+species need not override) and a `jacobian` that raises
+`NotImplementedError`.
 """
 from __future__ import annotations
 
@@ -61,6 +65,17 @@ class NetworkBase(abc.ABC):
     # shared SpeciesSet module lands).
     species: ClassVar[Any] = None
     walk_order: ClassVar[Tuple[Tuple[str, ...], ...]] = ()
+
+    # Evolved / ghost species declarations. `evolved` lists the names
+    # the solver treats as ODE state variables (operated on by
+    # `evaluate_CD` and integrated by the solver); `ghost` lists the
+    # names rebuilt algebraically by `fill_ghosts` each substep.
+    # The two tuples must cover `species.names` exactly with no
+    # overlap; `SpeciesSet` enforces that when constructed via the
+    # `ncr3_with_ghosts` family of factories, so this declaration is
+    # informational and used by the solver to size scratch buffers.
+    evolved: ClassVar[Tuple[str, ...]] = ()
+    ghost:   ClassVar[Tuple[str, ...]] = ()
 
     # Capability flags consumed by the solver / driver layer.
     kSupportsStrips: ClassVar[bool] = True
@@ -112,8 +127,37 @@ class NetworkBase(abc.ABC):
 
     # ---- Concrete defaults -----------------------------------------
     def fill_ghosts(self, state: Any) -> None:
-        """Fill algebraically-derived species (e.g., GOW17 CHx from
-        H2, C). Default no-op for networks with no derived species.
+        """Rebuild the ghost-species rows of `state.x` in place.
+
+        Contract:
+
+        - Pure algebra: reads only `state.x[evolved_idx]`, `state.T`,
+          `state.nH`, `state.Z_g`, `state.Z_d`, and any radiation /
+          column inputs the concrete network needs.
+        - Idempotent: calling `fill_ghosts(state)` twice in a row
+          leaves `state.x` unchanged on the second call.
+        - Mutates only `state.x[ghost_idx]`; never touches evolved
+          rows.
+        - Allocates nothing in the inner loop; the ghost rows are
+          written by indexed assignment into the pre-existing
+          `state.x` buffer.
+
+        Default no-op for networks that declare no ghost species
+        (e.g., a pure GOW17 network with the full species tracked
+        as ODE variables). Concrete networks override this to
+        materialise the algebraic closure.
+        """
+        return None
+
+    def allocate_scratch(self, state: Any) -> None:
+        """Register network-owned scratch buffers on `state`.
+
+        Called once at construction time by `ChemState.from_grid` when
+        the network is supplied. Subclasses with multi-buffer scratch
+        needs (e.g., a future NCR3-with-ions network reusing a
+        `metal_CT` 4xN strip) override this and call
+        `state.alloc_scratch(name, shape, dtype)` for each buffer.
+        Default: no-op.
         """
         return None
 

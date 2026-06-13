@@ -1,15 +1,21 @@
 """NCRNetwork3 — the three-species H I / H II / H2 NCR network.
 
-Tracks four rows in `state.x`:
+Tracks three evolved hydrogen species plus six algebraic ghosts:
 
-    0  H I        (atomic hydrogen,    x_HI  = n_HI  / n_H)
-    1  H II       (ionized hydrogen,   x_HII = n_HII / n_H)
-    2  H2         (molecular hydrogen, x_H2  = n_H2  / n_H)
-    3  electron   (electron fraction,  x_e   = n_e   / n_H)
+    evolved:  HI, HII, H2
+    ghost:    electron, CI, CII, CO, OI, OII
+
+The evolved rows are integrated as ODE state by the solver. The ghost
+rows are reconstructed every substep by `fill_ghosts(state)` from the
+evolved rows, T, and the configured C / O abundances (mirroring the
+`CoolingOther` body in `src/photchem/ncr_rates.hpp` lines 1505-1540
+of the tigris-ncr fork). This keeps the cooling layer's per-species
+abundance lookups uniform without growing the ODE state vector.
 
 Mass closure on hydrogen nuclei is `x_HI + x_HII + 2 * x_H2 = 1`.
-Charge closure is `x_e = x_HII` in this network (helium / metals
-not tracked yet; they re-enter via NCRNetwork3PlusIons16 in Phase 6).
+Charge closure is `x_e = x_HII + x_CII + x_OII` (electron count from
+the carbon and oxygen ghosts plus HII). Helium contributions to x_e
+arrive with Phase 6.
 
 The rate equations mirror the Tigris-NCR C++ network in
 `src/photchem/ncr_rates.hpp` (functions `HIIRates`, `H2Rates`). For
@@ -99,7 +105,15 @@ X_FLOOR = 1.0e-20   # species-fraction floor; matches C++ TINY_NUMBER
 # Single source of truth for the species inventory this network reads.
 # Shared as a class-level attribute so callers can identity-check
 # `state.species is NCRNetwork3.species` before entering `evaluate_CD`.
-_NCR3_SPECIES = SpeciesSet.minimal_HI_HII_H2()
+# The set is the 9-species ncr3_with_ghosts layout (3 evolved + 6 ghost);
+# evaluate_CD / closure still operate purely on the evolved rows, while
+# fill_ghosts materialises the algebraic ghost rows each substep.
+_NCR3_SPECIES = SpeciesSet.ncr3_with_ghosts()
+
+# Standard solar C and O abundances per H nucleus, mirroring the C++
+# constants `NCRRates::kxCstd` / `NCRRates::kxOstd` in ncr_rates.hpp:409.
+X_C_STD = 1.6e-4
+X_O_STD = 3.2e-4
 
 
 # ---- Rate helpers ------------------------------------------------------
@@ -237,8 +251,11 @@ class NCRNetwork3(NetworkBase):
 
     Class-level metadata:
 
-      species         -- minimal SpeciesSet, 4 rows in order
-                         (HI, HII, H2, electron).
+      species         -- 9-species SpeciesSet (HI, HII, H2 evolved;
+                         electron, CI, CII, CO, OI, OII ghost).
+      evolved         -- ('HI', 'HII', 'H2'). Solver state.
+      ghost           -- ('electron', 'CI', 'CII', 'CO', 'OI', 'OII').
+                         Rebuilt every substep by fill_ghosts().
       walk_order      -- single-element sequential walk used by the
                          Phase D ion sweep solver. For NCR3 the only
                          element is hydrogen and the walk visits
@@ -250,11 +267,21 @@ class NCRNetwork3(NetworkBase):
     """
 
     species: ClassVar[SpeciesSet] = _NCR3_SPECIES
+    evolved: ClassVar[Tuple[str, ...]] = ('HI', 'HII', 'H2')
+    ghost:   ClassVar[Tuple[str, ...]] = (
+        'electron', 'CI', 'CII', 'CO', 'OI', 'OII',
+    )
     walk_order: ClassVar[Tuple[Tuple[str, ...], ...]] = (
         ('HI', 'HII', 'H2'),
     )
     kSupportsStrips: ClassVar[bool] = True
     kNeedsJacobian: ClassVar[bool] = False
+
+    # Standard solar C and O abundances per H nucleus. Class-level
+    # constants mirror the C++ `NCRRates::kxCstd` / `kxOstd` so
+    # `fill_ghosts` can use them without an extra config read.
+    x_C_std: ClassVar[float] = X_C_STD
+    x_O_std: ClassVar[float] = X_O_STD
 
     # The species floor used by closure(). Instance attribute so the
     # integration agent can override it via a config object later
@@ -273,15 +300,17 @@ class NCRNetwork3(NetworkBase):
     ) -> None:
         """Write semi-implicit (C, D) rate split for HI, HII, H2.
 
-        Convention: `dx_i/dt = C_i - D_i * x_i`. The electron row is
-        left untouched — `closure()` and `electron_fraction()` are
-        the channels for electrons.
+        Convention: `dx_i/dt = C_i - D_i * x_i`. The ghost rows
+        (electron, CI, CII, CO, OI, OII) are left untouched —
+        `fill_ghosts()` is the channel that rebuilds them. Indices
+        are read from `state.species` so the network operates uniformly
+        whether the strip carries the full 9-species set or a reduced
+        layout used by legacy smoke tests.
         """
-        idx = self.species.idx
+        idx = state.species.idx
         i_HI = idx['HI']
         i_HII = idx['HII']
         i_H2 = idx['H2']
-        i_e = idx['electron']
 
         # Broadcast scalar config fields up to ncell-shape.
         nH = np.asarray(state.nH)
@@ -292,6 +321,8 @@ class NCRNetwork3(NetworkBase):
         xHI = state.x[i_HI]
         xHII = state.x[i_HII]
         xH2 = state.x[i_H2]
+        # Electron density from the explicit electron row.
+        i_e = idx['electron']
         x_e = state.x[i_e]
         ne = nH * x_e
 
@@ -347,17 +378,18 @@ class NCRNetwork3(NetworkBase):
     # ---- closure ----------------------------------------------------
     def closure(self, state: Any) -> None:
         """Apply the species floor and enforce
-        `x_HI + x_HII + 2 x_H2 = 1` plus `x_e = x_HII` in place.
+        `x_HI + x_HII + 2 x_H2 = 1` plus rebuild the ghost rows.
 
         The clamp-and-renormalise pattern mirrors the C++ RAMSES-style
         clipping in `ncr_solver.hpp`:541-555. We work on `state.x`
-        directly (no allocation).
+        directly (no allocation). After enforcing hydrogen
+        conservation, `fill_ghosts(state)` repopulates the metal
+        ghost rows and the electron row from the new evolved values.
         """
-        idx = self.species.idx
+        idx = state.species.idx
         i_HI = idx['HI']
         i_HII = idx['HII']
         i_H2 = idx['H2']
-        i_e = idx['electron']
 
         x = state.x
         floor = self.x_floor
@@ -384,21 +416,125 @@ class NCRNetwork3(NetworkBase):
         # Recompute HI from conservation.
         x[i_HI] = np.maximum(1.0 - x[i_HII] - 2.0 * x[i_H2], floor)
 
-        # Step 3: charge neutrality with H II only. He / metals
-        # contribute zero here; Phase 6 widens the network.
-        x[i_e] = x[i_HII]
+        # Step 3: rebuild ghost rows (electron + metals) from the
+        # post-conservation evolved values.
+        self.fill_ghosts(state)
 
     # ---- electron_fraction ------------------------------------------
     def electron_fraction(self, state: Any) -> np.ndarray:
-        """Return x_e implied by the current ionised-H fraction.
+        """Return x_e implied by the current ionised-H + metal
+        ghosts.
 
-        In NCR3 only H II contributes to the free-electron pool, so
-        `x_e = x_HII`. The integration agent / driver decides whether
-        to write this back into `state.x[electron_row]` (mid-sweep or
-        post-substep) — this method is read-only.
+        Reads the explicit electron row when the strip carries one
+        (the canonical 9-species `ncr3_with_ghosts` layout), else
+        falls back to `x_e = x_HII` (the minimal 4-species network
+        with only H II contributing electrons). This method is
+        read-only.
         """
-        i_HII = self.species.idx['HII']
-        return state.x[i_HII].copy()
+        idx = state.species.idx
+        i_e = idx.get('electron')
+        if i_e is not None:
+            return state.x[i_e].copy()
+        return state.x[idx['HII']].copy()
+
+    # ---- fill_ghosts -------------------------------------------------
+    def fill_ghosts(self, state: Any) -> None:
+        """Rebuild the ghost rows of `state.x` in place.
+
+        Implements the algebra of `NCRRates::CoolingOther` in
+        ncr_rates.hpp:1505-1540 of tigris-ncr (Chem_flag == 0 branch
+        — the full radiation-field-dependent GetxCII / CO chemistry
+        arrives with the GOW17 hand-off in Phase 9):
+
+        - x_OII = x_HII * xOstd * Z_g                (Saha-like
+          scaling of O+ on H+; no equivalent for OIII/OIV at NCR
+          temperatures).
+        - x_CII = xCstd * Z_g                        (saturated C+
+          at typical FUV exposure; the smooth `GetxCII` form lands
+          when chi_FUV / chi_CI / xi_CR / Z_d state inputs reach the
+          Python layer).
+        - x_CO  = 0                                  (no CO without
+          the full GOW17 chain; the proper form arrives in Phase 9).
+        - x_OI  = max(xOstd * Z_g - x_OII - x_CO, x_floor)
+        - x_CI  = max(xCstd * Z_g - x_CII - x_CO, x_floor)
+        - x_e   = max(x_HII + x_CII + x_OII, x_floor)
+          (singly-charged ghost ions contribute +1 each; CO and
+          OI are neutral.)
+
+        TODO: replace the saturated x_CII with the full GetxCII
+        prescription (chi_FUV, chi_CI, xi_CR, Z_d dependent), and
+        add the GOW17 CO branch once the corresponding state inputs
+        are wired up. Tracked in the chemistry-rewrite-plan §9.
+
+        Networks that operate on a strip without the metal ghost
+        rows (e.g., the legacy 4-species minimal set) only get the
+        electron row populated; absent ghost names are skipped via
+        `state.species.idx.get(name)`.
+        """
+        idx = state.species.idx
+        x = state.x
+        floor = self.x_floor
+
+        i_HII = idx['HII']
+        xHII = x[i_HII]
+
+        Z_g = np.asarray(state.Z_g)
+        xC_tot = self.x_C_std * Z_g
+        xO_tot = self.x_O_std * Z_g
+
+        # Resolve ghost row indices once. A `None` means the strip
+        # does not carry that row (e.g., the legacy 4-species minimal
+        # set has no metal ghost rows), in which case the species
+        # contributes zero to charge balance — the network is not
+        # meant to invent metals on a strip that does not track them.
+        i_OII = idx.get('OII')
+        i_OI = idx.get('OI')
+        i_CII = idx.get('CII')
+        i_CI = idx.get('CI')
+        i_CO = idx.get('CO')
+        i_e = idx.get('electron')
+
+        # Zero per-cell baselines for charge balance when a metal
+        # ghost is absent from the strip.
+        zero = np.zeros_like(xHII)
+
+        # OII: positive ion, scales with HII.
+        if i_OII is not None:
+            x[i_OII] = xHII * xO_tot
+            x_OII_arr = x[i_OII]
+        else:
+            x_OII_arr = zero
+
+        # CII: saturated at standard C abundance (Chem_flag == 0).
+        if i_CII is not None:
+            x[i_CII] = np.broadcast_to(xC_tot, xHII.shape).copy()
+            x_CII_arr = x[i_CII]
+        else:
+            x_CII_arr = zero
+
+        # CO: zero in the Chem_flag == 0 branch; the floor sits in
+        # the storage row so a downstream cooling lookup never sees a
+        # negative or zero abundance.
+        if i_CO is not None:
+            x[i_CO] = np.full_like(xHII, floor)
+        x_CO_arr = zero
+
+        # OI: remainder of the oxygen budget, floored.
+        if i_OI is not None:
+            x[i_OI] = np.maximum(xO_tot - x_OII_arr - x_CO_arr, floor)
+
+        # CI: remainder of the carbon budget, floored. With the
+        # Chem_flag == 0 branch x_CII = xCstd*Z_g and x_CO = 0, so
+        # x_CI hits the floor — but we still write the expression so
+        # the prescription matches the C++ source line by line.
+        if i_CI is not None:
+            x[i_CI] = np.maximum(xC_tot - x_CII_arr - x_CO_arr, floor)
+
+        # Electron from charge balance. Singly-charged positive ions
+        # contribute +1 each; CO and OI are neutral. Strips without
+        # metal ghost rows fall back to the H-only count `x_e = x_HII`.
+        if i_e is not None:
+            x[i_e] = np.maximum(xHII + x_CII_arr + x_OII_arr, floor)
 
 
 # ---- Helpers -----------------------------------------------------------
