@@ -46,6 +46,17 @@ class GrainRecombinationCooling(CoolingChannel):
         'cooling:grain_rec:tmp',
         'cooling:grain_rec:ne_floor',
         'cooling:grain_rec:lnx',
+        # Phase 4d FD-bootstrap derivative slots: same pattern as
+        # PhotoelectricHeating (which shares the WD01 charge-parameter
+        # chain). The full analytic chain rule on
+        #   Lambda ~ Z_d * ne * T^(D0 + D1/ln x) * exp(D2 + (D3 - D4 ln x) ln x)
+        # is mechanically tractable but tedious through the
+        # log-exponent + power-of-T product; FD bootstrap at
+        # dT_rel = 1e-3 forward (the project convention; see
+        # feedback_fd_bootstrap_convention) matches the accuracy
+        # the substep-damping role needs.
+        'cooling:grain_rec:T_orig',
+        'cooling:grain_rec:out_tp',
     )
     __version__: ClassVar[str] = '0.1@phase4b'
 
@@ -60,12 +71,9 @@ class GrainRecombinationCooling(CoolingChannel):
         self._chi_band = chi_band
         self._phi = float(phi)
 
-    def evaluate(
-        self,
-        state: Any,
-        out: np.ndarray,
-        d_out: Optional[np.ndarray] = None,
-    ) -> None:
+    def _compute_lambda(self, state: Any, out: np.ndarray) -> None:
+        """Write Lambda into `out`. Reads `state.T` directly so the
+        FD bootstrap can perturb T transiently."""
         T = state.T
         nH = state.nH
         xe = state.x[self._i_electron]
@@ -110,5 +118,30 @@ class GrainRecombinationCooling(CoolingChannel):
         np.multiply(out, Z_d, out=out)
         np.multiply(out, _PREFACTOR, out=out)
 
+    def evaluate(
+        self,
+        state: Any,
+        out: np.ndarray,
+        d_out: Optional[np.ndarray] = None,
+    ) -> None:
+        # Lambda at current state.T.
+        self._compute_lambda(state, out)
+
         if d_out is not None:
-            d_out[:] = 0.0
+            # FD bootstrap at dT_rel = 1e-3 forward (project
+            # convention; see CoolingChannel.evaluate docstring and
+            # tests/chemistry/test_fd_calibration.py). Same pattern as
+            # the PE heating channel which shares the WD01 charge-
+            # parameter chain.
+            _DT_REL = 1.0e-3
+            T_orig = state.get_scratch('cooling:grain_rec:T_orig')
+            out_tp = state.get_scratch('cooling:grain_rec:out_tp')
+            np.copyto(T_orig, state.T)
+            np.multiply(state.T, 1.0 + _DT_REL, out=state.T)
+            self._compute_lambda(state, out_tp)
+            np.copyto(state.T, T_orig)
+            np.subtract(out_tp, out, out=d_out)
+            np.divide(d_out, T_orig, out=d_out)
+            np.multiply(d_out, 1.0 / _DT_REL, out=d_out)
+            mu = state.get_scratch('solver:mu_at_entry')
+            np.multiply(d_out, mu, out=d_out)

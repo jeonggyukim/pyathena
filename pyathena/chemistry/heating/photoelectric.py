@@ -61,6 +61,16 @@ class PhotoelectricHeating(HeatingChannel):
         'heating:photoelectric:tmp',
         'heating:photoelectric:ne_floor',
         'heating:photoelectric:eps_num',
+        # Phase 4d FD-bootstrap derivative slots: T_orig snapshots
+        # state.T for restoration, out_tp holds Gamma at the perturbed
+        # T = T_orig * (1 + 1e-3). The full WD01 chain rule is too
+        # tedious to write analytically (~40 ops through a quotient
+        # rule on a 4-term denominator); FD bootstrap at the project
+        # convention dT_rel = 1e-3 (see feedback_fd_bootstrap_convention)
+        # matches the accuracy needed for stiffness damping with one
+        # extra _compute_gamma call.
+        'heating:photoelectric:T_orig',
+        'heating:photoelectric:out_tp',
     )
     __version__: ClassVar[str] = '0.1@phase4a'
 
@@ -75,12 +85,9 @@ class PhotoelectricHeating(HeatingChannel):
         self._chi_band = chi_band
         self._phi = float(phi)
 
-    def evaluate(
-        self,
-        state: Any,
-        out: np.ndarray,
-        d_out: Optional[np.ndarray] = None,
-    ) -> None:
+    def _compute_gamma(self, state: Any, out: np.ndarray) -> None:
+        """Write Gamma into `out`. Reads state.T directly so the FD
+        bootstrap can perturb T transiently."""
         T = state.T
         nH = state.nH
         xe = state.x[self._i_electron]
@@ -132,10 +139,35 @@ class PhotoelectricHeating(HeatingChannel):
         np.multiply(out, Z_d, out=out)
         np.multiply(out, _GAMMA0, out=out)
 
+    def evaluate(
+        self,
+        state: Any,
+        out: np.ndarray,
+        d_out: Optional[np.ndarray] = None,
+    ) -> None:
+        # Lambda at the current state.T.
+        self._compute_gamma(state, out)
+
         if d_out is not None:
-            # Phase 4b: analytic d(Gamma)/d(T/mu). Report zero for
-            # Phase 4a; PE heating is only weakly T-dependent (via
-            # T**C4 = T**0.147), so the missing damping is small in
-            # the regimes where PE dominates (cold / warm neutral
-            # gas).
-            d_out[:] = 0.0
+            # FD bootstrap at dT_rel = 1e-3 forward (the project
+            # convention; see CoolingChannel.evaluate docstring and
+            # the calibration sweep at
+            # tests/chemistry/test_fd_calibration.py). One extra
+            # _compute_gamma call at the perturbed temperature; the
+            # WD01 analytic chain rule is mechanically tractable but
+            # ~40 ops through a quotient rule on a 4-term denominator
+            # and gives no meaningful accuracy gain for the substep
+            # damping role.
+            _DT_REL = 1.0e-3
+            T_orig = state.get_scratch('heating:photoelectric:T_orig')
+            out_tp = state.get_scratch('heating:photoelectric:out_tp')
+            np.copyto(T_orig, state.T)
+            np.multiply(state.T, 1.0 + _DT_REL, out=state.T)
+            self._compute_gamma(state, out_tp)
+            np.copyto(state.T, T_orig)
+            # d_out = mu * (Gamma(T*(1+e)) - Gamma(T)) / (T * e)
+            np.subtract(out_tp, out, out=d_out)
+            np.divide(d_out, T_orig, out=d_out)
+            np.multiply(d_out, 1.0 / _DT_REL, out=d_out)
+            mu = state.get_scratch('solver:mu_at_entry')
+            np.multiply(d_out, mu, out=d_out)

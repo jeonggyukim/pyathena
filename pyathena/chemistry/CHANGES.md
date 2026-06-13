@@ -1392,3 +1392,58 @@ config.
 Validation: 535 passed, 4 skipped (up from 529 / 4; +6 net new
 calibration cases covering 3 channels x 2 FD methods, no
 regressions).
+
+## 2026-06-14: Phase 4d-b2 -- PE + GrainRec FD bootstrap
+
+Two more channels gain a non-zero d_out via the project's documented
+1-point forward FD bootstrap at `dT_rel = 1e-3` rather than analytic.
+The WD01 charge-parameter chain that both share is mechanically
+tractable but ~40 ops through a quotient rule on a 4-term
+denominator; FD bootstrap matches the substep-damping accuracy in
+one extra _compute_lambda call.
+
+This is the same pragmatic choice we would make for the level-pop
+channels (CII / OI / CI / OII) in Phase 4d-e. The eventual Phase 7
+swap to tabulated cooling functions with mini-RAMSES style
+`*_prime` derivative columns (precomputed analytic / numerical
+slopes alongside the value, then cubic Hermite interpolated at
+query time) would replace BOTH the FD-bootstrap path and the
+analytic-chain-rule path for tabulated channels.
+
+Channels:
+
+- `heating.photoelectric.PhotoelectricHeating` -- refactored to
+  expose `_compute_gamma(state, out)` as a private helper. The
+  `evaluate(state, out, d_out)` body calls `_compute_gamma` once
+  for Gamma; when `d_out is not None`, snapshots `state.T`, scales
+  it by `(1 + 1e-3)`, calls `_compute_gamma` a second time into
+  `out_tp`, restores `state.T`, and assembles
+  `d_out = mu * (out_tp - out) / (T_orig * 1e-3)`.
+- `cooling.grain_recombination.GrainRecombinationCooling` -- same
+  pattern with the corresponding `_compute_lambda(state, out)`
+  private helper.
+
+Two new scratch slots per channel:
+`heating:photoelectric:T_orig`, `heating:photoelectric:out_tp`,
+`cooling:grain_rec:T_orig`, `cooling:grain_rec:out_tp`. T_orig
+snapshots state.T for safe restoration; out_tp holds the perturbed-T
+value.
+
+Tests (`tests/chemistry/test_phase4d_analytic_derivatives.py`):
+
+- `test_photoelectric_heating_d_out_matches_FD_bootstrap` and
+  `test_grain_recombination_d_out_matches_FD_bootstrap` -- compare
+  the channel's own d_out (1-pt forward FD bootstrap) against the
+  test harness's 5-point central FD reference. Tolerance
+  `rtol = 5e-2` because the bootstrap has O(dT) truncation around
+  3% in the steepest regimes; this is the calibration-sweep
+  empirical worst case (see Phase 4d "FD bootstrap calibration"
+  entry above).
+
+Phase 4d running total after this commit: 9 channels with a
+non-zero d_out path -- 7 analytic (CR / H2Diss / Dust / FreeFreeH /
+Lya / HICollIon / HRecomb) and 2 FD bootstrap (PE / GrainRec). 12
+to go in Phase 4d-c / -d / -e.
+
+Validation: 537 passed, 4 skipped (up from 535 / 4; +2 net new
+analytic-derivative parity tests, no regressions).

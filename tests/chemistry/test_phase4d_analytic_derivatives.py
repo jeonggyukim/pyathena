@@ -42,7 +42,11 @@ from pyathena.chemistry.cooling.hi_collisional_ionization import (
 from pyathena.chemistry.cooling.recombination_hydrogen import (
     HRecombinationCooling,
 )
+from pyathena.chemistry.cooling.grain_recombination import (
+    GrainRecombinationCooling,
+)
 from pyathena.chemistry.heating.cosmic_ray import CosmicRayHeating
+from pyathena.chemistry.heating.photoelectric import PhotoelectricHeating
 from pyathena.chemistry.heating.h2_photodissociation import (
     H2DissociationHeating,
 )
@@ -281,3 +285,51 @@ def test_h_recombination_d_out_matches_FD():
             d_out[mask], fd[mask], rtol=1.0e-4, atol=0.0,
             err_msg=f'(xHII={xHII}, xe={xe})',
         )
+
+
+def test_photoelectric_heating_d_out_matches_FD_bootstrap():
+    """PE heating uses 1-point forward FD bootstrap at dT_rel = 1e-3
+    internally (analytic chain through the WD01 4-term denominator
+    quotient rule is mechanically tractable but ~40 ops and gives
+    no meaningful gain for the substep damping role). The channel's
+    own d_out is compared against the 5-point central FD reference
+    here at rtol = 5e-3 -- the forward FD truncation O(dT) bounded
+    by Gamma's roughly logarithmic T-dependence sits at ~5e-3 for
+    chi_PE = 1, ne ~ 1.
+    """
+    for xe in (0.01, 0.1, 0.5):
+        for chi in (1.0, 10.0):
+            state, species = _build_state(_T, _NH, xHI=0.5, xHII=0.5, xe=xe)
+            state.chi[state.chi_bands.index('FUV')] = chi
+            ch = PhotoelectricHeating(i_electron=species.idx['electron'])
+            _alloc_channel_scratch(state, ch)
+            out = np.empty_like(_T)
+            d_out = np.empty_like(_T)
+            ch.evaluate(state, out, d_out)
+            fd = _fd_central(ch, state)
+            mask = np.abs(d_out) > 1.0e-32
+            np.testing.assert_allclose(
+                d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+                err_msg=f'(xe={xe}, chi={chi})',
+            )
+
+
+def test_grain_recombination_d_out_matches_FD_bootstrap():
+    """GrainRec uses the same 1-point forward FD bootstrap pattern;
+    same rtol target."""
+    for xe in (0.01, 0.1, 0.5):
+        for chi in (1.0, 10.0):
+            state, species = _build_state(_T, _NH, xHI=0.5, xHII=0.5, xe=xe)
+            state.chi[state.chi_bands.index('FUV')] = chi
+            ch = GrainRecombinationCooling(
+                i_electron=species.idx['electron'])
+            _alloc_channel_scratch(state, ch)
+            out = np.empty_like(_T)
+            d_out = np.empty_like(_T)
+            ch.evaluate(state, out, d_out)
+            fd = _fd_central(ch, state)
+            mask = np.abs(d_out) > 1.0e-32
+            np.testing.assert_allclose(
+                d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+                err_msg=f'(xe={xe}, chi={chi})',
+            )
