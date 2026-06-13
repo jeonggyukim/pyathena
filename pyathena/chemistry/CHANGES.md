@@ -752,3 +752,76 @@ Out of scope (queued for Phase 4b batch 2 / 4c):
 Validation: 501 passed, 4 skipped (up from 497 / 4; +4 net new test
 entries covering 32 internal cases across the 4 channels, no
 regressions).
+
+## 2026-06-13: Phase 4b batch 2 -- CII / OI fine-structure + dust + level helpers
+
+Three more channels in the Phase 4 split: the CII 158 um 2-level
+fine-structure cooling, the OI 63 + 146 um 3-level fine-structure
+cooling, and the gas-grain thermal coupling (signed: cool when
+T > T_dust, heat when T < T_dust). Also lands shared steady-state
+2-level / 3-level helpers under `cooling/_level_helpers.py` so the
+remaining fine-structure ports (CI, OII, OIII, NI, NII, SI/II/III
+in later batches) can reuse the same population-balance arithmetic.
+
+CHIANTI / Cloudy swap inventory (Phase 7 and beyond):
+
+- Metal fine-structure channels (CII / OI / CI / ...) swap their
+  e and HI collision partners to CHIANTI table lookups; H2 partners
+  stay hand-coded because CHIANTI is purely atomic. Cloudy carries
+  some H2 / molecular data and may serve as a fallback for the
+  partners CHIANTI lacks; revisit in Phase 7.
+- H2 cooling channels (G17, rovib, colldiss), dust gas-grain
+  coupling, free-free, CR / PE heating, and H2 photoheating stay
+  hand-coded indefinitely (no atomic-line equivalent).
+
+Helpers:
+
+- `pyathena/chemistry/cooling/_level_helpers.py` exposes
+  `cool_2level(q01, q10, A10, E10, xs, out, tmp)` (Lambda = f1 * A10
+  * E10 * xs with f1 = q01 / (q01 + q10 + A10)) and `cool_3level(...)`
+  (Draine 2011 19.7-19.10 steady-state populations). Both take
+  caller-owned scratch and return Lambda in `out`. Partner-agnostic;
+  the channel decides which collision rates feed the q_ij.
+
+Channels:
+
+- `cooling.cii.CIIFineStructureCooling` -- literal port of
+  `cool.coolCII`. Assembles k10e (Eq 17.16 Draine 2011), k10HI
+  (Eq 17.17), and a piecewise-in-T k10H2 split into ortho / para
+  weighted 0.75 / 0.25. The T < 500 K / T >= 500 K piecewise
+  assembly uses two mask buffers and `np.multiply(mask, x, out=...)`
+  blending so the inner loop stays branch-free over the strip.
+- `cooling.oi.OIFineStructureCooling` -- literal port of
+  `cool.coolOI`. Three transitions (1<-0, 2<-0, 2<-1) each pull their
+  HI / H2-para / H2-ortho rate coefficients out of a single helper
+  `_assemble_kHI_kH2(...)` that walks the Draine 2011 F.6 power-law
+  fits with caller-owned scratch.
+- `cooling.dust.DustGasCoupling` -- literal port of `cool.cooldust`.
+  Lambda = alpha_gd * Z_d * n_H * sqrt(T) * (T - T_dust),
+  alpha_gd = 3.2e-34. Reads `state.T_dust`. Signed: positive when
+  the gas is hotter than the dust (net cooling); negative when the
+  gas is colder.
+
+Parity tests (`tests/chemistry/parity/test_phase4b_metal_fs_and_dust.py`):
+
+- One test per channel; CII loops 4 ionisation states x 3 xCII
+  abundances, OI loops 4 states x 2 xOI abundances, dust loops 4
+  states x 3 T_dust values x 2 Z_d. Tolerance rtol = 1e-12, atol = 0
+  with case-naming err_msg.
+
+Out of scope (queued for Phase 4b batch 3+ / 4c):
+
+- CI 3-level fine-structure (4-term Horner polynomial for the e-rate
+  collision strength; mechanical port, deferred to keep this commit
+  scoped).
+- OII fine-structure (cool.coolneb / cool.coolOII), HISmith21,
+  Lyman-alpha alternative form (cool.coolLya).
+- H2 G17, rovib, collisional-dissociation cooling.
+- WD01 recombination cooling on grains.
+- H2 form / photoheating / pump.
+- Analytic d(Lambda)/d(T/mu) derivatives.
+- Driver rebind to `CoolingChannels`.
+
+Validation: 504 passed, 4 skipped (up from 501 / 4; +3 net new test
+entries covering 40+ internal cases across the 3 channels, no
+regressions).
