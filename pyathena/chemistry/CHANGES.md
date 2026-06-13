@@ -892,3 +892,72 @@ Out of scope (queued for Phase 4b batch 4+ / 4c):
 Validation: 509 passed, 4 skipped (up from 504 / 4; +5 net new test
 entries covering ~50 internal cases across the 5 channels, no
 regressions).
+
+## 2026-06-13: Phase 4b batch 4a -- three H2 heating channels (NCR HM79 form)
+
+H2 formation, photodissociation, and UV pump heating split into three
+HeatingChannel subclasses. Each port follows the NCR production C++
+path at `tigris-ncr/src/photchem/ncr_rates.hpp:1545-1558` (the
+`iH2heating = 2` / HM79 branch by default) plus the equivalent path
+in `Athena-TIGRESS/src/microphysics/cool_tigress.c:1132-1152`.
+
+Discussion of derivative strategy: hybrid (analytic for simple
+closed forms, tabulated for level-population channels, finite
+difference as a bootstrap). Tabulated derivatives are nearly free
+once the value table exists -- one extra column, one extra lookup --
+and adequate for the substep stiffness-damping use case. Phase 4c
+will pick the strategy per channel; this batch still writes zero to
+`d_out`.
+
+Channels:
+
+- `heating.h2_formation.H2FormationHeating` -- per H2 formed on a
+  grain, `(0.2 + 4.2 * f) eV` of binding energy is returned to the
+  gas, with `f = 1 / (1 + n_crit / n_H)`. Grain rate from
+  Hollenbach + McKee 1979 `kgr = kgr_H2 * Z_d * sqrt(T/100) * 2 /
+  (1 + 0.4*sqrt(T/100) + 0.2*(T/100) + 0.08*(T/100)^2)` is the
+  default; a constant-rate variant is available via the
+  `temperature_dependent_kgr = False` constructor argument.
+  `n_crit` follows the HM79 form.
+- `heating.h2_photodissociation.H2DissociationHeating` --
+  `Gamma_diss = xi_diss_H2 * x_H2 * 0.4 eV`. The 0.4 eV per
+  dissociation event is the translational kinetic energy of the
+  resulting H atoms.
+- `heating.h2_photodissociation.H2PumpHeating` -- UV pump heating
+  `Gamma_pump = xi_diss_H2 * x_H2 * f_pump * mean_e * f * eV` with
+  `f = n_H / (n_H + n_crit)`. NCR default `form = 'HM79'`
+  (`f_pump = 9.0`, `mean_e = 2.2`); `form = 'V18'` selects the
+  Sternberg+2014 alternative (`f_pump = 8.0`, `mean_e = 2.0`).
+
+`xi_diss_H2` is supplied as a constructor argument (default 0). The
+Phase 4c driver rebind will surface it from the radiation policy.
+
+Parity tests
+(`tests/chemistry/parity/test_phase4b_h2_heating.py`): three test
+functions (one per channel). The legacy
+`pyathena.microphysics.cool.heatH2` has a latent typo at line 151
+(`sqrt(T2)` instead of `np.sqrt(T2)` on the `ikgr_H2 = 1` path) so
+it cannot be called from a test. The tests instead use inline
+closed-form references that mirror the C++ NCR source byte-for-byte.
+Tolerance `rtol = 1e-12`, `atol = 0`.
+
+Production-typo note: the `pyathena.microphysics.cool.heatH2`
+function is broken on the temperature-dependent grain rate path
+(its `ikgr_H2 = 1` branch). Production users typically call the
+combined `coolH2pump` / `coolH2diss` standalone helpers (which DO
+work) directly. The channel ports inherit the correct behaviour
+from the C++ side. The legacy typo is logged here so future cleanup
+of `pyathena.microphysics.cool` knows to fix it before the
+`pyathena.microphysics.cool` symbol gets deleted.
+
+Out of scope (Phase 4b batch 4b):
+
+- `coolH2colldiss` (H2 collisional dissociation cooling, careful
+  log-of-zero handling in cold regimes via `coeff_coll_H2`).
+- `coolOII` (O II fine-structure cooling, 3-level).
+- `coolneb` (metal-line nebular cooling).
+- `coolHISmith21` (alternative H I cooling form).
+
+Validation: 512 passed, 4 skipped (up from 509 / 4; +3 net new test
+entries covering 24 internal cases across the 3 channels, no
+regressions).
