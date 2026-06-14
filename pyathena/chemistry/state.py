@@ -49,6 +49,38 @@ from .diagnostics import SolverDiag
 # (FUV / LW / EUV). Matches `NCRRates` on the C++ side.
 DEFAULT_CHI_BANDS: Tuple[str, ...] = ('FUV', 'LW', 'EUV')
 
+# Canonical band layout shared with `pyathena.util.sb99` and the
+# legacy `pyathena.microphysics.photchem` setup.
+#
+#     Band   Wavelength (A)      Use
+#     ----   --------------      --------------------------------
+#     LyC    < 912               photoionising (H, He, ...)
+#     LW     912 - 1108          H2 photodissociation, dust PE
+#     PE     1108 - 2068         PAH heating, dust charging, CI/SiI
+#     FUV    912 - 2068          LW + PE combined (Draine G_0)
+#     OPT    2068 - 10000        optical (PAH IR seed)
+#     IR     10000 - 200000      dust thermal
+#
+# Note: `FUV` overlaps with `LW` + `PE` (not disjoint); radiation
+# policies pick one decomposition or the other based on the physics
+# they expose.
+#
+# ISRF reference energy densities per band [erg cm^-3], Habing 1968 /
+# Draine 1978 convention. Match tigris-ncr/src/photchem/photchem.hpp:
+# `u_rad_pe_isrf_cgs = 7.613e-14`, `u_rad_lw_isrf_cgs = 1.335e-14`.
+# Rate / cooling functions normalise `chi_band = u_rad[band] /
+# U_RAD_ISRF[band]` at point of use to obtain the dimensionless Draine
+# field strength.
+U_RAD_PE_ISRF_CGS:  float = 7.613e-14
+U_RAD_LW_ISRF_CGS:  float = 1.335e-14
+U_RAD_FUV_ISRF_CGS: float = U_RAD_PE_ISRF_CGS + U_RAD_LW_ISRF_CGS
+
+U_RAD_ISRF_CGS: Dict[str, float] = {
+    'PE':  U_RAD_PE_ISRF_CGS,
+    'LW':  U_RAD_LW_ISRF_CGS,
+    'FUV': U_RAD_FUV_ISRF_CGS,
+}
+
 # Sentinel string used in `policy_versions` when no policy was supplied
 # at construction time. Phase 3 drivers overwrite these via `from_grid`'s
 # policy kwargs.
@@ -126,6 +158,46 @@ class ChemState:
     # loop) and reuse the same buffer thereafter.
     scratch: Dict[str, np.ndarray] = field(default_factory=dict)
 
+    # ---- Radiation energy density per band ----
+    # Primary radiation-field representation: dict[band_name, ndarray]
+    # of radiation energy density in cgs (erg cm^-3). The radiation /
+    # ray-tracing module fills this; rate / cooling channels access
+    # the Draine-normalised dimensionless `chi_band = u_rad[band] /
+    # U_RAD_ISRF[band]` via `chi_for(band)`.
+    #
+    # Common bands and ISRF reference values (Habing 1968 / Draine
+    # 1978; match tigris-ncr/src/photchem/photchem.hpp):
+    #
+    #   'PE':  6-13.6 eV photoelectric band; ISRF u_rad = 7.613e-14
+    #   'LW':  Lyman-Werner band (11.2-13.6 eV); ISRF u_rad = 1.335e-14
+    #   'FUV': alias for the integrated Draine FUV band when no
+    #          subdivision is needed (rate functions treat
+    #          `chi_FUV = chi_PE` for the PE / dust-charging context).
+    #   'EUV': lambda < 912 Angstrom hydrogen-ionising band; usually
+    #          consumed via the per-species `zeta_pi[species]` dict
+    #          rather than as a chi normalisation.
+    #
+    # Phase 2 unit-test setups can leave the dict empty -- channels
+    # fall back to `chi=0` (dark). When the dict is populated for a
+    # band, `chi_for(band)` returns `u_rad[band] / U_RAD_ISRF[band]`
+    # element-wise.
+    u_rad: Dict[str, Any] = field(default_factory=dict)
+
+    # ---- Photo rates (per-species, dict-keyed) ----
+    # Convention: `xi_*` = cosmic-ray-driven rates (see `xi_CR`).
+    # `zeta_*` = photo-driven rates (PDR / HII region literature).
+    # Each dict is keyed by species name; missing keys default to 0 via
+    # the `zeta_pi_for` / `zeta_diss_for` helpers and via the network's
+    # `_get_optional` fallback. Values may be scalar (uniform over strip)
+    # or `(ncell,)` arrays.
+    #
+    #   zeta_pi[species]     -- photoionisation rate, s^-1
+    #     e.g., {'HI': 3e-9, 'H2': 1e-10, 'CII': ..., ...}
+    #   zeta_diss[species]   -- photodissociation rate, s^-1
+    #     e.g., {'H2': 1e-10, 'CO': 1e-11, ...}
+    zeta_pi:   Dict[str, Any] = field(default_factory=dict)
+    zeta_diss: Dict[str, Any] = field(default_factory=dict)
+
     # ---- Diagnostics (fixed-field POD; no free-form dict on hot path) ----
     diag: SolverDiag = field(default_factory=SolverDiag)
 
@@ -179,22 +251,68 @@ class ChemState:
 
     # ---- Structured radiation-field lookup ----
     def chi_for(self, band_name: str) -> np.ndarray:
-        """Return the row of `chi` named `band_name`.
+        """Return the Draine-normalised field strength in band
+        `band_name`. Resolution order:
 
-        Raises `KeyError` if `band_name` is not in `chi_bands`. The
-        returned array is a view into `chi` — mutating it mutates the
-        state. Networks should prefer this over reading positional
-        indices so the band layout can evolve without breaking call
-        sites.
+        1. Special case: `band_name == 'FUV'` is the LW+PE combined
+           Draine G_0. When the policy populated `state.u_rad['PE']`
+           and `state.u_rad['LW']` separately,
+           `chi_FUV = (u_rad['PE'] + u_rad['LW']) /
+                      (U_RAD_PE_ISRF_CGS + U_RAD_LW_ISRF_CGS)`.
+           Falls through to (2) if either sub-band is missing.
+
+        2. If `state.u_rad[band_name]` is populated, return
+           `u_rad[band_name] / U_RAD_ISRF_CGS[band_name]` -- the on-
+           the-fly chi conversion. This is the primary path: the
+           radiation module carries cgs energy densities; chemistry
+           internally normalises to Draine units where rate / cooling
+           formulas expect chi.
+
+        3. Otherwise fall back to the legacy `state.chi[band_idx]`
+           positional array (Phase 2 / 3 transitional layout); raises
+           `KeyError` if the band is not in `chi_bands` either.
+
+        Networks should prefer `chi_for(band_name)` over ad-hoc
+        attribute access so the band layout can evolve without
+        breaking call sites.
         """
+        if band_name == 'FUV' and self.u_rad:
+            u_PE = self.u_rad.get('PE')
+            u_LW = self.u_rad.get('LW')
+            if u_PE is not None and u_LW is not None:
+                return ((np.asarray(u_PE) + np.asarray(u_LW))
+                        / U_RAD_FUV_ISRF_CGS)
+        u_rad_band = self.u_rad.get(band_name) if self.u_rad else None
+        if u_rad_band is not None:
+            u_isrf = U_RAD_ISRF_CGS.get(band_name)
+            if u_isrf is None:
+                raise KeyError(
+                    f'no ISRF reference for chi normalisation of band '
+                    f'{band_name!r}; '
+                    f'known: {tuple(U_RAD_ISRF_CGS.keys())!r}')
+            return np.asarray(u_rad_band) / u_isrf
+        # Legacy positional chi array.
         try:
             idx = self.chi_bands.index(band_name)
         except ValueError as exc:
             raise KeyError(
                 f'chi band {band_name!r} not present; '
-                f'known bands = {self.chi_bands!r}'
+                f'state.u_rad keys = {tuple(self.u_rad.keys())!r}, '
+                f'state.chi_bands = {self.chi_bands!r}'
             ) from exc
         return self.chi[idx]
+
+    # ---- Photo-rate lookup ----
+    def zeta_pi_for(self, species: str, default: float = 0.0) -> Any:
+        """Photoionisation rate of `species` (s^-1). Returns `default`
+        if the species is not present in `state.zeta_pi`. Convention:
+        `zeta_pi_species = sigma_pi_species * photon_flux`."""
+        return self.zeta_pi.get(species, default)
+
+    def zeta_diss_for(self, species: str, default: float = 0.0) -> Any:
+        """Photodissociation rate of `species` (s^-1). Returns
+        `default` if missing."""
+        return self.zeta_diss.get(species, default)
 
     # ---- Scratch buffer management ----
     def alloc_scratch(
