@@ -135,6 +135,11 @@ def test_allocate_scratch_registers_named_buffers():
         'solver:inv_heat_cap_per_temp_mu',
         'solver:x_new_HI', 'solver:x_new_HII', 'solver:x_new_H2',
         'solver:reject_mask', 'solver:mask_b1', 'solver:mask_b2',
+        'solver:cramer_a', 'solver:cramer_b', 'solver:cramer_c',
+        'solver:cramer_d', 'solver:cramer_e', 'solver:cramer_f',
+        'solver:cramer_det',
+        'solver:xHI_pre', 'solver:xHII_pre', 'solver:xH2_pre',
+        'solver:f_denom',
     }
     assert expected.issubset(set(state.scratch))
 
@@ -195,17 +200,18 @@ def test_step_preserves_hydrogen_mass_closure():
     np.testing.assert_allclose(total, 1.0, rtol=1.0e-12, atol=0.0)
 
 
-# ---- Implicit-Euler chemistry update vs hand-rolled reference -----------
-def test_one_substep_BE_update_matches_hand_rolled_formula():
-    """At a small dt the solver's implicit-Euler chemistry step on the
-    evolved rows must reproduce the closed-form expression
-    `x_new = (x + C dt) / (1 + D dt)` cell-for-cell within rtol=1e-8.
+# ---- 2x2 Cramer chemistry update vs hand-rolled reference ---------------
+def test_one_substep_chem_update_matches_cramer_formula():
+    """At a small dt the solver's joint 2x2 Cramer step on (x_H2,
+    x_HII) must reproduce the closed-form Cramer expression
+    cell-for-cell within rtol=1e-8.
 
-    We pin the network's (C, D) output by snapshotting the values it
-    writes at the substep entry state, then drive the solver for a
-    single substep at a dt so small that the strip-MIN cap is
-    effectively dt_remaining, no rejection happens, and no significant
-    temperature drift muddies the test.
+    The pre-Cramer port did per-row implicit Euler on (HI, HII, H2)
+    independently; with the port (`UpdateChemistry` from
+    `ncr_solver.hpp:513-571`) the joint solve substitutes
+    `x_HI = 1 - 2 x_H2 - x_HII` into the source terms, so the
+    expected formula is the 2x2 Cramer result, not the per-row BE
+    formula.
     """
     state = _build_state(ncell=8, nH=1.0, T=8.0e3)
     solver = _build_solver(state, cfl_cool_sub=0.5)
@@ -224,28 +230,33 @@ def test_one_substep_BE_update_matches_hand_rolled_formula():
     x_HII_before = state.x[i_HII].copy()
     x_H2_before = state.x[i_H2].copy()
 
-    # Pick a dt so small that t_cool >> dt and the strip-MIN cap
-    # collapses to `dt_remaining`, ensuring the solver applies exactly
-    # the dt the test passes in.
-    dt = 1.0e2  # 100 s
+    dt = 1.0e2  # 100 s; tiny so the strip-MIN dt cap doesn't bite.
     state.reset_step(dt, 0.0)
     solver.step(dt, state)
 
-    expected_HI = (x_HI_before + C_ref[i_HI] * dt) / (1.0 + D_ref[i_HI] * dt)
-    expected_HII = (x_HII_before + C_ref[i_HII] * dt) \
-        / (1.0 + D_ref[i_HII] * dt)
-    expected_H2 = (x_H2_before + C_ref[i_H2] * dt) / (1.0 + D_ref[i_H2] * dt)
+    # Recover per-x_HI source rates the same way the solver does.
+    x_HI_safe = np.maximum(x_HI_before, 1.0e-20)
+    c_h2 = C_ref[i_H2] / x_HI_safe
+    c_hii = C_ref[i_HII] / x_HI_safe
+    D_H2 = D_ref[i_H2]
+    D_HII = D_ref[i_HII]
+    a = 1.0 + (2.0 * c_h2 + D_H2) * dt
+    b = c_h2 * dt
+    c = 2.0 * c_hii * dt
+    d = 1.0 + (c_hii + D_HII) * dt
+    e = x_H2_before + c_h2 * dt
+    f = x_HII_before + c_hii * dt
+    det = a * d - b * c
+    expected_H2 = (d * e - b * f) / det
+    expected_HII = (a * f - c * e) / det
+    expected_HI = 1.0 - 2.0 * expected_H2 - expected_HII
 
-    # Compare against the post-closure state. Closure applies floors
-    # and the H-conservation renormalisation; both leave values near
-    # the analytic prediction undisturbed for this nearly-neutral
-    # input.
     np.testing.assert_allclose(state.x[i_HI], expected_HI,
-                               rtol=1.0e-8, atol=0.0)
+                               rtol=1.0e-8, atol=1.0e-15)
     np.testing.assert_allclose(state.x[i_HII], expected_HII,
-                               rtol=1.0e-8, atol=0.0)
+                               rtol=1.0e-8, atol=1.0e-15)
     np.testing.assert_allclose(state.x[i_H2], expected_H2,
-                               rtol=1.0e-8, atol=0.0)
+                               rtol=1.0e-8, atol=1.0e-15)
 
 
 # ---- Subcycle rejection path --------------------------------------------

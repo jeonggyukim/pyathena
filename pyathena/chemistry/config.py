@@ -181,6 +181,16 @@ class ChemistryConfig:
     # but the driver should override on its way in to match the
     # production input.
     nsub_max:           int = 1000
+    # Post-step adaptive control on max fractional change in T or x.
+    # Mirrors Zier+ 2024 (AREPO-RT, MNRAS 533, 268), Section 4.1.1:
+    # reject the substep if observed `f = max(|delta T|/T,
+    # |delta x_i|/x_i) > f_chem_cap`, and target an average per-step
+    # change of `f_chem_target` via `dt_next = dt * f_chem_target / f`
+    # (capped at 2x growth). Defaults match Zier 2024's 10 / 5 percent
+    # rule; configurable per problem (e.g. 5 / 2.5 for tighter accuracy
+    # or 20 / 10 for cheaper run).
+    f_chem_cap:         float = 0.1
+    f_chem_target:      float = 0.05
 
     # ---- Abundance cutoffs ----
     x_h2_cut:           float = 0.0

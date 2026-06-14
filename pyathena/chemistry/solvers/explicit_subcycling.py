@@ -67,7 +67,17 @@ _NBAD_DT_MAX: int = 3
 # C++ side does not floor the substep length explicitly; here we floor
 # at a numerically representable level so the retry loop cannot loop
 # indefinitely on a pathological strip.
-_DT_SUB_FLOOR: float = 1.0e-30
+# Minimum substep length [seconds]. The substep retry loop halves
+# dt_sub on rejection up to `_NBAD_DT_MAX` times; the floor bails out
+# of the outer `step()` loop if dt_sub falls below it, so the strip
+# cannot spin forever on a pathological cell. Set well below any
+# physical chemistry timescale (the fastest collisional rate at
+# n = 1e20 cm^-3 is ~1e14 s^-1, dt ~ 1e-14 s; we floor a decade below
+# that).
+_DT_SUB_FLOOR: float = 1.0e-15
+# Species fraction floor. Matches `X_FLOOR` in `networks/ncr3.py` and
+# `TINY_NUMBER` on the C++ side (`src/photchem/defs.hpp`).
+_TINY_NUMBER: float = 1.0e-20
 
 
 @register_solver('explicit_subcycling')
@@ -119,6 +129,20 @@ class ExplicitSubcyclingSolver:
         self.nsub_max: int = int(
             params.get('nsub_max', max(config.nsub_max, _DEFAULT_NSUB_MAX)))
         self.temp_hot1: float = float(config.temp_hot1)
+        # Post-step adaptive-control thresholds (Zier+ 2024 §4.1.1).
+        # `f_chem_cap`: reject the substep if observed max fractional
+        # change in T or species exceeds this.
+        # `f_chem_target`: forward controller targets this as the
+        # average per-step fractional change via
+        # `dt_next = dt * min(2, f_chem_target / f_observed)`.
+        self.f_chem_cap: float = float(
+            params.get('f_chem_cap', config.f_chem_cap))
+        self.f_chem_target: float = float(
+            params.get('f_chem_target', config.f_chem_target))
+        # Forward-controller carry-over between substeps and between
+        # successive `step()` calls. Initial value `inf` lets the first
+        # substep fall back to the pre-step `_estimate_dt_sub` formula.
+        self._dt_sub_next: float = float('inf')
         # Pre-cache the species row indices the solver touches. These
         # are written by `allocate_scratch` once the state's species
         # set is known.
@@ -160,6 +184,26 @@ class ExplicitSubcyclingSolver:
         state.alloc_scratch('solver:x_new_HI', (ncell,))
         state.alloc_scratch('solver:x_new_HII', (ncell,))
         state.alloc_scratch('solver:x_new_H2', (ncell,))
+        # Substep-entry snapshot for the post-step f-rule reject branch
+        # (Zier+ 2024 §4.1.1). On x-cap rejection the chemistry rows
+        # are restored from these buffers and the substep retried at a
+        # smaller dt. `solver:f_denom` holds the floored denominator
+        # `max(x_pre, x_floor)` used to compute the relative change.
+        state.alloc_scratch('solver:xHI_pre', (ncell,))
+        state.alloc_scratch('solver:xHII_pre', (ncell,))
+        state.alloc_scratch('solver:xH2_pre', (ncell,))
+        state.alloc_scratch('solver:f_denom', (ncell,))
+        # 2x2 Cramer scratch for the joint (x_H2, x_HII) BE solve.
+        # Ports `ncr_solver.hpp::UpdateChemistry`: lines 521-528 build
+        # six scalars (a, b, c, d, e, f); we hold the strip-wide arrays
+        # plus the determinant.
+        state.alloc_scratch('solver:cramer_a', (ncell,))
+        state.alloc_scratch('solver:cramer_b', (ncell,))
+        state.alloc_scratch('solver:cramer_c', (ncell,))
+        state.alloc_scratch('solver:cramer_d', (ncell,))
+        state.alloc_scratch('solver:cramer_e', (ncell,))
+        state.alloc_scratch('solver:cramer_f', (ncell,))
+        state.alloc_scratch('solver:cramer_det', (ncell,))
         # Boolean scratch for the temperature-update rejection mask
         # and the H2 hot/cold gate. Two slots so the two consumers can
         # use them independently without aliasing.
@@ -206,13 +250,21 @@ class ExplicitSubcyclingSolver:
     def _do_one_substep(self, state: Any, dt_remaining: float) -> float:
         """One synchronous semi-implicit Euler substep over the strip.
 
-        Returns the substep length actually taken. The substep length
-        is initially `cfl_cool_sub * min_strip(t_cool, t_chem_HII,
-        t_chem_H2)` capped at `dt_remaining`; if the implied
-        temperature step is rejected for any cell, the substep is
-        halved on the whole strip and retried up to `_NBAD_DT_MAX`
-        times.
+        Substep length comes from either the pre-step formula
+        `cfl_cool_sub / max |C - D x|` or the forward controller
+        carry-over `self._dt_sub_next`, whichever is smaller, capped
+        at `dt_remaining`. After the T + chemistry update, the post-
+        step max fractional change `f = max(|delta T|/T,
+        |delta x_i|/x_i)` is checked: if `f > f_chem_cap` the substep
+        is rejected, the species and T are restored from the entry
+        snapshot, dt is halved, and the substep retried up to
+        `_NBAD_DT_MAX` times. On accept the forward controller stores
+        `dt_sub * min(2, f_chem_target / f)` for the next substep.
         """
+        i_HI = self._i_HI
+        i_HII = self._i_HII
+        i_H2 = self._i_H2
+
         C = state.get_scratch('solver:C')
         D = state.get_scratch('solver:D')
         T_entry = state.get_scratch('solver:tmp_ncell_b')
@@ -220,46 +272,81 @@ class ExplicitSubcyclingSolver:
         temp_mu_new = state.get_scratch('solver:temp_mu_new')
         mu_at_entry = state.get_scratch('solver:mu_at_entry')
         tmp_ncell = state.get_scratch('solver:tmp_ncell')
+        xHI_pre = state.get_scratch('solver:xHI_pre')
+        xHII_pre = state.get_scratch('solver:xHII_pre')
+        xH2_pre = state.get_scratch('solver:xH2_pre')
 
-        # Snapshot T at substep entry so the rejection-and-halve loop
-        # restores it on retry. mu is also snapshotted because every
-        # cooling sub-step computes its own `temp_mu_old = T_entry /
-        # mu_at_entry` and the post-chemistry rescale needs the same
-        # reference mu.
+        # Substep-entry snapshots. `T_entry` and `xX_pre` are
+        # restored on rejection. `mu_at_entry` is captured here once
+        # because the cooling step (re-)computes `temp_mu_old` from
+        # `T_entry / mu_at_entry` on every retry.
         np.copyto(T_entry, state.T)
         self.thermo.mu(state, mu_at_entry)
         np.divide(T_entry, mu_at_entry, out=temp_mu_old)
+        np.copyto(xHI_pre, state.x[i_HI])
+        np.copyto(xHII_pre, state.x[i_HII])
+        np.copyto(xH2_pre, state.x[i_H2])
 
-        # Step 1: evaluate (C, D) at the entry state.
+        # (C, D) and cooling at the entry state for the pre-step dt
+        # estimate; recomputed at the post-T state inside the retry
+        # loop for the chemistry solve.
         self.network.evaluate_CD(state, C, D)
-        # Step 2: compute cooling rates / derivative at the entry state.
         self._evaluate_cooling(state)
-        # Step 3: pick the strip-MIN dt_sub.
-        dt_sub = self._estimate_dt_sub(state, C, D, dt_remaining,
-                                       tmp_ncell)
+        dt_sub_pre = self._estimate_dt_sub(state, C, D, dt_remaining,
+                                           tmp_ncell)
+        # Forward-controller cap: never exceed
+        # `self._dt_sub_next` carried over from the previous substep.
+        # Also re-cap at `dt_remaining` because the controller does
+        # not know about the per-call remainder.
+        dt_sub = min(dt_sub_pre, self._dt_sub_next, dt_remaining)
 
-        # Step 4: try the substep; halve on rejection until accepted or
-        # the budget is exhausted.
+        f_observed = 0.0
+        accepted = False
         for _retry in range(_NBAD_DT_MAX + 1):
-            accepted = self._attempt_temp_mu_step(
+            # T step.
+            t_step_ok = self._attempt_temp_mu_step(
                 state, temp_mu_old, mu_at_entry, dt_sub,
             )
             state.diag.n_thermal_solves += 1
-            if accepted:
+            if not t_step_ok:
+                # T-cap inside the kernel rejected; halve and retry.
+                np.copyto(state.T, T_entry)
+                dt_sub *= 0.5
+                if dt_sub < _DT_SUB_FLOOR:
+                    break
+                continue
+            # Chemistry step at the post-T rate coefficients.
+            self.network.evaluate_CD(state, C, D)
+            self._update_chemistry(state, C, D, dt_sub)
+            self.network.closure(state)
+
+            # Post-step fractional change `f`.
+            f_observed = self._max_frac_change(
+                state, temp_mu_old, temp_mu_new,
+                xHI_pre, xHII_pre, xH2_pre,
+            )
+            if f_observed <= self.f_chem_cap:
+                accepted = True
                 break
-            # Restore T to the entry value before retrying.
+            # x-cap rejection. Restore both T and chemistry from
+            # snapshot, halve dt, retry.
             np.copyto(state.T, T_entry)
+            np.copyto(state.x[i_HI], xHI_pre)
+            np.copyto(state.x[i_HII], xHII_pre)
+            np.copyto(state.x[i_H2], xH2_pre)
             dt_sub *= 0.5
             if dt_sub < _DT_SUB_FLOOR:
                 break
-        else:
+        if not accepted:
             state.diag.n_nan_traps += 1
 
-        # Apply the implicit-Euler chemistry update + closure at the
-        # accepted dt_sub. Rates are recomputed at the post-T state.
-        self.network.evaluate_CD(state, C, D)
-        self._update_chemistry(state, C, D, dt_sub)
-        self.network.closure(state)
+        # Forward controller: target `f_chem_target` average change,
+        # capped at 2x growth per substep (matches the AREPO-RT
+        # default in Zier+ 2024).
+        eps = 1.0e-30
+        factor = self.f_chem_target / max(f_observed, eps)
+        factor = min(factor, 2.0)
+        self._dt_sub_next = dt_sub * factor
 
         # Post-chemistry rescale: temp_mu is the substep-invariant
         # variable. Cooling fixed it at temp_mu_new; chemistry then
@@ -276,6 +363,60 @@ class ExplicitSubcyclingSolver:
         self.thermo.mu(state, mu_new)
         np.multiply(mu_new, temp_mu_new, out=state.T)
         return dt_sub
+
+    def _max_frac_change(
+        self,
+        state: Any,
+        temp_mu_old: np.ndarray,
+        temp_mu_new: np.ndarray,
+        xHI_pre: np.ndarray,
+        xHII_pre: np.ndarray,
+        xH2_pre: np.ndarray,
+    ) -> float:
+        """Max fractional change in the substep.
+
+        For hydrogen species the metric is the ABSOLUTE change
+        `max(|delta x_HI|, |delta x_HII|, |delta(2 x_H2)|)`. Since
+        `x_HI + x_HII + 2 x_H2 = 1` exactly, each term is naturally
+        in `[0, 1]` and an absolute cap of 0.1 means "no more than
+        10 percent of the total H budget moves between species per
+        substep". Relative-change metrics would over-constrain dt
+        for trace species (e.g. x_HII at 1e-12 in cold molecular
+        gas).
+
+        For thermodynamics the relative change is measured on the
+        substep-invariant `temp_mu = T / mu`, not on `T` directly:
+        chemistry inside one substep changes `mu` (e.g. ionising H
+        bumps mu downward by ~ x_HII) without doing any work on the
+        gas, so `delta T` at fixed `temp_mu` is a bookkeeping
+        artefact, not a real thermodynamic change. `temp_mu` is the
+        variable the cooling kernel evolves, and it isolates the
+        actual energy / cooling step.
+        """
+        tmp = state.get_scratch('solver:tmp_ncell')
+
+        # f_T = max |temp_mu_new - temp_mu_old| / temp_mu_old.
+        np.subtract(temp_mu_new, temp_mu_old, out=tmp)
+        np.fabs(tmp, out=tmp)
+        np.divide(tmp, temp_mu_old, out=tmp)
+        f = float(np.max(tmp))
+
+        # f_HI = max |delta x_HI|.
+        np.subtract(state.x[self._i_HI], xHI_pre, out=tmp)
+        np.fabs(tmp, out=tmp)
+        f = max(f, float(np.max(tmp)))
+
+        # f_HII = max |delta x_HII|.
+        np.subtract(state.x[self._i_HII], xHII_pre, out=tmp)
+        np.fabs(tmp, out=tmp)
+        f = max(f, float(np.max(tmp)))
+
+        # f_H2 = max |delta (2 x_H2)|.
+        np.subtract(state.x[self._i_H2], xH2_pre, out=tmp)
+        np.fabs(tmp, out=tmp)
+        np.multiply(tmp, 2.0, out=tmp)
+        f = max(f, float(np.max(tmp)))
+        return f
 
     # ------------------------------------------------------------------
     # Substep ingredients
@@ -466,37 +607,152 @@ class ExplicitSubcyclingSolver:
     ) -> None:
         """Apply the implicit-Euler chemistry update to evolved rows.
 
-        Writes `state.x[evolved_idx]` in place using per-row scratch
-        buffers so the update is fancy-index-free (which keeps the
-        hot path under `assert_no_alloc`).
+        Ports `UpdateChemistry` from
+        `tigris-ncr/src/photchem/ncr_solver.hpp:513-571`: solves a
+        2x2 BE system for `(x_H2, x_HII)` with hydrogen conservation
+        `x_HI = 1 - 2 x_H2 - x_HII` substituted into the source
+        terms, then derives `x_HI` from closure with RAMSES-style
+        clipping. Three separate semi-implicit row updates on
+        `(x_HI, x_HII, x_H2)` would NOT conserve hydrogen because the
+        HII / H2 rows see a stale `x_HI` at substep entry and the HI
+        row sees a stale `x_HII / x_H2`; the joint Cramer solve here
+        is the conservation-respecting form.
+
+        NCR3-specific: the kernel assumes the evolved set is
+        `(x_HI, x_HII, x_H2)` with `x_HI` the closure species.
+        Multi-ion networks will dispatch to a per-network
+        `network.closure_substep(state, C, D, dt_sub)` hook.
         """
         i_HI = self._i_HI
         i_HII = self._i_HII
         i_H2 = self._i_H2
 
+        xHI = state.x[i_HI]
+        xH2 = state.x[i_H2]
+        xHII = state.x[i_HII]
+
+        # Recover the per-x_HI source rates. The network premultiplies
+        # `C[i_H2]  = c_h2  * x_HI` and `C[i_HII] = c_hii * x_HI`
+        # (see `NCRNetwork3.evaluate_CD`, lines 371, 375). Recover the
+        # per-x_HI factors by dividing; the floor on x_HI guards the
+        # HII-region case where x_HI -> 1e-4 and C also -> 0.
         tmp_ncell = state.get_scratch('solver:tmp_ncell')
-        x_new_HI = state.get_scratch('solver:x_new_HI')
-        x_new_HII = state.get_scratch('solver:x_new_HII')
+        np.maximum(xHI, _TINY_NUMBER, out=tmp_ncell)
+        c_h2 = state.get_scratch('solver:cramer_e')   # reuse: e overwrites c_h2
+        c_hii = state.get_scratch('solver:cramer_f')  # reuse: f overwrites c_hii
+        np.divide(C[i_H2],  tmp_ncell, out=c_h2)
+        np.divide(C[i_HII], tmp_ncell, out=c_hii)
+
+        a = state.get_scratch('solver:cramer_a')
+        b = state.get_scratch('solver:cramer_b')
+        cc = state.get_scratch('solver:cramer_c')
+        dd = state.get_scratch('solver:cramer_d')
+        e = state.get_scratch('solver:cramer_e')
+        f = state.get_scratch('solver:cramer_f')
+        det = state.get_scratch('solver:cramer_det')
+
+        # a = 1 + (2 c_h2 + D_H2) * dt
+        np.multiply(c_h2, 2.0, out=a)
+        np.add(a, D[i_H2], out=a)
+        np.multiply(a, dt_sub, out=a)
+        np.add(a, 1.0, out=a)
+
+        # b = c_h2 * dt
+        np.multiply(c_h2, dt_sub, out=b)
+
+        # cc = 2 c_hii * dt
+        np.multiply(c_hii, 2.0 * dt_sub, out=cc)
+
+        # dd = 1 + (c_hii + D_HII) * dt
+        np.add(c_hii, D[i_HII], out=dd)
+        np.multiply(dd, dt_sub, out=dd)
+        np.add(dd, 1.0, out=dd)
+
+        # e = x_H2 + c_h2 * dt   (overwrites c_h2)
+        np.multiply(c_h2, dt_sub, out=e)
+        np.add(e, xH2, out=e)
+
+        # f = x_HII + c_hii * dt  (overwrites c_hii)
+        np.multiply(c_hii, dt_sub, out=f)
+        np.add(f, xHII, out=f)
+
+        # det = a*d - b*c   (>= 1 + ... > 0 always)
+        np.multiply(a, dd, out=det)
+        np.multiply(b, cc, out=tmp_ncell)
+        np.subtract(det, tmp_ncell, out=det)
+
+        # x_H2_new = (d*e - b*f) / det
         x_new_H2 = state.get_scratch('solver:x_new_H2')
+        np.multiply(dd, e, out=x_new_H2)
+        np.multiply(b, f, out=tmp_ncell)
+        np.subtract(x_new_H2, tmp_ncell, out=x_new_H2)
+        np.divide(x_new_H2, det, out=x_new_H2)
 
-        # HI row
-        kern.semi_implicit_x_update(
-            state.x[i_HI], C[i_HI], D[i_HI], dt_sub,
-            out=x_new_HI, tmp=tmp_ncell,
-        )
-        # HII row
-        kern.semi_implicit_x_update(
-            state.x[i_HII], C[i_HII], D[i_HII], dt_sub,
-            out=x_new_HII, tmp=tmp_ncell,
-        )
-        # H2 row
-        kern.semi_implicit_x_update(
-            state.x[i_H2], C[i_H2], D[i_H2], dt_sub,
-            out=x_new_H2, tmp=tmp_ncell,
-        )
+        # x_HII_new = (a*f - c*e) / det
+        x_new_HII = state.get_scratch('solver:x_new_HII')
+        np.multiply(a, f, out=x_new_HII)
+        np.multiply(cc, e, out=tmp_ncell)
+        np.subtract(x_new_HII, tmp_ncell, out=x_new_HII)
+        np.divide(x_new_HII, det, out=x_new_HII)
 
-        # Write back. Single-row assignment is a view-targeted write
-        # via numpy's `__setitem__`, which does not allocate.
+        # Hot-gas gate: x_H2 = 0 where T >= temp_hot1
+        # (ncr_solver.hpp:532-536).
+        hot_gate = state.get_scratch('solver:mask_b1')
+        np.less(state.T, self.temp_hot1, out=hot_gate)
+        np.multiply(x_new_H2, hot_gate, out=x_new_H2)
+
+        # RAMSES-style closure (ncr_solver.hpp:539-555).
+        # 1) Re-normalise if x_HII + 2 x_H2 > 1: divide by
+        #    max(x_sum, 1.0) so the no-op case leaves x untouched.
+        np.multiply(x_new_H2, 2.0, out=a)              # a := 2 x_H2_new
+        np.add(a, x_new_HII, out=a)                    # a := x_sum
+        np.maximum(a, 1.0, out=a)                      # a := max(x_sum, 1)
+        np.divide(x_new_H2, a, out=x_new_H2)
+        np.divide(x_new_HII, a, out=x_new_HII)
+
+        # 2) Branch on x_H2 < 0.25. Compute both branches and select.
+        #    branch_low  (x_H2 < 0.25):
+        #        x_H2  = clip(x_H2,  TINY, 0.5)
+        #        x_HII = clip(x_HII, TINY, 1 - 2 x_H2)
+        #    branch_high (x_H2 >= 0.25):
+        #        x_HII = clip(x_HII, TINY, 1)
+        #        x_H2  = clip(x_H2,  TINY, 1 - x_HII)
+        low_mask = state.get_scratch('solver:mask_b2')
+        np.less(x_new_H2, 0.25, out=low_mask)
+
+        # Branch low: x_H2_lo -> b, x_HII_lo -> cc
+        np.maximum(x_new_H2, _TINY_NUMBER, out=b)
+        np.minimum(b, 0.5, out=b)                      # x_H2_lo
+        np.multiply(b, 2.0, out=tmp_ncell)
+        np.subtract(1.0, tmp_ncell, out=tmp_ncell)     # 1 - 2 x_H2_lo
+        np.maximum(x_new_HII, _TINY_NUMBER, out=cc)
+        np.minimum(cc, tmp_ncell, out=cc)              # x_HII_lo
+
+        # Branch high: x_HII_hi -> dd, x_H2_hi -> e
+        np.maximum(x_new_HII, _TINY_NUMBER, out=dd)
+        np.minimum(dd, 1.0, out=dd)                    # x_HII_hi
+        np.subtract(1.0, dd, out=tmp_ncell)            # 1 - x_HII_hi
+        np.maximum(x_new_H2, _TINY_NUMBER, out=e)
+        np.minimum(e, tmp_ncell, out=e)                # x_H2_hi
+
+        # Select: low_mask True -> low branch (b, cc); False -> high
+        # branch (e, dd). `np.where` does not accept `out=`; copy the
+        # high-branch result first, then overwrite the cells where
+        # `low_mask` is True with the low-branch result. Two `copyto`
+        # calls per output array; both are alloc-free.
+        np.copyto(x_new_H2,  e)
+        np.copyto(x_new_H2,  b,  where=low_mask)
+        np.copyto(x_new_HII, dd)
+        np.copyto(x_new_HII, cc, where=low_mask)
+
+        # x_HI_new = max(1 - x_HII_new - 2 x_H2_new, TINY)
+        x_new_HI = state.get_scratch('solver:x_new_HI')
+        np.multiply(x_new_H2, 2.0, out=x_new_HI)
+        np.add(x_new_HI, x_new_HII, out=x_new_HI)
+        np.subtract(1.0, x_new_HI, out=x_new_HI)
+        np.maximum(x_new_HI, _TINY_NUMBER, out=x_new_HI)
+
+        # Write back.
         np.copyto(state.x[i_HI], x_new_HI)
         np.copyto(state.x[i_HII], x_new_HII)
         np.copyto(state.x[i_H2], x_new_H2)
