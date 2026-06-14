@@ -11,7 +11,7 @@ test is a sanity check, not a parity test against
 from __future__ import annotations
 
 from types import SimpleNamespace
-from typing import Optional
+from typing import Any, Dict, Optional
 
 import numpy as np
 import pytest
@@ -33,9 +33,9 @@ def _make_state(
     Z_g: float = 1.0,
     xi_CR: float = 0.0,
     chi_FUV: Optional[float] = None,
-    xi_ph_HI: Optional[float] = None,
-    xi_ph_H2: Optional[float] = None,
-    xi_diss_H2: Optional[float] = None,
+    zeta_pi_HI: Optional[float] = None,
+    zeta_pi_H2: Optional[float] = None,
+    zeta_diss_H2: Optional[float] = None,
     ncell: int = 1,
     species=None,
 ) -> SimpleNamespace:
@@ -50,6 +50,15 @@ def _make_state(
     if species is None:
         species = NCRNetwork3.species
 
+    zeta_pi: Dict[str, Any] = {}
+    if zeta_pi_HI is not None:
+        zeta_pi['HI'] = _bcast(zeta_pi_HI)
+    if zeta_pi_H2 is not None:
+        zeta_pi['H2'] = _bcast(zeta_pi_H2)
+    zeta_diss: Dict[str, Any] = {}
+    if zeta_diss_H2 is not None:
+        zeta_diss['H2'] = _bcast(zeta_diss_H2)
+
     return SimpleNamespace(
         species=species,
         x=np.ascontiguousarray(x, dtype=np.float64),
@@ -59,9 +68,8 @@ def _make_state(
         Z_g=_bcast(Z_g),
         xi_CR=_bcast(xi_CR),
         chi_FUV=_bcast(chi_FUV),
-        xi_ph_HI=_bcast(xi_ph_HI),
-        xi_ph_H2=_bcast(xi_ph_H2),
-        xi_diss_H2=_bcast(xi_diss_H2),
+        zeta_pi=zeta_pi,
+        zeta_diss=zeta_diss,
     )
 
 
@@ -156,13 +164,13 @@ def test_evaluate_CD_radiation_increases_HII_creation():
     C_dark = np.zeros_like(x)
     D_dark = np.zeros_like(x)
     state_dark = _make_state(x=x.copy(), T=8000.0, nH=1.0,
-                             xi_ph_HI=0.0)
+                             zeta_pi_HI=0.0)
     net.evaluate_CD(state_dark, C_dark, D_dark)
 
     C_phot = np.zeros_like(x)
     D_phot = np.zeros_like(x)
     state_phot = _make_state(x=x.copy(), T=8000.0, nH=1.0,
-                             xi_ph_HI=1.0e-12)
+                             zeta_pi_HI=1.0e-12)
     net.evaluate_CD(state_phot, C_phot, D_phot)
 
     i_HII = species.idx['HII']

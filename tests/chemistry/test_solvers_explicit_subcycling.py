@@ -42,11 +42,19 @@ def _build_state(ncell: int = 16,
     T_arr = np.full(ncell, T)
     state = ChemState.from_grid(r, nH_arr, T_arr, species,
                                 xi_CR=xi_CR, nfreq=3)
-    # Pre-populate optional radiation attributes the network reads so
-    # `_get_optional` does not allocate per call. Zero radiation is fine
-    # for these tests; the solver only needs the buffers to be present.
-    for name in ('chi_FUV', 'xi_ph_HI', 'xi_ph_H2', 'xi_diss_H2'):
-        setattr(state, name, np.zeros(ncell, dtype=np.float64))
+    # Pre-populate optional radiation slots. chi_FUV stays as a flat
+    # attribute (single FUV band); photo-rates go into the per-species
+    # dicts (state.zeta_pi[species], state.zeta_diss[species]). Zero
+    # radiation is fine for these tests; the solver only needs the
+    # buffers to be present.
+    state.chi_FUV = np.zeros(ncell, dtype=np.float64)
+    state.zeta_pi = {
+        'HI': np.zeros(ncell, dtype=np.float64),
+        'H2': np.zeros(ncell, dtype=np.float64),
+    }
+    state.zeta_diss = {
+        'H2': np.zeros(ncell, dtype=np.float64),
+    }
     return state
 
 

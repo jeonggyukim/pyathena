@@ -49,17 +49,17 @@ class RadiationStub:
     """Constant-radiation policy.
 
     Copies the supplied scalar values (FUV intensity in Draine units,
-    H I and H2 photoionisation / dissociation rates) into the optional
-    state attributes that `NCRNetwork3.evaluate_CD` reads. When the
-    config does not specify a key, the corresponding state attribute is
-    left untouched, so callers that already set `state.chi_FUV` etc.
-    keep their values.
+    H I and H2 photoionisation / dissociation rates) into
+    `state.chi_FUV` plus the per-species photo-rate dicts
+    `state.zeta_pi` and `state.zeta_diss` that `NCRNetwork3.evaluate_CD`
+    reads. Missing keys leave the existing state values alone, so
+    callers that pre-populated the slots keep their values.
 
     Parameters
     ----------
     radiation_params : mapping, optional
-        Keys consumed: `chi_FUV`, `xi_ph_HI`, `xi_ph_H2`, `xi_diss_H2`.
-        Anything else is ignored.
+        Keys consumed: `chi_FUV`, `zeta_pi_HI`, `zeta_pi_H2`,
+        `zeta_diss_H2`. Anything else is ignored.
     """
 
     __version__: str = 'stub@phase3'
@@ -68,30 +68,52 @@ class RadiationStub:
                  radiation_params: Optional[Mapping[str, float]] = None) -> None:
         params = dict(radiation_params or {})
         self._chi_FUV: Optional[float] = params.get('chi_FUV')
-        self._xi_ph_HI: Optional[float] = params.get('xi_ph_HI')
-        self._xi_ph_H2: Optional[float] = params.get('xi_ph_H2')
-        self._xi_diss_H2: Optional[float] = params.get('xi_diss_H2')
+        self._zeta_pi_HI: Optional[float] = params.get('zeta_pi_HI')
+        self._zeta_pi_H2: Optional[float] = params.get('zeta_pi_H2')
+        self._zeta_diss_H2: Optional[float] = params.get('zeta_diss_H2')
 
     def update(self, state: Any) -> None:
         """Broadcast the configured scalars into ncell-shaped buffers.
 
-        Allocates on the first call (when the attribute is absent) and
+        Allocates on the first call (when the slot is absent) and
         writes in place on subsequent calls so the solver hot path
         sees a stable buffer reference.
         """
         ncell = state.nH.shape[0]
-        for attr_name, value in (
-            ('chi_FUV', self._chi_FUV),
-            ('xi_ph_HI', self._xi_ph_HI),
-            ('xi_ph_H2', self._xi_ph_H2),
-            ('xi_diss_H2', self._xi_diss_H2),
+        # chi_FUV stays as a flat attribute on state (single FUV band).
+        if self._chi_FUV is not None:
+            cur = getattr(state, 'chi_FUV', None)
+            if cur is None or not isinstance(cur, np.ndarray) \
+                    or cur.shape != (ncell,):
+                state.chi_FUV = np.full(
+                    ncell, float(self._chi_FUV), dtype=np.float64)
+            else:
+                cur[:] = float(self._chi_FUV)
+        # Per-species photo-rates go through the dict slots on state.
+        zeta_pi = getattr(state, 'zeta_pi', None)
+        if zeta_pi is None:
+            state.zeta_pi = zeta_pi = {}
+        for species, value in (
+            ('HI', self._zeta_pi_HI),
+            ('H2', self._zeta_pi_H2),
         ):
             if value is None:
                 continue
-            cur = getattr(state, attr_name, None)
+            cur = zeta_pi.get(species)
             if cur is None or not isinstance(cur, np.ndarray) \
                     or cur.shape != (ncell,):
-                setattr(state, attr_name,
-                        np.full(ncell, float(value), dtype=np.float64))
+                zeta_pi[species] = np.full(
+                    ncell, float(value), dtype=np.float64)
             else:
                 cur[:] = float(value)
+        zeta_diss = getattr(state, 'zeta_diss', None)
+        if zeta_diss is None:
+            state.zeta_diss = zeta_diss = {}
+        if self._zeta_diss_H2 is not None:
+            cur = zeta_diss.get('H2')
+            if cur is None or not isinstance(cur, np.ndarray) \
+                    or cur.shape != (ncell,):
+                zeta_diss['H2'] = np.full(
+                    ncell, float(self._zeta_diss_H2), dtype=np.float64)
+            else:
+                cur[:] = float(self._zeta_diss_H2)

@@ -77,6 +77,23 @@ class NetworkBase(abc.ABC):
     evolved: ClassVar[Tuple[str, ...]] = ()
     ghost:   ClassVar[Tuple[str, ...]] = ()
 
+    # Equilibrium-solver QSSA partition. Networks may declare which
+    # species the equilibrium solver should treat as Newton variables
+    # vs. analytically-projected. The default empty tuple means every
+    # `evolved` species is iterated as a Newton variable (no QSSA
+    # decoupling). Per-cell timescale-based partitioning (the C, D
+    # magnitude check at runtime) is handled by the solver, not here.
+    slow_species: ClassVar[Tuple[str, ...]] = ()
+
+    # Species whose abundance is fixed by a conservation relation
+    # rather than by their own ODE row. The equilibrium solver
+    # excludes these from its Newton variables -- `closure(state)`
+    # rebuilds them after each Newton step from the remaining
+    # evolved species. For NCRNetwork3 this is `('HI',)` because the
+    # hydrogen conservation `x_HI = 1 - 2 x_H2 - x_HII` fixes xHI
+    # whenever xH2, xHII are known.
+    closure_species: ClassVar[Tuple[str, ...]] = ()
+
     # Per-element partial-tracking declaration. Each entry is
     # `(element, q_max_tracked, evolved_ion_names)`. The driver consumes
     # this to size and load CIE-lumped pool tables (`x_high_frac(T)`,

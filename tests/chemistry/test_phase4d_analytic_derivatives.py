@@ -33,7 +33,7 @@ import numpy as np
 
 from pyathena.chemistry.species import SpeciesSet
 from pyathena.chemistry.state import ChemState
-from pyathena.chemistry.equilibrium import eq_xHII_xe
+from pyathena.chemistry.equilibrium_seed import eq_xHII_xe
 from pyathena.chemistry.cooling.dust import DustGasCoupling
 from pyathena.chemistry.cooling.free_free import FreeFreeHCooling
 from pyathena.chemistry.cooling.lya import LyaCooling

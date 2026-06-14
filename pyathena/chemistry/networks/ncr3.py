@@ -31,15 +31,15 @@ intent.
 
 Rate contributions (matching ncr_rates.hpp:1582-1625):
 
-  H II creation:    (k_coll(T) * n_e + xi_cr_HII + xi_ph_HI) * x_HI
-                    -> C_HII = (k_coll*n_e + xi_cr_HII + xi_ph_HI)
+  H II creation:    (k_coll(T) * n_e + xi_cr_HII + zeta_pi_HI) * x_HI
+                    -> C_HII = (k_coll*n_e + xi_cr_HII + zeta_pi_HI)
                        times x_HI in the network output
   H II destruction: n_e * alpha_rr(T) + nH * alpha_gr(T, chi, n_e, Z_d)
                     -> D_HII = n_e * alpha_rr + nH * alpha_gr
 
   H2 creation:      kgr(T, Z_d) * nH * x_HI
                     -> C_H2 = kgr*nH * x_HI in the network output
-  H2 destruction:   1.65 * xi_cr_H2 + xi_ph_H2 + xi_diss_H2 + xi_coll_H2
+  H2 destruction:   1.65 * xi_cr_H2 + zeta_pi_H2 + zeta_diss_H2 + xi_coll_H2
                     where xi_cr_H2 = 2 * xi_CR * (2.3 x_H2 + 1.5 x_HI)
                     -> D_H2 contains all of these
 
@@ -77,13 +77,16 @@ Divergences from `pyathena.microphysics.photchem.PhotChem`:
   Here we expose the same convention via `electron_fraction(state)`
   returning `x_HII`, and rely on the driver / solver to write it
   back. The network does not mutate the electron row.
-- Photo-rates (`xi_ph_HI`, `xi_ph_H2`, `xi_diss_H2`) and the FUV
-  intensity (`chi_FUV`) are read from optional fields on `state`:
-  `state.xi_ph_HI`, `state.xi_ph_H2`, `state.xi_diss_H2`,
-  `state.chi_FUV`. When absent (Phase 2 unit-test usage), they
-  default to zero — i.e., the network falls back to a dark, CR-only
-  regime. The integration agent will wire these up to `state.chi[]`
-  in Phase 3.
+- Photo-rates (`zeta_pi_HI`, `zeta_pi_H2`, `zeta_diss_H2`) are read
+  from the per-species dicts `state.zeta_pi[species]` and
+  `state.zeta_diss[species]`. The FUV intensity in Draine units
+  (`chi_FUV`) is read from `state.chi[band='FUV']` -- `chi` is
+  reserved for Draine-normalised FUV throughout pyathena. When the
+  dict keys are absent (Phase 2 unit-test usage, dark / CR-only
+  regime) the rate defaults to zero. Driver / radiation-policy code
+  is responsible for populating the dicts from the cell-local photon
+  flux integrated against the per-species cross section
+  (`zeta_pi[species] = integral over nu of sigma_pi(nu) * F_nu`).
 """
 from __future__ import annotations
 
@@ -271,6 +274,10 @@ class NCRNetwork3(NetworkBase):
     ghost:   ClassVar[Tuple[str, ...]] = (
         'electron', 'CI', 'CII', 'CO', 'OI', 'OII',
     )
+    # Hydrogen conservation `x_HI = 1 - 2 x_H2 - x_HII` makes xHI
+    # closure-derived; the equilibrium solver excludes it from
+    # Newton variables and lets `closure(state)` rebuild it.
+    closure_species: ClassVar[Tuple[str, ...]] = ('HI',)
     walk_order: ClassVar[Tuple[Tuple[str, ...], ...]] = (
         ('HI', 'HII', 'H2'),
     )
@@ -329,9 +336,12 @@ class NCRNetwork3(NetworkBase):
         # Optional radiation-side inputs. Default to zero so the
         # Phase 2 dark/CR-only tests work without state extensions.
         chi_FUV = _get_optional(state, 'chi_FUV', shape=T.shape)
-        xi_ph_HI = _get_optional(state, 'xi_ph_HI', shape=T.shape)
-        xi_ph_H2 = _get_optional(state, 'xi_ph_H2', shape=T.shape)
-        xi_diss_H2 = _get_optional(state, 'xi_diss_H2', shape=T.shape)
+        # Photo-driven rates: read via the per-species dicts on state.
+        # Networks default missing entries to zero (dark / CR-only
+        # regime).
+        zeta_pi_HI = _get_rate(state, 'zeta_pi', 'HI', shape=T.shape)
+        zeta_pi_H2 = _get_rate(state, 'zeta_pi', 'H2', shape=T.shape)
+        zeta_diss_H2 = _get_rate(state, 'zeta_diss', 'H2', shape=T.shape)
 
         # --- HII channel ---------------------------------------------
         k_coll = _coeff_kcoll_H(T)
@@ -340,7 +350,7 @@ class NCRNetwork3(NetworkBase):
         xi_cr_HII = xi_CR * (2.3 * xH2 + 1.5 * xHI)
 
         # Source per unit x_HI: dx_HII/dt = C_HII_per_xHI * x_HI - D_HII * x_HII
-        C_HII_per_xHI = k_coll * ne + xi_cr_HII + xi_ph_HI
+        C_HII_per_xHI = k_coll * ne + xi_cr_HII + zeta_pi_HI
         D_HII = ne * alpha_rr + nH * alpha_gr
 
         # --- H2 channel ----------------------------------------------
@@ -353,7 +363,7 @@ class NCRNetwork3(NetworkBase):
         D_H2 = np.where(
             hot_mask,
             0.0,
-            1.65 * xi_cr_H2 + xi_ph_H2 + xi_diss_H2 + xi_coll_H2,
+            1.65 * xi_cr_H2 + zeta_pi_H2 + zeta_diss_H2 + xi_coll_H2,
         )
 
         # --- Fold into NetworkBase (C, D x) form ---------------------
@@ -421,6 +431,45 @@ class NCRNetwork3(NetworkBase):
         self.fill_ghosts(state)
 
     # ---- electron_fraction ------------------------------------------
+    def seed_equilibrium(self, state: Any) -> None:
+        """Project (xHII, xCII, xe, xHI) onto the analytic atomic-only
+        H + C ionisation equilibrium for the current xH2 / T / nH /
+        ionising inputs. Used by `solve_equilibrium(seed=True)` so
+        Newton starts from a state near the true root.
+
+        Uses `pyathena.chemistry.equilibrium_seed.eq_xHII_xe`. xH2 is
+        held at the value on state.x[H2]; the seed is consistent with
+        whatever molecular state the caller has set, and Newton then
+        polishes for the xH2 coupling.
+        """
+        from pyathena.chemistry.equilibrium_seed import eq_xHII_xe
+        idx = state.species.idx
+        i_HI = idx['HI']
+        i_HII = idx['HII']
+        i_H2 = idx['H2']
+        i_e = idx.get('electron')
+        # Read radiation inputs directly from the same slots the
+        # network's evaluate_CD reads.
+        xi_CR = np.asarray(state.xi_CR)
+        zeta_pi_HI = state.zeta_pi.get('HI', 0.0) if state.zeta_pi else 0.0
+        try:
+            chi_FUV = state.chi_for('FUV')
+        except KeyError:
+            chi_FUV = 0.0
+        xHII_eq, _xCII_eq, xe_eq, xHI_eq = eq_xHII_xe(
+            T=state.T, nH=state.nH, xH2=state.x[i_H2],
+            xi_CR=float(np.asarray(xi_CR).max()),
+            G_PE=chi_FUV, G_CI=chi_FUV,
+            Z_d=float(np.asarray(state.Z_d).max()),
+            Z_g=float(np.asarray(state.Z_g).max()),
+            zeta_pi=zeta_pi_HI,
+        )
+        floor = self.x_floor
+        state.x[i_HII] = np.maximum(xHII_eq, floor)
+        state.x[i_HI] = np.maximum(xHI_eq, floor)
+        if i_e is not None:
+            state.x[i_e] = np.maximum(xe_eq, floor)
+
     def electron_fraction(self, state: Any) -> np.ndarray:
         """Return x_e implied by the current ionised-H + metal
         ghosts.
@@ -541,11 +590,26 @@ class NCRNetwork3(NetworkBase):
 def _get_optional(state: Any, attr: str, shape: tuple) -> np.ndarray:
     """Return `getattr(state, attr)` as an array broadcastable to
     `shape`, or zeros of that shape if the attribute is missing /
-    None. Used for radiation-side scalars (`chi_FUV`, `xi_ph_*`,
-    `xi_diss_H2`) that the Phase 2 ChemState skeleton does not yet
-    expose.
+    None. Used for radiation-field scalars (`chi_FUV`, ...).
     """
     val = getattr(state, attr, None)
+    if val is None:
+        return np.zeros(shape, dtype=np.float64)
+    return np.asarray(val, dtype=np.float64)
+
+
+def _get_rate(state: Any, category: str, species: str,
+              shape: tuple) -> np.ndarray:
+    """Read a per-species photo-rate (`zeta_pi[species]` or
+    `zeta_diss[species]`) from `state` and broadcast it to `shape`.
+    Missing categories or missing species default to zero, matching
+    the dark / CR-only baseline. Called once per `evaluate_CD` entry,
+    so the dict-lookup cost is amortised over the per-cell math.
+    """
+    rates = getattr(state, category, None)
+    if not rates:
+        return np.zeros(shape, dtype=np.float64)
+    val = rates.get(species)
     if val is None:
         return np.zeros(shape, dtype=np.float64)
     return np.asarray(val, dtype=np.float64)

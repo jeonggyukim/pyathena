@@ -51,9 +51,9 @@ def test_driver_step_smoke_1024_cell_HII_region():
     thermo = NCRThermo()
     radiation = RadiationStub({
         'chi_FUV': 1.0,
-        'xi_ph_HI': 0.0,
-        'xi_ph_H2': 0.0,
-        'xi_diss_H2': 0.0,
+        'zeta_pi_HI': 0.0,
+        'zeta_pi_H2': 0.0,
+        'zeta_diss_H2': 0.0,
     })
     driver = ChemistryDriver(
         config, network, thermo,
