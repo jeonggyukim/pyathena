@@ -30,45 +30,17 @@ from __future__ import annotations
 
 import numpy as np
 
+# Reuse the rate-coefficient implementations from the NCR3 network so
+# the equilibrium solver and the time-dependent network agree exactly
+# on the rate functions. The leading underscores are module-private but
+# we import them deliberately to avoid duplicating the formulas.
+from pyathena.chemistry.networks.ncr3 import (
+    _coeff_kcoll_H as coeff_kcoll_H,
+    _coeff_alpha_rr_H as coeff_alpha_rr_H,
+    _coeff_alpha_gr_H as coeff_alpha_gr_H,
+)
+
 _SMALL = 1.0e-50
-
-
-def coeff_kcoll_H(T):
-    """Collisional ionisation of HI by electrons (Gnat + Sternberg
-    2007 fit; T_e = T * k_B in eV)."""
-    lnTe = np.log(T * 8.6173e-5)
-    k_coll = np.where(
-        T > 3.0e3,
-        np.exp(
-            -3.271396786e1 + (1.35365560e1 + (-5.73932875 + (1.56315498
-            + (-2.877056e-1 + (3.48255977e-2 + (-2.63197617e-3
-            + (1.11954395e-4 + (-2.03914985e-6)
-            * lnTe) * lnTe) * lnTe) * lnTe) * lnTe) * lnTe) * lnTe) * lnTe),
-        0.0,
-    )
-    return k_coll
-
-
-def coeff_alpha_rr_H(T):
-    """HII radiative case-B recombination (Gong+17 fit to Ferland+92)."""
-    Tinv = 1.0 / T
-    bb = 315614.0 * Tinv
-    cc = 115188.0 * Tinv
-    dd = 1.0 + np.power(cc, 0.407)
-    return 2.753e-14 * np.power(bb, 1.5) * np.power(dd, -2.242)
-
-
-def coeff_alpha_gr_H(T, G_PE, ne, Z_d):
-    """Grain-assisted HII recombination (WD01 Table 3)."""
-    lnT = np.log(T)
-    cHp = np.array(
-        [12.25, 8.074e-6, 1.378, 5.087e2, 1.586e-2, 0.4723, 1.102e-5])
-    psi_gr = 1.7 * G_PE * np.sqrt(T) / (ne + _SMALL) + _SMALL
-    alpha_gr = 1.0e-14 * cHp[0] / (
-        1.0 + cHp[1] * np.power(psi_gr, cHp[2]) * (
-            1.0 + cHp[3] * np.power(T, cHp[4])
-            * np.power(psi_gr, -cHp[5] - cHp[6] * lnT))) * Z_d
-    return alpha_gr
 
 
 def get_xCII(nH, xe, xH2, T, Z_d, Z_g, xi_CR, G_PE, G_CI,
