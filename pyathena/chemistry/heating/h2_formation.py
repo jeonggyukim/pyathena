@@ -44,6 +44,8 @@ class H2FormationHeating(HeatingChannel):
         'heating:h2_form:tmp_a',
         'heating:h2_form:tmp_b',
         'heating:h2_form:f',
+        'heating:h2_form:T_orig',
+        'heating:h2_form:out_tp',
     )
     __version__: ClassVar[str] = '0.1@phase4b'
 
@@ -62,12 +64,7 @@ class H2FormationHeating(HeatingChannel):
         self._xi_diss_H2 = float(xi_diss_H2)
         self._temperature_dependent_kgr = bool(temperature_dependent_kgr)
 
-    def evaluate(
-        self,
-        state: Any,
-        out: np.ndarray,
-        d_out: Optional[np.ndarray] = None,
-    ) -> None:
+    def _compute_gamma(self, state: Any, out: np.ndarray) -> None:
         T = state.T
         nH = state.nH
         xHI = state.x[self._i_HI]
@@ -134,5 +131,31 @@ class H2FormationHeating(HeatingChannel):
         np.multiply(out, tmp_a, out=out)
         np.multiply(out, _EV_CGS, out=out)
 
+    def evaluate(
+        self,
+        state: Any,
+        out: np.ndarray,
+        d_out: Optional[np.ndarray] = None,
+    ) -> None:
+        # Lambda / Gamma at current state.T.
+        self._compute_gamma(state, out)
         if d_out is not None:
-            d_out[:] = 0.0
+            # FD bootstrap at dT_rel = 1e-3 forward (project
+            # convention; see CoolingChannel.evaluate docstring and
+            # tests/chemistry/test_fd_calibration.py). The analytic
+            # chain rule for this channel runs through composite
+            # log / exp / saturation-density factors; FD bootstrap
+            # matches the substep-damping accuracy in one extra
+            # _compute_gamma call.
+            _DT_REL = 1.0e-3
+            T_orig = state.get_scratch('heating:h2_form:T_orig')
+            out_tp = state.get_scratch('heating:h2_form:out_tp')
+            np.copyto(T_orig, state.T)
+            np.multiply(state.T, 1.0 + _DT_REL, out=state.T)
+            self._compute_gamma(state, out_tp)
+            np.copyto(state.T, T_orig)
+            np.subtract(out_tp, out, out=d_out)
+            np.divide(d_out, T_orig, out=d_out)
+            np.multiply(d_out, 1.0 / _DT_REL, out=d_out)
+            mu = state.get_scratch('solver:mu_at_entry')
+            np.multiply(d_out, mu, out=d_out)

@@ -45,11 +45,15 @@ from pyathena.chemistry.cooling.recombination_hydrogen import (
 from pyathena.chemistry.cooling.grain_recombination import (
     GrainRecombinationCooling,
 )
+from pyathena.chemistry.cooling.nebular import NebularMetalLineCooling
+from pyathena.chemistry.cooling.hi_smith21 import HISmith21Cooling
+from pyathena.chemistry.cooling.h2_colldiss import H2CollDissCooling
 from pyathena.chemistry.heating.cosmic_ray import CosmicRayHeating
 from pyathena.chemistry.heating.photoelectric import PhotoelectricHeating
 from pyathena.chemistry.heating.h2_photodissociation import (
-    H2DissociationHeating,
+    H2DissociationHeating, H2PumpHeating,
 )
+from pyathena.chemistry.heating.h2_formation import H2FormationHeating
 
 
 # Broad T coverage [100 K, 1e6 K] union with a denser sub-grid where
@@ -333,3 +337,114 @@ def test_grain_recombination_d_out_matches_FD_bootstrap():
                 d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
                 err_msg=f'(xe={xe}, chi={chi})',
             )
+
+
+def test_nebular_d_out_matches_FD_bootstrap():
+    """Nebular metal-line proxy uses FD bootstrap; analytic chain
+    through the 6-term polynomial * Boltzmann * Hummer density-
+    reduction is mechanically tractable but no gain over FD for
+    damping. Same rtol = 5e-2 as the other bootstrap channels.
+    """
+    for xHII, xe in ((0.5, 0.5), (0.99, 0.99)):
+        for Z_g in (0.5, 1.0):
+            state, species = _build_state(
+                _T, _NH, xHI=1.0 - xHII, xHII=xHII, xe=xe)
+            state.Z_g[:] = Z_g
+            ch = NebularMetalLineCooling(
+                i_HII=species.idx['HII'],
+                i_electron=species.idx['electron'])
+            _alloc_channel_scratch(state, ch)
+            out = np.empty_like(_T)
+            d_out = np.empty_like(_T)
+            ch.evaluate(state, out, d_out)
+            fd = _fd_central(ch, state)
+            # Nebular Lambda has a sign-changing region in the cold
+            # tail where the f_red density-reduction factor flips;
+            # mask below 1e-26 to ignore precision-noise crossings.
+            mask = np.abs(d_out) > 1.0e-26
+            np.testing.assert_allclose(
+                d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+                err_msg=f'(xHII={xHII}, xe={xe}, Z_g={Z_g})')
+
+
+def test_hi_smith21_d_out_matches_FD_bootstrap():
+    """HISmith21 has 4 line-series Upsilon * Boltzmann contributions
+    summed; FD bootstrap pattern."""
+    for xHI, xe in ((0.99, 0.01), (0.5, 0.5), (0.1, 0.5)):
+        state, species = _build_state(
+            _T, _NH, xHI=xHI, xHII=1.0 - xHI, xe=xe)
+        ch = HISmith21Cooling(
+            i_HI=species.idx['HI'],
+            i_electron=species.idx['electron'])
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        mask = np.abs(d_out) > 1.0e-28
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+            err_msg=f'(xHI={xHI}, xe={xe})')
+
+
+def test_h2_colldiss_d_out_matches_FD_bootstrap():
+    """H2 collisional dissociation has a gated log-log interpolation
+    in T; FD bootstrap. The T > 700 K gate triggers a step in the
+    value with finite derivative on each side and an indeterminate
+    delta at the boundary; mask cells where |d_out| < 1e-28 to
+    exclude the boundary noise from the comparison.
+    """
+    for xHI, xH2 in ((0.99, 0.0), (0.4, 0.3), (0.1, 0.45)):
+        state, species = _build_state(_T, _NH, xHI=xHI)
+        state.x[species.idx['H2']] = xH2
+        ch = H2CollDissCooling(
+            i_HI=species.idx['HI'], i_H2=species.idx['H2'])
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        with np.errstate(divide='ignore', invalid='ignore'):
+            ch.evaluate(state, out, d_out)
+            fd = _fd_central(ch, state)
+        mask = (np.abs(d_out) > 1.0e-28) & np.isfinite(fd)
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+            err_msg=f'(xHI={xHI}, xH2={xH2})')
+
+
+def test_h2_formation_d_out_matches_FD_bootstrap():
+    """H2 formation heating has the temperature-dependent grain rate
+    + HM79 n_crit chain. FD bootstrap."""
+    for xHI, xH2 in ((0.99, 0.0), (0.4, 0.3), (0.1, 0.45)):
+        state, species = _build_state(_T, _NH, xHI=xHI)
+        state.x[species.idx['H2']] = xH2
+        ch = H2FormationHeating(
+            i_HI=species.idx['HI'], i_H2=species.idx['H2'],
+            xi_diss_H2=1.0e-12)
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        mask = np.abs(d_out) > 1.0e-30
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+            err_msg=f'(xHI={xHI}, xH2={xH2})')
+
+
+def test_h2_pump_d_out_matches_FD_bootstrap():
+    """H2 pump heating has the HM79 n_crit chain. FD bootstrap."""
+    for xHI, xH2 in ((0.99, 0.0), (0.4, 0.3), (0.1, 0.45)):
+        state, species = _build_state(_T, _NH, xHI=xHI)
+        state.x[species.idx['H2']] = xH2
+        ch = H2PumpHeating(
+            i_HI=species.idx['HI'], i_H2=species.idx['H2'],
+            xi_diss_H2=1.0e-12)
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        mask = np.abs(d_out) > 1.0e-30
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+            err_msg=f'(xHI={xHI}, xH2={xH2})')

@@ -1447,3 +1447,65 @@ to go in Phase 4d-c / -d / -e.
 
 Validation: 537 passed, 4 skipped (up from 535 / 4; +2 net new
 analytic-derivative parity tests, no regressions).
+
+## 2026-06-14: Phase 4d-c -- 5 more channels via FD bootstrap
+
+Nebular, HISmith21, H2CollDiss, H2FormationHeating, H2PumpHeating
+all gain non-zero d_out via the project's 1-point forward FD
+bootstrap at `dT_rel = 1e-3`. Same refactor pattern as the
+Phase 4d-b2 PE / GrainRec batch:
+
+- The Lambda / Gamma computation moves into a private
+  `_compute_lambda(state, out)` (cooling) or
+  `_compute_gamma(state, out)` (heating) helper that reads
+  `state.T` directly.
+- `evaluate(state, out, d_out)` calls the helper once for the
+  value; when `d_out is not None`, snapshots `state.T`, scales it
+  by `(1 + 1e-3)`, calls the helper a second time, restores
+  `state.T`, and assembles `d_out = mu * (out_tp - out) /
+  (T_orig * 1e-3)`.
+
+Two new scratch slots per channel: `<ns>:T_orig`, `<ns>:out_tp`.
+
+Why FD bootstrap and not analytic for these five:
+
+- All five run through composite chain rules: 6-term Horner
+  polynomial * Boltzmann * Hummer density-reduction factor
+  (Nebular); 4 Upsilon series each piecewise in T6
+  (HISmith21); log-log interpolated rate coefficients across a
+  gated temperature window (H2CollDiss); HM79 ncrit chain
+  through saturation densities + temperature-dependent grain
+  rates (H2Formation, H2Pump). Each analytic derivative is
+  mechanically tractable but ~40-80 ops through quotient /
+  product rules, with no meaningful accuracy gain for the
+  substep damping role.
+- None of these channels are tabulatable as Lambda(T) alone:
+  Nebular depends on (T, xe, n_H, Z_g); HISmith21 on (T, xHI,
+  xe); H2CollDiss / Form / Pump on (T, n_H, xHI, xH2). Phase 7
+  tabulated Hermite path (mini-RAMSES style cool_prime columns)
+  does NOT cover them; the FD bootstrap stays the long-term
+  production path.
+
+Tests (`tests/chemistry/test_phase4d_analytic_derivatives.py`):
+
+- One test per channel: `test_nebular_d_out_matches_FD_bootstrap`,
+  `test_hi_smith21_d_out_matches_FD_bootstrap`,
+  `test_h2_colldiss_d_out_matches_FD_bootstrap`,
+  `test_h2_formation_d_out_matches_FD_bootstrap`,
+  `test_h2_pump_d_out_matches_FD_bootstrap`. Each compares the
+  channel's own forward-FD d_out against the 5-pt central FD
+  reference at `rtol = 5e-2` (the bootstrap O(dT) truncation
+  worst-case from the calibration sweep). Per-channel
+  subnormal-tail masks set above the noise floor; Nebular masks
+  cells below 1e-26 because the `f_red` density-reduction factor
+  flips sign in the cold tail and the comparison becomes precision
+  noise there.
+
+Phase 4d running total after this commit: 14 channels with a
+non-zero d_out path -- 7 analytic (CR, H2Diss, Dust, FreeFreeH,
+Lya, HICollIon, HRecomb) and 7 FD bootstrap (PE, GrainRec,
+Nebular, HISmith21, H2CollDiss, H2Form, H2Pump). 7 remaining:
+H2Moseley21, H2Gong17 (4d-d) and CII, OI, CI, OII (4d-e).
+
+Validation: 542 passed, 4 skipped (up from 537 / 4; +5 net new
+FD-bootstrap parity tests, no regressions).
