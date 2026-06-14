@@ -234,16 +234,21 @@ def _coeff_xi_coll_H2(
     ncrHI = np.power(10.0, 3.0 - 0.416 * logT4 - 0.327 * logT4 * logT4)
     ncrinv = np.clip(xHI / ncrHI + 2.0 * xH2 / ncrH2, 0.0, None)
     n2ncr = nH * ncrinv
-    k_H2_HI = np.power(
-        10.0,
-        np.log10(k9h) * n2ncr / (1.0 + n2ncr)
-        + np.log10(k9l) / (1.0 + n2ncr),
-    )
-    k_H2_H2 = np.power(
-        10.0,
-        np.log10(k10h) * n2ncr / (1.0 + n2ncr)
-        + np.log10(k10l) / (1.0 + n2ncr),
-    )
+    # Below ~700 K all four k* rates underflow to 0 (exp of large
+    # negative numbers), giving log10(0) = -inf. The result is
+    # discarded by the `T > temp_coll` mask on the next line, so the
+    # warnings are spurious; silence them locally.
+    with np.errstate(divide='ignore', invalid='ignore'):
+        k_H2_HI = np.power(
+            10.0,
+            np.log10(k9h) * n2ncr / (1.0 + n2ncr)
+            + np.log10(k9l) / (1.0 + n2ncr),
+        )
+        k_H2_H2 = np.power(
+            10.0,
+            np.log10(k10h) * n2ncr / (1.0 + n2ncr)
+            + np.log10(k10l) / (1.0 + n2ncr),
+        )
     xi = k_H2_H2 * nH * xH2 + k_H2_HI * nH * xHI
     return np.where(T > temp_coll, xi, 0.0)
 
