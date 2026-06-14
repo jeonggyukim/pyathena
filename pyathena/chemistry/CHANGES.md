@@ -1509,3 +1509,49 @@ H2Moseley21, H2Gong17 (4d-d) and CII, OI, CI, OII (4d-e).
 
 Validation: 542 passed, 4 skipped (up from 537 / 4; +5 net new
 FD-bootstrap parity tests, no regressions).
+
+## 2026-06-14: Phase 4d-d -- H2Moseley21 + H2Gong17 FD bootstrap + chemistry equilibrium helper
+
+- `pyathena.chemistry.cooling.h2_moseley21` -- `H2Moseley21Cooling`
+  gains FD-bootstrap `d_out`. The Lambda computation moves into a
+  private `_compute_lambda(state, out)` helper; `evaluate` calls it
+  twice (current T, then T*(1+1e-3)) for the forward FD. Two new
+  scratch slots `cooling:h2_moseley:T_orig` and
+  `cooling:h2_moseley:out_tp` carry the bootstrap state.
+- `pyathena.chemistry.cooling.h2_gong17` -- same FD-bootstrap
+  refactor on `H2Gong17Cooling`. Piecewise polynomial boundaries at
+  T = 100, 200, 1000, 6000 K give finite jumps in d_out across each
+  boundary; tests mask a 0.02-dex neighborhood around each boundary
+  before comparison.
+- `pyathena.chemistry.equilibrium` -- new module porting
+  `get_xHII`, `get_xCII`, `coeff_kcoll_H`, `coeff_alpha_rr_H`,
+  `coeff_alpha_gr_H` from `pyathena.microphysics.cool` /
+  `pyathena.microphysics.get_xe_eq` into the chemistry-rewrite
+  namespace. Adds `eq_xHII_xe(T, nH, xH2, xi_CR, G_PE, G_CI, ...)`
+  which solves jointly for (xHII, xCII, xe) at given (T, nH, xH2)
+  via damped fixed-point iteration on `xe = xHII(xe) + xCII(xe)`.
+  H conservation `xHI = 1 - 2*xH2 - xHII` is enforced on return.
+  Used to build physically-consistent test states without
+  hand-tuning abundance triplets, and reused later for
+  thermal/chemical equilibrium regression tests + as a reference
+  baseline when prototyping faster equilibrium solvers.
+- `tests/chemistry/test_phase4d_analytic_derivatives.py` --
+  `_build_state` gains an H-conservation assert
+  (`2*xH2 + xHI + xHII = 1` within roundoff). New `_build_state_eq`
+  variant derives (xHII, xCII, xe, xHI) from `eq_xHII_xe` at chosen
+  (T, nH, xH2, xi_CR, G_PE, G_CI). The CR / H2Dissociation / H2
+  formation / pump / colldiss callers from the prior batch get
+  conservation-respecting triplets (electron contribution from xCII
+  in the cold/molecular regime, xe ~ 1.6e-4). Two new tests for the
+  Phase 4d-d channels:
+  `test_h2_moseley21_d_out_matches_FD_bootstrap`,
+  `test_h2_gong17_d_out_matches_FD_bootstrap`. Both run at chemical
+  equilibrium (xH2 in {0.0, 0.3, 0.45}, xi_CR = 1e-16, G_PE = 0,
+  G_CI = 0); the molecular-regime cold/cool grid is
+  `T = logspace(1, 4, 30)` x `nH = logspace(0, 6, 14)`.
+
+Phase 4d running total after this commit: 16 channels with a
+non-zero d_out path -- 7 analytic, 9 FD bootstrap. 4 remaining
+(4d-e): CII, OI, CI, OII (level-pop channels).
+
+Validation: tests/chemistry/ 404 passed, 2 skipped.
