@@ -42,9 +42,9 @@ def integrate_rosenbrock23(
     y0: np.ndarray,
     t_target: float,
     *,
-    h_init: float = 1.0e-3,
-    h_min: float = 1.0e-12,
-    h_max: float = 1.0e20,
+    h_init: Optional[float] = None,
+    h_min: Optional[float] = None,
+    h_max: Optional[float] = None,
     atol: float = 1.0e-12,
     rtol: float = 1.0e-6,
     max_steps: int = 1000,
@@ -67,7 +67,13 @@ def integrate_rosenbrock23(
     y0 : ndarray
         Shape (nvar, ncell). Initial condition; mutated to final.
     t_target : float
-    h_init, h_min, h_max : float
+    h_init, h_min, h_max : float, optional
+        Step-size bounds. If None, defaults scale with the
+        integration window: `h_init = 1e-6 * t_target`,
+        `h_min = 1e-12 * t_target`, `h_max = t_target` (natural
+        ceiling: no single step can cover more than one full
+        window). Pass explicit values to override, or supply a
+        per-cell starting h via `h_init_arr`.
     atol, rtol : float
         Embedded error estimate tolerances.
     max_steps : int
@@ -79,6 +85,12 @@ def integrate_rosenbrock23(
     -------
     (y_final, RosenbrockResult)
     """
+    if h_init is None:
+        h_init = 1.0e-6 * t_target
+    if h_min is None:
+        h_min = 1.0e-12 * t_target
+    if h_max is None:
+        h_max = t_target
     nvar, ncell = y0.shape
     y = y0.copy()
     t = (np.zeros(ncell) if t_init is None
