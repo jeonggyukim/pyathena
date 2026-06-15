@@ -4,8 +4,8 @@ Runs Rosenbrock23 and backward-Euler (ExplicitSubcyclingSolver, 10 %
 rule and a 0.1 % tight-tolerance reference) on each cell of `_CELLS`
 independently, recording per-step abundances and the relative
 imbalance `(C - D x) / (C + D x)` per non-closure species. Writes
-`tests/figures/chem_solver_comparison.png` and a step-count / wall-
-time summary `tests/figures/chem_solver_comparison_summary.txt`.
+`tests/figures/chem_solver_comparison.png`. The step-count and
+wall-time table is printed to stdout (visible with `pytest -s`).
 """
 from __future__ import annotations
 
@@ -484,16 +484,13 @@ def test_figure_written(histories):
     assert os.path.isfile(out)
 
     # Summary table: step count and wall time per cell per solver.
-    # Written next to the PNG and also printed (visible with `pytest
-    # -s`). The same numbers are annotated on the figure but a flat
-    # text dump is easier to copy into a CHANGES entry or a PR body.
-    summary_lines = []
-    hdr = (f'{"cell":24s} '
-           f'{"Ros n":>8s} {"Ros ms":>9s} '
-           f'{"BE n":>8s} {"BE ms":>9s} '
-           f'{"ref n":>8s} {"ref ms":>9s}')
-    summary_lines.append(hdr)
-    summary_lines.append('-' * len(hdr))
+    # Printed only (visible with `pytest -s`); the same numbers are
+    # annotated on the figure.
+    print()
+    print(f'{"cell":24s} '
+          f'{"Ros n":>8s} {"Ros ms":>9s} '
+          f'{"BE n":>8s} {"BE ms":>9s} '
+          f'{"ref n":>8s} {"ref ms":>9s}')
     for col, cell in enumerate(_CELLS):
         n_ros = histories['rosenbrock'][col][3]
         t_ros = histories['rosenbrock'][col][4] * 1e3
@@ -501,16 +498,9 @@ def test_figure_written(histories):
         t_be = histories['be'][col][4] * 1e3
         n_ref = histories['be_ref'][col][3]
         t_ref = histories['be_ref'][col][4] * 1e3
-        summary_lines.append(
+        print(
             f'{cell["label"]:24s} '
             f'{n_ros:8d} {t_ros:9.2f} '
             f'{n_be:8d} {t_be:9.2f} '
             f'{n_ref:8d} {t_ref:9.2f}'
         )
-    summary = '\n'.join(summary_lines)
-    print()
-    print(summary)
-    summary_path = os.path.join(
-        _figures_dir(), 'chem_solver_comparison_summary.txt')
-    with open(summary_path, 'w') as fh:
-        fh.write(summary + '\n')
