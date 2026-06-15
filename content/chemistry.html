@@ -1,0 +1,1450 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
+    <title>Chemistry &#8212; pyathena</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/sphinx-book-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/sphinx-design.5ea377869091fd0449014c60fc090103.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
+    <script src="../_static/jquery.js"></script>
+    <script src="../_static/underscore.js"></script>
+    <script src="../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../_static/doctools.js"></script>
+    <script src="../_static/sphinx_highlight.js"></script>
+    <script src="../_static/clipboard.min.js"></script>
+    <script src="../_static/copybutton.js"></script>
+    <script src="../_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../_static/sphinx-thebe.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'content/chemistry';</script>
+    <link rel="index" title="Index" href="../genindex.html" />
+    <link rel="search" title="Search" href="../search.html" />
+    <link rel="next" title="Plotting Tools" href="plt_tools.html" />
+    <link rel="prev" title="Microphysics" href="microphysics.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../intro.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../_static/tigress_logo.jpg" class="logo__image only-light" alt="pyathena - Home"/>
+    <script>document.write(`<img src="../_static/tigress_logo.jpg" class="logo__image only-dark" alt="pyathena - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../intro.html">
+                    pyathena
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Basics</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="install.html">Installation</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../examples/quickstart.html">Quickstart</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API References</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="loadsim.html">LoadSim</a></li>
+<li class="toctree-l1"><a class="reference internal" href="athenadataset.html">AthenaDataSet</a></li>
+<li class="toctree-l1"><a class="reference internal" href="readers.html">Readers</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="units.html">Units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="pop_synth.html">Population Synthesis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="fields.html">Fields</a></li>
+<li class="toctree-l1"><a class="reference internal" href="microphysics.html">Microphysics</a></li>
+<li class="toctree-l1 current active"><a class="current reference internal" href="#">Chemistry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="plt_tools.html">Plotting Tools</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../examples/tigress-cooling.html">Cooling in TIGRESS-classic</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../examples/quickstart-astro-tigress.html">Quickstart: ASTRO-TIGRESS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../examples/sb99.html">Starburst99: Stellar Population Synthesis</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/jeonggyukim/pyathena" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2Fcontent/chemistry.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+
+
+<div class="dropdown dropdown-download-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Download this page">
+    <i class="fas fa-download"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="../_sources/content/chemistry.rst" target="_blank"
+   class="btn btn-sm btn-download-source-button dropdown-item"
+   title="Download source file"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file"></i>
+  </span>
+<span class="btn__text-container">.rst</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li>
+<button onclick="window.print()"
+  class="btn btn-sm btn-download-pdf-button dropdown-item"
+  title="Print to PDF"
+  data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-file-pdf"></i>
+  </span>
+<span class="btn__text-container">.pdf</span>
+</button>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+<button class="sidebar-toggle secondary-toggle btn btn-sm" title="Toggle secondary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <span class="fa-solid fa-list"></span>
+</button>
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1>Chemistry</h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+            <div>
+                <h2> Contents </h2>
+            </div>
+            <nav aria-label="Page">
+                <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#per-ion-coolant-solver">Per-ion coolant solver</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.coolants.base.IonCoolant"><code class="docutils literal notranslate"><span class="pre">IonCoolant</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.coolants.base.IonCoolant.cooling"><code class="docutils literal notranslate"><span class="pre">IonCoolant.cooling()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.coolants.base.IonCoolant.populations"><code class="docutils literal notranslate"><span class="pre">IonCoolant.populations()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.coolants.n_level.solve_5level_steady_state"><code class="docutils literal notranslate"><span class="pre">solve_5level_steady_state()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rate-coefficients">Rate coefficients</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.PhotX"><code class="docutils literal notranslate"><span class="pre">PhotX</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.PhotX.get_Eth"><code class="docutils literal notranslate"><span class="pre">PhotX.get_Eth()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.PhotX.get_sigma"><code class="docutils literal notranslate"><span class="pre">PhotX.get_sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.PhotX.get_sigma_table"><code class="docutils literal notranslate"><span class="pre">PhotX.get_sigma_table()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.get_sigma_pi_H2"><code class="docutils literal notranslate"><span class="pre">get_sigma_pi_H2()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ci_rate.CollIonRate"><code class="docutils literal notranslate"><span class="pre">CollIonRate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ci_rate.CollIonRate.get_ci_rate_table"><code class="docutils literal notranslate"><span class="pre">CollIonRate.get_ci_rate_table()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate"><code class="docutils literal notranslate"><span class="pre">RecRate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_dr_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_dr_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseA_Dr11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseB()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseB_Dr11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_grain"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_grain()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_table"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_table()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rr_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rr_rate()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_ion_HII_OI_Draine11"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate.get_ct_ion_HII_OI_Draine11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_ion_rate"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate.get_ct_ion_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_rec_HI_OII_Draine11"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate.get_ct_rec_HI_OII_Draine11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_rec_rate"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate.get_ct_rec_rate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#state-enums-diagnostics">State + enums + diagnostics</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState"><code class="docutils literal notranslate"><span class="pre">ChemState</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.alloc_scratch"><code class="docutils literal notranslate"><span class="pre">ChemState.alloc_scratch()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.chi_for"><code class="docutils literal notranslate"><span class="pre">ChemState.chi_for()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.freeze"><code class="docutils literal notranslate"><span class="pre">ChemState.freeze()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.from_grid"><code class="docutils literal notranslate"><span class="pre">ChemState.from_grid()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.from_meshblock"><code class="docutils literal notranslate"><span class="pre">ChemState.from_meshblock()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.from_photchem"><code class="docutils literal notranslate"><span class="pre">ChemState.from_photchem()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.get_scratch"><code class="docutils literal notranslate"><span class="pre">ChemState.get_scratch()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.ne"><code class="docutils literal notranslate"><span class="pre">ChemState.ne</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.reset_step"><code class="docutils literal notranslate"><span class="pre">ChemState.reset_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.to_hdf5"><code class="docutils literal notranslate"><span class="pre">ChemState.to_hdf5()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.validate"><code class="docutils literal notranslate"><span class="pre">ChemState.validate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.zeta_diss_for"><code class="docutils literal notranslate"><span class="pre">ChemState.zeta_diss_for()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.zeta_pi_for"><code class="docutils literal notranslate"><span class="pre">ChemState.zeta_pi_for()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.enums.Regime"><code class="docutils literal notranslate"><span class="pre">Regime</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.enums.InterpMode"><code class="docutils literal notranslate"><span class="pre">InterpMode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.diagnostics.SolverDiag"><code class="docutils literal notranslate"><span class="pre">SolverDiag</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.diagnostics.SolverDiag.as_dict"><code class="docutils literal notranslate"><span class="pre">SolverDiag.as_dict()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.diagnostics.SolverDiag.reset"><code class="docutils literal notranslate"><span class="pre">SolverDiag.reset()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.datapaths.chianti_v11_dir"><code class="docutils literal notranslate"><span class="pre">chianti_v11_dir()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.datapaths.gf12_dir"><code class="docutils literal notranslate"><span class="pre">gf12_dir()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.datapaths.chemistry_dir"><code class="docutils literal notranslate"><span class="pre">chemistry_dir()</span></code></a></li>
+</ul>
+</li>
+</ul>
+            </nav>
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="chemistry">
+<h1>Chemistry<a class="headerlink" href="#chemistry" title="Permalink to this heading">#</a></h1>
+<p>The <code class="docutils literal notranslate"><span class="pre">pyathena.chemistry</span></code> package is a typed, policy-based rewrite of
+<code class="docutils literal notranslate"><span class="pre">pyathena.microphysics</span></code>. The driver composes seven independent policy slots
+(network, solver, cooling, heating, opacity, radiation, thermo) at
+construction time; each slot is an abstract base class with multiple
+concrete implementations swappable per run. The same shape is the target for
+the tigris-ncr C++ implementation, so this package doubles as the reference
+implementation while the C++ port is in progress. Replaces the old package
+over a deprecation window. See the package <code class="docutils literal notranslate"><span class="pre">README.md</span></code> and
+<code class="docutils literal notranslate"><span class="pre">tigris-notes/docs-claude/pyathena/chemistry-rewrite-plan.md</span></code> for full
+design and roadmap.</p>
+<p>The current public API is small (Phase 0-1-2 in progress). This page renders
+the docstrings of the already-landed modules; new sections appear as further
+phases land.</p>
+<section id="per-ion-coolant-solver">
+<h2>Per-ion coolant solver<a class="headerlink" href="#per-ion-coolant-solver" title="Permalink to this heading">#</a></h2>
+<p>The 5-level statistical-equilibrium solver and its per-ion wrapper. Docstrings
+include the relevant atomic-physics equations rendered via MathJax.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.coolants.base.IonCoolant">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.coolants.base.</span></span><span class="sig-name descname"><span class="pre">IonCoolant</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">filename</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">label</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/coolants/base.html#IonCoolant"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.coolants.base.IonCoolant" title="Permalink to this definition">#</a></dt>
+<dd><p>Single-ion 5-level cooling function. Atomic data is read
+from a text file in <cite>data/microphysics/chianti_v11/</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>filename</strong> (<em>str</em>) – Name of the .txt under <cite>pyathena/photchem/data/</cite>,
+e.g. ‘o_3.txt’.</p></li>
+<li><p><strong>label</strong> (<em>str</em>) – Pretty-print label for diagnostics (e.g., ‘OIII’).</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.coolants.base.IonCoolant.cooling">
+<span class="sig-name descname"><span class="pre">cooling</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_ion</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/coolants/base.html#IonCoolant.cooling"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.coolants.base.IonCoolant.cooling" title="Permalink to this definition">#</a></dt>
+<dd><p>Volumetric cooling rate [erg cm^-3 s^-1] from this ion.</p>
+<p>Sum over all radiative transitions in the 5-level system,
+weighted by level populations and emitted photon energy.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.coolants.base.IonCoolant.populations">
+<span class="sig-name descname"><span class="pre">populations</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_e</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_p</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/coolants/base.html#IonCoolant.populations"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.coolants.base.IonCoolant.populations" title="Permalink to this definition">#</a></dt>
+<dd><p>Return (5, …) array of level fractional populations.
+Inputs can be scalars or numpy arrays.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.chemistry.coolants.n_level.solve_5level_steady_state">
+<span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.coolants.n_level.</span></span><span class="sig-name descname"><span class="pre">solve_5level_steady_state</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">A</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">g</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_coll_times_q</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/coolants/n_level.html#solve_5level_steady_state"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.coolants.n_level.solve_5level_steady_state" title="Permalink to this definition">#</a></dt>
+<dd><p>Solve the 5-level steady-state population.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>A</strong> (<em>(</em><em>5</em><em>, </em><em>5</em><em>) </em><em>array</em>) – Einstein A coefficients [s^-1]. <cite>A[i, j]</cite> is the spontaneous
+decay rate from upper level <cite>i</cite> to lower level <cite>j</cite> (nonzero
+for <cite>i &gt; j</cite>).</p></li>
+<li><p><strong>E</strong> (<em>(</em><em>5</em><em>,</em><em>) </em><em>array</em>) – Level energies above ground [erg]. <cite>E[0] = 0</cite>.</p></li>
+<li><p><strong>g</strong> (<em>(</em><em>5</em><em>,</em><em>) </em><em>array</em>) – Statistical weights <cite>g_i = 2 * J_i + 1</cite>.</p></li>
+<li><p><strong>T</strong> (<em>scalar</em><em> or </em><em>array</em>) – Temperature [K].  Used for the Boltzmann upward-rate factors.</p></li>
+<li><p><strong>n_coll_times_q</strong> (<em>(</em><em>5</em><em>, </em><em>5</em><em>, </em><em>...</em><em>) </em><em>array</em>) – <p>Total downward collisional rate matrix already summed over
+colliders and multiplied by their densities, i.e.</p>
+<blockquote>
+<div><p>n_coll_times_q[i, j] = sum_c n_c * q^c[i, j]</p>
+</div></blockquote>
+<p>for i &gt; j (downward rate from level i to level j). Trailing
+axes hold per-cell broadcasting. Each ion file builds this
+from its tabulated rate fits and the local densities.</p>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>f</strong> – Level fractional populations summing to unity along the
+leading axis.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>(5, …) array</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>For each cell the routine builds the 5x5 rate-balance matrix
+A_mat such that A_mat &#64; f = b, where the first 4 rows enforce
+d f_i / dt = 0 (sum of in-rates = sum of out-rates) and the
+last row enforces sum_i f_i = 1. The system is then solved
+with numpy.linalg.solve. For N cells this loops over cells
+once – acceptable for diagnostic test plots; the production
+sweep uses the offline-built (T, n_e) lookup tables instead.
+See Osterbrock &amp; Ferland 2006 sec 3.5 or Draine 2011 Eqs.
+17.3-17.5 for the derivation.</p>
+</dd></dl>
+
+</section>
+<section id="rate-coefficients">
+<h2>Rate coefficients<a class="headerlink" href="#rate-coefficients" title="Permalink to this heading">#</a></h2>
+<p>Phase 1 ports of the leaf rate modules; parity-tested at rtol = 1e-12 against
+the corresponding <code class="docutils literal notranslate"><span class="pre">pyathena.microphysics</span></code> modules.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.photx.PhotX">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.rates.photx.</span></span><span class="sig-name descname"><span class="pre">PhotX</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">datadir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyathena.chemistry.enums.InterpMode" title="pyathena.chemistry.enums.InterpMode"><span class="pre">InterpMode</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">InterpMode.Exact</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/photx.html#PhotX"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.photx.PhotX" title="Permalink to this definition">#</a></dt>
+<dd><p>Computes photoionization cross-sections as described in Verner 96
+<a class="reference external" href="http://adsabs.harvard.edu/abs/1996ApJ...465..487V">http://adsabs.harvard.edu/abs/1996ApJ…465..487V</a>
+Original python code from Rabacus implementation
+<a class="github reference external" href="https://github.com/galtay/rabacus/tree/master/rabacus/atomic/verner/photox">galtay/rabacus</a>
+(Released under GNU GPL3 v.30;
+JKIM: okay to copy snippets of their code?)</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>datadir</strong> (<em>str</em><em> or </em><em>None</em>) – Override the default Verner+96 data directory.</p></li>
+<li><p><strong>interp_mode</strong> (<a class="reference internal" href="#pyathena.chemistry.enums.InterpMode" title="pyathena.chemistry.enums.InterpMode"><em>InterpMode</em></a><em>, </em><em>optional</em>) – Rate-table interpolation mode. Only <cite>InterpMode.Exact</cite>
+(analytic evaluation) is supported at present; the
+<cite>LogLog</cite> / <cite>Nqt1</cite> / <cite>Nqt2</cite> table-based modes are
+scheduled for Phase 3.5 once the chemistry strip
+scaffold is in place.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.photx.PhotX.get_Eth">
+<span class="sig-name descname"><span class="pre">get_Eth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eV'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/photx.html#PhotX.get_Eth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.photx.PhotX.get_Eth" title="Permalink to this definition">#</a></dt>
+<dd><p>Threshold ionization energy in eV for ions defined by Z and N.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Atomic number (number of protons)</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Electron number</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>Eth</strong> – Threshold ionization energy in eV</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>float</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.photx.PhotX.get_sigma">
+<span class="sig-name descname"><span class="pre">get_sigma</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/photx.html#PhotX.get_sigma"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.photx.PhotX.get_sigma" title="Permalink to this definition">#</a></dt>
+<dd><p>Returns a photo-ionization cross-section for an ion defined by
+Z and N at energies E in eV.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Atomic number (number of protons)</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Electron number (number of electrons)</p></li>
+<li><p><strong>E</strong> (<em>array</em><em> of </em><em>floats</em>) – Calculate cross-section at these energies [eV]</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>sigma</strong> – Photoionization cross-sections [cm^-2]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array of floats</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.photx.PhotX.get_sigma_table">
+<span class="sig-name descname"><span class="pre">get_sigma_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">species_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">E</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/photx.html#PhotX.get_sigma_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.photx.PhotX.get_sigma_table" title="Permalink to this definition">#</a></dt>
+<dd><p>Strip-vectorised photoionization cross sections.</p>
+<p>Returns sigma_pi[(Z_i, N_i), E] stacked over every ion in
+<cite>species_set</cite>. Output shape is <cite>(n_ions, len(E))</cite>.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>species_set</strong> (<em>SpeciesSet</em>) – Iterable of ions. The traversal order follows the
+<cite>species_set.evolved_names + species_set.ghost_names</cite>
+convention when the partition is declared; falls back to
+<cite>species_set.ions</cite> (the full storage order) otherwise. Ions that lack a Verner+96
+entry — e.g. the bare electron or H2 — contribute a zero
+row.</p></li>
+<li><p><strong>E</strong> (<em>array-like</em><em> of </em><em>float</em>) – Photon energies [eV].</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>sigma</strong> – Shape <cite>(n_ions, len(E))</cite>. Cross sections in cm^-2.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Today this is a thin loop wrapper over <cite>get_sigma</cite>. The C++
+port (Phase D) will replace it with a precomputed strip-shape
+table indexed by the same <cite>(Z, N)</cite> ordering.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.photx.get_sigma_pi_H2">
+<span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.rates.photx.</span></span><span class="sig-name descname"><span class="pre">get_sigma_pi_H2</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">E</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/photx.html#get_sigma_pi_H2"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.photx.get_sigma_pi_H2" title="Permalink to this definition">#</a></dt>
+<dd><p>H2 photoionization cross-section [cm^-2]
+Table 1 in Baczynski et al. (2015)
+Piecewise constant cross-section to the analytical results
+of Liu &amp; Shemansky (2012)</p>
+<dl class="simple">
+<dt>E<span class="classifier">array of floats</span></dt><dd><p>Photon energy in eV</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.ci_rate.CollIonRate">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.rates.ci_rate.</span></span><span class="sig-name descname"><span class="pre">CollIonRate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interp_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyathena.chemistry.enums.InterpMode" title="pyathena.chemistry.enums.InterpMode"><span class="pre">InterpMode</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">InterpMode.Exact</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/ci_rate.html#CollIonRate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.ci_rate.CollIonRate" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>interp_mode</strong> (<a class="reference internal" href="#pyathena.chemistry.enums.InterpMode" title="pyathena.chemistry.enums.InterpMode"><em>InterpMode</em></a><em>, </em><em>optional</em>) – Rate-table interpolation mode. <cite>InterpMode.Exact</cite> (analytic
+Voronov fits) is the default; <cite>InterpMode.LogLog</cite>,
+<cite>InterpMode.Nqt2</cite>, and <cite>InterpMode.Nqt1</cite> precompute a
+<cite>(n_T, n_ions)</cite> table on construction and dispatch a
+two-point linear interpolation in the chosen log space.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.ci_rate.CollIonRate.get_ci_rate_table">
+<span class="sig-name descname"><span class="pre">get_ci_rate_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">species_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/ci_rate.html#CollIonRate.get_ci_rate_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.ci_rate.CollIonRate.get_ci_rate_table" title="Permalink to this definition">#</a></dt>
+<dd><p>Strip-vectorised collisional-ionization rates.</p>
+<p>Returns k_CI[(Z_i, N_i), T] stacked over every ion in
+<cite>species_set</cite>. Output shape is <cite>(n_species, ncell)</cite>. Species
+that have no entry — bare electron, H2, fully-stripped ions
+outside the Voronov table — contribute a zero row.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>species_set</strong> (<em>SpeciesSet</em>) – Iterable of ions. Picks up
+<cite>species_set.evolved_names + species_set.ghost_names</cite> when
+the partition is declared, else <cite>species_set.ions</cite>.</p></li>
+<li><p><strong>T</strong> (<em>float</em><em> or </em><em>array-like</em>) – Temperature [K].</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Today this is a thin loop wrapper over <cite>get_ci_rate</cite>. The C++
+port (Phase D) will replace it with a precomputed strip-shape
+table indexed by the same <cite>(Z, N)</cite> ordering.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.rates.rec_rate.</span></span><span class="sig-name descname"><span class="pre">RecRate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">caseB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interp_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyathena.chemistry.enums.InterpMode" title="pyathena.chemistry.enums.InterpMode"><span class="pre">InterpMode</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">InterpMode.Exact</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate" title="Permalink to this definition">#</a></dt>
+<dd><p>Class to compute Badnell (radiative/dielectronic) recombination rates,
+Draine (2011)’s recombination rates</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>caseB</strong> (<em>bool</em><em>, </em><em>optional</em>) – Use Draine 2011 Case B for hydrogen recombination.</p></li>
+<li><p><strong>interp_mode</strong> (<a class="reference internal" href="#pyathena.chemistry.enums.InterpMode" title="pyathena.chemistry.enums.InterpMode"><em>InterpMode</em></a><em>, </em><em>optional</em>) – Rate-table interpolation mode. <cite>InterpMode.Exact</cite> is the
+analytic Badnell fits and the default. The table-based
+modes (<cite>LogLog</cite>, <cite>Nqt2</cite>, <cite>Nqt1</cite>) pre-tabulate the TOTAL
+<cite>get_rec_rate(Z, N, T, M=1, kind=’badnell’)</cite> per (Z, N)
+ion on construction and dispatch through a single
+log-space linear interpolation at query time. Calls with
+<cite>M != 1</cite> or <cite>kind != ‘badnell’</cite> fall through to the
+analytic path even in the table modes, because the
+tabulation covers only the default ground-state
+badnell-formula combination.</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate.get_dr_rate">
+<span class="sig-name descname"><span class="pre">get_dr_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate.get_dr_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_dr_rate" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculate dielectronic recombination rate coefficient</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Nuclear charge</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion (before recombination)</p></li>
+<li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
+<li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
+and metastable terms. The default value is 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>rr</strong> – Dielectronic recombination coefficients [cm^3 s^-1]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array of floats</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate">
+<span class="sig-name descname"><span class="pre">get_rec_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'badnell'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate.get_rec_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculate radiative + dielectronic recombination rate coefficient</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Nuclear Charge</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion (before recombination)</p></li>
+<li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
+<li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
+and metastable terms. The default value is 1.</p></li>
+<li><p><strong>kind</strong> (<em>str</em>) – Set to ‘badnell’ to use fits Badnell fits or ‘dr11’ to use
+Draine (2011)’s formula. This keyword is ignored if caseB is turned on.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>rrate</strong> – Recombination rate coefficient [cm^3 s^-1]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array of floats</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rec_rate_H_caseA_Dr11</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate.get_rec_rate_H_caseA_Dr11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute case A recombination rate coefficient for H
+Table 14.1 in Draine (2011)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rec_rate_H_caseB</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate.get_rec_rate_H_caseB"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute case B recombination rate coefficient for H
+This is what we use in Athena-TIGRESS (fit to Ferland)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rec_rate_H_caseB_Dr11</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate.get_rec_rate_H_caseB_Dr11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute case B recombination rate coefficient for H
+Table 14.1 in Draine (2011)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_grain">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_rec_rate_grain</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ne</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">G0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate.get_rec_rate_grain"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_grain" title="Permalink to this definition">#</a></dt>
+<dd><p>Compute grain assisted recombination coefficient
+Ch 14.8 in Draine (2011)</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_table">
+<span class="sig-name descname"><span class="pre">get_rec_rate_table</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">species_set</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'badnell'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate.get_rec_rate_table"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_table" title="Permalink to this definition">#</a></dt>
+<dd><p>Strip-vectorised total recombination rates.</p>
+<p>Returns alpha_rec[(Z_i, N_i), T] stacked over every ion in
+<cite>species_set</cite>. Output shape is <cite>(n_species, ncell)</cite>. Species
+that have no recombination entry — neutral atoms whose
+reactant would be the neutral itself, the bare electron, H2,
+and fully-stripped ions outside the Badnell table coverage —
+contribute a zero row.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>species_set</strong> (<em>SpeciesSet</em>) – Iterable of ions. Picks up
+<cite>species_set.evolved_names + species_set.ghost_names</cite> when
+the partition is declared, else <cite>species_set.ions</cite> (the full
+storage order).</p></li>
+<li><p><strong>T</strong> (<em>float</em><em> or </em><em>array-like</em>) – Temperature [K]. The output is broadcast over T.</p></li>
+<li><p><strong>M</strong> (<em>int</em><em>, </em><em>optional</em>) – Initial metastable level (default 1, ground term).</p></li>
+<li><p><strong>kind</strong> (<em>str</em><em>, </em><em>optional</em>) – Passed through to <cite>get_rec_rate</cite>.</p></li>
+</ul>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>Today this is a thin loop wrapper over <cite>get_rec_rate</cite>. The C++
+port (Phase D) will replace it with a precomputed strip-shape
+table indexed by the same <cite>(Z, N)</cite> ordering.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.rec_rate.RecRate.get_rr_rate">
+<span class="sig-name descname"><span class="pre">get_rr_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">M</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/rec_rate.html#RecRate.get_rr_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rr_rate" title="Permalink to this definition">#</a></dt>
+<dd><p>Calculate radiative recombination rate coefficient</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>Z</strong> (<em>int</em>) – Nuclear Charge</p></li>
+<li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion</p></li>
+<li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
+<li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
+and metastable terms. The default value is 1.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p><strong>rr</strong> – Radiative recombination coefficients [cm^3 s^-1]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>array of floats</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.ct_rate.ChargeTransferRate">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.rates.ct_rate.</span></span><span class="sig-name descname"><span class="pre">ChargeTransferRate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">interp_mode</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><a class="reference internal" href="#pyathena.chemistry.enums.InterpMode" title="pyathena.chemistry.enums.InterpMode"><span class="pre">InterpMode</span></a></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">InterpMode.Exact</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/ct_rate.html#ChargeTransferRate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate" title="Permalink to this definition">#</a></dt>
+<dd><dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><p><strong>interp_mode</strong> (<a class="reference internal" href="#pyathena.chemistry.enums.InterpMode" title="pyathena.chemistry.enums.InterpMode"><em>InterpMode</em></a><em>, </em><em>optional</em>) – Rate-table interpolation mode. Only <cite>InterpMode.Exact</cite>
+(analytic Cloudy + UGA fits) is supported today; the
+table-based modes land in Phase 3.5 alongside the C++
+port.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_ion_HII_OI_Draine11">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_ct_ion_HII_OI_Draine11</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/ct_rate.html#ChargeTransferRate.get_ct_ion_HII_OI_Draine11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_ion_HII_OI_Draine11" title="Permalink to this definition">#</a></dt>
+<dd><p>O(J) + H II -&gt; O+ + H I charge-transfer ionization rate,
+reverse of <cite>get_ct_rec_HI_OII_Draine11</cite> by detailed balance
+(Draine 2011 Eqs. 14.28-14.30). Index convention follows
+Draine: k0i starts from J=2 (ground; endothermic by 229 K,
+suppressed at low T), k1i starts from J=1 (+228 K,
+nearly thermoneutral), k2i starts from J=0 (+326 K,
+exothermic by 97 K, enhanced at low T). The unweighted
+sum k0i + k1i + k2i returned when sum=True is NOT a
+physically valid per-O0 rate: in the low-density limit all
+O sits in J=2 so only k0i fires; in LTE the Boltzmann-
+weighted (5*k0i + 3*k1i + k2i)/9 applies. For correct
+per-O0 rates call with sum=False and weight by the J=2/1/0
+populations from <cite>cool.get_OI_lev</cite>.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_ion_rate">
+<span class="sig-name descname"><span class="pre">get_ct_ion_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/ct_rate.html#ChargeTransferRate.get_ct_ion_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_ion_rate" title="Permalink to this definition">#</a></dt>
+<dd><p>Charge transfer ionization rate coefficient for
+Ion(Z,q) + H -&gt; Ion(Z,q+1) + H+
+where q = Z - N is the ion charge. That is, (Z,N) is the reactant.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_rec_HI_OII_Draine11">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">get_ct_rec_HI_OII_Draine11</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">T</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sum</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/ct_rate.html#ChargeTransferRate.get_ct_rec_HI_OII_Draine11"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_rec_HI_OII_Draine11" title="Permalink to this definition">#</a></dt>
+<dd><p>O+ + H I -&gt; O(J) + H II charge-transfer recombination
+rate, Draine 2011 Eqs. 14.24-14.26 fits to Stancil et al.
+1999. Index convention follows Draine: k0r ends in J=2
+(ground state, max J since O 2p^4 is more-than-half-filled
+shell), k1r ends in J=1 (+228 K), k2r ends in J=0 (+326 K,
+endothermic by 97 K). NOTE: the index here means the FINAL
+J of the produced O atom, NOT the J value itself. k0r is
+the dominant channel in the low-density limit because all
+of O sits in the J=2 ground after fast radiative cascade.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_rec_rate">
+<span class="sig-name descname"><span class="pre">get_ct_rec_rate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/rates/ct_rate.html#ChargeTransferRate.get_ct_rec_rate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_rec_rate" title="Permalink to this definition">#</a></dt>
+<dd><p>Charge transfer recombination rate coefficient [cm^3/s] for</p>
+<blockquote>
+<div><p>Ion(Z, q) + H I -&gt; Ion(Z, q-1) + H II</p>
+</div></blockquote>
+<p>where q = Z - N is the REACTANT ion charge. That is, (Z, N)
+labels the reactant ion (the one that gains an electron from
+H I and recombines). Matches the (Z, N) = reactant convention
+used by <cite>get_ct_ion_rate</cite>, <cite>get_ci_rate</cite>, and <cite>get_rec_rate</cite>.</p>
+<p>Returns 0 for q &lt; 1 (already-neutral reactant cannot recombine
+further). For q &gt;= 5 the rate falls back to the Dalgarno
+generic estimate <cite>1.92e-9 * q</cite> (data tables only cover q &lt;= 4).</p>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+<section id="state-enums-diagnostics">
+<h2>State + enums + diagnostics<a class="headerlink" href="#state-enums-diagnostics" title="Permalink to this heading">#</a></h2>
+<p>The Phase 0 skeleton: state object that every chemistry policy reads and
+writes, plus shared enums and a fixed-field diagnostic counter block.</p>
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.state.</span></span><span class="sig-name descname"><span class="pre">ChemState</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">species:</span> <span class="pre">~typing.Any,</span> <span class="pre">policy_versions:</span> <span class="pre">~typing.Mapping[str,</span> <span class="pre">str],</span> <span class="pre">walk_order:</span> <span class="pre">~typing.Tuple[~typing.Tuple[str,</span> <span class="pre">...],</span> <span class="pre">...],</span> <span class="pre">x:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">nH:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">T:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">T_dust:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">Z_g:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">Z_d:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">chi:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">xi_CR:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">N_col:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">dvdr:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">dt:</span> <span class="pre">float,</span> <span class="pre">dt_remaining:</span> <span class="pre">~numpy.ndarray,</span> <span class="pre">t:</span> <span class="pre">float,</span> <span class="pre">chi_bands:</span> <span class="pre">~typing.Tuple[str,</span> <span class="pre">...]</span> <span class="pre">=</span> <span class="pre">('FUV',</span> <span class="pre">'LW',</span> <span class="pre">'EUV'),</span> <span class="pre">scratch:</span> <span class="pre">~typing.Dict[str,</span> <span class="pre">~numpy.ndarray]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">u_rad:</span> <span class="pre">~typing.Dict[str,</span> <span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">zeta_pi:</span> <span class="pre">~typing.Dict[str,</span> <span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">zeta_diss:</span> <span class="pre">~typing.Dict[str,</span> <span class="pre">~typing.Any]</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;,</span> <span class="pre">diag:</span> <span class="pre">~pyathena.chemistry.diagnostics.SolverDiag</span> <span class="pre">=</span> <span class="pre">&lt;factory&gt;</span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState" title="Permalink to this definition">#</a></dt>
+<dd><p>Per-strip chemistry / thermodynamic state.</p>
+<p>See the package README and the chemistry-rewrite-plan.md design
+document for the rationale behind each field.</p>
+<p>The schema (which fields exist, in what shape, with what dtypes)
+is fixed here and validated by <cite>validate()</cite>. The factories
+(<cite>from_grid</cite>, <cite>from_meshblock</cite>, <cite>from_photchem</cite>) and the HDF5
+serialisers are filled in as the consuming code paths land; see
+the chemistry-rewrite-plan.md roadmap.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.alloc_scratch">
+<span class="sig-name descname"><span class="pre">alloc_scratch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="pre">name:</span> <span class="pre">str,</span> <span class="pre">shape:</span> <span class="pre">~typing.Tuple[int,</span> <span class="pre">...],</span> <span class="pre">dtype:</span> <span class="pre">~typing.Any</span> <span class="pre">=</span> <span class="pre">&lt;class</span> <span class="pre">'numpy.float64'&gt;</span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.alloc_scratch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.alloc_scratch" title="Permalink to this definition">#</a></dt>
+<dd><p>Allocate (or re-allocate) a scratch buffer and return it.</p>
+<p>Subsequent calls with the same <cite>name</cite> overwrite the previous
+buffer. Networks call this at setup time via
+<cite>network.allocate_scratch(state)</cite>; the hot path then uses
+<cite>get_scratch(name)</cite> only.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.chi_for">
+<span class="sig-name descname"><span class="pre">chi_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">band_name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.chi_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.chi_for" title="Permalink to this definition">#</a></dt>
+<dd><p>Return the Draine-normalised field strength in band
+<cite>band_name</cite>. Resolution order:</p>
+<ol class="arabic">
+<li><p>Special case: <cite>band_name == ‘FUV’</cite> is the LW+PE combined
+Draine G_0. When the policy populated <cite>state.u_rad[‘PE’]</cite>
+and <cite>state.u_rad[‘LW’]</cite> separately,
+<a href="#id1"><span class="problematic" id="id2">`</span></a>chi_FUV = (u_rad[‘PE’] + u_rad[‘LW’]) /</p>
+<blockquote>
+<div><p>(U_RAD_PE_ISRF_CGS + U_RAD_LW_ISRF_CGS)`.</p>
+</div></blockquote>
+<p>Falls through to (2) if either sub-band is missing.</p>
+</li>
+<li><p>If <cite>state.u_rad[band_name]</cite> is populated, return
+<cite>u_rad[band_name] / U_RAD_ISRF_CGS[band_name]</cite> – the on-
+the-fly chi conversion. This is the primary path: the
+radiation module carries cgs energy densities; chemistry
+internally normalises to Draine units where rate / cooling
+formulas expect chi.</p></li>
+<li><p>Otherwise fall back to the legacy <cite>state.chi[band_idx]</cite>
+positional array (Phase 2 / 3 transitional layout); raises
+<cite>KeyError</cite> if the band is not in <cite>chi_bands</cite> either.</p></li>
+</ol>
+<p>Networks should prefer <cite>chi_for(band_name)</cite> over ad-hoc
+attribute access so the band layout can evolve without
+breaking call sites.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.freeze">
+<span class="sig-name descname"><span class="pre">freeze</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pyathena.chemistry.state.ChemState" title="pyathena.chemistry.state.ChemState"><span class="pre">ChemState</span></a></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.freeze"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.freeze" title="Permalink to this definition">#</a></dt>
+<dd><p>Deep copy for parity tests. Not used in production paths;
+production never copies the state.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.from_grid">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_grid</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">r</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nH</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">species</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z_g</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">Z_d</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">A_He</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0955</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nfreq</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">3</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ncol</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">T_dust</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">ndarray</span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dvdr</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">xi_CR</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chi_bands</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">Tuple</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">]</span></span><span class="p"><span class="pre">]</span></span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">network</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">solver</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">thermo</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cooling</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">opacity</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radiation</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Any</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pyathena.chemistry.state.ChemState" title="pyathena.chemistry.state.ChemState"><span class="pre">ChemState</span></a></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.from_grid"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.from_grid" title="Permalink to this definition">#</a></dt>
+<dd><p>Build a strip-shaped state from a 1-D radial / planar grid.</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>r</strong> (<em>ndarray</em><em>, </em><em>shape</em><em> (</em><em>ncell</em><em>,</em><em>)</em>) – Grid coordinate. Kept on the state purely as a reference;
+not consumed by any policy. Used to size the strip.</p></li>
+<li><p><strong>nH</strong> (<em>ndarray</em><em>, </em><em>shape</em><em> (</em><em>ncell</em><em>,</em><em>)</em>) – Initial hydrogen density [cm^-3] and temperature [K].</p></li>
+<li><p><strong>T</strong> (<em>ndarray</em><em>, </em><em>shape</em><em> (</em><em>ncell</em><em>,</em><em>)</em>) – Initial hydrogen density [cm^-3] and temperature [K].</p></li>
+<li><p><strong>species</strong> (<em>SpeciesSet</em>) – Species inventory. The strip carries <cite>(species.nspec, ncell)</cite>
+abundances initialized to the neutral state <cite>x_HI = 1</cite> (or
+its equivalent for the given species set: 1.0 on the first
+row, 0.0 on the rest). Callers override after construction.</p></li>
+<li><p><strong>Z_g</strong> (<em>float</em><em>, </em><em>optional</em>) – Gas / dust metallicity per cell. Stored as length-<cite>ncell</cite>
+arrays so a future call site can vary them spatially.</p></li>
+<li><p><strong>Z_d</strong> (<em>float</em><em>, </em><em>optional</em>) – Gas / dust metallicity per cell. Stored as length-<cite>ncell</cite>
+arrays so a future call site can vary them spatially.</p></li>
+<li><p><strong>A_He</strong> (<em>float</em><em>, </em><em>optional</em>) – Helium-to-hydrogen abundance ratio. Stored on <cite>species</cite> via
+the factory’s mu baseline (this parameter is forwarded for
+future ThermoPolicy bindings; it is not written into the
+state because mu is a derived quantity).</p></li>
+<li><p><strong>nfreq</strong> (<em>int</em><em>, </em><em>optional</em>) – Width of the radiation-field axis. Defaults to 3 to match
+the C++ NCRRates (FUV / LW / EUV).</p></li>
+<li><p><strong>ncol</strong> (<em>int</em><em>, </em><em>optional</em>) – Width of the column-density axis. Defaults to 0 (no column
+tracking) so the test harness does not need a column model.</p></li>
+<li><p><strong>T_dust</strong> (<em>ndarray</em><em>, </em><em>optional</em>) – Dust temperature per cell. Defaults to a constant 15 K
+(mid-range cold-ISM equilibrium) when not provided.</p></li>
+<li><p><strong>dvdr</strong> (<em>float</em><em>, </em><em>optional</em>) – Scalar broadcasts of the velocity gradient and CR ionization
+rate. The driver overwrites these per substep.</p></li>
+<li><p><strong>xi_CR</strong> (<em>float</em><em>, </em><em>optional</em>) – Scalar broadcasts of the velocity gradient and CR ionization
+rate. The driver overwrites these per substep.</p></li>
+<li><p><strong>chi_bands</strong> (<em>tuple</em><em> of </em><em>str</em><em>, </em><em>optional</em>) – Names for the rows of <cite>chi</cite>. Defaults to <cite>DEFAULT_CHI_BANDS</cite>
+(<cite>(‘FUV’, ‘LW’, ‘EUV’)</cite>) when <cite>nfreq == 3</cite> and to a
+positional <cite>(‘chi_0’, ‘chi_1’, …)</cite> layout otherwise.</p></li>
+<li><p><strong>network</strong> (<em>optional</em>) – Policy instances. When supplied, their qualified class name
+and <cite>__version__</cite> attribute are stamped into
+<cite>state.policy_versions</cite>. Unsupplied roles get the
+<cite>‘__none__’</cite> sentinel.</p></li>
+<li><p><strong>solver</strong> (<em>optional</em>) – Policy instances. When supplied, their qualified class name
+and <cite>__version__</cite> attribute are stamped into
+<cite>state.policy_versions</cite>. Unsupplied roles get the
+<cite>‘__none__’</cite> sentinel.</p></li>
+<li><p><strong>thermo</strong> (<em>optional</em>) – Policy instances. When supplied, their qualified class name
+and <cite>__version__</cite> attribute are stamped into
+<cite>state.policy_versions</cite>. Unsupplied roles get the
+<cite>‘__none__’</cite> sentinel.</p></li>
+<li><p><strong>cooling</strong> (<em>optional</em>) – Policy instances. When supplied, their qualified class name
+and <cite>__version__</cite> attribute are stamped into
+<cite>state.policy_versions</cite>. Unsupplied roles get the
+<cite>‘__none__’</cite> sentinel.</p></li>
+<li><p><strong>opacity</strong> (<em>optional</em>) – Policy instances. When supplied, their qualified class name
+and <cite>__version__</cite> attribute are stamped into
+<cite>state.policy_versions</cite>. Unsupplied roles get the
+<cite>‘__none__’</cite> sentinel.</p></li>
+<li><p><strong>radiation</strong> (<em>optional</em>) – Policy instances. When supplied, their qualified class name
+and <cite>__version__</cite> attribute are stamped into
+<cite>state.policy_versions</cite>. Unsupplied roles get the
+<cite>‘__none__’</cite> sentinel.</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>Validated strip with the abundance vector seeded to the
+neutral state and all radiation / column fields zeroed.</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p><a class="reference internal" href="#pyathena.chemistry.state.ChemState" title="pyathena.chemistry.state.ChemState">ChemState</a></p>
+</dd>
+</dl>
+<p class="rubric">Notes</p>
+<p>The factory does not consume the helium baseline <cite>A_He</cite> –
+that lives on <cite>ThermoPolicy</cite>. It is in the signature so the
+Phase 3 driver can adopt a single call shape without further
+churn.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.from_meshblock">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_meshblock</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pyathena.chemistry.state.ChemState" title="pyathena.chemistry.state.ChemState"><span class="pre">ChemState</span></a></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.from_meshblock"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.from_meshblock" title="Permalink to this definition">#</a></dt>
+<dd><p>Construct from an Athena++ MeshBlock view. Phase 8.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.from_photchem">
+<em class="property"><span class="pre">classmethod</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">from_photchem</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="o"><span class="pre">*</span></span><span class="n"><span class="pre">args</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><a class="reference internal" href="#pyathena.chemistry.state.ChemState" title="pyathena.chemistry.state.ChemState"><span class="pre">ChemState</span></a></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.from_photchem"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.from_photchem" title="Permalink to this definition">#</a></dt>
+<dd><p>Construct by adapting an existing
+<cite>pyathena.microphysics.photchem.PhotChem</cite> instance — used by
+parity tests. Phase 2 fleshes this out alongside NCRNetwork3.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.get_scratch">
+<span class="sig-name descname"><span class="pre">get_scratch</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">name</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.get_scratch"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.get_scratch" title="Permalink to this definition">#</a></dt>
+<dd><p>Return the scratch buffer registered under <cite>name</cite>.</p>
+<p>Raises <cite>KeyError</cite> if no buffer has been allocated for <cite>name</cite> —
+callers must call <cite>alloc_scratch</cite> first (typically through the
+owning network’s <cite>allocate_scratch</cite> hook). The hot path is
+expected to fetch buffers once and reuse the reference.</p>
+</dd></dl>
+
+<dl class="py property">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.ne">
+<em class="property"><span class="pre">property</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">ne</span></span><em class="property"><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="pre">ndarray</span></em><a class="headerlink" href="#pyathena.chemistry.state.ChemState.ne" title="Permalink to this definition">#</a></dt>
+<dd><p>Electron density n_e derived from the state.</p>
+<p>No setter. Callers must mutate <cite>x</cite> to change <cite>ne</cite>. The
+network is responsible for keeping the electron row of <cite>x</cite>
+consistent with the rest of the strip via
+<cite>NetworkBase.fill_ghosts</cite> (see
+<cite>pyathena/chemistry/networks/base.py</cite>); this property simply
+reads it back.</p>
+<p>Resolution order:</p>
+<ul class="simple">
+<li><p>If the species set carries an explicit <cite>electron</cite> row, the
+property returns <cite>n_H * x[electron]</cite> (the canonical 9-species
+<cite>ncr3_with_ghosts</cite> layout).</p></li>
+<li><p>Otherwise the value comes from the positive-charge sum
+<cite>n_H * sum_i max(q_i, 0) * x_i</cite>. This branch only matters
+for legacy <cite>SpeciesSet</cite> constructions that omit an electron
+species entirely.</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.reset_step">
+<span class="sig-name descname"><span class="pre">reset_step</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dt</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">t</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.reset_step"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.reset_step" title="Permalink to this definition">#</a></dt>
+<dd><p>Called at the head of every hydro step.</p>
+<p>Sets <cite>dt</cite>, <cite>t</cite>, <cite>dt_remaining = dt</cite> per cell, zeroes
+diagnostics. Does NOT touch <cite>x</cite>, <cite>T</cite>, <cite>nH</cite> — those carry over
+from the previous step.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.to_hdf5">
+<span class="sig-name descname"><span class="pre">to_hdf5</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.to_hdf5"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.to_hdf5" title="Permalink to this definition">#</a></dt>
+<dd><p>Serialise payload only. Phase 8.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.validate">
+<span class="sig-name descname"><span class="pre">validate</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.validate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.validate" title="Permalink to this definition">#</a></dt>
+<dd><p>Shape and finiteness asserts. Cheap; called after
+construction and at parity-test boundaries.</p>
+<p>Checks every payload array against the strip dimensions
+<cite>(nspec, ncell)</cite> and raises <cite>ValueError</cite> on mismatch. Also
+flags non-finite entries in the canonical hot-path arrays
+(<cite>T</cite>, <cite>nH</cite>, <cite>x</cite>).</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.zeta_diss_for">
+<span class="sig-name descname"><span class="pre">zeta_diss_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">species</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.zeta_diss_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.zeta_diss_for" title="Permalink to this definition">#</a></dt>
+<dd><p>Photodissociation rate of <cite>species</cite> (s^-1). Returns
+<cite>default</cite> if missing.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.state.ChemState.zeta_pi_for">
+<span class="sig-name descname"><span class="pre">zeta_pi_for</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">species</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">default</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0.0</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Any</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/state.html#ChemState.zeta_pi_for"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.state.ChemState.zeta_pi_for" title="Permalink to this definition">#</a></dt>
+<dd><p>Photoionisation rate of <cite>species</cite> (s^-1). Returns <cite>default</cite>
+if the species is not present in <cite>state.zeta_pi</cite>. Convention:
+<cite>zeta_pi_species = sigma_pi_species * photon_flux</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.enums.Regime">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.enums.</span></span><span class="sig-name descname"><span class="pre">Regime</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/enums.html#Regime"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.enums.Regime" title="Permalink to this definition">#</a></dt>
+<dd><p>Per-cell physical-regime tag for sorted-strip dispatch.</p>
+<p>Values are deliberately small int8-compatible integers; the C++
+port maps them to <cite>enum class Regime : int8_t</cite> and stores them
+in <cite>NCRStrip</cite> as <cite>int8</cite> to keep the strip footprint small.</p>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.enums.InterpMode">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.enums.</span></span><span class="sig-name descname"><span class="pre">InterpMode</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">value</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">names</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">*</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">module</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">qualname</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">type</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">boundary</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/enums.html#InterpMode"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.enums.InterpMode" title="Permalink to this definition">#</a></dt>
+<dd><p>Rate-table interpolation mode.</p>
+<p>Integer values mirror <cite>NCRRates::InterpMode</cite> in
+<cite>tigris-ncr/src/photchem/ncr_rates.hpp</cite>; both sides agree on the
+raw int so config files can use the integers interchangeably. The
+Python member names drop the C++ <cite>kFoo</cite> Google-style prefix per
+the project’s CLAUDE.md rule for new enumerators.</p>
+<p>Selectable per-run via the <cite>interp_mode</cite> parameter in the
+<cite>[photchem_ncr]</cite> input block.</p>
+<ul class="simple">
+<li><p>Exact  : full analytical form (slow; one log/exp/pow per rate)</p></li>
+<li><p>LogLog : log-log linear interpolation (1 log10 + 1 pow10 per rate)</p></li>
+<li><p>Nqt2   : NQT grid, nqt2_log encoding (1 sqrt + integer ops)</p></li>
+<li><p>Nqt1   : NQT grid, nqt1_log encoding (integer ops only)</p></li>
+</ul>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="pyathena.chemistry.diagnostics.SolverDiag">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.diagnostics.</span></span><span class="sig-name descname"><span class="pre">SolverDiag</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">n_strips_total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_strips_capped</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_extension_passes</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_per_cell_fallback</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_substeps_total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">nsub_max_seen</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_thermal_solves</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_thermal_iters_total</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_floor_clamps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_nan_traps</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">n_table_misses</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">0</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/chemistry/diagnostics.html#SolverDiag"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.diagnostics.SolverDiag" title="Permalink to this definition">#</a></dt>
+<dd><p>Per-step diagnostic counters written by the solver.</p>
+<p>Resetting: <cite>reset_step()</cite> zeroes all counters at the head of every
+hydro step. The driver reads them after the step to expose
+aggregate statistics; the solver writes them during the step.</p>
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.diagnostics.SolverDiag.as_dict">
+<span class="sig-name descname"><span class="pre">as_dict</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/diagnostics.html#SolverDiag.as_dict"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.diagnostics.SolverDiag.as_dict" title="Permalink to this definition">#</a></dt>
+<dd><p>Snapshot for logging / serialisation.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="pyathena.chemistry.diagnostics.SolverDiag.reset">
+<span class="sig-name descname"><span class="pre">reset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/diagnostics.html#SolverDiag.reset"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.diagnostics.SolverDiag.reset" title="Permalink to this definition">#</a></dt>
+<dd><p>Zero all counters. Called by <cite>ChemState.reset_step</cite>.</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.chemistry.datapaths.chianti_v11_dir">
+<span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.datapaths.</span></span><span class="sig-name descname"><span class="pre">chianti_v11_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/datapaths.html#chianti_v11_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.datapaths.chianti_v11_dir" title="Permalink to this definition">#</a></dt>
+<dd><p>Absolute path to the CHIANTI v11 derived tables (ioneq, cool,
+per-ion atomic data). Files live under
+<cite>data/microphysics/chianti_v11/</cite> — built by
+<cite>pyathena.chemistry.tables.chianti_v11.*</cite>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.chemistry.datapaths.gf12_dir">
+<span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.datapaths.</span></span><span class="sig-name descname"><span class="pre">gf12_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/datapaths.html#gf12_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.datapaths.gf12_dir" title="Permalink to this definition">#</a></dt>
+<dd><p>Absolute path to the Gnat &amp; Ferland 2012 per-element CIE
+cooling tables. Files live under
+<cite>data/microphysics/Gnat_Ferland12_tables/</cite>.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="pyathena.chemistry.datapaths.chemistry_dir">
+<span class="sig-prename descclassname"><span class="pre">pyathena.chemistry.datapaths.</span></span><span class="sig-name descname"><span class="pre">chemistry_dir</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="reference internal" href="../_modules/pyathena/chemistry/datapaths.html#chemistry_dir"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.chemistry.datapaths.chemistry_dir" title="Permalink to this definition">#</a></dt>
+<dd><p>Absolute path to the <cite>pyathena.chemistry</cite>-produced tables
+(new formats not present in <cite>microphysics</cite>, e.g., 2-D
+Lambda(T, n_e) tables, per-band SED-averaged opacities).
+Created on demand; not guaranteed to exist on a fresh checkout.</p>
+</dd></dl>
+
+</section>
+</section>
+
+    <script type="text/x-thebe-config">
+    {
+        requestKernel: true,
+        binderOptions: {
+            repo: "binder-examples/jupyter-stacks-datascience",
+            ref: "master",
+        },
+        codeMirrorConfig: {
+            theme: "abcdef",
+            mode: "python"
+        },
+        kernelOptions: {
+            name: "python3",
+            path: "./content"
+        },
+        predefinedOutput: true
+    }
+    </script>
+    <script>kernelName = 'python3'</script>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="microphysics.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Microphysics</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="plt_tools.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Plotting Tools</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc"><div class="sidebar-secondary-items sidebar-secondary__inner">
+
+
+  <div class="sidebar-secondary-item">
+  <div class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> Contents
+  </div>
+  <nav class="bd-toc-nav page-toc">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#per-ion-coolant-solver">Per-ion coolant solver</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.coolants.base.IonCoolant"><code class="docutils literal notranslate"><span class="pre">IonCoolant</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.coolants.base.IonCoolant.cooling"><code class="docutils literal notranslate"><span class="pre">IonCoolant.cooling()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.coolants.base.IonCoolant.populations"><code class="docutils literal notranslate"><span class="pre">IonCoolant.populations()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.coolants.n_level.solve_5level_steady_state"><code class="docutils literal notranslate"><span class="pre">solve_5level_steady_state()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#rate-coefficients">Rate coefficients</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.PhotX"><code class="docutils literal notranslate"><span class="pre">PhotX</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.PhotX.get_Eth"><code class="docutils literal notranslate"><span class="pre">PhotX.get_Eth()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.PhotX.get_sigma"><code class="docutils literal notranslate"><span class="pre">PhotX.get_sigma()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.PhotX.get_sigma_table"><code class="docutils literal notranslate"><span class="pre">PhotX.get_sigma_table()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.photx.get_sigma_pi_H2"><code class="docutils literal notranslate"><span class="pre">get_sigma_pi_H2()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ci_rate.CollIonRate"><code class="docutils literal notranslate"><span class="pre">CollIonRate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ci_rate.CollIonRate.get_ci_rate_table"><code class="docutils literal notranslate"><span class="pre">CollIonRate.get_ci_rate_table()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate"><code class="docutils literal notranslate"><span class="pre">RecRate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_dr_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_dr_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseA_Dr11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseB()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_H_caseB_Dr11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_grain"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_grain()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_table"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rec_rate_table()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.rec_rate.RecRate.get_rr_rate"><code class="docutils literal notranslate"><span class="pre">RecRate.get_rr_rate()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_ion_HII_OI_Draine11"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate.get_ct_ion_HII_OI_Draine11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_ion_rate"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate.get_ct_ion_rate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_rec_HI_OII_Draine11"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate.get_ct_rec_HI_OII_Draine11()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.rates.ct_rate.ChargeTransferRate.get_ct_rec_rate"><code class="docutils literal notranslate"><span class="pre">ChargeTransferRate.get_ct_rec_rate()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#state-enums-diagnostics">State + enums + diagnostics</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState"><code class="docutils literal notranslate"><span class="pre">ChemState</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.alloc_scratch"><code class="docutils literal notranslate"><span class="pre">ChemState.alloc_scratch()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.chi_for"><code class="docutils literal notranslate"><span class="pre">ChemState.chi_for()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.freeze"><code class="docutils literal notranslate"><span class="pre">ChemState.freeze()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.from_grid"><code class="docutils literal notranslate"><span class="pre">ChemState.from_grid()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.from_meshblock"><code class="docutils literal notranslate"><span class="pre">ChemState.from_meshblock()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.from_photchem"><code class="docutils literal notranslate"><span class="pre">ChemState.from_photchem()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.get_scratch"><code class="docutils literal notranslate"><span class="pre">ChemState.get_scratch()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.ne"><code class="docutils literal notranslate"><span class="pre">ChemState.ne</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.reset_step"><code class="docutils literal notranslate"><span class="pre">ChemState.reset_step()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.to_hdf5"><code class="docutils literal notranslate"><span class="pre">ChemState.to_hdf5()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.validate"><code class="docutils literal notranslate"><span class="pre">ChemState.validate()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.zeta_diss_for"><code class="docutils literal notranslate"><span class="pre">ChemState.zeta_diss_for()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.state.ChemState.zeta_pi_for"><code class="docutils literal notranslate"><span class="pre">ChemState.zeta_pi_for()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.enums.Regime"><code class="docutils literal notranslate"><span class="pre">Regime</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.enums.InterpMode"><code class="docutils literal notranslate"><span class="pre">InterpMode</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.diagnostics.SolverDiag"><code class="docutils literal notranslate"><span class="pre">SolverDiag</span></code></a><ul class="nav section-nav flex-column">
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.diagnostics.SolverDiag.as_dict"><code class="docutils literal notranslate"><span class="pre">SolverDiag.as_dict()</span></code></a></li>
+<li class="toc-h4 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.diagnostics.SolverDiag.reset"><code class="docutils literal notranslate"><span class="pre">SolverDiag.reset()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.datapaths.chianti_v11_dir"><code class="docutils literal notranslate"><span class="pre">chianti_v11_dir()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.datapaths.gf12_dir"><code class="docutils literal notranslate"><span class="pre">gf12_dir()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#pyathena.chemistry.datapaths.chemistry_dir"><code class="docutils literal notranslate"><span class="pre">chemistry_dir()</span></code></a></li>
+</ul>
+</li>
+</ul>
+  </nav></div>
+
+</div></div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Jeong-Gyu Kim, Chang-Goo Kim, Sanghyuk Moon
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>

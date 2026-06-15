@@ -8,7 +8,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pyathena.microphysics.rec_rate &#8212; pyathena</title>
+    <title>pyathena.chemistry.rates.rec_rate &#8212; pyathena</title>
   
   
   
@@ -18,49 +18,49 @@
   </script>
   
   <!-- Loaded before other Sphinx assets -->
-  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link href="../../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
 
   
-  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
-  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
-<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+  <link href="../../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
 
-    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-thebe.css" />
-    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.5ea377869091fd0449014c60fc090103.min.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/sphinx-book-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/sphinx-design.5ea377869091fd0449014c60fc090103.min.css" />
   
   <!-- Pre-loaded scripts that we'll load fully later -->
-  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
-<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
-  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+  <link rel="preload" as="script" href="../../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
 
-    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
-    <script src="../../../_static/jquery.js"></script>
-    <script src="../../../_static/underscore.js"></script>
-    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
-    <script src="../../../_static/doctools.js"></script>
-    <script src="../../../_static/sphinx_highlight.js"></script>
-    <script src="../../../_static/clipboard.min.js"></script>
-    <script src="../../../_static/copybutton.js"></script>
-    <script src="../../../_static/scripts/sphinx-book-theme.js"></script>
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <script src="../../../../_static/scripts/sphinx-book-theme.js"></script>
     <script>let toggleHintShow = 'Click to show';</script>
     <script>let toggleHintHide = 'Click to hide';</script>
     <script>let toggleOpenOnPrint = 'true';</script>
-    <script src="../../../_static/togglebutton.js"></script>
+    <script src="../../../../_static/togglebutton.js"></script>
     <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
-    <script src="../../../_static/design-tabs.js"></script>
+    <script src="../../../../_static/design-tabs.js"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
-    <script async="async" src="../../../_static/sphinx-thebe.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pyathena/microphysics/rec_rate';</script>
-    <link rel="index" title="Index" href="../../../genindex.html" />
-    <link rel="search" title="Search" href="../../../search.html" />
+    <script async="async" src="../../../../_static/sphinx-thebe.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pyathena/chemistry/rates/rec_rate';</script>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
   </head>
@@ -92,7 +92,7 @@
     <div class="search-button__overlay"></div>
     <div class="search-button__search-container">
 <form class="bd-search d-flex align-items-center"
-      action="../../../search.html"
+      action="../../../../search.html"
       method="get">
   <i class="fa-solid fa-magnifying-glass"></i>
   <input type="search"
@@ -143,7 +143,7 @@
     
   
 
-<a class="navbar-brand logo" href="../../../intro.html">
+<a class="navbar-brand logo" href="../../../../intro.html">
   
   
   
@@ -154,8 +154,8 @@
       
     
     
-    <img src="../../../_static/tigress_logo.jpg" class="logo__image only-light" alt="pyathena - Home"/>
-    <script>document.write(`<img src="../../../_static/tigress_logo.jpg" class="logo__image only-dark" alt="pyathena - Home"/>`);</script>
+    <img src="../../../../_static/tigress_logo.jpg" class="logo__image only-light" alt="pyathena - Home"/>
+    <script>document.write(`<img src="../../../../_static/tigress_logo.jpg" class="logo__image only-dark" alt="pyathena - Home"/>`);</script>
   
   
 </a></div>
@@ -175,39 +175,39 @@
         
         <ul class="nav bd-sidenav bd-sidenav__home-link">
             <li class="toctree-l1">
-                <a class="reference internal" href="../../../intro.html">
+                <a class="reference internal" href="../../../../intro.html">
                     pyathena
                 </a>
             </li>
         </ul>
         <p aria-level="2" class="caption" role="heading"><span class="caption-text">Basics</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../../content/install.html">Installation</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/install.html">Installation</a></li>
 
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart.html">Quickstart</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/quickstart.html">Quickstart</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">API References</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../../content/loadsim.html">LoadSim</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../content/athenadataset.html">AthenaDataSet</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../content/readers.html">Readers</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/loadsim.html">LoadSim</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/athenadataset.html">AthenaDataSet</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/readers.html">Readers</a></li>
 
 
 
-<li class="toctree-l1"><a class="reference internal" href="../../../content/units.html">Units</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../content/utils.html">Utilities</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../content/pop_synth.html">Population Synthesis</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../content/fields.html">Fields</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../content/microphysics.html">Microphysics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../content/chemistry.html">Chemistry</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../content/plt_tools.html">Plotting Tools</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/units.html">Units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/pop_synth.html">Population Synthesis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/fields.html">Fields</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/microphysics.html">Microphysics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/chemistry.html">Chemistry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../content/plt_tools.html">Plotting Tools</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
 <ul class="nav bd-sidenav">
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/tigress-cooling.html">Cooling in TIGRESS-classic</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/tigress-cooling.html">Cooling in TIGRESS-classic</a></li>
 
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart-astro-tigress.html">Quickstart: ASTRO-TIGRESS</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../../../examples/sb99.html">Starburst99: Stellar Population Synthesis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/quickstart-astro-tigress.html">Quickstart: ASTRO-TIGRESS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../../examples/sb99.html">Starburst99: Stellar Population Synthesis</a></li>
 </ul>
 
     </div>
@@ -279,7 +279,7 @@
       
       
       
-      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2F_modules/pyathena/microphysics/rec_rate.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2F_modules/pyathena/chemistry/rates/rec_rate.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -357,31 +357,91 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for pyathena.microphysics.rec_rate</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Computes recombination rate</span>
+  <h1>Source code for pyathena.chemistry.rates.rec_rate</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Recombination rate coefficients.</span>
+
+<span class="sd">Provides `RecRate` (Badnell RR + DR fits + Draine 2011 H case-B</span>
+<span class="sd">override) and the optional `RecRateCHIANTI` for the same rates via</span>
+<span class="sd">ChiantiPy. The Badnell data files live at</span>
+<span class="sd">`data/microphysics/badnell_{rr,dr_C,dr_E}_2023.dat`.</span>
+
+<span class="sd">Leaf module: no internal pyathena dependencies other than the</span>
+<span class="sd">shared `pyathena.chemistry.datapaths` helper used to resolve the</span>
+<span class="sd">data-file paths.</span>
+
+<span class="sd">Compatibility port of `pyathena.microphysics.rec_rate`; public API</span>
+<span class="sd">and numerical behavior identical (rtol = 1e-12 parity test under</span>
+<span class="sd">`tests/chemistry/parity/test_rec_rate_parity.py`).</span>
 <span class="sd">&quot;&quot;&quot;</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">osp</span>
+<span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">osp</span>  <span class="c1"># noqa: F401  (kept for API parity w/ microphysics module)</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Tuple</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">matplotlib.pyplot</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">plt</span>
-<span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 
-<div class="viewcode-block" id="RecRate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RecRate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..datapaths</span><span class="w"> </span><span class="kn">import</span> <span class="n">_DATA_ROOT</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">..enums</span><span class="w"> </span><span class="kn">import</span> <span class="n">InterpMode</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.</span><span class="w"> </span><span class="kn">import</span> <span class="n">_nqt</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">.photx</span><span class="w"> </span><span class="kn">import</span> <span class="n">_ordered_ions</span>
+
+<span class="c1"># Floor + T-grid shared with the CollIonRate tabulation. See</span>
+<span class="c1"># `ci_rate.py` for the rationale (mirrors C++ ncr_rates.hpp kRateFloor</span>
+<span class="c1"># / kNTabT / T range).</span>
+<span class="n">_RATE_FLOOR</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0e-100</span>
+<span class="n">_TAB_N</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2000</span>
+<span class="n">_TAB_T_MIN</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span>
+<span class="n">_TAB_T_MAX</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0e9</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_badnell_data_dir</span><span class="p">():</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Absolute path to the directory holding the Badnell .dat files.</span>
+<span class="sd">    The files remain under `data/microphysics/` (they were produced by</span>
+<span class="sd">    `pyathena.microphysics` and the rewrite does not move data files).</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">return</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">_DATA_ROOT</span><span class="p">,</span> <span class="s1">&#39;microphysics&#39;</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RecRate"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RecRate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 <span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to compute Badnell (radiative/dielectronic) recombination rates,</span>
 <span class="sd">    Draine (2011)&#39;s recombination rates</span>
 <span class="sd">    &quot;&quot;&quot;</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caseB</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">caseB</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">interp_mode</span><span class="p">:</span> <span class="s1">&#39;InterpMode&#39;</span> <span class="o">=</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">Exact</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        caseB : bool, optional</span>
+<span class="sd">            Use Draine 2011 Case B for hydrogen recombination.</span>
+<span class="sd">        interp_mode : InterpMode, optional</span>
+<span class="sd">            Rate-table interpolation mode. `InterpMode.Exact` is the</span>
+<span class="sd">            analytic Badnell fits and the default. The table-based</span>
+<span class="sd">            modes (`LogLog`, `Nqt2`, `Nqt1`) pre-tabulate the TOTAL</span>
+<span class="sd">            `get_rec_rate(Z, N, T, M=1, kind=&#39;badnell&#39;)` per (Z, N)</span>
+<span class="sd">            ion on construction and dispatch through a single</span>
+<span class="sd">            log-space linear interpolation at query time. Calls with</span>
+<span class="sd">            `M != 1` or `kind != &#39;badnell&#39;` fall through to the</span>
+<span class="sd">            analytic path even in the table modes, because the</span>
+<span class="sd">            tabulation covers only the default ground-state</span>
+<span class="sd">            badnell-formula combination.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">interp_mode</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">(</span>
+            <span class="n">InterpMode</span><span class="o">.</span><span class="n">Exact</span><span class="p">,</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">LogLog</span><span class="p">,</span>
+            <span class="n">InterpMode</span><span class="o">.</span><span class="n">Nqt2</span><span class="p">,</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">Nqt1</span><span class="p">,</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;RecRate: unknown interp_mode=</span><span class="si">{</span><span class="n">interp_mode</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">interp_mode</span> <span class="o">=</span> <span class="n">interp_mode</span>
         <span class="c1"># read data</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_read_data</span><span class="p">()</span>
         <span class="c1"># Use Draine&#39;s caseB for hydrogen</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">caseB</span> <span class="o">=</span> <span class="n">caseB</span>
+        <span class="k">if</span> <span class="n">interp_mode</span> <span class="o">!=</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">Exact</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_build_table</span><span class="p">(</span><span class="n">interp_mode</span><span class="p">)</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_read_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
-        <span class="n">basedir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">(),</span>
-                           <span class="s1">&#39;../../data/microphysics&#39;</span><span class="p">)</span>
+        <span class="n">basedir</span> <span class="o">=</span> <span class="n">_badnell_data_dir</span><span class="p">()</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_C</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_dr_C_2023.dat&#39;</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_E</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_dr_E_2023.dat&#39;</span><span class="p">)</span>
@@ -470,7 +530,117 @@ document.write(`
             <span class="k">except</span> <span class="ne">IndexError</span><span class="p">:</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">modr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
-<div class="viewcode-block" id="RecRate.get_rr_rate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rr_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_rr_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+        <span class="c1"># Build (Z, N, M) -&gt; row-index dicts for both DR and RR tables.</span>
+        <span class="c1"># Replaces per-call `np.where(c1 &amp; c2 &amp; c3)` scans in the</span>
+        <span class="c1"># `get_rr_rate` / `get_dr_rate` hot paths.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_rr_idx</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Zr</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Nr</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Mr</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span> <span class="n">i</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Zr</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_dr_idx</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Zd</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Nd</span><span class="p">[</span><span class="n">i</span><span class="p">]),</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Md</span><span class="p">[</span><span class="n">i</span><span class="p">])):</span> <span class="n">i</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">Zd</span><span class="o">.</span><span class="n">size</span><span class="p">)</span>
+        <span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_build_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">mode</span><span class="p">:</span> <span class="s1">&#39;InterpMode&#39;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Pre-tabulate `get_rec_rate(Z, N, T, M=1, kind=&#39;badnell&#39;)` per</span>
+<span class="sd">        (Z, N) ion onto the chosen log-T grid.</span>
+
+<span class="sd">        Only ions that have at least one entry in the RR or DR data are</span>
+<span class="sd">        eligible: the union of `_rr_idx` and `_dr_idx` keys restricted</span>
+<span class="sd">        to `M=1`. Each row stores the encoded total recombination rate</span>
+<span class="sd">        (log10 for LogLog; nqt2_log / nqt1_log for the NQT modes). The</span>
+<span class="sd">        lookup path adds two indexed reads + one linear interpolation.</span>
+
+<span class="sd">        Calls with `M != 1` or `kind != &#39;badnell&#39;` are dispatched back</span>
+<span class="sd">        to the analytic path inside `get_rec_rate`; the caller never</span>
+<span class="sd">        observes a mode-related inconsistency.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">LogLog</span><span class="p">:</span>
+            <span class="n">log_T_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span>
+                <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">_TAB_T_MIN</span><span class="p">),</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">_TAB_T_MAX</span><span class="p">),</span> <span class="n">_TAB_N</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_T_grid</span> <span class="o">=</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="n">log_T_grid</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tab_x_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">log_T_grid</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tab_inv_dx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span>
+                <span class="p">(</span><span class="n">_TAB_N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">log_T_grid</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">log_T_grid</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">y_min</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">_nqt</span><span class="o">.</span><span class="n">nqt1_log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">_TAB_T_MIN</span><span class="p">]))[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">y_max</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">_nqt</span><span class="o">.</span><span class="n">nqt1_log</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="n">_TAB_T_MAX</span><span class="p">]))[</span><span class="mi">0</span><span class="p">])</span>
+            <span class="n">y_grid</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="n">y_min</span><span class="p">,</span> <span class="n">y_max</span><span class="p">,</span> <span class="n">_TAB_N</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_T_grid</span> <span class="o">=</span> <span class="n">_nqt</span><span class="o">.</span><span class="n">nqt1_exp</span><span class="p">(</span><span class="n">y_grid</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tab_x_min</span> <span class="o">=</span> <span class="n">y_min</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_tab_inv_dx</span> <span class="o">=</span> <span class="nb">float</span><span class="p">((</span><span class="n">_TAB_N</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="p">(</span><span class="n">y_max</span> <span class="o">-</span> <span class="n">y_min</span><span class="p">))</span>
+
+        <span class="c1"># Collect every (Z, N) ion that has an M=1 row in either DR or RR.</span>
+        <span class="n">pairs</span><span class="p">:</span> <span class="nb">set</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">Zr</span><span class="p">,</span> <span class="n">Nr</span><span class="p">,</span> <span class="n">Mr</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rr_idx</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">Mr</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">pairs</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">Zr</span><span class="p">,</span> <span class="n">Nr</span><span class="p">))</span>
+        <span class="k">for</span> <span class="p">(</span><span class="n">Zd</span><span class="p">,</span> <span class="n">Nd</span><span class="p">,</span> <span class="n">Md</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dr_idx</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">Md</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">pairs</span><span class="o">.</span><span class="n">add</span><span class="p">((</span><span class="n">Zd</span><span class="p">,</span> <span class="n">Nd</span><span class="p">))</span>
+        <span class="n">pair_list</span> <span class="o">=</span> <span class="nb">sorted</span><span class="p">(</span><span class="n">pairs</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tab_ion_idx</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">],</span> <span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">):</span> <span class="n">j</span> <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pair_list</span><span class="p">)</span>
+        <span class="p">}</span>
+
+        <span class="n">n_ions</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">pair_list</span><span class="p">)</span>
+        <span class="n">tab</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">_TAB_N</span><span class="p">,</span> <span class="n">n_ions</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">j</span><span class="p">,</span> <span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">pair_list</span><span class="p">):</span>
+            <span class="c1"># Call the analytic-path helpers directly so the table-build</span>
+            <span class="c1"># is not blocked by the not-yet-set table.</span>
+            <span class="k">if</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">caseB</span><span class="p">:</span>
+                <span class="n">rates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">get_rec_rate_H_caseB_Dr11</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_T_grid</span><span class="p">),</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">elif</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">N</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="n">rates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">get_rr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_T_grid</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">rates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">get_rr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_T_grid</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">_T_grid</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">),</span>
+                    <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="n">rates</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">rates</span> <span class="o">&gt;</span> <span class="n">_RATE_FLOOR</span><span class="p">,</span> <span class="n">rates</span><span class="p">,</span> <span class="n">_RATE_FLOOR</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">mode</span> <span class="o">==</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">LogLog</span><span class="p">:</span>
+                <span class="n">tab</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">mode</span> <span class="o">==</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">Nqt2</span><span class="p">:</span>
+                <span class="n">tab</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">_nqt</span><span class="o">.</span><span class="n">nqt2_log</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># Nqt1</span>
+                <span class="n">tab</span><span class="p">[:,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">_nqt</span><span class="o">.</span><span class="n">nqt1_log</span><span class="p">(</span><span class="n">rates</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_tab</span> <span class="o">=</span> <span class="n">tab</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_table_lookup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ion_row</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">T</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Two-point linear interpolation of the recombination table.</span>
+
+<span class="sd">        Decoded from the encoding used at construction. Branch-free</span>
+<span class="sd">        over T because the mode dispatch happens once at the</span>
+<span class="sd">        `get_rec_rate` entry.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">T_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_mode</span> <span class="o">==</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">LogLog</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">log10</span><span class="p">(</span><span class="n">T_arr</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">x</span> <span class="o">=</span> <span class="n">_nqt</span><span class="o">.</span><span class="n">nqt1_log</span><span class="p">(</span><span class="n">T_arr</span><span class="p">)</span>
+        <span class="n">idx_f</span> <span class="o">=</span> <span class="p">(</span><span class="n">x</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tab_x_min</span><span class="p">)</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tab_inv_dx</span>
+        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">idx_f</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">int64</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="n">_TAB_N</span> <span class="o">-</span> <span class="mi">2</span><span class="p">)</span>
+        <span class="n">frac</span> <span class="o">=</span> <span class="n">idx_f</span> <span class="o">-</span> <span class="n">idx</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">lo</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tab</span><span class="p">[</span><span class="n">idx</span><span class="p">,</span> <span class="n">ion_row</span><span class="p">]</span>
+        <span class="n">hi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tab</span><span class="p">[</span><span class="n">idx</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">ion_row</span><span class="p">]</span>
+        <span class="n">encoded</span> <span class="o">=</span> <span class="n">lo</span> <span class="o">+</span> <span class="p">(</span><span class="n">hi</span> <span class="o">-</span> <span class="n">lo</span><span class="p">)</span> <span class="o">*</span> <span class="n">frac</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_mode</span> <span class="o">==</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">LogLog</span><span class="p">:</span>
+            <span class="k">return</span> <span class="mf">10.0</span> <span class="o">**</span> <span class="n">encoded</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">interp_mode</span> <span class="o">==</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">Nqt2</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">_nqt</span><span class="o">.</span><span class="n">nqt2_exp</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">_nqt</span><span class="o">.</span><span class="n">nqt1_exp</span><span class="p">(</span><span class="n">encoded</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RecRate.get_rr_rate"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate.get_rr_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_rr_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate radiative recombination rate coefficient</span>
 
@@ -492,11 +662,7 @@ document.write(`
 <span class="sd">            Radiative recombination coefficients [cm^3 s^-1]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">c1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Zr</span> <span class="o">==</span> <span class="n">Z</span>
-        <span class="n">c2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">==</span> <span class="n">N</span>
-        <span class="n">c3</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Mr</span> <span class="o">==</span> <span class="n">M</span>
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">c1</span> <span class="o">&amp;</span> <span class="n">c2</span> <span class="o">&amp;</span> <span class="n">c3</span><span class="p">)</span>
-        <span class="n">i</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_rr_idx</span><span class="p">[(</span><span class="nb">int</span><span class="p">(</span><span class="n">Z</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">M</span><span class="p">))]</span>
         <span class="n">sqrtTT0</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">T0r</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
         <span class="n">sqrtTT1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">T</span><span class="o">/</span><span class="bp">self</span><span class="o">.</span><span class="n">T1r</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
         <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">modr</span><span class="p">[</span><span class="n">i</span><span class="p">]:</span>
@@ -509,7 +675,7 @@ document.write(`
 
         <span class="k">return</span> <span class="n">rr</span></div>
 
-<div class="viewcode-block" id="RecRate.get_dr_rate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_dr_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_dr_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
+<div class="viewcode-block" id="RecRate.get_dr_rate"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate.get_dr_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_dr_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate dielectronic recombination rate coefficient</span>
 
@@ -531,21 +697,28 @@ document.write(`
 <span class="sd">            Dielectronic recombination coefficients [cm^3 s^-1]</span>
 <span class="sd">        &quot;&quot;&quot;</span>
 
-        <span class="n">c1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Zd</span> <span class="o">==</span> <span class="n">Z</span>
-        <span class="n">c2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nd</span> <span class="o">==</span> <span class="n">N</span>
-        <span class="n">c3</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Md</span> <span class="o">==</span> <span class="n">M</span>
-
-        <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">c1</span> <span class="o">&amp;</span> <span class="n">c2</span> <span class="o">&amp;</span> <span class="n">c3</span><span class="p">)</span>
-
-        <span class="n">i</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
-        <span class="n">dr</span> <span class="o">=</span> <span class="mf">0.0</span>
-        <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nd</span><span class="p">[</span><span class="n">i</span><span class="p">]):</span>
-            <span class="n">dr</span> <span class="o">+=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cd</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="bp">self</span><span class="o">.</span><span class="n">Ed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">m</span><span class="p">]</span><span class="o">/</span><span class="n">T</span><span class="p">)</span>
+        <span class="n">i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dr_idx</span><span class="p">[(</span><span class="nb">int</span><span class="p">(</span><span class="n">Z</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">N</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">M</span><span class="p">))]</span>
+        <span class="n">n</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nd</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+        <span class="c1"># Vectorise the inner DR sum:</span>
+        <span class="c1">#     dr = sum_m C_m * exp(-E_m / T)</span>
+        <span class="c1"># was a Python loop over the m channels; rewrite as a single</span>
+        <span class="c1"># broadcast + sum across the (n_channels, ncell) outer-product.</span>
+        <span class="n">T_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="c1"># `Cd` / `Ed` rows are zero-padded past `nd[i]`, so we slice to</span>
+        <span class="c1"># the first `n` entries explicitly.</span>
+        <span class="n">Cd_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Cd</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="n">n</span><span class="p">]</span>
+        <span class="n">Ed_i</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Ed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:</span><span class="n">n</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">T_arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">dr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">Cd_i</span> <span class="o">*</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">Ed_i</span> <span class="o">/</span> <span class="nb">float</span><span class="p">(</span><span class="n">T_arr</span><span class="p">)))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># (n_channels, 1) over (1, ncell) -&gt; (n_channels, ncell)</span>
+            <span class="n">dr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">exp</span><span class="p">(</span><span class="o">-</span><span class="n">Ed_i</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">/</span> <span class="n">T_arr</span><span class="p">[</span><span class="kc">None</span><span class="p">,</span> <span class="p">:])</span>
+            <span class="n">dr</span> <span class="o">=</span> <span class="p">(</span><span class="n">Cd_i</span><span class="p">[:,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">*</span> <span class="n">dr</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
 
         <span class="n">dr</span> <span class="o">*=</span> <span class="n">T</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dr</span></div>
 
-<div class="viewcode-block" id="RecRate.get_rec_rate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;badnell&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="RecRate.get_rec_rate"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;badnell&#39;</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
 <span class="sd">        Calculate radiative + dielectronic recombination rate coefficient</span>
 
@@ -571,6 +744,17 @@ document.write(`
 <span class="sd">        &quot;&quot;&quot;</span>
 
         <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;badnell&#39;</span><span class="p">:</span>
+            <span class="c1"># Table dispatch when (a) a non-Exact mode is active,</span>
+            <span class="c1"># (b) M=1 (only ground-state was tabulated), and (c) the</span>
+            <span class="c1"># (Z, N) pair is covered in `_tab_ion_idx`. Otherwise</span>
+            <span class="c1"># fall through to the analytic helpers.</span>
+            <span class="k">if</span> <span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">interp_mode</span> <span class="o">!=</span> <span class="n">InterpMode</span><span class="o">.</span><span class="n">Exact</span>
+                <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">M</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span>
+                <span class="ow">and</span> <span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">Z</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">N</span><span class="p">))</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tab_ion_idx</span>
+            <span class="p">):</span>
+                <span class="n">ion_row</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_tab_ion_idx</span><span class="p">[(</span><span class="nb">int</span><span class="p">(</span><span class="n">Z</span><span class="p">),</span> <span class="nb">int</span><span class="p">(</span><span class="n">N</span><span class="p">))]</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_table_lookup</span><span class="p">(</span><span class="n">ion_row</span><span class="p">,</span> <span class="n">T</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">caseB</span><span class="p">:</span> <span class="c1"># Ignore kind keyword</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rec_rate_H_caseB_Dr11</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
             <span class="k">elif</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">or</span> <span class="n">N</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span> <span class="c1"># No dielectronic recombination</span>
@@ -585,7 +769,59 @@ document.write(`
                 <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Z &gt; 1 is not supported for dr11 recombination rate.&#39;</span><span class="p">)</span>
                 <span class="k">raise</span></div>
 
-<div class="viewcode-block" id="RecRate.get_rec_rate_H_caseA_Dr11"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="RecRate.get_rec_rate_table"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_table">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_table</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">species_set</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;badnell&#39;</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Strip-vectorised total recombination rates.</span>
+
+<span class="sd">        Returns alpha_rec[(Z_i, N_i), T] stacked over every ion in</span>
+<span class="sd">        `species_set`. Output shape is `(n_species, ncell)`. Species</span>
+<span class="sd">        that have no recombination entry — neutral atoms whose</span>
+<span class="sd">        reactant would be the neutral itself, the bare electron, H2,</span>
+<span class="sd">        and fully-stripped ions outside the Badnell table coverage —</span>
+<span class="sd">        contribute a zero row.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        species_set : SpeciesSet</span>
+<span class="sd">            Iterable of ions. Picks up</span>
+<span class="sd">            `species_set.evolved_names + species_set.ghost_names` when</span>
+<span class="sd">            the partition is declared, else `species_set.ions` (the full</span>
+<span class="sd">            storage order).</span>
+<span class="sd">        T : float or array-like</span>
+<span class="sd">            Temperature [K]. The output is broadcast over T.</span>
+<span class="sd">        M : int, optional</span>
+<span class="sd">            Initial metastable level (default 1, ground term).</span>
+<span class="sd">        kind : str, optional</span>
+<span class="sd">            Passed through to `get_rec_rate`.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        Today this is a thin loop wrapper over `get_rec_rate`. The C++</span>
+<span class="sd">        port (Phase D) will replace it with a precomputed strip-shape</span>
+<span class="sd">        table indexed by the same `(Z, N)` ordering.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">T_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="n">ncell</span> <span class="o">=</span> <span class="n">T_arr</span><span class="o">.</span><span class="n">size</span> <span class="k">if</span> <span class="n">T_arr</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="k">else</span> <span class="mi">1</span>
+        <span class="n">ions</span> <span class="o">=</span> <span class="n">_ordered_ions</span><span class="p">(</span><span class="n">species_set</span><span class="p">)</span>
+
+        <span class="n">out</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">len</span><span class="p">(</span><span class="n">ions</span><span class="p">),</span> <span class="n">ncell</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">float</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">ion</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">ions</span><span class="p">):</span>
+            <span class="c1"># Skip rows that cannot recombine: bare electron, the</span>
+            <span class="c1"># neutral H2 molecule (no atomic Badnell entry), and any</span>
+            <span class="c1"># neutral atom (charge == 0). Per the Badnell convention</span>
+            <span class="c1"># the reactant (Z, N) must satisfy N &lt;= Z, i.e. charge &gt;= 1.</span>
+            <span class="k">if</span> <span class="n">ion</span><span class="o">.</span><span class="n">element</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;e&#39;</span><span class="p">,</span> <span class="s1">&#39;H2&#39;</span><span class="p">):</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">ion</span><span class="o">.</span><span class="n">charge</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">continue</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">rate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rec_rate</span><span class="p">(</span><span class="n">ion</span><span class="o">.</span><span class="n">Z</span><span class="p">,</span> <span class="n">ion</span><span class="o">.</span><span class="n">N</span><span class="p">,</span> <span class="n">T_arr</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">)</span>
+            <span class="k">except</span> <span class="p">(</span><span class="ne">KeyError</span><span class="p">,</span> <span class="ne">IndexError</span><span class="p">):</span>
+                <span class="c1"># Ion not in the Badnell table; leave zero.</span>
+                <span class="k">continue</span>
+            <span class="n">out</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">broadcast_to</span><span class="p">(</span><span class="n">rate</span><span class="p">,</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,))</span>
+        <span class="k">return</span> <span class="n">out</span></div>
+
+<div class="viewcode-block" id="RecRate.get_rec_rate_H_caseA_Dr11"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_H_caseA_Dr11</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute case A recombination rate coefficient for H</span>
 <span class="sd">        Table 14.1 in Draine (2011)</span>
@@ -593,7 +829,7 @@ document.write(`
         <span class="n">T4</span> <span class="o">=</span> <span class="n">T</span><span class="o">*</span><span class="mf">1e-4</span>
         <span class="k">return</span> <span class="mf">4.13e-13</span><span class="o">*</span><span class="n">T4</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.7131</span> <span class="o">-</span> <span class="mf">0.0115</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T4</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="RecRate.get_rec_rate_H_caseB_Dr11"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="RecRate.get_rec_rate_H_caseB_Dr11"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_H_caseB_Dr11</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute case B recombination rate coefficient for H</span>
 <span class="sd">        Table 14.1 in Draine (2011)</span>
@@ -601,7 +837,7 @@ document.write(`
         <span class="n">T4</span> <span class="o">=</span> <span class="n">T</span><span class="o">*</span><span class="mf">1e-4</span>
         <span class="k">return</span> <span class="mf">2.54e-13</span><span class="o">*</span><span class="n">T4</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.8163</span> <span class="o">-</span> <span class="mf">0.0208</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T4</span><span class="p">))</span></div>
 
-<div class="viewcode-block" id="RecRate.get_rec_rate_H_caseB"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="RecRate.get_rec_rate_H_caseB"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_H_caseB">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_H_caseB</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute case B recombination rate coefficient for H</span>
 <span class="sd">        This is what we use in Athena-TIGRESS (fit to Ferland)</span>
@@ -641,7 +877,7 @@ document.write(`
         <span class="k">return</span> <span class="mf">1e-14</span><span class="o">*</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="o">**</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span>\
                 <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">6</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="p">))))</span>
 
-<div class="viewcode-block" id="RecRate.get_rec_rate_grain"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_grain">[docs]</a>    <span class="nd">@staticmethod</span>
+<div class="viewcode-block" id="RecRate.get_rec_rate_grain"><a class="viewcode-back" href="../../../../content/chemistry.html#pyathena.chemistry.rates.rec_rate.RecRate.get_rec_rate_grain">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_grain</span><span class="p">(</span><span class="n">ne</span><span class="p">,</span> <span class="n">G0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Z</span><span class="p">):</span>
 <span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute grain assisted recombination coefficient</span>
 <span class="sd">        Ch 14.8 in Draine (2011)</span>
@@ -802,8 +1038,8 @@ By Jeong-Gyu Kim, Chang-Goo Kim, Sanghyuk Moon
   </div>
   
   <!-- Scripts loaded after <body> so the DOM is not blocked -->
-  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
-<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+  <script src="../../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
 
   <footer class="bd-footer">
   </footer>

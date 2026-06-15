@@ -8,7 +8,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>pyathena.plt_tools.make_spines_invisible &#8212; pyathena</title>
+    <title>pyathena.chemistry.enums &#8212; pyathena</title>
   
   
   
@@ -58,7 +58,7 @@
     <script src="../../../_static/design-tabs.js"></script>
     <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
     <script async="async" src="../../../_static/sphinx-thebe.js"></script>
-    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pyathena/plt_tools/make_spines_invisible';</script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pyathena/chemistry/enums';</script>
     <link rel="index" title="Index" href="../../../genindex.html" />
     <link rel="search" title="Search" href="../../../search.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
@@ -279,7 +279,7 @@
       
       
       
-      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2F_modules/pyathena/plt_tools/make_spines_invisible.html&body=Your%20issue%20content%20here." target="_blank"
+      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2F_modules/pyathena/chemistry/enums.html&body=Your%20issue%20content%20here." target="_blank"
    class="btn btn-sm btn-source-issues-button dropdown-item"
    title="Open an issue"
    data-bs-placement="left" data-bs-toggle="tooltip"
@@ -357,12 +357,69 @@ document.write(`
 <div id="searchbox"></div>
                 <article class="bd-article">
                   
-  <h1>Source code for pyathena.plt_tools.make_spines_invisible</h1><div class="highlight"><pre>
-<div class="viewcode-block" id="make_patch_spines_invisible"><a class="viewcode-back" href="../../../content/plt_tools.html#pyathena.plt_tools.make_spines_invisible.make_patch_spines_invisible">[docs]</a><span></span><span class="k">def</span><span class="w"> </span><span class="nf">make_patch_spines_invisible</span><span class="p">(</span><span class="n">ax</span><span class="p">):</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">set_frame_on</span><span class="p">(</span><span class="kc">True</span><span class="p">)</span>
-    <span class="n">ax</span><span class="o">.</span><span class="n">patch</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span>
-    <span class="k">for</span> <span class="n">sp</span> <span class="ow">in</span> <span class="n">ax</span><span class="o">.</span><span class="n">spines</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
-        <span class="n">sp</span><span class="o">.</span><span class="n">set_visible</span><span class="p">(</span><span class="kc">False</span><span class="p">)</span></div>
+  <h1>Source code for pyathena.chemistry.enums</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Single source of truth for enum values shared between</span>
+<span class="sd">`pyathena.chemistry` and the tigris-ncr C++ port.</span>
+
+<span class="sd">The C++ side reads these values via a codegen pass that emits the</span>
+<span class="sd">matching enum members in `src/photchem/photchem_enums.hpp` (planned).</span>
+<span class="sd">Reordering or renumbering values in this file therefore has C++</span>
+<span class="sd">ABI implications — keep them stable.</span>
+
+<span class="sd">Two enum families today:</span>
+
+<span class="sd">  Regime    — per-cell physical regime tag used by sorted-strip</span>
+<span class="sd">              dispatch (Phase B.3b / C2). Set by `SolverBase.pre_scan`.</span>
+
+<span class="sd">  InterpMode — rate-table interpolation mode. Mirrors the existing</span>
+<span class="sd">              `NCRRates::InterpMode` enum class in</span>
+<span class="sd">              `src/photchem/ncr_rates.hpp`.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">enum</span>
+
+
+<div class="viewcode-block" id="Regime"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.enums.Regime">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">Regime</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-cell physical-regime tag for sorted-strip dispatch.</span>
+
+<span class="sd">    Values are deliberately small int8-compatible integers; the C++</span>
+<span class="sd">    port maps them to `enum class Regime : int8_t` and stores them</span>
+<span class="sd">    in `NCRStrip` as `int8` to keep the strip footprint small.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">HOT</span>          <span class="o">=</span> <span class="mi">0</span>    <span class="c1"># T &gt; 1e5 K — fully ionized, collisional cooling dominant</span>
+    <span class="n">WARM_NEUTRAL</span> <span class="o">=</span> <span class="mi">1</span>    <span class="c1"># 1e3 K &lt; T &lt; 1e4 K, x_HII small — CII / OI cooling</span>
+    <span class="n">COLD_MOL</span>     <span class="o">=</span> <span class="mi">2</span>    <span class="c1"># T &lt; 100 K, x_H2 &gt; 0.5 — molecular / dust cooling dominant</span>
+    <span class="c1"># FRONT (value 3) is reserved for sharp-gradient cells (ionization</span>
+    <span class="c1"># fronts, WNM/CNM transition, post-shock cooling regions). It is</span>
+    <span class="c1"># experimental: only consumed once Phase C0 perf experiments</span>
+    <span class="c1"># validate that sorted-strip dispatch actually helps SIMD</span>
+    <span class="c1"># throughput. Reserved here so the C++ ABI gets the value early.</span>
+    <span class="n">FRONT</span>        <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">OTHER</span>        <span class="o">=</span> <span class="mi">99</span>   <span class="c1"># uncategorised; safe default before pre_scan runs</span></div>
+
+
+<div class="viewcode-block" id="InterpMode"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.enums.InterpMode">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">InterpMode</span><span class="p">(</span><span class="n">enum</span><span class="o">.</span><span class="n">IntEnum</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rate-table interpolation mode.</span>
+
+<span class="sd">    Integer values mirror `NCRRates::InterpMode` in</span>
+<span class="sd">    `tigris-ncr/src/photchem/ncr_rates.hpp`; both sides agree on the</span>
+<span class="sd">    raw int so config files can use the integers interchangeably. The</span>
+<span class="sd">    Python member names drop the C++ `kFoo` Google-style prefix per</span>
+<span class="sd">    the project&#39;s CLAUDE.md rule for new enumerators.</span>
+
+<span class="sd">    Selectable per-run via the `interp_mode` parameter in the</span>
+<span class="sd">    `[photchem_ncr]` input block.</span>
+
+<span class="sd">    - Exact  : full analytical form (slow; one log/exp/pow per rate)</span>
+<span class="sd">    - LogLog : log-log linear interpolation (1 log10 + 1 pow10 per rate)</span>
+<span class="sd">    - Nqt2   : NQT grid, nqt2_log encoding (1 sqrt + integer ops)</span>
+<span class="sd">    - Nqt1   : NQT grid, nqt1_log encoding (integer ops only)</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">Exact</span>  <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">LogLog</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">Nqt2</span>   <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">Nqt1</span>   <span class="o">=</span> <span class="mi">3</span></div>
 </pre></div>
 
                 </article>

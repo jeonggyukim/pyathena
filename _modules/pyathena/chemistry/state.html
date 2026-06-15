@@ -1,0 +1,1145 @@
+
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>pyathena.chemistry.state &#8212; pyathena</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/styles/sphinx-book-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/togglebutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/mystnb.11b39860a7a0cbfd473a3ad8a317855267ff0bd372690045ca344a6b62be495e.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-thebe.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/sphinx-design.5ea377869091fd0449014c60fc090103.min.css" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/sphinx_highlight.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    <script src="../../../_static/scripts/sphinx-book-theme.js"></script>
+    <script>let toggleHintShow = 'Click to show';</script>
+    <script>let toggleHintHide = 'Click to hide';</script>
+    <script>let toggleOpenOnPrint = 'true';</script>
+    <script src="../../../_static/togglebutton.js"></script>
+    <script>var togglebuttonSelector = '.toggle, .admonition.dropdown';</script>
+    <script src="../../../_static/design-tabs.js"></script>
+    <script>const THEBE_JS_URL = "https://unpkg.com/thebe@0.8.2/lib/index.js"; const thebe_selector = ".thebe,.cell"; const thebe_selector_input = "pre"; const thebe_selector_output = ".output, .cell_output"</script>
+    <script async="async" src="../../../_static/sphinx-thebe.js"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = '_modules/pyathena/chemistry/state';</script>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+  </head>
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search this book..."
+         aria-label="Search this book..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+        
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+
+  
+    
+  
+
+<a class="navbar-brand logo" href="../../../intro.html">
+  
+  
+  
+  
+  
+    
+    
+      
+    
+    
+    <img src="../../../_static/tigress_logo.jpg" class="logo__image only-light" alt="pyathena - Home"/>
+    <script>document.write(`<img src="../../../_static/tigress_logo.jpg" class="logo__image only-dark" alt="pyathena - Home"/>`);</script>
+  
+  
+</a></div>
+        <div class="sidebar-primary-item">
+
+ <script>
+ document.write(`
+   <button class="btn search-button-field search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <span class="search-button__default-text">Search</span>
+    <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd class="kbd-shortcut__modifier">K</kbd></span>
+   </button>
+ `);
+ </script></div>
+        <div class="sidebar-primary-item"><nav class="bd-links bd-docs-nav" aria-label="Main">
+    <div class="bd-toc-item navbar-nav active">
+        
+        <ul class="nav bd-sidenav bd-sidenav__home-link">
+            <li class="toctree-l1">
+                <a class="reference internal" href="../../../intro.html">
+                    pyathena
+                </a>
+            </li>
+        </ul>
+        <p aria-level="2" class="caption" role="heading"><span class="caption-text">Basics</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../content/install.html">Installation</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart.html">Quickstart</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">API References</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../content/loadsim.html">LoadSim</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/athenadataset.html">AthenaDataSet</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/readers.html">Readers</a></li>
+
+
+
+<li class="toctree-l1"><a class="reference internal" href="../../../content/units.html">Units</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/utils.html">Utilities</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/pop_synth.html">Population Synthesis</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/fields.html">Fields</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/microphysics.html">Microphysics</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/chemistry.html">Chemistry</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../content/plt_tools.html">Plotting Tools</a></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/tigress-cooling.html">Cooling in TIGRESS-classic</a></li>
+
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/quickstart-astro-tigress.html">Quickstart: ASTRO-TIGRESS</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../../../examples/sb99.html">Starburst99: Stellar Population Synthesis</a></li>
+</ul>
+
+    </div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+  
+  <div id="rtd-footer-container"></div>
+
+
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+
+<div class="sbt-scroll-pixel-helper"></div>
+
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item"><button class="sidebar-toggle primary-toggle btn btn-sm" title="Toggle primary sidebar" data-bs-placement="bottom" data-bs-toggle="tooltip">
+  <span class="fa-solid fa-bars"></span>
+</button></div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+
+<div class="article-header-buttons">
+
+
+
+
+
+<div class="dropdown dropdown-source-buttons">
+  <button class="btn dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Source repositories">
+    <i class="fab fa-github"></i>
+  </button>
+  <ul class="dropdown-menu">
+      
+      
+      
+      <li><a href="https://github.com/jeonggyukim/pyathena" target="_blank"
+   class="btn btn-sm btn-source-repository-button dropdown-item"
+   title="Source repository"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fab fa-github"></i>
+  </span>
+<span class="btn__text-container">Repository</span>
+</a>
+</li>
+      
+      
+      
+      
+      <li><a href="https://github.com/jeonggyukim/pyathena/issues/new?title=Issue%20on%20page%20%2F_modules/pyathena/chemistry/state.html&body=Your%20issue%20content%20here." target="_blank"
+   class="btn btn-sm btn-source-issues-button dropdown-item"
+   title="Open an issue"
+   data-bs-placement="left" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-lightbulb"></i>
+  </span>
+<span class="btn__text-container">Open issue</span>
+</a>
+</li>
+      
+  </ul>
+</div>
+
+
+
+
+<button onclick="toggleFullScreen()"
+  class="btn btn-sm btn-fullscreen-button"
+  title="Fullscreen mode"
+  data-bs-placement="bottom" data-bs-toggle="tooltip"
+>
+  
+
+<span class="btn__icon-container">
+  <i class="fas fa-expand"></i>
+  </span>
+
+</button>
+
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script>
+
+
+<script>
+document.write(`
+  <button class="btn btn-sm pst-navbar-icon search-button search-button__button" title="Search" aria-label="Search" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="fa-solid fa-magnifying-glass fa-lg"></i>
+  </button>
+`);
+</script>
+
+</div></div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="jb-print-docs-body" class="onlyprint">
+    <h1></h1>
+    <!-- Table of contents -->
+    <div id="print-main-content">
+        <div id="jb-print-toc">
+            
+        </div>
+    </div>
+</div>
+
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <h1>Source code for pyathena.chemistry.state</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;ChemState — the single object every chemistry policy reads and</span>
+<span class="sd">writes.</span>
+
+<span class="sd">The state carries: species inventory + ordering (frozen schema</span>
+<span class="sd">header), physical fields (n_H, T, T_dust, Z_g, Z_d, x, ne, radiation,</span>
+<span class="sd">column densities, velocity gradient), time-step bookkeeping</span>
+<span class="sd">(dt, dt_remaining, t), optional scratch buffers allocated lazily by</span>
+<span class="sd">specific solvers / networks, and a `SolverDiag` counter block.</span>
+
+<span class="sd">Design choices (cross-referenced to</span>
+<span class="sd">`tigris-notes/docs-claude/pyathena/chemistry-rewrite-plan.md`):</span>
+
+<span class="sd">- Mutable dataclass with a frozen schema header. `species`,</span>
+<span class="sd">  `policy_versions`, and array shapes are set once in `__init__` and</span>
+<span class="sd">  never mutated. Arrays themselves are written in place. Mirrors the</span>
+<span class="sd">  C++ `NCRStrip` SoA: zero allocation in the inner loop, plus a</span>
+<span class="sd">  one-time `validate()` after construction.</span>
+
+<span class="sd">- `ne` is a `@property` computed from `x` with no setter — callers</span>
+<span class="sd">  cannot inject stale electron densities.</span>
+
+<span class="sd">- Vectorised, with `ncell` as a leading axis. `ncell=1` is the natural</span>
+<span class="sd">  per-cell case. Matches the C++ strip layout (`CHUNK_SIZE = 16`) so</span>
+<span class="sd">  1:1 parity tests work without a re-broadcast step.</span>
+
+<span class="sd">- HDF5 serialisation persists payload only; scratch and `diag` are</span>
+<span class="sd">  recomputed on restart.</span>
+
+<span class="sd">`from_grid` is the canonical factory for offline / 1D analytic</span>
+<span class="sd">benchmarks (Stromgren sphere, PDR plane-parallel, single-cell sweeps).</span>
+<span class="sd">`from_meshblock` views an Athena++ MeshBlock as a ChemState without</span>
+<span class="sd">copying — used by the tigris-ncr port path. `from_photchem` adapts a</span>
+<span class="sd">legacy `pyathena.microphysics.photchem.PhotChem` instance for parity</span>
+<span class="sd">tests. Stubs raise `NotImplementedError` until the consuming code</span>
+<span class="sd">path lands; see the chemistry-rewrite-plan.md roadmap.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">__future__</span><span class="w"> </span><span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">contextlib</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">dataclasses</span><span class="w"> </span><span class="kn">import</span> <span class="n">dataclass</span><span class="p">,</span> <span class="n">field</span>
+<span class="kn">from</span><span class="w"> </span><span class="nn">typing</span><span class="w"> </span><span class="kn">import</span> <span class="n">Any</span><span class="p">,</span> <span class="n">Dict</span><span class="p">,</span> <span class="n">Mapping</span><span class="p">,</span> <span class="n">Optional</span><span class="p">,</span> <span class="n">Tuple</span>
+
+<span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
+
+<span class="kn">from</span><span class="w"> </span><span class="nn">.diagnostics</span><span class="w"> </span><span class="kn">import</span> <span class="n">SolverDiag</span>
+
+
+<span class="c1"># Default radiation-field band layout for the 3-band NCR convention</span>
+<span class="c1"># (FUV / LW / EUV). Matches `NCRRates` on the C++ side.</span>
+<span class="n">DEFAULT_CHI_BANDS</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;FUV&#39;</span><span class="p">,</span> <span class="s1">&#39;LW&#39;</span><span class="p">,</span> <span class="s1">&#39;EUV&#39;</span><span class="p">)</span>
+
+<span class="c1"># Canonical band layout shared with `pyathena.util.sb99` and the</span>
+<span class="c1"># legacy `pyathena.microphysics.photchem` setup.</span>
+<span class="c1">#</span>
+<span class="c1">#     Band   Wavelength (A)      Use</span>
+<span class="c1">#     ----   --------------      --------------------------------</span>
+<span class="c1">#     LyC    &lt; 912               photoionising (H, He, ...)</span>
+<span class="c1">#     LW     912 - 1108          H2 photodissociation, dust PE</span>
+<span class="c1">#     PE     1108 - 2068         PAH heating, dust charging, CI/SiI</span>
+<span class="c1">#     FUV    912 - 2068          LW + PE combined (Draine G_0)</span>
+<span class="c1">#     OPT    2068 - 10000        optical (PAH IR seed)</span>
+<span class="c1">#     IR     10000 - 200000      dust thermal</span>
+<span class="c1">#</span>
+<span class="c1"># Note: `FUV` overlaps with `LW` + `PE` (not disjoint); radiation</span>
+<span class="c1"># policies pick one decomposition or the other based on the physics</span>
+<span class="c1"># they expose.</span>
+<span class="c1">#</span>
+<span class="c1"># ISRF reference energy densities per band [erg cm^-3], Habing 1968 /</span>
+<span class="c1"># Draine 1978 convention. Match tigris-ncr/src/photchem/photchem.hpp:</span>
+<span class="c1"># `u_rad_pe_isrf_cgs = 7.613e-14`, `u_rad_lw_isrf_cgs = 1.335e-14`.</span>
+<span class="c1"># Rate / cooling functions normalise `chi_band = u_rad[band] /</span>
+<span class="c1"># U_RAD_ISRF[band]` at point of use to obtain the dimensionless Draine</span>
+<span class="c1"># field strength.</span>
+<span class="n">U_RAD_PE_ISRF_CGS</span><span class="p">:</span>  <span class="nb">float</span> <span class="o">=</span> <span class="mf">7.613e-14</span>
+<span class="n">U_RAD_LW_ISRF_CGS</span><span class="p">:</span>  <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.335e-14</span>
+<span class="n">U_RAD_FUV_ISRF_CGS</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="n">U_RAD_PE_ISRF_CGS</span> <span class="o">+</span> <span class="n">U_RAD_LW_ISRF_CGS</span>
+
+<span class="n">U_RAD_ISRF_CGS</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">float</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s1">&#39;PE&#39;</span><span class="p">:</span>  <span class="n">U_RAD_PE_ISRF_CGS</span><span class="p">,</span>
+    <span class="s1">&#39;LW&#39;</span><span class="p">:</span>  <span class="n">U_RAD_LW_ISRF_CGS</span><span class="p">,</span>
+    <span class="s1">&#39;FUV&#39;</span><span class="p">:</span> <span class="n">U_RAD_FUV_ISRF_CGS</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="c1"># Sentinel string used in `policy_versions` when no policy was supplied</span>
+<span class="c1"># at construction time. Phase 3 drivers overwrite these via `from_grid`&#39;s</span>
+<span class="c1"># policy kwargs.</span>
+<span class="n">_POLICY_NONE_SENTINEL</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s1">&#39;__none__&#39;</span>
+
+<span class="c1"># Names of the policy roles that `from_grid` recognises as keyword</span>
+<span class="c1"># arguments. Order is the canonical display order (network -&gt; solver -&gt;</span>
+<span class="c1"># thermo -&gt; cooling -&gt; opacity -&gt; radiation).</span>
+<span class="n">_POLICY_ROLES</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span>
+    <span class="s1">&#39;network&#39;</span><span class="p">,</span> <span class="s1">&#39;solver&#39;</span><span class="p">,</span> <span class="s1">&#39;thermo&#39;</span><span class="p">,</span> <span class="s1">&#39;cooling&#39;</span><span class="p">,</span> <span class="s1">&#39;opacity&#39;</span><span class="p">,</span> <span class="s1">&#39;radiation&#39;</span><span class="p">,</span>
+<span class="p">)</span>
+
+
+<span class="k">def</span><span class="w"> </span><span class="nf">_policy_version_tag</span><span class="p">(</span><span class="n">policy</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Stamp a policy as `ClassQualname@version_string`.</span>
+
+<span class="sd">    `version_string` is `policy.__version__` if set, else the sentinel</span>
+<span class="sd">    `__none__`. Callers pass the policy instance (not the class) so</span>
+<span class="sd">    instance-level overrides are picked up.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">if</span> <span class="n">policy</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">_POLICY_NONE_SENTINEL</span>
+    <span class="n">cls_name</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="n">policy</span><span class="p">)</span><span class="o">.</span><span class="vm">__qualname__</span>
+    <span class="n">version</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">policy</span><span class="p">,</span> <span class="s1">&#39;__version__&#39;</span><span class="p">,</span> <span class="n">_POLICY_NONE_SENTINEL</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">cls_name</span><span class="si">}</span><span class="s1">@</span><span class="si">{</span><span class="n">version</span><span class="si">}</span><span class="s1">&#39;</span>
+
+
+<div class="viewcode-block" id="ChemState"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState">[docs]</a><span class="nd">@dataclass</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChemState</span><span class="p">:</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Per-strip chemistry / thermodynamic state.</span>
+
+<span class="sd">    See the package README and the chemistry-rewrite-plan.md design</span>
+<span class="sd">    document for the rationale behind each field.</span>
+
+<span class="sd">    The schema (which fields exist, in what shape, with what dtypes)</span>
+<span class="sd">    is fixed here and validated by `validate()`. The factories</span>
+<span class="sd">    (`from_grid`, `from_meshblock`, `from_photchem`) and the HDF5</span>
+<span class="sd">    serialisers are filled in as the consuming code paths land; see</span>
+<span class="sd">    the chemistry-rewrite-plan.md roadmap.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="c1"># ---- Frozen schema header ----</span>
+    <span class="c1"># `species` is a SpeciesSet; typed as `Any` to avoid a forward</span>
+    <span class="c1"># import cycle between state.py and species.py.</span>
+    <span class="n">species</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="n">policy_versions</span><span class="p">:</span> <span class="n">Mapping</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span>
+    <span class="n">walk_order</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span>
+
+    <span class="c1"># ---- Mutable payload (ncell-shaped unless noted) ----</span>
+    <span class="n">x</span><span class="p">:</span>       <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (nspec, ncell), f64; mutated in place</span>
+    <span class="n">nH</span><span class="p">:</span>      <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (ncell,)</span>
+    <span class="n">T</span><span class="p">:</span>       <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (ncell,)</span>
+    <span class="n">T_dust</span><span class="p">:</span>  <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (ncell,)</span>
+    <span class="n">Z_g</span><span class="p">:</span>     <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (ncell,)</span>
+    <span class="n">Z_d</span><span class="p">:</span>     <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (ncell,)</span>
+    <span class="n">chi</span><span class="p">:</span>     <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (nfreq, ncell), Draine units</span>
+    <span class="n">xi_CR</span><span class="p">:</span>   <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (ncell,)</span>
+    <span class="n">N_col</span><span class="p">:</span>   <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (ncol, ncell)</span>
+    <span class="n">dvdr</span><span class="p">:</span>    <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>              <span class="c1"># (ncell,)</span>
+    <span class="n">dt</span><span class="p">:</span>           <span class="nb">float</span>
+    <span class="n">dt_remaining</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span>         <span class="c1"># (ncell,) — set to dt at reset_step</span>
+    <span class="n">t</span><span class="p">:</span>            <span class="nb">float</span>
+
+    <span class="c1"># ---- Structured radiation-field index ----</span>
+    <span class="c1"># `chi_bands[i]` names the i-th row of `chi`. The 3-band NCR default</span>
+    <span class="c1"># is `(&#39;FUV&#39;, &#39;LW&#39;, &#39;EUV&#39;)`; richer networks (Phase 6+) extend it.</span>
+    <span class="c1"># Use `chi_for(band_name)` instead of ad-hoc attribute access.</span>
+    <span class="n">chi_bands</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_CHI_BANDS</span>
+
+    <span class="c1"># ---- Lazily-allocated scratch buffers ----</span>
+    <span class="c1"># Networks / solvers request scratch by string key via</span>
+    <span class="c1"># `alloc_scratch(name, shape, dtype)` and read it back with</span>
+    <span class="c1"># `get_scratch(name)`. The dict is owned by the state; hot-path code</span>
+    <span class="c1"># is expected to allocate once at setup time (outside the inner</span>
+    <span class="c1"># loop) and reuse the same buffer thereafter.</span>
+    <span class="n">scratch</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="c1"># ---- Radiation energy density per band ----</span>
+    <span class="c1"># Primary radiation-field representation: dict[band_name, ndarray]</span>
+    <span class="c1"># of radiation energy density in cgs (erg cm^-3). The radiation /</span>
+    <span class="c1"># ray-tracing module fills this; rate / cooling channels access</span>
+    <span class="c1"># the Draine-normalised dimensionless `chi_band = u_rad[band] /</span>
+    <span class="c1"># U_RAD_ISRF[band]` via `chi_for(band)`.</span>
+    <span class="c1">#</span>
+    <span class="c1"># Common bands and ISRF reference values (Habing 1968 / Draine</span>
+    <span class="c1"># 1978; match tigris-ncr/src/photchem/photchem.hpp):</span>
+    <span class="c1">#</span>
+    <span class="c1">#   &#39;PE&#39;:  6-13.6 eV photoelectric band; ISRF u_rad = 7.613e-14</span>
+    <span class="c1">#   &#39;LW&#39;:  Lyman-Werner band (11.2-13.6 eV); ISRF u_rad = 1.335e-14</span>
+    <span class="c1">#   &#39;FUV&#39;: alias for the integrated Draine FUV band when no</span>
+    <span class="c1">#          subdivision is needed (rate functions treat</span>
+    <span class="c1">#          `chi_FUV = chi_PE` for the PE / dust-charging context).</span>
+    <span class="c1">#   &#39;EUV&#39;: lambda &lt; 912 Angstrom hydrogen-ionising band; usually</span>
+    <span class="c1">#          consumed via the per-species `zeta_pi[species]` dict</span>
+    <span class="c1">#          rather than as a chi normalisation.</span>
+    <span class="c1">#</span>
+    <span class="c1"># Phase 2 unit-test setups can leave the dict empty -- channels</span>
+    <span class="c1"># fall back to `chi=0` (dark). When the dict is populated for a</span>
+    <span class="c1"># band, `chi_for(band)` returns `u_rad[band] / U_RAD_ISRF[band]`</span>
+    <span class="c1"># element-wise.</span>
+    <span class="n">u_rad</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="c1"># ---- Photo rates (per-species, dict-keyed) ----</span>
+    <span class="c1"># Convention: `xi_*` = cosmic-ray-driven rates (see `xi_CR`).</span>
+    <span class="c1"># `zeta_*` = photo-driven rates (PDR / HII region literature).</span>
+    <span class="c1"># Each dict is keyed by species name; missing keys default to 0 via</span>
+    <span class="c1"># the `zeta_pi_for` / `zeta_diss_for` helpers and via the network&#39;s</span>
+    <span class="c1"># `_get_optional` fallback. Values may be scalar (uniform over strip)</span>
+    <span class="c1"># or `(ncell,)` arrays.</span>
+    <span class="c1">#</span>
+    <span class="c1">#   zeta_pi[species]     -- photoionisation rate, s^-1</span>
+    <span class="c1">#     e.g., {&#39;HI&#39;: 3e-9, &#39;H2&#39;: 1e-10, &#39;CII&#39;: ..., ...}</span>
+    <span class="c1">#   zeta_diss[species]   -- photodissociation rate, s^-1</span>
+    <span class="c1">#     e.g., {&#39;H2&#39;: 1e-10, &#39;CO&#39;: 1e-11, ...}</span>
+    <span class="n">zeta_pi</span><span class="p">:</span>   <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="n">zeta_diss</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="nb">dict</span><span class="p">)</span>
+
+    <span class="c1"># ---- Diagnostics (fixed-field POD; no free-form dict on hot path) ----</span>
+    <span class="n">diag</span><span class="p">:</span> <span class="n">SolverDiag</span> <span class="o">=</span> <span class="n">field</span><span class="p">(</span><span class="n">default_factory</span><span class="o">=</span><span class="n">SolverDiag</span><span class="p">)</span>
+
+    <span class="c1"># ---- Derived / read-only properties ----</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ne</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Electron density n_e derived from the state.</span>
+
+<span class="sd">        No setter. Callers must mutate `x` to change `ne`. The</span>
+<span class="sd">        network is responsible for keeping the electron row of `x`</span>
+<span class="sd">        consistent with the rest of the strip via</span>
+<span class="sd">        `NetworkBase.fill_ghosts` (see</span>
+<span class="sd">        `pyathena/chemistry/networks/base.py`); this property simply</span>
+<span class="sd">        reads it back.</span>
+
+<span class="sd">        Resolution order:</span>
+
+<span class="sd">        - If the species set carries an explicit `electron` row, the</span>
+<span class="sd">          property returns `n_H * x[electron]` (the canonical 9-species</span>
+<span class="sd">          `ncr3_with_ghosts` layout).</span>
+<span class="sd">        - Otherwise the value comes from the positive-charge sum</span>
+<span class="sd">          `n_H * sum_i max(q_i, 0) * x_i`. This branch only matters</span>
+<span class="sd">          for legacy `SpeciesSet` constructions that omit an electron</span>
+<span class="sd">          species entirely.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">species</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s1">&#39;species&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">species</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="s1">&#39;idx&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">idx</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="s1">&#39;electron&#39;</span> <span class="ow">in</span> <span class="n">idx</span><span class="p">:</span>
+                <span class="n">i_e</span> <span class="o">=</span> <span class="n">idx</span><span class="p">[</span><span class="s1">&#39;electron&#39;</span><span class="p">]</span>
+                <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nH</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">[</span><span class="n">i_e</span><span class="p">]</span>
+        <span class="n">charges</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="s1">&#39;charges&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">charges</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nH</span><span class="p">)</span>
+        <span class="c1"># `x_e` per cell = sum_i max(q_i, 0) * x_i. We use the absolute</span>
+        <span class="c1"># charge convention: positive ions add electrons; the electron</span>
+        <span class="c1"># row (charge -1) cancels HII when present. Equivalent to</span>
+        <span class="c1"># taking the half-sum |q|/2, but the explicit positive-only sum</span>
+        <span class="c1"># is easier to reason about.</span>
+        <span class="n">pos</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">maximum</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">charges</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">x_e_per_cell</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">@</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nH</span> <span class="o">*</span> <span class="n">x_e_per_cell</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">ncell</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">nH</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">nspec</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+    <span class="c1"># ---- Structured radiation-field lookup ----</span>
+<div class="viewcode-block" id="ChemState.chi_for"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.chi_for">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">chi_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">band_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the Draine-normalised field strength in band</span>
+<span class="sd">        `band_name`. Resolution order:</span>
+
+<span class="sd">        1. Special case: `band_name == &#39;FUV&#39;` is the LW+PE combined</span>
+<span class="sd">           Draine G_0. When the policy populated `state.u_rad[&#39;PE&#39;]`</span>
+<span class="sd">           and `state.u_rad[&#39;LW&#39;]` separately,</span>
+<span class="sd">           `chi_FUV = (u_rad[&#39;PE&#39;] + u_rad[&#39;LW&#39;]) /</span>
+<span class="sd">                      (U_RAD_PE_ISRF_CGS + U_RAD_LW_ISRF_CGS)`.</span>
+<span class="sd">           Falls through to (2) if either sub-band is missing.</span>
+
+<span class="sd">        2. If `state.u_rad[band_name]` is populated, return</span>
+<span class="sd">           `u_rad[band_name] / U_RAD_ISRF_CGS[band_name]` -- the on-</span>
+<span class="sd">           the-fly chi conversion. This is the primary path: the</span>
+<span class="sd">           radiation module carries cgs energy densities; chemistry</span>
+<span class="sd">           internally normalises to Draine units where rate / cooling</span>
+<span class="sd">           formulas expect chi.</span>
+
+<span class="sd">        3. Otherwise fall back to the legacy `state.chi[band_idx]`</span>
+<span class="sd">           positional array (Phase 2 / 3 transitional layout); raises</span>
+<span class="sd">           `KeyError` if the band is not in `chi_bands` either.</span>
+
+<span class="sd">        Networks should prefer `chi_for(band_name)` over ad-hoc</span>
+<span class="sd">        attribute access so the band layout can evolve without</span>
+<span class="sd">        breaking call sites.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">band_name</span> <span class="o">==</span> <span class="s1">&#39;FUV&#39;</span> <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_rad</span><span class="p">:</span>
+            <span class="n">u_PE</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_rad</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;PE&#39;</span><span class="p">)</span>
+            <span class="n">u_LW</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_rad</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s1">&#39;LW&#39;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">u_PE</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">u_LW</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">((</span><span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">u_PE</span><span class="p">)</span> <span class="o">+</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">u_LW</span><span class="p">))</span>
+                        <span class="o">/</span> <span class="n">U_RAD_FUV_ISRF_CGS</span><span class="p">)</span>
+        <span class="n">u_rad_band</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_rad</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">band_name</span><span class="p">)</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">u_rad</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="k">if</span> <span class="n">u_rad_band</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">u_isrf</span> <span class="o">=</span> <span class="n">U_RAD_ISRF_CGS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">band_name</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">u_isrf</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;no ISRF reference for chi normalisation of band &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="n">band_name</span><span class="si">!r}</span><span class="s1">; &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;known: </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="n">U_RAD_ISRF_CGS</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">!r}</span><span class="s1">&#39;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">u_rad_band</span><span class="p">)</span> <span class="o">/</span> <span class="n">u_isrf</span>
+        <span class="c1"># Legacy positional chi array.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">idx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">chi_bands</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="n">band_name</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">ValueError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;chi band </span><span class="si">{</span><span class="n">band_name</span><span class="si">!r}</span><span class="s1"> not present; &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;state.u_rad keys = </span><span class="si">{</span><span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">u_rad</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span><span class="si">!r}</span><span class="s1">, &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;state.chi_bands = </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">chi_bands</span><span class="si">!r}</span><span class="s1">&#39;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">chi</span><span class="p">[</span><span class="n">idx</span><span class="p">]</span></div>
+
+    <span class="c1"># ---- Photo-rate lookup ----</span>
+<div class="viewcode-block" id="ChemState.zeta_pi_for"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.zeta_pi_for">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">zeta_pi_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">species</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Photoionisation rate of `species` (s^-1). Returns `default`</span>
+<span class="sd">        if the species is not present in `state.zeta_pi`. Convention:</span>
+<span class="sd">        `zeta_pi_species = sigma_pi_species * photon_flux`.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">zeta_pi</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChemState.zeta_diss_for"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.zeta_diss_for">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">zeta_diss_for</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">species</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Photodissociation rate of `species` (s^-1). Returns</span>
+<span class="sd">        `default` if missing.&quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">zeta_diss</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span></div>
+
+    <span class="c1"># ---- Scratch buffer management ----</span>
+<div class="viewcode-block" id="ChemState.alloc_scratch"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.alloc_scratch">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">alloc_scratch</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Allocate (or re-allocate) a scratch buffer and return it.</span>
+
+<span class="sd">        Subsequent calls with the same `name` overwrite the previous</span>
+<span class="sd">        buffer. Networks call this at setup time via</span>
+<span class="sd">        `network.allocate_scratch(state)`; the hot path then uses</span>
+<span class="sd">        `get_scratch(name)` only.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">buf</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">scratch</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">buf</span>
+        <span class="k">return</span> <span class="n">buf</span></div>
+
+<div class="viewcode-block" id="ChemState.get_scratch"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.get_scratch">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_scratch</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Return the scratch buffer registered under `name`.</span>
+
+<span class="sd">        Raises `KeyError` if no buffer has been allocated for `name` —</span>
+<span class="sd">        callers must call `alloc_scratch` first (typically through the</span>
+<span class="sd">        owning network&#39;s `allocate_scratch` hook). The hot path is</span>
+<span class="sd">        expected to fetch buffers once and reuse the reference.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">scratch</span><span class="p">[</span><span class="n">name</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">exc</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;scratch buffer </span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s1"> not allocated; &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;call alloc_scratch(</span><span class="si">{</span><span class="n">name</span><span class="si">!r}</span><span class="s1">, ...) first&#39;</span>
+            <span class="p">)</span> <span class="kn">from</span><span class="w"> </span><span class="nn">exc</span></div>
+
+    <span class="c1"># ---- Lifecycle ----</span>
+<div class="viewcode-block" id="ChemState.reset_step"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.reset_step">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">reset_step</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">dt</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">t</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Called at the head of every hydro step.</span>
+
+<span class="sd">        Sets `dt`, `t`, `dt_remaining = dt` per cell, zeroes</span>
+<span class="sd">        diagnostics. Does NOT touch `x`, `T`, `nH` — those carry over</span>
+<span class="sd">        from the previous step.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">dt</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">t</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">t</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dt_remaining</span><span class="p">[:]</span> <span class="o">=</span> <span class="n">dt</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">diag</span><span class="o">.</span><span class="n">reset</span><span class="p">()</span></div>
+
+<div class="viewcode-block" id="ChemState.validate"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.validate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">validate</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Shape and finiteness asserts. Cheap; called after</span>
+<span class="sd">        construction and at parity-test boundaries.</span>
+
+<span class="sd">        Checks every payload array against the strip dimensions</span>
+<span class="sd">        `(nspec, ncell)` and raises `ValueError` on mismatch. Also</span>
+<span class="sd">        flags non-finite entries in the canonical hot-path arrays</span>
+<span class="sd">        (`T`, `nH`, `x`).</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ncell</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">ncell</span>
+        <span class="n">nspec</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">nspec</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">nspec</span><span class="p">,</span> <span class="n">ncell</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;x shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> != (nspec, ncell) &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;= (</span><span class="si">{</span><span class="n">nspec</span><span class="si">}</span><span class="s1">, </span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;T shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> does not match ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">T_dust</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;T_dust shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">T_dust</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> != ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z_g</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Z_g shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">Z_g</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> != ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z_d</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;Z_d shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">Z_d</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> != ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">xi_CR</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;xi_CR shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">xi_CR</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> != ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dvdr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;dvdr shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dvdr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> != ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">dt_remaining</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;dt_remaining shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">dt_remaining</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> != &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">chi</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">chi</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ncell</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;chi shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">chi</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> not (nfreq, ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_col</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">2</span> <span class="ow">or</span> <span class="bp">self</span><span class="o">.</span><span class="n">N_col</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="n">ncell</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;N_col shape </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">N_col</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> not (ncol, ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">)&#39;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;T contains non-finite values&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">nH</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;nH contains non-finite values&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">isfinite</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;x contains non-finite values&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChemState.freeze"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.freeze">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">freeze</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ChemState&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Deep copy for parity tests. Not used in production paths;</span>
+<span class="sd">        production never copies the state.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="n">ChemState</span><span class="p">(</span>
+            <span class="n">species</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">species</span><span class="p">,</span>
+            <span class="n">policy_versions</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">policy_versions</span><span class="p">),</span>
+            <span class="n">walk_order</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">walk_order</span><span class="p">,</span>
+            <span class="n">x</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">x</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">nH</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">nH</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">T</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">T_dust</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">T_dust</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">Z_g</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Z_g</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">Z_d</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">Z_d</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">chi</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chi</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">xi_CR</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">xi_CR</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">N_col</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">N_col</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">dvdr</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dvdr</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">dt</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dt</span><span class="p">,</span>
+            <span class="n">dt_remaining</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dt_remaining</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">t</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">t</span><span class="p">,</span>
+            <span class="n">chi_bands</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">chi_bands</span><span class="p">,</span>
+            <span class="n">scratch</span><span class="o">=</span><span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="n">v</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">scratch</span><span class="o">.</span><span class="n">items</span><span class="p">()},</span>
+            <span class="n">diag</span><span class="o">=</span><span class="n">SolverDiag</span><span class="p">(</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">diag</span><span class="o">.</span><span class="n">as_dict</span><span class="p">()),</span>
+        <span class="p">)</span></div>
+
+    <span class="c1"># ---- Factory ----</span>
+<div class="viewcode-block" id="ChemState.from_grid"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.from_grid">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_grid</span><span class="p">(</span>
+        <span class="bp">cls</span><span class="p">,</span>
+        <span class="n">r</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">nH</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">T</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span>
+        <span class="n">species</span><span class="p">,</span>
+        <span class="o">*</span><span class="p">,</span>
+        <span class="n">Z_g</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">Z_d</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1.0</span><span class="p">,</span>
+        <span class="n">A_He</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0955</span><span class="p">,</span>
+        <span class="n">nfreq</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">3</span><span class="p">,</span>
+        <span class="n">ncol</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">T_dust</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dvdr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">xi_CR</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">,</span>
+        <span class="n">chi_bands</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">network</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">solver</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">thermo</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">cooling</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">opacity</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">radiation</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ChemState&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Build a strip-shaped state from a 1-D radial / planar grid.</span>
+
+<span class="sd">        Parameters</span>
+<span class="sd">        ----------</span>
+<span class="sd">        r : ndarray, shape (ncell,)</span>
+<span class="sd">            Grid coordinate. Kept on the state purely as a reference;</span>
+<span class="sd">            not consumed by any policy. Used to size the strip.</span>
+<span class="sd">        nH, T : ndarray, shape (ncell,)</span>
+<span class="sd">            Initial hydrogen density [cm^-3] and temperature [K].</span>
+<span class="sd">        species : SpeciesSet</span>
+<span class="sd">            Species inventory. The strip carries `(species.nspec, ncell)`</span>
+<span class="sd">            abundances initialized to the neutral state `x_HI = 1` (or</span>
+<span class="sd">            its equivalent for the given species set: 1.0 on the first</span>
+<span class="sd">            row, 0.0 on the rest). Callers override after construction.</span>
+<span class="sd">        Z_g, Z_d : float, optional</span>
+<span class="sd">            Gas / dust metallicity per cell. Stored as length-`ncell`</span>
+<span class="sd">            arrays so a future call site can vary them spatially.</span>
+<span class="sd">        A_He : float, optional</span>
+<span class="sd">            Helium-to-hydrogen abundance ratio. Stored on `species` via</span>
+<span class="sd">            the factory&#39;s mu baseline (this parameter is forwarded for</span>
+<span class="sd">            future ThermoPolicy bindings; it is not written into the</span>
+<span class="sd">            state because mu is a derived quantity).</span>
+<span class="sd">        nfreq : int, optional</span>
+<span class="sd">            Width of the radiation-field axis. Defaults to 3 to match</span>
+<span class="sd">            the C++ NCRRates (FUV / LW / EUV).</span>
+<span class="sd">        ncol : int, optional</span>
+<span class="sd">            Width of the column-density axis. Defaults to 0 (no column</span>
+<span class="sd">            tracking) so the test harness does not need a column model.</span>
+<span class="sd">        T_dust : ndarray, optional</span>
+<span class="sd">            Dust temperature per cell. Defaults to a constant 15 K</span>
+<span class="sd">            (mid-range cold-ISM equilibrium) when not provided.</span>
+<span class="sd">        dvdr, xi_CR : float, optional</span>
+<span class="sd">            Scalar broadcasts of the velocity gradient and CR ionization</span>
+<span class="sd">            rate. The driver overwrites these per substep.</span>
+<span class="sd">        chi_bands : tuple of str, optional</span>
+<span class="sd">            Names for the rows of `chi`. Defaults to `DEFAULT_CHI_BANDS`</span>
+<span class="sd">            (`(&#39;FUV&#39;, &#39;LW&#39;, &#39;EUV&#39;)`) when `nfreq == 3` and to a</span>
+<span class="sd">            positional `(&#39;chi_0&#39;, &#39;chi_1&#39;, ...)` layout otherwise.</span>
+<span class="sd">        network, solver, thermo, cooling, opacity, radiation : optional</span>
+<span class="sd">            Policy instances. When supplied, their qualified class name</span>
+<span class="sd">            and `__version__` attribute are stamped into</span>
+<span class="sd">            `state.policy_versions`. Unsupplied roles get the</span>
+<span class="sd">            `&#39;__none__&#39;` sentinel.</span>
+
+<span class="sd">        Returns</span>
+<span class="sd">        -------</span>
+<span class="sd">        ChemState</span>
+<span class="sd">            Validated strip with the abundance vector seeded to the</span>
+<span class="sd">            neutral state and all radiation / column fields zeroed.</span>
+
+<span class="sd">        Notes</span>
+<span class="sd">        -----</span>
+<span class="sd">        The factory does not consume the helium baseline `A_He` --</span>
+<span class="sd">        that lives on `ThermoPolicy`. It is in the signature so the</span>
+<span class="sd">        Phase 3 driver can adopt a single call shape without further</span>
+<span class="sd">        churn.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">r</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">r</span><span class="o">.</span><span class="n">ndim</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s1">&#39;r must be 1-D; got shape </span><span class="si">{</span><span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="n">ncell</span> <span class="o">=</span> <span class="n">r</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="n">nH</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">nH</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">T</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nH</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;nH shape </span><span class="si">{</span><span class="n">nH</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> does not match r ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">T</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s1">&#39;T shape </span><span class="si">{</span><span class="n">T</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> does not match r ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">nspec</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">species</span><span class="p">,</span> <span class="s1">&#39;nspec&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">nspec</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s1">&#39;species must expose `nspec`; got &#39;</span>
+                <span class="sa">f</span><span class="s1">&#39;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">species</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="c1"># Seed abundances: one full unit on the first row (HI in the</span>
+        <span class="c1"># canonical SpeciesSet ordering), zeros elsewhere. Concrete</span>
+        <span class="c1"># callers override after construction.</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nspec</span><span class="p">,</span> <span class="n">ncell</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">x</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="mf">1.0</span>
+
+        <span class="n">Z_g_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">ncell</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">Z_g</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">Z_d_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">ncell</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">Z_d</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">T_dust</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">T_dust_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">ncell</span><span class="p">,</span> <span class="mf">15.0</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">T_dust_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">asarray</span><span class="p">(</span><span class="n">T_dust</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">T_dust_arr</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="p">(</span><span class="n">ncell</span><span class="p">,):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;T_dust shape </span><span class="si">{</span><span class="n">T_dust_arr</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s1"> != ncell=</span><span class="si">{</span><span class="n">ncell</span><span class="si">}</span><span class="s1">&#39;</span><span class="p">)</span>
+
+        <span class="n">nfreq_int</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">nfreq</span><span class="p">),</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="n">chi</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nfreq_int</span><span class="p">,</span> <span class="n">ncell</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">N_col</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="nb">max</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">ncol</span><span class="p">),</span> <span class="mi">0</span><span class="p">),</span> <span class="n">ncell</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">xi_CR_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">ncell</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">xi_CR</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">dvdr_arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">full</span><span class="p">(</span><span class="n">ncell</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">dvdr</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+        <span class="n">dt_rem</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">ncell</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">float64</span><span class="p">)</span>
+
+        <span class="c1"># Resolve chi_bands. When the caller did not pass a layout,</span>
+        <span class="c1"># default to the 3-band NCR convention for nfreq=3 and to a</span>
+        <span class="c1"># positional naming for other widths so `chi_for()` still works.</span>
+        <span class="k">if</span> <span class="n">chi_bands</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">nfreq_int</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">DEFAULT_CHI_BANDS</span><span class="p">):</span>
+                <span class="n">bands_resolved</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="n">DEFAULT_CHI_BANDS</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">bands_resolved</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;chi_</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s1">&#39;</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nfreq_int</span><span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">bands_resolved</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="n">chi_bands</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">bands_resolved</span><span class="p">)</span> <span class="o">!=</span> <span class="n">nfreq_int</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s1">&#39;chi_bands has </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">bands_resolved</span><span class="p">)</span><span class="si">}</span><span class="s1"> entries but &#39;</span>
+                    <span class="sa">f</span><span class="s1">&#39;nfreq=</span><span class="si">{</span><span class="n">nfreq_int</span><span class="si">}</span><span class="s1">&#39;</span>
+                <span class="p">)</span>
+
+        <span class="c1"># Stamp policy_versions from the supplied policy instances. The</span>
+        <span class="c1"># &#39;network&#39; / &#39;thermo&#39; entries are always present (even when not</span>
+        <span class="c1"># supplied) so legacy call sites that read these keys keep</span>
+        <span class="c1"># working; the others appear only when provided.</span>
+        <span class="n">provided</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span>
+            <span class="n">_POLICY_ROLES</span><span class="p">,</span>
+            <span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="n">solver</span><span class="p">,</span> <span class="n">thermo</span><span class="p">,</span> <span class="n">cooling</span><span class="p">,</span> <span class="n">opacity</span><span class="p">,</span> <span class="n">radiation</span><span class="p">),</span>
+        <span class="p">))</span>
+        <span class="n">policy_versions</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s1">&#39;network&#39;</span><span class="p">:</span> <span class="n">_policy_version_tag</span><span class="p">(</span><span class="n">provided</span><span class="p">[</span><span class="s1">&#39;network&#39;</span><span class="p">]),</span>
+            <span class="s1">&#39;thermo&#39;</span><span class="p">:</span>  <span class="n">_policy_version_tag</span><span class="p">(</span><span class="n">provided</span><span class="p">[</span><span class="s1">&#39;thermo&#39;</span><span class="p">]),</span>
+        <span class="p">}</span>
+        <span class="k">for</span> <span class="n">role</span> <span class="ow">in</span> <span class="p">(</span><span class="s1">&#39;solver&#39;</span><span class="p">,</span> <span class="s1">&#39;cooling&#39;</span><span class="p">,</span> <span class="s1">&#39;opacity&#39;</span><span class="p">,</span> <span class="s1">&#39;radiation&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">provided</span><span class="p">[</span><span class="n">role</span><span class="p">]</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">policy_versions</span><span class="p">[</span><span class="n">role</span><span class="p">]</span> <span class="o">=</span> <span class="n">_policy_version_tag</span><span class="p">(</span><span class="n">provided</span><span class="p">[</span><span class="n">role</span><span class="p">])</span>
+
+        <span class="c1"># Walk_order falls out of the network when one is supplied.</span>
+        <span class="n">walk_order</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="o">...</span><span class="p">]</span> <span class="o">=</span> <span class="p">()</span>
+        <span class="k">if</span> <span class="n">network</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">wo</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="s1">&#39;walk_order&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">wo</span><span class="p">:</span>
+                <span class="n">walk_order</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">(</span><span class="nb">tuple</span><span class="p">(</span><span class="n">g</span><span class="p">)</span> <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">wo</span><span class="p">)</span>
+
+        <span class="n">state</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span>
+            <span class="n">species</span><span class="o">=</span><span class="n">species</span><span class="p">,</span>
+            <span class="n">policy_versions</span><span class="o">=</span><span class="n">policy_versions</span><span class="p">,</span>
+            <span class="n">walk_order</span><span class="o">=</span><span class="n">walk_order</span><span class="p">,</span>
+            <span class="n">x</span><span class="o">=</span><span class="n">x</span><span class="p">,</span>
+            <span class="n">nH</span><span class="o">=</span><span class="n">nH</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">T</span><span class="o">=</span><span class="n">T</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span>
+            <span class="n">T_dust</span><span class="o">=</span><span class="n">T_dust_arr</span><span class="p">,</span>
+            <span class="n">Z_g</span><span class="o">=</span><span class="n">Z_g_arr</span><span class="p">,</span>
+            <span class="n">Z_d</span><span class="o">=</span><span class="n">Z_d_arr</span><span class="p">,</span>
+            <span class="n">chi</span><span class="o">=</span><span class="n">chi</span><span class="p">,</span>
+            <span class="n">xi_CR</span><span class="o">=</span><span class="n">xi_CR_arr</span><span class="p">,</span>
+            <span class="n">N_col</span><span class="o">=</span><span class="n">N_col</span><span class="p">,</span>
+            <span class="n">dvdr</span><span class="o">=</span><span class="n">dvdr_arr</span><span class="p">,</span>
+            <span class="n">dt</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">dt_remaining</span><span class="o">=</span><span class="n">dt_rem</span><span class="p">,</span>
+            <span class="n">t</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
+            <span class="n">chi_bands</span><span class="o">=</span><span class="n">bands_resolved</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="c1"># Give the network a chance to register its scratch buffers.</span>
+        <span class="k">if</span> <span class="n">network</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">alloc_hook</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">network</span><span class="p">,</span> <span class="s1">&#39;allocate_scratch&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">callable</span><span class="p">(</span><span class="n">alloc_hook</span><span class="p">):</span>
+                <span class="n">alloc_hook</span><span class="p">(</span><span class="n">state</span><span class="p">)</span>
+        <span class="c1"># Attach the grid coordinate as a non-schema field for callers</span>
+        <span class="c1"># that want to plot the strip later. Not part of validate().</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">,</span> <span class="n">r</span><span class="p">)</span>
+        <span class="c1"># Forward the helium abundance for downstream policy use; same</span>
+        <span class="c1"># rationale as `r`.</span>
+        <span class="nb">object</span><span class="o">.</span><span class="fm">__setattr__</span><span class="p">(</span><span class="n">state</span><span class="p">,</span> <span class="s1">&#39;A_He&#39;</span><span class="p">,</span> <span class="nb">float</span><span class="p">(</span><span class="n">A_He</span><span class="p">))</span>
+        <span class="n">state</span><span class="o">.</span><span class="n">validate</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">state</span></div>
+
+<div class="viewcode-block" id="ChemState.from_meshblock"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.from_meshblock">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_meshblock</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ChemState&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct from an Athena++ MeshBlock view. Phase 8.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s1">&#39;ChemState.from_meshblock arrives in Phase 8 (tigris-ncr port)&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChemState.from_photchem"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.from_photchem">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">from_photchem</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s1">&#39;ChemState&#39;</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Construct by adapting an existing</span>
+<span class="sd">        `pyathena.microphysics.photchem.PhotChem` instance — used by</span>
+<span class="sd">        parity tests. Phase 2 fleshes this out alongside NCRNetwork3.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s1">&#39;ChemState.from_photchem arrives in Phase 2 with NCRNetwork3&#39;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ChemState.to_hdf5"><a class="viewcode-back" href="../../../content/chemistry.html#pyathena.chemistry.state.ChemState.to_hdf5">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">to_hdf5</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">path</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;Serialise payload only. Phase 8.&quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">NotImplementedError</span><span class="p">(</span>
+            <span class="s1">&#39;ChemState.to_hdf5 arrives in Phase 8 (tigris-ncr port)&#39;</span><span class="p">)</span></div></div>
+
+
+<span class="nd">@contextlib</span><span class="o">.</span><span class="n">contextmanager</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">assert_no_alloc</span><span class="p">(</span><span class="n">allow</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Context manager: assert no new `numpy.ndarray` allocations</span>
+<span class="sd">    happened inside the block.</span>
+
+<span class="sd">    Used by Phase 3 solver tests to confirm that hot-path code paths do</span>
+<span class="sd">    not allocate. Tracks ndarray construction by wrapping the array</span>
+<span class="sd">    constructors numpy exposes at the Python level (`np.empty`,</span>
+<span class="sd">    `np.zeros`, `np.ones`, `np.full`, `np.array`, `np.asarray`, and</span>
+<span class="sd">    `np.copy`). Views, in-place ufuncs (`out=`), and pre-allocated</span>
+<span class="sd">    buffers do not go through these constructors — those are the</span>
+<span class="sd">    patterns the solver hot path must use.</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    allow : int, optional</span>
+<span class="sd">        Tolerate up to `allow` allocations without raising. Defaults to</span>
+<span class="sd">        zero. Useful when a known one-off setup allocation happens</span>
+<span class="sd">        inside the timed block.</span>
+
+<span class="sd">    Notes</span>
+<span class="sd">    -----</span>
+<span class="sd">    The wrap is process-wide (numpy has no thread-local hook), so do</span>
+<span class="sd">    not nest these or use them from multiple threads. `np.asarray` of an</span>
+<span class="sd">    array of the same dtype usually returns the input unchanged with no</span>
+<span class="sd">    fresh allocation, but a dtype / copy=True conversion does allocate</span>
+<span class="sd">    — the counter reflects what numpy actually did, not the call count.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">counter</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;n&#39;</span><span class="p">:</span> <span class="mi">0</span><span class="p">}</span>
+    <span class="n">constructors</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;empty&#39;</span><span class="p">,</span> <span class="s1">&#39;zeros&#39;</span><span class="p">,</span> <span class="s1">&#39;ones&#39;</span><span class="p">,</span> <span class="s1">&#39;full&#39;</span><span class="p">,</span> <span class="s1">&#39;array&#39;</span><span class="p">,</span> <span class="s1">&#39;copy&#39;</span><span class="p">,</span>
+                    <span class="s1">&#39;empty_like&#39;</span><span class="p">,</span> <span class="s1">&#39;zeros_like&#39;</span><span class="p">,</span> <span class="s1">&#39;ones_like&#39;</span><span class="p">,</span> <span class="s1">&#39;full_like&#39;</span><span class="p">)</span>
+    <span class="n">originals</span> <span class="o">=</span> <span class="p">{</span><span class="n">name</span><span class="p">:</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span> <span class="n">name</span><span class="p">)</span> <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">constructors</span><span class="p">}</span>
+
+    <span class="k">def</span><span class="w"> </span><span class="nf">_wrap</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">fn</span><span class="p">):</span>
+        <span class="k">def</span><span class="w"> </span><span class="nf">wrapper</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">=</span> <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">out</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">counter</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">out</span>
+        <span class="n">wrapper</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">=</span> <span class="n">name</span>
+        <span class="k">return</span> <span class="n">wrapper</span>
+
+    <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">originals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">_wrap</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">fn</span><span class="p">))</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">yield</span> <span class="n">counter</span>
+    <span class="k">finally</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">fn</span> <span class="ow">in</span> <span class="n">originals</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">np</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">fn</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">counter</span><span class="p">[</span><span class="s1">&#39;n&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">allow</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AssertionError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s1">&#39;expected at most </span><span class="si">{</span><span class="n">allow</span><span class="si">}</span><span class="s1"> numpy allocations, &#39;</span>
+            <span class="sa">f</span><span class="s1">&#39;got </span><span class="si">{</span><span class="n">counter</span><span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">]</span><span class="si">}</span><span class="s1">&#39;</span>
+        <span class="p">)</span>
+</pre></div>
+
+                </article>
+              
+
+              
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+<div class="bd-footer-content__inner container">
+  
+  <div class="footer-item">
+    
+<p class="component-author">
+By Jeong-Gyu Kim, Chang-Goo Kim, Sanghyuk Moon
+</p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+
+  <p class="copyright">
+    
+      © Copyright 2023.
+      <br/>
+    
+  </p>
+
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+  <div class="footer-item">
+    
+  </div>
+  
+</div>
+          </footer>
+        
+
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  <footer class="bd-footer">
+  </footer>
+  </body>
+</html>
