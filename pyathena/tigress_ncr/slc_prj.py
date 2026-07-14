@@ -244,7 +244,7 @@ class SliceProj:
         for ax in axes:
             i = axtoi[ax]
             dx = ds.domain["dx"][i] * self.u.length
-            conv_Sigma = (dx * self.u.muH * ac.u.cgs / au.cm**3).to("Msun/pc**2").value
+            conv_Sigma = (dx * self.u.density).to("Msun/pc**2").value
             conv_EM = (dx * au.cm**-6).to("pc cm-6").value
 
             res[ax] = dict()

@@ -145,7 +145,7 @@ def paper_snapshot(
     ]
     ds = s.load_vtk(num)
     dfi = set_my_dfi(ds.dfi)
-    if s.config_time < pd.to_datetime("2022-02-10 13:21:32 -0500"):
+    if s.config_time < pd.to_datetime("2022-02-10 13:21:32"):
         cooling_rate_unit = 1.0
     else:
         cooling_rate_unit = (s.u.energy_density / s.u.time).cgs.value

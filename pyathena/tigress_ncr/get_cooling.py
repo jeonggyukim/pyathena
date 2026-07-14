@@ -40,12 +40,12 @@ def f1(T, T0=2e4, T1=3.5e4):
 def get_cooling_heating(sim, ds, zrange=None, return_Lambda_e=True):
     """read necessary fields, calculate cooling from each coolnat"""
 
-    if sim.config_time < pd.to_datetime("2022-02-10 13:21:32 -0500"):
+    if sim.config_time < pd.to_datetime("2022-02-10 13:21:32"):
         cooling_rate_unit = 1.0
     else:
         cooling_rate_unit = (sim.u.energy_density / sim.u.time).cgs.value
 
-    # if sim.config_time < pd.to_datetime("2022-01-23 21:39:10 -0500"):
+    # if sim.config_time < pd.to_datetime("2022-01-23 21:39:10"):
     #     return_Lambda_e = True
     # else:
     #     return_Lambda_e = False

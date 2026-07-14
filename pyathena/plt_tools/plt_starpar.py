@@ -202,6 +202,7 @@ def legend_sp(ax, norm_factor, mass=[1e2, 1e3], location="top", fontsize='medium
 
 def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r,
                 orientation='horizontal',
+                tickloc="top",
                 bbox=[0.125, 0.9, 0.1, 0.015]):
 
     # Add starpar age colorbar
@@ -212,8 +213,8 @@ def colorbar_sp(fig, agemax, cmap=plt.cm.cool_r,
 
     # cbar_sp.ax.tick_params(labelsize=14)
     cb.set_label(r'${\rm age}\;[{\rm Myr}]$', fontsize=14)
-    cb.ax.xaxis.set_ticks_position('top')
-    cb.ax.xaxis.set_label_position('top')
+    cb.ax.xaxis.set_ticks_position(tickloc)
+    cb.ax.xaxis.set_label_position(tickloc)
 
     return cb
 
