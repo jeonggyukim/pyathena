@@ -13,13 +13,39 @@ Below is an example of how you can set up pyathena. It assumes that you have alr
 ```sh
 git clone https://github.com/jeonggyukim/pyathena.git
 cd pyathena
-conda env create -f env.yml
-conda activate pyathena
-pip install -e .                                         # drop the -e for a non-editable install
-python -c "import pyathena; print(pyathena.__file__)"    # sanity check
 ```
 
-Use `pip install -e .` (editable) if you plan to edit the source — changes take effect without reinstalling.
+Then pick one of the options below. Use `-e` (editable) if you plan to edit the source — changes take effect without reinstalling; drop it for a non-editable install.
+
+**Option 1 — conda + pip**
+```sh
+conda env create -f env.yml
+conda activate pyathena
+pip install -e . --no-deps    # conda already installed the dependencies
+```
+
+**Option 2 — conda + [uv](https://docs.astral.sh/uv/)**
+
+Same as Option 1, but uv resolves the editable install faster. uv uses the active conda environment (add `--python "$(which python)"` if it does not detect it).
+```sh
+conda env create -f env.yml
+conda activate pyathena
+uv pip install -e . --no-deps    # conda already installed the dependencies
+```
+
+**Option 3 — uv only (no conda)**
+
+uv installs every dependency from PyPI, so conda is not required. The dependencies are declared in `pyproject.toml`.
+```sh
+uv venv --python 3.10
+source .venv/bin/activate
+uv pip install -e .
+```
+
+Sanity check any option with:
+```sh
+python -c "import pyathena; print(pyathena.__file__)"
+```
 
 If conda cannot install the environment because two packages need different versions of the same thing, install an older version of one of them, for example:
 ```sh
@@ -43,7 +69,7 @@ See example [notebooks](notebook) and [documentation](https://jeonggyukim.github
 
 ## Contributing
 
-Fork the repo, follow the [Installation](#installation) steps with `pip install -e .`, then submit a pull request from a feature branch.
+Fork the repo, follow one of the editable ([Installation](#installation)) options, then submit a pull request from a feature branch.
 
 ## License
 
