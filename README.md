@@ -58,10 +58,27 @@ conda activate pyathena
 conda env update --file env.yml --prune
 ```
 
-To remove pyathena environment
+### Uninstall
+
+To remove only the pyathena package but keep the environment (matches Options 1 and 2):
 ```sh
-conda remove --name pyathena --all
+conda activate pyathena
+pip uninstall pyathena          # or: uv pip uninstall pyathena
 ```
+
+To remove the whole conda environment (Options 1 and 2):
+```sh
+conda deactivate
+conda env remove -n pyathena    # or: conda remove --name pyathena --all
+```
+
+To remove the uv-only environment (Option 3), delete its directory:
+```sh
+deactivate
+rm -rf .venv
+```
+
+The editable install only links to this repository, so uninstalling never deletes the source.
 
 ## Example Usage
 
