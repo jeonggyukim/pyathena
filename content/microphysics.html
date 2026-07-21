@@ -62,7 +62,7 @@
     <script>DOCUMENTATION_OPTIONS.pagename = 'content/microphysics';</script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Chemistry" href="chemistry.html" />
+    <link rel="next" title="Plotting Tools" href="plt_tools.html" />
     <link rel="prev" title="Fields" href="fields.html" />
   <meta name="viewport" content="width=device-width, initial-scale=1"/>
   <meta name="docsearch:language" content="en"/>
@@ -200,7 +200,6 @@
 <li class="toctree-l1"><a class="reference internal" href="pop_synth.html">Population Synthesis</a></li>
 <li class="toctree-l1"><a class="reference internal" href="fields.html">Fields</a></li>
 <li class="toctree-l1 current active"><a class="current reference internal" href="#">Microphysics</a></li>
-<li class="toctree-l1"><a class="reference internal" href="chemistry.html">Chemistry</a></li>
 <li class="toctree-l1"><a class="reference internal" href="plt_tools.html">Plotting Tools</a></li>
 </ul>
 <p aria-level="2" class="caption" role="heading"><span class="caption-text">Examples</span></p>
@@ -645,7 +644,7 @@ kappa_abs = absorption cross section per mass of gas (cm^2/gram)</p>
 Original python code from Rabacus implementation
 <a class="github reference external" href="https://github.com/galtay/rabacus/tree/master/rabacus/atomic/verner/photox">galtay/rabacus</a>
 (Released under GNU GPL3 v.30;
-JKIM: okay to copy snippets of their code?)</p>
+JKIM: is it okay to copy snippets of their code? what to do with license?)</p>
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.microphysics.photx.PhotX.get_Eth">
 <span class="sig-name descname"><span class="pre">get_Eth</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">Z</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">N</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'eV'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/photx.html#PhotX.get_Eth"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.photx.PhotX.get_Eth" title="Permalink to this definition">#</a></dt>
@@ -695,7 +694,7 @@ Z and N at energies E in eV.</p>
 <h2>Recombination Rates<a class="headerlink" href="#recombination-rates" title="Permalink to this heading">#</a></h2>
 <dl class="py class">
 <dt class="sig sig-object py" id="pyathena.microphysics.rec_rate.RecRate">
-<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.rec_rate.</span></span><span class="sig-name descname"><span class="pre">RecRate</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">caseB</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate" title="Permalink to this definition">#</a></dt>
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">pyathena.microphysics.rec_rate.</span></span><span class="sig-name descname"><span class="pre">RecRate</span></span><a class="reference internal" href="../_modules/pyathena/microphysics/rec_rate.html#RecRate"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.microphysics.rec_rate.RecRate" title="Permalink to this definition">#</a></dt>
 <dd><p>Class to compute Badnell (radiative/dielectronic) recombination rates,
 Draine (2011)’s recombination rates</p>
 <dl class="py method">
@@ -705,11 +704,11 @@ Draine (2011)’s recombination rates</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>Z</strong> (<em>int</em>) – Nuclear charge</p></li>
+<li><p><strong>Z</strong> (<em>int</em>) – Nuclear Charge</p></li>
 <li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion (before recombination)</p></li>
 <li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
 <li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
-and metastable terms. The default value is 1.</p></li>
+and metastable terms. The defualt value is 1.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -732,9 +731,9 @@ and metastable terms. The default value is 1.</p></li>
 <li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion (before recombination)</p></li>
 <li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
 <li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
-and metastable terms. The default value is 1.</p></li>
+and metastable terms. The defualt value is 1.</p></li>
 <li><p><strong>kind</strong> (<em>str</em>) – Set to ‘badnell’ to use fits Badnell fits or ‘dr11’ to use
-Draine (2011)’s formula. This keyword is ignored if caseB is turned on.</p></li>
+Draine (2011)’s formula.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -785,7 +784,7 @@ Ch 14.8 in Draine (2011)</p>
 <li><p><strong>N</strong> (<em>int</em>) – Number of electrons of the initial target ion</p></li>
 <li><p><strong>T</strong> (<em>array</em><em> of </em><em>floats</em>) – Temperature [K]</p></li>
 <li><p><strong>M</strong> (<em>int</em>) – Initial metastable levels (M=1 for the ground state) of the ground
-and metastable terms. The default value is 1.</p></li>
+and metastable terms. The defualt value is 1.</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns</dt>
@@ -865,11 +864,11 @@ For Draine’s ISRF in the solar neighborhood: 5.7e-11 s^-1</p></li>
       </div>
     </a>
     <a class="right-next"
-       href="chemistry.html"
+       href="plt_tools.html"
        title="next page">
       <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Chemistry</p>
+        <p class="prev-next-title">Plotting Tools</p>
       </div>
       <i class="fa-solid fa-angle-right"></i>
     </a>
