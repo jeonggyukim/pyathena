@@ -1,0 +1,24 @@
+Fit Parameters for Total Electron-Capture rate coefficients
+in Collisions of Hydrogen Ion-Molecule Isotopomer Fit Parameters
+-------------------------------------------------------------------
+
+J.G. Wang and P. C. Stancil, Physica Scripta T96, 72 (2002).
+
+The fit formula is:
+ln(rate coefficients) =sum_i C_i T_i(x)
+            x=[2ln(T)-ln(T_min)-ln(T_max)]/[ln(T_max)-ln(T_min)]
+            T_1(x)=1
+            T_2(x)=x
+          T_n+2(x)=2T_n+1(x)-T_n(x)
+
+Where rate coefficient is given in 10^-10 cm3/s and T is in K.
+
+Reaction T_min    T_max        C_1        C_2          C_3          C_4          C_5          C_6           C_7           C_8
+------------------------------------------------------------------------------------------------------------------------------------
+  1  1.0000E+1 2.0000E+4  2.502932E+0 -5.393191E-1 -4.248304E-1 -2.546348E-1 -1.170402E-1 -6.038553E-2 -2.184665E-2 -1.412504E-2
+  2  2.0000E+2 2.0000E+4  1.851741E+0  4.897535E-1 -8.010678E-1 -1.583993E-1  1.648558E-2 -2.199667E-2  1.172905E-2  2.968684E-2
+------------------------------------------------------------------------------------------------------------------------------------
+ 1. D^+ + H_2 -> H^+ + HD
+ 2. H^+ + D_2 -> D^+ + HD
+
+Last modified: October 10, 2001.

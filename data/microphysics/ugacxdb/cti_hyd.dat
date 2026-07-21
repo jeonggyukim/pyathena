@@ -1,0 +1,45 @@
+                            Description
+                            -----------
+
+This table contains rate coefficients (in cm^3/s) for reactions of the form
+X^+n + H^+ --> X^+(n+1) + H. We have fit all rate coefficients with the
+function
+
+alpha(t4) = a*t4^b[1 + c*exp(d*t4)]*exp(-E/kt4),
+
+where t4 is the temperature in units of 10^4 K, a, b, c, and d are the
+parameters of the fit, with a in units of 10^-9 cm^3/s, and the last exponent
+is simply the Boltzmann factor, with E/k in units of 10^4K. In the table below,
+column 1 gives the reactant (parent) ion (X in the reaction above), columns
+2-5 give the four fit parameters, columns 6 and 7 give the minimum and
+maximum temperature, respectively, over which the fit is valid, column 8 gives
+the value of E/k, and column 9 gives the fitted rate coefficient at 10^4K, in
+units of 10^-9 cm^3/s.
+
+
+                                    TABLE 2
+                         Charge Transfer Ionization Rates
+  ----------------------------------------------------------------------------------
+  Ion    a(10^-9 cm^3/s)   b       c         d      tlo    thi   E/k(10^4K)    R
+  ----------------------------------------------------------------------------------
+  Li^+0      2.84e-3     1.99    375.54    -54.07   1e+2   1e+4    0.000    2.84e-3
+  C^+0       1.07e-6     3.15    176.43    -4.29    1e+3   1e+5    0.000    3.66e-6
+  N^+0       4.55e-3    -0.29    -0.92     -8.38    1e+2   5e+4    1.086    1.54e-3
+  O^+0       7.40e-2     0.47    24.37     -0.74    1e+1   1e+4    0.023    9.13e-1
+  Na^+0      3.34e-6     9.31   2632.31    -3.04    1e+3   2e+4    0.000    4.24e-4
+  Mg^+0      9.76e-3     3.14    55.54     -1.12    5e+3   3e+4    0.000    1.87e-1
+  Mg^+1      7.60e-5     0.00    -1.97     -4.32    1e+4   3e+5    1.670    1.39e-5
+  Si^+0       0.92       1.15     0.80     -0.24    1e+3   2e+5    0.000    1.50e+0
+  Si^+1       2.26     7.36e-2   -0.43     -0.11    2e+3   1e+5    3.031    6.71e-2
+  S^+0       1.00e-5     0.00     0.00      0.00    1e+3   1e+4    0.000    1.00e-5
+  Cr^+1       4.39       0.61    -0.89     -3.56    1e+3   3e+4    3.349    1.50e-1
+  Mn^+1      2.83e-1   6.80e-3   6.44e-2   -9.70    1e+3   3e+4    2.368    2.65e-2
+  Fe^+0	      5.40	 0.00	 0.00       0.00    1e+1   1e+4    0.000    5.40e+0
+  Fe^+1       2.10     7.72e-2   -0.41     -7.31    1e+4   1e+5    3.005    1.04e-1
+  Co^+1      1.20e-2     3.49    24.41     -1.26    1e+3   3e+4    4.004    1.67e-3
+  ----------------------------------------------------------------------------------
+
+Notes:
+Fe: Estimate, 4/5*Langevin rate
+
+Last modified: February 5, 2001

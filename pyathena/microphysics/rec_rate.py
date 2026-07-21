@@ -12,18 +12,20 @@ class RecRate(object):
     Draine (2011)'s recombination rates
     """
 
-    def __init__(self):
+    def __init__(self, caseB=True):
         # read data
         self._read_data()
+        # Use Draine's caseB for hydrogen
+        self.caseB = caseB
 
     def _read_data(self):
 
         basedir = osp.join(pathlib.Path(__file__).parent.absolute(),
                            '../../data/microphysics')
 
-        self.fname_dr_C = os.path.join(basedir, 'badnell_dr_C.dat')
-        self.fname_dr_E = os.path.join(basedir, 'badnell_dr_E.dat')
-        self.fname_rr = os.path.join(basedir, 'badnell_rr.dat')
+        self.fname_dr_C = os.path.join(basedir, 'badnell_dr_C_2023.dat')
+        self.fname_dr_E = os.path.join(basedir, 'badnell_dr_E_2023.dat')
+        self.fname_rr = os.path.join(basedir, 'badnell_rr_2023.dat')
 
         # Read dielectronic recombination rate data
         with open(self.fname_dr_C, 'r') as fp:
@@ -122,7 +124,7 @@ class RecRate(object):
             Temperature [K]
         M : int
             Initial metastable levels (M=1 for the ground state) of the ground
-            and metastable terms. The defualt value is 1.
+            and metastable terms. The default value is 1.
 
         Returns
         -------
@@ -154,14 +156,14 @@ class RecRate(object):
         Parameters
         ----------
         Z : int
-            Nuclear Charge
+            Nuclear charge
         N : int
             Number of electrons of the initial target ion (before recombination)
         T : array of floats
             Temperature [K]
         M : int
             Initial metastable levels (M=1 for the ground state) of the ground
-            and metastable terms. The defualt value is 1.
+            and metastable terms. The default value is 1.
 
         Returns
         -------
@@ -197,10 +199,10 @@ class RecRate(object):
             Temperature [K]
         M : int
             Initial metastable levels (M=1 for the ground state) of the ground
-            and metastable terms. The defualt value is 1.
+            and metastable terms. The default value is 1.
         kind : str
             Set to 'badnell' to use fits Badnell fits or 'dr11' to use
-            Draine (2011)'s formula.
+            Draine (2011)'s formula. This keyword is ignored if caseB is turned on.
 
         Returns
         -------
@@ -209,7 +211,9 @@ class RecRate(object):
         """
 
         if kind == 'badnell':
-            if Z == 1: # No dielectronic recombination
+            if Z == 1 and self.caseB: # Ignore kind keyword
+                return self.get_rec_rate_H_caseB_Dr11(T)
+            elif Z == 1 or N == 0: # No dielectronic recombination
                 return self.get_rr_rate(Z, N, T, M=M)
             else:
                 return self.get_rr_rate(Z, N, T, M=M) + \
@@ -297,3 +301,82 @@ class RecRate(object):
         plt.loglog(T, self.get_dr_rate(Z, N, T, M=M), '--')
         plt.ylim(1e-14, 1e-10)
         return plt.gca()
+
+
+class RecRateCHIANTI(object):
+    """Total recombination rate (RR + DR) coefficient using CHIANTI
+    v11 data via ChiantiPy. Same `get_rec_rate(Z, N, T)` API as the
+    pyathena-native `RecRate`, so the two are drop-in interchangeable.
+
+    The class pre-tabulates rates on a fixed T grid at construction
+    time (CHIANTI lookups are slow per-call), and interpolates linearly
+    in log T at call time. Set `XUVTOP` to your CHIANTI v11 data
+    directory before importing.
+
+    Parameters
+    ----------
+    T_grid : array-like, optional
+        Temperature grid [K] for the pre-tabulation. Defaults to a
+        log-spaced 100-point grid from 100 K to 1e9 K covering the
+        full PDR-through-coronal range.
+    elements : list of (str, int) tuples, optional
+        Per-element atomic numbers to pre-load, e.g. [('Fe', 26)].
+        Defaults to the photchem followed set (H He C N O Ne Mg Si
+        S Ar Ca Fe). Pass a subset if you only need a few elements
+        and want to keep init time short.
+    """
+
+    DEFAULT_ELEMENTS = [
+        ('H', 1), ('He', 2), ('C', 6), ('N', 7), ('O', 8),
+        ('Ne', 10), ('Mg', 12), ('Si', 14), ('S', 16), ('Ar', 18),
+        ('Ca', 20), ('Fe', 26),
+    ]
+    _ELEM_SYM = {
+        'H':  'h',  'He': 'he', 'C':  'c',  'N':  'n',  'O':  'o',
+        'Ne': 'ne', 'Mg': 'mg', 'Si': 'si', 'S':  's',  'Ar': 'ar',
+        'Ca': 'ca', 'Fe': 'fe',
+    }
+
+    def __init__(self, T_grid=None, elements=None):
+        import ChiantiPy.core as ch
+        if T_grid is None:
+            T_grid = np.logspace(2.0, 9.0, 100)
+        else:
+            T_grid = np.asarray(T_grid, dtype=float)
+        self._T_grid = T_grid
+        self._lnT_grid = np.log(T_grid)
+        if elements is None:
+            elements = self.DEFAULT_ELEMENTS
+        # Pre-tabulated per (Z, N) -> array on T_grid.
+        # Convention: keyed by REACTANT, same as pyathena.RecRate
+        # (i.e., (Z, N) labels the ion being recombined).
+        self._table = {}
+        for element, Z in elements:
+            sym = self._ELEM_SYM[element]
+            for q in range(1, Z + 1):    # q=0 cannot recombine
+                ion_name = f'{sym}_{q + 1}'   # CHIANTI 1-based
+                try:
+                    ion = ch.ion(ion_name, temperature=T_grid)
+                    ion.recombRate()
+                    rate = np.asarray(ion.RecombRate['rate'])
+                except Exception:
+                    continue
+                rate = np.where(np.isfinite(rate) & (rate > 0), rate, 0.0)
+                N = Z - q                # reactant electron count
+                self._table[(Z, N)] = rate
+
+    def get_rec_rate(self, Z, N, T):
+        """Same API as pyathena.microphysics.rec_rate.RecRate.
+
+        Returns alpha_rec (RR + DR) [cm^3 / s] for the reactant ion
+        labeled by (Z, N) -- the ion BEFORE recombination. Returns 0
+        if CHIANTI lacks data for that ion.
+        """
+        rate = self._table.get((Z, N))
+        if rate is None:
+            return np.zeros_like(np.asarray(T, dtype=float))
+        T_arr = np.atleast_1d(np.asarray(T, dtype=float))
+        # Linear-log interpolation; clip to grid edges.
+        out = np.interp(np.log(T_arr), self._lnT_grid, rate,
+                        left=rate[0], right=rate[-1])
+        return float(out[0]) if np.isscalar(T) else out
