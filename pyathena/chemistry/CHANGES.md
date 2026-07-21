@@ -1555,3 +1555,53 @@ non-zero d_out path -- 7 analytic, 9 FD bootstrap. 4 remaining
 (4d-e): CII, OI, CI, OII (level-pop channels).
 
 Validation: tests/chemistry/ 404 passed, 2 skipped.
+
+## 2026-06-14 (cont.): solver landing -- Cramer + Zier subcycler, Rosenbrock reference, equilibrium prototypes dropped
+
+Back-fills the commits between Phase 4d-d (`b693ed7`) and HEAD
+(`f31e7af`) that were not logged at the time. Net surviving state
+only; the two equilibrium root-finder prototypes were added and then
+removed within this range.
+
+- `pyathena.chemistry.state` -- `ChemState` gains dict-valued
+  radiation fields `u_rad`, `zeta_pi`, `zeta_diss` (per band / per
+  species) plus ISRF constants; `equilibrium.py` renamed to
+  `equilibrium_seed.py`. (`6e70fc2`)
+- `pyathena.chemistry.networks.ncr3` (`NCRNetwork3`) -- adds
+  `closure_species`, `seed_equilibrium`, and dict-keyed photo rates;
+  `networks/base.py` grows the matching interface; `solvers/_stubs.py`
+  updated. Separately, `log10(0)` warnings in `_coeff_xi_coll_H2`
+  silenced. (`7eb37fc`, `9be150c`)
+- `pyathena.chemistry.equilibrium_seed` -- imports `coeff_*` from
+  `NCRNetwork3` instead of duplicating them. Retained only as an
+  initial-guess helper (`eq_xHII_xe`), not a solver. (`beeb0f6`)
+- `pyathena.chemistry.solvers.explicit_subcycling`
+  (`ExplicitSubcyclingSolver`) -- chemistry update rewritten to a 2x2
+  Cramer joint solve on `(x_H2, x_HII)` with
+  `x_HI = 1 - 2 x_H2 - x_HII` substituted into the source terms before
+  assembling the linear system (conservation-respecting; ports
+  `tigris-ncr/src/photchem/ncr_solver.hpp` `UpdateChemistry`). Adds a
+  Zier+ 2024 (AREPO-RT, MNRAS 533, 268 sec 4.1.1) post-step adaptive
+  substep controller: reject if
+  `f = max(|d temp_mu|/temp_mu, |d x_HI|, |d x_HII|, |d(2 x_H2)|)`
+  exceeds `f_chem_cap` (default 0.1); on accept carry
+  `dt_sub_next = dt_sub * min(2, f_chem_target / f)`
+  (default `f_chem_target` 0.05). New `f_chem_cap` / `f_chem_target`
+  fields in `ChemistryConfig`. (`e73cc2e`)
+- `pyathena.chemistry.solvers.rosenbrock` (`Rosenbrock23`,
+  Shampine 1982) + `pyathena.chemistry.solvers._rosenbrock_chemistry_adapter`
+  -- reference / fallback time-marching solver for the Phase 6
+  multi-ion and severe-stiffness regimes; not the production path. For
+  NCR3, BE + Cramer + Zier wins on substep count and wall time in every
+  ISM regime (cold molecular, CNM, WNM, HII region); numbers in
+  `tests/chemistry/test_chem_solver_comparison.py`. (`300a33e`,
+  `f31e7af`)
+- Equilibrium root-finder prototypes added then removed:
+  `equilibrium_solver.py` (Gauss-Seidel + naive Newton) and
+  `equilibrium_solver_v2.py` (log-space Newton + Armijo + trust
+  region) were committed as exploration and deleted in the same range
+  (`5d406f0`, `3c04658`, `f31e7af`). The production path reaches
+  equilibrium by time-marching the BE substep with the adaptive
+  controller above; no root-finder is kept.
+
+Validation: tests/chemistry/ 408 passed, 2 skipped.
