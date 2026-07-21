@@ -316,10 +316,13 @@ class PhotChem(object):
             self.sigma_pi_mean[name] = sigma_pi_Xi[name]/self.Xi
 
         # Set sigma_pi_mean to zero in bins lying entirely below threshold energy
-        # (bin's minimum wavelength already past the threshold wavelength).
         if self.clear_sigma_pi_above_thres:
             for name in ions_phot.index:
-                self.sigma_pi_mean[name][self.wav_bdry[:-1] >= self.wav_thres[name]] = 0.0
+                # A bin lies entirely below the threshold energy if its
+                # minimum wavelength (lower bin edge) is at or beyond the
+                # threshold wavelength.
+                bins_below_thres = self.wav_bdry[:-1] >= self.wav_thres[name]
+                self.sigma_pi_mean[name][bins_below_thres] = 0.0
 
         # Save to DataFrame
         self.ions['sigma_pi'] = pd.Series(self.sigma_pi_mean)
