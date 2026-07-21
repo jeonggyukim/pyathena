@@ -315,9 +315,11 @@ class PhotChem(object):
         for name in ions_phot.index:
             self.sigma_pi_mean[name] = sigma_pi_Xi[name]/self.Xi
 
+        # Set sigma_pi_mean to zero in bins lying entirely below threshold energy
+        # (bin's minimum wavelength already past the threshold wavelength).
         if self.clear_sigma_pi_above_thres:
             for name in ions_phot.index:
-                self.sigma_pi_mean[name][~(self.wav_thres[name] > self.wav_mean)] = 0.0
+                self.sigma_pi_mean[name][self.wav_bdry[:-1] >= self.wav_thres[name]] = 0.0
 
         # Save to DataFrame
         self.ions['sigma_pi'] = pd.Series(self.sigma_pi_mean)
@@ -453,11 +455,11 @@ class PhotChem(object):
         idx_wav = dfa['wav'] <= wav_max
         df = (dfa.loc[idx_wav & idx_age]).\
             copy(deep=True).reset_index(drop=True)
-        
+
         # idx = ((dfa['time_Myr'] - time).abs() ==\
         #     (dfa['time_Myr'] - time).abs().min()) &&\
         #     (dfa['wav'] < wav_max)
-                                                              
+
         # df = (dfa.loc[(dfa['time_Myr'] >= time) &
         #               (dfa['time_Myr'] < time + dt) &
         #               (dfa['wav'] < wav_max)]).\
