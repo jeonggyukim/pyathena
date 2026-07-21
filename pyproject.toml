@@ -1,0 +1,33 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pyathena"
+version = "0.1"
+description = "Read and analyze simulation data from the Athena-TIGRESS and TIGRIS codes"
+requires-python = ">=3.10"
+dependencies = [
+    "jupyter",
+    "yt>=4.4",
+    "h5py",
+    "matplotlib",
+    "numpy>=2.0",
+    "scipy",
+    "astropy",
+    "pandas",
+    "xarray",
+    "dask",
+    "netCDF4",
+    "healpy",
+    "cmasher",
+    "cmocean",
+    "jupyter-book",
+    "docutils==0.17.1",
+    "tqdm",
+    "periodictable",
+    "inherit_docstring",
+]
+
+[tool.setuptools.packages.find]
+include = ["pyathena*"]

@@ -14,6 +14,7 @@ tags
 job*
 scripts/
 working_notebooks/
-pyathena.egg-info
+*.egg-info
+.venv/
 CLAUDE.md
 .claude/
