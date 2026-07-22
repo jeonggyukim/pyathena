@@ -51,6 +51,10 @@ from pyathena.chemistry.cooling.hi_smith21 import HISmith21Cooling
 from pyathena.chemistry.cooling.h2_colldiss import H2CollDissCooling
 from pyathena.chemistry.cooling.h2_moseley21 import H2Moseley21Cooling
 from pyathena.chemistry.cooling.h2_gong17 import H2Gong17Cooling
+from pyathena.chemistry.cooling.cii import CIIFineStructureCooling
+from pyathena.chemistry.cooling.oi import OIFineStructureCooling
+from pyathena.chemistry.cooling.ci import CIFineStructureCooling
+from pyathena.chemistry.cooling.oii import OIIFineStructureCooling
 from pyathena.chemistry.heating.cosmic_ray import CosmicRayHeating
 from pyathena.chemistry.heating.photoelectric import PhotoelectricHeating
 from pyathena.chemistry.heating.h2_photodissociation import (
@@ -582,3 +586,137 @@ def test_h2_gong17_d_out_matches_FD_bootstrap():
         np.testing.assert_allclose(
             d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
             err_msg=f'(xH2={xH2})')
+
+
+# Level-population channel test profiles: (xHI, xH2, xe) with
+# xHII = 1 - xHI - 2 xH2 filled in by the test body. Same triplets as
+# the Phase 4b parity tests: mostly-atomic, half-ionized, transitional
+# and molecular-leaning compositions.
+_LEVEL_POP_PROFILES = (
+    (0.99, 0.0, 0.01),
+    (0.50, 0.0, 0.50),
+    (0.40, 0.30, 0.05),
+    (0.10, 0.45, 0.02),
+)
+
+
+def _slope_mask(state, out, d_out, eps: float = 0.03):
+    """Comparison mask for the level-population channels: keep cells
+    whose log-slope |d ln Lambda / d ln T| exceeds `eps`.
+
+    d_out = mu * dLambda/dT, so |d_out| > eps * mu * Lambda / T is
+    the log-slope cut. Near a sign change of dLambda/dT the forward
+    1-point bootstrap and the 5-point central reference disagree by
+    the curvature term, which dominates exactly where the slope
+    passes through zero; the cut drops those cancellation cells
+    while keeping every density decade in the comparison (an
+    absolute |d_out| floor would mask entire low-nH rows, since the
+    collisional d_out amplitude scales with nH). The 1e-32 floor
+    drops cells where Lambda underflowed to zero.
+    """
+    mu = state.scratch['solver:mu_at_entry']
+    return (np.abs(d_out) > eps * mu * np.abs(out) / state.T) \
+        & (np.abs(d_out) > 1.0e-32)
+
+
+def test_cii_d_out_matches_FD_bootstrap():
+    """CII 158 um 2-level channel: FD bootstrap through the
+    steady-state level solve. The H2 collision partner is piecewise
+    at T = 500 K with a finite jump in d_out across the boundary;
+    mask the boundary neighborhood, same as h2_gong17.
+    """
+    for xHI, xH2, xe in _LEVEL_POP_PROFILES:
+        xHII = 1.0 - xHI - 2.0 * xH2
+        state, species = _build_state(
+            _T, _NH, xHI=xHI, xHII=xHII, xH2=xH2, xe=xe)
+        state.x[species.idx['CII']] = 1.6e-4
+        ch = CIIFineStructureCooling(
+            i_HI=species.idx['HI'], i_H2=species.idx['H2'],
+            i_CII=species.idx['CII'],
+            i_electron=species.idx['electron'])
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        boundary_mask = np.abs(np.log10(state.T / 500.0)) < 0.02
+        mask = _slope_mask(state, out, d_out) & (~boundary_mask)
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+            err_msg=f'(xHI={xHI}, xH2={xH2}, xe={xe})')
+
+
+def test_oi_d_out_matches_FD_bootstrap():
+    """OI 63 + 146 um 3-level channel: FD bootstrap through the
+    steady-state level solve. All collision-partner fits are smooth
+    power laws in T; no piecewise boundary to mask."""
+    for xHI, xH2, xe in _LEVEL_POP_PROFILES:
+        xHII = 1.0 - xHI - 2.0 * xH2
+        state, species = _build_state(
+            _T, _NH, xHI=xHI, xHII=xHII, xH2=xH2, xe=xe)
+        state.x[species.idx['OI']] = 3.2e-4
+        ch = OIFineStructureCooling(
+            i_HI=species.idx['HI'], i_H2=species.idx['H2'],
+            i_OI=species.idx['OI'],
+            i_electron=species.idx['electron'])
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        mask = _slope_mask(state, out, d_out)
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+            err_msg=f'(xHI={xHI}, xH2={xH2}, xe={xe})')
+
+
+def test_ci_d_out_matches_FD_bootstrap():
+    """CI 370 + 609 um 3-level channel: FD bootstrap through the
+    steady-state level solve. The electron collision strengths are
+    piecewise at T = 1000 K with a finite jump in d_out across the
+    boundary; mask the boundary neighborhood."""
+    for xHI, xH2, xe in _LEVEL_POP_PROFILES:
+        xHII = 1.0 - xHI - 2.0 * xH2
+        state, species = _build_state(
+            _T, _NH, xHI=xHI, xHII=xHII, xH2=xH2, xe=xe)
+        state.x[species.idx['CI']] = 1.6e-4
+        ch = CIFineStructureCooling(
+            i_HI=species.idx['HI'], i_H2=species.idx['H2'],
+            i_CI=species.idx['CI'],
+            i_electron=species.idx['electron'])
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        boundary_mask = np.abs(np.log10(state.T / 1.0e3)) < 0.02
+        mask = _slope_mask(state, out, d_out) & (~boundary_mask)
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+            err_msg=f'(xHI={xHI}, xH2={xH2}, xe={xe})')
+
+
+def test_oii_d_out_matches_FD_bootstrap():
+    """OII 3-level channel (electron collider only): FD bootstrap
+    through the steady-state level solve. Smooth Omega power-law
+    fits; no piecewise boundary. Ionized-gas compositions -- the
+    channel is only relevant where O II exists. The upper levels sit
+    ~4e4 K above ground, so the Boltzmann factor underflows to zero
+    in the cold tail; those cells fall below the |d_out| threshold
+    and drop out of the comparison."""
+    for xHII, xe in ((0.99, 0.99), (0.5, 0.5)):
+        state, species = _build_state(
+            _T, _NH, xHI=1.0 - xHII, xHII=xHII, xe=xe)
+        state.x[species.idx['OII']] = 3.2e-4
+        ch = OIIFineStructureCooling(
+            i_OII=species.idx['OII'],
+            i_electron=species.idx['electron'])
+        _alloc_channel_scratch(state, ch)
+        out = np.empty_like(_T)
+        d_out = np.empty_like(_T)
+        ch.evaluate(state, out, d_out)
+        fd = _fd_central(ch, state)
+        mask = _slope_mask(state, out, d_out)
+        np.testing.assert_allclose(
+            d_out[mask], fd[mask], rtol=5.0e-2, atol=0.0,
+            err_msg=f'(xHII={xHII}, xe={xe})')

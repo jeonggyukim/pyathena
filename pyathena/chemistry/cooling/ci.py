@@ -108,6 +108,8 @@ class CIFineStructureCooling(CoolingChannel):
         'cooling:ci:tmp1',
         'cooling:ci:tmp2',
         'cooling:ci:fac',
+        'cooling:ci:T_orig',
+        'cooling:ci:out_tp',
     )
     __version__: ClassVar[str] = '0.1@phase4b'
 
@@ -124,12 +126,7 @@ class CIFineStructureCooling(CoolingChannel):
         self._i_CI = int(i_CI)
         self._i_electron = int(i_electron)
 
-    def evaluate(
-        self,
-        state: Any,
-        out: np.ndarray,
-        d_out: Optional[np.ndarray] = None,
-    ) -> None:
+    def _compute_lambda(self, state: Any, out: np.ndarray) -> None:
         T = state.T
         nH = state.nH
         xHI = state.x[self._i_HI]
@@ -277,5 +274,33 @@ class CIFineStructureCooling(CoolingChannel):
             xCI, out, tmp0, tmp1, tmp2,
         )
 
+    def evaluate(
+        self,
+        state: Any,
+        out: np.ndarray,
+        d_out: Optional[np.ndarray] = None,
+    ) -> None:
+        self._compute_lambda(state, out)
         if d_out is not None:
-            d_out[:] = 0.0
+            # FD bootstrap at dT_rel = 1e-3 forward (project
+            # convention; see CoolingChannel.evaluate docstring and
+            # tests/chemistry/test_fd_calibration.py). The analytic
+            # chain rule runs through the piecewise electron-strength
+            # polynomials and the steady-state 3-level solve; FD
+            # bootstrap matches the substep-damping accuracy in one
+            # extra _compute_lambda call. The T = 1000 K piecewise
+            # boundary gives an indeterminate delta for cells whose
+            # T and T * (1 + dT_rel) straddle it, same as the other
+            # gated bootstrap channels.
+            _DT_REL = 1.0e-3
+            T_orig = state.get_scratch('cooling:ci:T_orig')
+            out_tp = state.get_scratch('cooling:ci:out_tp')
+            np.copyto(T_orig, state.T)
+            np.multiply(state.T, 1.0 + _DT_REL, out=state.T)
+            self._compute_lambda(state, out_tp)
+            np.copyto(state.T, T_orig)
+            np.subtract(out_tp, out, out=d_out)
+            np.divide(d_out, T_orig, out=d_out)
+            np.multiply(d_out, 1.0 / _DT_REL, out=d_out)
+            mu = state.get_scratch('solver:mu_at_entry')
+            np.multiply(d_out, mu, out=d_out)
