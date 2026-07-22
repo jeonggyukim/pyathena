@@ -1605,3 +1605,41 @@ removed within this range.
   controller above; no root-finder is kept.
 
 Validation: tests/chemistry/ 408 passed, 2 skipped.
+
+## 2026-07-22: Phase 4d-e -- CII + OI + CI + OII FD bootstrap (Phase 4d complete)
+
+- `pyathena.chemistry.cooling.cii` / `oi` / `ci` / `oii` -- the four
+  level-population channels (`CIIFineStructureCooling`,
+  `OIFineStructureCooling`, `CIFineStructureCooling`,
+  `OIIFineStructureCooling`) gain FD-bootstrap `d_out`, closing the
+  last Phase 4d gap. Same refactor as 4d-c/4d-d: the Lambda
+  computation moves into a private `_compute_lambda(state, out)`;
+  `evaluate` calls it twice (current T, then T*(1+1e-3)) for the
+  forward FD and multiplies by `solver:mu_at_entry`. Two new scratch
+  slots per channel (`cooling:<ch>:T_orig`, `cooling:<ch>:out_tp`).
+  An analytic derivative would have to chain through the
+  steady-state 2-/3-level solve; FD bootstrap matches the
+  substep-damping accuracy in one extra `_compute_lambda` call.
+- `tests/chemistry/test_phase4d_analytic_derivatives.py` -- four new
+  tests (`test_{cii,oi,ci,oii}_d_out_matches_FD_bootstrap`) against
+  the 5-point central reference on the broad grid
+  (`T = 1e2..1e6 K` x `nH = 1e-2..1e4`), rtol = 5e-2. CII/OI/CI run
+  the Phase 4b parity composition triplets with the ghost abundance
+  set (xCII = xCI = 1.6e-4, xOI = 3.2e-4); OII runs ionized-gas
+  compositions (xHII = xe in {0.99, 0.5}, xOII = 3.2e-4). New
+  `_slope_mask` helper: instead of an absolute |d_out| floor (which
+  masks entire low-nH rows because the collisional d_out amplitude
+  scales with nH), keep cells whose log-slope
+  |d ln Lambda / d ln T| = |d_out| * T / (mu * Lambda) exceeds 0.03,
+  plus a 1e-32 underflow floor. This drops only the
+  dLambda/dT sign-change cells where the forward-vs-central
+  curvature term dominates, and keeps every density decade in the
+  comparison. CII additionally masks a 0.02-dex neighborhood of its
+  T = 500 K H2-partner piecewise boundary; CI likewise at its
+  T = 1000 K electron-strength boundary.
+
+Phase 4d complete: all 20 channels have a d_out path -- 7 analytic
+(including the two exactly-zero T-independent channels), 13 FD
+bootstrap.
+
+Validation: tests/chemistry/ 412 passed, 2 skipped.
