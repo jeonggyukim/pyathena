@@ -200,7 +200,8 @@ def to_cylindrical(vec, origin):
     return R, vec_cyl
 
 
-def groupby_bins(dat, coord, bins, range=None, cumulative=False, skipna=False):
+def groupby_bins(dat, coord, bins, range=None, cumulative=False, skipna=False,
+                 return_count=False):
     """Alternative to xr.groupby_bins, which is very slow
 
     Parameters
@@ -219,11 +220,15 @@ def groupby_bins(dat, coord, bins, range=None, cumulative=False, skipna=False):
         if True, perform cumulative binning, e.g.,
           v_r_binned[i] = v_r( edge[0] <= r < edge[i+1] ).mean()
         to calculate average velocity dispersion within radius r
+    return_count : bool, optional
+        If True, also return the number of samples in each bin.
 
     Returns
     ------
-    res: xarray.DataArray
-        binned array
+    res : xarray.DataArray
+        Binned array.
+    bin_cnt : xarray.DataArray, optional
+        Number of samples in each bin. Returned only if `return_count=True`.
     """
     if isinstance(bins, (int, np.integer)):
         if range is None:
@@ -251,8 +256,12 @@ def groupby_bins(dat, coord, bins, range=None, cumulative=False, skipna=False):
     # set new coordinates at the bin center
     centers = 0.5*(edges[1:] + edges[:-1])
     res = xr.DataArray(data=res, coords={coord: centers}, name=dat.name)
-    return res
-
+    if return_count:
+        bin_cnt = xr.DataArray(data=bin_cnt, coords={coord: centers},
+                               name='bin_count')
+        return res, bin_cnt
+    else:
+        return res
 
 def _chunk_like(*inputs: xr.DataArray | xr.Dataset, chunks: dict[str, int] | None):
     """Helper function that (re-)chunks inputs according to a single chunking dictionary.
