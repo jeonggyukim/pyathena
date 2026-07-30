@@ -33,6 +33,17 @@ def pytest_addoption(parser):
         help="Skip producing diagnostic plots from tests "
              "(plots are on by default)."
     )
+    # Declared here rather than in `tests/chemistry/perf/conftest.py`
+    # because pytest only calls `pytest_addoption` on initial conftests
+    # -- those between the rootdir and the command-line arguments. A
+    # perf-local declaration would leave `--bench` unknown to the skip
+    # hook whenever the suite is run as `pytest tests/chemistry`.
+    parser.addoption(
+        "--bench", action="store_true", default=False,
+        help="Run the Phase 4.5 performance benchmarks under "
+             "tests/chemistry/perf/ (skipped by default; they measure "
+             "throughput, they do not assert correctness)."
+    )
 
 
 @pytest.fixture(scope="session")

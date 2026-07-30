@@ -1643,3 +1643,48 @@ Phase 4d complete: all 20 channels have a d_out path -- 7 analytic
 bootstrap.
 
 Validation: tests/chemistry/ 412 passed, 2 skipped.
+
+## 2026-07-29: Phase 4.5 -- sorted-strip go/no-go benchmarks
+
+- `tests/chemistry/perf/` -- new benchmark package, skipped unless
+  `pytest --bench` (flag declared in `tests/conftest.py`; pytest only
+  calls `pytest_addoption` on initial conftests, so a perf-local
+  declaration would break `pytest tests/chemistry`). `_harness.py`
+  carries a benchmark-local regime classifier, five-regime strip
+  builders, and best-of-N timing. The regime tag stays local rather
+  than returning to the `ChemState` schema, where it was removed when
+  `scratch` became a dict; whether it earns a place back is what the
+  benchmarks were measuring.
+- `test_perf_strip_split.py` -- the result Phase 4.5 turns on. The
+  solver takes a strip-MIN `dt_sub`, so every cell walks the substep
+  count of the stiffest cell in its strip. A 256-cell strip sampled
+  across five regimes charges 37,888 cell-substeps against an ideal of
+  11,161 (3.39x). Unsorted splitting recovers nothing; sorting by
+  stiffness and splitting into 4 gives 15,232 (1.36x), saturating near
+  1.1x by 8 chunks. The unit is cell-substeps, so the counts transfer
+  to the C++ port unchanged.
+- `test_perf_simd_ceiling.py` -- numba kernels over the two gates
+  `_do_one_substep` takes (`temp_hot1`, `x_H2 < 0.25`), branch-free
+  against branched, crossed with fastmath and with transcendental vs
+  polynomial path bodies. Branch-free measures 0.50-0.59x throughput,
+  exactly the flop ratio, which cannot separate "neither vectorises"
+  from "both vectorise equally"; recorded as inconclusive. Sorted vs
+  mixed order gives 1.39x with exp/log bodies and 1.00x with
+  polynomial bodies -- cheap bodies get if-converted, leaving no
+  branch to mispredict.
+- `test_perf_strip_size.py` -- throughput against strip width. No knee
+  in 1-256 cells: the range is dominated by NumPy dispatch, with 0.44
+  ms per substep of width-independent overhead against 0.74 us per
+  cell-substep marginal, crossing near ncell = 600. Sets a Python
+  strip window of 512-4096 cells (upper end from 210 scratch buffers
+  at 1875 bytes/cell). Not a constraint on the C++ `CHUNK_SIZE`.
+- `SUMMARY.md` -- go/no-go writeup. Verdict: build the sorted-strip
+  path on load-balance grounds, not on the SIMD grounds the plan
+  assumed. Follow-ups: re-run the split benchmark against a regime
+  histogram from a real TIGRESS-NCR snapshot, and settle the SIMD
+  question in C++ with compiler vectorisation reports rather than a
+  Python proxy.
+
+Validation: tests/chemistry/ 412 passed, 12 skipped (the 10 new
+benchmarks skip without `--bench`). flake8 clean.
+
