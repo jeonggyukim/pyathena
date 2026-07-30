@@ -199,8 +199,20 @@ class CoolingChannels:
         slots.
 
         The solver expects:
-          - `solver:net_cool` = Lambda - Gamma (signed, cool-positive)
+          - `solver:net_cool` = Lambda - Gamma (signed, cool-positive),
+            per unit volume, erg / s / cm^3
           - `solver:d_net_cool_d_temp_mu` = d/d(T/mu) of the above
+
+        Individual channels write `n_H * Lambda_NCR`, that is the rate
+        per hydrogen nucleus (erg / s / H), matching the per-H^2
+        Tigris-NCR convention documented in
+        `tables/chianti_v11/build_cool.py` where the volumetric rate is
+        `n_H^2 * Lambda_NCR`. The accumulated sum is therefore short one
+        factor of `n_H` against what the solver consumes, and this
+        method applies it. The C++ side does the same multiplication in
+        the solver rather than the channel
+        (`tigris-ncr/src/photchem/ncr_solver.hpp:263`,
+        `var.cool_rate = var.nH * cool * ...`).
         """
         net_cool = state.get_scratch('solver:net_cool')
         d_net = state.get_scratch('solver:d_net_cool_d_temp_mu')
@@ -226,6 +238,10 @@ class CoolingChannels:
             else:
                 hch.evaluate(state, gam, None)
             np.subtract(net_cool, gam, out=net_cool)
+
+        # Per-H -> per-volume. See the convention note in the docstring.
+        np.multiply(net_cool, state.nH, out=net_cool)
+        np.multiply(d_net, state.nH, out=d_net)
 
 
 class HeatingChannel(abc.ABC):

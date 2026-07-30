@@ -89,8 +89,15 @@ def test_aggregator_allocate_scratch_registers_all_channels():
 
 
 def test_aggregator_update_matches_channel_sum():
-    """cooling.update(state) writes solver:net_cool = sum_c Lambda_c
-    - sum_h Gamma_h to within float round-off.
+    """cooling.update(state) writes solver:net_cool = n_H * (sum_c
+    Lambda_c - sum_h Gamma_h) to within float round-off.
+
+    The `n_H` converts the channels' per-hydrogen rate into the per
+    unit volume rate the solver consumes. Channels emit
+    `n_H * Lambda_NCR` under the per-H^2 convention of
+    `tables/chianti_v11/build_cool.py`, and the volumetric rate is
+    `n_H^2 * Lambda_NCR`; the aggregator supplies the remaining
+    factor, as the C++ solver does at `ncr_solver.hpp:263`.
     """
     state, species = _build_state(_T, _NH)
     cooling = make_ncr_default_cooling(species)
@@ -115,15 +122,17 @@ def test_aggregator_update_matches_channel_sum():
     for hch in cooling._heating:
         slot = state.get_scratch(f'cooling:Gamma:{hch.name}')
         reference -= slot
+    reference *= state.nH
 
     np.testing.assert_allclose(
         net_cool, reference, rtol=1.0e-14, atol=0.0,
-        err_msg='aggregator net_cool != sum_channels',
+        err_msg='aggregator net_cool != nH * sum_channels',
     )
-    # Derivative sum: d_net_cool_d_temp_mu = sum_c dLambda_c - sum_h
-    # dGamma_h. Phase 4d-a fills in analytic derivatives for a few
-    # channels (Dust, FreeFreeH, Lya) and leaves the rest at zero;
-    # the aggregator must still sum the per-channel slots exactly.
+    # Derivative sum: d_net_cool_d_temp_mu = n_H * (sum_c dLambda_c
+    # - sum_h dGamma_h). Phase 4d-a fills in analytic derivatives for a
+    # few channels (Dust, FreeFreeH, Lya) and leaves the rest at zero;
+    # the aggregator must still sum the per-channel slots exactly, and
+    # carry the same per-H -> per-volume factor as net_cool itself.
     reference_d = np.zeros(ncell, dtype=np.float64)
     for ch in cooling._channels:
         slot = state.get_scratch(f'cooling:dLambda:{ch.name}')
@@ -131,9 +140,10 @@ def test_aggregator_update_matches_channel_sum():
     for hch in cooling._heating:
         slot = state.get_scratch(f'cooling:dGamma:{hch.name}')
         reference_d -= slot
+    reference_d *= state.nH
     np.testing.assert_allclose(
         d_net_cool, reference_d, rtol=1.0e-14, atol=0.0,
-        err_msg='aggregator d_net_cool != sum_channel_derivatives',
+        err_msg='aggregator d_net_cool != nH * sum_channel_derivatives',
     )
 
 
@@ -159,3 +169,72 @@ def test_driver_setup_chains_cooling_allocation():
     # And one step runs (does not raise) on a tiny dt.
     nsub = driver.step(1.0e8, state)
     assert nsub >= 1
+
+
+def test_cooling_rate_scales_linearly_with_density():
+    """d(temp_mu)/dt is proportional to n_H at fixed T and composition.
+
+    The volumetric cooling rate goes as n_H^2 (per-H^2 Lambda_NCR
+    convention) while the internal energy density goes as n_H, so the
+    rate of change of temperature is linear in n_H. Before the
+    aggregator applied the per-H to per-volume conversion, channel
+    output (proportional to n_H) cancelled against
+    `inv_heat_cap_per_temp_mu` (proportional to 1/n_H) and the rate came
+    out independent of density. That left the solver correct only at
+    n_H = 1 cm^-3: cooling was too fast in diffuse gas and too slow in
+    dense gas.
+    A stub channel with a density-independent `Lambda_NCR` isolates the
+    conversion from channel physics. The production channel set cannot
+    be used here: level-population cooling (CII, OI, CI) saturates above
+    its critical density, and photoelectric heating and grain
+    recombination depend on `psi = G sqrt(T) / n_e`, so their
+    `Lambda_NCR` carries a genuine density dependence of its own.
+    """
+    from pyathena.chemistry.cooling.base import (
+        CoolingChannel,
+        CoolingChannels,
+    )
+    from pyathena.chemistry.solvers.explicit_subcycling import (
+        ExplicitSubcyclingSolver,
+    )
+
+    _LAMBDA_NCR = 1.0e-24  # erg cm^3 / s, constant by construction
+
+    class _ConstLambdaChannel(CoolingChannel):
+        name = 'ConstLambda'
+        SCRATCH_NAMES = ()
+
+        def evaluate(self, state, out, d_out=None):
+            # Channels emit n_H * Lambda_NCR (per hydrogen nucleus).
+            np.multiply(state.nH, _LAMBDA_NCR, out=out)
+            if d_out is not None:
+                d_out[:] = 0.0
+
+    T_fixed = 1.0e4
+    densities = np.array([1.0e-2, 1.0e-1, 1.0e0, 1.0e1, 1.0e2])
+    rates = []
+    for nH_val in densities:
+        T = np.full(2, T_fixed)
+        nH = np.full(2, nH_val)
+        state, _ = _build_state(T, nH)
+        solver = ExplicitSubcyclingSolver(
+            ChemistryConfig(), NCRNetwork3(), NCRThermo(),
+            cooling=CoolingChannels(channels=(_ConstLambdaChannel(),)),
+        )
+        solver.allocate_scratch(state)
+        solver.cooling.allocate_scratch(state)
+        solver._evaluate_cooling(state)
+        net_cool = state.get_scratch('solver:net_cool')[0]
+        inv_hc = state.get_scratch(
+            'solver:inv_heat_cap_per_temp_mu')[0]
+        rates.append(inv_hc * net_cool)
+
+    rates = np.array(rates)
+    # rate / n_H must be constant across four decades of density.
+    normalized = rates / densities
+    np.testing.assert_allclose(
+        normalized, normalized[0], rtol=1.0e-12, atol=0.0,
+        err_msg=('d(temp_mu)/dt is not linear in n_H; the per-H to '
+                 'per-volume conversion in CoolingChannels.update is '
+                 'missing or duplicated'),
+    )

@@ -1688,3 +1688,54 @@ Validation: tests/chemistry/ 412 passed, 2 skipped.
 Validation: tests/chemistry/ 412 passed, 12 skipped (the 10 new
 benchmarks skip without `--bench`). flake8 clean.
 
+## 2026-07-30: Fix missing per-H to per-volume conversion in cooling
+
+- `pyathena.chemistry.cooling.base.CoolingChannels.update` now
+  multiplies the accumulated `solver:net_cool` and
+  `solver:d_net_cool_d_temp_mu` by `state.nH`. Individual channels
+  emit `n_H * Lambda_NCR` (erg / s / H) under the per-H^2 convention
+  documented in `tables/chianti_v11/build_cool.py`, where the
+  volumetric rate is `n_H^2 * Lambda_NCR`. The solver consumes a
+  volumetric rate (`_substep_kernels.semi_implicit_temp_mu_update`,
+  and `inv_heat_cap_per_temp_mu = (gamma-1)/(n_H mu_hyd k_B)`), so the
+  sum was short one factor of `n_H`. The C++ side applies the same
+  multiplication in the solver rather than the channel
+  (`tigris-ncr/src/photchem/ncr_solver.hpp:263`,
+  `var.cool_rate = var.nH * cool * ...`).
+- Effect: `d(temp_mu)/dt` was independent of density. Channel output
+  scales as `n_H` and `inv_heat_cap_per_temp_mu` as `1/n_H`, and the
+  two cancelled exactly. The solver was correct only at
+  `n_H = 1 cm^-3`; cooling ran `1/n_H` too fast in diffuse gas and
+  `n_H` too slow in dense gas. Measured over four decades of density
+  at fixed T and composition, the pre-fix rate was constant to 5
+  significant figures where it must be linear in `n_H`.
+- Per-regime effect over a 1 Myr step, before -> after (substep count,
+  final T): hot (`n_H` 1e-2) 350 -> 1, T 1e6 K fell to 1.07e3 K and
+  now falls to 9.51e5 K; HII (1e1) 42 -> 142; CNM (5e1) 27 -> 40;
+  cold molecular (1e3) 1 -> 37. Diffuse gas no longer collapses and
+  dense gas now cools.
+- `tests/chemistry/parity/test_cooling_channels_aggregator.py` --
+  `test_aggregator_update_matches_channel_sum` updated: the contract is
+  now `net_cool == n_H * sum_channels`, for the derivative slot as
+  well. The old form asserted the sum without the factor, which
+  codified the defect.
+- New `test_cooling_rate_scales_linearly_with_density`: at fixed T and
+  composition, `d(temp_mu)/dt` must be proportional to `n_H` across
+  1e-2 to 1e2 cm^-3, at rtol 1e-12. It runs against a stub channel
+  with a density-independent `Lambda_NCR`, not the production set:
+  level-population cooling (CII, OI, CI) saturates above its critical
+  density, and photoelectric heating and grain recombination depend on
+  `psi = G sqrt(T)/n_e`, so the production channels carry a genuine
+  density dependence of their own (about 18 percent over that range)
+  that would mask the test.
+- Not fixed here: pyathena still has no hot-gas regime branch on
+  cooling. The C++ `EvaluateThermal` blends to CIE between
+  `temp_hot0` and `temp_hot1` and uses CIE only above `temp_hot1`;
+  pyathena applies every channel at every temperature. At 1e6 K
+  `GrainRecombinationCooling` gives Lambda_e = 3.45e-23 against a
+  metal-free CIE total of 5.00e-24, because the WD01 charge parameter
+  `x = 1.7 chi_PE sqrt(T)/(n_e phi) + 50` leaves the fit scaling as
+  T^1.02 with no radiation field.
+
+Validation: tests/chemistry/ 413 passed, 12 skipped. flake8 clean.
+
