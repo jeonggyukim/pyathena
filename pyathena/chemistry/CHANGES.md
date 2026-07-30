@@ -1739,3 +1739,80 @@ benchmarks skip without `--bench`). flake8 clean.
 
 Validation: tests/chemistry/ 413 passed, 12 skipped. flake8 clean.
 
+## 2026-07-30: Charge-transfer rate tables (interp modes)
+
+- `pyathena.chemistry.rates.ct_rate.ChargeTransferRate` accepts
+  `InterpMode.LogLog`, `Nqt2` and `Nqt1` in addition to `Exact`; the
+  constructor no longer raises `NotImplementedError` for them. This
+  was the last of the three rate modules without a table path
+  (`ci_rate` and `rec_rate` have had one since Phase 3.5).
+- Grid and encoding match `ci_rate` and `rec_rate` exactly:
+  `_TAB_N = 2000` points, `_TAB_T_MIN = 1` K to `_TAB_T_MAX = 1e9` K,
+  log10 spacing for LogLog and an `nqt1_log` axis for the NQT modes,
+  `_RATE_FLOOR = 1e-100`. The three modules therefore share one
+  temperature axis, which is what lets a single log-T index drive a
+  lookup across all of them.
+- Two tables, `(_TAB_N, n_keys)` each, one column per `(Z, N)`
+  reactant: 114 ionization columns (92 of them identically zero) and
+  110 recombination columns (27 zero). Columns are filled by calling
+  the analytic getters, now `_get_ct_ion_rate_exact` and
+  `_get_ct_rec_rate_exact`, so the builder captures the special-cased
+  ions and the per-ion `Tmin`/`Tmax` clamping without knowing about
+  them. Identically-zero columns carry a flag and return exact zeros
+  rather than `_RATE_FLOOR`.
+- Charge branches stay outside the table because they are
+  temperature-independent: ionization returns zeros for `q > 3`,
+  recombination returns zeros for `q < 1` and the Dalgarno estimate
+  `1.92e-9 * q` for `q > 4`.
+- The UGA accessors (`get_ct_ion_rate_uga`, `get_ct_rec_rate_uga`)
+  stay analytic in every mode. They read a separate database and are
+  not on the production path.
+- Clamp-aware recombination. Tabulating the analytic form directly
+  gave a worst relative error of 8.9e-2 (C II), entirely from the
+  per-ion `Tmin2`/`Tmax2` clamp: the analytic path clips `T` and then
+  evaluates, which leaves a slope discontinuity at each window edge,
+  and interpolating across the bin straddling one of those is what
+  costs the accuracy. Refining the grid does not help -- worst error
+  across `_TAB_N` = 2000, 4000, 8000, 16000 runs 8.9e-2, 7.4e-3,
+  1.0e-2, 7.5e-4, non-monotonic, because it depends on whether a grid
+  node happens to land near each ion's kink.
+
+  Recombination columns are therefore built from the **unclamped**
+  fit, with the clamp applied to `T` during lookup
+  (`_rec_smooth_and_clamp`, and the per-column `(Tmin, Tmax)` in
+  `_tab_clamp_rec`). The kink leaves the interpolant and the clamp
+  stays exact. The evaluated window is padded two bins beyond
+  `[Tmin2, Tmax2]` so the straddling bins hold true unclamped values;
+  columns are never read outside the window, because lookup clips
+  first.
+- Accuracy after that change, measured where the rate exceeds 1e-4 of
+  each ion's peak:
+
+  | mode | ionization | recombination |
+  |------|-----------|---------------|
+  | LogLog | 7.5e-3 | 2.8e-4 |
+  | Nqt2 | 1.1e-2 | 9.9e-3 |
+  | Nqt1 | 1.5e-2 | 1.1e-2 |
+
+  Recombination under LogLog now holds the same rtol 1e-3 bar as
+  `ci_rate`. Ionization keeps the tabulate-the-clamped-form path at
+  7.5e-3: unclamping it would also require applying
+  `exp(-dE * 1e4 / T)` at lookup, and putting a transcendental back
+  into the lookup works against the point of tabulating. Only 8 of
+  120 rows carry a nonzero `dE_rate1`. The four hand-fitted ions
+  (ionization `(8,8)`, `(12,12)`, `(14,14)`; recombination `(8,7)`)
+  are piecewise polynomials with their own internal breakpoints and
+  keep whatever interpolation error they have.
+- The significance mask matters for one ion in particular. The C II
+  recombination fit has a root at 5397 K, just below its `Tmin2` of
+  5500 K, so at the clamped floor it evaluates to 0.2 percent of its
+  leading term. Relative error on that near-cancellation is
+  meaningless; unmasked it reads 3.3e-2 while the error inside the
+  fit's own window is 2.9e-3.
+- `tests/chemistry/test_ct_rate_interp_modes.py` -- 13 new tests:
+  per-mode accuracy for both directions, `Exact` still the default,
+  the temperature-independent charge branches bypassing the table, and
+  the recombination plateaus outside `[Tmin2, Tmax2]` being flat.
+
+Validation: tests/chemistry/ 426 passed, 12 skipped. `Exact` remains
+the default, so no existing behaviour changed.

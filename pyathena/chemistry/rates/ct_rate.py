@@ -19,6 +19,15 @@ import astropy.constants as ac
 
 from ..datapaths import _DATA_ROOT
 from ..enums import InterpMode
+from . import _nqt
+
+
+# Table grid. Matches `ci_rate` and `rec_rate` so the three rate
+# modules share one temperature axis and one encoding convention.
+_RATE_FLOOR: float = 1.0e-100
+_TAB_N: int = 2000
+_TAB_T_MIN: float = 1.0
+_TAB_T_MAX: float = 1.0e9
 
 
 class ChargeTransferRate(object):
@@ -28,17 +37,17 @@ class ChargeTransferRate(object):
         Parameters
         ----------
         interp_mode : InterpMode, optional
-            Rate-table interpolation mode. Only `InterpMode.Exact`
-            (analytic Cloudy + UGA fits) is supported today; the
-            table-based modes land in Phase 3.5 alongside the C++
-            port.
+            Rate-table interpolation mode. `InterpMode.Exact` evaluates
+            the analytic Cloudy and UGA fits. `LogLog`, `Nqt2` and
+            `Nqt1` pre-tabulate the Cloudy-path rates that
+            `get_ct_ion_rate` and `get_ct_rec_rate` return, on the same
+            grid `ci_rate` and `rec_rate` use.
+
+            The UGA accessors (`get_ct_ion_rate_uga`,
+            `get_ct_rec_rate_uga`) stay analytic in every mode; they
+            read a separate database and are not on the production
+            path.
         """
-        if interp_mode != InterpMode.Exact:
-            raise NotImplementedError(
-                f'ChargeTransferRate interp_mode={interp_mode!r} is '
-                'not implemented; table-based modes (LogLog / Nqt1 '
-                '/ Nqt2) land in Phase 3.5. Use InterpMode.Exact '
-                'for now.')
         self.interp_mode = interp_mode
         self.basedir = osp.join(_DATA_ROOT, 'microphysics')
 
@@ -51,6 +60,8 @@ class ChargeTransferRate(object):
         self._read_data_cloudy()
         self._read_data_uga()
         self._build_indices()
+        if interp_mode != InterpMode.Exact:
+            self._build_table(interp_mode)
 
     def _build_indices(self):
         """Build the dict-based row lookups used by the UGA-table
@@ -232,7 +243,18 @@ class ChargeTransferRate(object):
         Charge transfer ionization rate coefficient for
         Ion(Z,q) + H -> Ion(Z,q+1) + H+
         where q = Z - N is the ion charge. That is, (Z,N) is the reactant.
+
+        Dispatches to the analytic fit or to the pre-built table
+        according to `interp_mode`.
         """
+        if self.interp_mode == InterpMode.Exact:
+            return self._get_ct_ion_rate_exact(Z, N, T)
+        return self._table_lookup_ct(self._tab_ion, self._tab_col_ion,
+                                     self._tab_zero_ion, Z, N, T,
+                                     zero_if_missing=True)
+
+    def _get_ct_ion_rate_exact(self, Z, N, T):
+        """Analytic Kingdon & Ferland fit; see `get_ct_ion_rate`."""
 
         # Charge
         q = Z - N
@@ -284,7 +306,25 @@ class ChargeTransferRate(object):
         Returns 0 for q < 1 (already-neutral reactant cannot recombine
         further). For q >= 5 the rate falls back to the Dalgarno
         generic estimate `1.92e-9 * q` (data tables only cover q <= 4).
+
+        Dispatches to the analytic fit or to the pre-built table
+        according to `interp_mode`. The q < 1 and q > 4 branches are
+        temperature-independent and stay outside the table.
         """
+        if self.interp_mode == InterpMode.Exact:
+            return self._get_ct_rec_rate_exact(Z, N, T)
+        q = Z - N
+        if q < 1:
+            return np.zeros_like(T)
+        if q > 4:
+            return np.full_like(T, 1.92e-9) * q
+        return self._table_lookup_ct(self._tab_rec, self._tab_col_rec,
+                                     self._tab_zero_rec, Z, N, T,
+                                     zero_if_missing=True,
+                                     clamp=self._tab_clamp_rec)
+
+    def _get_ct_rec_rate_exact(self, Z, N, T):
+        """Analytic Kingdon & Ferland fit; see `get_ct_rec_rate`."""
 
         # Reactant charge
         q = Z - N
@@ -320,6 +360,171 @@ class ChargeTransferRate(object):
 
     def _get_index2(self, Z, N):
         return self._cloudy_idx2[(int(Z), int(N))]
+
+    # ---- Table path -----------------------------------------------------
+    def _build_table(self, mode: 'InterpMode') -> None:
+        """Pre-tabulate the Cloudy-path CT rates on a shared T grid.
+
+        Two tables, ionization and recombination, each `(_TAB_N,
+        n_keys)` with one column per `(Z, N)` reactant. Columns are
+        filled from the analytic getters, so the special-cased ions
+        (O I, Mg I, Si I for ionization; O II for recombination) and
+        the per-ion `Tmin`/`Tmax` clamping are captured without the
+        builder needing to know about them.
+
+        Keys come from the Cloudy row dictionaries. Ionization is keyed
+        directly on the reactant; recombination's data table is keyed
+        by PRODUCT electron count, so a product key `(Z, Np)` yields the
+        reactant `(Z, Np - 1)`.
+
+        Rates that vanish identically over the whole grid get a column
+        flag instead of a floor, so the lookup returns exact zeros
+        rather than `_RATE_FLOOR`.
+        """
+        if mode == InterpMode.LogLog:
+            log_T_grid = np.linspace(
+                np.log10(_TAB_T_MIN), np.log10(_TAB_T_MAX), _TAB_N,
+            )
+            self._T_grid = 10.0 ** log_T_grid
+            self._tab_x_min = float(log_T_grid[0])
+            self._tab_inv_dx = float(
+                (_TAB_N - 1) / (log_T_grid[-1] - log_T_grid[0])
+            )
+        else:  # Nqt2 / Nqt1 share the same nqt1_log T grid
+            y_min = float(_nqt.nqt1_log(np.array([_TAB_T_MIN]))[0])
+            y_max = float(_nqt.nqt1_log(np.array([_TAB_T_MAX]))[0])
+            y_grid = np.linspace(y_min, y_max, _TAB_N)
+            self._T_grid = _nqt.nqt1_exp(y_grid)
+            self._tab_x_min = y_min
+            self._tab_inv_dx = float((_TAB_N - 1) / (y_max - y_min))
+
+        ion_keys = [(Z, N) for (Z, N) in sorted(self._cloudy_idx1)
+                    if 0 <= Z - N <= 3]
+        rec_keys = [(Z, Np - 1) for (Z, Np) in sorted(self._cloudy_idx2)
+                    if Np - 1 >= 1 and 1 <= Z - (Np - 1) <= 4]
+
+        self._tab_col_ion = {k: j for j, k in enumerate(ion_keys)}
+        self._tab_col_rec = {k: j for j, k in enumerate(rec_keys)}
+        self._tab_ion, self._tab_zero_ion, self._tab_clamp_ion = \
+            self._fill_table(mode, ion_keys, self._get_ct_ion_rate_exact,
+                             None)
+        self._tab_rec, self._tab_zero_rec, self._tab_clamp_rec = \
+            self._fill_table(mode, rec_keys, self._get_ct_rec_rate_exact,
+                             self._rec_smooth_and_clamp)
+
+    def _rec_smooth_and_clamp(self, Z, N):
+        """Unclamped recombination fit plus its `(Tmin, Tmax)` window.
+
+        Returns `(callable, Tmin, Tmax)`, or None when the key has no
+        plain Kingdon & Ferland form -- the hand-fitted O II case and
+        the rows whose leading coefficient is zero.
+
+        Tabulating the unclamped fit and applying the clamp to `T`
+        during lookup keeps the kink out of the interpolant. The
+        analytic path clamps `T` and then evaluates, which puts a
+        slope discontinuity at `Tmin` and `Tmax`; interpolating across
+        the bin that straddles one of those is what produced the 8.9e-2
+        worst-case error when the clamped form was tabulated directly.
+        """
+        if (Z, N) == (8, 7):        # Draine 2011 piecewise fit
+            return None
+        i = self._get_index2(Z, N + 1)
+        if self.a2[i] == 0.0:
+            return None
+        a, b, c, d = self.a2[i], self.b2[i], self.c2[i], self.d2[i]
+
+        def fn(T):
+            T4 = np.asarray(T, dtype=np.float64) * 1e-4
+            return 1e-9 * a * T4 ** b * (1.0 + c * np.exp(d * T4))
+
+        return fn, float(self.Tmin2[i]), float(self.Tmax2[i])
+
+    def _fill_table(self, mode, keys, exact_fn, smooth_fn):
+        """Evaluate each key over the grid and encode.
+
+        `smooth_fn(Z, N)` may return `(callable, Tmin, Tmax)` to have
+        the column built from the unclamped form, with the clamp
+        applied at lookup instead. Keys it declines fall back to
+        `exact_fn`, which already clamps internally, and get an
+        open clamp window.
+        """
+        tab = np.empty((_TAB_N, len(keys)), dtype=np.float64)
+        all_zero = np.zeros(len(keys), dtype=bool)
+        clamp = np.empty((len(keys), 2), dtype=np.float64)
+        clamp[:, 0] = -np.inf
+        clamp[:, 1] = np.inf
+        # Widen the evaluated window by two bins so the bins straddling
+        # Tmin and Tmax hold true unclamped values on both sides. Beyond
+        # that the column is never read, because lookup clamps first.
+        n_pad = 2
+        for j, (Z, N) in enumerate(keys):
+            spec = smooth_fn(Z, N) if smooth_fn is not None else None
+            if spec is None:
+                rates = np.asarray(exact_fn(Z, N, self._T_grid),
+                                   dtype=np.float64)
+            else:
+                fn, t_lo, t_hi = spec
+                clamp[j] = (t_lo, t_hi)
+                pad = 10.0 ** (n_pad * (np.log10(_TAB_T_MAX)
+                                        - np.log10(_TAB_T_MIN))
+                               / (_TAB_N - 1))
+                lo_ext = max(t_lo / pad, _TAB_T_MIN)
+                hi_ext = min(t_hi * pad, _TAB_T_MAX)
+                rates = np.asarray(
+                    fn(np.clip(self._T_grid, lo_ext, hi_ext)),
+                    dtype=np.float64)
+            all_zero[j] = not np.any(rates > 0.0)
+            rates = np.where(rates > _RATE_FLOOR, rates, _RATE_FLOOR)
+            if mode == InterpMode.LogLog:
+                tab[:, j] = np.log10(rates)
+            elif mode == InterpMode.Nqt2:
+                tab[:, j] = _nqt.nqt2_log(rates)
+            else:  # Nqt1
+                tab[:, j] = _nqt.nqt1_log(rates)
+        return tab, all_zero, clamp
+
+    def _table_lookup_ct(self, tab, cols, zero_flags, Z, N, T,
+                         zero_if_missing=False, clamp=None):
+        """Two-point linear interpolation of a pre-built CT table.
+
+        `zero_if_missing` returns zeros for a `(Z, N)` outside the
+        tabulated set, matching the analytic path, which returns zeros
+        for charges the Cloudy data does not cover.
+
+        `clamp` holds a per-column `(Tmin, Tmax)`. Columns built from
+        the unclamped fit carry a finite window and have `T` clipped
+        into it here, which reproduces the analytic clamp exactly and
+        keeps the interpolation inside the smooth part of the fit.
+        Columns built from the already-clamped analytic form carry an
+        infinite window, so the clip is a no-op.
+        """
+        key = (int(Z), int(N))
+        j = cols.get(key)
+        T_arr = np.asarray(T, dtype=np.float64)
+        if j is None:
+            if zero_if_missing:
+                return np.zeros_like(T_arr)
+            raise KeyError(f'no charge-transfer table column for {key}')
+        if zero_flags[j]:
+            return np.zeros_like(T_arr)
+        if clamp is not None:
+            T_arr = np.clip(T_arr, clamp[j, 0], clamp[j, 1])
+
+        if self.interp_mode == InterpMode.LogLog:
+            x = np.log10(T_arr)
+        else:
+            x = _nqt.nqt1_log(T_arr)
+        idx_f = (x - self._tab_x_min) * self._tab_inv_dx
+        idx = np.clip(idx_f.astype(np.int64), 0, _TAB_N - 2)
+        frac = idx_f - idx.astype(np.float64)
+        lo = tab[idx, j]
+        hi = tab[idx + 1, j]
+        encoded = lo + (hi - lo) * frac
+        if self.interp_mode == InterpMode.LogLog:
+            return 10.0 ** encoded
+        if self.interp_mode == InterpMode.Nqt2:
+            return _nqt.nqt2_exp(encoded)
+        return _nqt.nqt1_exp(encoded)
 
     @staticmethod
     def get_ct_rec_HI_OII(T):
