@@ -125,46 +125,69 @@ def test_derivative_is_continuous_at_the_ramp_edges():
 
 
 def test_fade_figure(figures_dir, save_figures):
-    """Diagnostic plot: weight, faded Lambda, and derivative vs FD."""
+    """Diagnostic plot of the fade windows actually in use.
+
+    Top panel shows every production `T_FADE` on one axis, so the
+    windows can be checked against where each ion or grain population
+    is expected to survive. Lower panels verify the machinery on one
+    channel: the faded value, and the reported derivative against a
+    finite difference.
+    """
     if not save_figures:
         return
     import matplotlib
     matplotlib.use('Agg')
     import matplotlib.pyplot as plt
 
-    T = np.logspace(3.0, 6.0, 1200)
-    plain, _ = _net(_LinearChannel, T)
-    faded, d_analytic = _net(_FadedChannel, T)
-    w = faded / plain
+    from pyathena.chemistry.cooling.factories import (
+        make_ncr_default_cooling,
+    )
+    from pyathena.chemistry.species import SpeciesSet
 
-    dT = T * 1.0e-6
-    hi, _ = _net(_FadedChannel, T + dT)
-    lo, _ = _net(_FadedChannel, T - dT)
+    cooling = make_ncr_default_cooling(SpeciesSet.ncr3_with_ghosts())
+    faded_channels = [
+        ch for ch in tuple(cooling._channels) + tuple(cooling._heating)
+        if ch.T_FADE is not None
+    ]
+
+    T = np.logspace(3.0, 8.0, 2000)
+    fig, ax = plt.subplots(3, 1, figsize=(7.5, 9.5), sharex=True)
+
+    w_buf, dw_buf, tmp = (np.empty(T.size) for _ in range(3))
+    for ch in faded_channels:
+        CoolingChannels._fade_weight(T, ch.T_FADE, w_buf, dw_buf, tmp)
+        ax[0].semilogx(T, w_buf.copy(), lw=1.6,
+                       label=f'{ch.name}  {ch.T_FADE}')
+    ax[0].set_ylabel('fade weight $w(T)$')
+    ax[0].set_ylim(-0.05, 1.05)
+    ax[0].set_title('Production T_FADE windows (C2 smootherstep)')
+    ax[0].legend(fontsize=7, loc='center left')
+
+    # Machinery check on one channel, on its own window.
+    Tm = np.logspace(3.5, 6.5, 1500)
+    plain, _ = _net(_LinearChannel, Tm)
+    faded, d_analytic = _net(_FadedChannel, Tm)
+    dT = Tm * 1.0e-6
+    hi, _ = _net(_FadedChannel, Tm + dT)
+    lo, _ = _net(_FadedChannel, Tm - dT)
     fd = (hi - lo) / (2.0 * dT)
 
-    fig, ax = plt.subplots(3, 1, figsize=(7, 9), sharex=True)
-    ax[0].semilogx(T, w, 'k-')
-    for e in _FadedChannel.T_FADE:
-        for a in ax:
-            a.axvline(e, color='0.7', ls=':', lw=1)
-    ax[0].set_ylabel('fade weight $w(T)$')
-    ax[0].set_title('C2 smootherstep fade, T_FADE = '
-                    f'{_FadedChannel.T_FADE}')
-
-    ax[1].loglog(T, plain, '0.6', lw=3, label='unfaded $\\Lambda = T$')
-    ax[1].loglog(T, faded, 'k-', label='faded')
-    ax[1].set_ylabel('$\\Lambda$')
+    ax[1].loglog(Tm, plain, '0.6', lw=3, label='unfaded $\\Lambda = T$')
+    ax[1].loglog(Tm, faded, 'k-', label='faded')
+    ax[1].set_ylabel('$\\Lambda$  (test channel)')
     ax[1].set_ylim(1e2, 2e6)
-    ax[1].legend()
+    ax[1].legend(fontsize=8)
 
-    ax[2].semilogx(T, fd, '0.6', lw=3, label='finite difference')
-    ax[2].semilogx(T, d_analytic / _MU, 'k--',
+    ax[2].semilogx(Tm, fd, '0.6', lw=3, label='finite difference')
+    ax[2].semilogx(Tm, d_analytic / _MU, 'k--',
                    label='analytic (product rule)')
-    ax[2].set_ylabel('$d\\Lambda/dT$')
+    ax[2].set_ylabel('$d\\Lambda/dT$  (test channel)')
     ax[2].set_xlabel('$T$ [K]')
-    ax[2].legend()
-    # A missing product-rule term would show as the dashed curve
-    # staying flat at 1 across the ramp instead of dipping negative.
+    ax[2].legend(fontsize=8)
+    for e in _FadedChannel.T_FADE:
+        for a in ax[1:]:
+            a.axvline(e, color='0.7', ls=':', lw=1)
+
     fig.tight_layout()
     fig.savefig(figures_dir / 'cooling_fade_weight.png', dpi=120)
     plt.close(fig)
