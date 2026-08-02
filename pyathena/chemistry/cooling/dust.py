@@ -15,7 +15,7 @@ carries no relevant data for it.
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Tuple
 
 import numpy as np
 
@@ -31,6 +31,14 @@ class DustGasCoupling(CoolingChannel):
     """
 
     name: ClassVar[str] = 'DustGasCoupling'
+    # Same hot-gas window as the other two dust-coupled channels. The
+    # argument here is only the grain population, not a fit range:
+    # Gnat & Sternberg 2007 take dust to be destroyed by thermal
+    # sputtering on a timescale short compared with the cooling time
+    # (Smith et al. 1996), so there are no grains left to exchange
+    # heat with. Left ungated this channel supplies 3.2e-25 erg/s/H at
+    # 1e6 K, which is 13 percent of the metal-free total there.
+    T_FADE: ClassVar[Optional[Tuple[float, float]]] = (2.0e4, 3.5e4)
     SCRATCH_NAMES: ClassVar[tuple] = (
         'cooling:dust:tmp',
         'cooling:dust:tmp_b',

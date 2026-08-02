@@ -25,7 +25,7 @@ dispatch logic.
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Tuple
 
 import numpy as np
 
@@ -57,6 +57,11 @@ class PhotoelectricHeating(HeatingChannel):
     """Weingartner & Draine 2001 photoelectric heating on dust."""
 
     name: ClassVar[str] = 'PhotoelectricWD01'
+    # Same window as `GrainRecombinationCooling`, which this channel
+    # shares the WD01 grain-charge chain with. The two come from one
+    # charge balance and must switch off together, or the grain
+    # population is implicitly heating without cooling.
+    T_FADE: ClassVar[Optional[Tuple[float, float]]] = (2.0e4, 3.5e4)
     SCRATCH_NAMES: ClassVar[tuple] = (
         'heating:photoelectric:tmp',
         'heating:photoelectric:ne_floor',

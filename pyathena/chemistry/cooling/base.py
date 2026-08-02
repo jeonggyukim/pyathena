@@ -41,6 +41,26 @@ class CoolingChannel(abc.ABC):
     # need no internal scratch (e.g. `H2DissociationHeating`).
     SCRATCH_NAMES: ClassVar[Tuple[str, ...]] = ()
 
+    # Temperature fade, as `(T_full, T_off)`. The channel contributes
+    # at full strength at `T_full`, ramps to zero at `T_off`, and is
+    # exactly zero beyond. `T_full < T_off` fades the channel out with
+    # rising temperature; `T_full > T_off` fades it out with falling
+    # temperature. `None` means the channel contributes everywhere.
+    #
+    # Two uses. Fits calibrated for the cold and warm ISM must not be
+    # evaluated in hot gas -- the WD01 grain-charge parameter carries
+    # an additive floor of 50, so `GrainRecombinationCooling` keeps
+    # scaling as T^1.02 with no radiation field and supplies about
+    # seven times the entire metal-free CIE cooling at 1e6 K. And a
+    # tracked ion whose abundance has gone gets its cooling switched
+    # off rather than evaluated (the per-ion caps in
+    # `ai-notes/docs-claude/pyathena/cie-pool-cooling-design.md`).
+    #
+    # The aggregator ramps rather than switching, because the solver
+    # differentiates the cooling function and a step in Lambda would
+    # put a delta in `d_net_cool_d_temp_mu`.
+    T_FADE: ClassVar[Optional[Tuple[float, float]]] = None
+
     def allocate_scratch(self, state: Any) -> None:
         """Register channel-internal scratch buffers on `state`.
 
@@ -193,6 +213,116 @@ class CoolingChannels:
                 state.alloc_scratch(
                     f'{self._prefix}:dGamma:{hch.name}', (ncell,))
             hch.allocate_scratch(state)
+        # Working space for the T_FADE ramp, shared across channels
+        # because it is consumed within one channel's accumulation.
+        if any(ch.T_FADE is not None
+               for ch in tuple(self._channels) + tuple(self._heating)):
+            state.alloc_scratch(f'{self._prefix}:fade_w', (ncell,))
+            state.alloc_scratch(f'{self._prefix}:fade_dw', (ncell,))
+            state.alloc_scratch(f'{self._prefix}:fade_tmp', (ncell,))
+
+    @staticmethod
+    def _fade_weight(T: np.ndarray, fade, w: np.ndarray,
+                     dw: np.ndarray, tmp: np.ndarray) -> None:
+        """Write the C2 smootherstep fade weight into `w` and `dw/dT`
+        into `dw`.
+
+        `fade` is `(T_full, T_off)`. The weight is 1 at `T_full`, 0 at
+        `T_off`, and monotone between, with continuous first and second
+        derivatives. C2 matters because the solver differentiates the
+        cooling function: with the cheaper C1 smoothstep `3s^2 - 2s^3`
+        the resulting `dLambda/dT` would be continuous but kinked.
+
+            s     = clamp((T - T_off) / (T_full - T_off), 0, 1)
+            w     = s^3 (s (6 s - 15) + 10)
+            dw/dT = 30 s^2 (s - 1)^2 / (T_full - T_off)
+
+        Written with `T_off` as the origin so one expression serves
+        either direction: `T_full > T_off` fades out downwards,
+        `T_full < T_off` fades out upwards. Allocation-free; `tmp` is
+        working space and holds `s` on return.
+        """
+        t_full, t_off = fade
+        inv_span = 1.0 / (t_full - t_off)
+        np.subtract(T, t_off, out=tmp)
+        np.multiply(tmp, inv_span, out=tmp)
+        np.clip(tmp, 0.0, 1.0, out=tmp)      # tmp = s
+
+        np.multiply(tmp, 6.0, out=dw)
+        np.subtract(dw, 15.0, out=dw)
+        np.multiply(dw, tmp, out=dw)
+        np.add(dw, 10.0, out=dw)             # dw = s (6 s - 15) + 10
+        np.multiply(tmp, tmp, out=w)
+        np.multiply(w, tmp, out=w)           # w = s^3
+        np.multiply(w, dw, out=w)            # w = s^3 (s (6 s - 15) + 10)
+
+        np.subtract(tmp, 1.0, out=dw)
+        np.multiply(dw, dw, out=dw)          # (s - 1)^2
+        np.multiply(dw, tmp, out=dw)
+        np.multiply(dw, tmp, out=dw)         # s^2 (s - 1)^2
+        np.multiply(dw, 30.0 * inv_span, out=dw)
+
+    def _fade_is_off_everywhere(self, state: Any, channel: Any) -> bool:
+        """True when no cell in the strip is inside `channel`'s window.
+
+        Checked before `evaluate` so a channel outside its range is not
+        computed at all. That is the point of the window: evaluating a
+        three-level solve for C I at 1e7 K is not merely wasted work,
+        it overflows and returns NaN.
+
+        A strip spanning the window still evaluates everywhere, and the
+        out-of-range cells are zeroed afterwards in `_apply_fade`.
+        Removing that case as well would need the channel to clamp its
+        own temperature internally.
+        """
+        fade = channel.T_FADE
+        if fade is None:
+            return False
+        t_full, t_off = fade
+        if t_full < t_off:                 # fades out with rising T
+            return bool(np.all(state.T >= t_off))
+        return bool(np.all(state.T <= t_off))
+
+    def _apply_fade(self, state: Any, channel: Any, val: np.ndarray,
+                    dval: Optional[np.ndarray]) -> None:
+        """Scale one channel's contribution by its `T_FADE` weight.
+
+        With `L_eff = w(T) L(T)` the derivative needs the product rule,
+
+            dL_eff/dT = w dL/dT + L dw/dT
+
+        so scaling `dval` alone would be wrong inside the ramp -- it
+        would miss the term that carries the switching itself. Channels
+        report the derivative in `temp_mu` space (already multiplied by
+        `mu`), so the new term picks up the same factor.
+
+        The `L dw/dT` term is computed before `val` is scaled, since it
+        needs the unfaded value.
+        """
+        fade = channel.T_FADE
+        if fade is None:
+            return
+        w = state.get_scratch(f'{self._prefix}:fade_w')
+        dw = state.get_scratch(f'{self._prefix}:fade_dw')
+        tmp = state.get_scratch(f'{self._prefix}:fade_tmp')
+        self._fade_weight(state.T, fade, w, dw, tmp)
+
+        off = w == 0.0
+        if dval is not None:
+            mu = state.get_scratch('solver:mu_at_entry')
+            np.multiply(dw, val, out=tmp)     # L dw/dT
+            np.multiply(tmp, mu, out=tmp)     # into temp_mu space
+            np.multiply(dval, w, out=dval)    # w dL/dT
+            np.add(dval, tmp, out=dval)
+            np.copyto(dval, 0.0, where=off)
+        np.multiply(val, w, out=val)
+        # Assign rather than rely on the multiply where the channel is
+        # off. A fit evaluated far outside its range can return inf or
+        # NaN -- the C I three-level solve overflows above about 1e7 K
+        # and returns NaN -- and `NaN * 0` is still NaN, which would
+        # then poison the whole of `net_cool`. Overwriting makes the
+        # fade a numerical guard as well as a physical gate.
+        np.copyto(val, 0.0, where=off)
 
     def update(self, state: Any) -> None:
         """Recompute every channel and accumulate into the solver
@@ -220,23 +350,39 @@ class CoolingChannels:
         d_net[:] = 0.0
         for ch in self._channels:
             lam = state.get_scratch(f'{self._prefix}:Lambda:{ch.name}')
+            if self._fade_is_off_everywhere(state, ch):
+                lam[...] = 0.0
+                if self._provide_derivative:
+                    state.get_scratch(
+                        f'{self._prefix}:dLambda:{ch.name}')[...] = 0.0
+                continue
             if self._provide_derivative:
                 dlam = state.get_scratch(
                     f'{self._prefix}:dLambda:{ch.name}')
                 ch.evaluate(state, lam, dlam)
+                self._apply_fade(state, ch, lam, dlam)
                 np.add(d_net, dlam, out=d_net)
             else:
                 ch.evaluate(state, lam, None)
+                self._apply_fade(state, ch, lam, None)
             np.add(net_cool, lam, out=net_cool)
         for hch in self._heating:
             gam = state.get_scratch(f'{self._prefix}:Gamma:{hch.name}')
+            if self._fade_is_off_everywhere(state, hch):
+                gam[...] = 0.0
+                if self._provide_derivative:
+                    state.get_scratch(
+                        f'{self._prefix}:dGamma:{hch.name}')[...] = 0.0
+                continue
             if self._provide_derivative:
                 dgam = state.get_scratch(
                     f'{self._prefix}:dGamma:{hch.name}')
                 hch.evaluate(state, gam, dgam)
+                self._apply_fade(state, hch, gam, dgam)
                 np.subtract(d_net, dgam, out=d_net)
             else:
                 hch.evaluate(state, gam, None)
+                self._apply_fade(state, hch, gam, None)
             np.subtract(net_cool, gam, out=net_cool)
 
         # Per-H -> per-volume. See the convention note in the docstring.
@@ -251,6 +397,13 @@ class HeatingChannel(abc.ABC):
 
     name: ClassVar[str] = '<unset>'
     SCRATCH_NAMES: ClassVar[Tuple[str, ...]] = ()
+
+    # Temperature fade, `(T_full, T_off)`. Same contract as
+    # `CoolingChannel.T_FADE`. Heating channels need it for the same
+    # reason: `PhotoelectricHeating` shares the WD01 grain-charge
+    # chain with `GrainRecombinationCooling`, so it too is a
+    # cold-and-warm-ISM fit that must not run in hot gas.
+    T_FADE: ClassVar[Optional[Tuple[float, float]]] = None
 
     def allocate_scratch(self, state: Any) -> None:
         """Register channel-internal scratch buffers on `state`.

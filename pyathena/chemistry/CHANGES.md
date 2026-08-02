@@ -1888,3 +1888,67 @@ Validation: tests/chemistry/ 443 passed, 12 skipped. flake8 clean.
   position) and `test_locate_and_interp_are_allocation_free`.
 
 Validation: tests/chemistry/ 445 passed, 12 skipped. flake8 clean.
+
+## 2026-08-02: Per-channel temperature fades; NaN in hot-gas cooling
+
+- `CoolingChannel.T_FADE` / `HeatingChannel.T_FADE`, as
+  `(T_full, T_off)`: the channel contributes at full strength at
+  `T_full`, ramps to zero at `T_off`, and is exactly zero beyond.
+  `T_full < T_off` fades out with rising temperature, `T_full > T_off`
+  with falling. Default `None` keeps every existing channel unchanged.
+  This is the first mechanism in the cooling path able to express that
+  a channel does not apply at a given temperature.
+- `CoolingChannels.update` ramps with the C2 Hermite smootherstep
+  `w = s^3 (s (6 s - 15) + 10)`. C2 because the solver differentiates
+  the cooling function; the cheaper C1 form would leave `dLambda/dT`
+  kinked. The derivative uses the product rule,
+  `dL_eff/dT = w dL/dT + L dw/dT`, with
+  `dw/dT = 30 s^2 (s - 1)^2 / (T_full - T_off)` -- scaling `d_out`
+  alone would drop the term that carries the switching itself.
+- Channels wholly outside their window are not evaluated at all
+  (`_fade_is_off_everywhere`), and where the weight is zero the result
+  is *assigned* zero rather than multiplied by it.
+- **Fixed: NaN in `solver:net_cool` above 1.13e7 K.** The C I
+  three-level solve overflows there (`q01*q12` to inf, then inf/inf),
+  and `NaN * 0` is still NaN, so a channel whose abundance was 1e-20
+  poisoned the entire cooling rate. Any run containing gas above about
+  1e7 K was affected. Found by the new CIE consistency test on its
+  first execution.
+- Fades applied. Dust-coupled channels fade over the C++ hot-gas
+  window (2e4 to 3.5e4 K): `GrainRecombinationCooling`,
+  `PhotoelectricHeating` (same WD01 grain-charge chain, so they must
+  switch off together) and `DustGasCoupling`. Gnat & Sternberg 2007
+  take dust to be sputtered on a timescale short compared with the
+  cooling time. At 1e6 K grain recombination had been supplying
+  Lambda_e = 3.45e-23 against a metal-free CIE total of 5.0e-24.
+  Fine-structure channels fade a decade above where CIE puts their ion
+  fraction below 1e-4, as margin against underionization: C I
+  (1e5, 1e6), C II (3e5, 3e6), O I (1e5, 1e6), O II (3e5, 3e6).
+- Effect at `n_H` = 1e-2, T = 1e6 K, metals zero: net Lambda_e goes
+  from 3.70e-23 to 2.46e-24, against a metal-free CIE reference of
+  5.00e-24. The factor of two that remains is helium, which the
+  network does not track.
+- `tests/chemistry/test_cooling_fade.py` -- 7 tests on the mechanism:
+  weight endpoints, monotonicity, the product-rule derivative against
+  finite differences, derivative continuity by refinement at both
+  edges, and the reversed fade direction. Figure:
+  `tests/figures/cooling_fade_weight.png`.
+- `tests/chemistry/test_cie_consistency.py` -- 4 tests. With
+  photoionization and cosmic rays off the network relaxes to
+  collisional ionization equilibrium, so its cooling can be compared
+  directly against an independent CIE table. Checks the relaxed
+  ionization state, smoothness across the fade window, and agreement
+  with hydrogen CIE above 3e6 K. Figure:
+  `tests/figures/cie_consistency_hydrogen.png`, per-channel plus the
+  ratio to CIE(H).
+
+Two things the figure shows that are not yet fixed. Between 5e4 and
+2.5e5 K the net exceeds CIE(H) by more than a factor of three, because
+the metal ghosts are held at fixed cold-gas abundances rather than
+evolved, so metal cooling appears where those ions cannot exist -- the
+same error as C I at 1e7 K, one level up, and what the CIE pool design
+addresses. And the C I level solve still overflows internally for
+strips that span its window; the result is discarded but the warning
+remains.
+
+Validation: tests/chemistry/ 456 passed, 12 skipped.

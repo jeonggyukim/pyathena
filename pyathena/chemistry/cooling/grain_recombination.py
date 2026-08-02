@@ -23,7 +23,7 @@ CHIANTI / Cloudy table form.
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Tuple
 
 import numpy as np
 
@@ -42,6 +42,17 @@ class GrainRecombinationCooling(CoolingChannel):
     """Cooling by electron capture on dust grains (WD01)."""
 
     name: ClassVar[str] = 'GrainRecombination'
+    # Fades out across the C++ hot-gas window (`temp_hot0` 2e4 K to
+    # `temp_hot1` 3.5e4 K). Two independent reasons. The WD01 fit is
+    # calibrated for the cold and warm neutral medium, and its charge
+    # parameter `x = 1.7 chi_PE sqrt(T)/(n_e phi) + 50` floors at 50,
+    # so with no radiation field the rate keeps scaling as T^1.02
+    # instead of switching off -- at 1e6 K that is Lambda_e = 3.45e-23
+    # against a metal-free CIE total of 5.0e-24. And the grains are not
+    # there: Gnat & Sternberg 2007 assume dust is destroyed by thermal
+    # sputtering on a timescale short compared with the cooling time
+    # (Smith et al. 1996).
+    T_FADE: ClassVar[Optional[Tuple[float, float]]] = (2.0e4, 3.5e4)
     SCRATCH_NAMES: ClassVar[tuple] = (
         'cooling:grain_rec:tmp',
         'cooling:grain_rec:ne_floor',

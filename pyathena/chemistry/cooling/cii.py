@@ -15,7 +15,7 @@ because CHIANTI has no H2 collisional data. See
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Tuple
 
 import numpy as np
 
@@ -39,6 +39,15 @@ class CIIFineStructureCooling(CoolingChannel):
     """C II 158 um fine-structure cooling. Phase 4b literal port."""
 
     name: ClassVar[str] = 'CIIFineStructure'
+    # Off well above where C II exists. CIE puts its ion
+    # fraction below 1e-4 by 1.6e5 K; the fade starts a decade
+    # above that as margin against underionization, where gas
+    # heated faster than it ionizes keeps low stages past their
+    # equilibrium temperature. This is also a numerical guard:
+    # the level solve overflows at high T and returns NaN, and
+    # the aggregator zeroes rather than scales where the fade
+    # has reached zero.
+    T_FADE: ClassVar[Optional[Tuple[float, float]]] = (3.0e5, 3.0e6)
     SCRATCH_NAMES: ClassVar[tuple] = (
         'cooling:cii:T2',
         'cooling:cii:tmp',

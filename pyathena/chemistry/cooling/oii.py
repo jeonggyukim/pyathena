@@ -16,7 +16,7 @@ CHIANTI lookup; the channel structure is unchanged.
 """
 from __future__ import annotations
 
-from typing import Any, ClassVar, Optional
+from typing import Any, ClassVar, Optional, Tuple
 
 import numpy as np
 
@@ -44,6 +44,15 @@ class OIIFineStructureCooling(CoolingChannel):
     """O II fine-structure cooling."""
 
     name: ClassVar[str] = 'OIIFineStructure'
+    # Off well above where O II exists. CIE puts its ion
+    # fraction below 1e-4 by 2.2e5 K; the fade starts a decade
+    # above that as margin against underionization, where gas
+    # heated faster than it ionizes keeps low stages past their
+    # equilibrium temperature. This is also a numerical guard:
+    # the level solve overflows at high T and returns NaN, and
+    # the aggregator zeroes rather than scales where the fade
+    # has reached zero.
+    T_FADE: ClassVar[Optional[Tuple[float, float]]] = (3.0e5, 3.0e6)
     SCRATCH_NAMES: ClassVar[tuple] = (
         'cooling:oii:T4',
         'cooling:oii:lnT4',
