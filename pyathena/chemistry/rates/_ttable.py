@@ -6,16 +6,26 @@ grid all three already share, so the cooling channels can tabulate
 their temperature-only factors without a fourth copy.
 
 The grid is 2000 points from 1 K to 1e9 K, log10-spaced for
-`InterpMode.LogLog` and `nqt1_log`-spaced for the NQT modes. Sharing
-it matters for more than tidiness: one log-T index and one
-interpolation weight can then drive a lookup across every tabulated
-quantity in a cell, which is the point of the whole exercise (see
-`ai-notes/docs-claude/pyathena/rate-tabulation-scoping.md`).
+`InterpMode.LogLog` and `nqt1_log`-spaced for the NQT modes.
 
-Values are stored log-encoded, so a tabulated quantity must be
-positive over the range where it is read. Non-positive entries are
-floored at `RATE_FLOOR` and, where a column vanishes identically, a
-flag returns exact zeros instead.
+Sharing the grid is what makes tabulation pay, and the API is shaped
+around it. Finding a cell's position on the axis costs a transcendental
+(`log10`, or bit manipulation for the NQT modes); interpolating a value
+at a known position costs a few arithmetic operations plus one decode.
+So a cell that reads N quantities should call `locate` once and
+`interp` N times.
+
+Calling `lookup` per table instead recomputes the position every time,
+and then tabulation can lose outright. Lyman alpha is the worked
+example: its two temperature-only factors replace three analytic
+transcendentals, but two independent LogLog lookups cost two
+transcendentals each, so four to replace three. One `locate` plus two
+`interp` calls costs two, and wins.
+
+Values are stored log-encoded, so a tabulated quantity must be positive
+over the range where it is read. Non-positive entries are floored at
+`RATE_FLOOR` and, where a column vanishes identically, a flag returns
+exact zeros instead.
 """
 from __future__ import annotations
 
@@ -54,10 +64,14 @@ class TemperatureTable:
         the window edges, and refining the grid does not fix it --
         see the charge-transfer entry dated 2026-07-30 in
         `chemistry/CHANGES.md`.
+
+        A clamped table cannot share a position with its neighbours,
+        because the clip changes `T`. Such a table has to go through
+        `lookup`.
     """
 
-    __slots__ = ('mode', '_x_min', '_inv_dx', '_tab', '_all_zero',
-                 '_clamp', 'T_grid')
+    __slots__ = ('mode', '_x_min', '_inv_dx', '_tab', '_tab_hi',
+                 '_all_zero', '_clamp', 'T_grid')
 
     def __init__(self, fn: Callable[[np.ndarray], np.ndarray],
                  mode: InterpMode,
@@ -105,70 +119,77 @@ class TemperatureTable:
             self._tab = _nqt.nqt2_log(values)
         else:
             self._tab = _nqt.nqt1_log(values)
+        # View onto the upper node of each bracketing pair, so `interp`
+        # never has to form `idx + 1` (which would allocate).
+        self._tab_hi = self._tab[1:]
 
+    # ---- Scratch -------------------------------------------------------
     @staticmethod
     def alloc_scratch(state, prefix: str) -> None:
-        """Register the four buffers `lookup` needs on `state`.
+        """Register the buffers the lookup path needs on `state`.
 
-        Call from a channel's `allocate_scratch`. The names are
-        `<prefix>:work`, `:idx`, `:lo`, `:hi`.
+        `<prefix>:idx` and `<prefix>:frac` hold the axis position, which
+        is shared across every unclamped table on this grid.
+        `<prefix>:lo` and `<prefix>:hi` are per-interpolation working
+        space and may be reused between tables.
         """
         ncell = state.nH.shape[0]
-        state.alloc_scratch(f'{prefix}:work', (ncell,))
         state.alloc_scratch(f'{prefix}:idx', (ncell,), dtype=np.int64)
+        state.alloc_scratch(f'{prefix}:frac', (ncell,))
         state.alloc_scratch(f'{prefix}:lo', (ncell,))
         state.alloc_scratch(f'{prefix}:hi', (ncell,))
 
     @staticmethod
     def get_scratch(state, prefix: str):
-        """Fetch the tuple `lookup` expects, in order."""
-        return (state.get_scratch(f'{prefix}:work'),
-                state.get_scratch(f'{prefix}:idx'),
+        """Fetch `(idx, frac, lo, hi)` in the order the calls expect."""
+        return (state.get_scratch(f'{prefix}:idx'),
+                state.get_scratch(f'{prefix}:frac'),
                 state.get_scratch(f'{prefix}:lo'),
                 state.get_scratch(f'{prefix}:hi'))
 
-    def lookup(self, T: np.ndarray, out: np.ndarray, scratch) -> np.ndarray:
-        """Allocation-free two-point interpolation into `out`.
+    # ---- Two-step path: locate once, interpolate many ------------------
+    def locate(self, T: np.ndarray, idx: np.ndarray,
+               frac: np.ndarray) -> None:
+        """Write the grid position of `T` into `idx` and `frac`.
 
-        `scratch` is the `(work, idx, lo, hi)` tuple from
-        `get_scratch`. Every step writes through `out=`, so this may be
-        called inside `assert_no_alloc`. `np.take` rather than fancy
-        indexing for the same reason -- `self._tab[idx]` allocates.
+        This is the step that costs a transcendental, and the step to
+        run once per cell rather than once per table. Every unclamped
+        table on this grid accepts the same `(idx, frac)`.
         """
-        work, idx, lo, hi = scratch
+        np.copyto(frac, T)
+        if self.mode == InterpMode.LogLog:
+            np.log10(frac, out=frac)
+        else:
+            np.copyto(frac, _nqt.nqt1_log(frac))
+        np.subtract(frac, self._x_min, out=frac)
+        np.multiply(frac, self._inv_dx, out=frac)
+        # Clip the position to the grid before truncating. Clipping to
+        # TAB_N - 2 first would discard the top node: `frac` could never
+        # reach 1, so the last grid point would return its neighbour's
+        # value. Truncation equals floor here because the value is
+        # non-negative after the clip.
+        np.clip(frac, 0.0, float(TAB_N - 1), out=frac)
+        np.copyto(idx, frac, casting='unsafe')
+        np.clip(idx, 0, TAB_N - 2, out=idx)
+        np.subtract(frac, idx, out=frac)
+        np.clip(frac, 0.0, 1.0, out=frac)
+
+    def interp(self, idx: np.ndarray, frac: np.ndarray, out: np.ndarray,
+               lo: np.ndarray, hi: np.ndarray) -> np.ndarray:
+        """Interpolate at a position produced by `locate`.
+
+        No transcendental beyond the single decode, and no index
+        arithmetic. `np.take` rather than fancy indexing because
+        `self._tab[idx]` allocates.
+        """
         if self._all_zero:
             out[...] = 0.0
             return out
-
-        if self._clamp is None:
-            np.copyto(work, T)
-        else:
-            np.clip(T, self._clamp[0], self._clamp[1], out=work)
-
-        if self.mode == InterpMode.LogLog:
-            np.log10(work, out=work)
-        else:
-            np.copyto(work, _nqt.nqt1_log(work))
-
-        np.subtract(work, self._x_min, out=work)
-        np.multiply(work, self._inv_dx, out=work)
-        # Clip the position to the grid, then take the lower node of the
-        # bracketing pair. Clipping to TAB_N - 2 *before* the floor would
-        # discard the top node: the last grid point would return its
-        # neighbour's value, because `frac` could never reach 1.
-        np.clip(work, 0.0, float(TAB_N - 1), out=work)
-        np.floor(work, out=out)
-        np.clip(out, 0.0, float(TAB_N - 2), out=out)
-        idx[...] = out.astype(np.int64)
-        np.subtract(work, out, out=work)  # work now holds frac in [0, 1]
-
         np.take(self._tab, idx, out=lo)
-        np.add(idx, 1, out=idx)
-        np.take(self._tab, idx, out=hi)
-
+        np.take(self._tab_hi, idx, out=hi)
         np.subtract(hi, lo, out=hi)
-        np.multiply(hi, work, out=hi)
-        np.add(lo, hi, out=out)           # out holds the encoding
+        np.multiply(hi, frac, out=hi)
+        np.add(lo, hi, out=out)
         if self.mode == InterpMode.LogLog:
             np.power(10.0, out, out=out)
         elif self.mode == InterpMode.Nqt2:
@@ -177,16 +198,35 @@ class TemperatureTable:
             np.copyto(out, _nqt.nqt1_exp(out))
         return out
 
+    # ---- One-step path -------------------------------------------------
+    def lookup(self, T: np.ndarray, out: np.ndarray, scratch) -> np.ndarray:
+        """`locate` then `interp` for a single table.
+
+        Correct anywhere, and the only option for a clamped table, but
+        it pays the position cost per table. Prefer one `locate` plus
+        several `interp` when a cell reads more than one table.
+        """
+        idx, frac, lo, hi = scratch
+        if self._all_zero:
+            out[...] = 0.0
+            return out
+        if self._clamp is None:
+            self.locate(T, idx, frac)
+        else:
+            np.clip(T, self._clamp[0], self._clamp[1], out=lo)
+            self.locate(lo, idx, frac)
+        return self.interp(idx, frac, out, lo, hi)
+
     def __call__(self, T: np.ndarray,
                  out: Optional[np.ndarray] = None) -> np.ndarray:
         """Convenience form that allocates its own scratch.
 
         For setup, tests and plotting. The substep loop should use
-        `lookup` with buffers from `get_scratch`.
+        `locate` once and `interp` per table.
         """
         T_arr = np.asarray(T, dtype=np.float64)
         result = out if out is not None else np.empty_like(T_arr)
-        scratch = (np.empty_like(T_arr),
-                   np.empty(T_arr.shape, dtype=np.int64),
+        scratch = (np.empty(T_arr.shape, dtype=np.int64),
+                   np.empty_like(T_arr),
                    np.empty_like(T_arr), np.empty_like(T_arr))
         return self.lookup(T_arr, result, scratch)

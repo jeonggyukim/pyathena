@@ -105,7 +105,7 @@ def test_lookup_is_allocation_free(mode):
     n = 64
     T = np.logspace(1.0, 8.0, n)
     out = np.empty(n)
-    scratch = (np.empty(n), np.empty(n, dtype=np.int64),
+    scratch = (np.empty(n, dtype=np.int64), np.empty(n),
                np.empty(n), np.empty(n))
     table.lookup(T, out, scratch)          # warm any lazy import
     with assert_no_alloc():
@@ -117,7 +117,7 @@ def test_lookup_matches_the_convenience_form():
     table = TemperatureTable(_free_free, InterpMode.LogLog)
     n = _T.size
     out = np.empty(n)
-    scratch = (np.empty(n), np.empty(n, dtype=np.int64),
+    scratch = (np.empty(n, dtype=np.int64), np.empty(n),
                np.empty(n), np.empty(n))
     table.lookup(_T, out, scratch)
     np.testing.assert_array_equal(out, table(_T))
@@ -136,3 +136,46 @@ def test_grid_endpoints_are_reproduced():
     edges = table.T_grid[[0, TAB_N - 1]]
     np.testing.assert_allclose(table(edges), _free_free(edges),
                                rtol=1.0e-12)
+
+
+def test_locate_is_shared_across_tables():
+    """One `locate` drives many `interp` calls.
+
+    This is the property that makes tabulation pay: finding the axis
+    position costs a transcendental, interpolating at a known position
+    does not. A cell reading N quantities should pay the position once.
+    """
+    t1 = TemperatureTable(_free_free, InterpMode.LogLog)
+    t2 = TemperatureTable(lambda T: np.exp(-11.84 / (T * 1.0e-4)),
+                          InterpMode.LogLog)
+    n = _T.size
+    idx = np.empty(n, dtype=np.int64)
+    frac = np.empty(n)
+    lo, hi = np.empty(n), np.empty(n)
+    o1, o2 = np.empty(n), np.empty(n)
+
+    t1.locate(_T, idx, frac)
+    t1.interp(idx, frac, o1, lo, hi)
+    t2.interp(idx, frac, o2, lo, hi)
+
+    # Identical to each table resolving the position on its own.
+    np.testing.assert_array_equal(o1, t1(_T))
+    np.testing.assert_array_equal(o2, t2(_T))
+
+
+def test_locate_and_interp_are_allocation_free():
+    t1 = TemperatureTable(_free_free, InterpMode.LogLog)
+    t2 = TemperatureTable(lambda T: np.sqrt(T), InterpMode.LogLog)
+    n = 64
+    T = np.logspace(1.0, 8.0, n)
+    idx = np.empty(n, dtype=np.int64)
+    frac = np.empty(n)
+    lo, hi = np.empty(n), np.empty(n)
+    o1, o2 = np.empty(n), np.empty(n)
+
+    t1.locate(T, idx, frac)                 # warm
+    t1.interp(idx, frac, o1, lo, hi)
+    with assert_no_alloc():
+        t1.locate(T, idx, frac)
+        t1.interp(idx, frac, o1, lo, hi)
+        t2.interp(idx, frac, o2, lo, hi)

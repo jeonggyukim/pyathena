@@ -1857,3 +1857,34 @@ factor. The clip now runs to `TAB_N - 1` before the floor and to
 `TAB_N - 2` after it.
 
 Validation: tests/chemistry/ 443 passed, 12 skipped. flake8 clean.
+
+## 2026-08-02: Split the temperature-table axis from the values
+
+- `TemperatureTable` gains `locate(T, idx, frac)` and
+  `interp(idx, frac, out, lo, hi)`; `lookup` becomes the two called
+  back to back. The previous API only offered `lookup`, which
+  recomputed the axis position for every table.
+- Why it mattered: finding a cell's position on the axis costs a
+  transcendental (`log10`, or bit manipulation for the NQT modes),
+  while interpolating at a known position does not. Tabulating is only
+  worth it if a cell pays the position **once** and interpolates many
+  times. Lyman alpha is the case that exposed this. Its two
+  temperature-only factors replace three analytic transcendentals, but
+  two independent LogLog lookups cost two transcendentals each -- four
+  to replace three, a loss. One `locate` plus two `interp` calls costs
+  two, and wins.
+- `interp` holds `self._tab_hi`, a view onto `self._tab[1:]`, so the
+  upper node of each bracketing pair is reached without forming
+  `idx + 1` (which would allocate). `locate` truncates via
+  `np.copyto(idx, frac, casting='unsafe')` rather than `astype`, for
+  the same reason.
+- Scratch is now `(idx, frac, lo, hi)`. `idx` and `frac` carry the
+  shared position; `lo` and `hi` are per-interpolation working space
+  and may be reused between tables.
+- A clamped table cannot share a position, because its clip changes
+  `T`. Those still go through `lookup`.
+- Two new tests: `test_locate_is_shared_across_tables` (one `locate`
+  feeding two tables gives results identical to each resolving its own
+  position) and `test_locate_and_interp_are_allocation_free`.
+
+Validation: tests/chemistry/ 445 passed, 12 skipped. flake8 clean.
