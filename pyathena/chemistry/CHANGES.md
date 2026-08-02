@@ -1816,3 +1816,44 @@ Validation: tests/chemistry/ 413 passed, 12 skipped. flake8 clean.
 
 Validation: tests/chemistry/ 426 passed, 12 skipped. `Exact` remains
 the default, so no existing behaviour changed.
+
+## 2026-08-02: Shared temperature-table helper
+
+- `pyathena.chemistry.rates._ttable.TemperatureTable` -- one
+  implementation of the build-and-look-up code that `ci_rate`,
+  `rec_rate` and `ct_rate` each grew separately. Cooling channels can
+  now tabulate their temperature-only factors without a fourth copy.
+  Same grid as the three rate modules (2000 points, 1 K to 1e9 K,
+  log10 spacing for LogLog and an `nqt1_log` axis for the NQT modes),
+  which is what allows one log-T index to drive a lookup across every
+  tabulated quantity in a cell.
+- `lookup(T, out, scratch)` is allocation-free and is what a substep
+  loop should call: every step writes through `out=`, and `np.take`
+  replaces fancy indexing, which allocates. `alloc_scratch(state,
+  prefix)` and `get_scratch(state, prefix)` register and fetch the four
+  buffers it needs. `__call__` keeps an allocating convenience form for
+  setup, tests and plotting.
+- Carries the clamp-aware pattern from the charge-transfer work: pass
+  an unclamped `fn` plus its `(Tmin, Tmax)` window and lookup clips `T`
+  into it, which keeps the slope discontinuity out of the interpolant.
+  `test_clamp_beats_tabulating_the_clamped_form` pins that this is
+  better than baking the clamp in, rather than leaving it as a claim in
+  a comment.
+- Accuracy on the free-free temperature factor, a smooth positive
+  function that isolates interpolation error from the fit: LogLog
+  4.8e-7, Nqt2 8.4e-4, Nqt1 1.1e-3.
+- `tests/chemistry/test_ttable.py` -- 17 tests: per-mode accuracy,
+  `Exact` rejected, identically-zero columns returning exact zeros,
+  clamp plateaus flat outside the window, the clamp-aware comparison
+  above, `lookup` allocation-free under `assert_no_alloc`, `lookup`
+  agreeing bit for bit with `__call__`, and both grid endpoints
+  reproduced exactly.
+
+Note on the endpoint test: it caught a real defect during development.
+Clipping the float index to `TAB_N - 2` before the floor discards the
+top node, because `frac` can then never reach 1, so the last grid point
+returns its neighbour's value -- 0.5 percent low for a `sqrt(T)`-like
+factor. The clip now runs to `TAB_N - 1` before the floor and to
+`TAB_N - 2` after it.
+
+Validation: tests/chemistry/ 443 passed, 12 skipped. flake8 clean.
