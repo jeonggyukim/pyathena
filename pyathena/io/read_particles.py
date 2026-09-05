@@ -4,7 +4,7 @@
 from .athena_read import partab, parbin
 from pandas import read_csv
 
-def read_partab(filename, **kwargs):
+def read_partab(filename, *, header_only=False, **kwargs):
     """Read Athena++ particle tab file (`par?.tab`) into a DataFrame.
 
     Columns are read from the file header. The DataFrame index is set to
@@ -29,7 +29,15 @@ def read_partab(filename, **kwargs):
     >>> df = read_partab("/path/to/par0.tab")
     >>> df.head()
     """
+    with open(filename) as stream:
+        first = stream.readline()
+    metadata = {}
+    if 'time =' in first:
+        metadata['time'] = float(first.split('time =', 1)[1].strip())
+    if header_only:
+        return metadata
     ds = partab(filename, **kwargs)
+    ds.attrs.update(metadata)
     ds.set_index('pid', inplace=True)
     ds.sort_index(inplace=True)
 
@@ -53,6 +61,8 @@ def read_parbin(filename, **kwargs):
         Particle data indexed by ``pid``.
     """
     ds = parbin(filename, **kwargs)
+    if kwargs.get('header_only', False):
+        return ds
     ds.set_index('pid', inplace=True)
     ds.sort_index(inplace=True)
 
