@@ -248,6 +248,9 @@ def parbin(fname, verbose=False, header_only=False):
             dsize = ndata * struct.calcsize(dtype)
             data = fp.read(dsize)
 
+            if len(data) != dsize:
+                raise ValueError(f'Truncated particle binary file: {fname}')
+
             if ndata == 1:
                 (rval,) = struct.unpack("<" + ndata * dtype, data)
             else:
