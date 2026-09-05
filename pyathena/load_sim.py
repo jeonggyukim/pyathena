@@ -282,6 +282,7 @@ class LoadSim(LoadSimBase):
         attrs_transfer = [
             'files', 'athena_variant', 'par', 'problem_id', 'out_fmt',
             'nums',
+            'nums_rprof',
             # particle (Athena++, AthenaK)
             'nums_partab', 'nums_parbin', 'partags', 'pids',
             'partab_outid', 'parbin_outid', 'pvtk_outvar',
@@ -415,56 +416,16 @@ class LoadSim(LoadSimBase):
 
         return self.ds
 
-    @property
-    def rprof_outputs(self):
-        """Index contiguous rprof outputs by their own number and actual time.
 
-        Refresh when files are added, removed, or replaced. This does not
-        change the HDF5-oriented nums attribute.
-        """
-        from pathlib import Path
-        import re
-
-        paths = sorted(Path(self.basedir).glob(f"{self.problem_id}.*.rprof"))
-        if not paths:
-            raise FileNotFoundError(f"No radial-profile outputs in {self.basedir}")
-        signature = tuple((str(p), p.stat().st_size, p.stat().st_mtime_ns)
-                          for p in paths)
-        if signature != getattr(self, '_rprof_signature', None):
-            rows, headers, streams = [], {}, set()
-            for path in paths:
-                match = re.fullmatch(
-                    re.escape(self.problem_id) + r"\.(.+)\.(\d+)\.rprof", path.name
-                )
-                if match is None:
-                    raise ValueError(f"Invalid radial-profile filename: {path.name}")
-                streams.add(match[1])
-                header = read_radial_profile(path, metadata_only=True)
-                num = int(header.attrs['num'])
-                if num != int(match[2]) or num in headers:
-                    raise ValueError(f"Duplicate or inconsistent rprof number: {path}")
-                headers[num] = header
-                rows.append(dict(num=num, time=header.attrs['time'],
-                                 cycle=header.attrs['cycle'], path=str(path)))
-            if len(streams) != 1:
-                raise ValueError(f"Ambiguous radial-profile streams: {sorted(streams)}")
-            outputs = pd.DataFrame(rows).set_index('num').sort_index()
-            if np.any(np.diff(outputs.index.to_numpy()) != 1):
-                raise ValueError("Gap in radial-profile output numbering")
-            if np.any(np.diff(outputs.time.to_numpy()) <= 0):
-                raise ValueError("Radial-profile times must increase with output number")
-            self._rprof_outputs = outputs
-            self._rprof_headers = headers
-            self._rprof_signature = signature
-        return self._rprof_outputs.copy()
+    def _get_frprof(self, num):
+        """Resolve a discovered radial-profile output by number."""
+        if not hasattr(self, 'nums_rprof') or num not in self.nums_rprof:
+            raise FileNotFoundError(f'Radial-profile output {num} is unavailable')
+        return self.files['rprofs'][self.nums_rprof.index(num)]
 
     def load_rprof(self, num, center_ids=None, *, metadata_only=False):
-        """Read one on-the-fly radial-profile output as an xarray Dataset."""
-        outputs = self.rprof_outputs
-        if num not in outputs.index:
-            raise KeyError(f"Radial-profile output {num} is unavailable")
-        return read_radial_profile(outputs.loc[num, 'path'],
-                                   center_ids=center_ids,
+        """Read one discovered radial-profile output as an xarray Dataset."""
+        return read_radial_profile(self._get_frprof(num), center_ids=center_ids,
                                    metadata_only=metadata_only)
 
     def load_hdf5(self, num=None, **kwargs):
