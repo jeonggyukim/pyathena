@@ -227,7 +227,7 @@ def partab(filename, raw=False, time=None):
 
 # ========================================================================================
 
-def parbin(fname, verbose=False):
+def parbin(fname, verbose=False, header_only=False):
     """Read par?.bin files and return pandas DataFrame.
     """
     if verbose:
@@ -276,6 +276,9 @@ def parbin(fname, verbose=False):
                          xmin=mesh_xmin, xmax=mesh_xmax,
                          len=mesh_len, rat=mesh_rat,
                          nx=nx, buf=buf)
+        metadata = dict(time=time, dt=dt, cycle=ncycle, nbtotal=nbtotal)
+        if header_only:
+            return metadata
         if verbose:
             print(f"time={time}, dt={dt}, ncycle={ncycle}")
             print(mesh_size)
@@ -307,6 +310,7 @@ def parbin(fname, verbose=False):
         df_intprop = pd.DataFrame(data=intprop, columns=header[:nint])
         df_realprop = pd.DataFrame(data=realprop, columns=header[nint:])
         pds = df_intprop.join(df_realprop)
+        pds.attrs.update(metadata)
         return pds
 
 
