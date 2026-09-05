@@ -39,12 +39,14 @@ def _read_array(stream, dtype, count, description):
     return values
 
 
-def read_radial_profile(path, center_ids=None):
+def read_radial_profile(path, center_ids=None, *, metadata_only=False):
     """Return a version-1 rprof file as an xarray.Dataset.
 
     Radial fields use dimensions (center_id, r). Center positions and
     center-only fields use dimension center_id. Selective reads preserve the
     order supplied in center_ids and raise KeyError for absent IDs.
+    With metadata_only=True, read coordinates and validate the file layout
+    without reading any radial or center-variable payloads.
     """
     path = Path(path)
     file_size = path.stat().st_size
@@ -161,7 +163,11 @@ def read_radial_profile(path, center_ids=None):
                 [index_by_id[int(value)] for value in requested], dtype=np.int64
             )
 
+        if not np.isfinite(time):
+            raise ValueError("Nonfinite radial-profile output time")
         data_vars = {}
+        if metadata_only:
+            descriptors = []
         for name, classification, count, offset in descriptors:
             if classification == _RADIAL_VARIABLE:
                 values = np.empty((selection.size, nr), dtype=np.float64)
