@@ -120,6 +120,10 @@ class FindFiles(object):
         ('parbin', '*.out?.?????.par?.parbin'),
         ('*.out?.?????.par?.parbin',)]
 
+    patterns['rprofs'] = [
+        ('rprof', '*.*.rprof'),
+        ('*.*.rprof',)]
+
     patterns['pvtk'] = [
         ('pvtk', '*.*.?????.part.vtk'),
         ('*.*.?????.part.vtk',)]
@@ -159,6 +163,7 @@ class FindFiles(object):
 
         if self.athena_variant == 'athena++':
             self.find_hdf5()
+            self.find_rprof()
             self.find_vtk()
             self.find_prtcl('partab')
             self.find_prtcl('parbin')
@@ -187,6 +192,26 @@ class FindFiles(object):
         for attr, v in list(vars(self).items()):
             if attr.startswith('nums') and v == []:
                 delattr(self, attr)
+
+    def find_rprof(self):
+        """Find one radial-profile stream without reading file headers."""
+        if 'rprof' not in self.out_fmt:
+            return
+        pattern = re.compile(re.escape(self.problem_id) + r'\.(.+)\.(\d+)\.rprof')
+        records, streams = [], set()
+        for path in self.find_match(self.patterns['rprofs']):
+            match = pattern.fullmatch(osp.basename(path))
+            if match is None:
+                raise ValueError(f'Invalid radial-profile filename: {path}')
+            streams.add(match[1])
+            records.append((int(match[2]), path))
+        if len(streams) > 1:
+            raise ValueError('Ambiguous radial-profile output streams')
+        records.sort()
+        self.nums_rprof = [num for num, path in records]
+        if len(set(self.nums_rprof)) != len(self.nums_rprof):
+            raise ValueError('Duplicate radial-profile output number')
+        self.files['rprofs'] = [path for num, path in records]
 
     def find_match(self, patterns):
         """Return files matching the first pattern that yields results.
