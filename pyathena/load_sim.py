@@ -31,6 +31,7 @@ from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
 from .io.read_radial_profile import read_radial_profile
+from .io.read_projection import read_projection
 from .io.read_particles import read_partab, read_parbin, read_parhst
 from .io.athenak import read_particle_vtk
 from .io.read_rst import read_rst
@@ -422,6 +423,14 @@ class LoadSim(LoadSimBase):
         if not hasattr(self, 'nums_rprof') or num not in self.nums_rprof:
             raise FileNotFoundError(f'Radial-profile output {num} is unavailable')
         return self.files['rprofs'][self.nums_rprof.index(num)]
+
+    def load_projection(self, num, axis='z', quantities=None, header_only=False):
+        """Load a full-box projection using its native output number."""
+        nums = getattr(self.ff, 'nums_projection', [])
+        if num not in nums:
+            raise FileNotFoundError(f'Projection output {num} was not discovered')
+        filename = self.files['projection'][nums.index(num)]
+        return read_projection(filename, axis, quantities, header_only)
 
     def load_rprof(self, num, center_ids=None, *, metadata_only=False):
         """Read one discovered radial-profile output as an xarray Dataset."""

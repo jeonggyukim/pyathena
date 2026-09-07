@@ -40,6 +40,8 @@ class FindFiles(object):
         Primary snapshot numbers (VTK or HDF5).
     nums_hdf5 : dict
         Maps output variable name → list of HDF5 snapshot numbers.
+    nums_projection : list of int
+        Native full-box projection file numbers, discovered separately from HDF5.
     nums_vtk : list of int
         All available VTK snapshot numbers.
     nums_rst : list of int
@@ -164,6 +166,7 @@ class FindFiles(object):
         if self.athena_variant == 'athena++':
             self.find_hdf5()
             self.find_rprof()
+            self.find_projection()
             self.find_vtk()
             self.find_prtcl('partab')
             self.find_prtcl('parbin')
@@ -192,6 +195,17 @@ class FindFiles(object):
         for attr, v in list(vars(self).items()):
             if attr.startswith('nums') and v == []:
                 delattr(self, attr)
+
+    def find_projection(self):
+        """Discover a projection stream separately from volumetric HDF5 files."""
+        self.nums_projection = []
+        if 'projection' not in self.out_fmt:
+            return
+        paths = self.find_match([('projection', '*.proj.h5'), ('*.proj.h5',)])
+        records = sorted((int(osp.basename(path).split('.')[-3]), path)
+                         for path in paths)
+        self.nums_projection = [num for num, path in records]
+        self.files['projection'] = [path for num, path in records]
 
     def find_rprof(self):
         """Find one radial-profile stream without reading file headers."""
