@@ -79,8 +79,6 @@ def read_radial_profile(path, center_ids=None, *, metadata_only=False):
             )
         if header_size > file_size:
             raise ValueError("Header extends beyond end of file")
-        if nsub != 4:
-            raise ValueError(f"Unsupported subcell count {nsub}; expected 4")
         if nr == 0:
             raise ValueError("Radial-profile file has no radial bins")
         if not np.isfinite(dx) or dx <= 0:
