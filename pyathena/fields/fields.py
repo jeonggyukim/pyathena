@@ -1260,7 +1260,8 @@ class DerivedFields(object):
                 pass
 
             try:
-                newcool = par["photchem"]["mode"] == "ncr"
+                newcool = ((par["photchem"]["mode"] == "ncr") and
+                           (par["photchem"]["photchem"] == "true"))
             except KeyError:
                 pass
 
