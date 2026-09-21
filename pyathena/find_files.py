@@ -122,10 +122,6 @@ class FindFiles(object):
         ('parbin', '*.out?.?????.par?.parbin'),
         ('*.out?.?????.par?.parbin',)]
 
-    patterns['rprofs'] = [
-        ('rprof', '*.*.rprof'),
-        ('*.*.rprof',)]
-
     patterns['pvtk'] = [
         ('pvtk', '*.*.?????.part.vtk'),
         ('*.*.?????.part.vtk',)]
@@ -133,6 +129,14 @@ class FindFiles(object):
     patterns['parhst'] = [
         ('parhst', '*.par*.csv'),
         ('*.par*.csv',)]
+
+    patterns['proj'] = [
+        ('proj', '*.out?.?????.proj'),
+        ('*.out?.?????.proj',)]
+
+    patterns['rprofs'] = [
+        ('rprof', '*.out?.?????.rprof'),
+        ('*.out?.?????.rprof',)]
 
     patterns['zprof'] = [
         ('*.zprof',),
@@ -195,37 +199,6 @@ class FindFiles(object):
         for attr, v in list(vars(self).items()):
             if attr.startswith('nums') and v == []:
                 delattr(self, attr)
-
-    def find_projection(self):
-        """Discover a projection stream separately from volumetric HDF5 files."""
-        self.nums_projection = []
-        if 'projection' not in self.out_fmt:
-            return
-        paths = self.find_match([('projection', '*.proj.h5'), ('*.proj.h5',)])
-        records = sorted((int(osp.basename(path).split('.')[-3]), path)
-                         for path in paths)
-        self.nums_projection = [num for num, path in records]
-        self.files['projection'] = [path for num, path in records]
-
-    def find_rprof(self):
-        """Find one radial-profile stream without reading file headers."""
-        if 'rprof' not in self.out_fmt:
-            return
-        pattern = re.compile(re.escape(self.problem_id) + r'\.(.+)\.(\d+)\.rprof')
-        records, streams = [], set()
-        for path in self.find_match(self.patterns['rprofs']):
-            match = pattern.fullmatch(osp.basename(path))
-            if match is None:
-                raise ValueError(f'Invalid radial-profile filename: {path}')
-            streams.add(match[1])
-            records.append((int(match[2]), path))
-        if len(streams) > 1:
-            raise ValueError('Ambiguous radial-profile output streams')
-        records.sort()
-        self.nums_rprof = [num for num, path in records]
-        if len(set(self.nums_rprof)) != len(self.nums_rprof):
-            raise ValueError('Duplicate radial-profile output number')
-        self.files['rprofs'] = [path for num, path in records]
 
     def find_match(self, patterns):
         """Return files matching the first pattern that yields results.
@@ -526,6 +499,37 @@ class FindFiles(object):
             if 'zprof' in self.out_fmt:
                 self.logger.warning(
                     'zprof files not found in {0:s}'.format(self.basedir))
+
+    def find_projection(self):
+        """Discover a projection stream separately from volumetric HDF5 files."""
+        self.nums_projection = []
+        if 'projection' not in self.out_fmt:
+            return
+        paths = self.find_match(self.patterns['proj'])
+        records = sorted((int(osp.basename(path).split('.')[-3]), path)
+                         for path in paths)
+        self.nums_projection = [num for num, path in records]
+        self.files['projection'] = [path for num, path in records]
+
+    def find_rprof(self):
+        """Find one radial-profile stream without reading file headers."""
+        if 'rprof' not in self.out_fmt:
+            return
+        pattern = re.compile(re.escape(self.problem_id) + r'\.(.+)\.(\d+)\.rprof')
+        records, streams = [], set()
+        for path in self.find_match(self.patterns['rprofs']):
+            match = pattern.fullmatch(osp.basename(path))
+            if match is None:
+                raise ValueError(f'Invalid radial-profile filename: {path}')
+            streams.add(match[1])
+            records.append((int(match[2]), path))
+        if len(streams) > 1:
+            raise ValueError('Ambiguous radial-profile output streams')
+        records.sort()
+        self.nums_rprof = [num for num, path in records]
+        if len(set(self.nums_rprof)) != len(self.nums_rprof):
+            raise ValueError('Duplicate radial-profile output number')
+        self.files['rprofs'] = [path for num, path in records]
 
     def find_vtk(self):
         """Find VTK output files (joined, id0, tarred, or Athena++ block files).
