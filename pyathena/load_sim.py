@@ -422,14 +422,14 @@ class LoadSim(LoadSimBase):
         """Resolve a discovered radial-profile output by number."""
         if not hasattr(self, 'nums_rprof') or num not in self.nums_rprof:
             raise FileNotFoundError(f'Radial-profile output {num} is unavailable')
-        return self.files['rprofs'][self.nums_rprof.index(num)]
+        return self.files['rprof'][self.nums_rprof.index(num)]
 
-    def load_projection(self, num, axis='z', quantities=None, header_only=False):
+    def load_proj(self, num, axis='z', quantities=None, header_only=False):
         """Load a full-box projection using its native output number."""
-        nums = getattr(self.ff, 'nums_projection', [])
+        nums = getattr(self.ff, 'nums_proj', [])
         if num not in nums:
             raise FileNotFoundError(f'Projection output {num} was not discovered')
-        filename = self.files['projection'][nums.index(num)]
+        filename = self.files['proj'][nums.index(num)]
         return read_projection(filename, axis, quantities, header_only)
 
     def load_rprof(self, num, center_ids=None, *, metadata_only=False):

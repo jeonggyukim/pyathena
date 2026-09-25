@@ -12,6 +12,11 @@ Readers
 .. autofunction:: pyathena.read_rst
 .. autofunction:: pyathena.read_hdf5
 
+Radial profiles
+===============
+
+.. autofunction:: pyathena.read_radial_profile
+
 Particle Readers
 ================
 
