@@ -11,6 +11,7 @@ __all__ = ["Units",
 # I/O
 from .io.read_hst import read_hst
 from .io.read_hdf5 import read_hdf5
+from .io.athenak import read_binary
 from .io.read_particles import read_partab, read_parhst
 from .io.timing_reader import TimingReader
 
