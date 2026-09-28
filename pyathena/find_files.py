@@ -67,7 +67,6 @@ class FindFiles(object):
         ('log.txt',),
         ('*.par',),
         ('*.out',),
-        ('athinput.*',),
         ('slurm-*',)]
 
     patterns['hst'] = [
@@ -230,19 +229,31 @@ class FindFiles(object):
 
         Sets ``athena_variant``, ``problem_id``, ``par``, ``out_fmt``,
         ``partags``, and HDF5/particle output bookkeeping attributes.
+        Fall back to the first plain input file if the selected file lacks ``job``.
         """
         fathinput = self.find_match(self.patterns['athinput'])
         if fathinput:
-            self.files['athinput'] = fathinput[0]
-            self.logger.info(f'athinput: {fathinput[0]}')
+            filename = fathinput[0]
             try:
-                self.par = read_athinput(self.files['athinput'])
+                par = read_athinput(filename)
             except Exception as e:
                 self.logger.warning(f'An error occured: {e}')
                 self.logger.warning('Failed to read parameters with read_athinput.' +\
                                     'Try again with athena_read.athinput')
-                self.par = athena_read.athinput(self.files['athinput'])
-                # TODO: deal with another failure?
+                par = athena_read.athinput(filename)
+            # If failed, fall back to the plain input file
+            if 'job' not in par:
+                fathinput = self.find_match([('athinput.*',), ('*.athinput',)])
+                if not fathinput or fathinput[0] == filename:
+                    raise ValueError(f'No input file with a job block in {self.basedir}')
+                filename = fathinput[0]
+                par = athena_read.athinput(filename)
+                if 'job' not in par:
+                    raise ValueError(f'No job block in {filename}')
+
+            self.files['athinput'] = filename
+            self.par = par
+            self.logger.info(f'athinput: {filename}')
 
             # Determine if it is Athena++ or Athena
             # TODO: determine athena_variant even when par is unavailable
