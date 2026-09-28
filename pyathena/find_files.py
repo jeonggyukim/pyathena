@@ -40,6 +40,8 @@ class FindFiles(object):
         Primary snapshot numbers (VTK or HDF5).
     nums_hdf5 : dict
         Maps output variable name → list of HDF5 snapshot numbers.
+    nums_bin : dict
+        Maps configured AthenaK binary stream IDs to native snapshot numbers.
     nums_projection : list of int
         Native full-box projection file numbers, discovered separately from HDF5.
     nums_vtk : list of int
@@ -184,6 +186,7 @@ class FindFiles(object):
         elif self.athena_variant == 'athenak':
             self.find_hdf5()
             self.find_rprof()
+            self.find_bin()
             self.find_prtcl('pvtk')
         self.find_hst()
         self.find_sn()
@@ -593,6 +596,42 @@ class FindFiles(object):
         elif self.athena_variant == 'athenak':
             #TODO: implement athenak vtk file finding
             pass
+
+    def find_bin(self):
+        """Discover native AthenaK binary numbers and paths per configured ID.
+
+        Prefer bin/ over the simulation root independently for each stream.
+        Empty streams retain empty lists. Existing primary numbers take priority.
+        """
+        self.files['bin'] = {}
+        self.nums_bin = {}
+        for name, output in self.par.items():
+            if not name.startswith('output') or output.get('file_type') != 'bin':
+                continue
+            stream_id = str(output.get('id', output['variable']))
+            pattern = re.compile(re.escape(f'{self.problem_id}.{stream_id}.')
+                                 + r'([0-9]+)\.bin')
+            numbered_files = []
+            for directory in (osp.join(self.basedir, 'bin'), self.basedir):
+                if not osp.isdir(directory):
+                    continue
+                with os.scandir(directory) as entries:
+                    numbered_files = [(int(match[1]), entry.path)
+                                      for entry in entries
+                                      if (match := pattern.fullmatch(entry.name))
+                                      and entry.is_file()]
+                if numbered_files:
+                    break
+            numbered_files.sort()
+            numbers = [number for number, _ in numbered_files]
+            if len(set(numbers)) != len(numbers):
+                raise ValueError(f'Duplicate binary snapshot numbers for stream {stream_id!r}')
+            self.files['bin'][stream_id] = [path for _, path in numbered_files]
+            self.nums_bin[stream_id] = numbers
+
+        nonempty = [numbers for numbers in self.nums_bin.values() if numbers]
+        if not getattr(self, 'nums', None) and len(nonempty) == 1:
+            self.nums = nonempty[0]
 
     def find_hdf5(self):
         """Find HDF5 output files and populate ``files['hdf5']`` and ``nums_hdf5``.

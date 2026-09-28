@@ -30,6 +30,7 @@ from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic
 from .io.read_vtk import AthenaDataSet, read_vtk_athenapp
 from .io.read_vtk_tar import AthenaDataSetTar
 from .io.read_hdf5 import read_hdf5
+from .io.athenak import read_binary
 from .io.read_radial_profile import read_radial_profile
 from .io.read_projection import read_projection
 from .io.read_particles import read_partab, read_parbin, read_parhst
@@ -283,7 +284,7 @@ class LoadSim(LoadSimBase):
         attrs_transfer = [
             'files', 'athena_variant', 'par', 'problem_id', 'out_fmt',
             'nums',
-            'nums_rprof',
+            'nums_rprof', 'nums_bin',
             # particle (Athena++, AthenaK)
             'nums_partab', 'nums_parbin', 'partags', 'pids',
             'partab_outid', 'parbin_outid', 'pvtk_outvar',
@@ -436,6 +437,26 @@ class LoadSim(LoadSimBase):
         """Read one discovered radial-profile output as an xarray Dataset."""
         return read_radial_profile(self._get_frprof(num), center_ids=center_ids,
                                    metadata_only=metadata_only)
+
+    def load_bin(self, num, output_id=None):
+        """Read a discovered AthenaK binary snapshot at its native number.
+
+        output_id is the configured id (default: variable). It can be omitted
+        only when exactly one binary stream has discovered files. Missing
+        streams or snapshots raise FileNotFoundError. See read_binary for the
+        supported layout and eager memory behavior.
+        """
+        streams = getattr(self, 'nums_bin', {})
+        if output_id is None:
+            nonempty = [name for name, numbers in streams.items() if numbers]
+            if len(nonempty) != 1:
+                raise ValueError('Specify output_id unless exactly one binary stream is nonempty')
+            output_id = nonempty[0]
+        numbers = streams.get(output_id, [])
+        if num not in numbers:
+            raise FileNotFoundError(f'Binary snapshot {num} not found for stream {output_id!r}')
+        filename = self.files['bin'][output_id][numbers.index(num)]
+        return read_binary(filename)
 
     def load_hdf5(self, num=None, **kwargs):
         """Read an Athena++ or AthenaK HDF5 snapshot.

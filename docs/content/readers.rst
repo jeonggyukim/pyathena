@@ -12,6 +12,11 @@ Readers
 .. autofunction:: pyathena.read_rst
 .. autofunction:: pyathena.read_hdf5
 
+AthenaK mesh binary snapshots
+=============================
+
+.. autofunction:: pyathena.read_binary
+
 Radial profiles
 ===============
 
