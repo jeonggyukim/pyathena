@@ -7,7 +7,7 @@ import numpy as np
 from .logger import create_logger
 
 from .io.read_athinput import read_athinput
-from .io.athena_read import athinput
+from .io import athena_read
 
 
 class FindFiles(object):
@@ -717,8 +717,7 @@ class FindFiles(object):
                     elif self.athena_variant == 'athena':
                         self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
                     elif self.athena_variant == 'athenak':
-                        # TODO: implement athenak rst file num extraction
-                        pass
+                        self.nums_rst = [int(f.split('.')[-2]) for f in self.files['rst']]
                     msg = 'rst: {0:s}'.format(osp.dirname(self.files['rst'][0]))
                     if len(self.nums_rst) > 0:
                         msg += ' nums: {0:d}-{1:d}'.format(
