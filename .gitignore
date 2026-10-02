@@ -17,4 +17,5 @@ working_notebooks/
 *.egg-info
 .venv/
 CLAUDE.md
+AGENTS.md
 .claude/
