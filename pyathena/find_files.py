@@ -42,7 +42,7 @@ class FindFiles(object):
         Maps output variable name → list of HDF5 snapshot numbers.
     nums_bin : dict
         Maps configured AthenaK binary stream IDs to native snapshot numbers.
-    nums_projection : list of int
+    nums_proj : list of int
         Native full-box projection file numbers, discovered separately from HDF5.
     nums_vtk : list of int
         All available VTK snapshot numbers.
@@ -516,11 +516,21 @@ class FindFiles(object):
                     'zprof files not found in {0:s}'.format(self.basedir))
 
     def find_proj(self):
-        """Discover a projection stream separately from volumetric HDF5 files."""
-        if 'projection' not in self.out_fmt:
+        """Discover native AthenaK projections in numeric output order."""
+        if 'proj' not in self.out_fmt:
             return
-        self.files['proj'] = self.find_match(self.patterns['proj'])
-        self.nums_proj = [int(f.split('.')[-2]) for f in self.files['proj']]
+        pattern = re.compile(re.escape(self.problem_id) + r'\.([0-9]+)\.proj$')
+        for directory in ('proj', ''):
+            matches = []
+            for filename in glob.glob(osp.join(self.basedir, directory, '*.proj')):
+                match = pattern.fullmatch(osp.basename(filename))
+                if match:
+                    matches.append((int(match[1]), filename))
+            if matches:
+                break
+        matches.sort()
+        self.nums_proj = [num for num, _ in matches]
+        self.files['proj'] = [filename for _, filename in matches]
 
     def find_rprof(self):
         """Find radial profiles"""
