@@ -38,7 +38,7 @@ def _read_array(stream, dtype, count, description):
     return values
 
 
-def read_radial_profile(path, center_ids=None, *, metadata_only=False):
+def read_rprof(path, center_ids=None, *, metadata_only=False):
     """Return an AthenaK version-1.0 radial-profile file as an xarray.Dataset.
 
     The first three stored variables are origin velocities with dimension

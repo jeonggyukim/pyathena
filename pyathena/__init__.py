@@ -11,7 +11,7 @@ __all__ = ["Units",
 # I/O
 from .io.read_hst import read_hst
 from .io.read_hdf5 import read_hdf5
-from .io.athenak import read_binary
+from .io.read_bin import read_bin
 from .io.read_particles import read_partab, read_parhst
 from .io.timing_reader import TimingReader
 
@@ -21,7 +21,8 @@ from .io.read_vtk import read_vtk, AthenaDataSet
 from .io.read_rst import read_rst, RestartHandler
 from .io.read_zprof import read_zprof, read_zprof_all
 from .io.read_sphst import read_sphst
-from .io.read_radial_profile import read_radial_profile
+from .io.read_rprof import read_rprof
+from .io.read_proj import read_proj
 from .io.read_starpar_vtk import read_starpar_vtk
 
 from .classic.vtk_reader import AthenaDataSet as AthenaDataSetClassic

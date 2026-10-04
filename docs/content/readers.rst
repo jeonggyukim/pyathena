@@ -15,12 +15,17 @@ Readers
 AthenaK mesh binary snapshots
 =============================
 
-.. autofunction:: pyathena.read_binary
+.. autofunction:: pyathena.read_bin
 
 Radial profiles
 ===============
 
-.. autofunction:: pyathena.read_radial_profile
+.. autofunction:: pyathena.read_rprof
+
+AthenaK projections
+===================
+
+.. autofunction:: pyathena.read_proj
 
 Particle Readers
 ================
