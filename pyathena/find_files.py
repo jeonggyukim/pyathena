@@ -123,6 +123,10 @@ class FindFiles(object):
         ('parbin', '*.out?.?????.par?.parbin'),
         ('*.out?.?????.par?.parbin',)]
 
+    patterns['parbin_athenak'] = [
+        ('parbin', '*.?????.parbin'),
+        ('*.?????.parbin',)]
+
     patterns['pvtk'] = [
         ('pvtk', '*.*.?????.part.vtk'),
         ('*.*.?????.part.vtk',)]
@@ -434,6 +438,11 @@ class FindFiles(object):
         """
         if key not in self.out_fmt:
             return
+        if self.athena_variant == 'athenak' and key == 'parbin':
+            matches = self.find_match(self.patterns['parbin_athenak'])
+            self.files[key] = matches
+            self.nums_parbin = [int(osp.basename(f).split('.')[-2]) for f in matches]
+            return
         num_slice = dict(partab=slice(-14, -9),
                          parbin=slice(-17, -12),
                          pvtk=slice(-14, -9))
@@ -460,12 +469,14 @@ class FindFiles(object):
 
     def find_parhst(self):
         """Find individual particle history CSV files and store in ``files['parhst']``."""
-        if [k for k in self.par.keys() if k.startswith('particle') and
-            self.par[k]['type'] != 'none']:
+        if ((self.athena_variant == 'athenak' and 'parhst' in self.out_fmt) or
+                (self.athena_variant == 'athena++' and
+                 any(k.startswith('particle') and self.par[k]['type'] != 'none'
+                     for k in self.par))):
             fparhst = self.find_match(self.patterns['parhst'])
             if fparhst:
                 self.files['parhst'] = fparhst
-                self.pids = [int(f.split('/')[-1].split('.')[1].strip('par'))
+                self.pids = [int(osp.basename(f).split('.')[-2].removeprefix('par'))
                              for f in self.files['parhst']]
                 self.pids.sort()
                 self.logger.info('parhst: {0:s} pids: {1:d}-{2:d}'.format(
@@ -727,6 +738,7 @@ class FindFiles(object):
                 self.patterns['rst'] = [
                     ('rst','{}.*.rst'.format(self.problem_id)),
                     ('rst','????','{}.*.rst'.format(self.problem_id)),
+                    ('rst','rank_00000000','{}.*.rst'.format(self.problem_id)),
                     ('rst','{}.*.tar'.format(self.problem_id)),
                     ('id0','{}.*.rst'.format(self.problem_id)),
                     ('{}.*.rst'.format(self.problem_id),)]

@@ -525,7 +525,7 @@ class LoadSim(LoadSimBase):
 
     def load_parbin(self, num=None, iparbin=None,
                     partag='par0', **kwargs):
-        """Read Athena++ parbin file.
+        """Read an Athena++ or native AthenaK parbin file.
 
         Parameters
         ----------
@@ -536,7 +536,7 @@ class LoadSim(LoadSimBase):
            Read i-th file in the parbin file list.
            Overrides num if both are given.
         partag : str
-           Particle tag in the input file. Default value is 'par0'
+           Athena++ particle species tag; ignored for native AthenaK snapshots.
 
         Returns
         -------
@@ -1068,6 +1068,12 @@ class LoadSim(LoadSimBase):
     def _get_fparbin(self, outid, partag, num=None, iparbin=None):
         """Get parbin file path
         """
+
+        if self.athena_variant == 'athenak':
+            if iparbin is not None:
+                return self.files['parbin'][iparbin]
+            dirname = osp.dirname(self.files['parbin'][0])
+            return osp.join(dirname, f'{self.problem_id}.{num:05d}.parbin')
 
         try:
             dirname = osp.dirname(self.files['parbin'][partag][0])
