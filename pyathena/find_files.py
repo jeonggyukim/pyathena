@@ -722,13 +722,9 @@ class FindFiles(object):
                 frst = self.find_match(self.patterns['rst'])
                 if frst:
                     self.files['rst'] = frst
-                    if self.athena_variant == 'athena++':
-                        numbered_rstfiles = [f for f in self.files['rst'] if 'final' not in f]
-                        self.nums_rst = [int(f[-9:-4]) for f in numbered_rstfiles]
-                    elif self.athena_variant == 'athena':
-                        self.nums_rst = [int(f[-8:-4]) for f in self.files['rst']]
-                    elif self.athena_variant == 'athenak':
-                        self.nums_rst = [int(f.split('.')[-2]) for f in self.files['rst']]
+                    numbered_rstfiles = [f for f in self.files['rst']
+                                         if not f.endswith('.final.rst')]
+                    self.nums_rst = [int(f.split('.')[-2]) for f in numbered_rstfiles]
                     msg = 'rst: {0:s}'.format(osp.dirname(self.files['rst'][0]))
                     if len(self.nums_rst) > 0:
                         msg += ' nums: {0:d}-{1:d}'.format(
