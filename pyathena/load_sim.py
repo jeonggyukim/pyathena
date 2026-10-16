@@ -260,6 +260,21 @@ class LoadSim(LoadSimBase):
         elif self.athena_variant == 'athena++':
             self.u = Units(kind='custom', units_dict=self.par['units'])
 
+    def __getattr__(self, name):
+        # Called only when normal attribute lookup fails. Falls back to the
+        # FindFiles instance so that s.nums_rst etc. keep working. Read ff
+        # from __dict__ to avoid infinite recursion before ff is set (e.g.,
+        # during unpickling or deepcopy).
+        try:
+            ff = self.__dict__['ff']
+        except KeyError:
+            raise AttributeError(name) from None
+        try:
+            return getattr(ff, name)
+        except AttributeError:
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'") from None
+
     def find_files(self, verbose=None):
         """Find output files under base directory and select the primary
         snapshot numbers.
