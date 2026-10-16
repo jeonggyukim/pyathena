@@ -126,7 +126,7 @@ if __name__ == '__main__':
     s0 = sa.set_model(sa.models[0]) # old cooling
     s1 = sa.set_model(sa.models[1]) # new cooling
     r1d = None
-    nums = s0.nums_id0
+    nums = s0.ff.nums_id0
     nums = split_container(nums, COMM.size)
 
     mynums = COMM.scatter(nums, root=0)
