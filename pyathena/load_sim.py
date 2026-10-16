@@ -301,7 +301,8 @@ class LoadSim(LoadSimBase):
                     getattr(self.ff, 'nums_id0', None))
         else:
             outvar = getattr(self.ff, '_hdf5_outvar_def', None)
-            nums = getattr(self.ff, 'nums_hdf5', {}).get(outvar)
+            nums = (getattr(self.ff, 'nums_hdf5', {}).get(outvar) or
+                    getattr(self.ff, 'nums_vtk', None))
         self.nums = list(nums or [])
 
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
