@@ -170,7 +170,7 @@ class FindFiles(object):
 
         if self.athena_variant == 'athena++':
             self.find_hdf5()
-            self.find_projection()
+            self.find_proj()
             self.find_vtk()
             self.find_prtcl('partab')
             self.find_prtcl('parbin')
@@ -183,10 +183,11 @@ class FindFiles(object):
             self.find_starpar_vtk()
             self.find_timeit()
         elif self.athena_variant == 'athenak':
-            self.find_hdf5()
-            self.find_rprof()
             self.find_bin()
-            self.find_prtcl('pvtk')
+            self.find_rprof()
+            self.find_proj()
+            self.find_prtcl('parbin')
+            self.find_parhst()
         self.find_hst()
         self.find_sn()
         self.find_zprof()
@@ -514,7 +515,7 @@ class FindFiles(object):
                 self.logger.warning(
                     'zprof files not found in {0:s}'.format(self.basedir))
 
-    def find_projection(self):
+    def find_proj(self):
         """Discover a projection stream separately from volumetric HDF5 files."""
         if 'projection' not in self.out_fmt:
             return
