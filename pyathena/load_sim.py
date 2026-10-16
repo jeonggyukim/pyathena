@@ -722,7 +722,7 @@ class LoadSim(LoadSimBase):
         method_list = []
         for func in sorted(dir(self)):
             if not func.startswith("__"):
-                if callable(getattr(self, func)):
+                if callable(getattr(self, func, None)):
                     method_list.append(func)
                     print(func, end=': ')
                     print(getattr(self, func).__doc__)
