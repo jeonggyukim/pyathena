@@ -36,12 +36,12 @@ class FindFiles(object):
         Input parameters read from the athinput file, or ``None`` if not found.
     out_fmt : list of str
         Output formats active in the simulation (e.g. ``['hst', 'vtk']``).
-    nums : list of int
-        Primary snapshot numbers (VTK or HDF5).
     nums_hdf5 : dict
         Maps output variable name → list of HDF5 snapshot numbers.
     nums_vtk : list of int
         All available VTK snapshot numbers.
+    nums_vtk_joined : list of int
+        Joined Athena VTK snapshot numbers.
     nums_rst : list of int
         Restart file snapshot numbers.
     nums_zprof : dict
@@ -506,12 +506,12 @@ class FindFiles(object):
                not self.files['vtk_tar']:
                 self.logger.warning(
                     'vtk files not found in {0:s}'.format(self.basedir))
-                self.nums = None
+                self.nums_vtk_joined = None
                 self.nums_id0 = None
                 self.nums_tar = None
                 self.nums_vtk = None
             else:
-                self.nums = [int(f[-8:-4]) for f in self.files['vtk']]
+                self.nums_vtk_joined = [int(f[-8:-4]) for f in self.files['vtk']]
                 self.nums_id0 = [int(f[-8:-4]) for f in self.files['vtk_id0']]
                 self.nums_tar = [int(f[-8:-4]) for f in self.files['vtk_tar']]
                 if self.nums_id0:
@@ -521,14 +521,13 @@ class FindFiles(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(
                             self.files['vtk_id0'][0]).split('.')[-2:]
-                if self.nums:
+                if self.nums_vtk_joined:
                     self.logger.info('vtk (joined): {0:s} nums: {1:d}-{2:d}'.format(
-                        osp.dirname(self.files['vtk'][0]), self.nums[0], self.nums[-1]))
+                        osp.dirname(self.files['vtk'][0]),
+                        self.nums_vtk_joined[0], self.nums_vtk_joined[-1]))
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(
                             self.files['vtk'][0]).split('.')[-2:]
-                else:
-                    self.nums = self.nums_id0
                 if self.nums_tar:
                     self.logger.info('vtk in tar: {0:s} nums: {1:d}-{2:d}'.format(
                         osp.dirname(self.files['vtk_tar'][0]),
@@ -536,10 +535,9 @@ class FindFiles(object):
                     if not hasattr(self, 'problem_id'):
                         self.problem_id = osp.basename(
                             self.files['vtk_tar'][0]).split('.')[-2:]
-                    self.nums = self.nums_tar
 
-                self.nums_vtk = list(set(self.nums) | set(self.nums_id0) |
-                                         set(self.nums_tar))
+                self.nums_vtk = list(set(self.nums_vtk_joined) |
+                                     set(self.nums_id0) | set(self.nums_tar))
                 self.nums_vtk.sort()
 
             # Check (joined) vtk file size
@@ -624,13 +622,6 @@ class FindFiles(object):
                     self.logger.info('hdf5 ({0:s}): {1:s} nums: {2:d}-{3:d}'.format(
                         v, osp.dirname(self.files['hdf5'][v][0]),
                         self.nums_hdf5[v][0], self.nums_hdf5[v][-1]))
-
-        # Set nums array
-        try:
-            self.nums = self.nums_hdf5[self._hdf5_outvar_def]
-        except AttributeError:
-            self.logger.warning('Could not set nums from hdf5 files. '
-                                'Perhaps no hydro output')
 
     def find_rst(self):
         """Find restart files and populate ``files['rst']`` and ``nums_rst``."""

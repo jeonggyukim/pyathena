@@ -12,7 +12,7 @@ class StarPar():
     def read_starpar_all(self, prefix='starpar_all',
                          savdir=None, force_override=False):
         rr = dict()
-        for num in self.nums_starpar:
+        for num in self.ff.nums_starpar:
             print(num, end=' ')
             r = self.read_starpar(num=num, force_override=force_override)
             if r is None:
