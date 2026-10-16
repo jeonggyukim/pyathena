@@ -538,7 +538,8 @@ document.write(`
 <span class="sd">    ds : AthenaDataSet or yt DataSet</span>
 <span class="sd">        Class for reading vtk file</span>
 <span class="sd">    nums : list of int</span>
-<span class="sd">        Primary snapshot numbers (e.g., joined vtk, hdf5, or bin)</span>
+<span class="sd">        Primary snapshot numbers: tarred, joined or id0 vtk for Athena;</span>
+<span class="sd">        hdf5 for Athena++ (vtk if no hdf5) and AthenaK (converted from bin)</span>
 <span class="sd">    u : Units object</span>
 <span class="sd">        Simulation unit</span>
 <span class="sd">    dfi : dict</span>
@@ -660,7 +661,8 @@ document.write(`
                     <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">,</span> <span class="s1">'nums_id0'</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="n">outvar</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">,</span> <span class="s1">'_hdf5_outvar_def'</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
-            <span class="n">nums</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">,</span> <span class="s1">'nums_hdf5'</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">outvar</span><span class="p">)</span>
+            <span class="n">nums</span> <span class="o">=</span> <span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">,</span> <span class="s1">'nums_hdf5'</span><span class="p">,</span> <span class="p">{})</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">outvar</span><span class="p">)</span> <span class="ow">or</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ff</span><span class="p">,</span> <span class="s1">'nums_vtk'</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">nums</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">nums</span> <span class="ow">or</span> <span class="p">[])</span></div>
 
 <div class="viewcode-block" id="LoadSim.load_vtk"><a class="viewcode-back" href="../../content/loadsim.html#pyathena.LoadSim.load_vtk">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_vtk</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">num</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ivtk</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">id0</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">load_method</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>

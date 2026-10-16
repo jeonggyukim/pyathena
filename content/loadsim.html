@@ -620,7 +620,8 @@ or their numerical values (0, 10, 20, 30, 40, 50).
 <dl class="py attribute">
 <dt class="sig sig-object py" id="pyathena.LoadSim.nums">
 <span class="sig-name descname"><span class="pre">nums</span></span><a class="headerlink" href="#pyathena.LoadSim.nums" title="Permalink to this definition">#</a></dt>
-<dd><p>Primary snapshot numbers (e.g., joined vtk, hdf5, or bin)</p>
+<dd><p>Primary snapshot numbers: tarred, joined or id0 vtk for Athena;
+hdf5 for Athena++ (vtk if no hdf5) and AthenaK (converted from bin)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>list of int</p>
