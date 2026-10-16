@@ -357,9 +357,9 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for pyathena.io.read_starpar_vtk</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""</span>
 <span class="sd">Read athena starpar vtk file using pandas, dictionary</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -368,60 +368,60 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_parse_starpar_vtk_line</span><span class="p">(</span><span class="n">spl</span><span class="p">,</span> <span class="n">grid</span><span class="p">):</span>
-    <span class="k">if</span> <span class="sa">b</span><span class="s2">&quot;vtk&quot;</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;vtk_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spl</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;time=&quot;</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
-        <span class="n">time_index</span> <span class="o">=</span> <span class="n">spl</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;time=&quot;</span><span class="p">)</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">spl</span><span class="p">[</span><span class="n">time_index</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;POINTS&quot;</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;nstars&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">spl</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;SCALARS&quot;</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
+    <span class="k">if</span> <span class="sa">b</span><span class="s2">"vtk"</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'vtk_version'</span><span class="p">]</span> <span class="o">=</span> <span class="n">spl</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"time="</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">spl</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="sa">b</span><span class="s2">"time="</span><span class="p">)</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'time'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">spl</span><span class="p">[</span><span class="n">time_index</span><span class="o">+</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"POINTS"</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'nstars'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">spl</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"SCALARS"</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
         <span class="n">field</span> <span class="o">=</span> <span class="n">spl</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_field&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;scalar&#39;</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spl</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;VECTORS&quot;</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'read_field'</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'read_type'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'scalar'</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'data_type'</span><span class="p">]</span> <span class="o">=</span> <span class="n">spl</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"VECTORS"</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
         <span class="n">field</span> <span class="o">=</span> <span class="n">spl</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_field&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;vector&#39;</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">spl</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'read_field'</span><span class="p">]</span> <span class="o">=</span> <span class="n">field</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'read_type'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'vector'</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'data_type'</span><span class="p">]</span> <span class="o">=</span> <span class="n">spl</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_convert_field_name</span><span class="p">(</span><span class="n">name</span><span class="p">):</span>
-    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_id&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;id&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_mass&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;mass&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_age&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;age&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_mage&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;mage&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_position&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;x&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_velocity&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;v&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_n_ostar&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;n_ostar&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_flag&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;flag&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_metal_mass[0]&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;metal_mass[0]&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_metal_mass[1]&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;metal_mass[1]&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_metal_mass[2]&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;metal_mass[2]&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_metal_mass[3]&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;metal_mass[3]&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_metal_mass[4]&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;metal_mass[4]&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_metal_mass[5]&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;metal_mass[5]&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_metal_mass[6]&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;metal_mass[6]&#39;</span>
-    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;star_particle_metal_mass[7]&#39;</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s1">&#39;metal_mass[7]&#39;</span>
+    <span class="k">if</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_id'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'id'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_mass'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'mass'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_age'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'age'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_mage'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'mage'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_position'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'x'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_velocity'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'v'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_n_ostar'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'n_ostar'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_flag'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'flag'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_metal_mass[0]'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'metal_mass[0]'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_metal_mass[1]'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'metal_mass[1]'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_metal_mass[2]'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'metal_mass[2]'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_metal_mass[3]'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'metal_mass[3]'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_metal_mass[4]'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'metal_mass[4]'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_metal_mass[5]'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'metal_mass[5]'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_metal_mass[6]'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'metal_mass[6]'</span>
+    <span class="k">elif</span> <span class="n">name</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'star_particle_metal_mass[7]'</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s1">'metal_mass[7]'</span>
 
 <div class="viewcode-block" id="read_starpar_vtk"><a class="viewcode-back" href="../../../content/readers.html#pyathena.read_starpar_vtk">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">read_starpar_vtk</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">force_override</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Read athena starpar vtk output.</span>
 <span class="sd">    Returns a dictionary containing mass, position, velocity, age, etc.</span>
 
@@ -436,25 +436,25 @@ document.write(`
 <span class="sd">    -------</span>
 <span class="sd">    df : dict</span>
 <span class="sd">        Pandas DataFrame object</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="n">fpkl</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span>
+    <span class="n">fpkl</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s1">'.p'</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">force_override</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="ow">and</span> \
        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
         <span class="n">hst</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;[read_starpar_vtk]: reading from existing pickle.&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'[read_starpar_vtk]: reading from existing pickle.'</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;[read_starpar_vtk]: pickle does not exist or starpar file updated.&#39;</span> <span class="o">+</span> \
-                      <span class="s1">&#39; Reading </span><span class="si">{0:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'[read_starpar_vtk]: pickle does not exist or starpar file updated.'</span> <span class="o">+</span> \
+                      <span class="s1">' Reading </span><span class="si">{0:s}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
 
     <span class="c1"># Check for existance of file</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">&#39;starpar vtk file </span><span class="si">{0:s}</span><span class="s1"> is not found&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+        <span class="k">raise</span> <span class="ne">IOError</span><span class="p">(</span><span class="s1">'starpar vtk file </span><span class="si">{0:s}</span><span class="s1"> is not found'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
 
     <span class="n">star</span> <span class="o">=</span> <span class="p">{}</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">'rb'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">grid</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
         <span class="c1"># Read time, nstars</span>
@@ -462,43 +462,43 @@ document.write(`
             <span class="n">spl</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
             <span class="n">_parse_starpar_vtk_line</span><span class="p">(</span><span class="n">spl</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
             <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
-            <span class="k">if</span> <span class="sa">b</span><span class="s2">&quot;POINT_DATA&quot;</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
+            <span class="k">if</span> <span class="sa">b</span><span class="s2">"POINT_DATA"</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
                 <span class="k">break</span>
 
-        <span class="n">time</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
-        <span class="n">nstars</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;nstars&#39;</span><span class="p">]</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'time'</span><span class="p">]</span>
+        <span class="n">nstars</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'nstars'</span><span class="p">]</span>
 
         <span class="c1"># Read field info</span>
         <span class="n">_field_map</span> <span class="o">=</span> <span class="p">{}</span>
-        <span class="k">while</span> <span class="n">line</span> <span class="o">!=</span> <span class="sa">b</span><span class="s1">&#39;&#39;</span><span class="p">:</span>
+        <span class="k">while</span> <span class="n">line</span> <span class="o">!=</span> <span class="sa">b</span><span class="s1">''</span><span class="p">:</span>
             <span class="n">spl</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
             <span class="n">_parse_starpar_vtk_line</span><span class="p">(</span><span class="n">spl</span><span class="p">,</span> <span class="n">grid</span><span class="p">)</span>
-            <span class="k">if</span> <span class="sa">b</span><span class="s2">&quot;SCALARS&quot;</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
-                <span class="n">field</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_field&#39;</span><span class="p">]</span>
-                <span class="n">datatype</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data_type&#39;</span><span class="p">]</span>
+            <span class="k">if</span> <span class="sa">b</span><span class="s2">"SCALARS"</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'read_field'</span><span class="p">]</span>
+                <span class="n">datatype</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'data_type'</span><span class="p">]</span>
                 <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>  <span class="c1"># Read the lookup table line</span>
-                <span class="n">_field_map</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;scalar&#39;</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">(),</span> <span class="n">datatype</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;VECTORS&quot;</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
-                <span class="n">field</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_field&#39;</span><span class="p">]</span>
-                <span class="n">datatype</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data_type&#39;</span><span class="p">]</span>
-                <span class="n">_field_map</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">&#39;vector&#39;</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">(),</span> <span class="n">datatype</span><span class="p">)</span>
+                <span class="n">_field_map</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'scalar'</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">(),</span> <span class="n">datatype</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="sa">b</span><span class="s2">"VECTORS"</span> <span class="ow">in</span> <span class="n">spl</span><span class="p">:</span>
+                <span class="n">field</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'read_field'</span><span class="p">]</span>
+                <span class="n">datatype</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'data_type'</span><span class="p">]</span>
+                <span class="n">_field_map</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="s1">'vector'</span><span class="p">,</span> <span class="n">f</span><span class="o">.</span><span class="n">tell</span><span class="p">(),</span> <span class="n">datatype</span><span class="p">)</span>
             <span class="n">line</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
 
         <span class="c1"># Read all fields</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">_field_map</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-            <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;scalar&#39;</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="s1">'scalar'</span><span class="p">:</span>
                 <span class="n">nvar</span> <span class="o">=</span> <span class="mi">1</span>
                 <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">nstars</span><span class="p">,</span> <span class="mi">1</span><span class="p">]</span>
-            <span class="k">elif</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="s1">&#39;vector&#39;</span><span class="p">:</span>
+            <span class="k">elif</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">==</span><span class="s1">'vector'</span><span class="p">:</span>
                 <span class="n">nvar</span> <span class="o">=</span> <span class="mi">3</span>
                 <span class="n">shape</span> <span class="o">=</span> <span class="p">[</span><span class="n">nstars</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Unknown variable type&#39;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Unknown variable type'</span><span class="p">)</span>
 
-            <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;float&#39;</span><span class="p">:</span>
-                <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;&gt;</span><span class="si">{}</span><span class="s1">f&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nvar</span><span class="o">*</span><span class="n">nstars</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;int&#39;</span><span class="p">:</span>
-                <span class="n">fmt</span> <span class="o">=</span> <span class="s1">&#39;&gt;</span><span class="si">{}</span><span class="s1">i&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nvar</span><span class="o">*</span><span class="n">nstars</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'float'</span><span class="p">:</span>
+                <span class="n">fmt</span> <span class="o">=</span> <span class="s1">'&gt;</span><span class="si">{}</span><span class="s1">f'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nvar</span><span class="o">*</span><span class="n">nstars</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="n">v</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'int'</span><span class="p">:</span>
+                <span class="n">fmt</span> <span class="o">=</span> <span class="s1">'&gt;</span><span class="si">{}</span><span class="s1">i'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">nvar</span><span class="o">*</span><span class="n">nstars</span><span class="p">)</span>
 
             <span class="n">f</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">v</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
             <span class="n">size</span> <span class="o">=</span> <span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">fmt</span><span class="p">)</span>
@@ -508,21 +508,21 @@ document.write(`
             <span class="k">if</span> <span class="n">nstars</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="n">star</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">star</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
             <span class="k">elif</span> <span class="n">nstars</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">&#39;vector&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">v</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s1">'vector'</span><span class="p">:</span>
                     <span class="n">star</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="n">name</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
 
-    <span class="n">star</span><span class="p">[</span><span class="s1">&#39;x1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">star</span><span class="p">[</span><span class="s1">&#39;x2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">star</span><span class="p">[</span><span class="s1">&#39;x3&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">&#39;x&#39;</span><span class="p">][:,</span><span class="mi">2</span><span class="p">]</span>
-    <span class="n">star</span><span class="p">[</span><span class="s1">&#39;v1&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span>
-    <span class="n">star</span><span class="p">[</span><span class="s1">&#39;v2&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span>
-    <span class="n">star</span><span class="p">[</span><span class="s1">&#39;v3&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">&#39;v&#39;</span><span class="p">][:,</span><span class="mi">2</span><span class="p">]</span>
-    <span class="n">star</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;x&#39;</span><span class="p">)</span>
-    <span class="n">star</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">&#39;v&#39;</span><span class="p">)</span>
+    <span class="n">star</span><span class="p">[</span><span class="s1">'x1'</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">'x'</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">star</span><span class="p">[</span><span class="s1">'x2'</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">'x'</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">star</span><span class="p">[</span><span class="s1">'x3'</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">'x'</span><span class="p">][:,</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">star</span><span class="p">[</span><span class="s1">'v1'</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">'v'</span><span class="p">][:,</span><span class="mi">0</span><span class="p">]</span>
+    <span class="n">star</span><span class="p">[</span><span class="s1">'v2'</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">'v'</span><span class="p">][:,</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">star</span><span class="p">[</span><span class="s1">'v3'</span><span class="p">]</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">'v'</span><span class="p">][:,</span><span class="mi">2</span><span class="p">]</span>
+    <span class="n">star</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'x'</span><span class="p">)</span>
+    <span class="n">star</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="s1">'v'</span><span class="p">)</span>
 
     <span class="c1"># Sort id in an ascending order (or age in an descending order)</span>
     <span class="k">if</span> <span class="n">nstars</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-        <span class="n">idsrt</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">&#39;id&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
+        <span class="n">idsrt</span> <span class="o">=</span> <span class="n">star</span><span class="p">[</span><span class="s1">'id'</span><span class="p">]</span><span class="o">.</span><span class="n">argsort</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">star</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
             <span class="n">star</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">[</span><span class="n">idsrt</span><span class="p">]</span>
 

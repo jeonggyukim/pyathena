@@ -357,15 +357,15 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for pyathena.util.piecewisepowerlaw</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""</span>
 <span class="sd">Code stolen from ComoloPy</span>
 <span class="sd">http://pydoc.net/CosmoloPy/0.1.104/cosmolopy.utils/</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <div class="viewcode-block" id="PiecewisePowerlaw"><a class="viewcode-back" href="../../../content/utils.html#pyathena.util.PiecewisePowerlaw">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PiecewisePowerlaw</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;A piecewise powerlaw function.</span>
+<span class="w">    </span><span class="sa">r</span><span class="sd">"""A piecewise powerlaw function.</span>
 
 <span class="sd">    You can specify the intervals and power indices, and this class</span>
 <span class="sd">    will figure out the coefficients needed to make the function</span>
@@ -394,13 +394,13 @@ document.write(`
 
 <span class="sd">    .. math:: I_{tot} = \sum_0^N I_n</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">limits</span><span class="p">,</span> <span class="n">powers</span><span class="p">,</span>
                  <span class="n">coefficients</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
                  <span class="n">externalval</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span>
                  <span class="n">norm</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Defined a piecewise powerlaw.</span>
+<span class="w">        </span><span class="sd">"""Defined a piecewise powerlaw.</span>
 
 <span class="sd">        If coefficients is None then the coefficients are determined</span>
 <span class="sd">        by requiring the function to be continuous and normalized to</span>
@@ -427,7 +427,7 @@ document.write(`
 
 <span class="sd">        externalval: scalar</span>
 <span class="sd">            Value to return outside the defined domain. None</span>
-<span class="sd">            correspons to &#39;NaN&#39;.</span>
+<span class="sd">            correspons to 'NaN'.</span>
 
 <span class="sd">        norm: boolean</span>
 <span class="sd">            Whether to normalize the integral of the function over the</span>
@@ -436,13 +436,13 @@ document.write(`
 <span class="sd">        The resulting function takes a single, one-dimensional array of</span>
 <span class="sd">        values on which to operate.</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">limits</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">limits</span><span class="p">)</span>
         <span class="n">powers</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">powers</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">limits</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">powers</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;limits must be one longer than powers.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"limits must be one longer than powers."</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">coefficients</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">powers</span><span class="p">))</span>
@@ -454,8 +454,8 @@ document.write(`
         <span class="k">else</span><span class="p">:</span>
             <span class="n">coefficients</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">coefficients</span><span class="p">)</span>
             <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="n">coefficients</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">powers</span><span class="p">):</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;coefficients and powers must be&quot;</span><span class="o">+</span>
-                                 <span class="s2">&quot; the same length.&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"coefficients and powers must be"</span><span class="o">+</span>
+                                 <span class="s2">" the same length."</span><span class="p">)</span>
 
         <span class="c1"># Find the integral of each piece.</span>
         <span class="n">integrals</span> <span class="o">=</span> <span class="p">((</span><span class="n">coefficients</span> <span class="o">/</span> <span class="p">(</span><span class="n">powers</span> <span class="o">+</span> <span class="mf">1.</span><span class="p">))</span> <span class="o">*</span>
@@ -470,7 +470,7 @@ document.write(`
 
         <span class="k">for</span> <span class="n">array</span> <span class="ow">in</span> <span class="p">[</span><span class="n">limits</span><span class="p">,</span> <span class="n">coefficients</span><span class="p">,</span> <span class="n">powers</span><span class="p">]:</span>
             <span class="k">if</span> <span class="n">array</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;arguments must be a 1D arrays or scalars.&quot;</span><span class="p">)</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"arguments must be a 1D arrays or scalars."</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_integrals</span> <span class="o">=</span> <span class="n">integrals</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_limits</span> <span class="o">=</span> <span class="n">limits</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_coefficients</span> <span class="o">=</span> <span class="n">coefficients</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span><span class="mi">1</span><span class="p">))</span>
@@ -478,11 +478,11 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">_externalval</span> <span class="o">=</span> <span class="n">externalval</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__call__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Evaluate the powerlaw at values x.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Evaluate the powerlaw at values x.</span>
+<span class="sd">        """</span>
         <span class="n">x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">x</span><span class="o">.</span><span class="n">ndim</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;argument must be a 1D array or scalar.&quot;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">"argument must be a 1D array or scalar."</span><span class="p">)</span>
         <span class="n">y</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">((</span><span class="bp">self</span><span class="o">.</span><span class="n">_coefficients</span> <span class="o">*</span> <span class="n">x</span><span class="o">**</span><span class="bp">self</span><span class="o">.</span><span class="n">_powers</span><span class="p">)</span> <span class="o">*</span>
                       <span class="p">(</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limits</span><span class="p">[</span><span class="mi">0</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span> <span class="o">*</span> <span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limits</span><span class="p">[</span><span class="mi">1</span><span class="p">:]),</span>
                       <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
@@ -492,11 +492,11 @@ document.write(`
         <span class="k">return</span> <span class="n">y</span>
 
 <div class="viewcode-block" id="PiecewisePowerlaw.integrate"><a class="viewcode-back" href="../../../content/utils.html#pyathena.util.PiecewisePowerlaw.integrate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">integrate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">high</span><span class="p">,</span> <span class="n">weight_power</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Integrate the function from low to high.</span>
+<span class="w">        </span><span class="sd">"""Integrate the function from low to high.</span>
 
 <span class="sd">        Optionally weight the integral by x^weight_power.</span>
 
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">limits</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_limits</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
         <span class="n">coefficients</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_coefficients</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>
         <span class="n">powers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_powers</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>

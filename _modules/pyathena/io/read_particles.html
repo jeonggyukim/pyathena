@@ -357,14 +357,14 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for pyathena.io.read_particles</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Module containing particle output readers&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""Module containing particle output readers"""</span>
 
 
 <span class="kn">from</span><span class="w"> </span><span class="nn">.athena_read</span><span class="w"> </span><span class="kn">import</span> <span class="n">partab</span><span class="p">,</span> <span class="n">parbin</span>
 <span class="kn">from</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_csv</span>
 
 <div class="viewcode-block" id="read_partab"><a class="viewcode-back" href="../../../content/readers.html#pyathena.read_partab">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">read_partab</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read Athena++ particle tab file (`par?.tab`) into a DataFrame.</span>
+<span class="w">    </span><span class="sd">"""Read Athena++ particle tab file (`par?.tab`) into a DataFrame.</span>
 
 <span class="sd">    Columns are read from the file header. The DataFrame index is set to</span>
 <span class="sd">    the particle id (``pid``) and sorted.</span>
@@ -385,17 +385,17 @@ document.write(`
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    &gt;&gt;&gt; from pyathena import read_partab</span>
-<span class="sd">    &gt;&gt;&gt; df = read_partab(&quot;/path/to/par0.tab&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; df = read_partab("/path/to/par0.tab")</span>
 <span class="sd">    &gt;&gt;&gt; df.head()</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ds</span> <span class="o">=</span> <span class="n">partab</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;pid&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'pid'</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">ds</span></div>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">read_parbin</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read Athena++ particle binary file (`par?.bin`) into a DataFrame.</span>
+<span class="w">    </span><span class="sd">"""Read Athena++ particle binary file (`par?.bin`) into a DataFrame.</span>
 
 <span class="sd">    The DataFrame index is set to the particle id (``pid``) and sorted.</span>
 
@@ -410,15 +410,15 @@ document.write(`
 <span class="sd">    -------</span>
 <span class="sd">    ds : pandas.DataFrame</span>
 <span class="sd">        Particle data indexed by ``pid``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ds</span> <span class="o">=</span> <span class="n">parbin</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
-    <span class="n">ds</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;pid&#39;</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">ds</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'pid'</span><span class="p">,</span> <span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
     <span class="n">ds</span><span class="o">.</span><span class="n">sort_index</span><span class="p">(</span><span class="n">inplace</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">ds</span>
 
 <div class="viewcode-block" id="read_parhst"><a class="viewcode-back" href="../../../content/readers.html#pyathena.read_parhst">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">read_parhst</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read an individual particle history file into a DataFrame.</span>
+<span class="w">    </span><span class="sd">"""Read an individual particle history file into a DataFrame.</span>
 
 <span class="sd">    The file is expected to be a CSV-style text file produced by Athena++</span>
 <span class="sd">    for tracking individual particle trajectories over time.</span>
@@ -435,7 +435,7 @@ document.write(`
 <span class="sd">    -------</span>
 <span class="sd">    ds : pandas.DataFrame</span>
 <span class="sd">        Individual particle history.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">ds</span> <span class="o">=</span> <span class="n">read_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
     <span class="c1"># TODO(SMOON) set index</span>
 

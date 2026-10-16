@@ -362,7 +362,7 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 
 <div class="viewcode-block" id="TimingReader"><a class="viewcode-back" href="../../../content/readers.html#pyathena.TimingReader">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">TimingReader</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Reader for Athena++ timing output files.</span>
+<span class="w">    </span><span class="sd">"""Reader for Athena++ timing output files.</span>
 
 <span class="sd">    Reads ``&lt;problem_id&gt;.loop_time.txt`` and ``&lt;problem_id&gt;.task_time.txt``</span>
 <span class="sd">    from the simulation base directory and exposes them as pandas DataFrames</span>
@@ -378,58 +378,58 @@ document.write(`
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
 <span class="sd">    &gt;&gt;&gt; from pyathena import TimingReader</span>
-<span class="sd">    &gt;&gt;&gt; tr = TimingReader(&quot;/path/to/basedir&quot;, &quot;problem_id&quot;)</span>
+<span class="sd">    &gt;&gt;&gt; tr = TimingReader("/path/to/basedir", "problem_id")</span>
 <span class="sd">    &gt;&gt;&gt; df_loop = tr.load_loop_time()</span>
-<span class="sd">    &gt;&gt;&gt; df_tasks = tr.load_task_time(groups=[&#39;Hydro&#39;, &#39;Primitives&#39;])</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    &gt;&gt;&gt; df_tasks = tr.load_task_time(groups=['Hydro', 'Primitives'])</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">basedir</span><span class="p">,</span> <span class="n">problem_id</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">fdict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="n">lt</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.loop_time.txt&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">problem_id</span><span class="p">))</span>
-        <span class="n">tt</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;</span><span class="si">{}</span><span class="s1">.task_time.txt&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">problem_id</span><span class="p">))</span>
+        <span class="n">lt</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">'</span><span class="si">{}</span><span class="s1">.loop_time.txt'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">problem_id</span><span class="p">))</span>
+        <span class="n">tt</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">'</span><span class="si">{}</span><span class="s1">.task_time.txt'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">problem_id</span><span class="p">))</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">lt</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fdict</span><span class="p">[</span><span class="s1">&#39;loop_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">lt</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fdict</span><span class="p">[</span><span class="s1">'loop_time'</span><span class="p">]</span> <span class="o">=</span> <span class="n">lt</span>
         <span class="k">if</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">isfile</span><span class="p">(</span><span class="n">tt</span><span class="p">):</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">fdict</span><span class="p">[</span><span class="s1">&#39;task_time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">tt</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">fdict</span><span class="p">[</span><span class="s1">'task_time'</span><span class="p">]</span> <span class="o">=</span> <span class="n">tt</span>
 
     <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">_read_block</span><span class="p">(</span><span class="n">block</span><span class="p">):</span>
         <span class="n">res</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="n">h</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-        <span class="n">res</span><span class="p">[</span><span class="s1">&#39;ncycle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
-        <span class="n">name</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">h</span> <span class="o">=</span> <span class="n">block</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">','</span><span class="p">)</span>
+        <span class="n">res</span><span class="p">[</span><span class="s1">'ncycle'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">h</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'='</span><span class="p">)[</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'='</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">name_tlist</span> <span class="o">=</span> <span class="n">name</span>
-        <span class="n">time</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">time</span> <span class="o">=</span> <span class="n">h</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'='</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
         <span class="n">res</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
         <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="n">block</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
-            <span class="n">sp</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">)</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39; &#39;</span><span class="p">,</span> <span class="s1">&#39;&#39;</span><span class="p">)</span>
-            <span class="n">time</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
+            <span class="n">sp</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">','</span><span class="p">)</span>
+            <span class="n">name</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">' '</span><span class="p">,</span> <span class="s1">''</span><span class="p">)</span>
+            <span class="n">time</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'='</span><span class="p">)[</span><span class="mi">1</span><span class="p">]</span>
             <span class="n">res</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">time</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">res</span><span class="p">,</span> <span class="n">name_tlist</span>
 
 <div class="viewcode-block" id="TimingReader.load_task_time"><a class="viewcode-back" href="../../../content/readers.html#pyathena.TimingReader.load_task_time">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_task_time</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">groups</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read .task_time.txt file</span>
+<span class="w">        </span><span class="sd">"""Read .task_time.txt file</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        groups : list</span>
 <span class="sd">            If provided, group tasks that have the same string in the list</span>
-<span class="sd">            everything else will be summed and stored in &#39;Others&#39;.</span>
-<span class="sd">            e.g., [&#39;Hydro&#39;,&#39;Primitives&#39;,&#39;UserWork&#39;]</span>
+<span class="sd">            everything else will be summed and stored in 'Others'.</span>
+<span class="sd">            e.g., ['Hydro','Primitives','UserWork']</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        dictionary of pandas.DataFrame</span>
 <span class="sd">            The breakdown of time taken by each task of the time integrator</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fdict</span><span class="p">[</span><span class="s1">&#39;task_time&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fdict</span><span class="p">[</span><span class="s1">'task_time'</span><span class="p">])</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
             <span class="n">lines</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
 
         <span class="n">block_idx</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
-            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;#&#39;</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">line</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'#'</span><span class="p">):</span>
                 <span class="n">block_idx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
         <span class="n">tt</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="n">names</span> <span class="o">=</span> <span class="p">[]</span>
@@ -447,10 +447,10 @@ document.write(`
         <span class="n">dfa</span> <span class="o">=</span> <span class="p">{}</span>
         <span class="k">for</span> <span class="n">name</span> <span class="ow">in</span> <span class="n">names</span><span class="p">:</span>
             <span class="n">df</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">tt</span><span class="p">[</span><span class="n">name</span><span class="p">])</span>
-            <span class="n">df</span><span class="p">[</span><span class="s1">&#39;All&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">&#39;ncycle&#39;</span><span class="p">)]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+            <span class="n">df</span><span class="p">[</span><span class="s1">'All'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span><span class="s1">'ncycle'</span><span class="p">)]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="k">if</span> <span class="n">groups</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">df</span><span class="p">[</span><span class="s1">&#39;Others&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span>
-                    <span class="s1">&#39;|&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">groups</span> <span class="o">+</span> <span class="p">[</span><span class="s1">&#39;ncycle&#39;</span><span class="p">,</span> <span class="s1">&#39;All&#39;</span><span class="p">]))]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">df</span><span class="p">[</span><span class="s1">'Others'</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">loc</span><span class="p">[:,</span> <span class="o">~</span><span class="n">df</span><span class="o">.</span><span class="n">columns</span><span class="o">.</span><span class="n">str</span><span class="o">.</span><span class="n">contains</span><span class="p">(</span>
+                    <span class="s1">'|'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">groups</span> <span class="o">+</span> <span class="p">[</span><span class="s1">'ncycle'</span><span class="p">,</span> <span class="s1">'All'</span><span class="p">]))]</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
                 <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="n">groups</span><span class="p">:</span>
                     <span class="n">df</span><span class="p">[</span><span class="n">g</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span><span class="o">.</span><span class="n">filter</span><span class="p">(</span><span class="n">like</span><span class="o">=</span><span class="n">g</span><span class="p">)</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
             <span class="n">dfa</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">df</span>
@@ -458,24 +458,24 @@ document.write(`
         <span class="k">return</span> <span class="n">dfa</span></div>
 
 <div class="viewcode-block" id="TimingReader.load_loop_time"><a class="viewcode-back" href="../../../content/readers.html#pyathena.TimingReader.load_loop_time">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">load_loop_time</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read .loop_time.txt file</span>
+<span class="w">        </span><span class="sd">"""Read .loop_time.txt file</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        pandas.DataFrame</span>
 <span class="sd">            The breakdown of each step of the main loop including</span>
 <span class="sd">            Before, TimeIntegratorTaskList, SelfGravity, After</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="k">def</span><span class="w"> </span><span class="nf">from_one_line</span><span class="p">(</span><span class="n">line</span><span class="p">):</span>
             <span class="n">info</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">sp</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;,&#39;</span><span class="p">):</span>
-                <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;=&#39;</span><span class="p">)</span>
-                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;ncycle&#39;</span><span class="p">,</span> <span class="s1">&#39;Nblocks&#39;</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">sp</span> <span class="ow">in</span> <span class="n">line</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">','</span><span class="p">):</span>
+                <span class="n">name</span><span class="p">,</span> <span class="n">value</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'='</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">name</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'ncycle'</span><span class="p">,</span> <span class="s1">'Nblocks'</span><span class="p">]:</span>
                     <span class="n">info</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
                 <span class="k">else</span><span class="p">:</span>
                     <span class="n">info</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
             <span class="k">return</span> <span class="n">info</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fdict</span><span class="p">[</span><span class="s1">&#39;loop_time&#39;</span><span class="p">])</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fdict</span><span class="p">[</span><span class="s1">'loop_time'</span><span class="p">])</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
             <span class="n">lines</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
 
         <span class="n">timing</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
@@ -487,7 +487,7 @@ document.write(`
             <span class="n">info</span> <span class="o">=</span> <span class="n">from_one_line</span><span class="p">(</span><span class="n">line</span><span class="p">)</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">info</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">timing</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
-        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">timing</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">&#39;ncycle&#39;</span><span class="p">)</span></div></div>
+        <span class="k">return</span> <span class="n">pd</span><span class="o">.</span><span class="n">DataFrame</span><span class="p">(</span><span class="n">timing</span><span class="p">)</span><span class="o">.</span><span class="n">set_index</span><span class="p">(</span><span class="s1">'ncycle'</span><span class="p">)</span></div></div>
 </pre></div>
 
                 </article>

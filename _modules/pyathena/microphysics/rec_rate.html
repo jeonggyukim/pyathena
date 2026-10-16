@@ -357,8 +357,8 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for pyathena.microphysics.rec_rate</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;Computes recombination rate</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""Computes recombination rate</span>
+<span class="sd">"""</span>
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">os.path</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">osp</span>
@@ -367,9 +367,9 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">pathlib</span>
 
 <div class="viewcode-block" id="RecRate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">RecRate</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Class to compute Badnell (radiative/dielectronic) recombination rates,</span>
-<span class="sd">    Draine (2011)&#39;s recombination rates</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Class to compute Badnell (radiative/dielectronic) recombination rates,</span>
+<span class="sd">    Draine (2011)'s recombination rates</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="c1"># read data</span>
@@ -378,33 +378,33 @@ document.write(`
     <span class="k">def</span><span class="w"> </span><span class="nf">_read_data</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
         <span class="n">basedir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">(),</span>
-                           <span class="s1">&#39;../../data/microphysics&#39;</span><span class="p">)</span>
+                           <span class="s1">'../../data/microphysics'</span><span class="p">)</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_C</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_dr_C.dat&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_E</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_dr_E.dat&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">fname_rr</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;badnell_rr.dat&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_C</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">'badnell_dr_C.dat'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_E</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">'badnell_dr_E.dat'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fname_rr</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">'badnell_rr.dat'</span><span class="p">)</span>
 
         <span class="c1"># Read dielectronic recombination rate data</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_C</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_C</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
             <span class="n">lines1</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
 
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_E</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname_dr_E</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
             <span class="n">lines2</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
 
         <span class="n">i0</span> <span class="o">=</span> <span class="mi">4</span>
         <span class="n">nline</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines1</span><span class="p">)</span> <span class="o">-</span> <span class="n">i0</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines1</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines2</span><span class="p">):</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Check data file (lines1, lines2) = </span><span class="si">{0:d}</span><span class="s1">, </span><span class="si">{1:d}</span><span class="s1">&#39;</span><span class="p">,</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'Check data file (lines1, lines2) = </span><span class="si">{0:d}</span><span class="s1">, </span><span class="si">{1:d}</span><span class="s1">'</span><span class="p">,</span>
                   <span class="nb">len</span><span class="p">(</span><span class="n">lines1</span><span class="p">),</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines2</span><span class="p">))</span>
             <span class="k">raise</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">Zd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Nd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Md</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Wd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Zd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Nd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Md</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Wd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Cd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nline</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Ed</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">((</span><span class="n">nline</span><span class="p">,</span> <span class="mi">9</span><span class="p">))</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">nd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nd</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="p">(</span><span class="n">l1</span><span class="p">,</span> <span class="n">l2</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">lines1</span><span class="p">[</span><span class="n">i0</span><span class="p">:</span><span class="n">i0</span> <span class="o">+</span> <span class="n">nline</span><span class="p">],</span>
                                          <span class="n">lines2</span><span class="p">[</span><span class="n">i0</span><span class="p">:</span><span class="n">i0</span> <span class="o">+</span> <span class="n">nline</span><span class="p">])):</span>
@@ -425,22 +425,22 @@ document.write(`
                     <span class="bp">self</span><span class="o">.</span><span class="n">Ed</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">l2_</span><span class="p">)</span>
                 <span class="bp">self</span><span class="o">.</span><span class="n">nd</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Columns do not match!&quot;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">"Columns do not match!"</span><span class="p">)</span>
                 <span class="k">raise</span>
 
         <span class="k">del</span> <span class="n">lines1</span><span class="p">,</span> <span class="n">lines2</span>
 
         <span class="c1"># Read radiative recombination rate data</span>
-        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname_rr</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
+        <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fname_rr</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">fp</span><span class="p">:</span>
             <span class="n">lines</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
 
         <span class="n">i0</span> <span class="o">=</span> <span class="mi">4</span>
         <span class="n">nline</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">lines</span><span class="p">)</span> <span class="o">-</span> <span class="n">i0</span>
 
-        <span class="bp">self</span><span class="o">.</span><span class="n">Zr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Mr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">Wr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;uint8&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Zr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Mr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">Wr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'uint8'</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Ar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">Br</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">T0r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">)</span>
@@ -448,7 +448,7 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">Cr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">T2r</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">)</span>
         <span class="c1"># Use modifed B for low-charge ions</span>
-        <span class="bp">self</span><span class="o">.</span><span class="n">modr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;bool&#39;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">modr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">nline</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'bool'</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">l1</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">[</span><span class="n">i0</span><span class="p">:</span><span class="n">i0</span> <span class="o">+</span> <span class="n">nline</span><span class="p">]):</span>
             <span class="n">l1</span> <span class="o">=</span> <span class="n">l1</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
@@ -468,7 +468,7 @@ document.write(`
                 <span class="bp">self</span><span class="o">.</span><span class="n">modr</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
 <div class="viewcode-block" id="RecRate.get_rr_rate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rr_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_rr_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Calculate radiative recombination rate coefficient</span>
 
 <span class="sd">        Parameters</span>
@@ -487,7 +487,7 @@ document.write(`
 <span class="sd">        -------</span>
 <span class="sd">        rr: array of floats</span>
 <span class="sd">            Radiative recombination coefficients [cm^3 s^-1]</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">c1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Zr</span> <span class="o">==</span> <span class="n">Z</span>
         <span class="n">c2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nr</span> <span class="o">==</span> <span class="n">N</span>
@@ -507,7 +507,7 @@ document.write(`
         <span class="k">return</span> <span class="n">rr</span></div>
 
 <div class="viewcode-block" id="RecRate.get_dr_rate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_dr_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_dr_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Calculate dielectronic recombination rate coefficient</span>
 
 <span class="sd">        Parameters</span>
@@ -526,7 +526,7 @@ document.write(`
 <span class="sd">        -------</span>
 <span class="sd">        rr: array of floats</span>
 <span class="sd">            Dielectronic recombination coefficients [cm^3 s^-1]</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">c1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Zd</span> <span class="o">==</span> <span class="n">Z</span>
         <span class="n">c2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Nd</span> <span class="o">==</span> <span class="n">N</span>
@@ -542,8 +542,8 @@ document.write(`
         <span class="n">dr</span> <span class="o">*=</span> <span class="n">T</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">1.5</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">dr</span></div>
 
-<div class="viewcode-block" id="RecRate.get_rec_rate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">&#39;badnell&#39;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="RecRate.get_rec_rate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="s1">'badnell'</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Calculate radiative + dielectronic recombination rate coefficient</span>
 
 <span class="sd">        Parameters</span>
@@ -558,49 +558,49 @@ document.write(`
 <span class="sd">            Initial metastable levels (M=1 for the ground state) of the ground</span>
 <span class="sd">            and metastable terms. The defualt value is 1.</span>
 <span class="sd">        kind : str</span>
-<span class="sd">            Set to &#39;badnell&#39; to use fits Badnell fits or &#39;dr11&#39; to use</span>
-<span class="sd">            Draine (2011)&#39;s formula.</span>
+<span class="sd">            Set to 'badnell' to use fits Badnell fits or 'dr11' to use</span>
+<span class="sd">            Draine (2011)'s formula.</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        rrate: array of floats</span>
 <span class="sd">            Recombination rate coefficient [cm^3 s^-1]</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
-        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;badnell&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'badnell'</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span> <span class="c1"># No dielectronic recombination</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">)</span> <span class="o">+</span> \
                   <span class="bp">self</span><span class="o">.</span><span class="n">get_dr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">)</span>
-        <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">&#39;dr11&#39;</span><span class="p">:</span>
+        <span class="k">elif</span> <span class="n">kind</span> <span class="o">==</span> <span class="s1">'dr11'</span><span class="p">:</span>
             <span class="k">if</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                 <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rec_rate_H_caseA</span><span class="p">(</span><span class="n">T</span><span class="p">)</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Z &gt; 1 is not supported for dr11 recombination rate.&#39;</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s1">'Z &gt; 1 is not supported for dr11 recombination rate.'</span><span class="p">)</span>
                 <span class="k">raise</span></div>
 
 <div class="viewcode-block" id="RecRate.get_rec_rate_H_caseA_Dr11"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseA_Dr11">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_H_caseA_Dr11</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute case A recombination rate coefficient for H</span>
+<span class="w">        </span><span class="sd">"""Compute case A recombination rate coefficient for H</span>
 <span class="sd">        Table 14.1 in Draine (2011)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">T4</span> <span class="o">=</span> <span class="n">T</span><span class="o">*</span><span class="mf">1e-4</span>
         <span class="k">return</span> <span class="mf">4.13e-13</span><span class="o">*</span><span class="n">T4</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.7131</span> <span class="o">-</span> <span class="mf">0.0115</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T4</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="RecRate.get_rec_rate_H_caseB_Dr11"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB_Dr11">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_H_caseB_Dr11</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute case B recombination rate coefficient for H</span>
+<span class="w">        </span><span class="sd">"""Compute case B recombination rate coefficient for H</span>
 <span class="sd">        Table 14.1 in Draine (2011)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">T4</span> <span class="o">=</span> <span class="n">T</span><span class="o">*</span><span class="mf">1e-4</span>
         <span class="k">return</span> <span class="mf">2.54e-13</span><span class="o">*</span><span class="n">T4</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">0.8163</span> <span class="o">-</span> <span class="mf">0.0208</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T4</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="RecRate.get_rec_rate_H_caseB"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_H_caseB">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_H_caseB</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute case B recombination rate coefficient for H</span>
+<span class="w">        </span><span class="sd">"""Compute case B recombination rate coefficient for H</span>
 <span class="sd">        This is what we use in Athena-TIGRESS (fit to Ferland)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">Tinv</span> <span class="o">=</span> <span class="mf">1.0</span><span class="o">/</span><span class="n">T</span>
         <span class="n">bb</span> <span class="o">=</span> <span class="mf">315614.0</span><span class="o">*</span><span class="n">Tinv</span>
         <span class="n">cc</span> <span class="o">=</span> <span class="mf">115188.0</span><span class="o">*</span><span class="n">Tinv</span>
@@ -613,34 +613,34 @@ document.write(`
         <span class="c1"># Parameters for Fit (14.37) to Grain Recombination Rate coefficients</span>
         <span class="c1"># alpha_gr(X +) for selected ions. (Draine 2011)</span>
         <span class="n">C</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="n">C</span><span class="p">[</span><span class="s1">&#39;H&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">12.25</span><span class="p">,</span> <span class="mf">8.074e-6</span><span class="p">,</span> <span class="mf">1.378</span><span class="p">,</span> <span class="mf">5.087e2</span><span class="p">,</span> <span class="mf">1.586e-2</span><span class="p">,</span> <span class="mf">0.4723</span><span class="p">,</span> <span class="mf">1.102e-5</span><span class="p">])</span>
-        <span class="n">C</span><span class="p">[</span><span class="s1">&#39;He&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">5.572</span><span class="p">,</span> <span class="mf">3.185e-7</span><span class="p">,</span> <span class="mf">1.512</span><span class="p">,</span> <span class="mf">5.115e3</span><span class="p">,</span> <span class="mf">3.903e-7</span><span class="p">,</span> <span class="mf">0.4956</span><span class="p">,</span> <span class="mf">5.494e-7</span><span class="p">])</span>
-        <span class="n">C</span><span class="p">[</span><span class="s1">&#39;C&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">45.58</span><span class="p">,</span> <span class="mf">6.089e-3</span><span class="p">,</span> <span class="mf">1.128</span><span class="p">,</span> <span class="mf">4.331e2</span><span class="p">,</span> <span class="mf">4.845e-2</span><span class="p">,</span> <span class="mf">0.8120</span><span class="p">,</span> <span class="mf">1.333e-4</span><span class="p">])</span>
-        <span class="n">C</span><span class="p">[</span><span class="s1">&#39;Mg&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2.510</span><span class="p">,</span> <span class="mf">8.116e-8</span><span class="p">,</span> <span class="mf">1.864</span><span class="p">,</span> <span class="mf">6.170e4</span><span class="p">,</span> <span class="mf">2.169e-6</span><span class="p">,</span> <span class="mf">0.9605</span><span class="p">,</span> <span class="mf">7.232e-5</span><span class="p">])</span>
-        <span class="n">C</span><span class="p">[</span><span class="s1">&#39;S&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">3.064</span><span class="p">,</span> <span class="mf">7.769e-5</span><span class="p">,</span> <span class="mf">1.319</span><span class="p">,</span> <span class="mf">1.087e2</span><span class="p">,</span> <span class="mf">3.475e-1</span><span class="p">,</span> <span class="mf">0.4790</span><span class="p">,</span> <span class="mf">4.689e-2</span><span class="p">])</span>
-        <span class="n">C</span><span class="p">[</span><span class="s1">&#39;Ca&#39;</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.636</span><span class="p">,</span> <span class="mf">8.208e-9</span><span class="p">,</span> <span class="mf">2.289</span><span class="p">,</span> <span class="mf">1.254e5</span><span class="p">,</span> <span class="mf">1.349e-9</span><span class="p">,</span> <span class="mf">1.1506</span><span class="p">,</span> <span class="mf">7.204e-4</span><span class="p">])</span>
+        <span class="n">C</span><span class="p">[</span><span class="s1">'H'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">12.25</span><span class="p">,</span> <span class="mf">8.074e-6</span><span class="p">,</span> <span class="mf">1.378</span><span class="p">,</span> <span class="mf">5.087e2</span><span class="p">,</span> <span class="mf">1.586e-2</span><span class="p">,</span> <span class="mf">0.4723</span><span class="p">,</span> <span class="mf">1.102e-5</span><span class="p">])</span>
+        <span class="n">C</span><span class="p">[</span><span class="s1">'He'</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">5.572</span><span class="p">,</span> <span class="mf">3.185e-7</span><span class="p">,</span> <span class="mf">1.512</span><span class="p">,</span> <span class="mf">5.115e3</span><span class="p">,</span> <span class="mf">3.903e-7</span><span class="p">,</span> <span class="mf">0.4956</span><span class="p">,</span> <span class="mf">5.494e-7</span><span class="p">])</span>
+        <span class="n">C</span><span class="p">[</span><span class="s1">'C'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">45.58</span><span class="p">,</span> <span class="mf">6.089e-3</span><span class="p">,</span> <span class="mf">1.128</span><span class="p">,</span> <span class="mf">4.331e2</span><span class="p">,</span> <span class="mf">4.845e-2</span><span class="p">,</span> <span class="mf">0.8120</span><span class="p">,</span> <span class="mf">1.333e-4</span><span class="p">])</span>
+        <span class="n">C</span><span class="p">[</span><span class="s1">'Mg'</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">2.510</span><span class="p">,</span> <span class="mf">8.116e-8</span><span class="p">,</span> <span class="mf">1.864</span><span class="p">,</span> <span class="mf">6.170e4</span><span class="p">,</span> <span class="mf">2.169e-6</span><span class="p">,</span> <span class="mf">0.9605</span><span class="p">,</span> <span class="mf">7.232e-5</span><span class="p">])</span>
+        <span class="n">C</span><span class="p">[</span><span class="s1">'S'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">3.064</span><span class="p">,</span> <span class="mf">7.769e-5</span><span class="p">,</span> <span class="mf">1.319</span><span class="p">,</span> <span class="mf">1.087e2</span><span class="p">,</span> <span class="mf">3.475e-1</span><span class="p">,</span> <span class="mf">0.4790</span><span class="p">,</span> <span class="mf">4.689e-2</span><span class="p">])</span>
+        <span class="n">C</span><span class="p">[</span><span class="s1">'Ca'</span><span class="p">]</span><span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.636</span><span class="p">,</span> <span class="mf">8.208e-9</span><span class="p">,</span> <span class="mf">2.289</span><span class="p">,</span> <span class="mf">1.254e5</span><span class="p">,</span> <span class="mf">1.349e-9</span><span class="p">,</span> <span class="mf">1.1506</span><span class="p">,</span> <span class="mf">7.204e-4</span><span class="p">])</span>
 
         <span class="k">if</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-            <span class="n">e</span> <span class="o">=</span> <span class="s1">&#39;H&#39;</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="s1">'H'</span>
         <span class="k">elif</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
-            <span class="n">e</span> <span class="o">=</span> <span class="s1">&#39;He&#39;</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="s1">'He'</span>
         <span class="k">elif</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">6</span><span class="p">:</span>
-            <span class="n">e</span> <span class="o">=</span> <span class="s1">&#39;C&#39;</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="s1">'C'</span>
         <span class="k">elif</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">12</span><span class="p">:</span>
-            <span class="n">e</span> <span class="o">=</span> <span class="s1">&#39;Mg&#39;</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="s1">'Mg'</span>
         <span class="k">elif</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">16</span><span class="p">:</span>
-            <span class="n">e</span> <span class="o">=</span> <span class="s1">&#39;S&#39;</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="s1">'S'</span>
         <span class="k">elif</span> <span class="n">Z</span> <span class="o">==</span> <span class="mi">20</span><span class="p">:</span>
-            <span class="n">e</span> <span class="o">=</span> <span class="s1">&#39;Ca&#39;</span>
+            <span class="n">e</span> <span class="o">=</span> <span class="s1">'Ca'</span>
 
         <span class="k">return</span> <span class="mf">1e-14</span><span class="o">*</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span><span class="o">/</span><span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="o">**</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">2</span><span class="p">]</span><span class="o">*</span>\
                 <span class="p">(</span><span class="mf">1.0</span> <span class="o">+</span> <span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">3</span><span class="p">]</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">4</span><span class="p">]</span><span class="o">*</span><span class="n">psi</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">5</span><span class="p">]</span><span class="o">-</span><span class="n">C</span><span class="p">[</span><span class="n">e</span><span class="p">][</span><span class="mi">6</span><span class="p">]</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">log</span><span class="p">(</span><span class="n">T</span><span class="p">))))</span>
 
 <div class="viewcode-block" id="RecRate.get_rec_rate_grain"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.rec_rate.RecRate.get_rec_rate_grain">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">get_rec_rate_grain</span><span class="p">(</span><span class="n">ne</span><span class="p">,</span> <span class="n">G0</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">Z</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute grain assisted recombination coefficient</span>
+<span class="w">        </span><span class="sd">"""Compute grain assisted recombination coefficient</span>
 <span class="sd">        Ch 14.8 in Draine (2011)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">psi</span> <span class="o">=</span> <span class="n">G0</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="mf">0.5</span><span class="o">/</span><span class="n">ne</span>
         <span class="k">return</span> <span class="n">RecRate</span><span class="o">.</span><span class="n">get_alpha_gr</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="n">psi</span><span class="p">,</span> <span class="n">Z</span><span class="p">)</span></div>
@@ -651,9 +651,9 @@ document.write(`
         <span class="c1"># Z = ct.EnumAtom.He.value</span>
         <span class="c1"># N = Z - 1</span>
         <span class="c1"># M = M</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rec_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">),</span> <span class="s1">&#39;-&#39;</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">),</span> <span class="s1">&#39;:&#39;</span><span class="p">)</span>
-        <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">),</span> <span class="s1">&#39;--&#39;</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rec_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">),</span> <span class="s1">'-'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_rr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">),</span> <span class="s1">':'</span><span class="p">)</span>
+        <span class="n">plt</span><span class="o">.</span><span class="n">loglog</span><span class="p">(</span><span class="n">T</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_dr_rate</span><span class="p">(</span><span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">T</span><span class="p">,</span> <span class="n">M</span><span class="o">=</span><span class="n">M</span><span class="p">),</span> <span class="s1">'--'</span><span class="p">)</span>
         <span class="n">plt</span><span class="o">.</span><span class="n">ylim</span><span class="p">(</span><span class="mf">1e-14</span><span class="p">,</span> <span class="mf">1e-10</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">plt</span><span class="o">.</span><span class="n">gca</span><span class="p">()</span></div>
 </pre></div>

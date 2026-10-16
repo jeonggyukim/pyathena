@@ -361,7 +361,7 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <div class="viewcode-block" id="rebin_xyz"><a class="viewcode-back" href="../../../content/utils.html#pyathena.rebin_xyz">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">rebin_xyz</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">bin_factor</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rebin a 3D array by averaging over blocks of size ``bin_factor`` in all dimensions.</span>
+<span class="w">    </span><span class="sd">"""Rebin a 3D array by averaging over blocks of size ``bin_factor`` in all dimensions.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -378,7 +378,7 @@ document.write(`
 <span class="sd">    -------</span>
 <span class="sd">    arr_rebin : ndarray</span>
 <span class="sd">        Rebinned array with shape ``(nz//bin_factor, ny//bin_factor, nx//bin_factor)``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">if</span> <span class="n">bin_factor</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">arr</span>
@@ -403,7 +403,7 @@ document.write(`
 
 
 <div class="viewcode-block" id="rebin_xy"><a class="viewcode-back" href="../../../content/utils.html#pyathena.rebin_xy">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">rebin_xy</span><span class="p">(</span><span class="n">arr</span><span class="p">,</span> <span class="n">bin_factor</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Rebin a 3D array by averaging over blocks of size ``bin_factor`` in the x-y plane.</span>
+<span class="w">    </span><span class="sd">"""Rebin a 3D array by averaging over blocks of size ``bin_factor`` in the x-y plane.</span>
 
 <span class="sd">    The z-axis is left unchanged.</span>
 
@@ -422,7 +422,7 @@ document.write(`
 <span class="sd">    -------</span>
 <span class="sd">    arr_rebin : ndarray</span>
 <span class="sd">        Rebinned array with shape ``(nz, ny//bin_factor, nx//bin_factor)``.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">if</span> <span class="n">bin_factor</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">arr</span>
@@ -445,7 +445,7 @@ document.write(`
     <span class="k">return</span> <span class="n">arr</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="n">nz</span><span class="p">,</span> <span class="n">ny1</span><span class="p">,</span> <span class="n">ny0</span><span class="o">//</span><span class="n">ny1</span><span class="p">,</span> <span class="n">nx1</span><span class="p">,</span> <span class="n">nx0</span><span class="o">//</span><span class="n">nx1</span><span class="p">])</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=-</span><span class="mi">1</span><span class="p">)</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span></div>
 
 
-<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">&#39;__main__&#39;</span><span class="p">:</span>
+<span class="k">if</span> <span class="vm">__name__</span> <span class="o">==</span> <span class="s1">'__main__'</span><span class="p">:</span>
 
     <span class="c1"># Test of rebin_xy</span>
     <span class="n">mask</span> <span class="o">=</span> <span class="kc">True</span>
@@ -465,9 +465,9 @@ document.write(`
     <span class="n">small1</span> <span class="o">=</span> <span class="n">rebin_xy_masked</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
     <span class="n">small2</span> <span class="o">=</span> <span class="n">rebin_xy_masked</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Original array</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">big</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;With fill value 0.0</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">small1</span><span class="p">)</span>
-    <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Without fill value</span><span class="se">\n</span><span class="s1">&#39;</span><span class="p">,</span> <span class="n">small2</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Original array</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="n">big</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'With fill value 0.0</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="n">small1</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s1">'Without fill value</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="n">small2</span><span class="p">)</span>
 </pre></div>
 
                 </article>

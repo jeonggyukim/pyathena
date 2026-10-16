@@ -357,9 +357,9 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for pyathena.io.read_timeit</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""</span>
 <span class="sd">Read athena log file timeit.txt using pandas</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -368,7 +368,7 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">pandas</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pd</span>
 
 <div class="viewcode-block" id="read_timeit"><a class="viewcode-back" href="../../../content/readers.html#pyathena.read_timeit">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">read_timeit</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">force_override</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot; Function to read timeit log file and pickle</span>
+<span class="w">    </span><span class="sd">""" Function to read timeit log file and pickle</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -383,25 +383,25 @@ document.write(`
 <span class="sd">    -------</span>
 <span class="sd">    hst : pandas dataframe</span>
 <span class="sd">        Each column contains time series data</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">skiprows</span> <span class="o">=</span> <span class="mi">1</span>
 
-    <span class="n">fpkl</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s1">&#39;.p&#39;</span>
+    <span class="n">fpkl</span> <span class="o">=</span> <span class="n">filename</span> <span class="o">+</span> <span class="s1">'.p'</span>
     <span class="k">if</span> <span class="ow">not</span> <span class="n">force_override</span> <span class="ow">and</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="ow">and</span> \
        <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span> <span class="o">&gt;</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">getmtime</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
         <span class="n">tmit</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_pickle</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span>
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;[read_timeit]: reading from existing pickle.&#39;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'[read_timeit]: reading from existing pickle.'</span><span class="p">)</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;[read_timeit]: pickle does not exist or timeit file updated.&#39;</span> <span class="o">+</span> \
-                      <span class="s1">&#39; Reading </span><span class="si">{0:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'[read_timeit]: pickle does not exist or timeit file updated.'</span> <span class="o">+</span> \
+                      <span class="s1">' Reading </span><span class="si">{0:s}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
         <span class="n">vlist</span> <span class="o">=</span> <span class="n">_get_timeit_var</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
 
         <span class="c1"># c engine does not support regex separators</span>
         <span class="n">tmit</span> <span class="o">=</span> <span class="n">pd</span><span class="o">.</span><span class="n">read_csv</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">names</span><span class="o">=</span><span class="n">vlist</span><span class="p">,</span> <span class="n">skiprows</span><span class="o">=</span><span class="n">skiprows</span><span class="p">,</span>
-                           <span class="n">comment</span><span class="o">=</span><span class="s1">&#39;#&#39;</span><span class="p">,</span> <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">&#39;python&#39;</span><span class="p">)</span>
+                           <span class="n">comment</span><span class="o">=</span><span class="s1">'#'</span><span class="p">,</span> <span class="n">delim_whitespace</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">engine</span><span class="o">=</span><span class="s1">'python'</span><span class="p">)</span>
         <span class="k">try</span><span class="p">:</span>
             <span class="n">tmit</span><span class="o">.</span><span class="n">to_pickle</span><span class="p">(</span><span class="n">fpkl</span><span class="p">)</span>
         <span class="k">except</span> <span class="ne">IOError</span><span class="p">:</span>
@@ -411,7 +411,7 @@ document.write(`
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_get_timeit_var</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Read variable names from timeit log file</span>
+<span class="w">    </span><span class="sd">"""Read variable names from timeit log file</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -422,9 +422,9 @@ document.write(`
 <span class="sd">    -------</span>
 <span class="sd">    vlist : list</span>
 <span class="sd">        List of variables</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">h</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
 
     <span class="k">return</span> <span class="n">h</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>

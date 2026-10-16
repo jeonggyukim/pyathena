@@ -360,8 +360,8 @@ document.write(`
 <span></span><span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <div class="viewcode-block" id="CoolRosen95"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.cool_rosen95.CoolRosen95">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">CoolRosen95</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Compute Lambda from Rosen &amp; Bregman (1995)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""Compute Lambda from Rosen &amp; Bregman (1995)</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
 
@@ -370,9 +370,9 @@ document.write(`
 
 <div class="viewcode-block" id="CoolRosen95.LambdaRosen95"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">LambdaRosen95</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Original definition (zero below 300 K)</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">Lambda</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">T</span> <span class="o">&gt;</span> <span class="mf">10.0</span><span class="p">,</span> <span class="n">T</span> <span class="o">&lt;</span> <span class="mf">2e3</span><span class="p">),</span>
                           <span class="mf">2.2380e-32</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> \
                  <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">T</span> <span class="o">&gt;=</span> <span class="mf">2e3</span><span class="p">,</span> <span class="n">T</span> <span class="o">&lt;</span> <span class="mf">8e3</span><span class="p">),</span>
@@ -386,9 +386,9 @@ document.write(`
 
 <div class="viewcode-block" id="CoolRosen95.LambdaRosen95_extrapolate"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.cool_rosen95.CoolRosen95.LambdaRosen95_extrapolate">[docs]</a>    <span class="nd">@staticmethod</span>
     <span class="k">def</span><span class="w"> </span><span class="nf">LambdaRosen95_extrapolate</span><span class="p">(</span><span class="n">T</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Extrapolation in log-log space below 300 K</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">Lambda</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">T</span> <span class="o">&gt;</span> <span class="mf">1.0</span><span class="p">,</span> <span class="n">T</span> <span class="o">&lt;</span> <span class="mf">2e3</span><span class="p">),</span>
                           <span class="mf">2.2380e-32</span><span class="o">*</span><span class="n">T</span><span class="o">**</span><span class="mf">2.0</span><span class="p">,</span> <span class="mf">0.0</span><span class="p">)</span> <span class="o">+</span> \
                  <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">logical_and</span><span class="p">(</span><span class="n">T</span> <span class="o">&gt;=</span> <span class="mf">2e3</span><span class="p">,</span> <span class="n">T</span> <span class="o">&lt;</span> <span class="mf">8e3</span><span class="p">),</span>

@@ -620,7 +620,7 @@ or their numerical values (0, 10, 20, 30, 40, 50).
 <dl class="py attribute">
 <dt class="sig sig-object py" id="pyathena.LoadSim.nums">
 <span class="sig-name descname"><span class="pre">nums</span></span><a class="headerlink" href="#pyathena.LoadSim.nums" title="Permalink to this definition">#</a></dt>
-<dd><p>vtk/hdf5 output numbers</p>
+<dd><p>Primary snapshot numbers (e.g., joined vtk, hdf5, or bin)</p>
 <dl class="field-list simple">
 <dt class="field-odd">Type</dt>
 <dd class="field-odd"><p>list of int</p>
@@ -670,7 +670,7 @@ or their numerical values (0, 10, 20, 30, 40, 50).
 
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pyathena</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">LoadSim</span><span class="p">(</span><span class="s1">&#39;/path/to/basedir&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">LoadSim</span><span class="p">(</span><span class="s1">'/path/to/basedir'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <dl class="py class">
@@ -699,7 +699,7 @@ output, (reprocessed) hst, and zprof. Used in child classes.</p>
 <dt class="sig sig-object py" id="pyathena.LoadSim.create_tar_all">
 <span class="sig-name descname"><span class="pre">create_tar_all</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">remove_original</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">kind</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'vtk'</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/load_sim.html#LoadSim.create_tar_all"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.create_tar_all" title="Permalink to this definition">#</a></dt>
 <dd><p>Move and tar all vtk/rst files from per-process <code class="docutils literal notranslate"><span class="pre">id*</span></code> directories.</p>
-<p>Iterates over all snapshot numbers in <code class="docutils literal notranslate"><span class="pre">nums_id0</span></code>, calls
+<p>Iterates over all snapshot numbers in <code class="docutils literal notranslate"><span class="pre">ff.nums_id0</span></code>, calls
 <a class="reference internal" href="#pyathena.LoadSim.move_to_tardir" title="pyathena.LoadSim.move_to_tardir"><code class="xref py py-meth docutils literal notranslate"><span class="pre">move_to_tardir()</span></code></a> to gather per-process files into numbered
 subdirectories, and then calls <a class="reference internal" href="#pyathena.LoadSim.create_tar" title="pyathena.LoadSim.create_tar"><code class="xref py py-meth docutils literal notranslate"><span class="pre">create_tar()</span></code></a> to pack each
 subdirectory into a single <code class="docutils literal notranslate"><span class="pre">.tar</span></code> archive.</p>
@@ -717,8 +717,8 @@ Default is <code class="docutils literal notranslate"><span class="pre">False</s
 <dl class="py method">
 <dt class="sig sig-object py" id="pyathena.LoadSim.find_files">
 <span class="sig-name descname"><span class="pre">find_files</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">verbose</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="reference internal" href="../_modules/pyathena/load_sim.html#LoadSim.find_files"><span class="viewcode-link"><span class="pre">[source]</span></span></a><a class="headerlink" href="#pyathena.LoadSim.find_files" title="Permalink to this definition">#</a></dt>
-<dd><p>Find output files under base directory and update the <cite>files</cite>
-attribute.</p>
+<dd><p>Find output files under base directory and select the primary
+snapshot numbers.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters</dt>
 <dd class="field-odd"><p><strong>verbose</strong> (<em>bool</em><em> or </em><em>str</em><em> or </em><em>int</em>) – If True/False, set logging level to ‘INFO’/’WARNING’.
@@ -737,7 +737,7 @@ or their numerical values (0, 10, 20, 30, 40, 50).
 <p>Looks in both <code class="docutils literal notranslate"><span class="pre">id*</span></code> subdirectories and dedicated format subdirectories
 for files matching <code class="docutils literal notranslate"><span class="pre">*.????.{fmt}.vtk</span></code>. Found files are stored in
 <code class="docutils literal notranslate"><span class="pre">self.files[fmt]</span></code> and the corresponding snapshot numbers are set as
-<code class="docutils literal notranslate"><span class="pre">self.nums_{fmt}</span></code>.</p>
+<code class="docutils literal notranslate"><span class="pre">self.ff.nums_{fmt}</span></code>.</p>
 </dd></dl>
 
 <dl class="py method">
@@ -1022,9 +1022,9 @@ Default is <a class="reference internal" href="#pyathena.LoadSim" title="pyathen
 
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span><span class="w"> </span><span class="nn">pyathena</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">pa</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">models</span> <span class="o">=</span> <span class="p">{</span><span class="s1">&#39;run1&#39;</span><span class="p">:</span> <span class="s1">&#39;/path/to/run1&#39;</span><span class="p">,</span> <span class="s1">&#39;run2&#39;</span><span class="p">:</span> <span class="s1">&#39;/path/to/run2&#39;</span><span class="p">}</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">models</span> <span class="o">=</span> <span class="p">{</span><span class="s1">'run1'</span><span class="p">:</span> <span class="s1">'/path/to/run1'</span><span class="p">,</span> <span class="s1">'run2'</span><span class="p">:</span> <span class="s1">'/path/to/run2'</span><span class="p">}</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">sa</span> <span class="o">=</span> <span class="n">pa</span><span class="o">.</span><span class="n">LoadSimAll</span><span class="p">(</span><span class="n">models</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">sa</span><span class="o">.</span><span class="n">set_model</span><span class="p">(</span><span class="s1">&#39;run1&#39;</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">sa</span><span class="o">.</span><span class="n">set_model</span><span class="p">(</span><span class="s1">'run1'</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 </pre></div>
 </div>
 <dl class="py method">

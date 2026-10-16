@@ -575,7 +575,7 @@ such as radial velocity. Default is <code class="docutils literal notranslate"><
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_athinput</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena.fields.fields</span><span class="w"> </span><span class="kn">import</span> <span class="n">DerivedFields</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">par</span> <span class="o">=</span> <span class="n">read_athinput</span><span class="p">(</span><span class="s2">&quot;/path/to/athinput&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">par</span> <span class="o">=</span> <span class="n">read_athinput</span><span class="p">(</span><span class="s2">"/path/to/athinput"</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">DerivedFields</span><span class="p">(</span><span class="n">par</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="nb">print</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">df</span><span class="o">.</span><span class="n">func</span><span class="o">.</span><span class="n">keys</span><span class="p">())[:</span><span class="mi">5</span><span class="p">])</span>
 </pre></div>

@@ -357,9 +357,9 @@ document.write(`
                 <article class="bd-article">
                   
   <h1>Source code for pyathena.io.read_vtk</h1><div class="highlight"><pre>
-<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span></span><span class="sd">"""</span>
 <span class="sd">Read athena vtk file</span>
-<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">"""</span>
 
 
 <span class="kn">import</span><span class="w"> </span><span class="nn">os</span>
@@ -395,14 +395,14 @@ document.write(`
     <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">dat</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
         <span class="n">dat</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dat</span><span class="p">[</span><span class="n">k</span><span class="p">])</span>
 
-    <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;x1f&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x1f</span><span class="p">)</span>
-    <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;x2f&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x2f</span><span class="p">)</span>
-    <span class="n">dat</span><span class="p">[</span><span class="s1">&#39;x3f&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x3f</span><span class="p">)</span>
+    <span class="n">dat</span><span class="p">[</span><span class="s1">'x1f'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x1f</span><span class="p">)</span>
+    <span class="n">dat</span><span class="p">[</span><span class="s1">'x2f'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x2f</span><span class="p">)</span>
+    <span class="n">dat</span><span class="p">[</span><span class="s1">'x3f'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x3f</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">dat</span>
 
 <div class="viewcode-block" id="read_vtk"><a class="viewcode-back" href="../../../content/readers.html#pyathena.read_vtk">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">read_vtk</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">id0_only</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Convenience wrapper function to read Athena vtk output file</span>
+<span class="w">    </span><span class="sd">"""Convenience wrapper function to read Athena vtk output file</span>
 <span class="sd">    using AthenaDataSet class.</span>
 
 <span class="sd">    Parameters</span>
@@ -416,14 +416,14 @@ document.write(`
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    ds : AthenaDataSet</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">return</span> <span class="n">AthenaDataSet</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">id0_only</span><span class="o">=</span><span class="n">id0_only</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="AthenaDataSet"><a class="viewcode-back" href="../../../content/athenadataset.html#pyathena.AthenaDataSet">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">AthenaDataSet</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">filename</span><span class="p">,</span> <span class="n">id0_only</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">units</span><span class="o">=</span><span class="n">Units</span><span class="p">(),</span> <span class="n">dfi</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Class to read athena vtk file.</span>
+<span class="w">        </span><span class="sd">"""Class to read athena vtk file.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -436,10 +436,10 @@ document.write(`
 <span class="sd">            pyathena Units object (used for reading derived fields)</span>
 <span class="sd">        dfi : dict</span>
 <span class="sd">            Dictionary containing derived fields info</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="k">if</span> <span class="ow">not</span> <span class="n">osp</span><span class="o">.</span><span class="n">exists</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">((</span><span class="s1">&#39;File does not exist: </span><span class="si">{0:s}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">)))</span>
+            <span class="k">raise</span> <span class="ne">IOError</span><span class="p">((</span><span class="s1">'File does not exist: </span><span class="si">{0:s}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">)))</span>
 
         <span class="n">dirname</span><span class="p">,</span> <span class="n">problem_id</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="n">ext</span><span class="p">,</span> <span class="n">mpi_mode</span><span class="p">,</span> <span class="n">nonzero_id</span> <span class="o">=</span> \
             <span class="n">_parse_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
@@ -464,10 +464,10 @@ document.write(`
         <span class="c1"># Find all vtk file names and add to flist</span>
         <span class="k">if</span> <span class="n">mpi_mode</span><span class="p">:</span>
             <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">suffix</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">fname_pattern</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="s1">&#39;id*/</span><span class="si">{0:s}</span><span class="s1">-id*.</span><span class="si">{1:s}</span><span class="s1">.</span><span class="si">{2:s}</span><span class="s1">&#39;</span><span class="o">.</span>\
+                <span class="n">fname_pattern</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="s1">'id*/</span><span class="si">{0:s}</span><span class="s1">-id*.</span><span class="si">{1:s}</span><span class="s1">.</span><span class="si">{2:s}</span><span class="s1">'</span><span class="o">.</span>\
                                          <span class="nb">format</span><span class="p">(</span><span class="n">problem_id</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">ext</span><span class="p">))</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">fname_pattern</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="s1">&#39;id*/</span><span class="si">{0:s}</span><span class="s1">-id*.</span><span class="si">{1:s}</span><span class="s1">.</span><span class="si">{2:s}</span><span class="s1">.</span><span class="si">{3:s}</span><span class="s1">&#39;</span><span class="o">.</span>\
+                <span class="n">fname_pattern</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="p">,</span> <span class="s1">'id*/</span><span class="si">{0:s}</span><span class="s1">-id*.</span><span class="si">{1:s}</span><span class="s1">.</span><span class="si">{2:s}</span><span class="s1">.</span><span class="si">{3:s}</span><span class="s1">'</span><span class="o">.</span>\
                                          <span class="nb">format</span><span class="p">(</span><span class="n">problem_id</span><span class="p">,</span> <span class="n">num</span><span class="p">,</span> <span class="n">suffix</span><span class="p">,</span> <span class="n">ext</span><span class="p">))</span>
             <span class="n">fnames</span> <span class="o">=</span> <span class="n">glob</span><span class="o">.</span><span class="n">glob</span><span class="p">(</span><span class="n">fname_pattern</span><span class="p">)</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">fnames</span> <span class="o">+=</span> <span class="n">fnames</span>
@@ -481,64 +481,64 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">set_region</span><span class="p">()</span>
 
         <span class="c1"># Need separte field_map for different grids</span>
-        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;all_grid_equal&#39;</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'all_grid_equal'</span><span class="p">]:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span> <span class="o">=</span> <span class="n">_set_field_map</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
             <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">:</span>
-                <span class="n">g</span><span class="p">[</span><span class="s1">&#39;field_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span>
+                <span class="n">g</span><span class="p">[</span><span class="s1">'field_map'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">g</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">:</span>
-                <span class="n">g</span><span class="p">[</span><span class="s1">&#39;field_map&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">_set_field_map</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;field_map&#39;</span><span class="p">]</span>
+                <span class="n">g</span><span class="p">[</span><span class="s1">'field_map'</span><span class="p">]</span> <span class="o">=</span> <span class="n">_set_field_map</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'field_map'</span><span class="p">]</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">field_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="o">.</span><span class="n">keys</span><span class="p">())</span>
 
 
 <div class="viewcode-block" id="AthenaDataSet.get_cc_pos"><a class="viewcode-back" href="../../../content/athenadataset.html#pyathena.AthenaDataSet.get_cc_pos">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_cc_pos</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute cell center positions</span>
+<span class="w">        </span><span class="sd">"""Compute cell center positions</span>
 
 <span class="sd">        Returns</span>
 <span class="sd">        -------</span>
 <span class="sd">        xc : numpy array</span>
 <span class="sd">            Unique cell-centered cooridnates</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">xc</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">le</span><span class="p">,</span> <span class="n">re</span><span class="p">,</span> <span class="n">dx</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">),</span> \
-            <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;gle&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;gre&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">le</span><span class="p">,</span> <span class="n">re</span><span class="p">,</span> <span class="n">dx</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="s1">'x'</span><span class="p">,</span> <span class="s1">'y'</span><span class="p">,</span> <span class="s1">'z'</span><span class="p">),</span> \
+            <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">'gle'</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">'gre'</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]):</span>
                 <span class="n">xc</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">le</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span> <span class="n">re</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">xc</span></div>
 
 <div class="viewcode-block" id="AthenaDataSet.get_cc_ijk"><a class="viewcode-back" href="../../../content/athenadataset.html#pyathena.AthenaDataSet.get_cc_ijk">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_cc_ijk</span><span class="p">(</span><span class="n">s</span><span class="p">,</span> <span class="n">x1</span><span class="p">,</span> <span class="n">x2</span><span class="p">,</span> <span class="n">x3</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Compute closest cell-center integer indices in which a particle resides</span>
+<span class="w">        </span><span class="sd">"""Compute closest cell-center integer indices in which a particle resides</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        x1,x2,x3 : array of floats</span>
 <span class="sd">            Particle position</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
         <span class="n">domain</span> <span class="o">=</span> <span class="n">s</span><span class="o">.</span><span class="n">domain</span>
-        <span class="n">le1</span><span class="p">,</span><span class="n">le2</span><span class="p">,</span><span class="n">le3</span> <span class="o">=</span> <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">]</span>
-        <span class="n">dx1</span><span class="p">,</span><span class="n">dx2</span><span class="p">,</span><span class="n">dx3</span> <span class="o">=</span> <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">]</span>
+        <span class="n">le1</span><span class="p">,</span><span class="n">le2</span><span class="p">,</span><span class="n">le3</span> <span class="o">=</span> <span class="n">domain</span><span class="p">[</span><span class="s1">'le'</span><span class="p">]</span>
+        <span class="n">dx1</span><span class="p">,</span><span class="n">dx2</span><span class="p">,</span><span class="n">dx3</span> <span class="o">=</span> <span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">x1</span> <span class="o">-</span> <span class="n">le1</span><span class="p">)</span><span class="o">/</span><span class="n">dx1</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">x2</span> <span class="o">-</span> <span class="n">le2</span><span class="p">)</span><span class="o">/</span><span class="n">dx2</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">),</span>
                 <span class="n">np</span><span class="o">.</span><span class="n">floor</span><span class="p">((</span><span class="n">x3</span> <span class="o">-</span> <span class="n">le3</span><span class="p">)</span><span class="o">/</span><span class="n">dx3</span><span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">))</span></div>
 
 <div class="viewcode-block" id="AthenaDataSet.set_region"><a class="viewcode-back" href="../../../content/athenadataset.html#pyathena.AthenaDataSet.set_region">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">set_region</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">re</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Set region and find overlapping grids.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="w">        </span><span class="sd">"""Set region and find overlapping grids.</span>
+<span class="sd">        """</span>
 
         <span class="k">if</span> <span class="n">le</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">le</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">]</span>
+            <span class="n">le</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'le'</span><span class="p">]</span>
         <span class="k">if</span> <span class="n">re</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">re</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;re&#39;</span><span class="p">]</span>
+            <span class="n">re</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'re'</span><span class="p">]</span>
 
         <span class="n">le</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">le</span><span class="p">)</span>
         <span class="n">re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">re</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="p">(</span><span class="n">re</span> <span class="o">&lt;</span> <span class="n">le</span><span class="p">)</span><span class="o">.</span><span class="n">any</span><span class="p">():</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Check left/right edge.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Check left/right edge.'</span><span class="p">)</span>
 
         <span class="c1"># Find all overlapping grids and their edges</span>
         <span class="n">gle_all</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># grid left edge</span>
@@ -546,16 +546,16 @@ document.write(`
         <span class="n">gidx</span> <span class="o">=</span> <span class="p">[]</span>     <span class="c1"># grid indices that belongs to this region</span>
         <span class="c1">#print(self.grid,len(self.grid))</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">):</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;re&#39;</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">le</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">re</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">'re'</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">le</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span> <span class="ow">and</span> <span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">'le'</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">re</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
                 <span class="n">gidx</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">i</span><span class="p">)</span>
-                <span class="n">gle_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">])</span>
-                <span class="n">gre_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;re&#39;</span><span class="p">])</span>
+                <span class="n">gle_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">'le'</span><span class="p">])</span>
+                <span class="n">gre_all</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">[</span><span class="s1">'re'</span><span class="p">])</span>
 
         <span class="n">gidx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gidx</span><span class="p">)</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">gidx</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Check left/right edges:&#39;</span><span class="p">,</span> <span class="n">le</span><span class="p">,</span> <span class="n">re</span><span class="p">,</span> \
-                             <span class="s1">&#39; Domain left/right edges are &#39;</span><span class="p">,</span> \
-                             <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;re&#39;</span><span class="p">])</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Check left/right edges:'</span><span class="p">,</span> <span class="n">le</span><span class="p">,</span> <span class="n">re</span><span class="p">,</span> \
+                             <span class="s1">' Domain left/right edges are '</span><span class="p">,</span> \
+                             <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'le'</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'re'</span><span class="p">])</span>
 
         <span class="n">gle_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gle_all</span><span class="p">)</span>
         <span class="n">gre_all</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">gre_all</span><span class="p">)</span>
@@ -573,7 +573,7 @@ document.write(`
 
         <span class="c1"># Number of cells per grid</span>
         <span class="n">Nxg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([(</span><span class="n">greu_</span> <span class="o">-</span> <span class="n">gleu_</span><span class="p">)</span><span class="o">/</span><span class="n">dx</span> <span class="k">for</span> <span class="n">greu_</span><span class="p">,</span> <span class="n">gleu_</span><span class="p">,</span> <span class="n">dx</span> <span class="ow">in</span> \
-                              <span class="nb">zip</span><span class="p">(</span><span class="n">greu</span><span class="p">,</span> <span class="n">gleu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">])])</span>
+                              <span class="nb">zip</span><span class="p">(</span><span class="n">greu</span><span class="p">,</span> <span class="n">gleu</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">])])</span>
         <span class="n">Nxg</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array_split</span><span class="p">(</span><span class="n">Nxg</span><span class="p">,</span> <span class="n">NGrid</span><span class="o">.</span><span class="n">cumsum</span><span class="p">()[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]),</span>
                        <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">tolist</span><span class="p">()</span>
 
@@ -589,26 +589,26 @@ document.write(`
 
         <span class="c1">#print(gidx,NGrid)</span>
         <span class="k">assert</span> <span class="nb">len</span><span class="p">(</span><span class="n">gidx</span><span class="p">)</span> <span class="o">==</span> <span class="n">NGrid</span><span class="o">.</span><span class="n">prod</span><span class="p">(),</span>\
-            <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;Unexpected error: Number of grids </span><span class="si">{0:d}</span><span class="s1"> != &#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gidx</span><span class="p">))</span> <span class="o">+</span>
-                  <span class="s1">&#39;number of unique edges </span><span class="si">{0:d}</span><span class="s1">.&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">NGrid</span><span class="o">.</span><span class="n">prod</span><span class="p">()))</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s1">'Unexpected error: Number of grids </span><span class="si">{0:d}</span><span class="s1"> != '</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">gidx</span><span class="p">))</span> <span class="o">+</span>
+                  <span class="s1">'number of unique edges </span><span class="si">{0:d}</span><span class="s1">.'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">NGrid</span><span class="o">.</span><span class="n">prod</span><span class="p">()))</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">region</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">le</span><span class="o">=</span><span class="n">le</span><span class="p">,</span> <span class="n">re</span><span class="o">=</span><span class="n">re</span><span class="p">,</span> <span class="n">gidx</span><span class="o">=</span><span class="n">gidx</span><span class="p">,</span>
                            <span class="n">gleu</span><span class="o">=</span><span class="n">gleu</span><span class="p">,</span> <span class="n">greu</span><span class="o">=</span><span class="n">greu</span><span class="p">,</span>\
                            <span class="n">gle</span><span class="o">=</span><span class="n">gle</span><span class="p">,</span> <span class="n">gre</span><span class="o">=</span><span class="n">gre</span><span class="p">,</span>
                            <span class="n">NGrid</span><span class="o">=</span><span class="n">NGrid</span><span class="p">,</span> <span class="n">Nxg</span><span class="o">=</span><span class="n">Nxg</span><span class="p">,</span> <span class="n">Nxr</span><span class="o">=</span><span class="n">Nxr</span><span class="p">)</span></div>
 
-<div class="viewcode-block" id="AthenaDataSet.get_slice"><a class="viewcode-back" href="../../../content/athenadataset.html#pyathena.AthenaDataSet.get_slice">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">&#39;density&#39;</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read slice of fields.</span>
+<div class="viewcode-block" id="AthenaDataSet.get_slice"><a class="viewcode-back" href="../../../content/athenadataset.html#pyathena.AthenaDataSet.get_slice">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_slice</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">'density'</span><span class="p">,</span> <span class="n">pos</span><span class="o">=</span><span class="s1">'c'</span><span class="p">,</span> <span class="n">method</span><span class="o">=</span><span class="s1">'nearest'</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Read slice of fields.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
 <span class="sd">        axis : str</span>
-<span class="sd">            Axis to slice along. &#39;x&#39; or &#39;y&#39; or &#39;z&#39;</span>
+<span class="sd">            Axis to slice along. 'x' or 'y' or 'z'</span>
 <span class="sd">        field : (list of) str</span>
 <span class="sd">            The name of the field(s) to be read.</span>
 <span class="sd">        pos : float or str</span>
-<span class="sd">            Slice through If &#39;c&#39; or &#39;center&#39;, get a slice through the domain</span>
-<span class="sd">            center. Default value is &#39;c&#39;.</span>
+<span class="sd">            Slice through If 'c' or 'center', get a slice through the domain</span>
+<span class="sd">            center. Default value is 'c'.</span>
 <span class="sd">        method : str</span>
 
 
@@ -616,34 +616,34 @@ document.write(`
 <span class="sd">        -------</span>
 <span class="sd">        slc : xarray dataset</span>
 <span class="sd">            An xarray dataset containing slices.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">axis_idx</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">x</span><span class="o">=</span><span class="mi">0</span><span class="p">,</span> <span class="n">y</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">z</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
 
         <span class="k">if</span> <span class="n">pos</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-            <span class="n">pos</span> <span class="o">=</span> <span class="s1">&#39;c&#39;</span>
+            <span class="n">pos</span> <span class="o">=</span> <span class="s1">'c'</span>
 
         <span class="n">field</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
         <span class="n">axis</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axis</span><span class="p">:</span>
-            <span class="n">le</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">])</span>
-            <span class="n">re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;re&#39;</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">pos</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">&#39;c&#39;</span><span class="p">,</span> <span class="s1">&#39;center&#39;</span><span class="p">]:</span>
-                <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">][</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span>
+            <span class="n">le</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'le'</span><span class="p">])</span>
+            <span class="n">re</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'re'</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">pos</span> <span class="ow">in</span> <span class="p">[</span><span class="s1">'c'</span><span class="p">,</span> <span class="s1">'center'</span><span class="p">]:</span>
+                <span class="n">pos</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'center'</span><span class="p">][</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span>
 
-            <span class="c1"># Let&#39;s make sure le &lt; re always and truncation error does not cause</span>
+            <span class="c1"># Let's make sure le &lt; re always and truncation error does not cause</span>
             <span class="c1"># problem, although performance can be slowed down a bit.</span>
-            <span class="n">le</span><span class="p">[</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">][</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span>
-            <span class="n">re</span><span class="p">[</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">][</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span>
+            <span class="n">le</span><span class="p">[</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">-</span> <span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">][</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span>
+            <span class="n">re</span><span class="p">[</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span> <span class="o">=</span> <span class="n">pos</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">][</span><span class="n">axis_idx</span><span class="p">[</span><span class="n">ax</span><span class="p">]]</span>
             <span class="n">dat</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_field</span><span class="p">(</span><span class="n">field</span><span class="p">,</span> <span class="n">le</span><span class="p">,</span> <span class="n">re</span><span class="p">,</span> <span class="n">as_xarray</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
 
-            <span class="n">slc</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">&#39;nearest&#39;</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">ax</span><span class="p">:</span><span class="n">pos</span><span class="p">})</span>
+            <span class="n">slc</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">sel</span><span class="p">(</span><span class="n">method</span><span class="o">=</span><span class="s1">'nearest'</span><span class="p">,</span> <span class="o">**</span><span class="p">{</span><span class="n">ax</span><span class="p">:</span><span class="n">pos</span><span class="p">})</span>
 
         <span class="k">return</span> <span class="n">slc</span></div>
 
-<div class="viewcode-block" id="AthenaDataSet.get_field"><a class="viewcode-back" href="../../../content/athenadataset.html#pyathena.AthenaDataSet.get_field">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">&#39;density&#39;</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">re</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">as_xarray</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Read 3d fields data.</span>
+<div class="viewcode-block" id="AthenaDataSet.get_field"><a class="viewcode-back" href="../../../content/athenadataset.html#pyathena.AthenaDataSet.get_field">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">'density'</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">re</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">as_xarray</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""Read 3d fields data.</span>
 
 <span class="sd">        Parameters</span>
 <span class="sd">        ----------</span>
@@ -661,7 +661,7 @@ document.write(`
 <span class="sd">        -------</span>
 <span class="sd">        dat : xarray dataset</span>
 <span class="sd">            An xarray dataset containing fields.</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">field</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
 
@@ -676,14 +676,14 @@ document.write(`
         <span class="c1"># If we are here, need to read all union of all input fields and those</span>
         <span class="c1"># required to calculate derived fields</span>
 
-        <span class="c1"># Let&#39;s first make sure that we have all info about dflist</span>
+        <span class="c1"># Let's first make sure that we have all info about dflist</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="n">dflist</span><span class="o">.</span><span class="n">issubset</span><span class="p">(</span><span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dfi</span><span class="o">.</span><span class="n">keys</span><span class="p">())):</span>
             <span class="n">tmp</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">dflist</span><span class="p">:</span>
                 <span class="k">if</span> <span class="ow">not</span> <span class="n">f</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfi</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
                     <span class="n">tmp</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
-            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">&quot;Unrecognized field name(s):&quot;</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="s2">"Unrecognized field name(s):"</span><span class="p">,</span> <span class="n">tmp</span><span class="p">)</span>
 
         <span class="c1"># Field names that are in the vtk file</span>
         <span class="n">flist</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="o">-</span> <span class="n">dflist</span>
@@ -691,15 +691,15 @@ document.write(`
         <span class="c1"># Fields that need to be read to calculate derived field</span>
         <span class="n">flist_dep</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">dflist</span><span class="p">:</span>
-            <span class="n">flist_dep</span> <span class="o">=</span> <span class="n">flist_dep</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dfi</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;field_dep&#39;</span><span class="p">])</span>
+            <span class="n">flist_dep</span> <span class="o">=</span> <span class="n">flist_dep</span> <span class="o">|</span> <span class="nb">set</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dfi</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">'field_dep'</span><span class="p">])</span>
 
         <span class="c1"># Fields names to be dropped later</span>
         <span class="n">fdrop_list</span> <span class="o">=</span> <span class="n">flist_dep</span> <span class="o">-</span> <span class="n">flist</span>
 
         <span class="c1"># Need to adjust names for vector fields</span>
         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="nb">list</span><span class="p">(</span><span class="n">fdrop_list</span><span class="p">):</span>
-            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;nvar&#39;</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;nvar&#39;</span><span class="p">]):</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">'nvar'</span><span class="p">]</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">'nvar'</span><span class="p">]):</span>
                     <span class="n">fdrop_list</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">f</span><span class="o">+</span><span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">))</span>
                 <span class="n">fdrop_list</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
@@ -708,19 +708,19 @@ document.write(`
 
         <span class="c1"># Calculate derived fields</span>
         <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">dflist</span><span class="p">:</span>
-            <span class="n">dat</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfi</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">&#39;func&#39;</span><span class="p">](</span><span class="n">dat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
+            <span class="n">dat</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfi</span><span class="p">[</span><span class="n">f</span><span class="p">][</span><span class="s1">'func'</span><span class="p">](</span><span class="n">dat</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">u</span><span class="p">)</span>
 
         <span class="c1"># Drop fields that are not requested</span>
         <span class="k">if</span> <span class="n">as_xarray</span><span class="p">:</span>
             <span class="n">dat</span> <span class="o">=</span> <span class="n">dat</span><span class="o">.</span><span class="n">drop</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">fdrop_list</span><span class="p">))</span>
-            <span class="n">dat</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;dfi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfi</span>
+            <span class="n">dat</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="s1">'dfi'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">dfi</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">fdrop_list</span><span class="p">:</span>
                 <span class="k">del</span> <span class="n">dat</span><span class="p">[</span><span class="n">f</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">dat</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span></div>
 
-    <span class="k">def</span><span class="w"> </span><span class="nf">_get_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">&#39;density&#39;</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">re</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">as_xarray</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
+    <span class="k">def</span><span class="w"> </span><span class="nf">_get_field</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="o">=</span><span class="s1">'density'</span><span class="p">,</span> <span class="n">le</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">re</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">as_xarray</span><span class="o">=</span><span class="kc">True</span><span class="p">):</span>
 
         <span class="n">field</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">field</span><span class="p">)</span>
 
@@ -732,24 +732,24 @@ document.write(`
         <span class="k">if</span> <span class="n">as_xarray</span><span class="p">:</span>
             <span class="c1"># Cell center positions</span>
             <span class="n">coords</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">le</span><span class="p">,</span> <span class="n">re</span><span class="p">,</span> <span class="n">dx</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="s1">&#39;x&#39;</span><span class="p">,</span> <span class="s1">&#39;y&#39;</span><span class="p">,</span> <span class="s1">&#39;z&#39;</span><span class="p">),</span> \
-                    <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;gle&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;gre&#39;</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">]):</span>
+            <span class="k">for</span> <span class="n">axis</span><span class="p">,</span> <span class="n">le</span><span class="p">,</span> <span class="n">re</span><span class="p">,</span> <span class="n">dx</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">((</span><span class="s1">'x'</span><span class="p">,</span> <span class="s1">'y'</span><span class="p">,</span> <span class="s1">'z'</span><span class="p">),</span> \
+                    <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">'gle'</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">'gre'</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]):</span>
                 <span class="c1"># May not result in correct number of elements due to truncation error</span>
                 <span class="c1"># x[axis] = np.arange(le + 0.5*dx, re + 0.5*dx, dx)</span>
                 <span class="n">coords</span><span class="p">[</span><span class="n">axis</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arange</span><span class="p">(</span><span class="n">le</span> <span class="o">+</span> <span class="mf">0.5</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span> <span class="n">re</span> <span class="o">+</span> <span class="mf">0.25</span><span class="o">*</span><span class="n">dx</span><span class="p">,</span> <span class="n">dx</span><span class="p">)</span>
 
             <span class="n">dat</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">arr</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
-                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;ndim&#39;</span><span class="p">]:</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">&gt;</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'ndim'</span><span class="p">]:</span>
                     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">v</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]):</span>
-                        <span class="n">dat</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="p">((</span><span class="s1">&#39;z&#39;</span><span class="p">,</span><span class="s1">&#39;y&#39;</span><span class="p">,</span><span class="s1">&#39;x&#39;</span><span class="p">),</span> <span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span>
+                        <span class="n">dat</span><span class="p">[</span><span class="n">k</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">)]</span> <span class="o">=</span> <span class="p">((</span><span class="s1">'z'</span><span class="p">,</span><span class="s1">'y'</span><span class="p">,</span><span class="s1">'x'</span><span class="p">),</span> <span class="n">v</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span>
                 <span class="k">else</span><span class="p">:</span>
-                    <span class="n">dat</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s1">&#39;z&#39;</span><span class="p">,</span><span class="s1">&#39;y&#39;</span><span class="p">,</span><span class="s1">&#39;x&#39;</span><span class="p">),</span> <span class="n">v</span><span class="p">)</span>
+                    <span class="n">dat</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="p">((</span><span class="s1">'z'</span><span class="p">,</span><span class="s1">'y'</span><span class="p">,</span><span class="s1">'x'</span><span class="p">),</span> <span class="n">v</span><span class="p">)</span>
 
             <span class="n">attrs</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
             <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
                 <span class="n">attrs</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span>
-                <span class="n">attrs</span><span class="p">[</span><span class="s1">&#39;num&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num</span>
+                <span class="n">attrs</span><span class="p">[</span><span class="s1">'num'</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">num</span>
             <span class="k">return</span> <span class="n">xr</span><span class="o">.</span><span class="n">Dataset</span><span class="p">(</span><span class="n">dat</span><span class="p">,</span> <span class="n">coords</span><span class="o">=</span><span class="n">coords</span><span class="p">,</span> <span class="n">attrs</span><span class="o">=</span><span class="n">attrs</span><span class="p">)</span>
         <span class="k">else</span><span class="p">:</span>
             <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">field</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
@@ -765,12 +765,12 @@ document.write(`
             <span class="n">arr</span><span class="p">[</span><span class="n">f</span><span class="p">]</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_set_array</span><span class="p">(</span><span class="n">f</span><span class="p">)</span>
 
         <span class="c1"># Read from individual grids and copy to data</span>
-        <span class="n">le</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;gle&#39;</span><span class="p">]</span>
-        <span class="n">dx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">]</span>
-        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;gidx&#39;</span><span class="p">]:</span>
+        <span class="n">le</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">'gle'</span><span class="p">]</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">'gidx'</span><span class="p">]:</span>
             <span class="n">g</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">grid</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
-            <span class="n">il</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rint</span><span class="p">((</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">]</span> <span class="o">-</span> <span class="n">le</span><span class="p">)</span><span class="o">/</span><span class="n">dx</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
-            <span class="n">iu</span> <span class="o">=</span> <span class="n">il</span> <span class="o">+</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span>
+            <span class="n">il</span> <span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">rint</span><span class="p">((</span><span class="n">g</span><span class="p">[</span><span class="s1">'le'</span><span class="p">]</span> <span class="o">-</span> <span class="n">le</span><span class="p">)</span><span class="o">/</span><span class="n">dx</span><span class="p">))</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>
+            <span class="n">iu</span> <span class="o">=</span> <span class="n">il</span> <span class="o">+</span> <span class="n">g</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span>
             <span class="n">slc</span> <span class="o">=</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">slice</span><span class="p">(</span><span class="n">l</span><span class="p">,</span> <span class="n">u</span><span class="p">)</span> <span class="k">for</span> <span class="n">l</span><span class="p">,</span> <span class="n">u</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">il</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">],</span> <span class="n">iu</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">])])</span>
 
             <span class="k">for</span> <span class="n">f</span> <span class="ow">in</span> <span class="n">field</span><span class="p">:</span>
@@ -780,41 +780,41 @@ document.write(`
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_read_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
 
-        <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]:</span>
-            <span class="k">return</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">field</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="ow">in</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]:</span>
+            <span class="k">return</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">field</span><span class="p">]</span>
         <span class="k">elif</span> <span class="n">field</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">field_list</span><span class="p">:</span>
-            <span class="n">fm</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;field_map&#39;</span><span class="p">][</span><span class="n">field</span><span class="p">]</span>
-            <span class="k">if</span> <span class="s1">&#39;tarinfo&#39;</span> <span class="ow">in</span> <span class="n">grid</span><span class="p">:</span>
-                <span class="n">fp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarfile</span><span class="o">.</span><span class="n">extractfile</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">&#39;tarinfo&#39;</span><span class="p">])</span>
+            <span class="n">fm</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'field_map'</span><span class="p">][</span><span class="n">field</span><span class="p">]</span>
+            <span class="k">if</span> <span class="s1">'tarinfo'</span> <span class="ow">in</span> <span class="n">grid</span><span class="p">:</span>
+                <span class="n">fp</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">tarfile</span><span class="o">.</span><span class="n">extractfile</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">'tarinfo'</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">],</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
-            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">fm</span><span class="p">[</span><span class="s1">&#39;offset&#39;</span><span class="p">])</span>
+                <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">],</span> <span class="s1">'rb'</span><span class="p">)</span>
+            <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">fm</span><span class="p">[</span><span class="s1">'offset'</span><span class="p">])</span>
             <span class="n">fp</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span> <span class="c1"># skip header</span>
-            <span class="k">if</span> <span class="n">fm</span><span class="p">[</span><span class="s1">&#39;read_table&#39;</span><span class="p">]:</span>
+            <span class="k">if</span> <span class="n">fm</span><span class="p">[</span><span class="s1">'read_table'</span><span class="p">]:</span>
                 <span class="n">fp</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
-            <span class="k">if</span> <span class="n">Version</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">Version</span><span class="p">(</span><span class="s1">&#39;2.0.0&#39;</span><span class="p">):</span>
-                <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fm</span><span class="p">[</span><span class="s1">&#39;dsize&#39;</span><span class="p">]),</span><span class="n">dtype</span><span class="o">=</span><span class="n">fm</span><span class="p">[</span><span class="s1">&#39;dtype&#39;</span><span class="p">])</span> <span class="c1"># New method for converting the binary data</span>
-                <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">field</span><span class="p">]</span><span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">newbyteorder</span><span class="p">())</span> <span class="c1"># New method for converting the binary data</span>
+            <span class="k">if</span> <span class="n">Version</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">__version__</span><span class="p">)</span> <span class="o">&gt;=</span> <span class="n">Version</span><span class="p">(</span><span class="s1">'2.0.0'</span><span class="p">):</span>
+                <span class="n">arr</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fm</span><span class="p">[</span><span class="s1">'dsize'</span><span class="p">]),</span><span class="n">dtype</span><span class="o">=</span><span class="n">fm</span><span class="p">[</span><span class="s1">'dtype'</span><span class="p">])</span> <span class="c1"># New method for converting the binary data</span>
+                <span class="n">grid</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">field</span><span class="p">]</span><span class="o">=</span> <span class="n">arr</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="n">arr</span><span class="o">.</span><span class="n">dtype</span><span class="o">.</span><span class="n">newbyteorder</span><span class="p">())</span> <span class="c1"># New method for converting the binary data</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">field</span><span class="p">]</span><span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fm</span><span class="p">[</span><span class="s1">&#39;dsize&#39;</span><span class="p">]),</span><span class="n">dtype</span><span class="o">=</span><span class="n">fm</span><span class="p">[</span><span class="s1">&#39;dtype&#39;</span><span class="p">]))</span><span class="o">.</span><span class="n">newbyteorder</span><span class="p">()</span> <span class="c1"># New method for converting the binary data</span>
+                <span class="n">grid</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">field</span><span class="p">]</span><span class="o">=</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">frombuffer</span><span class="p">(</span><span class="n">buffer</span><span class="o">=</span><span class="n">fp</span><span class="o">.</span><span class="n">read</span><span class="p">(</span><span class="n">fm</span><span class="p">[</span><span class="s1">'dsize'</span><span class="p">]),</span><span class="n">dtype</span><span class="o">=</span><span class="n">fm</span><span class="p">[</span><span class="s1">'dtype'</span><span class="p">]))</span><span class="o">.</span><span class="n">newbyteorder</span><span class="p">()</span> <span class="c1"># New method for converting the binary data</span>
             <span class="n">fp</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
-            <span class="k">if</span> <span class="n">fm</span><span class="p">[</span><span class="s1">&#39;nvar&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
-                <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">fm</span><span class="p">[</span><span class="s1">'nvar'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span>
-                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]),</span> <span class="n">fm</span><span class="p">[</span><span class="s1">&#39;nvar&#39;</span><span class="p">])</span>
+                <span class="n">shape</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]),</span> <span class="n">fm</span><span class="p">[</span><span class="s1">'nvar'</span><span class="p">])</span>
 
-            <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">shape</span>
+            <span class="n">grid</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">field</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span> <span class="o">=</span> <span class="n">shape</span>
 
-            <span class="k">return</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">][</span><span class="n">field</span><span class="p">]</span>
+            <span class="k">return</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'data'</span><span class="p">][</span><span class="n">field</span><span class="p">]</span>
 
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_set_array</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">field</span><span class="p">):</span>
 
-        <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;dtype&#39;</span><span class="p">]</span>
-        <span class="n">nvar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;nvar&#39;</span><span class="p">]</span>
-        <span class="n">Nxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">&#39;Nxr&#39;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="s1">&#39;face_centered_B&#39;</span> <span class="ow">in</span> <span class="n">field</span><span class="p">:</span>
+        <span class="n">dtype</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'dtype'</span><span class="p">]</span>
+        <span class="n">nvar</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'nvar'</span><span class="p">]</span>
+        <span class="n">Nxr</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">region</span><span class="p">[</span><span class="s1">'Nxr'</span><span class="p">]</span>
+        <span class="k">if</span> <span class="s1">'face_centered_B'</span> <span class="ow">in</span> <span class="n">field</span><span class="p">:</span>
             <span class="n">Nxr</span><span class="p">[</span><span class="nb">int</span><span class="p">(</span><span class="n">field</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+=</span> <span class="mi">1</span>
         <span class="k">if</span> <span class="n">nvar</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
             <span class="n">shape</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flipud</span><span class="p">(</span><span class="n">Nxr</span><span class="p">)</span>
@@ -831,45 +831,45 @@ document.write(`
         <span class="n">ngrid</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">grid</span><span class="p">)</span>
 
         <span class="c1"># Grid left/right edges</span>
-        <span class="n">gle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">ngrid</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
-        <span class="n">gre</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">ngrid</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
-        <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">ngrid</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;float32&#39;</span><span class="p">)</span>
-        <span class="n">Nx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
+        <span class="n">gle</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">ngrid</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'float32'</span><span class="p">)</span>
+        <span class="n">gre</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">ngrid</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'float32'</span><span class="p">)</span>
+        <span class="n">dx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">empty</span><span class="p">((</span><span class="n">ngrid</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'float32'</span><span class="p">)</span>
+        <span class="n">Nx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones_like</span><span class="p">(</span><span class="n">dx</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="s1">'int'</span><span class="p">)</span>
 
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">g</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">grid</span><span class="p">):</span>
-            <span class="n">gle</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">]</span>
-            <span class="n">gre</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;re&#39;</span><span class="p">]</span>
-            <span class="n">Nx</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span>
-            <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">]</span>
+            <span class="n">gle</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">'le'</span><span class="p">]</span>
+            <span class="n">gre</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">'re'</span><span class="p">]</span>
+            <span class="n">Nx</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span>
+            <span class="n">dx</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="p">:]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]</span>
 
         <span class="c1"># Check if all grids have the equal size</span>
         <span class="k">if</span> <span class="p">(</span><span class="n">Nx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="n">Nx</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">():</span>
-            <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;all_grid_equal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">domain</span><span class="p">[</span><span class="s1">'all_grid_equal'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;all_grid_equal&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="n">domain</span><span class="p">[</span><span class="s1">'all_grid_equal'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
         <span class="c1"># Set domain</span>
         <span class="n">le</span> <span class="o">=</span> <span class="n">gle</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
         <span class="n">re</span> <span class="o">=</span> <span class="n">gre</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span>
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;ngrid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">ngrid</span>
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">le</span>
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;re&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span>
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dx</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;Lx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span> <span class="o">-</span> <span class="n">le</span>
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;center&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">le</span> <span class="o">+</span> <span class="n">re</span><span class="p">)</span>
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;Lx&#39;</span><span class="p">]</span><span class="o">/</span><span class="n">domain</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;ndim&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span> <span class="c1"># always 3d</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'ngrid'</span><span class="p">]</span> <span class="o">=</span> <span class="n">ngrid</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'le'</span><span class="p">]</span> <span class="o">=</span> <span class="n">le</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'re'</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dx</span><span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="p">:]</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'Lx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">re</span> <span class="o">-</span> <span class="n">le</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'center'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span><span class="o">*</span><span class="p">(</span><span class="n">le</span> <span class="o">+</span> <span class="n">re</span><span class="p">)</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">domain</span><span class="p">[</span><span class="s1">'Lx'</span><span class="p">]</span><span class="o">/</span><span class="n">domain</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'int'</span><span class="p">)</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'ndim'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span> <span class="c1"># always 3d</span>
 
-        <span class="c1"># file = open(self.fnames[0], &#39;rb&#39;)</span>
+        <span class="c1"># file = open(self.fnames[0], 'rb')</span>
         <span class="c1"># tmpgrid = dict()</span>
-        <span class="c1"># tmpgrid[&#39;time&#39;] = None</span>
-        <span class="c1"># while tmpgrid[&#39;time&#39;] is None:</span>
+        <span class="c1"># tmpgrid['time'] = None</span>
+        <span class="c1"># while tmpgrid['time'] is None:</span>
         <span class="c1">#     line = file.readline()</span>
         <span class="c1">#     _vtk_parse_line(line, tmpgrid)</span>
         <span class="c1"># file.close()</span>
-        <span class="c1"># domain[&#39;time&#39;] = tmpgrid[&#39;time&#39;]</span>
+        <span class="c1"># domain['time'] = tmpgrid['time']</span>
 
-        <span class="n">domain</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">&#39;time&#39;</span><span class="p">]</span>
+        <span class="n">domain</span><span class="p">[</span><span class="s1">'time'</span><span class="p">]</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="s1">'time'</span><span class="p">]</span>
 
         <span class="k">return</span> <span class="n">domain</span>
 
@@ -877,25 +877,25 @@ document.write(`
         <span class="n">grid</span> <span class="o">=</span> <span class="p">[]</span>
         <span class="c1"># Record filename and data_offset</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">fname</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fnames</span><span class="p">):</span>
-            <span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
+            <span class="n">file</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="s1">'rb'</span><span class="p">)</span>
             <span class="n">g</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="n">g</span><span class="p">[</span><span class="s1">&#39;data&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-            <span class="n">g</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">fname</span>
-            <span class="n">g</span><span class="p">[</span><span class="s1">&#39;read_field&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
-            <span class="n">g</span><span class="p">[</span><span class="s1">&#39;read_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">g</span><span class="p">[</span><span class="s1">'data'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
+            <span class="n">g</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">]</span> <span class="o">=</span> <span class="n">fname</span>
+            <span class="n">g</span><span class="p">[</span><span class="s1">'read_field'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="n">g</span><span class="p">[</span><span class="s1">'read_type'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
 
-            <span class="k">while</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;read_field&#39;</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
-                <span class="n">g</span><span class="p">[</span><span class="s1">&#39;data_offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
+            <span class="k">while</span> <span class="n">g</span><span class="p">[</span><span class="s1">'read_field'</span><span class="p">]</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">g</span><span class="p">[</span><span class="s1">'data_offset'</span><span class="p">]</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
                 <span class="n">line</span> <span class="o">=</span> <span class="n">file</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
                 <span class="n">_vtk_parse_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">g</span><span class="p">)</span>
 
             <span class="n">file</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
-            <span class="n">g</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
-            <span class="n">g</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">][</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-            <span class="n">g</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">][</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+            <span class="n">g</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span> <span class="o">-=</span> <span class="mi">1</span>
+            <span class="n">g</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">][</span><span class="n">g</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="n">g</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">][</span><span class="n">g</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
 
             <span class="c1"># Right edge</span>
-            <span class="n">g</span><span class="p">[</span><span class="s1">&#39;re&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">]</span> <span class="o">+</span> <span class="n">g</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">g</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">]</span>
+            <span class="n">g</span><span class="p">[</span><span class="s1">'re'</span><span class="p">]</span> <span class="o">=</span> <span class="n">g</span><span class="p">[</span><span class="s1">'le'</span><span class="p">]</span> <span class="o">+</span> <span class="n">g</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span><span class="o">*</span><span class="n">g</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]</span>
             <span class="n">grid</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">g</span><span class="p">)</span>
 
         <span class="k">return</span> <span class="n">grid</span></div>
@@ -903,7 +903,7 @@ document.write(`
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_parse_filename</span><span class="p">(</span><span class="n">filename</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Break up a filename into its component</span>
+<span class="w">    </span><span class="sd">"""Break up a filename into its component</span>
 <span class="sd">    to check the extension and extract the output number.</span>
 
 <span class="sd">    Parameters</span>
@@ -917,22 +917,22 @@ document.write(`
 
 <span class="sd">    Examples</span>
 <span class="sd">    --------</span>
-<span class="sd">    &gt;&gt;&gt; _parse_filename(&#39;/basedir/id0/problem_id.0000.vtk&#39;)</span>
-<span class="sd">    (&#39;/basedir&#39;, &#39;problem_id&#39;, &#39;0000&#39;, &#39;vtk&#39;, True, False)</span>
+<span class="sd">    &gt;&gt;&gt; _parse_filename('/basedir/id0/problem_id.0000.vtk')</span>
+<span class="sd">    ('/basedir', 'problem_id', '0000', 'vtk', True, False)</span>
 
-<span class="sd">    &gt;&gt;&gt; _parse_filename(&#39;/basedir/id10/problem_id-id10.0000.d1.vtk&#39;)</span>
-<span class="sd">    (&#39;/basedir&#39;, &#39;problem_id&#39;, &#39;0000&#39;, &#39;vtk&#39;, True, True)</span>
+<span class="sd">    &gt;&gt;&gt; _parse_filename('/basedir/id10/problem_id-id10.0000.d1.vtk')</span>
+<span class="sd">    ('/basedir', 'problem_id', '0000', 'vtk', True, True)</span>
 
-<span class="sd">    &gt;&gt;&gt; _parse_filename(&#39;/basedir/problem_id.0000.vtk&#39;)</span>
-<span class="sd">    (&#39;/basedir&#39;, &#39;problem_id&#39;, &#39;0000&#39;, &#39;vtk&#39;, False, False)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    &gt;&gt;&gt; _parse_filename('/basedir/problem_id.0000.vtk')</span>
+<span class="sd">    ('/basedir', 'problem_id', '0000', 'vtk', False, False)</span>
+<span class="sd">    """</span>
 
     <span class="n">sep</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">sep</span>
     <span class="n">dirname</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">dirname</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
     <span class="n">nonzero_id</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="c1"># Check if dirname ends with id0</span>
     <span class="n">dirname_last</span> <span class="o">=</span> <span class="n">dirname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">if</span> <span class="n">dirname_last</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span> <span class="ow">and</span> \
+    <span class="k">if</span> <span class="n">dirname_last</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="s1">'id'</span><span class="p">)</span> <span class="ow">and</span> \
        <span class="n">dirname_last</span><span class="p">[</span><span class="mi">2</span><span class="p">:]</span><span class="o">.</span><span class="n">isdigit</span><span class="p">():</span>
         <span class="n">dirname</span> <span class="o">=</span> <span class="n">sep</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">dirname</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">sep</span><span class="p">)[:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
         <span class="n">mpi_mode</span> <span class="o">=</span> <span class="kc">True</span>
@@ -940,9 +940,9 @@ document.write(`
         <span class="n">mpi_mode</span> <span class="o">=</span> <span class="kc">False</span>
 
     <span class="n">base</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">basename</span><span class="p">(</span><span class="n">filename</span><span class="p">)</span>
-    <span class="n">base_split</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">&#39;.&#39;</span><span class="p">)</span>
+    <span class="n">base_split</span> <span class="o">=</span> <span class="n">base</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s1">'.'</span><span class="p">)</span>
     <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">base_split</span><span class="p">)</span> <span class="o">==</span> <span class="mi">3</span><span class="p">:</span>
-        <span class="n">problem_id</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_split</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
+        <span class="n">problem_id</span> <span class="o">=</span> <span class="s1">'.'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_split</span><span class="p">[:</span><span class="o">-</span><span class="mi">2</span><span class="p">])</span>
         <span class="n">num</span> <span class="o">=</span> <span class="n">base_split</span><span class="p">[</span><span class="o">-</span><span class="mi">2</span><span class="p">]</span>
         <span class="n">suffix</span> <span class="o">=</span> <span class="kc">None</span>
         <span class="n">ext</span> <span class="o">=</span> <span class="n">base_split</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -958,11 +958,11 @@ document.write(`
             <span class="n">suffix</span> <span class="o">=</span> <span class="kc">None</span>
 
         <span class="k">if</span> <span class="n">mpi_mode</span> <span class="ow">and</span> <span class="nb">int</span><span class="p">(</span><span class="n">dirname_last</span><span class="p">[</span><span class="mi">2</span><span class="p">:])</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
-            <span class="n">problem_id</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_split</span><span class="p">[:</span><span class="n">inum</span><span class="p">])</span>
-            <span class="n">problem_id</span> <span class="o">=</span> <span class="n">problem_id</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;-&#39;</span> <span class="o">+</span> <span class="n">dirname_last</span><span class="p">,</span><span class="s1">&#39;&#39;</span><span class="p">)</span>
+            <span class="n">problem_id</span> <span class="o">=</span> <span class="s1">'.'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_split</span><span class="p">[:</span><span class="n">inum</span><span class="p">])</span>
+            <span class="n">problem_id</span> <span class="o">=</span> <span class="n">problem_id</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">'-'</span> <span class="o">+</span> <span class="n">dirname_last</span><span class="p">,</span><span class="s1">''</span><span class="p">)</span>
             <span class="n">nonzero_id</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="n">problem_id</span> <span class="o">=</span> <span class="s1">&#39;.&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_split</span><span class="p">[:</span><span class="n">inum</span><span class="p">])</span>
+            <span class="n">problem_id</span> <span class="o">=</span> <span class="s1">'.'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">base_split</span><span class="p">[:</span><span class="n">inum</span><span class="p">])</span>
 
         <span class="n">num</span> <span class="o">=</span> <span class="n">base_split</span><span class="p">[</span><span class="n">inum</span><span class="p">]</span>
         <span class="n">ext</span> <span class="o">=</span> <span class="n">base_split</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
@@ -973,51 +973,51 @@ document.write(`
 
 <span class="k">def</span><span class="w"> </span><span class="nf">_set_field_map</span><span class="p">(</span><span class="n">grid</span><span class="p">):</span>
 
-    <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">&#39;filename&#39;</span><span class="p">],</span> <span class="s1">&#39;rb&#39;</span><span class="p">)</span>
+    <span class="n">fp</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">grid</span><span class="p">[</span><span class="s1">'filename'</span><span class="p">],</span> <span class="s1">'rb'</span><span class="p">)</span>
     <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
     <span class="n">eof</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
-    <span class="n">offset</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;data_offset&#39;</span><span class="p">]</span>
+    <span class="n">offset</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'data_offset'</span><span class="p">]</span>
     <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">offset</span><span class="p">)</span>
 
     <span class="n">field_map</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-    <span class="k">if</span> <span class="s1">&#39;Nx&#39;</span> <span class="ow">in</span> <span class="n">grid</span><span class="p">:</span>
-        <span class="n">Nx</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span>
+    <span class="k">if</span> <span class="s1">'Nx'</span> <span class="ow">in</span> <span class="n">grid</span><span class="p">:</span>
+        <span class="n">Nx</span> <span class="o">=</span> <span class="n">grid</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span>
 
     <span class="k">while</span> <span class="n">offset</span> <span class="o">&lt;</span> <span class="n">eof</span><span class="p">:</span>
         <span class="n">line</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
         <span class="n">sp</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
-        <span class="n">field</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">&#39;utf-8&#39;</span><span class="p">)</span>
+        <span class="n">field</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s1">'utf-8'</span><span class="p">)</span>
         <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">]</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">()</span>
-        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;read_table&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;title&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">line</span>
-        <span class="k">if</span> <span class="sa">b</span><span class="s2">&quot;SCALARS&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'read_table'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'title'</span><span class="p">]</span> <span class="o">=</span> <span class="n">line</span>
+        <span class="k">if</span> <span class="sa">b</span><span class="s2">"SCALARS"</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
             <span class="n">tmp</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
-            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;read_table&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;nvar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
-        <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;VECTORS&quot;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
-            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;nvar&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'read_table'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'nvar'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">elif</span> <span class="sa">b</span><span class="s2">"VECTORS"</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'nvar'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
         <span class="k">else</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">&#39; is unknown type.&#39;</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="s1">' is unknown type.'</span><span class="p">)</span>
 
-        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;offset&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">offset</span>
-        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;ndata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;nvar&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">grid</span><span class="p">[</span><span class="s1">&#39;ncells&#39;</span><span class="p">]</span>
-        <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s1">&#39;face_centered_B1&#39;</span><span class="p">:</span>
-            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;ndata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">Nx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">Nx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">Nx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">field</span> <span class="o">==</span> <span class="s1">&#39;face_centered_B2&#39;</span><span class="p">:</span>
-            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;ndata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">Nx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">Nx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
-        <span class="k">elif</span> <span class="n">field</span> <span class="o">==</span> <span class="s1">&#39;face_centered_B3&#39;</span><span class="p">:</span>
-            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;ndata&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">Nx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">Nx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'offset'</span><span class="p">]</span> <span class="o">=</span> <span class="n">offset</span>
+        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'ndata'</span><span class="p">]</span> <span class="o">=</span> <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'nvar'</span><span class="p">]</span><span class="o">*</span><span class="n">grid</span><span class="p">[</span><span class="s1">'ncells'</span><span class="p">]</span>
+        <span class="k">if</span> <span class="n">field</span> <span class="o">==</span> <span class="s1">'face_centered_B1'</span><span class="p">:</span>
+            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'ndata'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">Nx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">Nx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="n">Nx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">field</span> <span class="o">==</span> <span class="s1">'face_centered_B2'</span><span class="p">:</span>
+            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'ndata'</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">Nx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="n">Nx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="n">field</span> <span class="o">==</span> <span class="s1">'face_centered_B3'</span><span class="p">:</span>
+            <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'ndata'</span><span class="p">]</span> <span class="o">=</span> <span class="n">Nx</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">Nx</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">*</span><span class="p">(</span><span class="n">Nx</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">+</span><span class="mi">1</span><span class="p">)</span>
 
-        <span class="k">if</span> <span class="n">sp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;int&#39;</span><span class="p">:</span>
-            <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;i&#39;</span>
-        <span class="k">elif</span> <span class="n">sp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;float&#39;</span><span class="p">:</span>
-            <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;f&#39;</span>
-        <span class="k">elif</span> <span class="n">sp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">&#39;double&#39;</span><span class="p">:</span>
-            <span class="n">dtype</span> <span class="o">=</span> <span class="s1">&#39;d&#39;</span>
+        <span class="k">if</span> <span class="n">sp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'int'</span><span class="p">:</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="s1">'i'</span>
+        <span class="k">elif</span> <span class="n">sp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'float'</span><span class="p">:</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="s1">'f'</span>
+        <span class="k">elif</span> <span class="n">sp</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s1">'double'</span><span class="p">:</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="s1">'d'</span>
 
-        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;dtype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">dtype</span>
-        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;dsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;ndata&#39;</span><span class="p">]</span><span class="o">*</span><span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
-        <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">&#39;dsize&#39;</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'dtype'</span><span class="p">]</span> <span class="o">=</span> <span class="n">dtype</span>
+        <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'dsize'</span><span class="p">]</span> <span class="o">=</span> <span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'ndata'</span><span class="p">]</span><span class="o">*</span><span class="n">struct</span><span class="o">.</span><span class="n">calcsize</span><span class="p">(</span><span class="n">dtype</span><span class="p">)</span>
+        <span class="n">fp</span><span class="o">.</span><span class="n">seek</span><span class="p">(</span><span class="n">field_map</span><span class="p">[</span><span class="n">field</span><span class="p">][</span><span class="s1">'dsize'</span><span class="p">],</span> <span class="mi">1</span><span class="p">)</span>
         <span class="n">offset</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">tell</span><span class="p">()</span>
         <span class="n">tmp</span> <span class="o">=</span> <span class="n">fp</span><span class="o">.</span><span class="n">readline</span><span class="p">()</span>
         <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">tmp</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
@@ -1031,33 +1031,33 @@ document.write(`
 <span class="k">def</span><span class="w"> </span><span class="nf">_vtk_parse_line</span><span class="p">(</span><span class="n">line</span><span class="p">,</span> <span class="n">grid</span><span class="p">):</span>
     <span class="n">sp</span> <span class="o">=</span> <span class="n">line</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
 
-    <span class="k">if</span> <span class="sa">b</span><span class="s2">&quot;vtk&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;vtk_version&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;time=&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-        <span class="n">time_index</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="sa">b</span><span class="s2">&quot;time=&quot;</span><span class="p">)</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;time&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="n">time_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;,&#39;</span><span class="p">))</span>
-        <span class="k">if</span> <span class="sa">b</span><span class="s1">&#39;level&#39;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-            <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;level&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="n">time_index</span> <span class="o">+</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;,&#39;</span><span class="p">))</span>
-        <span class="k">if</span> <span class="sa">b</span><span class="s1">&#39;domain&#39;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-            <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;domain&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="n">time_index</span> <span class="o">+</span> <span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">&#39;,&#39;</span><span class="p">))</span>
-        <span class="k">if</span> <span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">&quot;PRIMITIVE&quot;</span><span class="p">:</span>
-            <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;prim_var_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;DIMENSIONS&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;Nx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;int&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;ORIGIN&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span> <span class="c1"># left_edge</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;le&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float64&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;SPACING&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;dx&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">&#39;float64&#39;</span><span class="p">)</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;CELL_DATA&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;ncells&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;SCALARS&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_field&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;scalar&#39;</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;VECTORS&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_field&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;read_type&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;vector&#39;</span>
-    <span class="k">elif</span> <span class="sa">b</span><span class="s2">&quot;POINTS&quot;</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
-        <span class="n">grid</span><span class="p">[</span><span class="s1">&#39;npoint&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">if</span> <span class="sa">b</span><span class="s2">"vtk"</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'vtk_version'</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"time="</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+        <span class="n">time_index</span> <span class="o">=</span> <span class="n">sp</span><span class="o">.</span><span class="n">index</span><span class="p">(</span><span class="sa">b</span><span class="s2">"time="</span><span class="p">)</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'time'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="n">time_index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">','</span><span class="p">))</span>
+        <span class="k">if</span> <span class="sa">b</span><span class="s1">'level'</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+            <span class="n">grid</span><span class="p">[</span><span class="s1">'level'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="n">time_index</span> <span class="o">+</span> <span class="mi">3</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">','</span><span class="p">))</span>
+        <span class="k">if</span> <span class="sa">b</span><span class="s1">'domain'</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+            <span class="n">grid</span><span class="p">[</span><span class="s1">'domain'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="n">time_index</span> <span class="o">+</span> <span class="mi">5</span><span class="p">]</span><span class="o">.</span><span class="n">rstrip</span><span class="p">(</span><span class="sa">b</span><span class="s1">','</span><span class="p">))</span>
+        <span class="k">if</span> <span class="n">sp</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="sa">b</span><span class="s2">"PRIMITIVE"</span><span class="p">:</span>
+            <span class="n">grid</span><span class="p">[</span><span class="s1">'prim_var_type'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"DIMENSIONS"</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'Nx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'int'</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"ORIGIN"</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span> <span class="c1"># left_edge</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'le'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float64'</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"SPACING"</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'dx'</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">3</span><span class="p">:])</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="s1">'float64'</span><span class="p">)</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"CELL_DATA"</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'ncells'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"SCALARS"</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'read_field'</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'read_type'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'scalar'</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"VECTORS"</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'read_field'</span><span class="p">]</span> <span class="o">=</span> <span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'read_type'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'vector'</span>
+    <span class="k">elif</span> <span class="sa">b</span><span class="s2">"POINTS"</span> <span class="ow">in</span> <span class="n">sp</span><span class="p">:</span>
+        <span class="n">grid</span><span class="p">[</span><span class="s1">'npoint'</span><span class="p">]</span> <span class="o">=</span> <span class="nb">eval</span><span class="p">(</span><span class="n">sp</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span>
 </pre></div>
 
                 </article>

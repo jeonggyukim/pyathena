@@ -362,7 +362,7 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">numpy</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">np</span>
 
 <div class="viewcode-block" id="toggle_xticks"><a class="viewcode-back" href="../../../content/plt_tools.html#pyathena.plt_tools.set_plt.toggle_xticks">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">toggle_xticks</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Toggle x-axis tick label visibility on one or more axes.</span>
+<span class="w">    </span><span class="sd">"""Toggle x-axis tick label visibility on one or more axes.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -370,12 +370,12 @@ document.write(`
 <span class="sd">        Axes to modify.</span>
 <span class="sd">    visible : bool, optional</span>
 <span class="sd">        Whether to show tick labels. Default is ``False`` (hidden).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">axes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">get_xticklabels</span><span class="p">()</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">],</span> <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="toggle_yticks"><a class="viewcode-back" href="../../../content/plt_tools.html#pyathena.plt_tools.set_plt.toggle_yticks">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">toggle_yticks</span><span class="p">(</span><span class="n">axes</span><span class="p">,</span> <span class="n">visible</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Toggle y-axis tick label visibility on one or more axes.</span>
+<span class="w">    </span><span class="sd">"""Toggle y-axis tick label visibility on one or more axes.</span>
 
 <span class="sd">    Parameters</span>
 <span class="sd">    ----------</span>
@@ -383,104 +383,104 @@ document.write(`
 <span class="sd">        Axes to modify.</span>
 <span class="sd">    visible : bool, optional</span>
 <span class="sd">        Whether to show tick labels. Default is ``False`` (hidden).</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="n">axes</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">axes</span><span class="p">)</span>
     <span class="n">plt</span><span class="o">.</span><span class="n">setp</span><span class="p">([</span><span class="n">ax</span><span class="o">.</span><span class="n">get_yticklabels</span><span class="p">()</span> <span class="k">for</span> <span class="n">ax</span> <span class="ow">in</span> <span class="n">axes</span><span class="p">],</span> <span class="n">visible</span><span class="o">=</span><span class="n">visible</span><span class="p">)</span></div>
 
 <div class="viewcode-block" id="set_plt_default"><a class="viewcode-back" href="../../../content/plt_tools.html#pyathena.plt_tools.set_plt.set_plt_default">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">set_plt_default</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply default matplotlib rcParams for pyathena plots.</span>
+<span class="w">    </span><span class="sd">"""Apply default matplotlib rcParams for pyathena plots.</span>
 
 <span class="sd">    Sets figure size (8x6), DPI 200, font size 15, thick tick marks,</span>
 <span class="sd">    and constrained layout.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.dpi&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.constrained_layout.use&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'figure.figsize'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'figure.dpi'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">200</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'figure.constrained_layout.use'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;font.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">15</span>
-    <span class="c1">#plt.rcParams[&#39;font.weight&#39;] = 300</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'font.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">15</span>
+    <span class="c1">#plt.rcParams['font.weight'] = 300</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.linewidth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.major.width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.major.width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.major.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.major.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.minor.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.minor.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;lines.linewidth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span></div>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.linewidth'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.major.width'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.major.width'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.major.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.major.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.minor.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.minor.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'lines.linewidth'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span></div>
 
-    <span class="c1"># plt.rcParams[&#39;xtick.top&#39;] = True</span>
-    <span class="c1"># plt.rcParams[&#39;ytick.right&#39;] = True</span>
+    <span class="c1"># plt.rcParams['xtick.top'] = True</span>
+    <span class="c1"># plt.rcParams['ytick.right'] = True</span>
 
 <div class="viewcode-block" id="set_plt_fancy"><a class="viewcode-back" href="../../../content/plt_tools.html#pyathena.plt_tools.set_plt.set_plt_fancy">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">set_plt_fancy</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Apply a publication-quality matplotlib style.</span>
+<span class="w">    </span><span class="sd">"""Apply a publication-quality matplotlib style.</span>
 
 <span class="sd">    Sets ticks inward on all sides, white background, thick lines,</span>
 <span class="sd">    and a custom 10-color cycle.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;lines.linewidth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;lines.solid_capstyle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;butt&#39;</span>
+<span class="sd">    """</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'lines.linewidth'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">2.0</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'lines.solid_capstyle'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'butt'</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;legend.fancybox&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'legend.fancybox'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.prop_cycle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">cycler</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;#008fd5&#39;</span><span class="p">,</span>
-                                                     <span class="s1">&#39;#fc4f30&#39;</span><span class="p">,</span>
-                                                     <span class="s1">&#39;#e5ae38&#39;</span><span class="p">,</span>
-                                                     <span class="s1">&#39;#6d904f&#39;</span><span class="p">,</span>
-                                                     <span class="s1">&#39;#fe01b1&#39;</span><span class="p">,</span>
-                                                     <span class="s1">&#39;#06c2ac&#39;</span><span class="p">,</span>
-                                                     <span class="s1">&#39;#fe019a&#39;</span><span class="p">,</span> <span class="c1"># neon pink</span>
-                                                     <span class="s1">&#39;#810f7c&#39;</span><span class="p">,</span>
-                                                     <span class="s1">&#39;#8b8b8b&#39;</span><span class="p">,</span> <span class="c1"># gray</span>
-                                                     <span class="s1">&#39;black&#39;</span><span class="p">])</span> <span class="o">+</span>
-                                       <span class="n">cycler</span><span class="p">(</span><span class="n">linestyle</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span>
-                                                         <span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">,</span><span class="s1">&#39;-&#39;</span><span class="p">]))</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.prop_cycle'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="n">cycler</span><span class="p">(</span><span class="n">color</span><span class="o">=</span><span class="p">[</span><span class="s1">'#008fd5'</span><span class="p">,</span>
+                                                     <span class="s1">'#fc4f30'</span><span class="p">,</span>
+                                                     <span class="s1">'#e5ae38'</span><span class="p">,</span>
+                                                     <span class="s1">'#6d904f'</span><span class="p">,</span>
+                                                     <span class="s1">'#fe01b1'</span><span class="p">,</span>
+                                                     <span class="s1">'#06c2ac'</span><span class="p">,</span>
+                                                     <span class="s1">'#fe019a'</span><span class="p">,</span> <span class="c1"># neon pink</span>
+                                                     <span class="s1">'#810f7c'</span><span class="p">,</span>
+                                                     <span class="s1">'#8b8b8b'</span><span class="p">,</span> <span class="c1"># gray</span>
+                                                     <span class="s1">'black'</span><span class="p">])</span> <span class="o">+</span>
+                                       <span class="n">cycler</span><span class="p">(</span><span class="n">linestyle</span><span class="o">=</span><span class="p">[</span><span class="s1">'-'</span><span class="p">,</span><span class="s1">'-'</span><span class="p">,</span><span class="s1">'-'</span><span class="p">,</span><span class="s1">'-'</span><span class="p">,</span><span class="s1">'-'</span><span class="p">,</span>
+                                                         <span class="s1">'-'</span><span class="p">,</span><span class="s1">'-'</span><span class="p">,</span><span class="s1">'-'</span><span class="p">,</span><span class="s1">'-'</span><span class="p">,</span><span class="s1">'-'</span><span class="p">]))</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.facecolor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;white&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.labelsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;large&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.axisbelow&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.grid&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.edgecolor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;black&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.linewidth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;axes.titlesize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;large&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.facecolor'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'white'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.labelsize'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'large'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.axisbelow'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.grid'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.edgecolor'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'black'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.linewidth'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'axes.titlesize'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'large'</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;patch.edgecolor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;f0f0f0&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;patch.linewidth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'patch.edgecolor'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'f0f0f0'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'patch.linewidth'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">0.5</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;svg.fonttype&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;path&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'svg.fonttype'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'path'</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;grid.linestyle&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;-&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;grid.linewidth&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;grid.color&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;cbcbcb&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'grid.linestyle'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'-'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'grid.linewidth'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">1.0</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'grid.color'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'cbcbcb'</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.major.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.minor.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.major.width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.major.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.minor.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.major.width&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.direction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;in&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.direction&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;in&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.minor.visible&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.minor.visible&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.major.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.minor.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.major.width'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.major.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.minor.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.major.width'</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.direction'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'in'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.direction'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'in'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.minor.visible'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.minor.visible'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;xtick.top&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;ytick.right&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'xtick.top'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'ytick.right'</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;font.size&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mf">15.0</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'font.size'</span><span class="p">]</span> <span class="o">=</span> <span class="mf">15.0</span>
 
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;savefig.edgecolor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;white&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;savefig.facecolor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;white&#39;</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'savefig.edgecolor'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'white'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'savefig.facecolor'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'white'</span>
 
-    <span class="c1"># plt.rcParams[&#39;figure.constrained_layout.use&#39;] = True</span>
-    <span class="c1"># plt.rcParams[&#39;figure.subplot.left&#39;] = 0.08</span>
-    <span class="c1"># plt.rcParams[&#39;figure.subplot.right&#39;] = 0.95</span>
-    <span class="c1"># plt.rcParams[&#39;figure.subplot.bottom&#39;] = 0.07</span>
-    <span class="c1"># plt.rcParams[&#39;figure.subplot.hspace&#39;] = 0.0</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.facecolor&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;white&#39;</span>
-    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">&#39;figure.figsize&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span></div>
-    <span class="c1"># plt.rcParams[&#39;figure.dpi&#39;] = 200</span>
+    <span class="c1"># plt.rcParams['figure.constrained_layout.use'] = True</span>
+    <span class="c1"># plt.rcParams['figure.subplot.left'] = 0.08</span>
+    <span class="c1"># plt.rcParams['figure.subplot.right'] = 0.95</span>
+    <span class="c1"># plt.rcParams['figure.subplot.bottom'] = 0.07</span>
+    <span class="c1"># plt.rcParams['figure.subplot.hspace'] = 0.0</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'figure.facecolor'</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'white'</span>
+    <span class="n">plt</span><span class="o">.</span><span class="n">rcParams</span><span class="p">[</span><span class="s1">'figure.figsize'</span><span class="p">]</span> <span class="o">=</span> <span class="p">(</span><span class="mi">8</span><span class="p">,</span> <span class="mi">6</span><span class="p">)</span></div>
+    <span class="c1"># plt.rcParams['figure.dpi'] = 200</span>
 </pre></div>
 
                 </article>

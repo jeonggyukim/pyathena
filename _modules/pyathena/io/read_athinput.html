@@ -362,7 +362,7 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">collections</span>
 
 <div class="viewcode-block" id="read_athinput"><a class="viewcode-back" href="../../../content/readers.html#pyathena.read_athinput">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">read_athinput</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="n">as_namedtuple</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Function to read athinput and configure block from simulation log</span>
 
 <span class="sd">    Parameters</span>
@@ -377,25 +377,25 @@ document.write(`
 <span class="sd">    par : dict or namedtuple</span>
 <span class="sd">        Each item is a dictionary or namedtuple containing individual input</span>
 <span class="sd">        block.</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">if</span> <span class="n">verbose</span><span class="p">:</span>
-        <span class="nb">print</span><span class="p">(</span><span class="s1">&#39;[read_par]: Reading params from </span><span class="si">{0}</span><span class="s1">&#39;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s1">'[read_par]: Reading params from </span><span class="si">{0}</span><span class="s1">'</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">filename</span><span class="p">))</span>
 
     <span class="n">lines</span> <span class="o">=</span> <span class="p">[]</span>
-    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
+    <span class="k">with</span> <span class="nb">open</span><span class="p">(</span><span class="n">filename</span><span class="p">,</span> <span class="s1">'r'</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
         <span class="n">lines</span> <span class="o">=</span> <span class="n">f</span><span class="o">.</span><span class="n">readlines</span><span class="p">()</span>
 
     <span class="n">DUMP</span> <span class="o">=</span> <span class="kc">False</span>
     <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
-        <span class="k">if</span> <span class="s1">&#39;PAR_DUMP&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s1">'PAR_DUMP'</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
             <span class="n">DUMP</span> <span class="o">=</span> <span class="kc">True</span>
             <span class="k">break</span>
 
     <span class="k">if</span> <span class="n">DUMP</span><span class="p">:</span> <span class="c1"># from simulation log</span>
         <span class="n">flag</span> <span class="o">=</span> <span class="kc">True</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
-            <span class="k">if</span> <span class="s1">&#39;PAR_DUMP&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">'PAR_DUMP'</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
                 <span class="k">if</span> <span class="n">flag</span><span class="p">:</span>
                     <span class="n">istart</span> <span class="o">=</span> <span class="n">i</span>
                     <span class="n">flag</span> <span class="o">=</span> <span class="kc">False</span>
@@ -403,18 +403,18 @@ document.write(`
                     <span class="n">iend</span> <span class="o">=</span> <span class="n">i</span>
     <span class="k">else</span><span class="p">:</span> <span class="c1"># from restart</span>
         <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lines</span><span class="p">):</span>
-            <span class="k">if</span> <span class="s1">&#39;&lt;comment&gt;&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">'&lt;comment&gt;'</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
                 <span class="n">istart</span> <span class="o">=</span> <span class="n">i</span>
-            <span class="k">if</span> <span class="s1">&#39;SMR enabled?&#39;</span> <span class="ow">in</span> <span class="n">line</span> <span class="ow">or</span> <span class="s1">&#39;&lt;par_end&gt;&#39;</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s1">'SMR enabled?'</span> <span class="ow">in</span> <span class="n">line</span> <span class="ow">or</span> <span class="s1">'&lt;par_end&gt;'</span> <span class="ow">in</span> <span class="n">line</span><span class="p">:</span>
                 <span class="n">iend</span> <span class="o">=</span> <span class="n">i</span>
 
     <span class="n">lines</span> <span class="o">=</span> <span class="n">lines</span><span class="p">[</span><span class="n">istart</span><span class="p">:</span><span class="n">iend</span><span class="p">]</span>
 
     <span class="c1"># Parse lines</span>
-    <span class="n">reblock</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;&lt;\w+&gt;\s*&quot;</span><span class="p">)</span>
-    <span class="c1">##  reparam=re.compile(r&quot;[-\[\]\w]+\s*=&quot;)</span>
+    <span class="n">reblock</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"&lt;\w+&gt;\s*"</span><span class="p">)</span>
+    <span class="c1">##  reparam=re.compile(r"[-\[\]\w]+\s*=")</span>
     <span class="c1"># To deal with space (such as star particles in &lt;configure&gt;)</span>
-    <span class="n">reparam</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;[-\[\]\w]+[\s*[-\[\]\w]*]*\s*=&quot;</span><span class="p">)</span>
+    <span class="n">reparam</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="sa">r</span><span class="s2">"[-\[\]\w]+[\s*[-\[\]\w]*]*\s*="</span><span class="p">)</span>
 
     <span class="c1"># Find blocks first</span>
     <span class="n">block</span> <span class="o">=</span> <span class="p">[]</span>
@@ -424,7 +424,7 @@ document.write(`
             <span class="n">block</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">b</span><span class="o">.</span><span class="n">group</span><span class="p">()</span><span class="o">.</span><span class="n">strip</span><span class="p">()[</span><span class="mi">1</span><span class="p">:</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
 
     <span class="c1"># remove comment block</span>
-    <span class="n">block</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">&#39;comment&#39;</span><span class="p">)</span>
+    <span class="n">block</span><span class="o">.</span><span class="n">remove</span><span class="p">(</span><span class="s1">'comment'</span><span class="p">)</span>
 
     <span class="n">o</span> <span class="o">=</span> <span class="p">{}</span>
     <span class="k">for</span> <span class="n">b</span> <span class="ow">in</span> <span class="n">block</span><span class="p">:</span>
@@ -444,24 +444,24 @@ document.write(`
             <span class="n">lsplit</span> <span class="o">=</span> <span class="n">l</span><span class="o">.</span><span class="n">split</span><span class="p">()</span>
             <span class="n">i1_found</span><span class="o">=</span><span class="kc">False</span>
             <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">lsplit_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">lsplit</span><span class="p">):</span>
-                <span class="k">if</span> <span class="n">lsplit_</span> <span class="o">==</span> <span class="s1">&#39;=&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">lsplit_</span> <span class="o">==</span> <span class="s1">'='</span><span class="p">:</span>
                     <span class="n">i0</span> <span class="o">=</span> <span class="n">i</span>
-                <span class="k">if</span> <span class="n">lsplit_</span> <span class="o">==</span> <span class="s1">&#39;#&#39;</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">lsplit_</span> <span class="o">==</span> <span class="s1">'#'</span><span class="p">:</span>
                     <span class="n">i1</span> <span class="o">=</span> <span class="n">i</span>
                     <span class="n">i1_found</span><span class="o">=</span><span class="kc">True</span>
                     <span class="k">break</span>
 
-            <span class="n">pname</span> <span class="o">=</span> <span class="s1">&#39;_&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lsplit</span><span class="p">[:</span><span class="n">i0</span><span class="p">])</span>
-            <span class="k">if</span> <span class="n">i1_found</span><span class="p">:</span> <span class="n">value</span> <span class="o">=</span> <span class="s1">&#39; &#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lsplit</span><span class="p">[</span><span class="n">i0</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">i1</span><span class="p">])</span>
+            <span class="n">pname</span> <span class="o">=</span> <span class="s1">'_'</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lsplit</span><span class="p">[:</span><span class="n">i0</span><span class="p">])</span>
+            <span class="k">if</span> <span class="n">i1_found</span><span class="p">:</span> <span class="n">value</span> <span class="o">=</span> <span class="s1">' '</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">lsplit</span><span class="p">[</span><span class="n">i0</span><span class="o">+</span><span class="mi">1</span><span class="p">:</span><span class="n">i1</span><span class="p">])</span>
             <span class="k">else</span><span class="p">:</span> <span class="n">value</span> <span class="o">=</span> <span class="n">lsplit</span><span class="p">[</span><span class="n">i0</span><span class="o">+</span><span class="mi">1</span><span class="p">]</span>
 
             <span class="c1"># Evaluate if value is floating point number (or real number) or integer or string</span>
             <span class="c1"># Too complicated...there must be a better way...</span>
-            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[+-]?\d*\.\d*[eE][+-]?\d+$&#39;</span><span class="p">,</span><span class="n">value</span><span class="p">)</span> <span class="ow">or</span> \
-               <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[+-]?\d+[eE][+-]?\d+$&#39;</span><span class="p">,</span><span class="n">value</span><span class="p">)</span> <span class="ow">or</span> \
-               <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^[+-]?\d+\.\d*$&#39;</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^[+-]?\d*\.\d*[eE][+-]?\d+$'</span><span class="p">,</span><span class="n">value</span><span class="p">)</span> <span class="ow">or</span> \
+               <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^[+-]?\d+[eE][+-]?\d+$'</span><span class="p">,</span><span class="n">value</span><span class="p">)</span> <span class="ow">or</span> \
+               <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^[+-]?\d+\.\d*$'</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
                 <span class="n">o</span><span class="p">[</span><span class="n">bname</span><span class="p">][</span><span class="n">pname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
-            <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">&#39;^-?[0-9]+$&#39;</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">elif</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s1">'^-?[0-9]+$'</span><span class="p">,</span><span class="n">value</span><span class="p">):</span>
                 <span class="n">o</span><span class="p">[</span><span class="n">bname</span><span class="p">][</span><span class="n">pname</span><span class="p">]</span> <span class="o">=</span> <span class="nb">int</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
 <span class="c1">#                o[bname][l.split()[0]]=float(value)</span>
             <span class="k">else</span><span class="p">:</span>
@@ -469,7 +469,7 @@ document.write(`
 
     <span class="k">if</span> <span class="n">as_namedtuple</span><span class="p">:</span>
         <span class="c1"># Convert to namedtuple</span>
-        <span class="n">par</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="s1">&#39;par&#39;</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">keys</span><span class="p">())(</span><span class="o">**</span><span class="n">o</span><span class="p">)</span>
+        <span class="n">par</span> <span class="o">=</span> <span class="n">collections</span><span class="o">.</span><span class="n">namedtuple</span><span class="p">(</span><span class="s1">'par'</span><span class="p">,</span> <span class="n">o</span><span class="o">.</span><span class="n">keys</span><span class="p">())(</span><span class="o">**</span><span class="n">o</span><span class="p">)</span>
         <span class="k">return</span> <span class="n">par</span>
     <span class="k">else</span><span class="p">:</span>
         <span class="k">return</span> <span class="n">o</span></div>

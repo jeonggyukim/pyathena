@@ -670,12 +670,12 @@ a list of all possible arguments.</p></li>
 </div>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena.io</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_hdf5</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">read_hdf5</span><span class="p">(</span><span class="s2">&quot;/path/to/hdf/file&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">read_hdf5</span><span class="p">(</span><span class="s2">"/path/to/hdf/file"</span><span class="p">)</span>
 </pre></div>
 </div>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena.load_sim</span><span class="w"> </span><span class="kn">import</span> <span class="n">LoadSim</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">LoadSim</span><span class="p">(</span><span class="s2">&quot;/path/to/basedir&quot;</span><span class="p">)</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">read_hdf5</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">&#39;hdf5&#39;</span><span class="p">][</span><span class="s1">&#39;prim&#39;</span><span class="p">][</span><span class="mi">30</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">s</span> <span class="o">=</span> <span class="n">LoadSim</span><span class="p">(</span><span class="s2">"/path/to/basedir"</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">ds</span> <span class="o">=</span> <span class="n">read_hdf5</span><span class="p">(</span><span class="n">s</span><span class="o">.</span><span class="n">files</span><span class="p">[</span><span class="s1">'hdf5'</span><span class="p">][</span><span class="s1">'prim'</span><span class="p">][</span><span class="mi">30</span><span class="p">])</span>
 </pre></div>
 </div>
 </dd></dl>
@@ -706,7 +706,7 @@ the particle id (<code class="docutils literal notranslate"><span class="pre">pi
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena</span><span class="w"> </span><span class="kn">import</span> <span class="n">read_partab</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">read_partab</span><span class="p">(</span><span class="s2">&quot;/path/to/par0.tab&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df</span> <span class="o">=</span> <span class="n">read_partab</span><span class="p">(</span><span class="s2">"/path/to/par0.tab"</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">df</span><span class="o">.</span><span class="n">head</span><span class="p">()</span>
 </pre></div>
 </div>
@@ -822,9 +822,9 @@ via <a class="reference internal" href="#pyathena.TimingReader.load_loop_time" t
 </dl>
 <p class="rubric">Examples</p>
 <div class="doctest highlight-default notranslate"><div class="highlight"><pre><span></span><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span><span class="w"> </span><span class="nn">pyathena</span><span class="w"> </span><span class="kn">import</span> <span class="n">TimingReader</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">tr</span> <span class="o">=</span> <span class="n">TimingReader</span><span class="p">(</span><span class="s2">&quot;/path/to/basedir&quot;</span><span class="p">,</span> <span class="s2">&quot;problem_id&quot;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">tr</span> <span class="o">=</span> <span class="n">TimingReader</span><span class="p">(</span><span class="s2">"/path/to/basedir"</span><span class="p">,</span> <span class="s2">"problem_id"</span><span class="p">)</span>
 <span class="gp">&gt;&gt;&gt; </span><span class="n">df_loop</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">load_loop_time</span><span class="p">()</span>
-<span class="gp">&gt;&gt;&gt; </span><span class="n">df_tasks</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">load_task_time</span><span class="p">(</span><span class="n">groups</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;Hydro&#39;</span><span class="p">,</span> <span class="s1">&#39;Primitives&#39;</span><span class="p">])</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">df_tasks</span> <span class="o">=</span> <span class="n">tr</span><span class="o">.</span><span class="n">load_task_time</span><span class="p">(</span><span class="n">groups</span><span class="o">=</span><span class="p">[</span><span class="s1">'Hydro'</span><span class="p">,</span> <span class="s1">'Primitives'</span><span class="p">])</span>
 </pre></div>
 </div>
 <dl class="py method">

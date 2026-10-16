@@ -369,20 +369,20 @@ document.write(`
                        <span class="p">)</span>
 
 
-<div class="viewcode-block" id="cmap_apply_alpha"><a class="viewcode-back" href="../../../content/plt_tools.html#pyathena.plt_tools.cmap.cmap_apply_alpha">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">cmap_apply_alpha</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">&#39;Blues&#39;</span><span class="p">):</span>
+<div class="viewcode-block" id="cmap_apply_alpha"><a class="viewcode-back" href="../../../content/plt_tools.html#pyathena.plt_tools.cmap.cmap_apply_alpha">[docs]</a><span class="k">def</span><span class="w"> </span><span class="nf">cmap_apply_alpha</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="s1">'Blues'</span><span class="p">):</span>
 
     <span class="n">NN</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linspace</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span>
     <span class="n">cm_orig</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">cm</span><span class="o">.</span><span class="n">get_cmap</span><span class="p">(</span><span class="n">name</span><span class="p">)</span>
     <span class="n">cm</span> <span class="o">=</span> <span class="n">cm_orig</span><span class="p">(</span><span class="n">NN</span><span class="p">)</span>
     <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">cm</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">//</span><span class="mi">4</span><span class="p">):</span>
         <span class="n">cm</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="mi">3</span><span class="p">]</span> <span class="o">=</span> <span class="n">NN</span><span class="p">[</span><span class="n">i</span><span class="o">*</span><span class="mi">4</span><span class="p">]</span>
-        <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s1">&#39;my_&#39;</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">cm</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span>
+        <span class="n">cmap</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s1">'my_'</span> <span class="o">+</span> <span class="n">name</span><span class="p">,</span> <span class="n">cm</span><span class="p">,</span> <span class="mi">256</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">cmap</span></div>
 
-<span class="k">def</span><span class="w"> </span><span class="nf">cmap_shift</span><span class="p">(</span><span class="n">cmap</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">midpoint</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;shiftedcmap&#39;</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;Function to offset the center of a colormap. Useful for data with a</span>
-<span class="sd">    negative min and positive max and you want the middle of the colormap&#39;s</span>
+<span class="k">def</span><span class="w"> </span><span class="nf">cmap_shift</span><span class="p">(</span><span class="n">cmap</span><span class="p">,</span> <span class="n">start</span><span class="o">=</span><span class="mf">0.0</span><span class="p">,</span> <span class="n">midpoint</span><span class="o">=</span><span class="mf">0.5</span><span class="p">,</span> <span class="n">stop</span><span class="o">=</span><span class="mf">1.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'shiftedcmap'</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">"""Function to offset the center of a colormap. Useful for data with a</span>
+<span class="sd">    negative min and positive max and you want the middle of the colormap's</span>
 <span class="sd">    dynamic range to be at zero.</span>
 
 <span class="sd">    Parameters</span>
@@ -390,7 +390,7 @@ document.write(`
 <span class="sd">    cmap : matplotlib colormap</span>
 <span class="sd">        Colormap to be modified</span>
 <span class="sd">    start : float</span>
-<span class="sd">        Offset from lowest point in the colormap&#39;s range. Should be between 0.0</span>
+<span class="sd">        Offset from lowest point in the colormap's range. Should be between 0.0</span>
 <span class="sd">        and `midpoint`. Default value is 0.0 (no lower ofset).</span>
 <span class="sd">    midpoint : float</span>
 <span class="sd">        New center of the colormap. Should be between 0.0 and 1.0. In general,</span>
@@ -399,14 +399,14 @@ document.write(`
 <span class="sd">        0.0, `midpoint` should be set to 1 - 5/(5 + 15)) or 0.75. Default value</span>
 <span class="sd">        is 0.5 (no shift).</span>
 <span class="sd">    stop : float</span>
-<span class="sd">        Offset from highets point in the colormap&#39;s range. Should be between</span>
+<span class="sd">        Offset from highets point in the colormap's range. Should be between</span>
 <span class="sd">        `midpoint` and 1.0. Default value is 1.0 (no upper ofset).</span>
 
 <span class="sd">    Returns</span>
 <span class="sd">    -------</span>
 <span class="sd">    cmap_new : matplotlib colormap</span>
 <span class="sd">        New colormap</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">cdict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">red</span><span class="o">=</span><span class="p">[],</span> <span class="n">green</span><span class="o">=</span><span class="p">[],</span> <span class="n">blue</span><span class="o">=</span><span class="p">[],</span> <span class="n">alpha</span><span class="o">=</span><span class="p">[])</span>
 
@@ -421,10 +421,10 @@ document.write(`
 
     <span class="k">for</span> <span class="n">ri</span><span class="p">,</span> <span class="n">si</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">reg_index</span><span class="p">,</span> <span class="n">shift_index</span><span class="p">):</span>
         <span class="n">r</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">a</span> <span class="o">=</span> <span class="n">cmap</span><span class="p">(</span><span class="n">ri</span><span class="p">)</span>
-        <span class="n">cdict</span><span class="p">[</span><span class="s1">&#39;red&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">si</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span>
-        <span class="n">cdict</span><span class="p">[</span><span class="s1">&#39;green&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">si</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">g</span><span class="p">))</span>
-        <span class="n">cdict</span><span class="p">[</span><span class="s1">&#39;blue&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">si</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
-        <span class="n">cdict</span><span class="p">[</span><span class="s1">&#39;alpha&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">si</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">a</span><span class="p">))</span>
+        <span class="n">cdict</span><span class="p">[</span><span class="s1">'red'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">si</span><span class="p">,</span> <span class="n">r</span><span class="p">,</span> <span class="n">r</span><span class="p">))</span>
+        <span class="n">cdict</span><span class="p">[</span><span class="s1">'green'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">si</span><span class="p">,</span> <span class="n">g</span><span class="p">,</span> <span class="n">g</span><span class="p">))</span>
+        <span class="n">cdict</span><span class="p">[</span><span class="s1">'blue'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">si</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="n">b</span><span class="p">))</span>
+        <span class="n">cdict</span><span class="p">[</span><span class="s1">'alpha'</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">si</span><span class="p">,</span> <span class="n">a</span><span class="p">,</span> <span class="n">a</span><span class="p">))</span>
 
     <span class="n">cmap_new</span> <span class="o">=</span> <span class="n">mpl</span><span class="o">.</span><span class="n">colors</span><span class="o">.</span><span class="n">LinearSegmentedColormap</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">cdict</span><span class="p">)</span>
     <span class="c1"># plt.register_cmap(cmap=cmap_new)</span>
@@ -433,10 +433,10 @@ document.write(`
 
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_cmap_parula</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Function to get MATLAB Parula colormap</span>
 <span class="sd">    https://stackoverflow.com/questions/34859628/has-someone-made-the-parula-colormap-in-matplotlib</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">cm_data</span> <span class="o">=</span> <span class="p">[[</span><span class="mf">0.2422</span><span class="p">,</span> <span class="mf">0.1504</span><span class="p">,</span> <span class="mf">0.6603</span><span class="p">],</span>
                <span class="p">[</span><span class="mf">0.2444</span><span class="p">,</span> <span class="mf">0.1534</span><span class="p">,</span> <span class="mf">0.6728</span><span class="p">],</span>
@@ -695,15 +695,15 @@ document.write(`
                <span class="p">[</span><span class="mf">0.9749</span><span class="p">,</span> <span class="mf">0.9782</span><span class="p">,</span> <span class="mf">0.0872</span><span class="p">],</span>
                <span class="p">[</span><span class="mf">0.9769</span><span class="p">,</span> <span class="mf">0.9839</span><span class="p">,</span> <span class="mf">0.0805</span><span class="p">]]</span>
 
-    <span class="n">cmap</span> <span class="o">=</span> <span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s1">&#39;parula&#39;</span><span class="p">,</span> <span class="n">cm_data</span><span class="p">)</span>
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">LinearSegmentedColormap</span><span class="o">.</span><span class="n">from_list</span><span class="p">(</span><span class="s1">'parula'</span><span class="p">,</span> <span class="n">cm_data</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">cmap</span>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_cmap_planck</span><span class="p">():</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Function to get Planck colormap</span>
 <span class="sd">    https://zonca.github.io/2013/09/Planck-CMB-map-at-high-resolution.html</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="n">cm_data</span> <span class="o">=</span> <span class="p">[[</span>  <span class="mf">0.</span><span class="p">,</span>   <span class="mf">0.</span><span class="p">,</span> <span class="mf">255.</span><span class="p">],</span>
                <span class="p">[</span>  <span class="mf">0.</span><span class="p">,</span>   <span class="mf">2.</span><span class="p">,</span> <span class="mf">255.</span><span class="p">],</span>
@@ -962,11 +962,11 @@ document.write(`
                <span class="p">[</span><span class="mf">103.</span><span class="p">,</span>   <span class="mf">1.</span><span class="p">,</span>   <span class="mf">0.</span><span class="p">],</span>
                <span class="p">[</span><span class="mf">100.</span><span class="p">,</span>   <span class="mf">0.</span><span class="p">,</span>   <span class="mf">0.</span><span class="p">]]</span>
 
-    <span class="n">cmap</span> <span class="o">=</span> <span class="n">ListedColormap</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cm_data</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">&#39;planck&#39;</span><span class="p">)</span>
+    <span class="n">cmap</span> <span class="o">=</span> <span class="n">ListedColormap</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">cm_data</span><span class="p">)</span><span class="o">/</span><span class="mf">255.0</span><span class="p">,</span> <span class="n">name</span><span class="o">=</span><span class="s1">'planck'</span><span class="p">)</span>
     <span class="c1"># color of missing pixels</span>
-    <span class="n">cmap</span><span class="o">.</span><span class="n">set_bad</span><span class="p">(</span><span class="s1">&#39;gray&#39;</span><span class="p">)</span>
+    <span class="n">cmap</span><span class="o">.</span><span class="n">set_bad</span><span class="p">(</span><span class="s1">'gray'</span><span class="p">)</span>
     <span class="c1"># color of background, necessary if you want to use</span>
-    <span class="n">cmap</span><span class="o">.</span><span class="n">set_under</span><span class="p">(</span><span class="s1">&#39;white&#39;</span><span class="p">)</span>
+    <span class="n">cmap</span><span class="o">.</span><span class="n">set_under</span><span class="p">(</span><span class="s1">'white'</span><span class="p">)</span>
 
     <span class="k">return</span> <span class="n">cmap</span>
 </pre></div>

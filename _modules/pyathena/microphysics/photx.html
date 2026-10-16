@@ -365,24 +365,24 @@ document.write(`
 <span class="kn">import</span><span class="w"> </span><span class="nn">astropy.units</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">au</span>
 <span class="kn">import</span><span class="w"> </span><span class="nn">astropy.constants</span><span class="w"> </span><span class="k">as</span><span class="w"> </span><span class="nn">ac</span>
 
-<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;PhotX&#39;</span><span class="p">]</span>
+<span class="n">__all__</span> <span class="o">=</span> <span class="p">[</span><span class="s1">'PhotX'</span><span class="p">]</span>
 
 <div class="viewcode-block" id="PhotX"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.photx.PhotX">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">PhotX</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Computes photoionization cross-sections as described in Verner 96</span>
 <span class="sd">    http://adsabs.harvard.edu/abs/1996ApJ...465..487V</span>
 <span class="sd">    Original python code from Rabacus implementation</span>
 <span class="sd">    https://github.com/galtay/rabacus/tree/master/rabacus/atomic/verner/photox</span>
 <span class="sd">    (Released under GNU GPL3 v.30;</span>
 <span class="sd">    JKIM: is it okay to copy snippets of their code? what to do with license?)</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
     <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">datadir</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
         <span class="c1"># Read Verner et al. 1996 photoionization cross-section table</span>
         <span class="k">if</span> <span class="n">datadir</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
             <span class="n">basedir</span> <span class="o">=</span> <span class="n">osp</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">pathlib</span><span class="o">.</span><span class="n">Path</span><span class="p">(</span><span class="vm">__file__</span><span class="p">)</span><span class="o">.</span><span class="n">parent</span><span class="o">.</span><span class="n">absolute</span><span class="p">(),</span>
-                               <span class="s1">&#39;../../data/microphysics&#39;</span><span class="p">)</span>
-            <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">&#39;verner96_photx.dat&#39;</span><span class="p">)</span>
+                               <span class="s1">'../../data/microphysics'</span><span class="p">)</span>
+            <span class="n">fname</span> <span class="o">=</span> <span class="n">os</span><span class="o">.</span><span class="n">path</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">basedir</span><span class="p">,</span> <span class="s1">'verner96_photx.dat'</span><span class="p">)</span>
 
         <span class="n">dat</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">loadtxt</span><span class="p">(</span><span class="n">fname</span><span class="p">,</span> <span class="n">unpack</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_dat</span> <span class="o">=</span> <span class="n">dat</span>
@@ -401,8 +401,8 @@ document.write(`
         <span class="bp">self</span><span class="o">.</span><span class="n">y1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dat</span><span class="p">[</span><span class="mi">10</span><span class="p">]</span>
         <span class="k">del</span> <span class="bp">self</span><span class="o">.</span><span class="n">_dat</span>
 
-<div class="viewcode-block" id="PhotX.get_Eth"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.photx.PhotX.get_Eth">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_Eth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">&#39;eV&#39;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<div class="viewcode-block" id="PhotX.get_Eth"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.photx.PhotX.get_Eth">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_Eth</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">unit</span><span class="o">=</span><span class="s1">'eV'</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Threshold ionization energy in eV for ions defined by Z and N.</span>
 
 <span class="sd">        Parameters</span>
@@ -416,7 +416,7 @@ document.write(`
 <span class="sd">        -------</span>
 <span class="sd">        Eth: float</span>
 <span class="sd">            Threshold ionization energy in eV</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="n">c1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">==</span> <span class="n">Z</span>
         <span class="n">c2</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">N</span> <span class="o">==</span> <span class="n">N</span>
@@ -424,13 +424,13 @@ document.write(`
         <span class="n">indx</span> <span class="o">=</span> <span class="n">indx</span><span class="p">[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
         <span class="n">Eth</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Eth</span><span class="p">[</span><span class="n">indx</span><span class="p">]</span>
 
-        <span class="k">if</span> <span class="n">unit</span> <span class="o">==</span> <span class="s1">&#39;eV&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">unit</span> <span class="o">==</span> <span class="s1">'eV'</span><span class="p">:</span>
             <span class="k">return</span> <span class="n">Eth</span>
-        <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="s1">&#39;Angstrom&#39;</span><span class="p">:</span>
-            <span class="k">return</span> <span class="p">((</span><span class="n">ac</span><span class="o">.</span><span class="n">h</span><span class="o">*</span><span class="n">ac</span><span class="o">.</span><span class="n">c</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">Eth</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">eV</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">&#39;Angstrom&#39;</span><span class="p">)</span><span class="o">.</span><span class="n">value</span></div>
+        <span class="k">elif</span> <span class="n">unit</span> <span class="o">==</span> <span class="s1">'Angstrom'</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">((</span><span class="n">ac</span><span class="o">.</span><span class="n">h</span><span class="o">*</span><span class="n">ac</span><span class="o">.</span><span class="n">c</span><span class="p">)</span><span class="o">/</span><span class="p">(</span><span class="n">Eth</span><span class="o">*</span><span class="n">au</span><span class="o">.</span><span class="n">eV</span><span class="p">))</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="s1">'Angstrom'</span><span class="p">)</span><span class="o">.</span><span class="n">value</span></div>
 
 <div class="viewcode-block" id="PhotX.get_sigma"><a class="viewcode-back" href="../../../content/microphysics.html#pyathena.microphysics.photx.PhotX.get_sigma">[docs]</a>    <span class="k">def</span><span class="w"> </span><span class="nf">get_sigma</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">Z</span><span class="p">,</span> <span class="n">N</span><span class="p">,</span> <span class="n">E</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;Returns a photo-ionization cross-section for an ion defined by</span>
+<span class="w">        </span><span class="sd">"""Returns a photo-ionization cross-section for an ion defined by</span>
 <span class="sd">        Z and N at energies E in eV.</span>
 
 <span class="sd">        Parameters</span>
@@ -446,7 +446,7 @@ document.write(`
 <span class="sd">        -------</span>
 <span class="sd">        sigma: array of floats</span>
 <span class="sd">            Photoionization cross-sections [cm^-2]</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="c1"># calculate fit</span>
         <span class="n">c1</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">Z</span> <span class="o">==</span> <span class="n">Z</span>
@@ -479,14 +479,14 @@ document.write(`
         <span class="k">return</span> <span class="n">sigma</span></div></div>
 
 <span class="k">def</span><span class="w"> </span><span class="nf">get_sigma_pi_H2</span><span class="p">(</span><span class="n">E</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;H2 photoionization cross-section [cm^-2]</span>
+<span class="w">    </span><span class="sd">"""H2 photoionization cross-section [cm^-2]</span>
 <span class="sd">    Table 1 in Baczynski et al. (2015)</span>
 <span class="sd">    Piecewise constant cross-section to the analytical results</span>
 <span class="sd">    of Liu &amp; Shemansky (2012)</span>
 
 <span class="sd">    E : array of floats</span>
 <span class="sd">        Photon energy in eV</span>
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
     <span class="k">return</span> <span class="mf">1e-18</span><span class="o">*</span><span class="n">np</span><span class="o">.</span><span class="n">piecewise</span><span class="p">(</span><span class="n">E</span><span class="p">,</span> <span class="p">[</span><span class="n">E</span> <span class="o">&lt;</span> <span class="mf">15.2</span><span class="p">,</span>
                             <span class="p">((</span><span class="n">E</span> <span class="o">&gt;=</span> <span class="mf">15.2</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">E</span> <span class="o">&lt;</span> <span class="mf">15.45</span><span class="p">)),</span>
                             <span class="p">((</span><span class="n">E</span> <span class="o">&gt;=</span> <span class="mf">15.45</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">(</span><span class="n">E</span> <span class="o">&lt;</span> <span class="mf">15.70</span><span class="p">)),</span>

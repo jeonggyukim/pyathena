@@ -364,13 +364,13 @@ document.write(`
 <span class="kn">from</span><span class="w"> </span><span class="nn">.piecewisepowerlaw</span><span class="w"> </span><span class="kn">import</span> <span class="n">PiecewisePowerlaw</span>
 
 <div class="viewcode-block" id="mass_to_lum"><a class="viewcode-back" href="../../../content/pop_synth.html#pyathena.util.mass_to_lum">[docs]</a><span class="k">class</span><span class="w"> </span><span class="nc">mass_to_lum</span><span class="p">(</span><span class="nb">object</span><span class="p">):</span>
-<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="w">    </span><span class="sd">"""</span>
 <span class="sd">    Simple class for calculating mass-to-light conversion factor</span>
 
-<span class="sd">    &quot;&quot;&quot;</span>
+<span class="sd">    """</span>
 
-    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">&#39;Padova&#39;</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+    <span class="k">def</span><span class="w"> </span><span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">model</span><span class="o">=</span><span class="s1">'Padova'</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">"""</span>
 <span class="sd">        Initialize a mass_to_lum object.</span>
 
 <span class="sd">        Parameters</span>
@@ -380,7 +380,7 @@ document.write(`
 <span class="sd">            ``Padova`` - Power-law approximation to stellar luminosity, MS lifetime</span>
 <span class="sd">            based on Padova evolutionary track (Bruzual &amp; Charlot 2003).</span>
 <span class="sd">            Data taken from Table 1 in Parravano et al. (2003).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="bp">self</span><span class="o">.</span><span class="n">model</span> <span class="o">=</span> <span class="n">model</span>
 
@@ -395,7 +395,7 @@ document.write(`
             <span class="bp">self</span><span class="o">.</span><span class="n">LtoM_LW_SB99</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">QtoM_EUV_SB99</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_MtoL_SB99</span><span class="p">()</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">SNrate</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_SNrate_SB99</span><span class="p">()</span>
 
-        <span class="k">if</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">&#39;Padova&#39;</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">model</span> <span class="o">==</span> <span class="s1">'Padova'</span><span class="p">:</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">calc_tMS</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_LFUV</span><span class="p">,</span> \
                 <span class="bp">self</span><span class="o">.</span><span class="n">calc_LH2</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">calc_Qi</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_MtoL_Padova</span><span class="p">()</span>
             <span class="bp">self</span><span class="o">.</span><span class="n">calc_ZAMS_mass</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_age_to_mass</span><span class="p">()</span>
@@ -405,13 +405,13 @@ document.write(`
         <span class="n">age_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">flip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">calc_tMS</span><span class="p">(</span><span class="n">mass_range</span><span class="p">))</span>
 
         <span class="k">def</span><span class="w"> </span><span class="nf">age_to_mass</span><span class="p">(</span><span class="n">age</span><span class="p">):</span>
-            <span class="c1"># Isn&#39;t there more elegant way of doing this??</span>
+            <span class="c1"># Isn't there more elegant way of doing this??</span>
             <span class="n">age</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">atleast_1d</span><span class="p">(</span><span class="n">age</span><span class="p">)</span>
             <span class="n">res</span> <span class="o">=</span> <span class="p">[]</span>
             <span class="k">for</span> <span class="n">age_</span> <span class="ow">in</span> <span class="n">age</span><span class="p">:</span>
                 <span class="n">idx</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">age_</span> <span class="o">&lt;</span> <span class="n">age_range</span><span class="p">)[</span><span class="mi">0</span><span class="p">][</span><span class="mi">0</span><span class="p">]</span>
                 <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
-                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;Too small main sequence age&#39;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">'Too small main sequence age'</span><span class="p">)</span>
                 <span class="k">if</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
                     <span class="n">res</span><span class="o">.</span><span class="n">append</span><span class="p">(((</span><span class="n">age_</span> <span class="o">-</span> <span class="mf">2.3</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">)</span><span class="o">/</span><span class="mf">7.6e2</span><span class="p">)</span><span class="o">**</span><span class="p">(</span><span class="o">-</span><span class="mf">1.0</span><span class="o">/</span><span class="mf">1.57</span><span class="p">))</span>
                 <span class="k">elif</span> <span class="n">idx</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
@@ -430,8 +430,8 @@ document.write(`
         <span class="k">return</span> <span class="n">age_to_mass</span>
 
     <span class="k">def</span><span class="w"> </span><span class="nf">_get_MtoL_Padova</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
-<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
-<span class="sd">        Initialize power-law functions for model &#39;Padova&#39;</span>
+<span class="w">        </span><span class="sd">"""</span>
+<span class="sd">        Initialize power-law functions for model 'Padova'</span>
 
 <span class="sd">        tMS: main sequence lifetime [Myr],</span>
 <span class="sd">        LFUV: mean luminosities in the FUV band (912 - 2070A) [Lsun],</span>
@@ -441,7 +441,7 @@ document.write(`
 <span class="sd">        NOTE: Return NaN if mass is outside the valid range</span>
 
 <span class="sd">        See Table 1 in Parravano et al. (2003).</span>
-<span class="sd">        &quot;&quot;&quot;</span>
+<span class="sd">        """</span>
 
         <span class="c1"># main sequence lifetime</span>
         <span class="n">mass_range</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">([</span><span class="mf">1.2</span><span class="p">,</span> <span class="mf">3.0</span><span class="p">,</span> <span class="mf">6.0</span><span class="p">,</span> <span class="mf">9.0</span><span class="p">,</span> <span class="mf">12.0</span><span class="p">,</span> <span class="mf">120.01</span><span class="p">])</span>
