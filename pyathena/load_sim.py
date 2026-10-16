@@ -179,7 +179,8 @@ class LoadSim(LoadSimBase):
     ds : AthenaDataSet or yt DataSet
         Class for reading vtk file
     nums : list of int
-        Primary snapshot numbers (e.g., joined vtk, hdf5, or bin)
+        Primary snapshot numbers: tarred, joined or id0 vtk for Athena;
+        hdf5 for Athena++ (vtk if no hdf5) and AthenaK (converted from bin)
     u : Units object
         Simulation unit
     dfi : dict
