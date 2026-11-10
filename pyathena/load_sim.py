@@ -113,11 +113,11 @@ class LoadSimBase(ABC):
 
     @property
     def problem_id(self):
-        return self._problem_id
+        return self.ff.problem_id
 
     @property
     def athena_variant(self):
-        return self._athena_variant
+        return self.ff.athena_variant
 
     @property
     def domain(self):
@@ -129,11 +129,15 @@ class LoadSimBase(ABC):
 
     @property
     def par(self):
-        return self._par
+        return self.ff.par
 
     @property
     def files(self):
-        return self._files
+        return self.ff.files
+
+    @property
+    def pids(self):
+        return self.ff.pids
 
     @property
     def verbose(self):
@@ -175,7 +179,8 @@ class LoadSim(LoadSimBase):
     ds : AthenaDataSet or yt DataSet
         Class for reading vtk file
     nums : list of int
-        vtk/hdf5 output numbers
+        Primary snapshot numbers: tarred, joined or id0 vtk for Athena;
+        hdf5 for Athena++ (vtk if no hdf5) and AthenaK (converted from bin)
     u : Units object
         Simulation unit
     dfi : dict
@@ -256,9 +261,24 @@ class LoadSim(LoadSimBase):
         elif self.athena_variant == 'athena++':
             self.u = Units(kind='custom', units_dict=self.par['units'])
 
+    def __getattr__(self, name):
+        # Called only when normal attribute lookup fails. Falls back to the
+        # FindFiles instance so that s.nums_rst etc. keep working. Read ff
+        # from __dict__ to avoid infinite recursion before ff is set (e.g.,
+        # during unpickling or deepcopy).
+        try:
+            ff = self.__dict__['ff']
+        except KeyError:
+            raise AttributeError(name) from None
+        try:
+            return getattr(ff, name)
+        except AttributeError:
+            raise AttributeError(
+                f"'{type(self).__name__}' object has no attribute '{name}'") from None
+
     def find_files(self, verbose=None):
-        """Find output files under base directory and update the `files`
-        attribute.
+        """Find output files under base directory and select the primary
+        snapshot numbers.
 
         Parameters
         ----------
@@ -276,34 +296,15 @@ class LoadSim(LoadSimBase):
         except OSError as e:
             raise OSError(e)
 
-        # Transfer attributes of FindFiles to LoadSim
-        # TODO: Some of these attributes don't need to be transferred.
-        attrs_transfer = [
-            'files', 'athena_variant', 'par', 'problem_id', 'out_fmt',
-            'nums',
-            # particle (Athena++, AthenaK)
-            'nums_partab', 'nums_parbin', 'partags', 'pids',
-            'partab_outid', 'parbin_outid', 'pvtk_outvar',
-            # hdf5 (Athena++)
-            'nums_hdf5', 'hdf5_outid', 'hdf5_outvar', '_hdf5_outid_def',
-            '_hdf5_outvar_def',
-            # zprof
-            'nums_zprof', 'phase',
-            # rst
-            'nums_rst',
-            # starpar (Athena)
-            'nums_starpar',  'nums_sphst',
-            # vtk
-            'nums_vtk', 'nums_id0', 'nums_tar', 'nums_vtk',
-            '_fmt_vtk2d_not_found']
-        for attr in attrs_transfer:
-            if hasattr(self.ff, attr):
-                if attr in ['files', 'par', 'athena_variant', 'problem_id']:
-                    setattr(self, '_' + attr, getattr(self.ff, attr))
-                else:
-                    setattr(self, attr, getattr(self.ff, attr))
-            else:
-                pass
+        if self.athena_variant == 'athena':
+            nums = (getattr(self.ff, 'nums_tar', None) or
+                    getattr(self.ff, 'nums_vtk_joined', None) or
+                    getattr(self.ff, 'nums_id0', None))
+        else:
+            outvar = getattr(self.ff, '_hdf5_outvar_def', None)
+            nums = (getattr(self.ff, 'nums_hdf5', {}).get(outvar) or
+                    getattr(self.ff, 'nums_vtk', None))
+        self.nums = list(nums or [])
 
     def load_vtk(self, num=None, ivtk=None, id0=True, load_method=None):
         """Function to read Athena vtk file using pythena or yt and
@@ -468,7 +469,7 @@ class LoadSim(LoadSimBase):
         if num is None and ipartab is None:
             raise ValueError('Specify either num or ipartab')
 
-        self.fpartab = self._get_fpartab(self.partab_outid, partag, num, ipartab)
+        self.fpartab = self._get_fpartab(self.ff.partab_outid, partag, num, ipartab)
         if self.fpartab is None or not osp.exists(self.fpartab):
             self.logger.info('[load_partab]: partab file does not exist. ')
 
@@ -499,7 +500,7 @@ class LoadSim(LoadSimBase):
         if num is None and iparbin is None:
             raise ValueError('Specify either num or iparbin')
 
-        self.fparbin = self._get_fparbin(self.parbin_outid, partag, num, iparbin)
+        self.fparbin = self._get_fparbin(self.ff.parbin_outid, partag, num, iparbin)
         if self.fparbin is None or not osp.exists(self.fparbin):
             self.logger.info('[load_parbin]: parbin file does not exist. ')
 
@@ -530,7 +531,7 @@ class LoadSim(LoadSimBase):
         if num is None and fidx is None:
             raise ValueError('Specify either num or fidx')
 
-        self.fpvtk = self._get_fpvtk(self.pvtk_outvar, partag, num, fidx)
+        self.fpvtk = self._get_fpvtk(self.ff.pvtk_outvar, partag, num, fidx)
         if self.fpvtk is None or not osp.exists(self.fpvtk):
             self.logger.info('[load_pvtk]: pvtk file does not exist. ')
 
@@ -628,7 +629,7 @@ class LoadSim(LoadSimBase):
     def create_tar_all(self, remove_original=False, kind='vtk'):
         """Move and tar all vtk/rst files from per-process ``id*`` directories.
 
-        Iterates over all snapshot numbers in ``nums_id0``, calls
+        Iterates over all snapshot numbers in ``ff.nums_id0``, calls
         :meth:`move_to_tardir` to gather per-process files into numbered
         subdirectories, and then calls :meth:`create_tar` to pack each
         subdirectory into a single ``.tar`` archive.
@@ -641,9 +642,9 @@ class LoadSim(LoadSimBase):
         kind : {'vtk', 'rst'}, optional
             File type to archive. Default is ``'vtk'``.
         """
-        for num in self.nums_id0:
+        for num in self.ff.nums_id0:
             self.move_to_tardir(num=num, kind=kind)
-        raw_tardirs = self._find_match([(kind,"????")])
+        raw_tardirs = self.ff.find_match([(kind,"????")])
         for num in [int(f[-4:]) for f in raw_tardirs]:
             self.create_tar(num=num, remove_original=remove_original, kind=kind)
 
@@ -676,7 +677,7 @@ class LoadSim(LoadSimBase):
             id_files = [self._get_filename('vtk_id0',num=num)]
         elif kind == 'rst':
             id_files = [self._get_filename('rst',num=num)]
-        id_files += self._find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
+        id_files += self.ff.find_match([('id*','{0:s}-id*.{1:04d}.{2:s}'.\
                                      format(self.problem_id, num, kind))])
         # move each file
         self.logger.info('[move_to_tardir] moving {:d} files to {:s}'.\
@@ -738,7 +739,7 @@ class LoadSim(LoadSimBase):
         method_list = []
         for func in sorted(dir(self)):
             if not func.startswith("__"):
-                if callable(getattr(self, func)):
+                if callable(getattr(self, func, None)):
                     method_list.append(func)
                     print(func, end=': ')
                     print(getattr(self, func).__doc__)
@@ -824,7 +825,7 @@ class LoadSim(LoadSimBase):
         >>> ds = s.load_hdf5(30, x1_min=-0.5, x1_max=0.5, x2_min=1, x2_max=1.2)
         >>> # Load everything at fifth snapshot with ghost cells
         >>> num_ghost = s.par['configure']['Number_of_ghost_cells'] if \
-                 s.par[f'output{s.hdf5_outid[0]}']['ghost_zones'] == 'true' else 0
+                 s.par[f'output{s.ff.hdf5_outid[0]}']['ghost_zones'] == 'true' else 0
         >>> ds = s.load_hdf5(ihdf5=5, num_ghost=num_ghost)
         """
 
@@ -836,18 +837,18 @@ class LoadSim(LoadSimBase):
             self.load_method = load_method
 
         if outid is None and outvar is None:
-            outid = self._hdf5_outid_def
-            outvar = self._hdf5_outvar_def
+            outid = self.ff._hdf5_outid_def
+            outvar = self.ff._hdf5_outvar_def
         elif outid is not None:
-            if not outid in self.hdf5_outid:
+            if not outid in self.ff.hdf5_outid:
                 self.logger.error('Invalid hdf5 output id!')
-            idx = [i for i,v in enumerate(self.hdf5_outid) if v == outid][0]
-            outvar = self.hdf5_outvar[idx]
+            idx = [i for i,v in enumerate(self.ff.hdf5_outid) if v == outid][0]
+            outvar = self.ff.hdf5_outvar[idx]
         elif outvar is not None:
-            if not outvar in self.hdf5_outvar:
+            if not outvar in self.ff.hdf5_outvar:
                 self.logger.error('Invalid hdf5 variable!')
-            idx = [i for i,v in enumerate(self.hdf5_outvar) if v == outvar][0]
-            outid = self.hdf5_outid[idx]
+            idx = [i for i,v in enumerate(self.ff.hdf5_outvar) if v == outvar][0]
+            outid = self.ff.hdf5_outid[idx]
 
         self.fhdf5 = self._get_fhdf5(outid, outvar, num, ihdf5)
         if self.fhdf5 is None or not osp.exists(self.fhdf5):
@@ -943,17 +944,17 @@ class LoadSim(LoadSimBase):
         Looks in both ``id*`` subdirectories and dedicated format subdirectories
         for files matching ``*.????.{fmt}.vtk``. Found files are stored in
         ``self.files[fmt]`` and the corresponding snapshot numbers are set as
-        ``self.nums_{fmt}``.
+        ``self.ff.nums_{fmt}``.
         """
-        self.logger.info('Find 2d vtk: {0:s}'.format(' '.join(self._fmt_vtk2d_not_found)))
-        for fmt in self._fmt_vtk2d_not_found:
+        self.logger.info('Find 2d vtk: {0:s}'.format(' '.join(self.ff._fmt_vtk2d_not_found)))
+        for fmt in self.ff._fmt_vtk2d_not_found:
             fmt = fmt.split('.')[0]
             patterns = [('id*', '*.????.{0:s}.vtk'.format(fmt)),
                 ('{0:s}'.format(fmt), '*.????.{0:s}.vtk'.format(fmt))]
-            files = self._find_match(patterns)
+            files = self.ff.find_match(patterns)
             if files:
                 self.files[f'{fmt}'] = files
-                setattr(self, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
+                setattr(self.ff, f'nums_{fmt}', [int(osp.basename(f).split('.')[1]) \
                                               for f in self.files[f'{fmt}']])
             else:
                 self.logger.info('{0:s} files not found '.format(fmt))

@@ -20,7 +20,7 @@ class StarPar():
         """Function to read all post-processed starpar dump
         """
         if nums is None:
-            nums = self.nums_starpar
+            nums = self.ff.nums_starpar
 
         rr = dict()
         for i,num in enumerate(nums):
