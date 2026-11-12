@@ -271,10 +271,15 @@ class LoadSim(LoadSimBase):
         except KeyError:
             raise AttributeError(name) from None
         try:
-            return getattr(ff, name)
+            value = getattr(ff, name)
         except AttributeError:
             raise AttributeError(
                 f"'{type(self).__name__}' object has no attribute '{name}'") from None
+        warnings.warn(
+            f"Accessing FindFiles attribute '{name}' through LoadSim is "
+            f"deprecated; use s.ff.{name} instead.",
+            FutureWarning, stacklevel=2)
+        return value
 
     def find_files(self, verbose=None):
         """Find output files under base directory and select the primary
