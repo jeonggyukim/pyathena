@@ -12,7 +12,7 @@ import pprint
 import pyathena as pa
 from ..util.split_container import split_container
 from ..plt_tools.make_movie import make_movie
-from .load_sim_sf_cloud import load_all_alphabeta
+from .load_sim_sf_cloud import load_all_alphabeta, load_all_sf_cloud
 
 if __name__ == '__main__':
 

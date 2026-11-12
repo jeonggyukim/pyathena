@@ -18,6 +18,8 @@ from yt.utilities.linear_interpolators import \
 from yt.units.yt_array import YTArray, YTQuantity
 from yt.utilities.cosmology import Cosmology
 
+data_url = "http://yt-project.org/data"
+
 data_version = {"cloudy": 2,
                 "apec": 2}
 

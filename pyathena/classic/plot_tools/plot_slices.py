@@ -42,7 +42,7 @@ def slice(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
         tMyr=slc_data['time']
     else:
         time,sp=read_starvtk(starfname,time_out=True)
-        tMyr=time*Myr
+        tMyr=time*to_Myr
     images=[]
     for i,axis in enumerate(['y','z']):
         for j,f in enumerate(fields_to_draw):
@@ -154,7 +154,7 @@ def slice2(slcfname,starfname,fields_to_draw,zoom=1.,aux={},\
         tMyr=slc_data['time']
     else:
         time,sp=read_starvtk(starfname,time_out=True)
-        tMyr=time*Myr
+        tMyr=time*to_Myr
     images=[]
     for i,axis in enumerate(['y','z']):
         for j,f in enumerate(fields_to_draw):

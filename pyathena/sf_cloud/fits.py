@@ -1,12 +1,13 @@
 from astropy.io import fits
 import os
+import os.path as osp
 import numpy as np
 
 class Fits:
     def save_to_fits(self, num, fields = ['nH','T'], savname=None):
 
         def _create_fits_header(ds, par):
-            units = self.u
+            u = self.u
             hdr = fits.Header()
             hdr['time_code'] = ds.domain['time']
             hdr['time_Myr'] = (ds.domain['time']*u.Myr, 'Myr')

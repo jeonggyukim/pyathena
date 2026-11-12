@@ -226,7 +226,7 @@ class FindFiles(object):
                 self.logger.warning(f'An error occured: {e}')
                 self.logger.warning('Failed to read parameters with read_athinput.' +\
                                     'Try again with athena_read.athinput')
-                self.par = athena_read.athinput(self.files['athinput'])
+                self.par = athinput(self.files['athinput'])
                 # TODO: deal with another failure?
 
             # Determine if it is Athena++ or Athena
