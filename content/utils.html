@@ -522,10 +522,10 @@ velocities in cylindrical coords.</p></li>
 If bins is a sequence, it defines the bin edges, including the rightmost edge,
 allowing for non-uniform bin widths.</p></li>
 <li><p><strong>range</strong> (<em>(</em><em>float</em><em>, </em><em>float</em><em>)</em><em>, </em><em>optional</em>) – The lower and upper range of the bins.</p></li>
-<li><p><strong>cumulative</strong> (<em>bool</em>) – <dl class="simple">
-<dt>if True, perform cumulative binning, e.g.,</dt><dd><p>v_r_binned[i] = v_r( edge[0] &lt;= r &lt; edge[i+1] ).mean()</p>
-</dd>
-</dl>
+<li><p><strong>cumulative</strong> (<em>bool</em>) – <p>if True, perform cumulative binning, e.g.,</p>
+<blockquote>
+<div><p>v_r_binned[i] = v_r( edge[0] &lt;= r &lt; edge[i+1] ).mean()</p>
+</div></blockquote>
 <p>to calculate average velocity dispersion within radius r</p>
 </p></li>
 </ul>

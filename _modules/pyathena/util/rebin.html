@@ -462,8 +462,8 @@ document.write(`
 
     <span class="n">big</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">tile</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>
 
-    <span class="n">small1</span> <span class="o">=</span> <span class="n">rebin_xy_masked</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
-    <span class="n">small2</span> <span class="o">=</span> <span class="n">rebin_xy_masked</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="n">small1</span> <span class="o">=</span> <span class="n">rebin_xy</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="mf">0.0</span><span class="p">)</span>
+    <span class="n">small2</span> <span class="o">=</span> <span class="n">rebin_xy</span><span class="p">(</span><span class="n">big</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">fill_value</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
 
     <span class="nb">print</span><span class="p">(</span><span class="s1">'Original array</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="n">big</span><span class="p">)</span>
     <span class="nb">print</span><span class="p">(</span><span class="s1">'With fill value 0.0</span><span class="se">\n</span><span class="s1">'</span><span class="p">,</span> <span class="n">small1</span><span class="p">)</span>

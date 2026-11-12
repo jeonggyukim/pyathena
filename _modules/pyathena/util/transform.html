@@ -576,11 +576,13 @@ document.write(`
 <span class="sd">        The lower and upper range of the bins.</span>
 <span class="sd">    cumulative : bool</span>
 <span class="sd">        if True, perform cumulative binning, e.g.,</span>
-<span class="sd">          v_r_binned[i] = v_r( edge[0] &lt;= r &lt; edge[i+1] ).mean()</span>
+
+<span class="sd">            v_r_binned[i] = v_r( edge[0] &lt;= r &lt; edge[i+1] ).mean()</span>
+
 <span class="sd">        to calculate average velocity dispersion within radius r</span>
 
 <span class="sd">    Returns</span>
-<span class="sd">    ------</span>
+<span class="sd">    -------</span>
 <span class="sd">    res: xarray.DataArray</span>
 <span class="sd">        binned array</span>
 <span class="sd">    """</span>
