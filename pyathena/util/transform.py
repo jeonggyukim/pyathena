@@ -217,11 +217,13 @@ def groupby_bins(dat, coord, bins, range=None, cumulative=False, skipna=False):
         The lower and upper range of the bins.
     cumulative : bool
         if True, perform cumulative binning, e.g.,
-          v_r_binned[i] = v_r( edge[0] <= r < edge[i+1] ).mean()
+
+            v_r_binned[i] = v_r( edge[0] <= r < edge[i+1] ).mean()
+
         to calculate average velocity dispersion within radius r
 
     Returns
-    ------
+    -------
     res: xarray.DataArray
         binned array
     """

@@ -103,8 +103,8 @@ if __name__ == '__main__':
 
     big = np.tile(big, (1, 1, 1))
 
-    small1 = rebin_xy_masked(big, 2, fill_value=0.0)
-    small2 = rebin_xy_masked(big, 2, fill_value=None)
+    small1 = rebin_xy(big, 2, fill_value=0.0)
+    small2 = rebin_xy(big, 2, fill_value=None)
 
     print('Original array\n', big)
     print('With fill value 0.0\n', small1)

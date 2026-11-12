@@ -39,15 +39,15 @@ def cleanup_directory(base,problem_id,problem_dir=None):
         subdir='{}{}/{}'.format(base,problem_dir,ext)
         success[ext]=True
         if not os.path.isdir(subdir): os.mkdir(subdir)
-        if ext is 'zprof':
+        if ext == 'zprof':
             files=glob.glob('{}{}/id0/{}.*.zprof'.format(base,problem_dir,problem_id))
             files+=glob.glob('{}{}/id0/{}.*.zprof.p'.format(base,problem_dir,problem_id))
-        elif ext is 'hst':
+        elif ext == 'hst':
             files=glob.glob('{}{}/id0/{}.hst'.format(base,problem_dir,problem_id))
             files+=glob.glob('{}{}/id0/{}.sn'.format(base,problem_dir,problem_id))
-        elif ext is 'rst':
+        elif ext == 'rst':
             files=glob.glob('{}{}/id0/{}.????.rst'.format(base,problem_dir,problem_id))
-        elif ext is 'starpar':
+        elif ext == 'starpar':
             files=glob.glob('{}{}/id0/{}.????.starpar.vtk'.format(base,problem_dir,problem_id))
         else:
             print('{} extention specifier is not known'.format(ext))
@@ -55,14 +55,14 @@ def cleanup_directory(base,problem_id,problem_dir=None):
         if len(files):
             print('moving {} files...'.format(ext))
             for f in files:
-                if ext is 'hst':
+                if ext == 'hst':
                     shutil.copy2(f,f.replace('id0/','{}/'.format(ext)))
                 else:
                     shutil.move(f,f.replace('id0/','{}/'.format(ext)))
         else:
             success[ext]=False
 
-        if ext is 'rst':
+        if ext == 'rst':
             for i in range(1,nprocs):
                 files=glob.glob('{}{}/id{}/{}-id{}.????.rst'.format(base,problem_dir,i,problem_id,i))
                 if len(files):
@@ -314,17 +314,17 @@ def processing_zprof_dump(h,rates,params,zprof_ds,hstfile):
     for i,ph in enumerate(['_2p','_h','','_c','_u','_w','_h1','_h2',]):
         dtot=zpw.sel(fields='d').sum(dim='zaxis')
         Atot=zpw.sel(fields='A').sum(dim='zaxis')
-        if ph is '_2p':
+        if ph == '_2p':
             zp=zp2p
-        elif ph is '_h':
+        elif ph == '_h':
             zp=zph
-        elif ph is '':
+        elif ph == '':
             zp=zpw
         else:
             zp=zprof_ds['phase{}'.format(i-2)]
         dphase=zp.sel(fields='d').sum(dim='zaxis')
         h_zp['surf{}'.format(ph)]=(zp.sel(fields='d')/zpw.sel(fields='A')).sum(dim='zaxis')*toMsun*dz
-        if ph is not '':
+        if ph != '':
             h_zp['mf{}'.format(ph)]=zp.sel(fields='d').sum(dim='zaxis')/dtot
             h_zp['vf{}'.format(ph)]=zp.sel(fields='A').sum(dim='zaxis')/Atot
         h_zp['H{}'.format(ph)]=np.sqrt((zp.sel(fields='d')*zp.zaxis**2).sum(dim='zaxis')/dphase)
@@ -363,7 +363,7 @@ def processing_zprof_dump(h,rates,params,zprof_ds,hstfile):
         h_zp['v3_bd{}'.format(ph)]=0.5*(h_zp['v3_ubd{}'.format(ph)]+h_zp['v3_lbd{}'.format(ph)])
 
         for ns in range(nscal+1):
-            if ns is 0: var='d'
+            if ns == 0: var='d'
             else: var='s{}'.format(ns)
             field_name_u='massflux_{}_{}{}'.format('ubd',var,ph)
             flx=zp_upper.loc['pFz{}'.format(var)]/area

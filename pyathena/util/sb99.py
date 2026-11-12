@@ -1818,7 +1818,7 @@ if __name__ == '__main__':
 
     for mdl in models.keys():
         print(mdl)
-        sb = sb99.SB99(models[mdl])
+        sb = SB99(models[mdl])
         sb = write_sb99_output_for_tigress(sb)
         print(sb.par[25], sb.par[-7])
         # break

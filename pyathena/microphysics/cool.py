@@ -148,7 +148,7 @@ def heatH2(nH, T, xHI, xH2, Z_d, kgr_H2, xi_diss_H2, ikgr_H2, iH2heating):
         kgr = kgr_H2*Z_d
     else:
         T2 = T*1e-2
-        kgr = kgr_H2*Z_d*sqrt(T2)*2.0/(1+0.4*np.sqrt(T2)+0.2*T2+0.08*T2*T2)
+        kgr = kgr_H2*Z_d*np.sqrt(T2)*2.0/(1+0.4*np.sqrt(T2)+0.2*T2+0.08*T2*T2)
 
     if iH2heating == 1:
         A = 2.0e-7

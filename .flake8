@@ -1,0 +1,13 @@
+[flake8]
+# Error classes only: syntax errors, undefined names, invalid comparisons.
+select = E9,F63,F7,F82
+exclude =
+    .git,
+    __pycache__,
+    docs/_build,
+    # Python 2 code; does not parse.
+    pyathena/sf_cloud/cloud_evol.py
+per-file-ignores =
+    # Undefined names whose intended value is unknown (`f`, `model`).
+    pyathena/classic/plot_tools/plot_projection.py:F821
+    pyathena/tigress_single_sn/plt_tigress_single_sn.py:F821

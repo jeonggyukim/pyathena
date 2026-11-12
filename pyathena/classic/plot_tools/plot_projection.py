@@ -16,6 +16,9 @@ from ..set_units import set_units
 from .scatter_sp import scatter_sp
 import pickle
 
+unit=set_units()
+to_Myr=unit['time'].to('Myr').value
+
 def plot_projection(surfname,starfname,field='rho',
                     stars=True,writefile=True,runaway=True,aux={},norm_factor=1.):
 
@@ -33,7 +36,7 @@ def plot_projection(surfname,starfname,field='rho',
         tMyr=frb['time']
     else:
         time,sp=read_starvtk(starfname,time_out=True)
-        tMyr=time*Myr
+        tMyr=time*to_Myr
 
     if 'z' in frb:
         extent=np.array(frb['zextent'])
@@ -108,7 +111,7 @@ def plot_projection_Z(surfname,starfname,stars=True,writefile=True,runaway=True,
         tMyr=frb['time']
     else:
         time,sp=read_starvtk(starfname,time_out=True)
-        tMyr=time*Myr
+        tMyr=time*to_Myr
 
     extent=np.array(frb['y']['bounds'])/1.e3
     x0=extent[0]

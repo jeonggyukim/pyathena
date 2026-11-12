@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import os
+from itertools import product, combinations
 
 def cc_arr(domain):
     le=domain['left_edge']

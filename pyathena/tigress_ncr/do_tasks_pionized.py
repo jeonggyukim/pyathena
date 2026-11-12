@@ -28,7 +28,7 @@ if __name__ == '__main__':
     args = vars(parser.parse_args())
     locals().update(args)
 
-    s = pa.LoadSimTIGRESSNCR(basedir, verbose=False)
+    s = pa.LoadSimTIGRESSNCR(args['basedir'], verbose=False)
     nums = s.nums[50:300]
 
     if COMM.rank == 0:

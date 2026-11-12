@@ -97,7 +97,7 @@ class DustDraine(object):
             l = line.split()
             if len(l[idx_comment:]) != 0:
                 maxlen = max(maxlen, len(' '.join(l[idx_comment:])))
-        comment = np.chararray(nline, itemsize=maxlen)
+        comment = np.empty(nline, dtype=f'S{max(maxlen, 1)}')
 
         for i, line in enumerate(lines):
             l = line.split()

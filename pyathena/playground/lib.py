@@ -3,7 +3,7 @@
 # Taken from http://www.qtrac.eu/pyclassmulti.html
 
 def add_methods_from(*modules):
-    "Takes any number of modules and for each one adds any methods that have been
+    """Takes any number of modules and for each one adds any methods that have been
     registered with the class it is used to decorate.
 
     """

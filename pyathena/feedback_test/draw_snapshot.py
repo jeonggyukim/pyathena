@@ -162,6 +162,7 @@ if __name__ == '__main__':
     mynums = COMM.scatter(nums, root=0)
     print('[rank, mynums]:', COMM.rank, mynums)
 
+    time0 = time.time()
     for num in mynums:
         print(COMM.rank, num, end=' ')
         ds = plt_snapshot(s, h, num, savfig=True)
