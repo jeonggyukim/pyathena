@@ -29,7 +29,7 @@ jobs:
     - name: Build the book
       shell: bash -l {0}
       run: |
-        PYTHONPATH=./ jupyter-book build docs/
+        PYTHONPATH=./ jupyter-book build -W --keep-going docs/
 
     # Push the book's HTML to github-pages
     - name: GitHub Pages action

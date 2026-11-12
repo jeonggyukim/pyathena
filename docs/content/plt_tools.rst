@@ -16,6 +16,7 @@ Annotations
 
 .. autoclass:: pyathena.plt_tools.line_annotation.LineAnnotation
     :members:
+    :exclude-members: set
 
 Plots
 =====
