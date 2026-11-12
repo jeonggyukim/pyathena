@@ -241,6 +241,93 @@ def make_athena_run(basedir, pid='fake', nx=(8, 6, 4), ngrid=(2, 1, 1),
     return expected
 
 
+ATHDF_NAME_LEN = 21
+
+
+def write_athdf(fname, time, le, re, nx, nb, fields):
+    """Write one Athena++ .athdf file (no mesh refinement) with h5py.
+
+    Mirrors src/outputs/athena_hdf5.cpp: root attributes, per-block
+    Levels/LogicalLocations/x?f/x?v datasets, and one 5D dataset
+    'prim' of shape (nvar, nblock, nz, ny, nx) in float32.
+    fields: ordered dict variable name -> global (nz, ny, nx) array.
+    Meshblocks are ordered with x1 fastest, then x2, then x3.
+    """
+    import h5py
+
+    nx, nb = np.array(nx), np.array(nb)
+    le, re = np.array(le, float), np.array(re, float)
+    dx = (re - le)/nx
+    nblk = nx//nb
+    locs = [(i, j, k) for k in range(nblk[2]) for j in range(nblk[1])
+            for i in range(nblk[0])]
+    names = list(fields)
+
+    def s(lst):
+        return np.array(lst, dtype=f'S{ATHDF_NAME_LEN}')
+
+    with h5py.File(fname, 'w') as f:
+        f.attrs['NumCycles'] = np.int32(0)
+        f.attrs['Time'] = np.float32(time)
+        f.attrs['Coordinates'] = np.bytes_(b'cartesian')
+        for d in range(3):
+            f.attrs[f'RootGridX{d+1}'] = np.array([le[d], re[d], 1.0],
+                                                  dtype=np.float32)
+        f.attrs['RootGridSize'] = nx.astype(np.int32)
+        f.attrs['NumMeshBlocks'] = np.int32(len(locs))
+        f.attrs['MeshBlockSize'] = nb.astype(np.int32)
+        f.attrs['MaxLevel'] = np.int32(0)
+        f.attrs['NumVariables'] = np.array([len(names)], dtype=np.int32)
+        f.attrs['DatasetNames'] = s(['prim'])
+        f.attrs['VariableNames'] = s(names)
+
+        f['Levels'] = np.zeros(len(locs), dtype=np.int32)
+        f['LogicalLocations'] = np.array(locs, dtype=np.int64)
+        prim = np.empty((len(names), len(locs), *nb[::-1]), dtype=np.float32)
+        for d, key in enumerate(('x1', 'x2', 'x3')):
+            xf = np.empty((len(locs), nb[d] + 1), dtype=np.float32)
+            for b, loc in enumerate(locs):
+                i0 = loc[d]*nb[d]
+                xf[b] = le[d] + dx[d]*np.arange(i0, i0 + nb[d] + 1)
+            f[f'{key}f'] = xf
+            f[f'{key}v'] = 0.5*(xf[:, 1:] + xf[:, :-1])
+        for b, (i, j, k) in enumerate(locs):
+            sl = np.s_[k*nb[2]:(k + 1)*nb[2], j*nb[1]:(j + 1)*nb[1],
+                       i*nb[0]:(i + 1)*nb[0]]
+            for n, name in enumerate(names):
+                prim[n, b] = fields[name][sl]
+        f['prim'] = prim
+
+
+def make_athenapp_hdf5_run(basedir, pid='fakeh5', nx=(8, 6, 4), nb=(4, 3, 4),
+                           le=(-4.0, -3.0, -2.0), re=(4.0, 3.0, 2.0),
+                           nums=(0, 1)):
+    """Create an Athena++ run with hdf5 (prim) output in basedir/hdf5/.
+
+    Meshblocks split the domain along x and y. Fields: rho as in
+    make_athena_run, press = 2*rho, vel1..3 = rho + 0.1, 0.2, 0.3.
+    """
+    nx, le, re = np.array(nx), np.array(le, float), np.array(re, float)
+    basedir.mkdir(parents=True)
+    (basedir / 'hdf5').mkdir()
+    athinput = ATHINPUT_ATHENAPP.format(pid=pid, nx=nx, le=le, re=re, nb=nb)
+    athinput = athinput.replace('file_type  = vtk', 'file_type  = hdf5')
+    write_stdout_log(basedir / 'out.txt', athinput)
+    write_hst(basedir / f'{pid}.hst', np.arange(0.0, 2.05, 0.1))
+
+    expected = dict(nx=nx, le=le, re=re, dx=(re - le)/nx, pid=pid,
+                    nums=list(nums), fields={})
+    for num in nums:
+        d = cell_index_field(nx, 1000.0*num)
+        fields = dict(rho=d, press=2.0*d)
+        for c in range(3):
+            fields[f'vel{c+1}'] = d + np.float32(0.1*(c + 1))
+        expected['fields'][num] = fields
+        write_athdf(basedir / 'hdf5' / f'{pid}.out2.{num:05d}.athdf',
+                    float(num), le, re, nx, nb, fields)
+    return expected
+
+
 def make_athenapp_run(basedir, pid='fakepp', nx=(8, 6, 4), nb=(4, 6, 4),
                       le=(-4.0, -3.0, -2.0), re=(4.0, 3.0, 2.0),
                       nums=(0, 1)):
