@@ -16,7 +16,7 @@ from ..set_units import set_units
 from .scatter_sp import scatter_sp
 import pickle
 
-unit=set_units(muH=1.4271)
+unit=set_units()
 to_Myr=unit['time'].to('Myr').value
 
 def plot_projection(surfname,starfname,field='rho',
